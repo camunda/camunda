@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver;
+import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver.InstanceKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -66,6 +68,7 @@ public class Engine implements RecordProcessor {
   private RecordProcessorMap recordProcessorMap;
   private MutableProcessingState processingState;
   private CommandBufferingBehavior bufferingBehavior;
+  private InstanceKeyResolver instanceKeyResolver;
   private SuspensionBehavior suspensionBehavior;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
@@ -136,6 +139,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext, writers, config, securityConfig);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
+    instanceKeyResolver = new InstanceKeyResolver(processingState);
     suspensionBehavior = new SuspensionBehavior(processingState);
     final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
@@ -210,7 +214,11 @@ public class Engine implements RecordProcessor {
         processingResultBuilder.withProcessInASeparateBatch();
       }
 
-      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor);
+      final InstanceKeys keys =
+          suspensionBehavior.appliesTo(currentProcessor)
+              ? instanceKeyResolver.resolve(typedCommand)
+              : InstanceKeyResolver.UNRESOLVED;
+      final var suspension = suspensionBehavior.process(typedCommand, currentProcessor, keys);
       switch (suspension.outcome()) {
         case REJECT -> {
           rejectInstanceCommand(typedCommand, suspension.rejectionReason());

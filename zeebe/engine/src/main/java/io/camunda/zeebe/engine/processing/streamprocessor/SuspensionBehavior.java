@@ -22,11 +22,12 @@ import org.slf4j.Logger;
  * instance carries a suspension marker.
  *
  * <p>Only processors that implement {@link SuspensionAware} are gated; every other command is
- * processed normally. An implementing processor's {@link SuspensionAware#onSuspended} classifies
- * the command as {@code PROCESS}, {@code REJECT}, or {@code BUFFER} while {@code SUSPENDED}. While
- * {@code RESUMING}, {@link SuspensionAware#onResuming} classifies instead. Commands targeting
- * {@code SUSPENDING} instances use {@link SuspensionAware#onSuspending}, which delegates to {@link
- * SuspensionAware#onSuspended} by default.
+ * processed normally. The caller resolves the instance keys with {@link InstanceKeyResolver} when
+ * {@link #appliesTo} is true, and passes them in. An implementing processor's {@link
+ * SuspensionAware#onSuspended} classifies the command as {@code PROCESS}, {@code REJECT}, or {@code
+ * BUFFER} while {@code SUSPENDED}. While {@code RESUMING}, {@link SuspensionAware#onResuming}
+ * classifies instead. Commands targeting {@code SUSPENDING} instances use {@link
+ * SuspensionAware#onSuspending}, which delegates to {@link SuspensionAware#onSuspended} by default.
  */
 @NullMarked
 public final class SuspensionBehavior {
@@ -34,45 +35,38 @@ public final class SuspensionBehavior {
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
   private final ProcessingState processingState;
-  private final InstanceKeyResolver resolver;
 
   public SuspensionBehavior(final ProcessingState processingState) {
-    this(processingState, new InstanceKeyResolver(processingState));
-  }
-
-  public SuspensionBehavior(
-      final ProcessingState processingState, final InstanceKeyResolver resolver) {
     this.processingState = processingState;
-    this.resolver = resolver;
   }
 
   /**
-   * Decides how to treat the command; commands whose processor is not {@link SuspensionAware}, or
-   * whose target is not suspended, are always processed. The resolved target process instance key
-   * is returned alongside the decision so callers reuse it rather than re-deriving it (external
-   * {@code JOB}/{@code INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands
-   * don't carry it on the wire).
+   * True when the gate consults the processor, so the caller must resolve the instance keys.
+   * Otherwise, avoid resolving the process instance key to keep the state lookups off the hot path
+   * for unrelated commands.
    */
-  public SuspensionResult process(
-      final TypedRecord<?> command, final TypedRecordProcessor<?> processor) {
-    return process(command, processor, null);
+  public boolean appliesTo(final TypedRecordProcessor<?> processor) {
+    return processor instanceof SuspensionAware<?>;
   }
 
   /**
-   * Same as {@link #process(TypedRecord, TypedRecordProcessor)}, where {@code resolved} are keys
-   * the caller already resolved for this command, so the gate does not resolve them twice.
+   * Decides how to treat the command, given the keys the caller resolved with {@link
+   * InstanceKeyResolver}; commands whose processor is not {@link SuspensionAware}, or whose target
+   * is not suspended, are always processed. The target process instance key is returned alongside
+   * the decision so callers reuse it rather than re-deriving it (external {@code JOB}/{@code
+   * INCIDENT}/{@code USER_TASK}/{@code AD_HOC_SUB_PROCESS_INSTRUCTION} commands don't carry it on
+   * the wire).
    */
   public SuspensionResult process(
       final TypedRecord<?> command,
       final TypedRecordProcessor<?> processor,
-      final @Nullable InstanceKeys resolved) {
-    if (!(processor instanceof final SuspensionAware<?> suspensionAware)) {
-      // processors that don't opt in via SuspensionAware are never gated; checked before resolving
-      // the process instance key to keep the state lookups off the hot path for unrelated commands
+      final InstanceKeys keys) {
+    if (!appliesTo(processor)) {
+      // processors that don't opt in via SuspensionAware are never gated
       return passThrough(-1);
     }
 
-    final InstanceKeys keys = resolved != null ? resolved : resolver.resolve(command);
+    final SuspensionAware<?> suspensionAware = (SuspensionAware<?>) processor;
     final long processInstanceKey = keys.processInstanceKey();
     if (!keys.isResolved()) {
       return passThrough(processInstanceKey);
