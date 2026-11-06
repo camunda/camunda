@@ -87,7 +87,7 @@ public final class StorageOrdinalAssignmentTest {
       EngineRule.singlePartition()
           .maxCommandsInBatch(1)
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Test
   public void shouldAssignConfiguredOrdinalToProcessInstanceRecords() {
