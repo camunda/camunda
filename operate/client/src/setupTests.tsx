@@ -7,6 +7,7 @@
  */
 
 import '@testing-library/jest-dom';
+import type {TestingLibraryMatchers} from '@testing-library/jest-dom/matchers';
 // We had issues with the Mobx store resets executing before the React component unmounts
 // eslint-disable-next-line testing-library/no-manual-cleanup
 import {cleanup} from '@testing-library/react';
@@ -26,6 +27,12 @@ import MockReactMarkdown from '__mocks__/react-markdown';
 import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
 import {resetAllStores} from 'modules/testUtils/resetAllStores';
+
+declare module 'vitest' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
+  interface Assertion<R extends void | Promise<void> = void, T = unknown>
+    extends TestingLibraryMatchers<unknown, R> {}
+}
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
