@@ -448,7 +448,7 @@ camunda: # Type: io.camunda.configuration.Camunda
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_ENDPOINT
           retry: # Type: io.camunda.configuration.data.primarystorage.backup.Azure$Retry  
             # Maximum number of attempts the client makes for a failing request.
-            max-attempts: null # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_RETRY_MAXATTEMPTS
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_RETRY_MAXATTEMPTS
           
           sas-token: # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken  
             # The SAS token must be of the following types: "delegation", "service" or "account".
@@ -486,9 +486,9 @@ camunda: # Type: io.camunda.configuration.Camunda
           max-concurrent-transfers: 8 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_MAXCONCURRENTTRANSFERS
           retry: # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$Retry  
             # Maximum number of attempts the client makes for a failing request.
-            max-attempts: null # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_MAXATTEMPTS
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_MAXATTEMPTS
             # Maximum total time the client keeps retrying a failing request.
-            total-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_TOTALTIMEOUT
+            total-timeout: null # Type: Optional<Duration>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_TOTALTIMEOUT
         
         offset: 0 # Type: Long, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_OFFSET
         read-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_READTIMEOUT
