@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.eventplane.EventPlaneRegistration;
 import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
@@ -65,6 +66,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +94,8 @@ public final class PartitionManagerImpl
   private final PartitionScalingChangeExecutor scalingExecutor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final ExporterHistoryPurger exporterHistoryPurger;
+  private final @Nullable EventPlaneRegistration eventPlaneRegistration;
+  private boolean eventPlaneRegistrationSubmitted;
 
   public PartitionManagerImpl(
       final String partitionGroup,
@@ -137,6 +141,15 @@ public final class PartitionManagerImpl
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
 
+    // One for the tenant, which its partitions on this broker share while they lead.
+    eventPlaneRegistration =
+        brokerCfg.getEventPlane().getEndpoint() == null
+            ? null
+            : new EventPlaneRegistration(
+                brokerCfg.getEventPlane(),
+                partitionGroup,
+                () -> clusterConfigurationService.getCurrentClusterConfiguration().clusterId());
+
     zeebePartitionFactory =
         new ZeebePartitionFactory(
             actorSchedulingService,
@@ -159,7 +172,8 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            eventPlaneRegistration);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());
@@ -315,6 +329,20 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> start() {
+    if (eventPlaneRegistration != null) {
+      eventPlaneRegistrationSubmitted = true;
+      // Registering is best effort: without it, the partitions start all the same.
+      concurrencyControl.runOnCompletion(
+          actorSchedulingService.submitActor(eventPlaneRegistration),
+          (ok, error) -> {
+            if (error != null) {
+              LOGGER.warn(
+                  "Failed to start registering physical tenant {} in the Event Plane",
+                  partitionGroup,
+                  error);
+            }
+          });
+    }
     return clusterConfigurationService
         .getLatestClusterConfiguration()
         .andThen(this::startPartitions, concurrencyControl);
@@ -338,10 +366,20 @@ public final class PartitionManagerImpl
             result.completeExceptionally(error);
           } else {
             partitions.clear();
-            result.complete(null);
+            closeEventPlaneRegistration(result);
           }
         });
     return result;
+  }
+
+  private void closeEventPlaneRegistration(final ActorFuture<Void> result) {
+    // An actor that was never submitted would never close.
+    if (eventPlaneRegistration == null || !eventPlaneRegistrationSubmitted) {
+      result.complete(null);
+      return;
+    }
+    concurrencyControl.runOnCompletion(
+        eventPlaneRegistration.closeAsync(), (ok, error) -> result.complete(null));
   }
 
   private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
