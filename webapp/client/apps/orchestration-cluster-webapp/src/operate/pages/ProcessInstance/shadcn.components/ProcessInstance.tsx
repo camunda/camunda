@@ -11,11 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
-import {PROCESS_INSTANCE_TABS, type ProcessInstanceTab} from './processInstanceTabs';
+import {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, type ProcessInstanceTab} from './processInstanceTabs';
 import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
+	visibleTabs: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
@@ -23,7 +24,15 @@ type Props = {
 	children?: React.ReactNode;
 };
 
-const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, header, topPanel, children}) => {
+const ProcessInstance: React.FC<Props> = ({
+	activeTab,
+	visibleTabs,
+	onTabChange,
+	breadcrumb,
+	header,
+	topPanel,
+	children,
+}) => {
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -66,9 +75,9 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, h
 								>
 									<div className="flex h-12 min-h-12 items-center px-4">
 										<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
-											{PROCESS_INSTANCE_TABS.map((tab) => (
+											{visibleTabs.map((tab) => (
 												<TabsTrigger key={tab} value={tab}>
-													{t(`operate.processInstance.history.${tab}`)}
+													{t(TAB_LABEL_KEYS[tab])}
 												</TabsTrigger>
 											))}
 										</TabsList>

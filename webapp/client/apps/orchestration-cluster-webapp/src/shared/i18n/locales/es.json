@@ -1752,8 +1752,10 @@
 					"table": {
 						"operationType": "Tipo de operación",
 						"entityType": "Tipo de entidad",
-						"entityKey": "Clave de entidad"
-					}
+						"entityKey": "Clave de entidad",
+						"result": "Resultado"
+					},
+					"list": "Lista del registro de operaciones"
 				},
 				"variables": {
 					"search": "Buscar variables por nombre",
@@ -1959,7 +1961,8 @@
 					"time": "Hora",
 					"emptyAll": "Este elemento no tiene listeners de ejecución ni listeners de tareas de usuario",
 					"emptyTask": "Este elemento no tiene listeners de tareas de usuario",
-					"emptyExecution": "Este elemento no tiene listeners de ejecución"
+					"emptyExecution": "Este elemento no tiene listeners de ejecución",
+					"loading": "Cargando listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Instancia de proceso - Modo de modificación",
@@ -2156,6 +2159,7 @@
 					"processDefinitions": "definiciones de proceso",
 					"variables": "variables"
 				},
+				"noActor": "Sin actor",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "Agente de IA en nombre de {{actorType}}",
 					"mcpToolCall": "Llamada de herramienta MCP"

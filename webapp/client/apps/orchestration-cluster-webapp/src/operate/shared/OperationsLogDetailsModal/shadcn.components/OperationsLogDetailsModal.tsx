@@ -52,6 +52,11 @@ type Props = {
 	auditLog: AuditLog;
 };
 
+type DetailsModalState = {
+	isOpen: boolean;
+	auditLog?: AuditLog;
+};
+
 type RowProps = {
 	icon?: React.ReactNode;
 	label: React.ReactNode;
@@ -193,7 +198,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							noWrapLabel
 						>
 							<div className="flex items-center gap-2">
-								<OperationsLogResultIcon state={auditLog.result} data-testid={`${auditLog.auditLogKey}-icon`} />
+								<OperationsLogResultIcon state={auditLog.result} />
 								<span>{spaceAndCapitalize(auditLog.result)}</span>
 							</div>
 						</Row>
@@ -330,4 +335,5 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 	);
 };
 
+export type {DetailsModalState};
 export {OperationsLogDetailsModal};

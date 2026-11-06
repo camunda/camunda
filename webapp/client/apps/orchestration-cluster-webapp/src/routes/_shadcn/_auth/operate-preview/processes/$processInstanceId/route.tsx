@@ -6,12 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect} from 'react';
 import {createFileRoute, Outlet, useLocation, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
 import {
+	PROCESS_INSTANCE_TABS,
+	getHiddenTabRedirect,
 	getProcessInstanceTabFromPath,
+	getVisibleProcessInstanceTabs,
 	type ProcessInstanceTab,
 } from '#/operate/pages/ProcessInstance/shadcn.components/processInstanceTabs';
 import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceBreadcrumb';
@@ -21,10 +25,14 @@ import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/sha
 import {ProcessInstanceOperations} from '#/operate/pages/ProcessInstance/ProcessInstanceOperations/shadcn.components/ProcessInstanceOperations';
 import {ProcessInstancePageProvider} from '#/operate/pages/ProcessInstance/ProcessInstancePageProvider';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
-import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
+import {
+	processInstanceQuery,
+	useProcessInstanceWaitStateStatistics,
+} from '#/operate/pages/ProcessInstance/processInstance.queries';
 import {validateProcessInstanceRouteSearch} from '#/operate/pages/ProcessInstance/processInstanceSearch';
 import {loadOperateClientConfig} from '#/operate/shared/queries/loadOperateClientConfig';
-import {getProcessDefinitionName} from '#/operate/shared/utils/processInstance';
+import {getProcessDefinitionName, isInstanceRunning} from '#/operate/shared/utils/processInstance';
+import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {storeSessionState} from '#/shared/browser-storage/session-storage';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$processInstanceId')({
@@ -45,7 +53,13 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				]
 			: [],
 	}),
-	pendingComponent: () => <ProcessInstance activeTab="variables" header={<ProcessInstanceHeaderSkeleton />} />,
+	pendingComponent: () => (
+		<ProcessInstance
+			activeTab="variables"
+			visibleTabs={PROCESS_INSTANCE_TABS}
+			header={<ProcessInstanceHeaderSkeleton />}
+		/>
+	),
 	component: function ProcessInstanceRoute() {
 		const {processInstanceId} = Route.useParams();
 		const search = Route.useSearch();
@@ -59,6 +73,27 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				case 'incidents':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/incidents',
+						params: {processInstanceId},
+						search: true,
+						hash: true,
+					});
+				case 'input-mappings':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/input-mappings',
+						params: {processInstanceId},
+						search: true,
+						hash: true,
+					});
+				case 'output-mappings':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/output-mappings',
+						params: {processInstanceId},
+						search: true,
+						hash: true,
+					});
+				case 'operations-log':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/operations-log',
 						params: {processInstanceId},
 						search: true,
 						hash: true,
@@ -88,6 +123,33 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 			}
 		};
 
+		const hasSelection = Boolean(search.elementId || search.elementInstanceKey);
+		const visibleTabs = getVisibleProcessInstanceTabs(hasSelection);
+		const activeTab = getProcessInstanceTabFromPath(pathname);
+		const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
+		const redirectTarget = getHiddenTabRedirect({
+			activeTab,
+			visibleTabs,
+			hasSelection,
+			isProcessLevelWaiting: hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId),
+			isWaitStateLoading: isInstanceRunning(processInstance) && waitStateStatistics === undefined,
+		});
+
+		useEffect(() => {
+			if (redirectTarget !== null) {
+				void navigate({
+					to:
+						redirectTarget === 'details'
+							? '/operate-preview/processes/$processInstanceId/details'
+							: '/operate-preview/processes/$processInstanceId/variables',
+					params: {processInstanceId},
+					search: true,
+					hash: true,
+					replace: true,
+				});
+			}
+		}, [redirectTarget, navigate, processInstanceId]);
+
 		return (
 			<ProcessInstancePageProvider
 				processInstanceId={processInstanceId}
@@ -95,7 +157,8 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				search={search}
 			>
 				<ProcessInstance
-					activeTab={getProcessInstanceTabFromPath(pathname)}
+					activeTab={activeTab}
+					visibleTabs={visibleTabs}
 					onTabChange={(tab) => void changeTab(tab)}
 					breadcrumb={
 						hierarchy && hierarchy.length > 1 ? (
