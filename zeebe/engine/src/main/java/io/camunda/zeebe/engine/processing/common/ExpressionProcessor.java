@@ -481,9 +481,20 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
-    return evaluationResult
-        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
+    return evaluateArrayExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateArrayExpression(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, List<DirectBuffer>> evaluateArrayExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey, label))
         .map(EvaluationResult::getList);
   }
 
@@ -499,9 +510,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
+    return evaluateArrayOfStringsExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateArrayOfStringsExpression(Expression, long, String)}, but labels the
+   * failure message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, List<String>> evaluateArrayOfStringsExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId, label);
     return evaluationResult
-        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey))
+        .flatMap(result -> typeCheck(result, ResultType.ARRAY, scopeKey, label))
         .map(EvaluationResult::getListOfStrings)
         .flatMap(
             list -> {
@@ -512,9 +535,11 @@ public final class ExpressionProcessor {
                   createFailureMessage(
                       evaluationResult.get(),
                       String.format(
-                          "Expected result of the expression '%s' to be 'ARRAY' containing 'STRING' items,"
+                          "Expected result of the %s '%s'%s to be 'ARRAY' containing 'STRING' items,"
                               + " but was 'ARRAY' containing at least one non-'STRING' item.",
-                          expression.getExpression()),
+                          label.hasKind() ? label.kind() : "expression",
+                          expression.getExpression(),
+                          label.describeTarget()),
                       scopeKey));
             });
   }
