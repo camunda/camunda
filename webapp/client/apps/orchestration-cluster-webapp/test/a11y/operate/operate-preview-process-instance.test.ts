@@ -25,15 +25,17 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
+import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
-test('should have no accessibility violations in the process instance placeholder shell', async ({
+test('should have no accessibility violations in the process instance diagram shell', async ({
 	network,
 	operatePreviewProcessInstancePage,
 	makeAxeBuilder,
 }) => {
 	network.use(
+		...processInstanceDiagramHandlers(),
 		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
@@ -57,6 +59,25 @@ test('should have no accessibility violations in the process instance placeholde
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 	await expect(operatePreviewProcessInstancePage.header).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the process instance diagram with a selected element', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		...processInstanceDiagramHandlers(),
+		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
+	);
+
+	await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementId=task-1`);
+	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Incidents: 1')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

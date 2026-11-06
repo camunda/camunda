@@ -38,25 +38,9 @@ describe('<StateOverlay />', () => {
 	});
 
 	it('renders the count when provided', async () => {
-		const screen = await render(
-			<StateOverlay state="active" container={getContainer()} count={3} testId="active-overlay" />,
-		);
+		const screen = await render(<StateOverlay state="active" container={getContainer()} count={3} />);
 
-		await expect.element(screen.getByTestId('active-overlay')).toHaveTextContent('3');
-	});
-
-	it('renders without a count', async () => {
-		const screen = await render(
-			<StateOverlay state="incidents" container={getContainer()} testId="incidents-overlay" />,
-		);
-
-		await expect.element(screen.getByTestId('incidents-overlay')).toBeVisible();
-	});
-
-	it('defaults the test id to state-overlay-<state>', async () => {
-		const screen = await render(<StateOverlay state="canceled" container={getContainer()} />);
-
-		await expect.element(screen.getByTestId('state-overlay-canceled')).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'Active: 3'})).toHaveTextContent('3');
 	});
 
 	it('renders the provided title', async () => {
@@ -86,7 +70,7 @@ describe('<StateOverlay />', () => {
 	it('should pulse a ring without reducing opacity when faded', async () => {
 		const screen = await render(<StateOverlay state="active" container={getContainer()} count={1} isFaded />);
 
-		const badge = screen.getByTestId('state-overlay-active').element();
+		const badge = screen.getByRole('img', {name: 'Active: 1, pending modification'}).element();
 		expect(getComputedStyle(badge).opacity).toBe('1');
 		expect(getComputedStyle(badge).animationName).toBe('state-overlay-ring');
 	});
@@ -100,7 +84,7 @@ describe('<StateOverlay />', () => {
 	it('should not pulse when not faded', async () => {
 		const screen = await render(<StateOverlay state="active" container={getContainer()} count={1} />);
 
-		expect(getComputedStyle(screen.getByTestId('state-overlay-active').element()).animationName).toBe('none');
+		expect(getComputedStyle(screen.getByRole('img', {name: 'Active: 1'}).element()).animationName).toBe('none');
 	});
 
 	it('should prefix the accessible name with the element name', async () => {
@@ -116,10 +100,10 @@ describe('<StateOverlay />', () => {
 		async (state) => {
 			const container = getContainer();
 			container.className = 'c4-ui';
-			await render(<StateOverlay state={state} container={container} count={1} />);
+			const screen = await render(<StateOverlay state={state} container={container} count={1} />);
 
 			await expect
-				.poll(() => getComputedStyle(document.querySelector(`[data-testid="state-overlay-${state}"]`)!).backgroundColor)
+				.poll(() => getComputedStyle(screen.getByRole('img').element()).backgroundColor)
 				.not.toBe('rgba(0, 0, 0, 0)');
 		},
 	);

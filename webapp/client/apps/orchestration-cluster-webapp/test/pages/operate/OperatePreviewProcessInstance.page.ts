@@ -30,8 +30,20 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.page.getByRole('navigation', {name: 'breadcrumb'});
 	}
 
-	get diagramPanelPlaceholder() {
-		return this.page.getByText('Diagram panel placeholder');
+	get diagramPanel() {
+		return this.page.getByRole('region', {name: 'Process instance diagram'});
+	}
+
+	get diagram() {
+		return this.diagramPanel.getByRole('region', {name: 'Diagram', exact: true});
+	}
+
+	stateOverlay(name: string) {
+		return this.diagramPanel.getByRole('img', {name, exact: true});
+	}
+
+	diagramElement(elementId: string) {
+		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
 	get bottomPanelPlaceholder() {
