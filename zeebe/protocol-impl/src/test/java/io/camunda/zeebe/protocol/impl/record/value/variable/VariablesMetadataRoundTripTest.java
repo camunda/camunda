@@ -19,6 +19,11 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -80,6 +85,176 @@ final class VariablesMetadataRoundTripTest {
 
     // then
     assertThat(copy).isEqualTo(record);
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfMessage() {
+    // given
+    final var record =
+        new MessageRecord()
+            .setName("message")
+            .setCorrelationKey("key")
+            .setTimeToLive(0L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfMessage() {
+    // given
+    final var record =
+        new MessageRecord()
+            .setName("message")
+            .setCorrelationKey("key")
+            .setTimeToLive(0L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageRecord();
+    copy.wrap(record);
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfMessageSubscription() {
+    // given
+    final var record =
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(1L)
+            .setElementInstanceKey(2L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageSubscriptionRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfMessageSubscription() {
+    // given
+    final var record =
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(1L)
+            .setElementInstanceKey(2L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageSubscriptionRecord();
+    copy.wrap(record);
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfProcessMessageSubscription() {
+    // given
+    final var record =
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(1)
+            .setProcessInstanceKey(1L)
+            .setElementInstanceKey(2L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new ProcessMessageSubscriptionRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfProcessMessageSubscription() {
+    // given
+    final var record =
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(1)
+            .setProcessInstanceKey(1L)
+            .setElementInstanceKey(2L)
+            .setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new ProcessMessageSubscriptionRecord();
+    copy.wrap(record);
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfMessageStartEventSubscription() {
+    // given
+    final var record = new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageStartEventSubscriptionRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfMessageStartEventSubscription() {
+    // given
+    final var record = new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageStartEventSubscriptionRecord();
+    copy.wrap(record);
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @Test
+  void shouldKeepVariablesMetadataOfMessageStartProcessInstanceRequest() {
+    // given
+    final var record =
+        new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageStartProcessInstanceRequestRecord();
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyVariablesMetadataOfMessageStartProcessInstanceRequest() {
+    // given
+    final var record =
+        new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA);
+
+    // when
+    final var copy = new MessageStartProcessInstanceRequestRecord();
+    copy.wrap(record);
+
+    // then
     assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
   }
 

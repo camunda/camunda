@@ -1342,6 +1342,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "messageId": "test-id",
                   "name": "test-message",
                   "deadline": 22,
@@ -1373,6 +1374,7 @@ final class JsonSerializableToJsonTest {
                   "timeToLive": 12,
                   "correlationKey": "test-key",
                   "variables": {},
+                  "variablesMetadata": {},
                   "messageId": "",
                   "name": "test-message",
                   "deadline": -1,
@@ -1434,6 +1436,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 6
                 }
@@ -1465,6 +1468,7 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "businessId": "",
                   "variables": {},
+                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 0
                 }
@@ -1518,6 +1522,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "biz-42",
@@ -1554,6 +1559,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "variables": {},
+                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "",
@@ -1614,6 +1620,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
+                  "variablesMetadata": {},
                   "bpmnProcessId": "process",
                   "messageKey": 3,
                   "correlationKey": "key",
@@ -1653,6 +1660,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1345,
                   "processDefinitionKey": -1,
                   "variables": {},
+                  "variablesMetadata": {},
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "correlationKey": "",
