@@ -96,6 +96,12 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(
                 ZeebeCalledElement::getProcessId, ExpressionVerification::isMandatory)
             .hasValidExpression(
+                calledElement ->
+                    calledElement.getBindingType() == ZeebeBindingType.versionTag
+                        ? calledElement.getVersionTag()
+                        : null,
+                ExpressionVerification::isOptional)
+            .hasValidExpression(
                 ZeebeCalledElement::getBusinessId,
                 expression ->
                     expression
