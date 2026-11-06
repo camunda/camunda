@@ -9,6 +9,11 @@ package io.camunda.zeebe.metrics;
 
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.starter.ProcessInstanceCreator;
+import io.camunda.zeebe.starter.StarterFinished;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -22,6 +27,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+<<<<<<< HEAD
+=======
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
@@ -57,6 +72,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   /** Starts the periodic checking for process instance availability. */
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
     scheduleCheck(availabilityCheckInterval.toMillis());
   }
@@ -103,6 +119,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     piCheckExecutorService.shutdownNow();
   }

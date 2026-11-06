@@ -12,6 +12,7 @@ import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
 import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeApiClient.PageEvaluationResult;
 import io.camunda.zeebe.optimize.OptimizeApiClient.ReportEvaluationResult;
+import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
@@ -26,6 +27,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+<<<<<<< HEAD
+=======
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
 /**
  * Periodically evaluates Optimize dashboards and reports to exercise the Optimize REST API under
@@ -65,6 +76,29 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     this.registry = registry;
   }
 
+<<<<<<< HEAD
+=======
+  private static OptimizeApiClient createApiClient(
+      final OptimizeProperties props,
+      final WebClient.Builder webClientBuilder,
+      final ObjectMapper objectMapper) {
+    // applyEnvironmentOverrides(false): keep this provider from inheriting the Zeebe client's OAuth
+    // env vars (orchestration creds). Token caching/refresh/retry are handled by the provider.
+    final CredentialsProvider credentials =
+        CredentialsProvider.newCredentialsProviderBuilder()
+            .clientId(props.getClientId())
+            .clientSecret(props.getClientSecret())
+            .audience(props.getAudience())
+            .scope(OAUTH_SCOPE)
+            .authorizationServerUrl(
+                props.getKeycloakUrl() + REALMS_PATH + props.getRealm() + TOKEN_ENDPOINT_PATH)
+            .applyEnvironmentOverrides(false)
+            .build();
+    return new OptimizeApiClient(props, webClientBuilder, objectMapper, credentials);
+  }
+
+  @EventListener(ApplicationReadyEvent.class)
+>>>>>>> e477398ed (refactor: start the starter components from application events)
   public void start() {
     LOG.info(
         "Scheduling Optimize dashboard and report evaluations every {} (initial delay {})",
@@ -222,6 +256,7 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     if (scheduledTask != null) {
       scheduledTask.cancel(true);
