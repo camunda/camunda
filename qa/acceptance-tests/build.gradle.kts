@@ -6,6 +6,7 @@ import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
 
 plugins {
   id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
   id("buildlogic.integration-test-module-conventions")
   id("buildlogic.test-jar-conventions")
 }

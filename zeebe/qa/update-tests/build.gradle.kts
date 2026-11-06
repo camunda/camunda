@@ -2,6 +2,7 @@ import org.gradle.api.tasks.testing.Test
 
 plugins {
   id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
   id("buildlogic.integration-test-module-conventions")
 }
 
