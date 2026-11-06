@@ -124,6 +124,28 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
   }
 
   @Test
+  public void shouldReturnNotFoundForUnknownClientRegistrationId() {
+    // when
+    final MvcTestResult result =
+        mockMvcTester.get().uri("https://localhost/oauth2/authorization/openapi.json").exchange();
+
+    // then
+    assertThat(result).hasStatus(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRedirectToProviderForKnownClientRegistrationId() {
+    // when
+    final MvcTestResult result =
+        mockMvcTester.get().uri("https://localhost/oauth2/authorization/oidc").exchange();
+
+    // then
+    assertThat(result).hasStatus(HttpStatus.FOUND);
+    assertThat(result.getResponse().getRedirectedUrl())
+        .startsWith("https://authorization.example.com");
+  }
+
+  @Test
   public void shouldNotRequireCsrfTokenWithGetEndpoint() {
     // given
     final MockHttpSession mockHttpSession = new MockHttpSession();
