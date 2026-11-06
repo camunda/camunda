@@ -630,7 +630,10 @@ jobs:
           token: ${{ steps.owner-action-token.outputs.token }}
           path: team-test-automation
           persist-credentials: false
-          sparse-checkout: .github/actions/resolve-triage-owner
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/actions/resolve-triage-owner/
+            /.github/workflows/triage-assignments.json
 
       - name: Resolve this area's triage owner
         id: triage-owner
