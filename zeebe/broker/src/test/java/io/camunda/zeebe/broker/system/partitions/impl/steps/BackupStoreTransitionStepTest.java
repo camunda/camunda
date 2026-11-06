@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -200,8 +200,9 @@ class BackupStoreTransitionStepTest {
             e ->
                 assertThat(e)
                     .hasRootCauseInstanceOf(ConnectException.class)
-                    .hasStackTraceContaining(AzureBackupStoreException.ConfigurationException.class.getName()));
-        assertThat(transitionContext.getBackupStore()).isNull();
+                    .hasStackTraceContaining(
+                        AzureBackupStoreException.ConfigurationException.class.getName()));
+    assertThat(transitionContext.getBackupStore()).isNull();
   }
 
   @Test
@@ -230,7 +231,8 @@ class BackupStoreTransitionStepTest {
             e ->
                 assertThat(e)
                     .hasRootCauseInstanceOf(ConnectException.class)
-                    .hasStackTraceContaining(ConfigurationException.class.getName()));
+                    .hasStackTraceContaining(
+                        GcsBackupStoreException.ConfigurationException.class.getName()));
 
     assertThat(transitionContext.getBackupStore()).isNull();
   }
