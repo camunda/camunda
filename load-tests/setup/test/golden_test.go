@@ -39,11 +39,11 @@ var update = flag.Bool("update-golden", false,
 // Rendered k6 manifests (templates/k6) are left out of every scenario unless
 // its PathFilter selects them, as in the "k6" scenario.
 //
-// DualRegionZone, when set ("region-a" or "region-b"), renders only the platform chart, as that half of
-// a dual region cluster (dual_region=true) against the fixed dualRegionPeerNamespace. A set
-// Workload is then passed to the platform render too, so scenario=max covers the overrides that
-// generate-dual-region-values.sh folds into its application-override.yml. Only supported on
-// versions with dual_region_supported=true (main, stable-810).
+// DualRegionZone, when set ("region-a" or "region-b"), renders the platform and load-test-setup
+// charts as that half of a dual region cluster (dual_region=true) against the fixed
+// dualRegionPeerNamespace. A set Workload is passed to both renders, so scenario=max covers the
+// overrides that generate-dual-region-values.sh folds into its application-override.yml. Only
+// supported on versions with dual_region_supported=true (main, stable-810).
 //
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
@@ -136,16 +136,13 @@ var defaultScenarios = []scenario{
 	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenantCount: 1},
 	{Name: "none-physical-tenants", Storage: "none", Optimize: false, PhysicalTenantCount: 1},
 	// Both halves of a dual region cluster: every exporter id must target the same Elasticsearch
-	// in both regions, which only shows when region-a and region-b are compared. Scoped to the
-	// orchestration templates, where the zone topology, contact points and exporters land.
-	{Name: "elasticsearch-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a",
-		PathFilter: []string{"templates/orchestration"}},
-	{Name: "elasticsearch-dual-region-b", Storage: "elasticsearch", DualRegionZone: "region-b",
-		PathFilter: []string{"templates/orchestration"}},
-	{Name: "none-dual-region-a", Storage: "none", DualRegionZone: "region-a",
-		PathFilter: []string{"templates/orchestration"}},
-	{Name: "max-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a", Workload: "max",
-		PathFilter: []string{"templates/orchestration"}},
+	// in both regions, which only shows when region-a and region-b are compared, and region-b
+	// starts without load generators and with a suspended leader balancer.
+	{Name: "elasticsearch-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a"},
+	{Name: "elasticsearch-dual-region-b", Storage: "elasticsearch", DualRegionZone: "region-b"},
+	{Name: "none-dual-region-a", Storage: "none", DualRegionZone: "region-a"},
+	{Name: "max-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a", Workload: "max"},
+	{Name: "realistic-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a", Workload: "realistic"},
 }
 
 // dualRegionVersions are the setup versions with dual_region_supported=true.
@@ -252,9 +249,10 @@ func TestGoldenFiles(t *testing.T) {
 			defer ns.Cleanup()
 
 			// Checked before Workload: that branch renders only the load-test-setup chart, while
-			// a dual region workload changes the platform's application-override.yml.
+			// a dual region workload also changes the platform's application-override.yml.
 			if s.DualRegionZone != "" {
 				renderAndAssert(t, s.Version, s.Name, "platform", ns, "template", s.Workload, s.PathFilter, dualRegionVars(s.DualRegionZone)...)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter, dualRegionVars(s.DualRegionZone)...)
 				return
 			}
 

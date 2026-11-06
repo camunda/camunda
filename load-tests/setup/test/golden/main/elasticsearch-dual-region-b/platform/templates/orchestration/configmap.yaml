@@ -290,10 +290,14 @@ data:
     # dual region (generate-dual-region-values.sh): zone region-b of c8-golden-dual-region-peer + c8-golden-main-elasticsearch-dual-region-b.
     camunda:
       cluster:
-        # one contact point per zone is enough: membership gossip discovers the other brokers
+        # every broker, as the chart lists them for a single zone
         initial-contact-points:
-          - camunda-region-a.c8-golden-dual-region-peer.svc.cluster.local:26502
-          - camunda-region-b.c8-golden-main-elasticsearch-dual-region-b.svc.cluster.local:26502
+          - camunda-region-a-0.camunda-region-a.c8-golden-dual-region-peer.svc.cluster.local:26502
+          - camunda-region-a-1.camunda-region-a.c8-golden-dual-region-peer.svc.cluster.local:26502
+          - camunda-region-a-2.camunda-region-a.c8-golden-dual-region-peer.svc.cluster.local:26502
+          - camunda-region-b-0.camunda-region-b.c8-golden-main-elasticsearch-dual-region-b.svc.cluster.local:26502
+          - camunda-region-b-1.camunda-region-b.c8-golden-main-elasticsearch-dual-region-b.svc.cluster.local:26502
+          - camunda-region-b-2.camunda-region-b.c8-golden-main-elasticsearch-dual-region-b.svc.cluster.local:26502
       # every exporter id writes to the same Elasticsearch on every broker, in both regions, so a
       # leadership change between regions never resumes an exporter against another Elasticsearch
       data:

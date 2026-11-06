@@ -203,6 +203,14 @@ endif
 ifneq ($(physical_tenant_count),0)
 $(error dual_region=true does not support physical_tenant_count > 0)
 endif
+# Region A runs the load generators and the leader balancer for the whole cluster, so region B starts
+# without them: no load tester or k6 tests, and a suspended leader balancer CronJob.
+# additional_load_test_configuration comes after these flags, so it can turn them back on.
+ifeq ($(dual_region_zone),region-b)
+_load_test_setup_flags += --set load-tester.enabled=false
+_load_test_setup_flags += --set k6.tests.default.enabled=false --set k6.tests.data-read.enabled=false
+_load_test_setup_flags += --set leaderBalancer.suspend=true
+endif
 endif
 
 # Add secondary storage values
