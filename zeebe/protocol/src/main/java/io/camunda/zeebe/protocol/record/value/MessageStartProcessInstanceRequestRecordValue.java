@@ -122,4 +122,11 @@ public interface MessageStartProcessInstanceRequestRecordValue
    *     as a genuine TTL=0 message does.
    */
   long getMessageTtl();
+
+  /**
+   * @return the metadata of the variables of this record by variable name, empty if none of the
+   *     variables comes with metadata
+   * @since 8.11
+   */
+  Map<String, VariableMetadataValue> getVariablesMetadata();
 }
