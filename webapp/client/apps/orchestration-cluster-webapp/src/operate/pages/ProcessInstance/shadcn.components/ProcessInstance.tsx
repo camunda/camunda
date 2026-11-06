@@ -16,31 +16,89 @@ import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
+	isDesktop?: boolean;
 	visibleTabs: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
 	topPanel?: React.ReactNode;
+	historyPanel?: React.ReactNode;
 	children?: React.ReactNode;
 };
 
 const ProcessInstance: React.FC<Props> = ({
 	activeTab,
+	isDesktop = true,
 	visibleTabs,
 	onTabChange,
 	breadcrumb,
 	header,
 	topPanel,
+	historyPanel,
 	children,
 }) => {
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
 	const panelMinHeight = clientHeight / 4;
+	const [bottomWidth, setBottomWidth] = useState(0);
 
 	useEffect(() => {
-		setClientHeight(containerRef.current?.clientHeight ?? 0);
+		const container = containerRef.current;
+		setClientHeight(container?.clientHeight ?? 0);
+		setBottomWidth(container?.clientWidth ?? 0);
+		if (!container) {
+			return;
+		}
+		const observer = new ResizeObserver(() => {
+			setBottomWidth((current) => (current === container.clientWidth ? current : container.clientWidth));
+		});
+		observer.observe(container);
+		return () => observer.disconnect();
 	}, []);
+
+	const tabsSection = (
+		<section className="flex h-full flex-col overflow-hidden">
+			<Tabs
+				value={activeTab}
+				onValueChange={(tab) => onTabChange?.(tab as ProcessInstanceTab)}
+				className="flex min-h-0 grow flex-col gap-0"
+			>
+				<div className="flex h-12 min-h-12 items-center px-4">
+					<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
+						{visibleTabs.map((tab) => (
+							<TabsTrigger key={tab} value={tab}>
+								{t(TAB_LABEL_KEYS[tab])}
+							</TabsTrigger>
+						))}
+					</TabsList>
+				</div>
+				{PROCESS_INSTANCE_TABS.map((tab) => (
+					<TabsContent
+						key={tab}
+						value={tab}
+						forceMount
+						className="mt-0 min-h-0 flex-1 overflow-auto data-[state=inactive]:hidden"
+					>
+						{tab === activeTab ? (children ?? <ProcessInstanceTabPlaceholder />) : null}
+					</TabsContent>
+				))}
+			</Tabs>
+		</section>
+	);
+	const bottomPanel =
+		historyPanel && isDesktop ? (
+			<ResizablePanel
+				panelId="process-instance-bottom-panel"
+				direction={SplitDirection.Horizontal}
+				minWidths={[Math.max(420, bottomWidth / 4), bottomWidth / 4]}
+			>
+				{historyPanel}
+				{tabsSection}
+			</ResizablePanel>
+		) : (
+			tabsSection
+		);
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -67,33 +125,7 @@ const ProcessInstance: React.FC<Props> = ({
 									</>
 								)}
 							</section>
-							<section className="flex h-full flex-col overflow-hidden">
-								<Tabs
-									value={activeTab}
-									onValueChange={(tab) => onTabChange?.(tab as ProcessInstanceTab)}
-									className="flex min-h-0 grow flex-col gap-0"
-								>
-									<div className="flex h-12 min-h-12 items-center px-4">
-										<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
-											{visibleTabs.map((tab) => (
-												<TabsTrigger key={tab} value={tab}>
-													{t(TAB_LABEL_KEYS[tab])}
-												</TabsTrigger>
-											))}
-										</TabsList>
-									</div>
-									{PROCESS_INSTANCE_TABS.map((tab) => (
-										<TabsContent
-											key={tab}
-											value={tab}
-											forceMount
-											className="mt-0 min-h-0 flex-1 overflow-auto data-[state=inactive]:hidden"
-										>
-											{tab === activeTab ? (children ?? <ProcessInstanceTabPlaceholder />) : null}
-										</TabsContent>
-									))}
-								</Tabs>
-							</section>
+							{bottomPanel}
 						</ResizablePanel>
 					</div>
 				</div>

@@ -6,19 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
-import {createFileRoute, Outlet, useLocation, useNavigate} from '@tanstack/react-router';
+import {createFileRoute, Outlet, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstance';
 import {
 	PROCESS_INSTANCE_TABS,
-	getHiddenTabRedirect,
-	getProcessInstanceTabFromPath,
-	getVisibleProcessInstanceTabs,
 	type ProcessInstanceTab,
 } from '#/operate/pages/ProcessInstance/shadcn.components/processInstanceTabs';
+import {useVisibleProcessInstanceTabs} from '#/operate/pages/ProcessInstance/shadcn.components/useVisibleProcessInstanceTabs';
 import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceBreadcrumb';
+import {InstanceHistory} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceHistory';
+import {isWidthAboveBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMedia';
 import {InstanceDiagram} from '#/operate/pages/ProcessInstance/shadcn.components/InstanceDiagram';
 import {ProcessInstanceHeader} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceHeaderSkeleton';
@@ -66,10 +65,16 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const navigate = useNavigate();
 		const {data: processInstance} = useSuspenseQuery(processInstanceQuery(processInstanceId));
 		const {data: hierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
-		const {pathname} = useLocation();
 
 		const changeTab = (tab: ProcessInstanceTab) => {
 			switch (tab) {
+				case 'history':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/history',
+						params: {processInstanceId},
+						search: true,
+						hash: true,
+					});
 				case 'incidents':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/incidents',
@@ -123,32 +128,15 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 			}
 		};
 
-		const hasSelection = Boolean(search.elementId || search.elementInstanceKey);
-		const visibleTabs = getVisibleProcessInstanceTabs(hasSelection);
-		const activeTab = getProcessInstanceTabFromPath(pathname);
+		const isDesktop = useMatchMedia(isWidthAboveBreakpoint('lg'));
 		const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
-		const redirectTarget = getHiddenTabRedirect({
-			activeTab,
-			visibleTabs,
-			hasSelection,
+		const {visibleTabs, activeTab, isActiveTabHidden} = useVisibleProcessInstanceTabs({
+			processInstanceId,
+			hasSelection: Boolean(search.elementId || search.elementInstanceKey),
+			isDesktop,
 			isProcessLevelWaiting: hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId),
 			isWaitStateLoading: isInstanceRunning(processInstance) && waitStateStatistics === undefined,
 		});
-
-		useEffect(() => {
-			if (redirectTarget !== null) {
-				void navigate({
-					to:
-						redirectTarget === 'details'
-							? '/operate-preview/processes/$processInstanceId/details'
-							: '/operate-preview/processes/$processInstanceId/variables',
-					params: {processInstanceId},
-					search: true,
-					hash: true,
-					replace: true,
-				});
-			}
-		}, [redirectTarget, navigate, processInstanceId]);
 
 		return (
 			<ProcessInstancePageProvider
@@ -158,6 +146,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 			>
 				<ProcessInstance
 					activeTab={activeTab}
+					isDesktop={isDesktop}
 					visibleTabs={visibleTabs}
 					onTabChange={(tab) => void changeTab(tab)}
 					breadcrumb={
@@ -166,9 +155,10 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 						) : undefined
 					}
 					topPanel={<InstanceDiagram />}
+					historyPanel={<InstanceHistory />}
 					header={<ProcessInstanceHeader operations={<ProcessInstanceOperations key={processInstanceId} />} />}
 				>
-					<Outlet />
+					{!isActiveTabHidden && <Outlet />}
 				</ProcessInstance>
 			</ProcessInstancePageProvider>
 		);

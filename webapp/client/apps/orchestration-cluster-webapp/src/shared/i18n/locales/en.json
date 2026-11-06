@@ -1660,6 +1660,7 @@
 					"operationsLog": "Operations Log",
 					"timestamps": "End date",
 					"executionCount": "Execution count",
+					"loadingMore": "Loading more elements",
 					"multiInstance": " (Multi Instance)",
 					"migrated": "Migrated {{date}}",
 					"forbidden": "You do not have permission to view instance history",

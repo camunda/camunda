@@ -20,10 +20,11 @@ import {
 	mockOperateClientConfigEndpoint,
 	mockGetIncidentEndpoint,
 	mockQueryAuditLogsEndpoint,
+	mockGetElementInstanceEndpoint,
+	mockQueryElementInstancesEndpoint,
 	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
-	mockGetElementInstanceEndpoint,
 	mockResolveIncidentEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -35,8 +36,11 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
-import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
 import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
@@ -553,5 +557,33 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/operations-log');
 
 		await expect(page.getByText('No operations found for this instance')).toBeVisible();
+	});
+
+	test('should show the instance history tree and select an element from it', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		const task = createElementInstance({
+			elementId: 'task-1',
+			elementInstanceKey: '2251799813685290',
+			elementName: 'Task 1',
+		});
+		network.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([
+						createElementInstance({elementId: 'task-1', elementInstanceKey: '2251799813685290', elementName: 'Task 1'}),
+					]),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.historyItem('Task 1').click();
+
+		await expect(page).toHaveURL(/elementInstanceKey=%222251799813685290%22/);
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toHaveAttribute('aria-selected', 'true');
 	});
 });
