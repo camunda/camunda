@@ -19,9 +19,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ProtectionMode;
+import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.protocol.rest.ProtectionModeEnum;
+import io.camunda.client.protocol.rest.VariableMetadata;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import java.util.Collections;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -45,5 +50,28 @@ public class GetVariableTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getVariableUrl(variableKey));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldReturnVariableMetadata() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getVariableMetadata().getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
   }
 }

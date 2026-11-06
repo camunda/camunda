@@ -17,6 +17,7 @@ package io.camunda.process.test.utils;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.api.search.response.VariableMetadata;
 
 public class VariableBuilder implements Variable {
 
@@ -27,6 +28,7 @@ public class VariableBuilder implements Variable {
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
   private String tenantId;
+  private VariableMetadata variableMetadata;
   private Boolean isTruncated;
   private JsonMapper jsonMapper;
 
@@ -63,6 +65,11 @@ public class VariableBuilder implements Variable {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public VariableMetadata getVariableMetadata() {
+    return variableMetadata;
   }
 
   @Override
@@ -114,6 +121,11 @@ public class VariableBuilder implements Variable {
 
   public VariableBuilder setVariableKey(final Long variableKey) {
     this.variableKey = variableKey;
+    return this;
+  }
+
+  public VariableBuilder setVariableMetadata(final VariableMetadata variableMetadata) {
+    this.variableMetadata = variableMetadata;
     return this;
   }
 
