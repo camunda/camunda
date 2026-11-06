@@ -180,7 +180,7 @@ public final class SegmentedJournal implements Journal {
       }
     } finally {
       if (writer.getLastFlushedIndex() > 0) {
-        metaStore.storeLastFlushedIndex((writer.getLastFlushedIndex()));
+        metaStore.storeLastFlushedIndexAsync(writer.getLastFlushedIndex());
       }
     }
   }

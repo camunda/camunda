@@ -1172,6 +1172,33 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldRecoverWhenPersistedLastFlushedIndexLagsBehindTheJournal() throws Exception {
+    // given - a crash lost the asynchronous update of the last flushed index after the journal
+    // flush returned, so the persisted value is lower than what the journal holds
+    journal = openJournal(2);
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    journal.append(journalFactory.entry());
+    final var lastRecord = journal.append(journalFactory.entry());
+    journal.flush();
+    journal.close();
+    journalFactory.metaStore().storeLastFlushedIndex(1L);
+
+    // when
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+
+    // then - nothing is lost and the unprotected entries are not treated as missing
+    assertThat(journal.getLastIndex()).isEqualTo(lastRecord.index());
+    final var reader = journal.openReader();
+    assertThat(reader.next().index()).isEqualTo(1L);
+    assertThat(reader.next().index()).isEqualTo(2L);
+    assertThat(reader.next().index()).isEqualTo(3L);
+    assertThat(reader.next().index()).isEqualTo(lastRecord.index());
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
   void shouldFailWithOODForAsyncSegmentCreation() {
     // given
     journalFactory = new TestJournalFactory("test", 1, createFailingSegmentAllocator(3));

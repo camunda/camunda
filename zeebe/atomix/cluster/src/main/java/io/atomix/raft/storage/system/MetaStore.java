@@ -19,6 +19,7 @@ package io.atomix.raft.storage.system;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.metrics.MetaStoreMetrics;
 import io.atomix.raft.storage.RaftStorage;
@@ -33,6 +34,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +60,17 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private volatile long lastFlushedIndex;
   private volatile long commitIndex;
 
+  // Guards only the pending slot below and is never held during IO, so the Raft thread never waits
+  // for a file write when requesting an async update. Lock order: this -> slotLock.
+  private final Object slotLock = new Object();
+  private final int partitionId;
+  private boolean hasPendingIndex;
+  private long pendingIndex;
+  private boolean drainScheduled;
+  private boolean closed;
+  private ExecutorService asyncWriter;
+  private volatile Exception asyncFailure;
+
   public MetaStore(final RaftStorage storage, final MeterRegistry meterRegistry)
       throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
@@ -64,6 +78,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
           String.format("Can't create storage directory [%s].", storage.directory()));
     }
 
+    partitionId = storage.partitionId();
     metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()), meterRegistry);
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
@@ -163,6 +178,84 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   @Override
   public synchronized void storeLastFlushedIndex(final long index) {
+    // a pending async value must never overtake this store, even when this one is skipped below
+    discardPendingIndex();
+    failIfAsyncWriteFailed();
+    writeLastFlushedIndex(index);
+  }
+
+  /**
+   * Requests an update of the last flushed index without waiting for the file write. Must only be
+   * used after the journal flush of {@code index} returned. Consecutive requests are coalesced, the
+   * latest value wins. A failed write is rethrown on the next store call.
+   */
+  @Override
+  public void storeLastFlushedIndexAsync(final long index) {
+    failIfAsyncWriteFailed();
+    synchronized (slotLock) {
+      if (closed) {
+        // close already persisted the latest requested value; a lower persisted value is safe
+        return;
+      }
+      pendingIndex = index;
+      hasPendingIndex = true;
+      if (drainScheduled) {
+        return;
+      }
+      drainScheduled = true;
+      if (asyncWriter == null) {
+        asyncWriter =
+            Executors.newSingleThreadExecutor(
+                new ThreadFactoryBuilder()
+                    .setNameFormat("raft-partition-" + partitionId + "-meta-flush")
+                    .setDaemon(true)
+                    .build());
+      }
+      asyncWriter.execute(this::drainPendingIndex);
+    }
+  }
+
+  private void drainPendingIndex() {
+    while (true) {
+      synchronized (this) {
+        final long index;
+        synchronized (slotLock) {
+          if (!hasPendingIndex) {
+            drainScheduled = false;
+            return;
+          }
+          index = pendingIndex;
+          hasPendingIndex = false;
+        }
+
+        try {
+          writeLastFlushedIndex(index);
+        } catch (final Exception e) {
+          log.error("Failed to store last flushed index {} asynchronously", index, e);
+          asyncFailure = e;
+          synchronized (slotLock) {
+            drainScheduled = false;
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  private void discardPendingIndex() {
+    synchronized (slotLock) {
+      hasPendingIndex = false;
+    }
+  }
+
+  private void failIfAsyncWriteFailed() {
+    final var failure = asyncFailure;
+    if (failure != null) {
+      throw new StorageException("Failed to store last flushed index asynchronously", failure);
+    }
+  }
+
+  private void writeLastFlushedIndex(final long index) {
     if (index == lastFlushedIndex) {
       log.trace("Skip storing same last flushed index {}", index);
       return;
@@ -245,9 +338,28 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   @Override
   public synchronized void close() {
+    final ExecutorService writer;
+    final boolean hadPending;
+    final long pending;
+    synchronized (slotLock) {
+      closed = true;
+      hadPending = hasPendingIndex;
+      pending = pendingIndex;
+      hasPendingIndex = false;
+      writer = asyncWriter;
+    }
+    if (writer != null) {
+      // a drain task still queued finds nothing pending and ends
+      writer.shutdown();
+    }
+
     try {
       // write to disk what's present in the buffer, as it may have not yet been written.
       try {
+        if (hadPending && asyncFailure == null) {
+          serializer.writeLastFlushedIndex(pending);
+          lastFlushedIndex = pending;
+        }
         writeToFile(serializer.metaByteBuffer(), metaFileChannel, true);
       } catch (final Exception e) {
         log.warn("Failed to write to metaStore before closing", e);
