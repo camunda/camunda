@@ -9,6 +9,8 @@
 import {queryOptions} from '@tanstack/react-query';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
+import {mergePathname} from '#/shared/http/mergePathname';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 
 type ActorType = 'USER' | 'CLIENT' | 'ENGINE';
 
@@ -58,9 +60,13 @@ type VariablesSearchResponse = {
 	page: {totalItems: number};
 };
 
+function withContextPath(url: string) {
+	return mergePathname(getBootConfig().contextPath, url);
+}
+
 async function post<T>(url: string, body: unknown): Promise<T> {
 	const {response, error} = await request(
-		new Request(url, {
+		new Request(withContextPath(url), {
 			method: 'POST',
 			headers: {'Content-Type': 'application/json'},
 			body: JSON.stringify(body),
@@ -130,7 +136,9 @@ function variableHistoryItemQuery(variableHistoryItemKey: string) {
 	return queryOptions({
 		queryKey: ['variableHistoryPrototype', 'item', variableHistoryItemKey] as const,
 		queryFn: async (): Promise<VariableHistoryItemDetail> => {
-			const {response, error} = await request(new Request(`/v2/variables/history/${variableHistoryItemKey}`));
+			const {response, error} = await request(
+				new Request(withContextPath(`/v2/variables/history/${variableHistoryItemKey}`)),
+			);
 			if (error !== null) {
 				throw mapQueryError(error);
 			}
