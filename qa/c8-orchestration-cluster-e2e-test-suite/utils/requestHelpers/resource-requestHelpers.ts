@@ -203,11 +203,36 @@ export async function deployResourceAndGetMetadata(
   return resourceMetadataOf(body.deployments[deploymentIndex]);
 }
 
+interface DeployedEntity {
+  resourceName: string;
+  version: number;
+}
+
+// One entry of the `deployments` array of a POST /deployments response.
+export interface DeploymentEntry {
+  processDefinition?: DeployedEntity & {
+    processDefinitionKey: string;
+    processDefinitionId: string;
+  };
+  form?: DeployedEntity & {formKey: string; formId: string};
+  decisionDefinition?: Omit<DeployedEntity, 'resourceName'> & {
+    decisionDefinitionKey: string;
+    decisionDefinitionId: string;
+    name: string;
+  };
+  decisionRequirements?: DeployedEntity & {
+    decisionRequirementsKey: string;
+    decisionRequirementsId: string;
+  };
+  resource?: DeployedEntity & {resourceKey: string; resourceId: string};
+}
+
 // Maps one entry of a POST /deployments response to the key and id of the
 // resource it deployed. For a DMN file, pass the `decisionRequirements` entry to
 // get the key POST /resources/:key/deletion takes.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function resourceMetadataOf(deployment: any): ResourceMetadata {
+export function resourceMetadataOf(
+  deployment: DeploymentEntry,
+): ResourceMetadata {
   if (deployment.processDefinition) {
     return {
       resourceKey: deployment.processDefinition.processDefinitionKey,
