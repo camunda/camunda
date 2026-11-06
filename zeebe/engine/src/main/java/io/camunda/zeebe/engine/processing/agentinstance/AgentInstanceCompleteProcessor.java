@@ -75,7 +75,9 @@ public final class AgentInstanceCompleteProcessor
     commandWriter.appendFollowUpCommand(
         agentInstanceKey,
         AgentHistoryBatchIntent.CLEAN_UP,
-        new AgentHistoryBatchRecord().setAgentInstanceKey(agentInstanceKey));
+        new AgentHistoryBatchRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setStorageOrdinal(current.getStorageOrdinal()));
 
     // re-chain: other agent instances may still be left for this process instance
     commandWriter.appendNewCommand(

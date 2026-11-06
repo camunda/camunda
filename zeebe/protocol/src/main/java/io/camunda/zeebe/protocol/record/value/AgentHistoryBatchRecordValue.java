@@ -20,9 +20,14 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * Represents a batch of agent history item ids that the engine cleans up.
+ *
+ * @see StorageOrdinalRelated
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableAgentHistoryBatchRecordValue.Builder.class)
-public interface AgentHistoryBatchRecordValue extends RecordValue {
+public interface AgentHistoryBatchRecordValue extends RecordValue, StorageOrdinalRelated {
 
   /** Returns the key of the agent instance this batch belongs to. */
   long getAgentInstanceKey();
