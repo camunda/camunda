@@ -22,8 +22,10 @@
 #     same slot scenario=max uses, so the scenario=max overrides are folded in here.
 #       - the initial contact points: one per zone, the zone's headless service, which publishes
 #         not-ready addresses so it resolves during a cold start
-#       - with elasticsearch, a second Camunda exporter writing to the Elasticsearch of the
-#         other namespace, so each region's records end up in both Elasticsearch clusters
+#       - with elasticsearch, one Camunda exporter per region instead of the autoconfigured one.
+#         Exporter positions are replicated per exporter id, so each id must write to the same
+#         Elasticsearch on every broker: camundaregiona always writes to region A,
+#         camundaregionb always to region B, whichever region leads the partition.
 #
 # Usage: generate-dual-region-values.sh <zone> <own-namespace> <peer-namespace> <cluster-name> \
 #          <secondary-storage> <scenario>
@@ -129,6 +131,27 @@ orchestration:
         priority: ${REGION_B_PRIORITY}
 EOF
 
+region_exporter() {
+  local name="$1" namespace="$2"
+  cat <<EOF
+      ${name}:
+        class-name: io.camunda.exporter.CamundaExporter
+        args:
+          connect:
+            type: elasticsearch
+            url: http://${ELASTICSEARCH_SERVICE}.${namespace}.svc.cluster.local:${ELASTICSEARCH_PORT}
+          createSchema: true
+          # what the autoconfigured exporter would take from camunda-platform-values-defaults.yaml
+          history:
+            waitPeriodBeforeArchiving: 1m
+            rolloverBatchSize: 500
+            retention:
+              enabled: true
+              minimumAge: 1d
+              policyName: camunda-retention-policy
+EOF
+}
+
 {
   echo "# dual region (generate-dual-region-values.sh): zone ${zone} of ${namespace_a} + ${namespace_b}."
   if [[ "$scenario" == "max" ]]; then
@@ -145,17 +168,14 @@ camunda:
 EOF
   if [[ "$secondary_storage" == "elasticsearch" ]]; then
     cat <<EOF
-  # the exporter autoconfigured from camunda.data.secondary-storage writes to the Elasticsearch of
-  # this namespace; this one writes the same records to the one of ${peer_namespace}
+  # every exporter id writes to the same Elasticsearch on every broker, in both regions, so a
+  # leadership change between regions never resumes an exporter against another Elasticsearch
   data:
+    secondary-storage:
+      autoconfigure-camunda-exporter: false
     exporters:
-      camundaExporterPeer:
-        class-name: io.camunda.exporter.CamundaExporter
-        args:
-          connect:
-            type: elasticsearch
-            url: http://${ELASTICSEARCH_SERVICE}.${peer_namespace}.svc.cluster.local:${ELASTICSEARCH_PORT}
-          createSchema: true
 EOF
+    region_exporter camundaregiona "$namespace_a"
+    region_exporter camundaregionb "$namespace_b"
   fi
 } > "$override_file"

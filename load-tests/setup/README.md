@@ -474,9 +474,11 @@ With `dual_region=true` the Makefile generates two files, following the document
   `camunda-region-a-0`, …. The `camunda` and `camunda-gateway` services keep their names.
 - `camunda-platform-dual-region-override.yaml`, passed as `application-override.yml`: what the chart
   leaves to the user for a cluster spanning more than one zone. That is the initial contact points
-  (the headless service of each zone) and, with `secondary_storage=elasticsearch`, a second Camunda
-  exporter writing to the Elasticsearch of the other region, so each region's records land in
-  both. Because it takes the place of the `application-override.yml` of `scenario=max`, it
+  (the headless service of each zone) and, with `secondary_storage=elasticsearch`, one Camunda
+  exporter per region (`camundaregiona`, `camundaregionb`) in place of the autoconfigured one. Each
+  exporter id writes to the same Elasticsearch on every broker, so both regions get every record
+  and a leadership change between regions never resumes an exporter against the other
+  Elasticsearch. Because it takes the place of the `application-override.yml` of `scenario=max`, it
   carries that scenario's overrides itself.
 
 Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and
