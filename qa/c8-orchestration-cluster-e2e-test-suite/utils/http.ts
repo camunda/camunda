@@ -244,10 +244,12 @@ export function textXMLHeaders(
   };
 }
 
-export function defaultHeaders(): Record<string, string> {
+export function defaultHeaders(
+  token: string = credentials.accessToken,
+): Record<string, string> {
   return {
     Accept: 'application/json',
-    ...authHeaders(credentials.accessToken),
+    ...authHeaders(token),
   };
 }
 
