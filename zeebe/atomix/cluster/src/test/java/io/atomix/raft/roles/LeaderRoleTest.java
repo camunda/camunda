@@ -59,6 +59,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -444,6 +445,11 @@ public class LeaderRoleTest {
 
   private record TestIndexedRaftLogEntry(long index, long term, RaftEntry entry)
       implements IndexedRaftLogEntry {
+
+    @Override
+    public UUID epoch() {
+      return new UUID(0, term);
+    }
 
     @Override
     public boolean isApplicationEntry() {
