@@ -1645,7 +1645,6 @@
 			},
 			"processInstance": {
 				"scaffold": {
-					"headerPlaceholder": "Header placeholder",
 					"diagramPanelPlaceholder": "Diagram panel placeholder",
 					"bottomPanelPlaceholder": "Bottom panel placeholder"
 				},
@@ -1737,6 +1736,7 @@
 				},
 				"header": {
 					"key": "Process Instance Key",
+					"keyCopyButtonDescription": "Process Instance Key / Click to copy",
 					"waiting": "Waiting",
 					"waitingCount": "{{count}} waiting",
 					"version": "Version",

@@ -17,10 +17,12 @@ import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 type Props = {
 	activeTab: ProcessInstanceTab;
 	onTabChange?: (tab: ProcessInstanceTab) => void;
+	breadcrumb?: React.ReactNode;
+	header: React.ReactNode;
 	children?: React.ReactNode;
 };
 
-const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, children}) => {
+const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, breadcrumb, header, children}) => {
 	const {t} = useTranslation();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [clientHeight, setClientHeight] = useState(0);
@@ -36,11 +38,8 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, children}) =>
 				{t('operate.processInstance.title')}
 			</Heading>
 			<div className="flex min-h-0 flex-1 flex-col">
-				<header className="border-b border-border">
-					<Text as="p" className="p-4 text-sm text-neutral-foreground-subtle">
-						{t('operate.processInstance.scaffold.headerPlaceholder')}
-					</Text>
-				</header>
+				{breadcrumb}
+				{header}
 				<div className="flex min-h-0 flex-1 overflow-hidden">
 					<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
 						<ResizablePanel
@@ -60,8 +59,8 @@ const ProcessInstance: React.FC<Props> = ({activeTab, onTabChange, children}) =>
 									onValueChange={(tab) => onTabChange?.(tab as ProcessInstanceTab)}
 									className="flex min-h-0 grow flex-col gap-0"
 								>
-									<div className="flex h-12 min-h-12 items-center border-b border-border px-4">
-										<TabsList aria-label={t('operate.processInstance.history.tabs')}>
+									<div className="flex h-12 min-h-12 items-center px-4">
+										<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
 											{PROCESS_INSTANCE_TABS.map((tab) => (
 												<TabsTrigger key={tab} value={tab}>
 													{t(`operate.processInstance.history.${tab}`)}

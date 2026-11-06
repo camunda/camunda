@@ -1633,7 +1633,6 @@
 			},
 			"processInstance": {
 				"scaffold": {
-					"headerPlaceholder": "Marcador de posición del encabezado",
 					"diagramPanelPlaceholder": "Marcador de posición del panel de diagrama",
 					"bottomPanelPlaceholder": "Marcador de posición del panel inferior"
 				},
@@ -1725,6 +1724,7 @@
 				},
 				"header": {
 					"key": "Clave de instancia de proceso",
+					"keyCopyButtonDescription": "Clave de instancia de proceso / Clic para copiar",
 					"waiting": "En espera",
 					"waitingCount": "{{count}} en espera",
 					"version": "Versión",

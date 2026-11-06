@@ -1633,7 +1633,6 @@
 			},
 			"processInstance": {
 				"scaffold": {
-					"headerPlaceholder": "Platzhalter für die Kopfzeile",
 					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
 					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"
 				},
@@ -1725,6 +1724,7 @@
 				},
 				"header": {
 					"key": "Prozessinstanzschlüssel",
+					"keyCopyButtonDescription": "Prozessinstanzschlüssel / Klicken zum Kopieren",
 					"waiting": "Wartend",
 					"waitingCount": "{{count}} wartend",
 					"version": "Version",

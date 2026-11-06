@@ -11,13 +11,15 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {ProcessInstance} from './ProcessInstance';
 
+const HEADER = <p>Instance header content</p>;
+
 const ProcessInstanceWithHeight: React.FC = () => (
 	<div style={{height: '800px'}} className="flex flex-col">
-		<ProcessInstance activeTab="variables" />
+		<ProcessInstance activeTab="variables" header={HEADER} />
 	</div>
 );
 
-describe('<ProcessInstance activeTab="variables" /> (DS scaffold)', () => {
+describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold)', () => {
 	it('should render the sr-only process instance title', async () => {
 		const screen = await renderWithRouter(ProcessInstanceWithHeight, {
 			path: '/operate-preview/processes/$processInstanceId',
@@ -27,13 +29,13 @@ describe('<ProcessInstance activeTab="variables" /> (DS scaffold)', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
 	});
 
-	it('should render the header, diagram, and bottom panel placeholders', async () => {
+	it('should render the provided header and the diagram and bottom panel placeholders', async () => {
 		const screen = await renderWithRouter(ProcessInstanceWithHeight, {
 			path: '/operate-preview/processes/$processInstanceId',
 			initialEntry: '/operate-preview/processes/2251799813685249',
 		});
 
-		await expect.element(screen.getByText('Header placeholder')).toBeVisible();
+		await expect.element(screen.getByText('Instance header content')).toBeVisible();
 		await expect.element(screen.getByText('Diagram panel placeholder')).toBeVisible();
 		await expect.element(screen.getByText('Bottom panel placeholder')).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Variables'})).toBeVisible();
@@ -44,7 +46,7 @@ describe('<ProcessInstance activeTab="variables" /> (DS scaffold)', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '800px'}} className="flex flex-col">
-					<ProcessInstance activeTab="incidents" onTabChange={onTabChange} />
+					<ProcessInstance activeTab="incidents" onTabChange={onTabChange} header={HEADER} />
 				</div>
 			),
 			{
