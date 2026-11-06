@@ -77,7 +77,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
 
           if (index !== -1 && lastRemovedModification.source !== 'variables') {
             if (lastAddModification !== undefined) {
-              fieldArray.fields.update(index, {
+              form.mutators['update']?.('newVariables', index, {
                 id: lastAddModification.id,
                 name: lastAddModification.name,
                 value: lastAddModification.newValue,
