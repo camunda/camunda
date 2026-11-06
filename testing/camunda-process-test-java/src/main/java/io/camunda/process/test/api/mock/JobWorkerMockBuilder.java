@@ -76,10 +76,6 @@ public interface JobWorkerMockBuilder {
    * comparison without widening, {@code null} handling). If no row matches, the job completes
    * without variables.
    *
-   * <p>A failing match behaves like {@link #thenComplete(Function)}: the job fails through the
-   * client's default job exception handler, retries apply, and {@link
-   * JobWorkerMock#getInvocations()} counts every attempt.
-   *
    * <p>Example usage:
    *
    * <pre>

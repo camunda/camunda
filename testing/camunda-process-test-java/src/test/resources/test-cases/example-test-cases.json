@@ -1,9 +1,9 @@
 {
-  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.9/schema.json",
+  "$schema": "https://camunda.com/json-schema/cpt-test-cases/8.10/schema.json",
   "testCases": [
     {
-      "name": "Happy path order processing",
-      "description": "The order should be processed successfully from creation to shipping with tracking code received.",
+      "name": "Create and complete process instance",
+      "description": "Simple test case that creates a process instance and completes the job.",
       "instructions": [
         {
           "type": "CREATE_PROCESS_INSTANCE",
@@ -12,6 +12,13 @@
           },
           "variables": {
             "order_id": "order-1"
+          }
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "processDefinitionId": "process",
+            "jobType": "test"
           }
         },
         {
@@ -24,7 +31,7 @@
       ]
     },
     {
-      "name": "Verify order variable",
+      "name": "Verify variable with FEEL expression",
       "description": "Using an FEEL expression to verify the order variable.",
       "instructions": [
         {

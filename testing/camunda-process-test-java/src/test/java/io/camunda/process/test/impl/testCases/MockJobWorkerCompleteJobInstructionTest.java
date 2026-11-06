@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -232,6 +233,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(feelResult);
 
+    clearInvocations(evaluationClient);
+
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
@@ -247,6 +250,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // the stub only returns feelResult for the exact expression/variables combination, so a
     // matching result proves the right expression and variables were sent
     assertThat(result).isEqualTo(feelResult);
+
+    verify(evaluationClient).newEvaluateExpressionCommand();
   }
 
   @Test
@@ -273,6 +278,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(feelResult);
 
+    clearInvocations(evaluationClient);
+
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // when the runner has finished and closed its client before the job is activated
@@ -282,6 +289,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // then
     assertThat(result).isEqualTo(feelResult);
     verify(camundaClient, never()).newEvaluateExpressionCommand();
+    verify(evaluationClient).newEvaluateExpressionCommand();
   }
 
   @Test
@@ -307,6 +315,8 @@ public class MockJobWorkerCompleteJobInstructionTest {
             .getResult())
         .thenReturn(Collections.singletonMap("result", 1));
 
+    clearInvocations(evaluationClient.newEvaluateExpressionCommand());
+
     // when
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
     final Map<String, Object> result = functionCaptor.getValue().apply(jobVariables);
@@ -314,6 +324,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
     // then: the expression was evaluated as-is, not prefixed with a second '=' (the stub only
     // matches the single-'=' expression)
     assertThat(result).isEqualTo(Collections.singletonMap("result", 1));
+    verify(evaluationClient.newEvaluateExpressionCommand()).expression("={ result: 1 }");
   }
 
   @Test
@@ -344,7 +355,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
 
     // then
     assertThatThrownBy(() -> functionCaptor.getValue().apply(jobVariables))
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Expected the FEEL expression '=1 + 1' to evaluate to a JSON object, but it evaluated to '2'.");
   }
 
   @Test
@@ -375,7 +388,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
 
     // then
     assertThatThrownBy(() -> functionCaptor.getValue().apply(jobVariables))
-        .isInstanceOf(IllegalStateException.class);
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Expected the FEEL expression '=missingVariable' to evaluate to a JSON object, but it evaluated to 'null'.");
   }
 
   @ParameterizedTest
@@ -394,8 +409,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("variablesExpression")
-        .hasMessageContaining(JOB_TYPE);
+        .hasMessageContaining(
+            "Expected 'variablesExpression' to be a non-blank FEEL expression for job type '%s', but it was blank.",
+            JOB_TYPE);
     verify(processTestContext, never()).mockJobWorker(any());
   }
 
@@ -414,7 +430,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
             () ->
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected only one of 'variables', 'variablesExpression', 'variablesTable' or 'useExampleData' to be set");
   }
 
   @Test
@@ -432,7 +450,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
             () ->
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected only one of 'variables', 'variablesExpression', 'variablesTable' or 'useExampleData' to be set");
   }
 
   @Test
@@ -450,7 +470,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
             () ->
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected only one of 'variables', 'variablesExpression', 'variablesTable' or 'useExampleData' to be set");
   }
 
   @Test
@@ -468,7 +490,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
             () ->
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected only one of 'variables', 'variablesExpression', 'variablesTable' or 'useExampleData' to be set");
   }
 
   @Test
@@ -486,7 +510,9 @@ public class MockJobWorkerCompleteJobInstructionTest {
             () ->
                 instructionHandler.execute(
                     instruction, processTestContext, camundaClient, assertionFacade))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageStartingWith(
+            "Expected only one of 'variables', 'variablesExpression', 'variablesTable' or 'useExampleData' to be set");
   }
 
   @Test
@@ -499,6 +525,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
         ImmutableMockJobWorkerCompleteJobInstruction.builder()
             .jobType(JOB_TYPE)
             .putAllVariables(variables)
+            .variablesTable(Collections.emptyList())
             .build();
 
     when(jobWorkerMockBuilder.thenComplete(variables)).thenReturn(jobWorkerMock);
