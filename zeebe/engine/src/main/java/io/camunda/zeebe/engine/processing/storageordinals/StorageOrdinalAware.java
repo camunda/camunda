@@ -31,10 +31,14 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public interface StorageOrdinalAware<T extends UnifiedRecordValue> {
 
   /**
-   * Sets the given ordinal on the command value.
+   * Sets the given ordinal on the command value. The engine calls this before the banned instance
+   * check, the suspension gate and {@link TypedRecordProcessor#processRecord}, for a command that
+   * arrives without the ordinal, so every rejection and every follow-up record written from the
+   * command value carries it.
    *
    * @param command the command being handled
-   * @param storageOrdinal the ordinal of the target root process instance
+   * @param storageOrdinal the ordinal of the target process instance, which carries its root's
+   *     ordinal
    */
   void restoreStorageOrdinal(TypedRecord<T> command, int storageOrdinal);
 }

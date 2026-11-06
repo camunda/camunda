@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalRestoreBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver;
 import io.camunda.zeebe.engine.processing.streamprocessor.InstanceKeyResolver.InstanceKeys;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
@@ -70,6 +71,7 @@ public class Engine implements RecordProcessor {
   private CommandBufferingBehavior bufferingBehavior;
   private InstanceKeyResolver instanceKeyResolver;
   private SuspensionBehavior suspensionBehavior;
+  private StorageOrdinalRestoreBehavior ordinalRestoreBehavior;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -141,6 +143,9 @@ public class Engine implements RecordProcessor {
     writers.setKeyValidator(processingState.getKeyGenerator());
     instanceKeyResolver = new InstanceKeyResolver(processingState);
     suspensionBehavior = new SuspensionBehavior(processingState);
+    ordinalRestoreBehavior =
+        new StorageOrdinalRestoreBehavior(
+            processingState.getPartitionId(), processingState.getElementInstanceState());
     final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);
@@ -203,6 +208,18 @@ public class Engine implements RecordProcessor {
       if (currentProcessor == null) {
         return processingResultBuilder.build();
       }
+
+      // the keys are resolved once for both behaviors, and only when one of them needs them
+      final InstanceKeys keys =
+          ordinalRestoreBehavior.appliesTo(typedCommand, currentProcessor)
+                  || suspensionBehavior.appliesTo(currentProcessor)
+              ? instanceKeyResolver.resolve(typedCommand)
+              : InstanceKeyResolver.UNRESOLVED;
+
+      // the ordinal is restored before the ban check and the gate, so their rejections carry it;
+      // a no-op unless the processor is StorageOrdinalAware and the value carries no ordinal
+      ordinalRestoreBehavior.restore(typedCommand, currentProcessor, keys);
+
       if (isBannedCommand(typedCommand)) {
         // Reject commands for banned process instances
         rejectBannedInstanceCommand(typedCommand);
@@ -214,10 +231,7 @@ public class Engine implements RecordProcessor {
         processingResultBuilder.withProcessInASeparateBatch();
       }
 
-      final InstanceKeys keys =
-          suspensionBehavior.appliesTo(currentProcessor)
-              ? instanceKeyResolver.resolve(typedCommand)
-              : InstanceKeyResolver.UNRESOLVED;
+      // a no-op unless the processor is SuspensionAware
       final var suspension = suspensionBehavior.process(typedCommand, currentProcessor, keys);
       switch (suspension.outcome()) {
         case REJECT -> {
