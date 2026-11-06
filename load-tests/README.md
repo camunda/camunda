@@ -73,16 +73,16 @@ graph TD
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
     VARIANT -- "scenario: max" --> CORE
-    VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
-    VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
-    VARIANT -- "delete namespace<br/>after metrics" --> DELETE
+    VARIANT -- "profiles each variant<br/>after the soak" --> PROFILE
+    VARIANT -- "45 min soak, then<br/>snapshot metrics" --> METRICS
+    VARIANT -- "delete namespace<br/>after metrics and profiling" --> DELETE
     WEEKLY -- "main: 3 parallel calls,<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "main: ECS" --> ECS
     WEEKLY -- "stable: 1 job per branch<br/>(cross-branch ref)" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "profile path:<br/>after 45min wait" --> PROFILE
     PR -- "metrics path:<br/>15min warmup + 30min window,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
@@ -393,7 +393,7 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 
 ### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and measure for 45 minutes (15 min warmup, then a 30 min measured window, the same as the PR load test). Profiling follows the soak, and the namespace is deleted after metrics and profiling are done.
 
 **Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 
@@ -407,7 +407,7 @@ Daily stress tests run against the state of the **main** branch via the [Daily l
 
 **Profiling:** Every stress test variant is profiled by [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml).
 
-Before any metrics or profiles are taken the stress tests get a warmup period.
+Before the metrics window starts the stress tests get a 15 minute warmup period. Profiling starts after the soak, so the profiler does not run during the measured window.
 
 ### Ad-hoc load tests
 
@@ -435,7 +435,7 @@ The label selects the secondary storage and the client protocol: `benchmark-<sto
 
 Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR.
 
-- **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
+- **Profile path:** after the 15-minute warmup and the 30-minute metrics window, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
   1. Waits 15 minutes (warmup), then 30 minutes (metrics accumulation), so PromQL `rate`/`increase` numbers cover steady-state traffic with no ramp-up bias.
   2. Resolves the last completed daily-on-main run via the GitHub Actions API ([`.github/scripts/resolve-daily.py`](../.github/scripts/resolve-daily.py)), walking back up to 7 business days. Derives the daily comparison anchor from `soak.started_at + 45 min` to match the same post-warmup slice as the PR side.
