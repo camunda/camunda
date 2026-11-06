@@ -386,8 +386,6 @@ registerProject(":zeebe-transport", "zeebe/transport")
 
 registerProject(":camunda-gateway-mcp", "gateways/gateway-mcp")
 
-registerProject(":zeebe-build-tools", "build-tools")
-
 registerProject(":zeebe-elasticsearch-exporter", "zeebe/exporters/elasticsearch-exporter")
 
 registerProject(

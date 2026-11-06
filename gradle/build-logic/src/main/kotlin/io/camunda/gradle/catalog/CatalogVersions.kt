@@ -171,15 +171,6 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("org-apache-httpcomponents-core5-httpcore5", pomVersion("version.httpcore5"))
   version("org-apache-httpcomponents-httpasyncclient", pomVersion("version.httpasyncclient"))
   version("org-apache-httpcomponents-httpclient", pomVersion("version.httpclient"))
-  // from build-tools/pom.xml (Maven uses plugin.version.surefire separately)
-  version(
-    "org-apache-maven-surefire-maven-surefire-common",
-    pomVersion("version.maven-surefire-common"),
-  )
-  version(
-    "org-apache-maven-surefire-surefire-myextensions-api",
-    pomVersion("version.surefire-extensions-api"),
-  )
   version("org-camunda-bpm-camunda-license-check", pomVersion("version.camunda-license-check"))
   version("org-camunda-feel-feel-engine", pomVersion("version.feel-scala"))
   version("org-checkerframework-checker-qual", pomVersion("version.checker-qual"))
