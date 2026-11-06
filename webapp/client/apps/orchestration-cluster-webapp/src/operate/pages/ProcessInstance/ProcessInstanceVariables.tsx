@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Loading} from '@carbon/react';
@@ -17,9 +18,12 @@ import {useVariableScope} from './useVariableScope';
 import {variablesQuery} from './variables.queries';
 import {VariablesError} from './VariablesError';
 import {VariablesForm} from './VariablesForm';
+import {VariableHistoryView} from './VariableHistoryView';
+import {VariableHistoryViewContext} from './VariableHistoryViewContext';
+import type {VariableHistoryTarget} from './variableHistory.queries';
 import {Content, EmptyMessageContainer} from './variables.styled';
 
-const ProcessInstanceVariables: React.FC = () => {
+const VariablesContent: React.FC = () => {
 	const {t} = useTranslation();
 	const {processInstanceId} = useProcessInstancePage();
 	const {isFetchingElementError} = useProcessInstanceElementSelection();
@@ -73,6 +77,18 @@ const ProcessInstanceVariables: React.FC = () => {
 				/>
 			)}
 		</Content>
+	);
+};
+
+const ProcessInstanceVariables: React.FC = () => {
+	const [historyTarget, setHistoryTarget] = useState<VariableHistoryTarget | null>(null);
+
+	return historyTarget === null ? (
+		<VariableHistoryViewContext.Provider value={setHistoryTarget}>
+			<VariablesContent />
+		</VariableHistoryViewContext.Provider>
+	) : (
+		<VariableHistoryView target={historyTarget} onBack={() => setHistoryTarget(null)} />
 	);
 };
 

@@ -80,6 +80,19 @@ const Operations = styled.div`
 	min-width: var(--cds-spacing-10);
 `;
 
+const HistoryView = styled.div`
+	height: 100%;
+	overflow-y: auto;
+	padding: var(--cds-spacing-03) var(--cds-spacing-05);
+`;
+
+const HistoryHeader = styled.div`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-05);
+	margin-bottom: var(--cds-spacing-05);
+`;
+
 const HistoryNotice = styled.div`
 	margin-bottom: var(--cds-spacing-05);
 	.cds--inline-notification {
@@ -206,6 +219,8 @@ export {
 	VariableName,
 	Operations,
 	InlineLoading,
+	HistoryView,
+	HistoryHeader,
 	HistoryNotice,
 	HistoryAccordion,
 	EntryTitle,

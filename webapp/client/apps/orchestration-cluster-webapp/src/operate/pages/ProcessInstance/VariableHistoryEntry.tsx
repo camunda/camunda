@@ -8,12 +8,22 @@
 
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {AccordionItem, Tag} from '@carbon/react';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import {endpoints} from '#/shared/http/endpoints';
+import {hoveredHistoryElement} from './hoveredHistoryElement';
+import {instanceRequest} from './processInstance.queries';
+import {AccordionItem, Link, Tag} from '@carbon/react';
 import {DiffEditor} from '#/operate/shared/Editors/DiffEditor';
 import {beautifyJSON} from '#/shared/json/beautifyJSON';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
-import {variableHistoryItemQuery, type VariableHistoryItem} from './variableHistory.queries';
+import {
+	elementTimelineQuery,
+	findElementAt,
+	variableHistoryItemQuery,
+	type VariableHistoryItem,
+} from './variableHistory.queries';
+import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {Actor, EntryTitle, ValueComparison, ValueLabel} from './variables.styled';
 
 type Props = {
@@ -46,6 +56,7 @@ function editorHeight(...values: string[]) {
 
 const VariableHistoryEntry: React.FC<Props> = ({item}) => {
 	const [isOpen, setIsOpen] = useState(false);
+	const {selectElement, selectElementInstance, clearSelection} = useProcessInstanceElementSelection();
 	const {data} = useQuery({...variableHistoryItemQuery(item.variableHistoryItemKey), enabled: isOpen});
 	const detail = data === undefined ? item : {...item, value: data.value};
 	const previousValue = detail.previousValue === null ? '' : beautifyJSON(detail.previousValue);
@@ -56,6 +67,20 @@ const VariableHistoryEntry: React.FC<Props> = ({item}) => {
 			: item.operationType === 'CREATED'
 				? 'Initial value'
 				: 'Previous value (not recorded)';
+	const scopeElementKey = item.elementInstanceKey ?? (item.scopeKey === item.processInstanceKey ? null : item.scopeKey);
+	const {data: scopeInstance} = useQuery({
+		queryKey: ['elementInstance', scopeElementKey],
+		queryFn: ({signal}) => instanceRequest<ElementInstance>(endpoints.getElementInstance(scopeElementKey!), signal),
+		enabled: item.elementId === null && scopeElementKey !== null,
+		staleTime: Infinity,
+	});
+	const {data: timeline} = useQuery(elementTimelineQuery(item.processInstanceKey));
+	const activeElement = findElementAt(timeline?.items ?? [], item.timestamp);
+	const elementId = item.elementId ?? scopeInstance?.elementId ?? activeElement?.elementId ?? null;
+	const elementInstanceKey =
+		item.elementId !== null || scopeInstance !== undefined
+			? scopeElementKey
+			: (activeElement?.elementInstanceKey ?? null);
 	const isRedacted = item.metadata.protectionModes.includes('REDACT');
 
 	return (
@@ -73,7 +98,37 @@ const VariableHistoryEntry: React.FC<Props> = ({item}) => {
 					<Tag size="sm" type="outline">
 						{item.scopeKey === item.processInstanceKey ? 'Global' : 'Local'}
 					</Tag>
-					{item.elementId !== null && <span>{item.elementId}</span>}
+					{elementId !== null && (
+						<Link
+							href="#"
+							onMouseEnter={() => hoveredHistoryElement.set(elementId)}
+							onMouseLeave={() => hoveredHistoryElement.set(null)}
+							onClick={(event: React.MouseEvent) => {
+								event.preventDefault();
+								event.stopPropagation();
+								hoveredHistoryElement.set(null);
+								if (elementInstanceKey !== null) {
+									void selectElementInstance({elementId, elementInstanceKey});
+								} else {
+									selectElement(elementId);
+								}
+							}}
+						>
+							{elementId}
+						</Link>
+					)}
+					{elementId === null && (
+						<Link
+							href="#"
+							onClick={(event: React.MouseEvent) => {
+								event.preventDefault();
+								event.stopPropagation();
+								clearSelection();
+							}}
+						>
+							{item.processDefinitionId}
+						</Link>
+					)}
 					<time dateTime={item.timestamp}>{formatTimestamp(item.timestamp)}</time>
 				</EntryTitle>
 			}

@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useContext} from 'react';
 import {Button} from '@carbon/react';
 import {Time} from '@carbon/react/icons';
-import {VariableHistoryModal} from './VariableHistoryModal';
+import {VariableHistoryViewContext} from './VariableHistoryViewContext';
 import type {VariableHistoryTarget} from './variableHistory.queries';
 
 type Props = {
@@ -17,22 +17,19 @@ type Props = {
 };
 
 const VariableHistoryButton: React.FC<Props> = ({target}) => {
-	const [isOpen, setIsOpen] = useState(false);
+	const showHistory = useContext(VariableHistoryViewContext);
 
 	return (
-		<>
-			<Button
-				kind="ghost"
-				hasIconOnly
-				renderIcon={Time}
-				size="sm"
-				aria-label={`View history of ${target.name}`}
-				iconDescription="View history"
-				tooltipPosition="top"
-				onClick={() => setIsOpen(true)}
-			/>
-			{isOpen && <VariableHistoryModal target={target} onClose={() => setIsOpen(false)} />}
-		</>
+		<Button
+			kind="ghost"
+			hasIconOnly
+			renderIcon={Time}
+			size="sm"
+			aria-label={`View history of ${target.name}`}
+			iconDescription="View history"
+			tooltipPosition="top"
+			onClick={() => showHistory(target)}
+		/>
 	);
 };
 

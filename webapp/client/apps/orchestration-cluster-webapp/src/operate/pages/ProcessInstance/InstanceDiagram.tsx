@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore} from 'react';
 import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {useQueryClient as useReactQueryClient} from '@tanstack/react-query';
 import kebabCase from 'lodash/kebabCase';
 import {Button} from '@carbon/react';
+import {hoveredHistoryElement} from './hoveredHistoryElement';
 import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Diagram} from '#/operate/shared/Diagram';
@@ -149,6 +150,10 @@ function InstanceDiagram({
 			.map(({id}) => id);
 		return [...new Set([...(sequenceFlows.data?.map(({elementId}) => elementId) ?? []), ...compensationAssociations])];
 	}, [diagram?.diagramModel, highlightedElementIds, sequenceFlows.data]);
+	const hoveredHistoryElementId = useSyncExternalStore(
+		hoveredHistoryElement.subscribe,
+		hoveredHistoryElement.getSnapshot,
+	);
 	const customElementClasses = useMemo<[string, string][]>(() => {
 		if (isModificationModeEnabled || !diagram) {
 			return [];
@@ -159,8 +164,11 @@ function InstanceDiagram({
 		if (pendingDrillDownElementId) {
 			drilldownElements.push([pendingDrillDownElementId, 'op-drilldown-loading']);
 		}
+		if (hoveredHistoryElementId) {
+			drilldownElements.push([hoveredHistoryElementId, 'op-selected'], [hoveredHistoryElementId, 'op-selected-frame']);
+		}
 		return drilldownElements;
-	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId]);
+	}, [diagram, isModificationModeEnabled, pendingDrillDownElementId, hoveredHistoryElementId]);
 
 	const clearSelection = useCallback(
 		(shouldClear?: (elementId?: string) => boolean) => {
