@@ -21,8 +21,6 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.function.Consumer;
@@ -30,9 +28,7 @@ import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public final class DbProcessMessageSubscriptionState
-    implements MutableProcessMessageSubscriptionState,
-        PendingProcessMessageSubscriptionState,
-        StreamProcessorLifecycleAware {
+    implements MutableProcessMessageSubscriptionState, PendingProcessMessageSubscriptionState {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   // (elementInstanceKey, tenant aware messageName) => ProcessMessageSubscription
@@ -49,6 +45,12 @@ public final class DbProcessMessageSubscriptionState
 
   private final TransientPendingSubscriptionState transientState;
   private final InstantSource clock;
+
+  // (elementInstanceKey, "", "") sorts before every subscription of that element instance
+  private final DbCompositeKey<DbLong, DbTenantAwareKey<DbString>> recoveryStartKey =
+      new DbCompositeKey<>(
+          new DbLong(),
+          new DbTenantAwareKey<>(new DbString(), new DbString(), PlacementType.PREFIX));
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -73,14 +75,17 @@ public final class DbProcessMessageSubscriptionState
   }
 
   @Override
-  public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    subscriptionColumnFamily.forEach(
-        subscription -> {
+  public long recoverPending(final long fromElementInstanceKey, final int batchLimit) {
+    return PendingSubscriptionScan.scanChunk(
+        subscriptionColumnFamily,
+        recoveryStartKey,
+        fromElementInstanceKey,
+        batchLimit,
+        (subscription, instanceKey) -> {
           if (subscription.isOpening() || subscription.isClosing()) {
             final var record = subscription.getRecord();
             transientState.add(
-                new PendingSubscription(
-                    record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
+                new PendingSubscription(instanceKey, record.getMessageName(), record.getTenantId()),
                 clock.millis());
           }
         });
