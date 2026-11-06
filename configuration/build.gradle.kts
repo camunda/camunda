@@ -1,6 +1,56 @@
+import buildlogic.ArtifactKind
+import buildlogic.artifactKind
+
 plugins { id("buildlogic.server-conventions") }
 
-sourceSets { main { java { srcDir("src/build") } } }
+// Build-time tooling (GenerateDefaults) that is run against the Spring configuration metadata. It is
+// kept out of `main` so it is not packaged in the module jar.
+val buildTools =
+  sourceSets.create("build") {
+    java.srcDir("src/build")
+    compileClasspath += sourceSets["main"].output
+    runtimeClasspath += output + compileClasspath
+  }
+
+// Inherit the main dependencies (and the BOM constraints applied to `implementation`).
+configurations.named(buildTools.implementationConfigurationName) {
+  extendsFrom(configurations.implementation.get())
+}
+
+sourceSets.named("test") {
+  compileClasspath += buildTools.output
+  runtimeClasspath += buildTools.output
+}
+
+// Mirrors dist's exec:java@generate-default-config. Not wired into assemble/check, like the Maven
+// execution bound to phase=none; :dist copies the result into its sources and verifies it.
+val metadataFile =
+  layout.buildDirectory.file("classes/java/main/META-INF/spring-configuration-metadata.json")
+val generatedDefaultsFile = layout.buildDirectory.file("generated/default-config/defaults.yaml")
+
+val generateDefaultConfig =
+  tasks.register<JavaExec>("generateDefaultConfig") {
+    group = "build tools"
+    description = "Generates defaults.yaml from the Spring configuration metadata"
+    classpath = buildTools.runtimeClasspath
+    mainClass.set("io.camunda.configuration.GenerateDefaults")
+    dependsOn(tasks.named("compileJava"))
+    inputs.file(metadataFile)
+    outputs.file(generatedDefaultsFile)
+    // JavaExec is not cacheable by default; opt in so unchanged inputs hit the build cache.
+    outputs.cacheIf { true }
+    args(metadataFile.get().asFile.absolutePath, generatedDefaultsFile.get().asFile.absolutePath)
+  }
+
+// Consumed by :dist, which owns the committed copy of the file.
+val defaultConfig =
+  configurations.create("defaultConfig") {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    artifactKind(project, ArtifactKind.DEFAULT_CONFIG)
+  }
+
+artifacts { add(defaultConfig.name, generatedDefaultsFile) { builtBy(generateDefaultConfig) } }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)

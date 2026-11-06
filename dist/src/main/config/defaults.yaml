@@ -2052,6 +2052,7 @@ zeebe: # Type:
     gateway: null # Type: io.camunda.zeebe.broker.system.configuration.EmbeddedGatewayCfg, Env: ZEEBE_BROKER_GATEWAY
     license-key: null # Type: String, Env: ZEEBE_BROKER_LICENSEKEY
     network: null # Type: io.camunda.zeebe.broker.system.configuration.NetworkCfg, Env: ZEEBE_BROKER_NETWORK
+    processing: null # Type: io.camunda.zeebe.broker.system.configuration.ProcessingCfg, Env: ZEEBE_BROKER_PROCESSING
     threads: null # Type: io.camunda.zeebe.broker.system.configuration.ThreadsCfg, Env: ZEEBE_BROKER_THREADS
   
   gateway: # Type: io.camunda.configuration.beans.LegacyGatewayBasedProperties  
