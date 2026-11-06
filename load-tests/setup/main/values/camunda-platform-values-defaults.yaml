@@ -165,6 +165,22 @@ orchestration:
           resourceId: "*"
           permissions:
             - CREATE
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: DECISION_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_DECISION_INSTANCE
+            - DELETE_DECISION_INSTANCE
+            - READ_DECISION_DEFINITION
+            - READ_DECISION_INSTANCE
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: EXPRESSION
+          resourceId: "*"
+          permissions:
+            - EVALUATE
+
   # For simplicity of the deployment, we override the names to camunda
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
