@@ -39,11 +39,24 @@ public final class ActorJob {
   @Async.Execute
   void execute(final ActorThread runner) {
     observeSchedulingLatency(runner.getActorMetrics());
+    execute();
+  }
+
+  /** Recovery jobs bypass latency recording, which may itself have caused the failure. */
+  void execute() {
     try {
       invoke();
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
-      task.onFailure(e);
+      try {
+        task.onFailure(e);
+      } catch (final Throwable failureHandlingError) {
+        FATAL_ERROR_HANDLER.handleError(failureHandlingError);
+        if (failureHandlingError != e) {
+          failureHandlingError.addSuppressed(e);
+        }
+        throw failureHandlingError;
+      }
     } finally {
       // in any case, success or exception, decide if the job should be resubmitted
       if (isTriggeredBySubscription() || runnable == null) {
@@ -171,7 +184,7 @@ public final class ActorJob {
   }
 
   public void failFuture(final Throwable cause) {
-    if (resultFuture != null) {
+    if (resultFuture != null && !resultFuture.isDone()) {
       resultFuture.completeExceptionally(cause);
     }
   }

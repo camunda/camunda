@@ -8,13 +8,17 @@
 package io.camunda.zeebe.scheduler.future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -22,10 +26,100 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CompletableActorFutureTest {
 
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldNotifyRemainingCallbacksWhenCallbackThrows(final boolean exceptionalCompletion) {
+    // given
+    final var future = new CompletableActorFuture<Integer>();
+    final var failure = new IllegalArgumentException("operation failed");
+    final var firstCallbackFailure = new IllegalStateException("first callback failed");
+    final var secondCallbackFailure = new AssertionError("second callback failed");
+    final var observedResult = new AtomicReference<Object>();
+    future.onComplete(
+        (result, error) -> {
+          throw firstCallbackFailure;
+        },
+        Runnable::run);
+    future.onComplete(
+        (result, error) -> {
+          throw secondCallbackFailure;
+        },
+        Runnable::run);
+    future.onComplete(
+        (result, error) -> observedResult.set(error == null ? result : error), Runnable::run);
+
+    // when
+    assertThatThrownBy(
+            () -> {
+              if (exceptionalCompletion) {
+                future.completeExceptionally(failure);
+              } else {
+                future.complete(42);
+              }
+            })
+        .isSameAs(firstCallbackFailure);
+
+    // then
+    assertThat(observedResult).hasValue(exceptionalCompletion ? failure : 42);
+    assertThat(firstCallbackFailure.getSuppressed()).containsExactly(secondCallbackFailure);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldWakeBlockedCallerWhenCallbackThrows(final boolean exceptionalCompletion) {
+    // given
+    final var future = new CompletableActorFuture<Integer>();
+    final var failure = new IllegalArgumentException("operation failed");
+    final var callbackFailure = new IllegalStateException("callback failed");
+    final var waitingThread = new AtomicReference<Thread>();
+    future.onComplete(
+        (result, error) -> {
+          throw callbackFailure;
+        },
+        Runnable::run);
+    final Future<Object> waiter =
+        EXECUTOR.submit(
+            () -> {
+              waitingThread.set(Thread.currentThread());
+              try {
+                return future.get();
+              } catch (final ExecutionException e) {
+                return e.getCause();
+              }
+            });
+    try {
+      await()
+          .until(
+              () ->
+                  waitingThread.get() != null
+                      && waitingThread.get().getState() == Thread.State.TIMED_WAITING);
+
+      // when
+      assertThatThrownBy(
+              () -> {
+                if (exceptionalCompletion) {
+                  future.completeExceptionally(failure);
+                } else {
+                  future.complete(42);
+                }
+              })
+          .isSameAs(callbackFailure);
+
+      // then
+      assertThat(waiter)
+          .succeedsWithin(Duration.ofSeconds(5))
+          .isEqualTo(exceptionalCompletion ? failure : 42);
+    } finally {
+      waiter.cancel(true);
+    }
+  }
 
   @Nested
   public class CompletionTimestamp {

@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -21,8 +22,10 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jetbrains.annotations.Async;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +36,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class ActorTask {
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
   private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
       LIFECYCLE_UPDATER =
           AtomicReferenceFieldUpdater.newUpdater(
@@ -53,6 +57,9 @@ public class ActorTask {
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
   private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
   private List<ActorSubscription> subscriptions = new ArrayList<>();
+  private final AtomicReference<Throwable> pendingFailure = new AtomicReference<>();
+  private boolean recoveryStarted;
+  private boolean failureCallbackPending;
 
   /**
    * jobs that are submitted to this task externally. A job is submitted "internally" if it is
@@ -85,6 +92,9 @@ public class ActorTask {
     submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
     fastLaneJobs = new ArrayDeque<>();
     lifecyclePhase = ActorLifecyclePhase.STARTING;
+    pendingFailure.set(null);
+    recoveryStarted = false;
+    failureCallbackPending = false;
 
     // create initial job to invoke on start callback
     final ActorJob j = new ActorJob();
@@ -120,8 +130,15 @@ public class ActorTask {
   public boolean execute(final ActorThread runner) {
     schedulingState.set(TaskSchedulingState.ACTIVE);
 
+    final var failure = pendingFailure.get();
+    if (failure != null) {
+      pendingFailure.set(null);
+      executeRecovery(runner, failure);
+      return false;
+    }
+
     boolean resubmit = false;
-    while (!resubmit && (currentJob != null || poll())) {
+    while (!resubmit && pendingFailure.get() == null && (currentJob != null || poll())) {
       currentJob.execute(runner);
 
       switch (currentJob.schedulingState) {
@@ -159,6 +176,10 @@ public class ActorTask {
         resubmit = currentJob != null;
         break;
       }
+    }
+
+    if (pendingFailure.get() != null) {
+      return true;
     }
 
     if (currentJob == null) {
@@ -243,24 +264,58 @@ public class ActorTask {
   }
 
   private void onClosed() {
+    final var failure = closeResources(null);
+    if (failure != null) {
+      LangUtil.rethrowUnchecked(failure);
+    }
     schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
+  }
 
-    // we need to work on a copy - otherwise we would get a ConcurrentModificationException
-    // since some subscriptions remove them self on cancel
-    final var actorSubscriptions = new ArrayList<>(subscriptions);
-    actorSubscriptions.forEach(ActorSubscription::cancel);
+  private @Nullable Throwable closeResources(@Nullable Throwable failure) {
+    // Detach resources before invoking callbacks so recovery never repeats their cleanup.
+    final var actorSubscriptions = subscriptions;
     subscriptions = new ArrayList<>();
-
     final Queue<ActorJob> activeJobsQueue = submittedJobs;
     submittedJobs = new ClosedQueue();
+    final var queuedJobs = fastLaneJobs;
+    fastLaneJobs = new ClosedQueue();
+    final var closingMetrics = metrics;
+    metrics = ActorMetricsScoped.NOOP;
 
-    ActorJob j;
-
-    while ((j = activeJobsQueue.poll()) != null) {
-      // cancel and discard jobs
-      failJob(j);
+    for (final var subscription : actorSubscriptions) {
+      failure = runCleanup(failure, subscription::cancel);
     }
-    metrics.close();
+    failure = failQueuedJobs(queuedJobs, failure);
+    failure = failQueuedJobs(activeJobsQueue, failure);
+    return runCleanup(failure, closingMetrics::close);
+  }
+
+  private @Nullable Throwable failQueuedJobs(
+      final Queue<ActorJob> jobs, @Nullable Throwable failure) {
+    if (!(jobs instanceof ClosedQueue)) {
+      ActorJob job;
+      while ((job = jobs.poll()) != null) {
+        final var discardedJob = job;
+        failure = runCleanup(failure, () -> discardedJob.failFuture("Actor is closed"));
+      }
+    }
+    return failure;
+  }
+
+  private @Nullable Throwable runCleanup(final @Nullable Throwable failure, final Runnable action) {
+    try {
+      action.run();
+    } catch (final Throwable cleanupError) {
+      FATAL_ERROR_HANDLER.handleError(cleanupError);
+      LOG.error("Failed to clean up actor {}", getName(), cleanupError);
+      if (failure == null) {
+        return cleanupError;
+      }
+      if (failure != cleanupError) {
+        failure.addSuppressed(cleanupError);
+      }
+    }
+    return failure;
   }
 
   private void failJob(final ActorJob job) {
@@ -302,8 +357,11 @@ public class ActorTask {
         closeFuture.completeExceptionally(failure);
       }
       case STARTED -> {
-        actor.handleFailure(failure);
-        currentJob.failFuture(failure);
+        try {
+          actor.handleFailure(failure);
+        } finally {
+          currentJob.failFuture(failure);
+        }
       }
       default -> {
         // do nothing
@@ -355,9 +413,18 @@ public class ActorTask {
      * yet in state waiting. After transitioning to waiting we check if we need to wake
      * up right away.
      */
-    if ((lifecyclePhase == ActorLifecyclePhase.STARTED && !submittedJobs.isEmpty())
-        || pollSubscriptionsWithoutAddingJobs(subscriptionsRef)) {
-      // could be that another thread already woke up this task
+    try {
+      if (pendingFailure.get() != null
+          || (lifecyclePhase == ActorLifecyclePhase.STARTED && !submittedJobs.isEmpty())
+          || pollSubscriptionsWithoutAddingJobs(subscriptionsRef)) {
+        // could be that another thread already woke up this task
+        return casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP);
+      }
+    } catch (final Throwable error) {
+      FATAL_ERROR_HANDLER.handleError(error);
+      LOG.error("Failed to check subscriptions while parking actor {}", getName(), error);
+      // Another thread may already own the task after WAITING was published.
+      pendingFailure.compareAndSet(null, error);
       return casState(TaskSchedulingState.WAITING, TaskSchedulingState.WAKING_UP);
     }
 
@@ -487,6 +554,9 @@ public class ActorTask {
 
   public void addSubscription(final ActorSubscription subscription) {
     ensureCalledFromActorThread("addSubscription(ActorSubscription)");
+    if (recoveryStarted) {
+      throw new IllegalStateException("Cannot add subscriptions while recovering a failed actor");
+    }
     subscriptions.add(subscription);
   }
 
@@ -517,6 +587,8 @@ public class ActorTask {
     if (previousPhase == ActorLifecyclePhase.FAILED) {
       return;
     }
+    // Future callbacks can interrupt failure handling before onActorFailed is reached.
+    failureCallbackPending = true;
 
     if (previousPhase == ActorLifecyclePhase.STARTING) {
       startingFuture.completeExceptionally(error);
@@ -527,7 +599,71 @@ public class ActorTask {
     }
 
     discardNextJobs();
+    failureCallbackPending = false;
     actor.onActorFailed();
+  }
+
+  /**
+   * Requests a recovery job after execution failed while this thread still owns the task. Actor
+   * callbacks and cleanup run on the next scheduler turn with a current job.
+   *
+   * @return true if recovery should be scheduled, false if it has already been attempted
+   */
+  boolean onUnhandledError(final Throwable error) {
+    if (recoveryStarted) {
+      schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
+      return false;
+    }
+    pendingFailure.compareAndSet(null, error);
+    return true;
+  }
+
+  private void executeRecovery(final ActorThread runner, final Throwable error) {
+    recoveryStarted = true;
+    final var interruptedJob = currentJob;
+    final var recoveryJob = new ActorJob();
+    recoveryJob.onJobAddedToTask(this);
+    recoveryJob.setRunnable(() -> recover(error, interruptedJob));
+    currentJob = recoveryJob;
+    try {
+      recoveryJob.execute();
+    } finally {
+      try {
+        failPendingFuture(startingFuture, error);
+        failPendingFuture(jobStartingTaskFuture, error);
+        failPendingFuture(jobClosingTaskFuture, error);
+        closeResources(error);
+        failPendingFuture(closeFuture, error);
+      } finally {
+        currentJob = null;
+        runner.recycleJob(recoveryJob);
+        schedulingState.set(TaskSchedulingState.NOT_SCHEDULED);
+      }
+    }
+  }
+
+  private void recover(final Throwable error, final @Nullable ActorJob interruptedJob) {
+    final var previousPhase = lifecyclePhase;
+    if (previousPhase != ActorLifecyclePhase.CLOSED) {
+      lifecyclePhase = ActorLifecyclePhase.FAILED;
+    }
+    if (previousPhase != ActorLifecyclePhase.FAILED
+        && previousPhase != ActorLifecyclePhase.CLOSED) {
+      failureCallbackPending = true;
+    }
+    if (interruptedJob != null) {
+      runCleanup(error, () -> interruptedJob.failFuture(error));
+    }
+    if (failureCallbackPending) {
+      failureCallbackPending = false;
+      runCleanup(error, actor::onActorFailed);
+    }
+  }
+
+  private void failPendingFuture(final ActorFuture<?> future, final Throwable error) {
+    if (!future.isDone()) {
+      runCleanup(error, () -> future.completeExceptionally(error));
+    }
   }
 
   public int estimateQueueLength() {

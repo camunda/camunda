@@ -129,6 +129,12 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
       LOG.error("Unexpected error occurred in task {}", currentTask, e);
+      try {
+        resubmit = currentTask.onUnhandledError(e);
+      } catch (final Throwable handlingError) {
+        FATAL_ERROR_HANDLER.handleError(handlingError);
+        LOG.error("Failed to handle unexpected error in task {}", currentTask, handlingError);
+      }
     } finally {
       clock.update();
       properties.keySet().forEach(MDC::remove);

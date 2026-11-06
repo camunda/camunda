@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -29,14 +30,23 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.agrona.LangUtil;
 import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 
-/** Completable future implementation that is garbage free and reusable */
+/**
+ * Completable future implementation that is garbage free and reusable.
+ *
+ * <p>Nonfatal synchronous callback failures do not prevent notification of remaining callbacks or
+ * blocked callers. The first callback failure is rethrown after notification, with subsequent
+ * failures suppressed.
+ */
 @SuppressWarnings("restriction")
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
   private static final long STATE_OFFSET;
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER =
+      FatalErrorHandler.withLogger(Loggers.ACTOR_LOGGER);
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -426,26 +436,42 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   private void notifyAllBlocked() {
-    notifyBlockedCallBacks();
-
     try {
-      completionLock.lock();
-      if (isDoneCondition != null) {
-        // condition is null if the future was created with `completed` or `completedExceptionally`,
-        // i.e. the future was never waiting for a result.
-        isDoneCondition.signalAll();
-      }
+      notifyBlockedCallBacks();
     } finally {
-      completionLock.unlock();
+      completionLock.lock();
+      try {
+        if (isDoneCondition != null) {
+          // condition is null if the future was created with `completed` or
+          // `completedExceptionally`,
+          // i.e. the future was never waiting for a result.
+          isDoneCondition.signalAll();
+        }
+      } finally {
+        completionLock.unlock();
+      }
     }
   }
 
   private void notifyBlockedCallBacks() {
+    Throwable callbackFailure = null;
     while (!blockedCallbacks.isEmpty()) {
       final var callBack = blockedCallbacks.poll();
       if (callBack != null) {
-        callBack.accept(value, failureCause);
+        try {
+          callBack.accept(value, failureCause);
+        } catch (final Throwable error) {
+          FATAL_ERROR_HANDLER.handleError(error);
+          if (callbackFailure == null) {
+            callbackFailure = error;
+          } else if (callbackFailure != error) {
+            callbackFailure.addSuppressed(error);
+          }
+        }
       }
+    }
+    if (callbackFailure != null) {
+      LangUtil.rethrowUnchecked(callbackFailure);
     }
   }
 
