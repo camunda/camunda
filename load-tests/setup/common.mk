@@ -31,9 +31,9 @@
 #   rendering an incomplete overlay.
 #
 # - dual_region_supported
-#   Set to `true` for versions whose platform chart takes the unified `camunda.cluster.*`
-#   zone-aware settings that generate-dual-region-values.sh writes, so dual_region=true fails fast
-#   instead of silently deploying a single-region cluster.
+#   Set to `true` for versions whose platform chart supports the zone-aware
+#   `orchestration.partitioning` values that generate-dual-region-values.sh writes (chart v15,
+#   Camunda 8.10, and later), so dual_region=true fails fast elsewhere instead of failing the render.
 #
 # - prefer_rest
 #   Whether the load testers prefer REST over gRPC (matches the load-tester
@@ -125,8 +125,9 @@ _scenario_load_test_flags =
 _scenario_platform_flags =
 endif
 
-# A dual region cluster replaces the application-override.yml that scenario=max would set, through
-# the same key; generate-dual-region-values.sh folds the scenario=max overrides into its file.
+# A dual region cluster fills the application-override.yml slot that scenario=max would set, through
+# the same key; generate-dual-region-values.sh folds the scenario=max overrides into its file. The
+# zone topology itself goes through chart values (camunda-platform-dual-region-values.yaml, below).
 ifeq ($(dual_region),true)
 ifeq ($(scenario_max_override_key),)
 $(error dual_region=true requires scenario_max_override_key to be declared by the version Makefile)
@@ -219,6 +220,12 @@ platform_values += -f camunda-platform-physical-tenants.yaml
 _load_test_setup_flags += --set keycloak.hostname=keycloak
 endif
 
+# Layer the zone-aware topology of a dual region cluster on top, generated at install/template time
+# by generate-dual-region-values.sh (see the generate-dual-region-values target below).
+ifeq ($(dual_region),true)
+platform_values += -f camunda-platform-dual-region-values.yaml
+endif
+
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
@@ -273,11 +280,6 @@ install: check-deadline install-load-test-setup $(install_storage_target) instal
 .PHONY: install-stable
 install-stable: check-deadline install-load-test-setup $(install_storage_target) install-platform-stable
 
-# When physical_tenant_count > 0, also deploy pt1..ptN's own load testers. Appended as the
-# last prerequisite so it runs after the platform is up and the load-test-credentials secret
-# exists. Only versions with physical_tenants_supported=true define
-# install-load-test-physical-tenants; harmless no-op declaration everywhere else since the
-# fail-fast gate above already rejects physical_tenant_count > 0 there.
 ifeq ($(dual_region),true)
 install-platform: generate-dual-region-values
 install-platform-stable: generate-dual-region-values
@@ -285,6 +287,11 @@ template: generate-dual-region-values
 template-stable: generate-dual-region-values
 endif
 
+# When physical_tenant_count > 0, also deploy pt1..ptN's own load testers. Appended as the
+# last prerequisite so it runs after the platform is up and the load-test-credentials secret
+# exists. Only versions with physical_tenants_supported=true define
+# install-load-test-physical-tenants; harmless no-op declaration everywhere else since the
+# fail-fast gate above already rejects physical_tenant_count > 0 there.
 ifneq ($(physical_tenant_count),0)
 install: install-load-test-physical-tenants
 install-stable: install-load-test-physical-tenants
@@ -388,7 +395,8 @@ install-load-test-physical-tenants:
 	done
 endif
 
-# Generates camunda-platform-dual-region-override.yaml (see generate-dual-region-values.sh).
+# Generates camunda-platform-dual-region-values.yaml and camunda-platform-dual-region-override.yaml
+# (see generate-dual-region-values.sh).
 .PHONY: generate-dual-region-values
 generate-dual-region-values:
 	../generate-dual-region-values.sh "$(dual_region_zone)" "$(namespace)" "$(dual_region_peer_namespace)" \
