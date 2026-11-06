@@ -22,6 +22,7 @@ export async function searchVariableByNameAndProcessInstanceKey(
     processInstanceKey: string;
     name: string;
   },
+  assertionOptions = defaultAssertionOptions,
 ) {
   const localState: Record<string, unknown> = {};
 
@@ -53,7 +54,7 @@ export async function searchVariableByNameAndProcessInstanceKey(
     const json = await res.json();
     expect(json.items.length).toBeGreaterThan(0);
     localState['variable'] = json.items[0];
-  }).toPass(defaultAssertionOptions);
+  }).toPass(assertionOptions);
 
   return localState['variable'] as {
     variableKey: string;
