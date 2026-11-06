@@ -12,9 +12,13 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
@@ -537,6 +541,81 @@ public class RoleTest {
     // when
     final var deletedRole = engine.role().deleteRole(roleId).delete().getValue();
     assertThat(deletedRole).hasRoleId(roleId);
+  }
+
+  @Test
+  public void shouldRemoveDeletedRoleFromItsTenants() {
+    // given a role that is a member of a tenant
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+    engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.tenant().addEntity(tenantId).withEntityId(roleId).withEntityType(EntityType.ROLE).add();
+
+    // when
+    engine.role().deleteRole(roleId).delete();
+
+    // then the role is no longer a member of the tenant
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantId(tenantId)
+                .withEntityId(roleId)
+                .exists())
+        .isTrue();
+
+    // and a role created again with the same ID can be assigned anew, so it inherited nothing
+    engine.role().newRole(roleId).create();
+    Assertions.assertThat(
+            engine
+                .tenant()
+                .addEntity(tenantId)
+                .withEntityId(roleId)
+                .withEntityType(EntityType.ROLE)
+                .add()
+                .getIntent())
+        .isEqualTo(TenantIntent.ENTITY_ADDED);
+  }
+
+  @Test
+  public void shouldRemoveLeftoverTenantMembershipsWhenRoleIsCreated() {
+    // given a tenant membership of a role ID without a role, as a deletion before the fix left it;
+    // the engine applies such an event only when it replays the log, so it is written while it is
+    // stopped
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidIdentityId();
+    final var tenant = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .key(tenant.getKey())
+            .tenant(
+                TenantIntent.ENTITY_ADDED,
+                new TenantRecord()
+                    .setTenantKey(tenant.getKey())
+                    .setTenantId(tenantId)
+                    .setEntityId(roleId)
+                    .setEntityType(EntityType.ROLE)));
+    engine.start();
+
+    // when
+    engine.role().newRole(roleId).create();
+
+    // then the new role does not inherit it
+    Assertions.assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_REMOVED)
+                .withTenantId(tenantId)
+                .withEntityId(roleId)
+                .exists())
+        .isTrue();
+    Assertions.assertThat(
+            engine
+                .tenant()
+                .addEntity(tenantId)
+                .withEntityId(roleId)
+                .withEntityType(EntityType.ROLE)
+                .add()
+                .getIntent())
+        .isEqualTo(TenantIntent.ENTITY_ADDED);
   }
 
   @Test

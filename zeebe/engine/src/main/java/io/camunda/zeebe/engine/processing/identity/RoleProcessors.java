@@ -35,11 +35,12 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.CREATE,
         new RoleCreateProcessor(
-            processingState.getRoleState(),
+            processingState,
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            membershipStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.UPDATE,
@@ -78,6 +79,7 @@ public class RoleProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            membershipStateAdapter));
   }
 }
