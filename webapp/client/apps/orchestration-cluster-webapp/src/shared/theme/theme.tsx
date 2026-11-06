@@ -8,15 +8,23 @@
 
 import {action, computed, makeObservable, observable} from 'mobx';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 
 type ThemeOption = 'system' | 'dark' | 'light';
-
-const STORED_THEME = getStateLocally('theme');
-const INITIAL_THEME = isThemeOption(STORED_THEME) ? STORED_THEME : 'system';
 
 function isThemeOption(theme: unknown): theme is ThemeOption {
 	return ['system', 'dark', 'light'].includes(String(theme));
 }
+
+function getInitialTheme(): ThemeOption {
+	const {organizationId, clusterId} = getBootConfig();
+	const isSaas = organizationId !== null && clusterId !== null;
+	const storedTheme = getStateLocally('themeChoice') ?? (isSaas ? null : getStateLocally('theme'));
+
+	return isThemeOption(storedTheme) ? storedTheme : 'system';
+}
+
+const INITIAL_THEME = getInitialTheme();
 
 class Theme {
 	selectedTheme: ThemeOption = INITIAL_THEME;
@@ -26,6 +34,7 @@ class Theme {
 		makeObservable(this, {
 			selectedTheme: observable,
 			changeTheme: action,
+			seedTheme: action,
 			actualTheme: computed,
 			reset: action,
 		});
@@ -33,7 +42,11 @@ class Theme {
 
 	changeTheme = (theme: ThemeOption) => {
 		this.selectedTheme = theme;
-		storeStateLocally('theme', theme);
+		storeStateLocally('themeChoice', theme);
+	};
+
+	seedTheme = (theme: ThemeOption) => {
+		this.selectedTheme = theme;
 	};
 
 	get actualTheme() {
@@ -47,4 +60,4 @@ class Theme {
 
 const themeStore = new Theme();
 
-export {themeStore};
+export {themeStore, getInitialTheme};
