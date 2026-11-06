@@ -357,12 +357,11 @@ public class AtomixTransportTest {
   }
 
   @Test
-  public void shouldNotReceiveRequestOnLegacyTopicWhenLegacyReceiveIsDisabled() {
+  public void shouldNotReceiveRequestOnLegacyTopicWhenLegacyReceiveIsDisabled() throws Exception {
     // given -- a server transport that doesn't receive on legacy subjects
-    final var transport =
+    try (final var transport =
         transportFactory.createServerTransport(
-            cluster.getMessagingService(), new SnowflakeIdGenerator(1), false);
-    try {
+            cluster.getMessagingService(), new SnowflakeIdGenerator(1), false)) {
       final var partition = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 5);
       transport.subscribe(partition, RequestType.COMMAND, new DirectlyResponder()).join();
       final var serverAddress = cluster.getMessagingService().address();
@@ -381,12 +380,6 @@ public class AtomixTransportTest {
       assertThatThrownBy(legacyResponseFuture::join)
           .hasCauseInstanceOf(MessagingException.NoRemoteHandler.class);
       assertThat(prefixedResponseFuture.join()).isEqualTo(MESSAGE_CONTENT.getBytes());
-    } finally {
-      try {
-        transport.close();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 
