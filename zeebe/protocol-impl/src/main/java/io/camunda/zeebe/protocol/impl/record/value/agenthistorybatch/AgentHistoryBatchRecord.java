@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -21,10 +22,13 @@ public final class AgentHistoryBatchRecord extends UnifiedRecordValue
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final ArrayProperty<StringValue> historyItemIdsProp =
       new ArrayProperty<>("historyItemIds", StringValue::new);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   public AgentHistoryBatchRecord() {
-    super(2);
-    declareProperty(agentInstanceKeyProp).declareProperty(historyItemIdsProp);
+    super(3);
+    declareProperty(agentInstanceKeyProp)
+        .declareProperty(historyItemIdsProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   @Override
@@ -50,6 +54,16 @@ public final class AgentHistoryBatchRecord extends UnifiedRecordValue
     if (historyItemIds != null) {
       historyItemIds.forEach(id -> historyItemIdsProp.add().wrap(BufferUtil.wrapString(id)));
     }
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public AgentHistoryBatchRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }
