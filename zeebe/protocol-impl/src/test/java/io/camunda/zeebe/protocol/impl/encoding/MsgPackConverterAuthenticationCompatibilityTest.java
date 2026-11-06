@@ -14,11 +14,9 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.ConditionalMembership;
 import io.camunda.security.api.model.authz.MembershipCondition;
 import io.camunda.security.api.model.authz.Operand;
-import io.camunda.security.api.model.authz.PrincipalAttribute;
 import io.camunda.security.api.model.authz.ResourceAttribute;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -123,7 +121,7 @@ class MsgPackConverterAuthenticationCompatibilityTest {
 
   @Test
   void shouldNotPersistConditionalRoleMemberships() throws Exception {
-    // given an authentication with conditional memberships of both operand variants
+    // given an authentication with conditions on both resource attributes
     final var lookups = new AtomicInteger();
     final var authentication =
         CamundaAuthentication.of(
@@ -138,11 +136,11 @@ class MsgPackConverterAuthenticationCompatibilityTest {
                                   "reviewer",
                                   List.of(
                                       new MembershipCondition(
-                                          ResourceAttribute.WORKSPACE,
-                                          new Operand.Values(Set.of("payments"))),
+                                          ResourceAttribute.WORKSPACE_ID,
+                                          new Operand.Equals("payments")),
                                       new MembershipCondition(
-                                          ResourceAttribute.ASSIGNEE,
-                                          new Operand.Principal(PrincipalAttribute.USERNAME)))));
+                                          ResourceAttribute.PROJECT_ID,
+                                          new Operand.Equals("invoicing")))));
                         }));
 
     // when
