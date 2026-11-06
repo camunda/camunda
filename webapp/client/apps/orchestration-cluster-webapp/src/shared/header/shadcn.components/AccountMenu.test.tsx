@@ -102,7 +102,7 @@ describe('User info', () => {
 		const screen = await render(<AccountMenu displayName="Demo User" canLogout onLogout={() => {}} />);
 
 		expect(themeStore.selectedTheme).toBe('system');
-		expect(localStorage.getItem('theme')).toBeNull();
+		expect(localStorage.getItem('themeChoice')).toBeNull();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
 
@@ -111,7 +111,7 @@ describe('User info', () => {
 		await userEvent.click(screen.getByRole('radio', {name: 'Light'}));
 
 		expect(themeStore.selectedTheme).toBe('light');
-		expect(localStorage.getItem('theme')).toBe('"light"');
+		expect(localStorage.getItem('themeChoice')).toBe('"light"');
 		await expect.element(screen.getByRole('radio', {name: 'Light'})).toBeChecked();
 		await expect.element(screen.getByRole('radio', {name: 'System'})).not.toBeChecked();
 	});
