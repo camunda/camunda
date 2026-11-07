@@ -234,10 +234,6 @@
       "defaultValue": "PT1H"
     },
     {
-      "name": "camunda.client.execution-threads",
-      "defaultValue": 1
-    },
-    {
       "name": "camunda.client.use-client-side-load-balancing",
       "defaultValue": false
     },
