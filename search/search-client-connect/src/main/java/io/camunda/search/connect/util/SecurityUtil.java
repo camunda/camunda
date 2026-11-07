@@ -18,12 +18,15 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import javax.net.ssl.SSLContext;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.ssl.SSLContexts;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.core5.ssl.SSLContexts;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class SecurityUtil {
+
+  public static final AuthScope ANY_AUTH_SCOPE = new AuthScope(null, -1);
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityUtil.class);
 
@@ -41,8 +44,11 @@ public final class SecurityUtil {
       setCertificateInTrustStore(trustStore, certificate, alias);
     }
 
-    final var trustStrategy =
-        configuration.isSelfSigned() ? new TrustSelfSignedStrategy() : null; // default;
+    // We used TrustSelfSignedStrategy here but HttpClient 5 deprecates it in favor of pinning the
+    // certificate in the truststore, which would change behavior for configs that trust any
+    // self-signed certificate. This lambda keeps its historical chain.length == 1 semantics.
+    final TrustStrategy trustStrategy =
+        configuration.isSelfSigned() ? (chain, authType) -> chain.length == 1 : null; // default;
     if (trustStore.size() > 0) {
       return SSLContexts.custom().loadTrustMaterial(trustStore, trustStrategy).build();
     } else {
@@ -66,7 +72,7 @@ public final class SecurityUtil {
   private static Certificate loadCertificateFromPath(final String certificatePath) {
     final Certificate cert;
 
-    try (var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final var bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {

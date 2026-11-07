@@ -24,7 +24,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.CompositeTermsAggreg
 import co.elastic.clients.elasticsearch._types.aggregations.NestedAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import com.google.common.collect.ImmutableList;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.es.ElasticsearchCompositeAggregationScroller;
@@ -207,8 +207,8 @@ public class AssigneeAndCandidateGroupsReaderES implements AssigneeAndCandidateG
                                                         CompositeAggregation.of(
                                                             c -> {
                                                               c.sources(
-                                                                      ImmutableList.of(
-                                                                          Map.of(
+                                                                      List.of(
+                                                                          new NamedValue<>(
                                                                               TERMS_AGG,
                                                                               CompositeAggregationSource
                                                                                   .of(
