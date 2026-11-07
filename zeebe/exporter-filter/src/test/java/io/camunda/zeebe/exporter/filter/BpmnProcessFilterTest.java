@@ -120,6 +120,27 @@ final class BpmnProcessFilterTest {
   }
 
   @Test
+  void shouldRejectAllIdsWhenExclusionCoversEntireInclusion() {
+    // given
+    final var filter =
+        new BpmnProcessFilter(
+            /* inclusion */ List.of(INCLUDED_ID), /* exclusion */ List.of(INCLUDED_ID));
+
+    final var includedRecord =
+        recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, INCLUDED_ID));
+    final var otherRecord =
+        recordWithValue(valueWithBpmnProcessId(ProcessInstanceRecordValue.class, OTHER_ID));
+
+    // when / then
+    assertThat(filter.accept(includedRecord))
+        .as("ID present in both inclusion and exclusion should be rejected")
+        .isFalse();
+    assertThat(filter.accept(otherRecord))
+        .as("ID not present in the inclusion list should be rejected")
+        .isFalse();
+  }
+
+  @Test
   void shouldAcceptSupportedRecordsWithNullBpmnProcessId() {
     // given
     final var filter = new BpmnProcessFilter(List.of(INCLUDED_ID), List.of());
