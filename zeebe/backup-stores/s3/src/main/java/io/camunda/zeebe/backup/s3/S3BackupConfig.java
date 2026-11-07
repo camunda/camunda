@@ -52,6 +52,8 @@ import org.jspecify.annotations.Nullable;
  *     still pending replication. Only used when {@code waitForReplication} is enabled.
  * @param replicationTimeout How long to wait for all objects of a backup to be replicated before
  *     the backup fails. Only used when {@code waitForReplication} is enabled.
+ * @param maxReadRate Maximum rate in bytes per second at which all backups of this JVM together
+ *     read local files to upload them. 0 means unlimited.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -78,7 +80,8 @@ public record S3BackupConfig(
     DefaultsMode defaultsMode,
     boolean waitForReplication,
     Duration replicationPollInterval,
-    Duration replicationTimeout) {
+    Duration replicationTimeout,
+    long maxReadRate) {
 
   public static final Duration DEFAULT_REPLICATION_POLL_INTERVAL = Duration.ofSeconds(5);
   public static final Duration DEFAULT_REPLICATION_TIMEOUT = Duration.ofMinutes(15);
@@ -100,6 +103,11 @@ public record S3BackupConfig(
             "Can't use compression algorithm %s. Only supports %s"
                 .formatted(compressionAlgorithm.get(), supported));
       }
+    }
+    if (maxReadRate < 0) {
+      throw new IllegalArgumentException(
+          "Expected maxReadRate to be 0 (unlimited) or positive, but was %d bytes per second"
+              .formatted(maxReadRate));
     }
     basePath = BackupStorePaths.sanitizeBasePath(basePath.orElse(null));
     ssecKey.ifPresent(SseCKey::decodeAndValidate);
@@ -156,6 +164,8 @@ public record S3BackupConfig(
         + replicationPollInterval
         + ", replicationTimeout="
         + replicationTimeout
+        + ", maxReadRate="
+        + maxReadRate
         + '}';
   }
 
@@ -177,6 +187,7 @@ public record S3BackupConfig(
     private boolean waitForReplication = false;
     private Duration replicationPollInterval = DEFAULT_REPLICATION_POLL_INTERVAL;
     private Duration replicationTimeout = DEFAULT_REPLICATION_TIMEOUT;
+    private long maxReadRate;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -274,6 +285,11 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withMaxReadRate(final long maxReadRate) {
+      this.maxReadRate = maxReadRate;
+      return this;
+    }
+
     public S3BackupConfig build() {
       if (bucketName == null) {
         throw new IllegalArgumentException("Bucket name must not be empty.");
@@ -296,7 +312,8 @@ public record S3BackupConfig(
           defaultsMode,
           waitForReplication,
           replicationPollInterval,
-          replicationTimeout);
+          replicationTimeout,
+          maxReadRate);
     }
   }
 
