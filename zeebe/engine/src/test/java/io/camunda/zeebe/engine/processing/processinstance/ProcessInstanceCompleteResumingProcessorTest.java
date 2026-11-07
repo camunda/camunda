@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -57,7 +58,11 @@ public final class ProcessInstanceCompleteResumingProcessorTest {
 
     processor =
         new ProcessInstanceCompleteResumingProcessor(
-            elementInstanceState, suspensionState, writers, suspensionMetrics);
+            elementInstanceState,
+            suspensionState,
+            mock(AsyncRequestState.class),
+            writers,
+            suspensionMetrics);
 
     // default: the common case of an active instance still marked RESUMING
     when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
