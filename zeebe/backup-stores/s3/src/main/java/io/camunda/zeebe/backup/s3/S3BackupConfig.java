@@ -44,6 +44,8 @@ import org.jspecify.annotations.Nullable;
  * @param defaultsMode Defaults mode of the AWS SDK client. If empty, {@link DefaultsMode#AUTO} is
  *     used, which probes the EC2 instance metadata endpoint to detect the runtime environment and
  *     can block for a couple of seconds when not running on AWS.
+ * @param maxReadRate Maximum rate in bytes per second at which all backups of this JVM together
+ *     read local files to upload them. 0 means unlimited.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -67,7 +69,8 @@ public record S3BackupConfig(
     Optional<String> ssecKey,
     Optional<Duration> readTimeout,
     Optional<Duration> writeTimeout,
-    DefaultsMode defaultsMode) {
+    DefaultsMode defaultsMode,
+    long maxReadRate) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -86,6 +89,11 @@ public record S3BackupConfig(
             "Can't use compression algorithm %s. Only supports %s"
                 .formatted(compressionAlgorithm.get(), supported));
       }
+    }
+    if (maxReadRate < 0) {
+      throw new IllegalArgumentException(
+          "Expected maxReadRate to be 0 (unlimited) or positive, but was %d bytes per second"
+              .formatted(maxReadRate));
     }
     basePath = BackupStorePaths.sanitizeBasePath(basePath.orElse(null));
     ssecKey.ifPresent(SseCKey::decodeAndValidate);
@@ -125,6 +133,8 @@ public record S3BackupConfig(
         + writeTimeout
         + ", defaultsMode="
         + defaultsMode
+        + ", maxReadRate="
+        + maxReadRate
         + '}';
   }
 
@@ -143,6 +153,7 @@ public record S3BackupConfig(
     private @Nullable Duration readTimeout;
     private @Nullable Duration writeTimeout;
     private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
+    private long maxReadRate;
 
     /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
     private Integer maxConcurrentConnections = 50;
@@ -225,6 +236,11 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withMaxReadRate(final long maxReadRate) {
+      this.maxReadRate = maxReadRate;
+      return this;
+    }
+
     public S3BackupConfig build() {
       if (bucketName == null) {
         throw new IllegalArgumentException("Bucket name must not be empty.");
@@ -244,7 +260,8 @@ public record S3BackupConfig(
           Optional.ofNullable(ssecKey),
           Optional.ofNullable(readTimeout),
           Optional.ofNullable(writeTimeout),
-          defaultsMode);
+          defaultsMode,
+          maxReadRate);
     }
   }
 
