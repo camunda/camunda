@@ -59,6 +59,12 @@ jobs:
             arch: arm64
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      # Git for Windows caps paths at 260 chars (MAX_PATH) unless core.longpaths is set; some
+      # repo paths (e.g. Playwright snapshot names) exceed it and make checkout fail.
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
