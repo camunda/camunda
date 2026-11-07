@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.unit.DataSize;
 
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
@@ -767,6 +768,31 @@ public class DataBackupS3Test {
     void shouldSetDefaultsMode() {
       assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode())
           .isEqualTo(DefaultsMode.STANDARD);
+    }
+
+    @Test
+    void shouldNotLimitReadRateByDefault() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxReadRate()).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.s3.max-read-rate=100MB",
+      })
+  class WithMaxReadRate {
+    final BrokerBasedProperties brokerCfg;
+
+    WithMaxReadRate(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetMaxReadRate() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getMaxReadRate())
+          .isEqualTo(DataSize.ofMegabytes(100));
     }
   }
 }
