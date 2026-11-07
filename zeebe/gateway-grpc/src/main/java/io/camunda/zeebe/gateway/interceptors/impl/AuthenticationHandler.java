@@ -33,6 +33,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderInitializationException;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 /** Used by the {@link AuthenticationInterceptor} to authenticate incoming requests. */
@@ -121,6 +122,13 @@ public sealed interface AuthenticationHandler {
       final Jwt token;
       try {
         token = jwtDecoder.decode(tokenValue);
+      } catch (final JwtDecoderInitializationException e) {
+        // The decoder could not reach the identity provider to resolve its configuration — a
+        // transient infrastructure problem, not a bad token. It is not a JwtException, so without
+        // this branch it escapes the interceptor as an unhandled ERROR. The resolution layer
+        // already logged the cause; surface a retryable status with a generic description.
+        LOG.debug("Rejecting bearer token: OIDC issuer resolution failed", e);
+        return Either.left(Status.UNAVAILABLE.augmentDescription("Identity provider unavailable"));
       } catch (final JwtException e) {
         // Exception details may include the IdP URL or issuer mismatch strings; log them
         // server-side and return a generic status so API callers don't see them.
