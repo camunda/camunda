@@ -8,11 +8,14 @@
 package io.camunda.zeebe.stream.impl.metrics;
 
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc.OnRecoveredListenerKeys;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
+import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -54,6 +57,16 @@ public final class StreamProcessorMetrics {
   public CloseableSilently startRecoveryTimer() {
     return MicrometerUtil.timer(
         startupRecoveryTime::set, TimeUnit.MILLISECONDS, registry.config().clock());
+  }
+
+  public void observeOnRecoveredListenerDuration(final String listener, final Duration duration) {
+    final var meterDoc = StreamMetricsDoc.ON_RECOVERED_LISTENER_DURATION;
+    Timer.builder(meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .tag(OnRecoveredListenerKeys.LISTENER.asString(), listener)
+        .register(registry)
+        .record(duration);
   }
 
   public void initializeProcessorPhase(final Phase phase) {
