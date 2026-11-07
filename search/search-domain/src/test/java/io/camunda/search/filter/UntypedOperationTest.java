@@ -27,6 +27,36 @@ class UntypedOperationTest {
   }
 
   @Test
+  void shouldMatchIntegerBeyondLongRangeByItsExactText() {
+    final Operation<String> operation =
+        new Operation<>(Operator.EQUALS, List.of("18446744073709551615"));
+    final UntypedOperation untypedOperation = UntypedOperation.of(operation);
+
+    assertThat(untypedOperation.type()).isEqualTo(ValueTypeEnum.STRING);
+    assertThat(untypedOperation.value()).isEqualTo("18446744073709551615");
+  }
+
+  @Test
+  void shouldMapEachValueOfInOperationIndividually() {
+    final Operation<String> operation =
+        new Operation<>(Operator.IN, List.of("1", "18446744073709551615"));
+    final UntypedOperation untypedOperation = UntypedOperation.of(operation);
+
+    assertThat(untypedOperation.values()).containsExactly(1L, "18446744073709551615");
+  }
+
+  @Test
+  void shouldRejectRangeOperatorForIntegerBeyondLongRange() {
+    final Operation<String> operation =
+        new Operation<>(Operator.GREATER_THAN, List.of("18446744073709551615"));
+    final IllegalArgumentException exception =
+        catchThrowableOfType(IllegalArgumentException.class, () -> UntypedOperation.of(operation));
+
+    assertThat(exception)
+        .hasMessage("Unsupported value type for number operator (<,<=,>,>=): STRING");
+  }
+
+  @Test
   void shouldThrowExceptionForInvalidValueType() {
     final Operation<String> operation = new Operation<>(Operator.GREATER_THAN, List.of("value"));
     final IllegalArgumentException exception =
