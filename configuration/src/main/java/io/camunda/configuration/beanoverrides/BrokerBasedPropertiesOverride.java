@@ -935,6 +935,7 @@ public class BrokerBasedPropertiesOverride {
     s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
     s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
     s3BackupStoreConfig.setDefaultsMode(s3.getDefaultsMode());
+    s3BackupStoreConfig.setMaxReadRate(s3.getMaxReadRate());
 
     override.getData().getBackup().setS3(s3BackupStoreConfig);
   }

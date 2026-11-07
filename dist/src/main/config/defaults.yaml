@@ -537,6 +537,12 @@ camunda: # Type: io.camunda.configuration.Camunda
           # number of concurrent uploads as to avoid connection timeouts when uploading backups with large/many
           # files.
           max-concurrent-connections: 50 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_MAXCONCURRENTCONNECTIONS
+          # Maximum number of bytes per second that all backups of this broker together read from the local disk
+          # to upload them, for example '100MB'. Backups read every journal segment since the last snapshot;
+          # without a limit, this can use up the disk throughput when the segments are not in the page cache, so
+          # that journal writes wait and all partitions stall. Set it well below the throughput of the data
+          # volume. When not set, the read rate is not limited.
+          max-read-rate: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_MAXREADRATE
           # Configure AWS region. If no region is provided it will be determined as documented in
           # https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-
           # determine-the-aws-region-from-the-environment

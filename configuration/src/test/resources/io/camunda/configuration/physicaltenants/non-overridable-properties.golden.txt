@@ -92,6 +92,7 @@ cluster.receive-on-legacy-subject
 cluster.replication-factor
 cluster.size
 cluster.zone
+data.primary-storage.backup.s3.max-read-rate
 data.primary-storage.directory
 data.primary-storage.disk.free-space.processing
 data.primary-storage.disk.free-space.replication
