@@ -342,7 +342,8 @@ public final class VariableBehavior {
         .setBpmnProcessId(bpmnProcessId)
         .setTenantId(tenantId)
         .setName(name)
-        .setValue(value, valueOffset, valueLength);
+        .setValue(value, valueOffset, valueLength)
+        .setSource(variableSourceRecord);
 
     final Optional<VariableEvent> variableEvent =
         setLocalVariable(variableRecord, metadataLookup.forVariable(name));

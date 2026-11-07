@@ -223,6 +223,13 @@ camunda-platform:
       replicas: 0
     persistenceType: disk
     pvcSize: 1Gi
+    env:
+    - name: CAMUNDA_DATA_AUDITLOG_VARIABLEHISTORYPERCENT
+      value: "100"
+    - name: CAMUNDA_DATA_AUDITLOG_VARIABLEHISTORYUSER
+      value: "true"
+    - name: CAMUNDA_DATA_AUDITLOG_VARIABLEHISTORYCLIENT
+      value: "true"
     javaOpts: >-
       -Xms512m -Xmx512m
       -XX:+HeapDumpOnOutOfMemoryError

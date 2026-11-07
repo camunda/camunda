@@ -45,6 +45,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
+import io.camunda.db.rdbms.sql.VariableHistoryMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import org.apache.ibatis.session.SqlSession;
@@ -90,6 +91,7 @@ public record RdbmsMapperBundle(
     UserMapper userMapper,
     UserTaskMapper userTaskMapper,
     VariableMapper variableMapper,
+    VariableHistoryMapper variableHistoryMapper,
     WaitStateMapper waitStateMapper) {
 
   public static RdbmsMapperBundle from(
@@ -136,6 +138,7 @@ public record RdbmsMapperBundle(
         getMapper(sqlSession, UserMapper.class),
         getMapper(sqlSession, UserTaskMapper.class),
         getMapper(sqlSession, VariableMapper.class),
+        getMapper(sqlSession, VariableHistoryMapper.class),
         getMapper(sqlSession, WaitStateMapper.class));
   }
 

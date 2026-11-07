@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- PoC for camunda/pdp-3517-variable-trace#53: write only, no reads -->
+<mapper namespace="io.camunda.db.rdbms.sql.VariableHistoryMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
+    INSERT INTO ${prefix}VARIABLE_HISTORY (
+      VARIABLE_HISTORY_KEY,
+      VAR_KEY,
+      VAR_NAME,
+      SCOPE_KEY,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_DEFINITION_ID,
+      TENANT_ID,
+      PARTITION_ID,
+      RECORD_POSITION,
+      EVENT_TIME,
+      OPERATION,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      VALUE_SIZE,
+      IS_PREVIEW,
+      VAR_VALUE,
+      VAR_FULL_VALUE
+    )
+    VALUES
+    <foreach collection="dbModels" item="history" separator=",">
+      (
+        #{history.variableHistoryKey},
+        #{history.variableKey},
+        #{history.name},
+        #{history.scopeKey},
+        #{history.processInstanceKey},
+        #{history.rootProcessInstanceKey},
+        #{history.processDefinitionKey},
+        #{history.processDefinitionId},
+        #{history.tenantId},
+        #{history.partitionId},
+        #{history.position},
+        #{history.eventTime, jdbcType=TIMESTAMP},
+        #{history.operation},
+        #{history.actorType},
+        #{history.actorId},
+        #{history.valueSize},
+        #{history.isPreview},
+        #{history.value},
+        #{history.fullValue}
+      )
+    </foreach>
+  </insert>
+
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'VARIABLE_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'VARIABLE_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'VARIABLE_HISTORY'"/>
+    <bind name="primaryKeyColumn" value="'VARIABLE_HISTORY_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
+</mapper>

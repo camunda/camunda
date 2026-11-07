@@ -46,6 +46,7 @@ public enum ContextType {
   USER(false),
   USER_TASK(true),
   VARIABLE(false),
+  VARIABLE_HISTORY(false),
   WAIT_STATE(false),
   // delete+insert is used for CLUSTER_VARIABLE_METADATA child rows, so order must be preserved
   // to ensure DELETE runs before INSERT
