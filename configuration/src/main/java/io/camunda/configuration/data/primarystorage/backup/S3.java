@@ -190,7 +190,10 @@ public class S3 {
    * disk to upload them, for example '100MB'. Backups read every journal segment since the last
    * snapshot; without a limit, this can use up the disk throughput when the segments are not in the
    * page cache, so that journal writes wait and all partitions stall. Set it well below the
-   * throughput of the data volume. When not set, the read rate is not limited.
+   * throughput of the data volume. When not set, the read rate is not limited. Uploads that read
+   * through the limit get their api-call-timeout extended by the time the limit adds for one
+   * partition; when a broker leads several partitions, they share the rate, so raise
+   * api-call-timeout accordingly.
    */
   private DataSize maxReadRate;
 
