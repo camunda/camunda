@@ -4,6 +4,8 @@ import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessCheck
 import com.diffplug.gradle.spotless.SpotlessExtension
 import io.camunda.gradle.flags.asEnabledFlag
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.promotedErrorProneChecks
 import net.ltgt.gradle.errorprone.errorprone
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.junitplatform.JUnitPlatformOptions
@@ -32,6 +34,13 @@ val isCi =
   providers.environmentVariable("CI").map { it.equals("true", ignoreCase = true) }.getOrElse(false)
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().orElse(false)
 val skipErrorProne = providers.gradleProperty("errorprone.skip").isPresent
+// Maven's error-prone.checks property is the single source of truth so the two builds cannot
+// enforce different checks.
+val errorProneChecks =
+  providers
+    .fileContents(layout.settingsDirectory.file("parent/pom.xml"))
+    .asText
+    .map { pomXml -> PomResolver(pomXml).promotedErrorProneChecks() }
 
 dependencies {
   // A consumer that requests an artifact kind must get that variant, not the default jar variant.
@@ -112,9 +121,8 @@ tasks.named<JavaCompile>("compileJava") {
     options.errorprone.disableAllChecks.set(true)
   } else {
     options.errorprone.disableAllWarnings.set(true)
-    // Off-by-default checks promoted to errors; keep in sync with error-prone.checks in
-    // parent/pom.xml.
-    options.errorprone.error("LockNotBeforeTry", "HashCodeInObjectsHash", "ObjectsHashCodePrimitive")
+    // Off-by-default checks promoted to errors, as declared by Maven in parent/pom.xml.
+    options.errorprone.error(*errorProneChecks.get().toTypedArray())
   }
   options.errorprone.error("NullAway")
   options.errorprone.excludedPaths.set(
