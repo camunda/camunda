@@ -22159,7 +22159,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -22255,6 +22256,20 @@
                         }
                       }
                     ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      }
+                    ]
                   }
                 ]
               },
@@ -22314,7 +22329,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -22391,6 +22407,20 @@
                     "matcher": {
                       "id": "byName",
                       "options": "pod"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
                     },
                     "properties": [
                       {
@@ -27384,7 +27414,8 @@
                   "spec": {
                     "options": {
                       "join": [
-                        "pod"
+                        "pod",
+                        "physicalTenant"
                       ],
                       "value": "partition"
                     }
@@ -27466,6 +27497,20 @@
                     "matcher": {
                       "id": "byName",
                       "options": "pod"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "physicalTenant"
                     },
                     "properties": [
                       {
