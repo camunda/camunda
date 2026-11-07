@@ -1,5 +1,10 @@
 {
   "entries": {
+    "camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main": {
+      "repo": "camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets",
+      "version": "main",
+      "sha": "742815e8e42387c77e70b69f8747141dbf216607"
+    },
     "github/gh-aw-actions/setup@v0.88.2": {
       "repo": "github/gh-aw-actions/setup",
       "version": "v0.88.2",
