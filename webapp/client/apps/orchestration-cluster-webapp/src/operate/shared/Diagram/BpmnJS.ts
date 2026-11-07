@@ -71,6 +71,7 @@ function isMultiInstance(businessObject: BpmnElement['businessObject']): boolean
 }
 
 class BpmnJS {
+	#shouldResetStaleSequenceFlows: boolean;
 	#navigatedViewer: InstanceType<typeof NavigatedViewer> | null = null;
 	#xml: string | null = null;
 	#selectableElements: string[] = [];
@@ -80,6 +81,10 @@ class BpmnJS {
 	#highlightedElementIds: string[] = [];
 	#overlaysData: OverlayData[] = [];
 	#hasOuterBorderOnSelection = false;
+
+	constructor({shouldResetStaleSequenceFlows = false}: {shouldResetStaleSequenceFlows?: boolean} = {}) {
+		this.#shouldResetStaleSequenceFlows = shouldResetStaleSequenceFlows;
+	}
 	#rootElement?: BpmnElement;
 	#customElementClasses: [elementId: string, className: string][] = [];
 	#overlaysByType = new Map<string, OverlayEntry[]>();
@@ -276,6 +281,13 @@ class BpmnJS {
 		}
 
 		if (!deepEqual(this.#highlightedSequenceFlows, highlightedSequenceFlows)) {
+			if (this.#shouldResetStaleSequenceFlows) {
+				this.#highlightedSequenceFlows
+					.filter((sequenceFlow) => !highlightedSequenceFlows.includes(sequenceFlow))
+					.forEach((sequenceFlow) => {
+						this.#colorSequenceFlow(sequenceFlow, undefined);
+					});
+			}
 			highlightedSequenceFlows.forEach((sequenceFlow) => {
 				this.#colorSequenceFlow(sequenceFlow, highlightedSequenceFlowsColor);
 			});
@@ -333,7 +345,7 @@ class BpmnJS {
 		}
 	};
 
-	#colorSequenceFlow = (id: string, color: string) => {
+	#colorSequenceFlow = (id: string, color: string | undefined) => {
 		const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
 		const graphicsFactory = this.#navigatedViewer?.get('graphicsFactory');
 		const element = elementRegistry?.get(id);
@@ -418,6 +430,11 @@ class BpmnJS {
 	};
 
 	#destroy = () => {
+		const canvas = this.#navigatedViewer?.get('canvas');
+		if (canvas !== undefined) {
+			// canvas debounces viewbox.changed (deferUpdate) and would read the destroyed container
+			(canvas as unknown as {viewbox: () => unknown}).viewbox = () => ({});
+		}
 		this.#navigatedViewer?.destroy();
 	};
 
@@ -448,6 +465,22 @@ class BpmnJS {
 			canvas.resized();
 			canvas.zoom('fit-viewport', 'auto');
 		}
+	};
+
+	ensureOutline = (elementId: string) => {
+		this.#ensureOutline(elementId);
+	};
+
+	revealElement = (elementId: string) => {
+		this.#navigatedViewer?.get('canvas')?.scrollToElement(elementId);
+	};
+
+	getElementName = (elementId: string) => {
+		return this.#navigatedViewer?.get('elementRegistry')?.get(elementId)?.businessObject.name;
+	};
+
+	getElementType = (elementId: string) => {
+		return this.#navigatedViewer?.get('elementRegistry')?.get(elementId)?.type;
 	};
 
 	findRootId = (selectedElementId: string) => {
