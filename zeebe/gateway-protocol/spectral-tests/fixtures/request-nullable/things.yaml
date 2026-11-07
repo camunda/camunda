@@ -1,0 +1,303 @@
+# Domain file with paths and schemas for testing no-nullable-request-properties.
+# Contains both valid and invalid cases, each at a distinct API path.
+
+## ─── Path definitions ──────────────────────────────────────────────────────────
+
+paths:
+
+  # ── Valid: optional non-nullable request fields ───────────────────
+  /valid-post:
+    post:
+      tags: [Test]
+      operationId: validPost
+      summary: Create a thing (valid)
+      description: Request fields are optional by omission; only the response is nullable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidRequest'
+      responses:
+        "200":
+          description: The created thing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NullableResult'
+
+  # ── Allowlisted: allowlistedPatch is in the fixture allowlist ─────
+  /allowlisted-patch/{thingKey}:
+    patch:
+      tags: [Test]
+      operationId: allowlistedPatch
+      summary: Update a thing (allowlisted dueDate)
+      description: changeset.dueDate is allowlisted, changeset.notListed is not.
+      parameters:
+        - name: thingKey
+          in: path
+          required: true
+          description: The key of the thing.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                changeset:
+                  $ref: '#/components/schemas/SharedChangeset'
+      responses:
+        "204":
+          description: Updated.
+
+  # ── Invalid: top-level nullable field ─────────────────────────────
+  /invalid-top-level:
+    post:
+      tags: [Test]
+      operationId: invalidTopLevel
+      summary: Create a thing (invalid)
+      description: Top-level request field is nullable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  nullable: true
+                  description: A nullable field.
+      responses:
+        "200":
+          description: Created.
+
+  # ── Invalid: PATCH without exemption ──────────────────────────────
+  /invalid-patch:
+    patch:
+      tags: [Test]
+      operationId: invalidPatch
+      summary: Patch a thing (invalid)
+      description: PATCH requests get no exemption from the rule.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                label:
+                  type: string
+                  nullable: true
+                  description: A nullable field.
+      responses:
+        "204":
+          description: Patched.
+
+  # ── Invalid: nullable field in a $ref'd component ─────────────────
+  /invalid-ref:
+    post:
+      tags: [Test]
+      operationId: invalidRef
+      summary: Create with nested component (invalid)
+      description: Nullable field lives in a nested component schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefRequest'
+      responses:
+        "200":
+          description: Created.
+
+  # ── Invalid: nullable field in an allOf member ────────────────────
+  /invalid-allof:
+    post:
+      tags: [Test]
+      operationId: invalidAllOf
+      summary: Create with allOf (invalid)
+      description: Nullable field lives in an allOf member.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllOfRequest'
+      responses:
+        "200":
+          description: Created.
+
+  # ── Invalid: nullable field in array items ────────────────────────
+  /invalid-items:
+    post:
+      tags: [Test]
+      operationId: invalidItems
+      summary: Create with array items (invalid)
+      description: Nullable field lives in the items of an array.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                list:
+                  type: array
+                  description: A list.
+                  items:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                        nullable: true
+                        description: A nullable field.
+      responses:
+        "200":
+          description: Created.
+
+  # ── Invalid: nullable field in additionalProperties ───────────────
+  /invalid-additional-properties:
+    post:
+      tags: [Test]
+      operationId: invalidAdditionalProperties
+      summary: Create with a map (invalid)
+      description: Nullable field lives in the values of a map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                map:
+                  type: object
+                  description: A map.
+                  additionalProperties:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                        nullable: true
+                        description: A nullable field.
+      responses:
+        "200":
+          description: Created.
+
+  # ── Invalid: schema shared with an allowlisted operation ──────────
+  /invalid-shared:
+    patch:
+      tags: [Test]
+      operationId: invalidShared
+      summary: Patch using the shared changeset (invalid)
+      description: Allowlist entries are per operation, so nothing is exempt here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                changeset:
+                  $ref: '#/components/schemas/SharedChangeset'
+      responses:
+        "204":
+          description: Patched.
+
+  # ── Invalid: self-referencing schema ──────────────────────────────
+  /invalid-recursive:
+    post:
+      tags: [Test]
+      operationId: invalidRecursive
+      summary: Create with a recursive schema (invalid)
+      description: The traversal must terminate on cycles.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                node:
+                  $ref: '#/components/schemas/RecursiveNode'
+      responses:
+        "200":
+          description: Created.
+
+## ─── Schema definitions ────────────────────────────────────────────────────────
+
+components:
+  schemas:
+
+    ValidRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: An optional field.
+        count:
+          type: integer
+          description: Another optional field.
+
+    NullableResult:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          nullable: true
+          description: Nullable fields are fine in responses.
+
+    RefRequest:
+      type: object
+      properties:
+        nested:
+          $ref: '#/components/schemas/RefInner'
+
+    RefInner:
+      type: object
+      properties:
+        value:
+          type: string
+          nullable: true
+          description: A nullable field.
+
+    AllOfRequest:
+      allOf:
+        - type: object
+          properties:
+            base:
+              type: string
+              description: A regular field.
+        - type: object
+          properties:
+            extra:
+              type: string
+              nullable: true
+              description: A nullable field.
+
+    SharedChangeset:
+      type: object
+      properties:
+        dueDate:
+          type: string
+          nullable: true
+          description: A nullable field.
+        notListed:
+          type: string
+          nullable: true
+          description: A nullable field.
+
+    RecursiveNode:
+      type: object
+      properties:
+        value:
+          type: string
+          nullable: true
+          description: A nullable field.
+        next:
+          $ref: '#/components/schemas/RecursiveNode'

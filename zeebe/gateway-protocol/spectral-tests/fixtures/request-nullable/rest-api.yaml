@@ -1,0 +1,53 @@
+# Entry point for no-nullable-request-properties rule tests.
+# Mirrors the real spec structure: paths $ref into domain files.
+openapi: "3.0.3"
+info:
+  title: Test Fixture — no-nullable-request-properties
+  version: "1.0"
+tags:
+  - name: Test
+
+paths:
+  # ── Valid cases ──────────────────────────────────────────────
+  # Optional non-nullable request fields; nullable only in the response
+  /valid-post:
+    $ref: 'things.yaml#/paths/~1valid-post'
+
+  # ── Allowlisted (operationId allowlistedPatch, see nullable-request-allowlist.json) ──
+  # PATCH with an allowlisted nullable field and one that is not listed;
+  # its changeset schema is shared with /invalid-shared
+  /allowlisted-patch/{thingKey}:
+    $ref: 'things.yaml#/paths/~1allowlisted-patch~1{thingKey}'
+
+  # ── Invalid cases ───────────────────────────────────────────
+  # Top-level nullable field
+  /invalid-top-level:
+    $ref: 'things.yaml#/paths/~1invalid-top-level'
+
+  # PATCH has no exemption
+  /invalid-patch:
+    $ref: 'things.yaml#/paths/~1invalid-patch'
+
+  # Nullable field in a $ref'd component
+  /invalid-ref:
+    $ref: 'things.yaml#/paths/~1invalid-ref'
+
+  # Nullable field in an allOf member
+  /invalid-allof:
+    $ref: 'things.yaml#/paths/~1invalid-allof'
+
+  # Nullable field in array items
+  /invalid-items:
+    $ref: 'things.yaml#/paths/~1invalid-items'
+
+  # Nullable field in additionalProperties values
+  /invalid-additional-properties:
+    $ref: 'things.yaml#/paths/~1invalid-additional-properties'
+
+  # Same schema as the allowlisted operation, but not allowlisted here
+  /invalid-shared:
+    $ref: 'things.yaml#/paths/~1invalid-shared'
+
+  # Self-referencing schema
+  /invalid-recursive:
+    $ref: 'things.yaml#/paths/~1invalid-recursive'
