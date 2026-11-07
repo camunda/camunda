@@ -94,7 +94,9 @@ runs:
       id: get-version
       if: ${{ inputs.version == ''}}
       shell: bash
-      run: echo "result=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+      run: |
+        VERSION=$(.github/scripts/get-project-version.sh)
+        echo "result=${VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: Set image build label from ISO 8601 DATE
       id: get-date

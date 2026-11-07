@@ -141,8 +141,7 @@ jobs:
           if [ -n "${{ inputs.version }}" ]; then
             VERSION="${{ inputs.version }}"
           else
-            # shellcheck disable=SC2016
-            VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
+            VERSION=$(.github/scripts/get-project-version.sh)
           fi
           export VERSION
           if [[ "${VERSION}" == *-SNAPSHOT ]]; then
