@@ -99,9 +99,9 @@ Complex pending state may use a local reducer or MobX when simpler state is insu
 **Target:** `styled-components` and Carbon are kept **temporarily** for the legacy-to-unified
 migration. This is a compatibility step, not the target design system and not a frontend-wide
 default — the Camunda design system replaces it later via
-[design-system-migrator](../design-system-migrator/SKILL.md). Reuse existing Carbon components;
-custom JSX is a last resort at this stage. Tasklist's design-system migration runs independently —
-never apply these Carbon rules there.
+[orchestration-cluster-migration-conventions](../orchestration-cluster-migration-conventions/SKILL.md).
+Reuse existing Carbon components; custom JSX is a last resort at this stage. Tasklist's
+design-system migration runs independently — never apply these Carbon rules there.
 
 ## Component structure
 
