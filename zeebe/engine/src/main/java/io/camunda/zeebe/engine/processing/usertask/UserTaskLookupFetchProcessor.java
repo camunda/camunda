@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
+
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -16,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -35,10 +40,10 @@ import org.agrona.DirectBuffer;
  * Reads an active user task and the variables visible to it from the engine state, as they are
  * committed. Pending changes (e.g. a new assignee while task listeners run) are not returned; the
  * lifecycle state tells the client that a change is in progress.
+ *
+ * <p>The variables come with the task, so they need the same permission as reading the task, as the
+ * variables of an activated job do; no process instance read access is required.
  */
-// TODO: authorize reading the user task and remove this exclusion,
-// https://github.com/camunda/camunda/issues/66845
-@ExcludeAuthorizationCheck
 public final class UserTaskLookupFetchProcessor
     implements TypedRecordProcessor<UserTaskLookupRecord> {
 
@@ -48,6 +53,7 @@ public final class UserTaskLookupFetchProcessor
   private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final CslTenantCheck tenantCheck;
+  private final UserTaskAuthorizationCheck userTaskAuth;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -56,11 +62,13 @@ public final class UserTaskLookupFetchProcessor
   public UserTaskLookupFetchProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     userTaskState = processingState.getUserTaskState();
     variableState = processingState.getVariableState();
     bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
     this.tenantCheck = tenantCheck;
+    this.userTaskAuth = userTaskAuth;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -69,6 +77,7 @@ public final class UserTaskLookupFetchProcessor
   @Override
   public void processRecord(final TypedRecord<UserTaskLookupRecord> command) {
     findUserTask(command)
+        .flatMap(userTask -> checkAuthorization(command, userTask))
         // A banned instance hit an unrecoverable error and was given up to keep the partition
         // healthy; it can only be canceled. Reject the read like every other user task command, so
         // the client learns the instance is banned instead of getting a task nobody can act on.
@@ -89,6 +98,15 @@ public final class UserTaskLookupFetchProcessor
               RejectionType.NOT_FOUND, NO_USER_TASK_FOUND_MESSAGE.formatted(userTaskKey)));
     }
     return Either.right(userTask);
+  }
+
+  private Either<Rejection, UserTaskRecord> checkAuthorization(
+      final TypedRecord<UserTaskLookupRecord> command, final UserTaskRecord userTask) {
+    return userTaskAuth.check(
+        command,
+        userTask,
+        processDefinition(PermissionType.READ_USER_TASK),
+        userTask(PermissionType.READ, ALL));
   }
 
   private void acceptCommand(
