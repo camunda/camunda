@@ -50,6 +50,23 @@ public class VariableDbModelTest {
   }
 
   @Test
+  public void shouldStoreIntegerBeyondLongRangeAsString() {
+    // when
+    final VariableDbModel model =
+        new VariableDbModel.VariableDbModelBuilder()
+            .variableKey(1L)
+            .name("test")
+            .value("18446744073709551615")
+            .build();
+
+    // then
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
+    assertThat(model.longValue()).isNull();
+    assertThat(model.doubleValue()).isNull();
+    assertThat(model.value()).isEqualTo("18446744073709551615");
+  }
+
+  @Test
   public void shouldSetCorrectTypeAndValueForNegativeLongValue() {
     // given
     final VariableDbModel.VariableDbModelBuilder builder =
