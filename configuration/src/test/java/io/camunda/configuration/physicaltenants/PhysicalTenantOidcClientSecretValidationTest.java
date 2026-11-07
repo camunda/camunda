@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -167,6 +169,45 @@ class PhysicalTenantOidcClientSecretValidationTest {
     // when / then
     assertThatCode(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
         .doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @CsvSource({"https://root-idp, https://root-idp/", "https://root-idp/, https://root-idp"})
+  void shouldAcceptIssuerThatOnlyAddsOrRemovesATrailingSlash(
+      final String rootIssuer, final String tenantIssuer) {
+    // given — the same issuer, written with or without a trailing slash
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "oidc.issuer-uri",
+                rootIssuer,
+                ROOT + "oidc.client-secret",
+                "root-secret",
+                TENANT + "oidc.issuer-uri",
+                tenantIssuer,
+                TENANT + "providers.assigned[0]",
+                "oidc"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectTokenUriThatOnlyAddsATrailingSlashWithInheritedSecret() {
+    // given — the token endpoint is called as configured, so a trailing slash is another endpoint
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "oidc.token-uri", "https://root-idp/token",
+                ROOT + "oidc.client-secret", "root-secret",
+                TENANT + "oidc.token-uri", "https://root-idp/token/",
+                TENANT + "providers.assigned[0]", "oidc"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .withMessageContaining("provider 'oidc'");
   }
 
   @Test
