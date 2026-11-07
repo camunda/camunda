@@ -6,6 +6,13 @@
 # tenant's own connectors runtime serves its jobs and no other runtime does.
 # Set TENANT_SECRET_VALUE to the value of C8RUN_E2E_SECRET stored with
 # `c8run secrets --physical-tenant <id> set` to verify the physical tenant resolves its own secret, not the default one.
+# Set DEFAULT_SECRET_VALUE to the default tenant's C8RUN_E2E_SECRET to verify it too.
+# Set CHECK_MISSING_SECRET=1 to verify an unset C8RUN_E2E_MISSING raises a SECRET_RESOLUTION_ERROR
+# incident in the physical tenant.
+# Set SECRETS_LIST_EXPECT to a secret name (with C8RUN_DIR) to verify `c8run secrets list` prints it
+# and no secret value.
+# Set CONNECTOR_ENV_PREFIX to C8RUN_SECRETS_ENV_PREFIX (with C8RUN_DIR, Linux only) to verify each
+# connectors runtime's environment holds no other tenant's secret variables.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
@@ -95,24 +102,94 @@ printf "\nTest: process is isolated from the default tenant\n"
 default_after="$(count_definitions "$base" "$default_auth")"
 [[ "$default_after" == "$default_before" ]] || fail "process leaked into the default tenant"
 
-if [[ -n "${TENANT_SECRET_VALUE:-}" ]]; then
-        tenant_api="$base/physical-tenants/$tenant/v2"
-        printf "\nTest: physical tenant %s resolves its own secrets\n" "$tenant"
-        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/deployments" \
-                -F "resources=@$script_dir/centralized_secrets.bpmn" >/dev/null || fail "secrets process deployment failed"
-        curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/process-instances" \
-                -H 'Content-Type: application/json' --data-raw '{"processDefinitionId":"c8runSecretPresent"}' >/dev/null \
-                || fail "secrets process instance creation failed"
-        resolved=""
+# Deploys the secrets processes to a tenant, starts one of them and prints its instance key.
+start_secrets_process() {
+        local api="$1" login="$2" process_id="$3"
+        curl --silent --show-error --fail -u "$login" -X POST "$api/deployments" \
+                -F "resources=@$script_dir/centralized_secrets.bpmn" >/dev/null || fail "secrets process deployment to $api failed"
+        curl --silent --show-error --fail -u "$login" -X POST "$api/process-instances" \
+                -H 'Content-Type: application/json' --data-raw "{\"processDefinitionId\":\"$process_id\"}" \
+                | jq -r '.processInstanceKey' || fail "$process_id instance creation in $api failed"
+}
+
+# Runs the secrets process in a tenant and prints the secret its job received.
+resolve_secret() {
+        local api="$1" login="$2" resolved=""
+        start_secrets_process "$api" "$login" c8runSecretPresent >/dev/null
         for _ in $(seq 1 10); do
-                resolved="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/jobs/activation" \
+                resolved="$(curl --silent --show-error --fail -u "$login" -X POST "$api/jobs/activation" \
                         -H 'Content-Type: application/json' \
                         --data-raw '{"type":"c8run-secret-present","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":5000}' \
                         | jq -r '.jobs[0].variables.resolvedSecret // empty')"
                 [[ -n "$resolved" ]] && break
                 sleep 2
         done
+        printf '%s' "$resolved"
+}
+
+if [[ -n "${TENANT_SECRET_VALUE:-}" ]]; then
+        printf "\nTest: physical tenant %s resolves its own secrets\n" "$tenant"
+        resolved="$(resolve_secret "$base/physical-tenants/$tenant/v2" "$auth")"
         [[ "$resolved" == "$TENANT_SECRET_VALUE" ]] || fail "$tenant resolved '$resolved' instead of its own secret"
+fi
+
+if [[ -n "${DEFAULT_SECRET_VALUE:-}" ]]; then
+        printf "\nTest: the default tenant resolves its own secrets\n"
+        resolved="$(resolve_secret "$base/v2" "$default_auth")"
+        [[ "$resolved" == "$DEFAULT_SECRET_VALUE" ]] || fail "default tenant resolved '$resolved' instead of its own secret"
+fi
+
+if [[ "${CHECK_MISSING_SECRET:-0}" == "1" ]]; then
+        tenant_api="$base/physical-tenants/$tenant/v2"
+        printf "\nTest: a missing secret in %s raises a secret resolution incident\n" "$tenant"
+        instance_key="$(start_secrets_process "$tenant_api" "$auth" c8runSecretMissing)"
+        jobs="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/jobs/activation" \
+                -H 'Content-Type: application/json' \
+                --data-raw '{"type":"c8run-secret-missing","worker":"c8run-e2e","timeout":30000,"maxJobsToActivate":1,"requestTimeout":5000}' \
+                | jq '.jobs | length')"
+        [[ "$jobs" == "0" ]] || fail "a job with a missing secret was activated in $tenant"
+        incident=""
+        for _ in $(seq 1 15); do
+                incident="$(curl --silent --show-error --fail -u "$auth" -X POST "$tenant_api/process-instances/$instance_key/incidents/search" \
+                        -H 'Content-Type: application/json' --data-raw '{}' \
+                        | jq -r '.items | any(.errorType == "SECRET_RESOLUTION_ERROR" and .state == "ACTIVE")')"
+                [[ "$incident" == "true" ]] && break
+                sleep 2
+        done
+        [[ "$incident" == "true" ]] || fail "missing secret did not raise a SECRET_RESOLUTION_ERROR incident in $tenant"
+fi
+
+if [[ -n "${SECRETS_LIST_EXPECT:-}" ]]; then
+        printf "\nTest: c8run secrets list prints names and no values\n"
+        c8run="${C8RUN_DIR:?C8RUN_DIR is required with SECRETS_LIST_EXPECT}/c8run"
+        [[ -x "$c8run" ]] || c8run="$c8run.exe"
+        names="$("$c8run" secrets list)" || fail "c8run secrets list failed"
+        grep -qx "$SECRETS_LIST_EXPECT" <<<"$names" || fail "c8run secrets list did not print $SECRETS_LIST_EXPECT: $names"
+        for value in "${DEFAULT_SECRET_VALUE:-}" "${TENANT_SECRET_VALUE:-}"; do
+                if [[ -n "$value" ]] && grep -qF "$value" <<<"$names"; then
+                        fail "c8run secrets list printed a secret value"
+                fi
+        done
+fi
+
+if [[ -n "${CONNECTOR_ENV_PREFIX:-}" ]]; then
+        if [[ "$(uname -s)" == "Linux" ]]; then
+                printf "\nTest: each connectors runtime sees only its own tenant's secret variables\n"
+                tenant_upper="$(printf '%s' "$tenant" | tr '[:lower:]' '[:upper:]')"
+                runtime_env() {
+                        local pid_file="${C8RUN_DIR:?C8RUN_DIR is required with CONNECTOR_ENV_PREFIX}/$1"
+                        [[ -f "$pid_file" ]] || fail "$pid_file is missing"
+                        tr '\0' '\n' <"/proc/$(head -1 "$pid_file")/environ"
+                }
+                default_env="$(runtime_env connectors.process)"
+                tenant_env="$(runtime_env "connectors-$tenant.process")"
+                grep -qi "^${CONNECTOR_ENV_PREFIX}DEFAULT_" <<<"$default_env" || fail "the default connectors runtime lacks its own secret variables"
+                ! grep -qi "^${CONNECTOR_ENV_PREFIX}${tenant_upper}_" <<<"$default_env" || fail "the default connectors runtime sees $tenant's secret variables"
+                grep -qi "^${CONNECTOR_ENV_PREFIX}${tenant_upper}_" <<<"$tenant_env" || fail "$tenant's connectors runtime lacks its own secret variables"
+                ! grep -qi "^${CONNECTOR_ENV_PREFIX}DEFAULT_" <<<"$tenant_env" || fail "$tenant's connectors runtime sees the default tenant's secret variables"
+        else
+                printf "\nSkipping connectors runtime environment test: it reads /proc, which only Linux has\n"
+        fi
 fi
 
 if [[ "${CHECK_CONNECTORS:-0}" == "1" ]]; then
