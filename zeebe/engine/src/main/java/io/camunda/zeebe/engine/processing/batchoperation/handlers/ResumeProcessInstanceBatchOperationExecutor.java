@@ -32,7 +32,10 @@ public class ResumeProcessInstanceBatchOperationExecutor implements BatchOperati
   }
 
   @Override
-  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long itemKey,
+      final int itemStorageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Resuming process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
@@ -40,6 +43,7 @@ public class ResumeProcessInstanceBatchOperationExecutor implements BatchOperati
         AuthInfo.ofClaims(brokerRequestAuthorizationConverter.convert(authentication));
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
+    command.setStorageOrdinal(itemStorageOrdinal);
     commandWriter.appendFollowUpCommand(
         itemKey,
         ProcessInstanceIntent.RESUME,

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 class BatchOperationInitializationBehaviorTest {
 
   private static final long BATCH_OPERATION_KEY = 12345L;
+  private static final int STORAGE_ORDINAL = 1234;
   private static final String SEARCH_CURSOR = "test-cursor";
   private static final String NEXT_SEARCH_CURSOR = "next-cursor";
   private static final int PAGE_SIZE = 100;
@@ -56,6 +57,7 @@ class BatchOperationInitializationBehaviorTest {
     batchOperation =
         new PersistedBatchOperation()
             .setKey(BATCH_OPERATION_KEY)
+            .setStorageOrdinal(STORAGE_ORDINAL)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
             .setInitializationSearchCursor(SEARCH_CURSOR)
             .setInitializationSearchQueryPageSize(PAGE_SIZE)
@@ -83,8 +85,9 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
-    verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
+    verify(commandBuilder)
+        .appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
     verify(metrics).recordItemsPerPartition(2, BatchOperationType.CANCEL_PROCESS_INSTANCE);
     verify(metrics)
         .startStartExecuteLatencyMeasure(
@@ -110,8 +113,9 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo("cursor2");
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
-    verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
+    verify(commandBuilder)
+        .appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
     verify(metrics).recordItemsPerPartition(4, BatchOperationType.CANCEL_PROCESS_INSTANCE);
   }
 
@@ -133,6 +137,7 @@ class BatchOperationInitializationBehaviorTest {
         .appendInitializationCommand(
             eq(taskResultBuilder),
             eq(BATCH_OPERATION_KEY),
+            eq(STORAGE_ORDINAL),
             anyString(),
             eq(PAGE_SIZE / 2)); // Should write INITIALIZE with reduced page size
   }
@@ -156,7 +161,11 @@ class BatchOperationInitializationBehaviorTest {
     // INITIALIZE command written to persist progress
     verify(commandBuilder)
         .appendInitializationCommand(
-            eq(taskResultBuilder), eq(BATCH_OPERATION_KEY), eq("cursor1"), eq(PAGE_SIZE));
+            eq(taskResultBuilder),
+            eq(BATCH_OPERATION_KEY),
+            eq(STORAGE_ORDINAL),
+            eq("cursor1"),
+            eq(PAGE_SIZE));
   }
 
   @Test
@@ -176,7 +185,7 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(needsRetry.cause()).isSameAs(exception);
 
     verify(commandBuilder, never())
-        .appendInitializationCommand(any(), anyLong(), anyString(), anyInt());
+        .appendInitializationCommand(any(), anyLong(), anyInt(), anyString(), anyInt());
   }
 
   @Test
@@ -198,7 +207,11 @@ class BatchOperationInitializationBehaviorTest {
 
     verify(commandBuilder)
         .appendInitializationCommand(
-            eq(taskResultBuilder), eq(BATCH_OPERATION_KEY), eq("cursor1"), anyInt());
+            eq(taskResultBuilder),
+            eq(BATCH_OPERATION_KEY),
+            eq(STORAGE_ORDINAL),
+            eq("cursor1"),
+            anyInt());
   }
 
   @Test
@@ -209,11 +222,20 @@ class BatchOperationInitializationBehaviorTest {
 
     // when
     initializer.appendFailedCommand(
-        taskResultBuilder, batchOperation.getKey(), errorMessage, errorType);
+        taskResultBuilder,
+        batchOperation.getKey(),
+        batchOperation.getStorageOrdinal(),
+        errorMessage,
+        errorType);
 
     // then
     verify(commandBuilder)
-        .appendFailureCommand(taskResultBuilder, batchOperation.getKey(), errorMessage, errorType);
+        .appendFailureCommand(
+            taskResultBuilder,
+            batchOperation.getKey(),
+            batchOperation.getStorageOrdinal(),
+            errorMessage,
+            errorType);
   }
 
   @Test
@@ -231,8 +253,9 @@ class BatchOperationInitializationBehaviorTest {
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
 
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
-    verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
+    verify(commandBuilder)
+        .appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
     verify(metrics).recordItemsPerPartition(0, BatchOperationType.CANCEL_PROCESS_INSTANCE);
   }
 
@@ -265,8 +288,9 @@ class BatchOperationInitializationBehaviorTest {
     final var success = (InitializationOutcome.Success) result;
     assertThat(success.cursor()).isEqualTo(NEXT_SEARCH_CURSOR);
     verify(commandBuilder)
-        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY);
-    verify(commandBuilder).appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY);
+        .appendFinishInitializationCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
+    verify(commandBuilder)
+        .appendExecutionCommand(taskResultBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
     verify(metrics).recordItemsPerPartition(2, BatchOperationType.DELETE_PROCESS_INSTANCE);
     verify(metrics)
         .startStartExecuteLatencyMeasure(
@@ -296,6 +320,6 @@ class BatchOperationInitializationBehaviorTest {
 
     // No INITIALIZE command should be written for terminal failure
     verify(commandBuilder, never())
-        .appendInitializationCommand(any(), anyLong(), anyString(), anyInt());
+        .appendInitializationCommand(any(), anyLong(), anyInt(), anyString(), anyInt());
   }
 }

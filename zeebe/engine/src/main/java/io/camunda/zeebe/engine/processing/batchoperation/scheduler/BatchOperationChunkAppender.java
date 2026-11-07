@@ -11,18 +11,21 @@ import com.google.common.collect.Lists;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,17 +62,19 @@ public class BatchOperationChunkAppender {
    * chunks were appended, the end cursor of the page, the number of items processed, and whether it
    * was the last page of items.
    *
-   * @param batchOperationKey the key of the batch operation being processed
+   * @param operation the batch operation being processed
    * @param page the page of items to process
    * @param taskResultBuilder the builder to append command records to
    * @return a result indicating whether chunks were appended, the end cursor, number of items
    *     processed, and if it was the last page
    */
   private ChunkingOutcome chunkAndAppend(
-      final long batchOperationKey,
+      final PersistedBatchOperation operation,
       final ItemPage page,
       final TaskResultBuilder taskResultBuilder) {
-    final boolean appendedChunks = appendChunks(taskResultBuilder, batchOperationKey, page.items());
+    final boolean appendedChunks =
+        appendChunks(
+            taskResultBuilder, operation.getKey(), operation.getStorageOrdinal(), page.items());
 
     if (!appendedChunks) {
       return new ChunkingOutcome.BufferFull();
@@ -100,15 +105,16 @@ public class BatchOperationChunkAppender {
     } catch (final Exception e) {
       return new ChunkingOutcome.FetchFailed(e);
     }
-    return chunkAndAppend(context.operation().getKey(), page, taskResultBuilder);
+    return chunkAndAppend(context.operation(), page, taskResultBuilder);
   }
 
   private boolean appendChunks(
       final TaskResultBuilder taskResultBuilder,
       final long batchOperationKey,
+      final int storageOrdinal,
       final List<Item> items) {
 
-    final var chunkRecords = createChunks(batchOperationKey, items);
+    final var chunkRecords = createChunks(batchOperationKey, storageOrdinal, items);
     final FollowUpCommandMetadata metadata =
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey));
 
@@ -127,10 +133,19 @@ public class BatchOperationChunkAppender {
     return false;
   }
 
+  // Sorted by storage ordinal, then key, so items of one ordinal sit together within and across
+  // chunks and the execution side can treat them as runs.
   private List<BatchOperationChunkRecord> createChunks(
-      final long batchOperationKey, final List<Item> items) {
-    return Lists.partition(items, chunkSize).stream()
-        .map(chunkItems -> createChunkRecord(batchOperationKey, chunkItems))
+      final long batchOperationKey, final int storageOrdinal, final List<Item> items) {
+    final var sortedItems =
+        items.stream()
+            .map(BatchOperationChunkAppender::mapItem)
+            .sorted(
+                Comparator.comparingInt(BatchOperationItemValue::getStorageOrdinal)
+                    .thenComparingLong(BatchOperationItemValue::getItemKey))
+            .toList();
+    return Lists.partition(sortedItems, chunkSize).stream()
+        .map(chunkedItems -> createChunkRecord(batchOperationKey, storageOrdinal, chunkedItems))
         .toList();
   }
 
@@ -145,19 +160,24 @@ public class BatchOperationChunkAppender {
   }
 
   private static BatchOperationChunkRecord createChunkRecord(
-      final long batchOperationKey, final List<Item> chunkItems) {
+      final long batchOperationKey,
+      final int storageOrdinal,
+      final List<BatchOperationItemValue> chunkItems) {
     final var command = new BatchOperationChunkRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setItems(
-        chunkItems.stream().map(BatchOperationChunkAppender::mapItem).collect(Collectors.toSet()));
+    command.setStorageOrdinal(storageOrdinal);
+    command.setItems(chunkItems);
     return command;
   }
 
-  private static BatchOperationItem mapItem(final Item item) {
-    return new BatchOperationItem()
-        .setItemKey(item.itemKey())
-        .setProcessInstanceKey(item.processInstanceKey())
-        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
+  // TODO(#57006): set the storage ordinal of every item from the item provider once it exposes
+  //  it. Until then every item is written with 0 = not known.
+  private static BatchOperationItemValue mapItem(final Item item) {
+    return new BatchOperationItem(
+        item.itemKey(),
+        item.processInstanceKey(),
+        Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L),
+        StorageOrdinalRelated.MAIN_INDEX);
   }
 
   /**

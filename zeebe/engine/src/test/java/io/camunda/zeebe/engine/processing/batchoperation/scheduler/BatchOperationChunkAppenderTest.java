@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.mockito.ArgumentCaptor;
 class BatchOperationChunkAppenderTest {
 
   private static final long BATCH_OPERATION_KEY = 123L;
+  private static final int STORAGE_ORDINAL = 7;
   private static final int CHUNK_SIZE = 2;
 
   private BatchOperationChunkAppender processor;
@@ -198,14 +200,52 @@ class BatchOperationChunkAppenderTest {
 
     // First chunk should have 2 items (chunk size)
     assertThat(capturedChunks.get(0).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(0).getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(capturedChunks.get(0).getItems())
-        .containsExactlyInAnyOrder(
-            new BatchOperationItem(100L, 200L, -1L), new BatchOperationItem(101L, 201L, 111L));
+        .containsExactly(
+            new BatchOperationItem(100L, 200L, -1L, 0),
+            new BatchOperationItem(101L, 201L, 111L, 0));
 
     // Second chunk should have 1 item (remainder)
     assertThat(capturedChunks.get(1).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(capturedChunks.get(1).getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(capturedChunks.get(1).getItems())
-        .containsExactly(new BatchOperationItem(102L, 202L, 112L));
+        .containsExactly(new BatchOperationItem(102L, 202L, 112L, 0));
+  }
+
+  @Test
+  void shouldOrderItemsByKeyWithinAndAcrossChunks() {
+    // given a page in arbitrary order
+    final var items =
+        List.of(
+            new Item(102L, 202L, null, null),
+            new Item(100L, 200L, null, null),
+            new Item(101L, 201L, null, null));
+    final var page = new ItemPage(items, "cursor", 3L, false);
+    final var context = createContext("cursor0", 10);
+
+    when(mockItemProvider.fetchItemPage("cursor0", 10)).thenReturn(page);
+    when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
+
+    // when
+    processor.fetchAndChunkNextPage(mockItemProvider, context, mockTaskResultBuilder);
+
+    // then the chunks hold the items sorted by key
+    final var chunkCaptor = ArgumentCaptor.forClass(BatchOperationChunkRecord.class);
+    verify(mockTaskResultBuilder, times(2))
+        .appendCommandRecord(
+            eq(BATCH_OPERATION_KEY),
+            eq(BatchOperationChunkIntent.CREATE),
+            chunkCaptor.capture(),
+            any(FollowUpCommandMetadata.class));
+
+    final var capturedChunks = chunkCaptor.getAllValues();
+    assertThat(capturedChunks.get(0).getItems())
+        .extracting(BatchOperationItemValue::getItemKey)
+        .containsExactly(100L, 101L);
+    assertThat(capturedChunks.get(1).getItems())
+        .extracting(BatchOperationItemValue::getItemKey)
+        .containsExactly(102L);
   }
 
   @Test
@@ -279,7 +319,10 @@ class BatchOperationChunkAppenderTest {
   }
 
   private static InitializationContext createContext(final String cursor, final int pageSize) {
-    final var batchOperation = new PersistedBatchOperation().setKey(BATCH_OPERATION_KEY);
+    final var batchOperation =
+        new PersistedBatchOperation()
+            .setKey(BATCH_OPERATION_KEY)
+            .setStorageOrdinal(STORAGE_ORDINAL);
     return new InitializationContext(batchOperation, cursor, pageSize, 0, false);
   }
 }
