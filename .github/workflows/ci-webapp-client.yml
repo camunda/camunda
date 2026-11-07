@@ -338,7 +338,7 @@ jobs:
         with:
           directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
-        run: npm run build -w @camunda/orchestration-cluster-webapp
+        run: npm run build:visual-regression -w @camunda/orchestration-cluster-webapp
       - name: Integration tests
         run: npm run test:integration -w @camunda/orchestration-cluster-webapp -- test/integration/${{ matrix.component }}/
       - name: Upload Playwright report

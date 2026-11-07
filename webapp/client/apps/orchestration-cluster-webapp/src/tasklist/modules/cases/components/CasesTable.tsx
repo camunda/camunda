@@ -13,10 +13,9 @@ import {DataTable, EmptyState, type DataTableColumn, type SortingConfig} from '@
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
 import {CaseStatusBadge} from '#/tasklist/modules/cases/components/CaseStatusBadge';
+import {CASES_PAGE_SIZE} from '#/tasklist/modules/cases/getCasesRequestBody';
 import {SORT_FIELDS, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
-
-const PAGE_SIZE = 25;
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
@@ -120,7 +119,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 	const pagination = useMemo(
 		() => ({
 			manual: true,
-			pageSize: PAGE_SIZE,
+			pageSize: CASES_PAGE_SIZE,
 			pageIndex: search.page - 1,
 			rowCount: totalItems,
 			onPaginationChange: handlePaginationChange,
