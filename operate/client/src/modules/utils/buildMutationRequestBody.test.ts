@@ -411,6 +411,21 @@ describe('buildMutationRequestBody', () => {
     });
   });
 
+  it('keeps the exact value of large integers in variable conditions', () => {
+    const body: Body = buildMutationRequestBody({
+      searchParams: createSearchParams({incidents: 'true'}),
+      conditions: [
+        {name: 'orderId', operator: 'notEqual', value: '1234567890123456789'},
+        {name: 'batchId', operator: 'oneOf', value: '9007199254740993, 1'},
+      ],
+    });
+
+    expect(body.filter?.variables).toEqual([
+      {name: 'orderId', value: {$neq: '1234567890123456789'}},
+      {name: 'batchId', value: {$in: ['9007199254740993', '1']}},
+    ]);
+  });
+
   it('maps conditions to variables array', () => {
     const searchParams = createSearchParams({
       active: 'true',
