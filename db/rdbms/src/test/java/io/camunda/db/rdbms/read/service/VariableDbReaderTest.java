@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -18,6 +19,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -26,6 +29,8 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VariableDbReaderTest {
   private final VariableMapper variableMapper = mock(VariableMapper.class);
@@ -97,6 +102,27 @@ class VariableDbReaderTest {
     final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
 
     assertThat(names).isEmpty();
+    verify(variableMapper, never()).findVariableNames(any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"after", "before"})
+  void shouldRejectUndecodablePaginationCursorForNameSearch(final String direction) {
+    // given a cursor that is valid base64 but not a decodable pagination cursor
+    final var cursor = "bm90IGEgcmVhbCBjdXJzb3IgcGF5bG9hZA==";
+    final VariableNameQuery query =
+        VariableNameQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(1L))
+                    .page(p -> "after".equals(direction) ? p.after(cursor) : p.before(cursor)));
+    final ResourceAccessChecks resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled());
+
+    // when / then
+    assertThatThrownBy(() -> variableDbReader.searchVariableNames(query, resourceAccessChecks))
+        .isInstanceOfSatisfying(
+            CamundaSearchException.class,
+            e -> assertThat(e.getReason()).isEqualTo(Reason.INVALID_ARGUMENT));
     verify(variableMapper, never()).findVariableNames(any());
   }
 
