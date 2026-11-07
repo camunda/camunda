@@ -42,6 +42,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
    *
    * @return identifier
    */
+  @Override
   public T id() {
     return identifier;
   }
@@ -53,7 +54,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
    */
   @Override
   public int hashCode() {
-    return identifier.hashCode();
+    return Objects.hashCode(identifier);
   }
 
   /**
@@ -79,6 +80,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
    *
    * @return string
    */
+  @Override
   public String toString() {
     return identifier.toString();
   }

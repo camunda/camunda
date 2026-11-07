@@ -35,7 +35,7 @@ public abstract class AbstractExporterEntity<T extends AbstractExporterEntity<T>
 
   @Override
   public int hashCode() {
-    return Objects.hash(id);
+    return Objects.hashCode(id);
   }
 
   @Override

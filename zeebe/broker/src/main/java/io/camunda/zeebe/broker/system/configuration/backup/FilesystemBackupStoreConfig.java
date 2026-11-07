@@ -29,7 +29,7 @@ public class FilesystemBackupStoreConfig implements ConfigurationEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(basePath);
+    return Objects.hashCode(basePath);
   }
 
   @Override
