@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.unit.DataSize;
 
 final class BackupStoreCfgTest {
 
@@ -171,6 +173,47 @@ final class BackupStoreCfgTest {
     // then
     assertThat(backup.getStore()).isEqualTo(BackupStoreType.S3);
     assertThat(backup.getS3()).isEqualTo(expectedConfig);
+  }
+
+  @Test
+  void shouldNotLimitS3ReadRateByDefault() {
+    // given
+    final var backup =
+        withBucketNames(TestConfigReader.readConfig("empty", Map.of()).getData().getBackup());
+
+    // when
+    final var storeConfig = s3StoreConfig(backup);
+
+    // then
+    assertThat(backup.getS3().getMaxReadRate()).isNull();
+    assertThat(storeConfig.maxReadRate()).isZero();
+  }
+
+  @Test
+  void shouldPassS3MaxReadRateToStoreInBytesPerSecond() {
+    // given
+    final var backup =
+        withBucketNames(TestConfigReader.readConfig("empty", Map.of()).getData().getBackup());
+    backup.getS3().setMaxReadRate(DataSize.ofMegabytes(50));
+
+    // when
+    final var storeConfig = s3StoreConfig(backup);
+
+    // then
+    assertThat(storeConfig.maxReadRate()).isEqualTo(50L * 1024 * 1024);
+  }
+
+  @Test
+  void shouldRejectNegativeS3MaxReadRate() {
+    // given
+    final var backup =
+        withBucketNames(TestConfigReader.readConfig("empty", Map.of()).getData().getBackup());
+    backup.getS3().setMaxReadRate(DataSize.ofBytes(-1));
+
+    // when - then
+    assertThatThrownBy(() -> s3StoreConfig(backup))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxReadRate");
   }
 
   /** The S3 and GCS store configs reject a missing bucket name, which is unset by default. */

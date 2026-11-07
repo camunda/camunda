@@ -132,6 +132,32 @@ final class S3BackupConfigTest {
   }
 
   @Test
+  void shouldNotLimitReadRateByDefault() {
+    // when
+    final var config = new Builder().withBucketName("bucket").build();
+
+    // then
+    assertThat(config.maxReadRate()).isZero();
+  }
+
+  @Test
+  void shouldKeepConfiguredMaxReadRate() {
+    // when
+    final var config = new Builder().withBucketName("bucket").withMaxReadRate(1024).build();
+
+    // then
+    assertThat(config.maxReadRate()).isEqualTo(1024);
+  }
+
+  @Test
+  void shouldRejectNegativeMaxReadRate() {
+    // when - then
+    assertThatThrownBy(() -> new Builder().withBucketName("bucket").withMaxReadRate(-1).build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxReadRate");
+  }
+
+  @Test
   void shouldRedactSsecKeyInToString() {
     // given
     final var config = new Builder().withBucketName("bucket").withSsecKey(VALID_SSEC_KEY).build();
