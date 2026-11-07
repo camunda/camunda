@@ -71,6 +71,11 @@ const Filters: React.FC = observer(() => {
     delete filterValues.processDefinitionId;
     delete filterValues.processDefinitionVersion;
   }
+  const {conditions} = variableFilterStore;
+  const inlineVariableValues =
+    conditions.length === 1 && conditions[0]?.operator === 'equals'
+      ? {variableName: conditions[0].name, variableValues: conditions[0].value}
+      : {};
 
   return (
     <Form<ProcessInstancesFilter>
@@ -84,7 +89,7 @@ const Filters: React.FC = observer(() => {
           }),
         });
       }}
-      initialValues={filterValues}
+      initialValues={{...filterValues, ...inlineVariableValues}}
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
@@ -98,7 +103,7 @@ const Filters: React.FC = observer(() => {
             }
             onResetClick={() => {
               variableFilterStore.setConditions([]);
-              form.reset();
+              form.reset(initialValues);
               navigate({
                 search: updateProcessInstancesFilterSearchString(
                   searchParams,
