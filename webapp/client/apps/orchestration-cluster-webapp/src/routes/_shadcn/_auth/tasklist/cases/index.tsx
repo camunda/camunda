@@ -6,11 +6,29 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {PageLayout} from '@camunda/design-system';
+import {useCallback} from 'react';
+import {createFileRoute, stripSearchParams, useNavigate} from '@tanstack/react-router';
+import {TasklistCasesPage} from '#/tasklist/pages/TasklistCasesPage';
+import {casesSearchDefaults, casesSearchSchema, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 
 const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/')({
-	component: () => <PageLayout />,
+	validateSearch: casesSearchSchema,
+	search: {
+		middlewares: [stripSearchParams(casesSearchDefaults)],
+	},
+	component: function TasklistCasesRoute() {
+		const search = Route.useSearch();
+		const navigate = useNavigate();
+
+		const handleSearchChange = useCallback(
+			(next: Partial<CasesSearch>) => {
+				navigate({to: '/tasklist/cases', search: {...search, ...next}});
+			},
+			[navigate, search],
+		);
+
+		return <TasklistCasesPage cases={[]} totalItems={0} search={search} onSearchChange={handleSearchChange} />;
+	},
 });
 
 export {Route};
