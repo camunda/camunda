@@ -42,6 +42,17 @@ public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
   HistoryDeletionType getResourceType();
 
   /**
+   * Returns the storage ordinal of the resource to delete, so the deletion can be routed to the
+   * storage that holds the resource's data.
+   *
+   * <p>This record is a short-lived work item and is itself stored in the main index, so unlike
+   * instance records it does not implement {@link StorageOrdinalRelated}. The value is {@code 0}
+   * when the ordinal is not known, and {@link StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED} for
+   * resource types that have no ordinal, such as process definitions and decision requirements.
+   */
+  int getResourceStorageOrdinal();
+
+  /**
    * Returns the process id which belongs to the process instance to delete.
    *
    * <p>This is only set when performing a singular deletion (not a batch operation) and is used for
