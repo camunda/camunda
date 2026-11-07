@@ -8,7 +8,6 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
@@ -20,8 +19,10 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
+import java.util.List;
 
-public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
+public class UserFilterTransformer extends IndexFilterTransformer<UserFilter>
+    implements OrFilterTransformer<UserFilter> {
 
   public UserFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
@@ -31,14 +32,13 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   public SearchQuery toSearchQuery(final UserFilter filter) {
     final var queries = new ArrayList<>(toSearchQueryFields(filter));
 
-    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
-      queries.add(or(filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).toList()));
-    }
+    toOrClause(filter).ifPresent(queries::add);
 
     return and(queries);
   }
 
-  private ArrayList<SearchQuery> toSearchQueryFields(final UserFilter filter) {
+  @Override
+  public List<SearchQuery> toSearchQueryFields(final UserFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.addAll(stringOperations(USERNAME, filter.usernameOperations()));
     queries.addAll(stringOperations(NAME, filter.nameOperations()));

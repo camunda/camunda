@@ -10,6 +10,7 @@ package io.camunda.util;
 import io.camunda.search.filter.Operation;
 import java.util.List;
 import java.util.function.Function;
+import org.apache.commons.lang3.ObjectUtils;
 
 public final class FilterUtil {
 
@@ -31,5 +32,21 @@ public final class FilterUtil {
   public static <T, R> Operation<T> mapDefaultToOperation(
       final Function<R, T> typeMapper, final R value, final R... values) {
     return mapDefaultToOperation(CollectionUtil.collectValues(typeMapper, value, values));
+  }
+
+  /**
+   * Unlike {@link ObjectUtils#isNotEmpty}, a {@link String} is considered present as soon as it is
+   * non-null — an explicitly supplied empty string ("") is a meaningful exact-match criterion, not
+   * an absent one. Collections/maps/arrays keep the generic null-or-empty-means-absent semantics,
+   * since some filter fields are normalized to an empty collection rather than left null when
+   * unset.
+   */
+  public static boolean hasAnyNonEmpty(final Object... values) {
+    for (final var value : values) {
+      if (value instanceof String || ObjectUtils.isNotEmpty(value)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

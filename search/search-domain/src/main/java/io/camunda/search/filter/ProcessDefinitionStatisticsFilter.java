@@ -37,7 +37,31 @@ public record ProcessDefinitionStatisticsFilter(
     List<Operation<Integer>> incidentErrorHashCodeOperations,
     List<Operation<String>> businessIdOperations,
     List<ProcessDefinitionStatisticsFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<ProcessDefinitionStatisticsFilter> {
+
+  // processDefinitionKey is the mandatory join key shared by every $or group, not a filter
+  // criterion, so it is intentionally excluded here.
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        processInstanceKeyOperations,
+        parentProcessInstanceKeyOperations,
+        parentFlowNodeInstanceKeyOperations,
+        startDateOperations,
+        endDateOperations,
+        stateOperations,
+        hasIncident,
+        tenantIdOperations,
+        variableFilters,
+        errorMessageOperations,
+        batchOperationIdOperations,
+        hasRetriesLeft,
+        flowNodeIdOperations,
+        hasFlowNodeInstanceIncident,
+        flowNodeInstanceStateOperations,
+        incidentErrorHashCodeOperations,
+        businessIdOperations);
+  }
 
   public Builder toBuilder() {
     return new Builder(processDefinitionKey)

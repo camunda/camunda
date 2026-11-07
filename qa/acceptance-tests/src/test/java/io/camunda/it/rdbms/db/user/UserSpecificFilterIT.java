@@ -208,6 +208,33 @@ public class UserSpecificFilterIT {
     assertThat(searchResult.total()).isEqualTo(2);
   }
 
+  @Test
+  public void shouldTreatEmptyOrFilterGroupAsMatchingEverything() {
+    final var matchingUsername = Strings.newRandomValidUsername();
+    final var nonMatchingUsername = Strings.newRandomValidUsername();
+    createAndSaveUser(
+        rdbmsWriters, UserFixtures.createRandomized(b -> b.username(matchingUsername)));
+    createAndSaveUser(
+        rdbmsWriters, UserFixtures.createRandomized(b -> b.username(nonMatchingUsername)));
+
+    final var searchResult =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder()
+                    .usernames(matchingUsername)
+                    .orFilters(
+                        List.of(
+                            new UserFilter.Builder().build(),
+                            new UserFilter.Builder().usernames(nonMatchingUsername).build()))
+                    .build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // an empty $or group has no criteria of its own, so it matches everything; the whole $or
+    // clause collapses into a no-op instead of narrowing to the other, non-matching branch
+    assertThat(searchResult.total()).isEqualTo(1);
+  }
+
   static List<UserFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new UserFilter.Builder().usernames("user-1337").build(),

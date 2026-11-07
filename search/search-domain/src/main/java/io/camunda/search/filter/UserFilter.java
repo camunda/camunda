@@ -26,7 +26,13 @@ public record UserFilter(
     String groupId,
     String roleId,
     List<UserFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<UserFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        usernameOperations, nameOperations, emailOperations, tenantId, groupId, roleId);
+  }
 
   public Builder toBuilder() {
     return new Builder()

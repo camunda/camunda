@@ -181,6 +181,33 @@ public class MappingRuleSpecificFilterIT {
   }
 
   @Test
+  public void shouldTreatEmptyOrFilterGroupAsMatchingEverything() {
+    final var matchingId = Strings.newRandomValidIdentityId();
+    final var nonMatchingId = Strings.newRandomValidIdentityId();
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(matchingId)));
+    createAndSaveMappingRule(
+        rdbmsWriters, MappingRuleFixtures.createRandomized(b -> b.mappingRuleId(nonMatchingId)));
+
+    final var searchResult =
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder()
+                    .mappingRuleId(matchingId)
+                    .orFilters(
+                        List.of(
+                            new MappingRuleFilter.Builder().build(),
+                            new MappingRuleFilter.Builder().mappingRuleId(nonMatchingId).build()))
+                    .build(),
+                MappingRuleSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // an empty $or group has no criteria of its own, so it matches everything; the whole $or
+    // clause collapses into a no-op instead of narrowing to the other, non-matching branch
+    assertThat(searchResult.total()).isEqualTo(1);
+  }
+
+  @Test
   public void shouldFilterMappingRulesByMappingRuleIdLike() {
     final var matchingId = "like-test-" + Strings.newRandomValidIdentityId();
     final var nonMatchingId = Strings.newRandomValidIdentityId();

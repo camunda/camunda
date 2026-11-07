@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.UserFilter;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,24 @@ class UserFilterTransformerTest extends AbstractTransformerTest {
               assertThat(termValue(or.should().get(0))).isEqualTo("user-1");
               assertThat(termValue(or.should().get(1))).isEqualTo("user-2");
             });
+  }
+
+  @Test
+  void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    final var filter =
+        FilterBuilders.user(
+            f ->
+                f.usernames("user-top")
+                    .orFilters(
+                        List.of(
+                            new UserFilter.Builder().build(),
+                            FilterBuilders.user(f1 -> f1.usernames("user-1")))));
+
+    final var searchQuery = transformQuery(filter);
+
+    // an empty $or group matches everything, collapsing the whole $or clause into a no-op: only
+    // the top-level username term remains, unwrapped since it's the sole remaining condition
+    assertThat(termValue(searchQuery)).isEqualTo("user-top");
   }
 
   /**
