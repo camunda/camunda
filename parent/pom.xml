@@ -74,7 +74,6 @@
     <version.hamcrest>3.0</version.hamcrest>
     <version.icu4j>79.1</version.icu4j>
     <version.json-schema-validator>3.0.8</version.json-schema-validator>
-    <version.maven-surefire-common>3.5.6</version.maven-surefire-common>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.6.5</version.httpclient5>
@@ -192,7 +191,6 @@
     <version.java-jwt>4.6.2</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.roaster>2.31.1.Final</version.roaster>
-    <version.surefire-extensions-api>3.5.6</version.surefire-extensions-api>
     <version.postgresql>42.7.14</version.postgresql>
     <version.h2>2.5.252</version.h2>
     <version.aws-advanced-jdbc-wrapper>4.5.0</version.aws-advanced-jdbc-wrapper>
@@ -265,7 +263,7 @@
     <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.7.0</plugin.version.enforcer>
     <plugin.version.exec>3.6.4</plugin.version.exec>
-    <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
+    <plugin.version.failsafe>3.6.1</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.16</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
@@ -282,7 +280,7 @@
     <plugin.version.shade>3.6.2</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.10.4.1</plugin.version.spotbugs>
-    <plugin.version.surefire>3.5.6</plugin.version.surefire>
+    <plugin.version.surefire>3.6.1</plugin.version.surefire>
     <plugin.version.versions>2.23.0</plugin.version.versions>
     <plugin.version.frontend-maven>2.0.2</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.4.0</plugin.version.maven-source>
@@ -3461,18 +3459,6 @@
       <dependencies>
         <dependency>
           <groupId>org.apache.maven.surefire</groupId>
-          <artifactId>surefire-junit4</artifactId>
-          <version>${plugin.version.surefire}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.maven.surefire</groupId>
-          <artifactId>surefire-junit47</artifactId>
-          <version>${plugin.version.surefire}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.maven.surefire</groupId>
           <artifactId>surefire-junit-platform</artifactId>
           <version>${plugin.version.surefire}</version>
           <scope>test</scope>
@@ -3485,8 +3471,6 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <configuration>
               <ignoredUnusedDeclaredDependencies combine.children="append">
-                <dep>org.apache.maven.surefire:surefire-junit4</dep>
-                <dep>org.apache.maven.surefire:surefire-junit47</dep>
                 <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
                 <dep>org.codehaus.plexus:plexus-utils</dep>
                 <dep>io.camunda:camunda-client-java</dep>

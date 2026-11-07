@@ -20,7 +20,6 @@
   <name>Camunda Schema manager</name>
 
   <properties>
-    <skipITs>false</skipITs>
     <excludeITNames/>
   </properties>
 
