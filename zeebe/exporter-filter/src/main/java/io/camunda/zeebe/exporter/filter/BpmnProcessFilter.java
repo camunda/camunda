@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -60,18 +59,12 @@ public final class BpmnProcessFilter implements ExporterRecordFilter, RecordVers
   private static final SemanticVersion MIN_BROKER_VERSION =
       new SemanticVersion(8, 9, 0, null, null);
 
-  private final Set<String> allowedBpmnProcesses;
-  private final Set<String> excludedBpmnProcesses;
+  private final Set<String> inclusion;
+  private final Set<String> exclusion;
 
   public BpmnProcessFilter(final List<String> inclusion, final List<String> exclusion) {
-    final Set<String> inc = normalize(inclusion);
-    final Set<String> exc = normalize(exclusion);
-
-    final Set<String> allowed = new HashSet<>(inc);
-    allowed.removeAll(exc);
-
-    allowedBpmnProcesses = Collections.unmodifiableSet(allowed);
-    excludedBpmnProcesses = Collections.unmodifiableSet(exc);
+    this.inclusion = normalize(inclusion);
+    this.exclusion = normalize(exclusion);
   }
 
   private static Set<String> normalize(final List<String> raw) {
@@ -89,11 +82,8 @@ public final class BpmnProcessFilter implements ExporterRecordFilter, RecordVers
       return true;
     }
 
-    if (allowedBpmnProcesses.isEmpty()) {
-      return !excludedBpmnProcesses.contains(bpmnProcessId);
-    }
-
-    return allowedBpmnProcesses.contains(bpmnProcessId);
+    return (inclusion.isEmpty() || inclusion.contains(bpmnProcessId))
+        && !exclusion.contains(bpmnProcessId);
   }
 
   @Override
