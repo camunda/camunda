@@ -303,7 +303,9 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   private boolean isInstanceCommand() {
     return nonNull(view)
         && nonNull(view.getEntity())
-        && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
+        && (ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
+            // Agent run reports can be split by model, so the distribution is part of the key.
+            || ProcessViewEntity.AGENT_RUN.equals(view.getEntity()));
   }
 
   public @Valid List<ProcessFilterDto<?>> getFilter() {

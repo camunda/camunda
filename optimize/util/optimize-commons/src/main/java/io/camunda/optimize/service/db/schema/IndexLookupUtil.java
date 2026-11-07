@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
@@ -34,6 +36,8 @@ import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImport
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
@@ -122,6 +126,9 @@ public class IndexLookupUtil {
     lookupMap.put(
         BusinessValueTargetIndexES.class.getSimpleName(),
         index -> new BusinessValueTargetIndexOS());
+    lookupMap.put(AgentRunIndexES.class.getSimpleName(), index -> new AgentRunIndexOS());
+    lookupMap.put(
+        AgentDefinitionIndexES.class.getSimpleName(), index -> new AgentDefinitionIndexOS());
     lookupMap.put(CollectionIndexES.class.getSimpleName(), index -> new CollectionIndexOS());
     lookupMap.put(DashboardIndexES.class.getSimpleName(), index -> new DashboardIndexOS());
     lookupMap.put(
@@ -179,6 +186,9 @@ public class IndexLookupUtil {
     lookupMap.put(
         BusinessValueTargetIndexOS.class.getSimpleName(),
         index -> new BusinessValueTargetIndexES());
+    lookupMap.put(AgentRunIndexOS.class.getSimpleName(), index -> new AgentRunIndexES());
+    lookupMap.put(
+        AgentDefinitionIndexOS.class.getSimpleName(), index -> new AgentDefinitionIndexES());
     lookupMap.put(CollectionIndexOS.class.getSimpleName(), index -> new CollectionIndexES());
     lookupMap.put(DashboardIndexOS.class.getSimpleName(), index -> new DashboardIndexES());
     lookupMap.put(

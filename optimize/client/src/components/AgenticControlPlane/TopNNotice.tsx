@@ -22,7 +22,9 @@ export function TopNNotice({tile, data}: Readonly<TopNNoticeProps>) {
   const total = getResultTotal(data);
   // Only surface the notice when the backend truncated the result to the top N.
   if (topN == null || total == null || total <= topN) {
-       return null;
+    return null;
   }
-  return <p className="tile-topn-notice">{t('agenticControlPlane.topNNotice', {shown: topN, total})}</p>;
+  return (
+    <p className="tile-topn-notice">{t('agenticControlPlane.topNNotice', {shown: topN, total})}</p>
+  );
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AgentModelDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.CandidateGroupDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.EndDateDistributedByDto;
@@ -27,7 +28,8 @@ public enum ProcessDistributedBy {
   PROCESS_DISTRIBUTED_BY_NONE(new NoneDistributedByDto()),
   PROCESS_DISTRIBUTED_BY_PROCESS(new ProcessDistributedByDto()),
   PROCESS_DISTRIBUTED_BY_USER_TASK(new UserTaskDistributedByDto()),
-  PROCESS_DISTRIBUTED_BY_VARIABLE(new VariableDistributedByDto());
+  PROCESS_DISTRIBUTED_BY_VARIABLE(new VariableDistributedByDto()),
+  PROCESS_DISTRIBUTED_BY_AGENT_MODEL(new AgentModelDistributedByDto());
 
   private final ProcessReportDistributedByDto<?> dto;
 

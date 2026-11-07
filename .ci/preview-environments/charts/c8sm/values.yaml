@@ -299,7 +299,10 @@ camunda-platform:
     enabled: true
     fullnameOverride: optimize
     contextPath: /optimize
-    partitionCount: "1"
+    # prototype: the agentic seed data (templates/agentic-seed.yml) is on partition 2, so
+    # Optimize imports it with its own position and keeps importing the single-partition
+    # cluster's real records on partition 1.
+    partitionCount: "2"
     database:
       elasticsearch:
         # Optimize's datastore and the legacy Zeebe exporter resolve from this

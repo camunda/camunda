@@ -1,0 +1,372 @@
+<title>Agentic Control Dashboard v2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: product UI. Sticky filter bar, KPI row, then charts and tables; drill-down overview -> process -> agent. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --surface-2:#eef1f5; --line:#dde2ea; --fg:#161b24; --muted:#5b6475;
+  --accent:#2557d6; --accent-soft:#e3ebfd;
+  --good:#1f7a4d; --good-soft:#e1f3e9; --warn:#a15c00; --warn-soft:#fdf0db; --bad:#b42318; --bad-soft:#fde7e5;
+  --s1:#2557d6; --s2:#0f8b8d; --s3:#c2410c; --s4:#7c3aed;
+  --band:rgba(37,87,214,.14);
+  --font-ui:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-data:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f131a; --surface:#171c25; --surface-2:#1e2430; --line:#2b3240; --fg:#e7ebf2; --muted:#9aa4b5;
+  --accent:#7fa2ff; --accent-soft:#1d2a4a;
+  --good:#5fd39a; --good-soft:#163527; --warn:#f2b155; --warn-soft:#3a2a12; --bad:#ff8a7d; --bad-soft:#3d1a17;
+  --s1:#7fa2ff; --s2:#3cc6c8; --s3:#f08a4b; --s4:#b892ff; --band:rgba(127,162,255,.18); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f131a; --surface:#171c25; --surface-2:#1e2430; --line:#2b3240; --fg:#e7ebf2; --muted:#9aa4b5;
+  --accent:#7fa2ff; --accent-soft:#1d2a4a;
+  --good:#5fd39a; --good-soft:#163527; --warn:#f2b155; --warn-soft:#3a2a12; --bad:#ff8a7d; --bad-soft:#3d1a17;
+  --s1:#7fa2ff; --s2:#3cc6c8; --s3:#f08a4b; --s4:#b892ff; --band:rgba(127,162,255,.18); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px;display:grid;gap:20px}
+header.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;max-width:70ch}
+.proto{font-family:var(--font-data);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:3px 8px;border-radius:4px;white-space:nowrap}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end}
+.field{display:grid;gap:3px;min-width:0}
+.field label{font-size:11px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+select,input[type=search]{font:inherit;color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-width:0;max-width:100%}
+.toggle{display:flex;gap:6px;align-items:center;margin-left:auto;color:var(--muted);font-size:13px}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:8px 14px;color:var(--muted);font-weight:500;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs button:hover{color:var(--fg)}
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.crumbs button{background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.section{display:grid;gap:12px}
+.section>h2{font-size:15px;font-weight:600;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.section>h2 small{font-weight:400;color:var(--muted);font-size:13px}
+.grid{display:grid;gap:12px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.two{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.card h3{font-size:13px;font-weight:600;margin:0;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.def{color:var(--muted);font-size:12.5px;margin:0}
+.big{font-size:28px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.row{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.num{font-family:var(--font-data);font-variant-numeric:tabular-nums}
+.delta{font-family:var(--font-data);font-size:12px;padding:1px 6px;border-radius:4px}
+.delta.good{color:var(--good);background:var(--good-soft)} .delta.bad{color:var(--bad);background:var(--bad-soft)} .delta.flat{color:var(--muted);background:var(--surface-2)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.ext{background:var(--accent-soft);color:var(--accent)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.good{background:var(--good-soft);color:var(--good)}
+.mid{font-family:var(--font-data);font-size:10.5px;color:var(--accent);background:var(--accent-soft);padding:0 5px;border-radius:3px;font-weight:500}
+body:not(.ids) .mid{display:none}
+.breakdown{display:grid;gap:4px}
+.stack{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--surface-2)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+.note{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:8px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11.5px;color:var(--muted);font-weight:500;letter-spacing:.02em;background:var(--surface-2)}
+th.sort{cursor:pointer;user-select:none} th.sort:hover{color:var(--fg)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr.click{cursor:pointer} tbody tr.click:hover{background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+.name{font-weight:500}
+.dim{color:var(--muted)}
+.bars{display:grid;gap:8px}
+.barrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:13px}
+.barrow .track{grid-column:1/-1;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.barrow .fill{height:100%;background:var(--bad)}
+.barrow .msg{grid-column:1/-1;font-family:var(--font-data);font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+svg text{fill:var(--muted);font-family:var(--font-data);font-size:10px}
+.later{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.later .card{border-style:dashed;background:transparent}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
+.meta b{font-weight:500}
+@media (prefers-reduced-motion:no-preference){.card,.tablewrap{transition:border-color .15s}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Agentic control</h1>
+      <p class="sub">Which agents run in this environment, how much they use, how long they take and why they fail.</p>
+    </div>
+    <span class="proto">Prototype · mock data</span>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Views">
+    <button role="tab" id="tab-dashboard" data-tab="dashboard">Dashboard</button>
+    <button role="tab" id="tab-inventory" data-tab="inventory">Agent inventory</button>
+  </div>
+
+  <div class="bar" role="group" aria-label="Filters">
+    <div class="field"><label for="f-env">Environment</label><select id="f-env"><option>eu-central-prod</option><option>us-east-prod</option></select></div>
+    <div class="field"><label for="f-period">Period</label><select id="f-period"><option>Last 30 days</option><option>Last 7 days</option><option>Last 90 days</option></select></div>
+    <div class="field"><label for="f-process">Process</label><select id="f-process"></select></div>
+    <div class="field"><label for="f-agent">Agent</label><select id="f-agent"></select></div>
+    <label class="toggle" for="f-ids"><input type="checkbox" id="f-ids" checked> Show plan metric IDs</label>
+  </div>
+
+  <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+  <main id="view" class="grid" style="gap:24px"></main>
+</div>
+
+<script>
+// ---------- mock data (shaped like optimize-agent-instance aggregations) ----------
+const PROCESSES = [
+  {key:"card-dispute", name:"Card dispute"},
+  {key:"refund-request", name:"Refund request"},
+  {key:"claim-intake", name:"Claim intake"},
+  {key:"customer-onboarding", name:"Customer onboarding"},
+  {key:"ticket-escalation", name:"Ticket escalation"},
+  {key:"vendor-approval", name:"Vendor approval"},
+];
+const MODELS = ["Claude Sonnet 4.6","Claude Haiku 4.5","GPT-5"];
+// runs, avgTok, success %, active duration avg/p50/p95 (s), human steps, model calls, limit hit %, cache share
+const AGENTS = [
+  {id:"card-dispute:FraudTriage", name:"Fraud triage agent", proc:"card-dispute", type:"AI_AGENT_SUB_PROCESS", model:"Claude Sonnet 4.6", runs:2930, tok:9600, ok:88.4, avg:78, p50:72, p95:185, human:0.6, calls:5.8, limit:6.1, last:"2 min ago", maxCalls:10},
+  {id:"card-dispute:EvidenceSummary", name:"Evidence summarizer", proc:"card-dispute", type:"AI_AGENT_TASK", model:"Claude Haiku 4.5", runs:2104, tok:3100, ok:98.7, avg:14, p50:12, p95:31, human:0, calls:1.9, limit:0.2, last:"4 min ago", maxCalls:5},
+  {id:"refund-request:RefundDecision", name:"Refund decision agent", proc:"refund-request", type:"AI_AGENT_SUB_PROCESS", model:"Claude Sonnet 4.6", runs:4812, tok:5200, ok:97.9, avg:44, p50:41, p95:96, human:0.3, calls:3.4, limit:0.8, last:"1 min ago", maxCalls:10},
+  {id:"refund-request:EmailClassifier", name:"Email classifier", proc:"refund-request", type:"AI_AGENT_TASK", model:"Claude Haiku 4.5", runs:12406, tok:1800, ok:99.1, avg:9, p50:8, p95:17, human:0, calls:1.2, limit:0, last:"just now", maxCalls:3},
+  {id:"claim-intake:ClaimsSummarizer", name:"Claims summarizer", proc:"claim-intake", type:"AI_AGENT_SUB_PROCESS", model:"Claude Sonnet 4.6", runs:3388, tok:7400, ok:96.5, avg:58, p50:54, p95:130, human:0.4, calls:4.1, limit:1.4, last:"6 min ago", maxCalls:10},
+  {id:"customer-onboarding:KycChecker", name:"KYC document checker", proc:"customer-onboarding", type:"AI_AGENT_SUB_PROCESS", model:"GPT-5", runs:1207, tok:11200, ok:91.0, avg:96, p50:88, p95:240, human:1.1, calls:6.3, limit:3.2, last:"12 min ago", maxCalls:12},
+  {id:"ticket-escalation:SupportEscalation", name:"Support escalation agent", proc:"ticket-escalation", type:"AI_AGENT_SUB_PROCESS", model:"Claude Haiku 4.5", runs:4523, tok:5400, ok:97.0, avg:62, p50:59, p95:119, human:0.8, calls:3.7, limit:0.9, last:"3 min ago", maxCalls:8},
+  {id:"vendor-approval:VendorScreening", name:"Vendor screening agent", proc:"vendor-approval", type:"EXTERNAL_AGENT", model:"GPT-5", runs:640, tok:6300, ok:82.3, avg:121, p50:104, p95:310, human:0, calls:7.9, limit:9.4, last:"40 min ago", maxCalls:10},
+];
+const PREV = {tokens:0.85, runs:0.93, ok:+1.1, dur:0.93}; // previous period factors for deltas
+
+const byId = Object.fromEntries(AGENTS.map(a=>[a.id,a]));
+const procName = k => PROCESSES.find(p=>p.key===k)?.name ?? k;
+const fmt = n => n>=1e6 ? (n/1e6).toFixed(1)+"M" : n>=1e4 ? (n/1e3).toFixed(1)+"k" : Math.round(n).toLocaleString("en-US");
+const fmtInt = n => Math.round(n).toLocaleString("en-US");
+const dur = s => s>=60 ? `${Math.floor(s/60)}m ${String(Math.round(s%60)).padStart(2,"0")}s` : `${Math.round(s)}s`;
+const pct = n => n.toFixed(1)+"%";
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function aggregate(list){
+  const runs = list.reduce((s,a)=>s+a.runs,0);
+  const tokens = list.reduce((s,a)=>s+a.runs*a.tok,0);
+  const w = k => runs ? list.reduce((s,a)=>s+a.runs*a[k],0)/runs : 0;
+  return {runs, tokens, avgTok: runs?tokens/runs:0, ok:w("ok"), avg:w("avg"), p50:w("p50"), p95:Math.max(0,...list.map(a=>a.p95)), human:w("human"), calls:w("calls"), limit:w("limit"),
+    agents:list.length, processes:new Set(list.map(a=>a.proc)).size, external:list.filter(a=>a.type==="EXTERNAL_AGENT").length};
+}
+function split(tokens){ // input, output (incl. reasoning), cache write, cache read; reasoning = of which in output
+  return {input:tokens*.31, output:tokens*.28, reasoning:tokens*.10, cacheWrite:tokens*.06, cacheRead:tokens*.35};
+}
+// deterministic pseudo-random
+function rng(seed){let s=seed%2147483647;if(s<=0)s+=2147483646;return()=>(s=s*16807%2147483647)/2147483647}
+
+// ---------- small components ----------
+const id = m => `<span class="mid" title="Metric ${m} in agentic-dashboard-v2-plan.md">${m}</span>`;
+function delta(cur, prev, goodWhenUp, unit="%"){
+  const d = unit==="pts" ? cur-prev : (cur/prev-1)*100;
+  if (Math.abs(d) < 0.05) return `<span class="delta flat">± 0 vs prev.</span>`;
+  const good = (d>0) === goodWhenUp;
+  return `<span class="delta ${good?"good":"bad"}">${d>0?"▲":"▼"} ${Math.abs(d).toFixed(1)}${unit==="pts"?" pts":"%"} vs prev.</span>`;
+}
+function tokensCard(agg, mid="M1"){
+  const s = split(agg.tokens);
+  const parts = [["Input",s.input,"var(--s1)"],["Output",s.output,"var(--s2)"],["Cache write",s.cacheWrite,"var(--s4)"],["Cache read",s.cacheRead,"var(--s3)"]];
+  return `<div class="card">
+    <h3>Total tokens ${id(mid)}</h3>
+    <p class="def">Input + output + cache write + cache read. Reasoning is part of output.</p>
+    <div class="row"><span class="big">${fmt(agg.tokens)}</span>${delta(agg.tokens, agg.tokens*PREV.tokens, false)}</div>
+    <div class="row dim" style="font-size:13px"><span>${id("M3")} <span class="num">${fmt(agg.avgTok)}</span> per agent run</span><span>${id("M4")} <span class="num">${fmtInt(agg.runs)}</span> runs ${delta(agg.runs, agg.runs*PREV.runs, true)}</span></div>
+    <div class="breakdown">${id("M2")}
+      <div class="stack" role="img" aria-label="Token breakdown">${parts.map(p=>`<span style="width:${p[1]/agg.tokens*100}%;background:${p[2]}"></span>`).join("")}</div>
+      <div class="legend">${parts.map(p=>`<span><i style="background:${p[2]}"></i>${p[0]} <span class="num">${fmt(p[1])}</span></span>`).join("")}<span>of which reasoning <span class="num">${fmt(s.reasoning)}</span></span></div>
+    </div>
+  </div>`;
+}
+function successCard(agg){
+  return `<div class="card">
+    <h3>Success rate ${id("M5")}</h3>
+    <p class="def">Runs with no incident on the agent or its tools and no limit hit.</p>
+    <div class="row"><span class="big">${pct(agg.ok)}</span>${delta(agg.ok, agg.ok+PREV.ok, true, "pts")}</div>
+    <div class="row dim" style="font-size:13px"><span class="num">${fmtInt(agg.runs*(100-agg.ok)/100)}</span> failed runs</div>
+  </div>`;
+}
+function durationCard(agg){
+  return `<div class="card">
+    <h3>Agent run duration ${id("M6")}</h3>
+    <p class="def">Active time: sum of the agent's element instance durations. Waiting for people between loops is excluded.</p>
+    <div class="row"><span class="big">${dur(agg.avg)}</span><span class="dim">average</span>${delta(agg.avg, agg.avg*PREV.dur, false)}</div>
+    <div class="row dim" style="font-size:13px"><span>p50 <span class="num">${dur(agg.p50)}</span></span><span>p95 <span class="num">${dur(agg.p95)}</span></span></div>
+  </div>`;
+}
+function humanCard(agg){
+  return `<div class="card">
+    <h3>Human steps per run ${id("M14")}</h3>
+    <p class="def">User tasks completed while the agent run was active.</p>
+    <div class="row"><span class="big">${agg.human.toFixed(1)}</span></div>
+    <div class="row dim" style="font-size:13px">How often a person still gets involved</div>
+  </div>`;
+}
+
+// line chart: series [{name,color,values}], x labels, optional annotation index
+function lineChart(series, labels, {annotate, band, yFmt=fmt, height=220}={}){
+  const W=640,H=height,L=46,R=12,T=14,B=26, iw=W-L-R, ih=H-T-B;
+  const all=series.flatMap(s=>s.values).concat(band?band.hi:[]);
+  const max=Math.max(...all)*1.12, x=i=>L+i*iw/(labels.length-1), y=v=>T+ih-(v/max)*ih;
+  const ticks=4; let g="";
+  for(let t=0;t<=ticks;t++){const v=max*t/ticks;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y(v)+3}" text-anchor="end">${yFmt(v)}</text>`}
+  labels.forEach((lb,i)=>{ if(i%2===0||i===labels.length-1) g+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${lb}</text>`});
+  if(annotate){const xa=x(annotate.i);g+=`<rect x="${xa}" y="${T}" width="${x(labels.length-1)-xa}" height="${ih}" fill="var(--surface-2)" opacity=".7"/><line x1="${xa}" x2="${xa}" y1="${T}" y2="${T+ih}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${xa+4}" y="${T+10}" text-anchor="start">${annotate.text}</text>`}
+  if(band){const top=band.hi.map((v,i)=>`${x(i)},${y(v)}`).join(" "), bot=band.lo.map((v,i)=>`${x(i)},${y(v)}`).reverse().join(" ");g+=`<polygon points="${top} ${bot}" fill="var(--band)"/>`}
+  series.forEach(s=>{g+=`<polyline fill="none" stroke="${s.color}" stroke-width="2" points="${s.values.map((v,i)=>`${x(i)},${y(v)}`).join(" ")}"/>`;const li=s.values.length-1;g+=`<circle cx="${x(li)}" cy="${y(s.values[li])}" r="3" fill="${s.color}"/>`});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Chart">${g}</svg>`;
+}
+const WEEKS = Array.from({length:10},(_,i)=>`W${35+i}`);
+function modelSeries(list){
+  const colors={"Claude Sonnet 4.6":"var(--s1)","Claude Haiku 4.5":"var(--s2)","GPT-5":"var(--s3)"};
+  return MODELS.filter(m=>list.some(a=>a.model===m)).map((m,k)=>{
+    const ags=list.filter(a=>a.model===m); const base=ags.reduce((s,a)=>s+a.tok,0)/ags.length; const r=rng(k*97+ags.length*13);
+    return {name:m,color:colors[m],values:WEEKS.map((_,i)=>base*(i<6?0.62:1)*(0.93+r()*0.14))};
+  });
+}
+
+// ---------- views ----------
+const state = {sort:{key:"runs",dir:-1}, q:"", pct:"avg"};
+
+const okChip = v => `<span class="chip ${v<90?"bad":v<95?"warn":"good"}">${pct(v)}</span>`;
+
+function inventory(list, title){
+  const agg = aggregate(list);
+  let rows = list.filter(a => (a.name+" "+procName(a.proc)+" "+a.model).toLowerCase().includes(state.q.toLowerCase()));
+  const val = (a,k) => k==="tokens"?a.runs*a.tok : k==="name"?a.name : k==="dur"?a[state.pct==="avg"?"avg":state.pct] : a[k];
+  rows.sort((a,b)=>{const x=val(a,state.sort.key),y=val(b,state.sort.key);return (x>y?1:x<y?-1:0)*state.sort.dir});
+  const th=(k,label,n=true)=>`<th class="sort ${n?"n":""}" data-sort="${k}" aria-sort="${state.sort.key===k?(state.sort.dir>0?"ascending":"descending"):"none"}">${label}${state.sort.key===k?(state.sort.dir>0?" ▲":" ▼"):""}</th>`;
+  return `<div class="section"><h2>${title} ${id("M8")} <small>${agg.agents} agents across ${agg.processes} processes, ${agg.external} external</small></h2>
+  <div class="row"><div class="field" style="flex:1 1 220px"><label for="f-q">Search agents</label><input type="search" id="f-q" placeholder="Name, process or model" value="${esc(state.q)}"></div>
+  <div class="field"><label for="f-pct">Duration column</label><select id="f-pct"><option value="avg"${state.pct==="avg"?" selected":""}>Average</option><option value="p50"${state.pct==="p50"?" selected":""}>p50</option><option value="p95"${state.pct==="p95"?" selected":""}>p95</option></select></div></div>
+  <div class="tablewrap"><table><thead><tr>${th("name","Agent",false)}<th>Process</th><th>Source ${id("M12")}</th><th>Model</th>${th("runs","Agent runs")}${th("tokens","Total tokens")}${th("tok","Tokens per run")}${th("ok","Success rate")}${th("dur","Duration ("+(state.pct==="avg"?"avg":state.pct)+")")}${th("human","Human steps")}<th>Last run</th></tr></thead><tbody>
+  ${rows.map(a=>`<tr class="click" data-agent="${a.id}" tabindex="0"><td class="name">${esc(a.name)}</td><td>${esc(procName(a.proc))}</td><td>${a.type==="EXTERNAL_AGENT"?'<span class="chip ext">External</span>':'<span class="chip">Camunda</span>'}</td><td>${esc(a.model)}</td><td class="n">${fmtInt(a.runs)}</td><td class="n">${fmt(a.runs*a.tok)}</td><td class="n">${fmt(a.tok)}</td><td class="n">${okChip(a.ok)}</td><td class="n">${dur(a[state.pct])}</td><td class="n">${a.human.toFixed(1)}</td><td class="dim">${a.last}</td></tr>`).join("") || `<tr><td colspan="11" class="dim">No agents match "${esc(state.q)}".</td></tr>`}
+  </tbody></table></div></div>`;
+}
+
+function laterSection(){
+  const items=[["L1","Cost per run and total spend","Needs a price per model; tokens by model are stored."],["L2","Needs attention","Needs thresholds; limit-hit and token spikes per agent."],["L3","Targets","Success and duration targets per agent or global."],["L4","Repeated tool calls","Needs the order of tool calls (agent history)."]];
+  return `<div class="section"><h2>Later phase <small>not built in this phase, see the plan</small></h2><div class="later">${items.map(i=>`<div class="card"><h3>${i[1]} ${id(i[0])}</h3><p class="def">${i[2]}</p></div>`).join("")}</div></div>`;
+}
+
+function failureReasons(list){
+  const failed = list.reduce((s,a)=>s+a.runs*(100-a.ok)/100,0);
+  const items=[["Limit hit: max model calls",.44,"Stopped at the 10-call limit"],["Tool failure: Look up merchant",.24,"FAILED_JOB · HTTP 503 from merchant-service"],["Connector authentication",.16,"FAILED_JOB · Bearer token is no longer available"],["Agent configuration",.10,"IO_MAPPING_ERROR · Expected result of 'fromAi(...)' to be a string"],["Limit hit: max tokens",.06,"Stopped at the 8,000-token limit"]];
+  return `<div class="card"><h3>Why agent runs failed ${id("M16")}</h3><p class="def">${fmtInt(failed)} failed runs, by limit or by incident type and element, with the first incident message.</p>
+  <div class="bars">${items.map(i=>`<div class="barrow"><span>${i[0]}</span><span class="num">${fmtInt(failed*i[1])}</span><div class="track"><div class="fill" style="width:${i[1]/items[0][1]*100}%"></div></div><span class="msg">${i[2]}</span></div>`).join("")}</div>
+  <a href="#" class="dim" style="font-size:12.5px" onclick="event.preventDefault()">Open ${fmtInt(failed)} failed runs in Operate ↗</a></div>`;
+}
+
+function renderOverview(list, scopeProc){
+  const agg = aggregate(list);
+  const ms = modelSeries(list);
+  return `
+  <div class="section"><h2>${scopeProc?esc(procName(scopeProc))+": agents":"All agents"} <small>completed agent runs in the period</small></h2>
+    <div class="grid kpis">${tokensCard(agg)}${successCard(agg)}${durationCard(agg)}${humanCard(agg)}</div></div>
+  <div class="grid two">
+    <div class="card"><h3>Tokens per agent run over time, by model ${id("M7")}</h3><p class="def">Median tokens per run, per week. From 8.10, cache tokens are counted, so values step up there: a definition change, not drift.</p>
+      ${lineChart(ms, WEEKS, {annotate:{i:6,text:"8.10: cache tokens counted"}})}
+      <div class="legend">${ms.map(s=>`<span><i style="background:${s.color}"></i>${s.name}</span>`).join("")}</div></div>
+    ${scopeProc ? failureReasons(list) : `<div class="card"><h3>Limit hits ${id("M17")}</h3><p class="def">Runs that stopped at a configured limit. Runs from before 8.11 have no limit data.</p><div class="row"><span class="big">${pct(agg.limit)}</span></div><div class="bars">${list.slice().sort((a,b)=>b.limit-a.limit).slice(0,4).map(a=>`<div class="barrow"><span>${esc(a.name)}</span><span class="num">${pct(a.limit)}</span><div class="track"><div class="fill" style="width:${a.limit/10*100}%;background:var(--warn)"></div></div></div>`).join("")}</div><p class="note">Runs before 8.11: no data</p></div>`}
+  </div>
+  ${scopeProc ? "" : laterSection()}`;
+}
+
+function renderAgent(a){
+  const agg = aggregate([a]);
+  const r=rng(a.runs);
+  const avg=WEEKS.map((_,i)=>a.tok*(i<6?.62:1)*(.94+r()*.12));
+  const band={lo:avg.map(v=>v*.45),hi:avg.map(v=>v*1.9)};
+  const tools = a.type==="AI_AGENT_SUB_PROCESS" ? [["Look up merchant",1.8,6.9],["Check transaction history",3.1,.4],["Request customer confirmation",1.2,1.1],["Open case",.4,.8]] : null;
+  const models = [[a.model, a.runs*.82, a.tok, a.avg, a.ok],[a.model.startsWith("Claude Sonnet")?"Claude Haiku 4.5":"Claude Sonnet 4.6", a.runs*.18, a.tok*.7, a.avg*.8, a.ok-2.4]];
+  return `
+  <div class="card"><div class="meta">${id("M15")}
+    <span>Process <b>${esc(procName(a.proc))}</b></span><span>Type <b>${a.type==="EXTERNAL_AGENT"?"External agent":a.type==="AI_AGENT_TASK"?"AI Agent Task":"AI Agent Sub-process"}</b></span>
+    <span>Model <b>${esc(a.model)}</b></span><span>Limits <b>${a.maxCalls} model calls · 8,000 tokens</b></span><span>Process version <b>v7</b></span>
+    <span>Model calls per run ${id("M22")} <b class="num">${a.calls.toFixed(1)}</b> of ${a.maxCalls}</span></div></div>
+  <div class="grid kpis">${tokensCard(agg)}${successCard(agg)}${durationCard(agg)}
+    <div class="card"><h3>Limit hits ${id("M17")}</h3><p class="def">Runs that stopped at a configured limit.</p><div class="row"><span class="big">${pct(a.limit)}</span></div><div class="row dim" style="font-size:13px"><span class="num">${fmtInt(a.runs*a.limit/100*.9)}</span> at max model calls · <span class="num">${fmtInt(a.runs*a.limit/100*.1)}</span> at max tokens</div></div></div>
+  <div class="grid two">
+    <div class="card"><h3>Tokens per run against normal range ${id("M18")}</h3><p class="def">Weekly average, with the p5 to p95 range shaded.</p>${lineChart([{name:"Average",color:"var(--s1)",values:avg}],WEEKS,{band,annotate:{i:6,text:"8.10: cache tokens counted"}})}</div>
+    ${failureReasons([a])}
+  </div>
+  <div class="grid two">
+    <div class="section"><h2>Tools ${id("M20")} <small>${tools?"counted from tool elements in the process":"not available for this agent type"}</small></h2>
+      ${tools?`<div class="tablewrap"><table style="min-width:420px"><thead><tr><th>Tool</th><th class="n">Calls per run</th><th class="n">Failure rate</th></tr></thead><tbody>${tools.map(t=>`<tr><td>${t[0]}</td><td class="n">${t[1].toFixed(1)}</td><td class="n">${t[2]>5?`<span class="chip bad">${pct(t[2])}</span>`:pct(t[2])}</td></tr>`).join("")}</tbody></table></div>`
+      :`<p class="note">${a.type==="EXTERNAL_AGENT"?"External agents run their tools outside Camunda, so only the total is known":"AI Agent Task tools run in a separate sub-process, so only the total is known"}: ${(a.calls*0.8).toFixed(1)} tool calls per run.</p>`}</div>
+    <div class="section"><h2>Model comparison ${id("M19")} <small>same agent, by model used</small></h2>
+      <div class="tablewrap"><table style="min-width:480px"><thead><tr><th>Model</th><th class="n">Runs</th><th class="n">Tokens per run</th><th class="n">Avg duration</th><th class="n">Success rate</th></tr></thead><tbody>${models.map(m=>`<tr><td>${m[0]}</td><td class="n">${fmtInt(m[1])}</td><td class="n">${fmt(m[2])}</td><td class="n">${dur(m[3])}</td><td class="n">${okChip(m[4])}</td></tr>`).join("")}</tbody></table></div></div>
+  </div>
+  <div class="section"><h2>Where this agent is used ${id("M21")} <small>by root process, including call activities</small></h2>
+    <div class="tablewrap"><table style="min-width:480px"><thead><tr><th>Started from</th><th class="n">Runs</th><th class="n">Tokens</th><th class="n">Share</th></tr></thead><tbody>
+    <tr><td>${esc(procName(a.proc))} <span class="dim">(directly)</span></td><td class="n">${fmtInt(a.runs*.72)}</td><td class="n">${fmt(a.runs*a.tok*.7)}</td><td class="n">70%</td></tr>
+    <tr><td>Chargeback review <span class="dim">(call activity)</span></td><td class="n">${fmtInt(a.runs*.21)}</td><td class="n">${fmt(a.runs*a.tok*.23)}</td><td class="n">23%</td></tr>
+    <tr><td>Customer chatbot <span class="dim">(call activity)</span></td><td class="n">${fmtInt(a.runs*.07)}</td><td class="n">${fmt(a.runs*a.tok*.07)}</td><td class="n">7%</td></tr></tbody></table></div></div>`;
+}
+
+// ---------- routing and wiring ----------
+const route = {tab:"dashboard", level:"overview", proc:null, agent:null};
+function readHash(){
+  const h = location.hash.slice(1);
+  if (h.startsWith("agent-")) { const a = AGENTS.find(x=>slug(x.id)===h.slice(6)); if (a) return Object.assign(route,{tab:"inventory",level:"agent",agent:a.id,proc:null}); }
+  if (h.startsWith("process-") && PROCESSES.some(p=>p.key===h.slice(8))) return Object.assign(route,{tab:"dashboard",level:"process",proc:h.slice(8),agent:null});
+  if (h==="inventory") return Object.assign(route,{tab:"inventory",level:"overview",proc:null,agent:null});
+  Object.assign(route,{tab:"dashboard",level:"overview",proc:null,agent:null});
+}
+const slug = s => s.replace(/[^A-Za-z0-9_-]/g,"_");
+function go(level, proc=null, agent=null){
+  Object.assign(route,{level,proc,agent});
+  const hash = level==="agent" ? "#agent-"+slug(agent) : level==="process" ? "#process-"+proc : "#"+route.tab;
+  try{ history.replaceState(null,"", hash); }catch(e){}
+  render(); window.scrollTo({top:0});
+}
+function setTab(tab){ route.tab=tab; go(route.proc?"process":"overview", route.proc); }
+function renderInventory(list){
+  return `${inventory(list, route.proc ? "Agents in "+esc(procName(route.proc)) : "Agent inventory")}
+  <p class="note">Select an agent to open its details.</p>`;
+}
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected", String(b.dataset.tab===route.tab)));
+  const fp=document.getElementById("f-process"), fa=document.getElementById("f-agent");
+  fp.innerHTML=`<option value="">All processes</option>`+PROCESSES.map(p=>`<option value="${p.key}"${route.proc===p.key?" selected":""}>${esc(p.name)}</option>`).join("");
+  const agents=AGENTS.filter(a=>!route.proc||a.proc===route.proc);
+  fa.innerHTML=`<option value="">All agents</option>`+agents.map(a=>`<option value="${a.id}"${route.agent===a.id?" selected":""}>${esc(a.name)}</option>`).join("");
+  const crumbs=document.getElementById("crumbs");
+  const root = route.tab==="inventory" ? "Agent inventory" : "All processes";
+  const parts=[`<button data-go="overview">${root}</button>`];
+  if(route.proc) parts.push(route.level==="process"?`<span>${esc(procName(route.proc))}</span>`:`<button data-go="process">${esc(procName(route.proc))}</button>`);
+  if(route.agent) parts.push(`<span>${esc(byId[route.agent].name)}</span>`);
+  crumbs.innerHTML = route.level==="overview" ? `<span>${root}</span>` : parts.join(`<span aria-hidden="true">/</span>`);
+  const view=document.getElementById("view");
+  view.innerHTML = route.level==="agent" ? renderAgent(byId[route.agent])
+    : route.tab==="inventory" ? renderInventory(agents)
+    : renderOverview(agents, route.proc);
+}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab],[data-go],[data-proc],[data-agent],th[data-sort]"); if(!t) return;
+  if(t.dataset.tab) return setTab(t.dataset.tab);
+  if(t.dataset.go==="overview") return go("overview");
+  if(t.dataset.go==="process") return go("process",route.proc);
+  if(t.dataset.proc) return go("process",t.dataset.proc);
+  if(t.dataset.agent) return go("agent",route.proc,t.dataset.agent);
+  if(t.dataset.sort){const k=t.dataset.sort;state.sort={key:k,dir:state.sort.key===k?-state.sort.dir:-1};render();}
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.matches("tr.click")) e.target.click(); });
+document.addEventListener("input",e=>{
+  if(e.target.id==="f-q"){state.q=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById("f-q");q.focus();q.setSelectionRange(pos,pos);}
+});
+document.addEventListener("change",e=>{
+  if(e.target.id==="f-process") return e.target.value?go("process",e.target.value):go("overview");
+  if(e.target.id==="f-agent") return e.target.value?go("agent",route.proc,e.target.value):go(route.proc?"process":"overview",route.proc);
+  if(e.target.id==="f-pct"){state.pct=e.target.value;render();}
+  if(e.target.id==="f-ids") document.body.classList.toggle("ids",e.target.checked);
+});
+document.body.classList.add("ids");
+readHash(); render();
+</script>
