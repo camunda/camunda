@@ -389,6 +389,25 @@ func TestScrubTenantEnv(t *testing.T) {
 	assert.Equal(t, []string{"PATH=/bin", "CAMUNDA_CLIENT_X=1"}, env)
 }
 
+func TestScrubOtherTenantSecrets(t *testing.T) {
+	env := []string{"PATH=/bin", "C8_DEFAULT_A=1", "C8_HR_A=2", "c8_hr_b=3", "C8_HR_=4", "C8_SALES_A=5", "C8_HRX_A=6", "X_C8_HR_A=7"}
+	for _, tc := range []struct {
+		name   string
+		prefix string
+		own    string
+		want   []string
+	}{
+		{"default runtime", "C8_", DefaultID, []string{"PATH=/bin", "C8_DEFAULT_A=1", "C8_HRX_A=6", "X_C8_HR_A=7"}},
+		{"tenant runtime", "C8_", "hr", []string{"PATH=/bin", "C8_HR_A=2", "c8_hr_b=3", "C8_HR_=4", "C8_HRX_A=6", "X_C8_HR_A=7"}},
+		{"lowercase prefix", "c8_", "sales", []string{"PATH=/bin", "C8_SALES_A=5", "C8_HRX_A=6", "X_C8_HR_A=7"}},
+		{"no prefix outside env mode", "", DefaultID, env},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, ScrubOtherTenantSecrets(env, tc.prefix, []string{"hr", "sales"}, tc.own))
+		})
+	}
+}
+
 func TestProbeRunsTenantsConcurrentlyUnderOneDeadline(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

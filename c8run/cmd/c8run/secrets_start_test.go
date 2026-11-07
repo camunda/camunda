@@ -47,6 +47,7 @@ func TestEnvSecretsModeConfiguresAnEnvStorePerTenant(t *testing.T) {
 
 	// then
 	assert.Equal(t, "C8_SECRET_DEFAULT_", os.Getenv("CAMUNDA_SECRETS_STORES_ENV_DEFAULT_PREFIX"))
+	assert.Equal(t, "C8_SECRET_", settings.SecretsEnvPrefix, "connectors runtimes filter other tenants' variables by it")
 	assert.Equal(t, "C8_SECRET_HR_", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_HR_SECRETS_STORES_ENV_DEFAULT_PREFIX"])
 	assert.Equal(t, "C8_SECRET_SALES_", settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_SALES_SECRETS_STORES_ENV_DEFAULT_PREFIX"])
 	assert.Empty(t, os.Getenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH"), "env mode configures no file store")
@@ -149,6 +150,7 @@ func TestLocalSecretsModeConfiguresFileStoresAndIgnoresThePrefix(t *testing.T) {
 
 	// then
 	assert.DirExists(t, directory)
+	assert.Empty(t, settings.SecretsEnvPrefix)
 	assert.DirExists(t, os.Getenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH"))
 	assert.Equal(t, os.Getenv(localsecrets.DirectoryEnv), os.Getenv("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH"))
 	assert.DirExists(t, settings.PhysicalTenantsEnv["CAMUNDA_PHYSICALTENANTS_HR_SECRETS_STORES_FILE_DEFAULT_PATH"])
