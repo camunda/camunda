@@ -120,7 +120,7 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
           ErrorMapper.createForbiddenException(missingAuthorizations));
     }
 
-    return operation.get();
+    return ErrorMapper.mapCoordinatorUnavailable(operation.get());
   }
 
   private boolean hasPermission(

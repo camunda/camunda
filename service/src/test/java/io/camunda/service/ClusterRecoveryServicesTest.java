@@ -8,13 +8,16 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse.LegacyConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterRestoreRequest;
@@ -26,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.util.Either;
+import java.net.ConnectException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -206,6 +210,56 @@ final class ClusterRecoveryServicesTest {
     assertThat(result.getLeft().code()).isEqualTo(ErrorCode.NOT_FOUND);
     assertThat(result.getLeft().message()).contains("unknown-tenant");
     verify(sender, never()).clusterRestore(any());
+  }
+
+  @Test
+  void shouldMapUnreachableCoordinatorToUnavailableOnModeChange() {
+    // given
+    when(sender.modeChange(any()))
+        .thenReturn(CompletableFuture.failedFuture(new ConnectException("connection refused")));
+
+    // when
+    final var failure =
+        catchThrowable(() -> services.changeMode(null, Mode.RECOVERING, false).join());
+
+    // then — a retryable status, not an unexpected INTERNAL error
+    assertThat(failure).hasCauseInstanceOf(ServiceException.class);
+    assertThat(((ServiceException) failure.getCause()).getStatus())
+        .isEqualTo(ServiceException.Status.UNAVAILABLE);
+  }
+
+  @Test
+  void shouldMapUnreachableCoordinatorToUnavailableOnRestore() {
+    // given
+    when(sender.clusterRestore(any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new MessagingException.NoRemoteHandler("topology-restore")));
+    final var parameters = new RestoreParameters(List.of(55L), null, null);
+
+    // when
+    final var failure =
+        catchThrowable(
+            () -> services.restore(Optional.of(TENANT_B), parameters, Map.of(), false).join());
+
+    // then
+    assertThat(failure).hasCauseInstanceOf(ServiceException.class);
+    assertThat(((ServiceException) failure.getCause()).getStatus())
+        .isEqualTo(ServiceException.Status.UNAVAILABLE);
+  }
+
+  @Test
+  void shouldLeaveUnrelatedFailureOnModeChangeUnmapped() {
+    // given — only an unavailable coordinator is mapped; other failures keep their own type
+    when(sender.modeChange(any()))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("boom")));
+
+    // when
+    final var failure =
+        catchThrowable(() -> services.changeMode(null, Mode.RECOVERING, false).join());
+
+    // then
+    assertThat(failure).hasCauseInstanceOf(IllegalStateException.class);
   }
 
   private void givenRestoreAccepted() {

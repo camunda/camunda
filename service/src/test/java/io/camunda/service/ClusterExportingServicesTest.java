@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController.ClusterWide;
@@ -99,6 +100,30 @@ class ClusterExportingServicesTest {
     final var future = services.getExportingStatus();
 
     // then
+    assertThat(future)
+        .failsWithin(Duration.ZERO)
+        .withThrowableThat()
+        .withCauseInstanceOf(ServiceException.class)
+        .satisfies(
+            e ->
+                assertThat(((ServiceException) e.getCause()).getStatus())
+                    .isEqualTo(Status.UNAVAILABLE));
+  }
+
+  @Test
+  void shouldMapUnknownCoordinatorMemberToUnavailable() {
+    // given -- the coordinator dropped out of the membership view, so the status query fails
+    final var controller = mock(ClusterWide.class);
+    when(controller.getExportingStatus())
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new MessagingException.NoSuchMemberException("member '0'")));
+    final var services = new ClusterExportingServices(controller);
+
+    // when
+    final var future = services.getExportingStatus();
+
+    // then -- a retryable status, not INTERNAL
     assertThat(future)
         .failsWithin(Duration.ZERO)
         .withThrowableThat()
