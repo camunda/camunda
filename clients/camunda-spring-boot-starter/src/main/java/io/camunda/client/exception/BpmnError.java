@@ -16,7 +16,7 @@
 package io.camunda.client.exception;
 
 /**
- * Indicates an error in sense of BPMN occured, that should be handled by the BPMN process, see <a
+ * Indicates an error in sense of BPMN occurred, that should be handled by the BPMN process, see <a
  * href="https://docs.camunda.io/docs/reference/bpmn-processes/error-events/error-events/">...</a>
  */
 public class BpmnError extends CamundaError {
