@@ -3007,7 +3007,7 @@ jobs:
           mkdir -p "${dir}"
           # --retry-all-errors: curl only retries timeouts and 5xx by default, so a transient TLS
           # handshake failure (exit 35) would fail the job without a single retry
-          curl_opts=(-fsSL --connect-timeout 10 --max-time 120 --retry 5 --retry-delay 2 --retry-all-errors)
+          curl_opts=(-fsSL --connect-timeout 10 --max-time 120 --retry 8 --retry-delay 5 --retry-all-errors)
           curl "${curl_opts[@]}" -o "${dir}/${asset}" "${base_url}/${asset}"
           curl "${curl_opts[@]}" -o "${dir}/checksums.txt" "${base_url}/checksums.txt"
           (cd "${dir}" && grep -F " ${asset}" checksums.txt | sha256sum -c -)
