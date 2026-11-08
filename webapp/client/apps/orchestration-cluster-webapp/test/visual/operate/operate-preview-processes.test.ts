@@ -186,3 +186,39 @@ test('should match the diagram panel header snapshot with a long process name an
 	await expect(panel.getByRole('button', {name: /Delete Process Definition/})).toBeVisible();
 	await expect(panel.locator('header')).toHaveScreenshot();
 });
+
+test('should match the instances table snapshot when the search fails', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+}) => {
+	network.use(
+		mockQueryProcessInstancesEndpoint({
+			successResponse: new HttpResponse(null, {status: 500}),
+		}),
+	);
+	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
+
+	await expect(operatePreviewProcessesPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
+		timeout: 15000,
+	});
+	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});
+
+test('should match the instances table snapshot when the search is forbidden', async ({
+	network,
+	operatePreviewProcessesPage,
+	page,
+}) => {
+	network.use(
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json({}, {status: 403}),
+		}),
+	);
+	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true`);
+
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('You need permission')).toBeVisible({
+		timeout: 15000,
+	});
+	await expect(operatePreviewProcessesPage.instancesTable).toHaveScreenshot();
+});
