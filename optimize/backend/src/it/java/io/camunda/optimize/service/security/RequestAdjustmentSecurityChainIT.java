@@ -10,6 +10,7 @@ package io.camunda.optimize.service.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -68,6 +69,7 @@ public class RequestAdjustmentSecurityChainIT extends AbstractRequestAdjustmentS
 
     // then it is redirected to the OIDC authorization endpoint
     assertThat(response.getStatus()).isEqualTo(Response.Status.FOUND.getStatusCode());
-    assertThat(response.getHeaderString("Location")).contains("/oauth2/authorization/");
+    assertThat(URI.create(response.getHeaderString("Location")).getPath())
+        .startsWith("/oauth2/authorization/");
   }
 }

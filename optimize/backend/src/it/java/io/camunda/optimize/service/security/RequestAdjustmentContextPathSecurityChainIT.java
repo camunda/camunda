@@ -10,6 +10,7 @@ package io.camunda.optimize.service.security;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.Response;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -54,9 +55,11 @@ public class RequestAdjustmentContextPathSecurityChainIT
     // when it requests /<clusterId>/
     final Response response = get("/");
 
-    // then it is redirected to the OIDC authorization endpoint
+    // then it is redirected to the OIDC authorization endpoint inside the context path, so a
+    // redirect that drops the cluster id cannot pass
     assertThat(response.getStatus()).isEqualTo(Response.Status.FOUND.getStatusCode());
-    assertThat(response.getHeaderString("Location")).contains("/oauth2/authorization/");
+    assertThat(URI.create(response.getHeaderString("Location")).getPath())
+        .startsWith(CLUSTER_ID_CONTEXT_PATH + "/oauth2/authorization/");
   }
 
   @Test
