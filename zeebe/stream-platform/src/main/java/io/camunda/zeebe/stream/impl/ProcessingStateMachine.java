@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -621,6 +622,7 @@ public final class ProcessingStateMachine implements CloseableSilently {
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
+    errorRecord.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     final var recordMetadata =
         new RecordMetadata()
