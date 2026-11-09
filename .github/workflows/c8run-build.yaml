@@ -86,6 +86,11 @@ jobs:
       run:
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -248,6 +253,11 @@ jobs:
     timeout-minutes: 15
     needs: camunda-dist-build
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -421,6 +431,11 @@ jobs:
         shell: bash
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -514,6 +529,11 @@ jobs:
         shell: bash
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
