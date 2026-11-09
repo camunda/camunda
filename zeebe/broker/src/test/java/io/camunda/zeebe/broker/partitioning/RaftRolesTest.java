@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -111,10 +112,9 @@ public final class RaftRolesTest {
         .join();
 
     // then
-    roleChanged.get(60, TimeUnit.SECONDS);
-
     // single node becomes directly leader again
     Awaitility.await()
+        .timeout(Duration.ofSeconds(60))
         .untilAsserted(
             () -> assertThat(roles).containsSequence(Role.INACTIVE, Role.LEADER, Role.LEADER));
   }
