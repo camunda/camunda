@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_suspension_subprocesses" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:message id="review_message" name="suspension-review-message">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=correlationKey" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:process id="user_task_suspension_subprocesses" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>start_embedded</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="start_embedded" sourceRef="start" targetRef="embedded" />
+    <bpmn:subProcess id="embedded" name="Embedded review">
+      <bpmn:incoming>start_embedded</bpmn:incoming>
+      <bpmn:outgoing>embedded_end</bpmn:outgoing>
+      <bpmn:startEvent id="embedded_start">
+        <bpmn:outgoing>embedded_start_task</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="embedded_start_task" sourceRef="embedded_start" targetRef="embedded_task" />
+      <bpmn:userTask id="embedded_task" name="Review embedded task">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>embedded_start_task</bpmn:incoming>
+        <bpmn:outgoing>embedded_task_end</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="embedded_task_end" sourceRef="embedded_task" targetRef="embedded_done" />
+      <bpmn:endEvent id="embedded_done">
+        <bpmn:incoming>embedded_task_end</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="embedded_end" sourceRef="embedded" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>embedded_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="event_subprocess" name="Message review" triggeredByEvent="true">
+      <bpmn:startEvent id="message_start" isInterrupting="false">
+        <bpmn:outgoing>message_start_task</bpmn:outgoing>
+        <bpmn:messageEventDefinition messageRef="review_message" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="message_start_task" sourceRef="message_start" targetRef="message_task" />
+      <bpmn:userTask id="message_task" name="Review message task">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>message_start_task</bpmn:incoming>
+        <bpmn:outgoing>message_task_end</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="message_task_end" sourceRef="message_task" targetRef="message_done" />
+      <bpmn:endEvent id="message_done">
+        <bpmn:incoming>message_task_end</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_suspension_subprocesses">
+    <bpmndi:BPMNPlane id="Plane_suspension_subprocesses" bpmnElement="user_task_suspension_subprocesses">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="100" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="embedded_di" bpmnElement="embedded" isExpanded="true">
+        <dc:Bounds x="190" y="60" width="370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="embedded_start_di" bpmnElement="embedded_start">
+        <dc:Bounds x="220" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="embedded_task_di" bpmnElement="embedded_task">
+        <dc:Bounds x="310" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="embedded_done_di" bpmnElement="embedded_done">
+        <dc:Bounds x="480" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="620" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="event_subprocess_di" bpmnElement="event_subprocess" isExpanded="true">
+        <dc:Bounds x="190" y="300" width="370" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="message_start_di" bpmnElement="message_start">
+        <dc:Bounds x="220" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="message_task_di" bpmnElement="message_task">
+        <dc:Bounds x="310" y="350" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="message_done_di" bpmnElement="message_done">
+        <dc:Bounds x="480" y="372" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="start_embedded_di" bpmnElement="start_embedded">
+        <di:waypoint x="136" y="150" />
+        <di:waypoint x="190" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="embedded_start_task_di" bpmnElement="embedded_start_task">
+        <di:waypoint x="256" y="150" />
+        <di:waypoint x="310" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="embedded_task_end_di" bpmnElement="embedded_task_end">
+        <di:waypoint x="410" y="150" />
+        <di:waypoint x="480" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="embedded_end_di" bpmnElement="embedded_end">
+        <di:waypoint x="560" y="150" />
+        <di:waypoint x="620" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="message_start_task_di" bpmnElement="message_start_task">
+        <di:waypoint x="256" y="390" />
+        <di:waypoint x="310" y="390" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="message_task_end_di" bpmnElement="message_task_end">
+        <di:waypoint x="410" y="390" />
+        <di:waypoint x="480" y="390" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
