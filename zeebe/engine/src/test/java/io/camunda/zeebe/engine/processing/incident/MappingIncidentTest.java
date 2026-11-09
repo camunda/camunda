@@ -43,15 +43,10 @@ public final class MappingIncidentTest {
 
   // Pinned to ORDERED: the test below verifies that ORDERED evaluates failing sources on
   // superseded duplicate targets, which is ORDERED-specific behavior (COMBINED resolves
-  // duplicates at expression-build time and never evaluates the superseded source).
+  // duplicates at expression-build time and never evaluates the superseded source). Input mappings
+  // are pinned too, so the mapping failure messages can be asserted with their target variable.
   @ClassRule
   public static final EngineRule ENGINE_ORDERED =
-      EngineRule.singlePartition()
-          .withEngineConfig(
-              c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
-
-  @ClassRule
-  public static final EngineRule ENGINE_ORDERED_INPUT_AND_OUTPUT =
       EngineRule.singlePartition()
           .withEngineConfig(
               c ->
@@ -132,11 +127,11 @@ public final class MappingIncidentTest {
   @Test
   public void shouldNameTargetVariableOfFailingOrderedInputMapping() {
     // given
-    ENGINE_ORDERED_INPUT_AND_OUTPUT.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
     // when
     final long processInstanceKey =
-        ENGINE_ORDERED_INPUT_AND_OUTPUT.processInstance().ofBpmnProcessId("process").create();
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
 
     // then
     final var incident =
@@ -152,16 +147,12 @@ public final class MappingIncidentTest {
   @Test
   public void shouldNameTargetVariableOfFailingOrderedOutputMapping() {
     // given
-    ENGINE_ORDERED_INPUT_AND_OUTPUT.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
     final long processInstanceKey =
-        ENGINE_ORDERED_INPUT_AND_OUTPUT.processInstance().ofBpmnProcessId("process").create();
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
 
     // when
-    ENGINE_ORDERED_INPUT_AND_OUTPUT
-        .job()
-        .withType("test")
-        .ofInstance(processInstanceKey)
-        .complete();
+    ENGINE_ORDERED.job().withType("test").ofInstance(processInstanceKey).complete();
 
     // then
     final var incident =
