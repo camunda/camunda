@@ -54,6 +54,12 @@ const initialValues: ProcessInstancesFilter = {
   incidents: true,
 };
 
+const omitVariableValues = ({
+  variableName,
+  variableValues,
+  ...rest
+}: ProcessInstancesFilter = {}) => rest;
+
 const Filters: React.FC = observer(() => {
   const clientConfig = getClientConfig();
   const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
@@ -90,6 +96,11 @@ const Filters: React.FC = observer(() => {
         });
       }}
       initialValues={{...filterValues, ...inlineVariableValues}}
+      // We explicitly ignore the variable fields when comparing initialValues,
+      // because typing a variable would otherwise erase the user's other inputs.
+      initialValuesEqual={(previous, next) =>
+        isEqual(omitVariableValues(previous), omitVariableValues(next))
+      }
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
