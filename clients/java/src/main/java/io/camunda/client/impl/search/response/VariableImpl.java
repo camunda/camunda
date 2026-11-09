@@ -33,7 +33,7 @@ public class VariableImpl implements Variable {
   private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
-  private final VariableMetadata variableMetadata;
+  private final VariableMetadata metadata;
   @JsonIgnore private final JsonMapper jsonMapper;
 
   public VariableImpl(final VariableSearchResult item, final JsonMapper jsonMapper) {
@@ -45,7 +45,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
-    variableMetadata =
+    metadata =
         item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
@@ -59,7 +59,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
-    variableMetadata =
+    metadata =
         item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
@@ -100,8 +100,8 @@ public class VariableImpl implements Variable {
   }
 
   @Override
-  public VariableMetadata getVariableMetadata() {
-    return variableMetadata;
+  public VariableMetadata getMetadata() {
+    return metadata;
   }
 
   @Override

@@ -50,7 +50,7 @@ public interface Variable {
    *
    * @return the variable metadata, or {@code null} if the server did not return any
    */
-  VariableMetadata getVariableMetadata();
+  VariableMetadata getMetadata();
 
   /* Check if the variable is truncated */
   Boolean isTruncated();

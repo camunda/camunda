@@ -28,7 +28,7 @@ public class VariableBuilder implements Variable {
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
   private String tenantId;
-  private VariableMetadata variableMetadata;
+  private VariableMetadata metadata;
   private Boolean isTruncated;
   private JsonMapper jsonMapper;
 
@@ -68,8 +68,8 @@ public class VariableBuilder implements Variable {
   }
 
   @Override
-  public VariableMetadata getVariableMetadata() {
-    return variableMetadata;
+  public VariableMetadata getMetadata() {
+    return metadata;
   }
 
   @Override
@@ -124,8 +124,8 @@ public class VariableBuilder implements Variable {
     return this;
   }
 
-  public VariableBuilder setVariableMetadata(final VariableMetadata variableMetadata) {
-    this.variableMetadata = variableMetadata;
+  public VariableBuilder setMetadata(final VariableMetadata metadata) {
+    this.metadata = metadata;
     return this;
   }
 

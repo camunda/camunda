@@ -71,7 +71,7 @@ public class GetVariableTest extends ClientRestTest {
     final Variable variable = client.newVariableGetRequest(variableKey).send().join();
 
     // then
-    assertThat(variable.getVariableMetadata().getProtectionModes())
+    assertThat(variable.getMetadata().getProtectionModes())
         .containsExactly(ProtectionMode.REDACT);
   }
 }
