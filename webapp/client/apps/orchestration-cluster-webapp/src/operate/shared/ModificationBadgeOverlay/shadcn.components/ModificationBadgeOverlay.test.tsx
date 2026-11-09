@@ -7,16 +7,22 @@
  */
 
 import '#/shared/theme/tailwind.css';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 
-function getContainer() {
-	return document.body.appendChild(document.createElement('div'));
-}
-
 describe('<ModificationBadgeOverlay />', () => {
+	const container = document.createElement('div');
+
+	beforeEach(() => {
+		document.body.appendChild(container);
+	});
+
+	afterEach(() => {
+		container.remove();
+	});
+
 	it.for([
 		{newTokenCount: 2, cancelledTokenCount: 0, name: '2 added'},
 		{newTokenCount: 0, cancelledTokenCount: 3, name: '3 canceled'},
@@ -24,7 +30,7 @@ describe('<ModificationBadgeOverlay />', () => {
 	])('should name the badge "$name"', async ({newTokenCount, cancelledTokenCount, name}) => {
 		const screen = await render(
 			<ModificationBadgeOverlay
-				container={getContainer()}
+				container={container}
 				newTokenCount={newTokenCount}
 				cancelledTokenCount={cancelledTokenCount}
 			/>,
@@ -35,9 +41,9 @@ describe('<ModificationBadgeOverlay />', () => {
 
 	it('should render nothing without modifications', async () => {
 		const screen = await render(
-			<ModificationBadgeOverlay container={getContainer()} newTokenCount={0} cancelledTokenCount={0} />,
+			<ModificationBadgeOverlay container={container} newTokenCount={0} cancelledTokenCount={0} />,
 		);
 
-		await expect.element(screen.getByTestId('modifications-overlay')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('img')).not.toBeInTheDocument();
 	});
 });

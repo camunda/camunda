@@ -34,7 +34,61 @@ const BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
 
+const NAMED_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_2" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_2" isExecutable="false">
+    <bpmn:startEvent id="startEvent_1" name="Begin" />
+    <bpmn:serviceTask id="task_1" name="Pay" />
+    <bpmn:dataObjectReference id="dataObject_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_2">
+    <bpmndi:BPMNPlane id="BPMNPlane_2" bpmnElement="Process_2">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_1_di" bpmnElement="task_1">
+        <dc:Bounds x="120" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="dataObject_1_di" bpmnElement="dataObject_1">
+        <dc:Bounds x="400" y="82" width="36" height="50" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+
 const XML_WITHOUT_LAYOUT = BPMN_XML.slice(0, BPMN_XML.indexOf('<bpmndi:BPMNDiagram')) + '</bpmn:definitions>';
+
+const FLOW_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_3" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_3" isExecutable="false">
+    <bpmn:startEvent id="startEvent_1" />
+    <bpmn:task id="task_1" />
+    <bpmn:endEvent id="endEvent_1" />
+    <bpmn:sequenceFlow id="flow_1" sourceRef="startEvent_1" targetRef="task_1" />
+    <bpmn:sequenceFlow id="flow_2" sourceRef="task_1" targetRef="endEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_3">
+    <bpmndi:BPMNPlane id="BPMNPlane_3" bpmnElement="Process_3">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_1_di" bpmnElement="task_1">
+        <dc:Bounds x="250" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
+        <dc:Bounds x="412" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="250" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_2_di" bpmnElement="flow_2">
+        <di:waypoint x="350" y="100" />
+        <di:waypoint x="412" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
 
 const OVERLAY_TYPE = 'testOverlayType';
 
@@ -361,149 +415,202 @@ describe('<Diagram />', () => {
 
 		expect(onElementDoubleClick).toHaveBeenCalledWith('startEvent_1');
 	});
+
 	it('should describe how to navigate the diagram with the keyboard', async () => {
-		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
 
 		await expect
-			.poll(() => document.querySelector('[data-testid="diagram-canvas"]')?.getAttribute('aria-describedby'))
-			.not.toBeNull();
-		const hintId = document.querySelector('[data-testid="diagram-canvas"]')!.getAttribute('aria-describedby')!;
-		expect(document.getElementById(hintId)?.textContent).toBe(
-			'Use the arrow keys to move between elements and Enter to select.',
-		);
+			.element(screen.getByRole('button', {name: 'start event', exact: true}))
+			.toHaveAccessibleDescription('Use the arrow keys to move between elements and Enter to select.');
+		await expect
+			.element(screen.getByRole('region', {name: 'Diagram'}))
+			.toHaveAccessibleDescription('Use the arrow keys to move between elements and Enter to select.');
+	});
+
+	it('should use the provided aria label for the diagram region', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} ariaLabel="Order process" />);
+
+		await expect.element(screen.getByRole('region', {name: 'Order process'})).toBeVisible();
 	});
 
 	it('should name non-selectable elements even without tooltip text', async () => {
-		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('aria-label'))
-			.toBe('end event');
+		await expect.element(screen.getByRole('img', {name: 'end event', exact: true})).toBeInTheDocument();
 	});
 
 	it('should append the tooltip text to the name of non-selectable elements', async () => {
-		await render(
+		const screen = await render(
 			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} nonSelectableNodeTooltipText="Not selectable" />,
 		);
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('aria-label'))
-			.toBe('end event, Not selectable');
+		await expect.element(screen.getByRole('img', {name: 'end event, Not selectable', exact: true})).toBeInTheDocument();
 	});
 
-	it('should attach the keyboard hint to selectable elements', async () => {
-		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
+	it('should name elements by name and type, falling back to a readable type for unknown ones', async () => {
+		const screen = await render(
+			<Diagram
+				xml={NAMED_XML}
+				selectableElements={['startEvent_1', 'task_1']}
+				nonSelectableNodeTooltipText="Not selectable"
+			/>,
+		);
 
+		await expect.element(screen.getByRole('button', {name: 'Begin (start event)', exact: true})).toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Pay (service task)', exact: true})).toBeInTheDocument();
 		await expect
-			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('aria-describedby'))
-			.toBe(document.querySelector('[data-testid="diagram-canvas"]')?.getAttribute('aria-describedby'));
+			.element(screen.getByRole('img', {name: 'data object reference, Not selectable', exact: true}))
+			.toBeInTheDocument();
+	});
+
+	it('should show the tooltip text when hovering a non-selectable element', async () => {
+		const screen = await render(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} nonSelectableNodeTooltipText="Not selectable" />,
+		);
+
+		await userEvent.hover(screen.getByRole('img', {name: 'end event, Not selectable', exact: true}));
+
+		await expect.element(screen.getByRole('tooltip', {name: 'Not selectable'})).toBeVisible();
+	});
+
+	it('should expose the selection state of selectable elements', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1', 'endEvent_1']}
+				selectedElementIds={['startEvent_1']}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'start event', pressed: true})).toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'end event', pressed: false})).toBeInTheDocument();
 	});
 
 	it('should drop button semantics from elements that stop being selectable', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
+		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).toBeInTheDocument();
 
 		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['endEvent_1']} />);
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
-		expect(document.querySelectorAll('[role="button"][data-element-id]')).toHaveLength(1);
-		expect(document.querySelector('[data-element-id="startEvent_1"]')?.hasAttribute('tabindex')).toBe(false);
+		await expect.element(screen.getByRole('button', {name: 'end event', exact: true})).toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should drop the restriction announcement when no elements are restricted anymore', async () => {
 		const screen = await render(
 			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} nonSelectableNodeTooltipText="Not selectable" />,
 		);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('aria-label'))
-			.toBe('end event, Not selectable');
+		await expect.element(screen.getByRole('img', {name: 'end event, Not selectable', exact: true})).toBeInTheDocument();
 
 		await screen.rerender(<Diagram xml={BPMN_XML} />);
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.hasAttribute('aria-label'))
-			.toBe(false);
-		expect(document.querySelector('[data-element-id="endEvent_1"]')?.hasAttribute('role')).toBe(false);
+		await expect.element(screen.getByRole('img', {name: 'end event, Not selectable'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('img', {name: 'end event'})).not.toBeInTheDocument();
 	});
 
-	it('should move focus and the tab stop to the nearest element with the arrow keys', async () => {
-		await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} />);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
-		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
+	it('should move focus between elements with the arrow keys', async () => {
+		const screen = await render(
+			<Diagram xml={NAMED_XML} selectableElements={['startEvent_1', 'task_1', 'dataObject_1']} />,
+		);
+		const start = screen.getByRole('button', {name: 'Begin (start event)', exact: true});
+		const task = screen.getByRole('button', {name: 'Pay (service task)', exact: true});
+		const dataObject = screen.getByRole('button', {name: 'data object reference', exact: true});
+		await expect.element(start).toBeInTheDocument();
+
+		await userEvent.tab();
+		await expect.element(start).toHaveFocus();
+
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(start).toHaveFocus();
+
+		await userEvent.keyboard('{ArrowDown}');
+		await expect.element(task).toHaveFocus();
+
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(start).toHaveFocus();
 
 		await userEvent.keyboard('{ArrowRight}');
-
-		await expect.poll(() => document.activeElement?.getAttribute('data-element-id')).toBe('endEvent_1');
-		expect(document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('tabindex')).toBe('0');
-		expect(document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('tabindex')).toBe('-1');
+		await expect.element(dataObject).toHaveFocus();
 
 		await userEvent.keyboard('{ArrowLeft}');
-
-		await expect.poll(() => document.activeElement?.getAttribute('data-element-id')).toBe('startEvent_1');
+		await expect.element(start).toHaveFocus();
 	});
 
-	it('should select the focused element when pressing Enter', async () => {
-		const onElementSelection = vi.fn();
-		await render(
-			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} onElementSelection={onElementSelection} />,
-		);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
-		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
-
-		await userEvent.keyboard('{Enter}');
-
-		await vi.waitFor(() => expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false));
-	});
-
-	it('should select the focused element when pressing Space', async () => {
-		const onElementSelection = vi.fn();
-		await render(
-			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} onElementSelection={onElementSelection} />,
-		);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
-		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
-
-		await userEvent.keyboard(' ');
-
-		await vi.waitFor(() => expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false));
-	});
-
-	it('should keep the focused element as the tab stop when the diagram re-renders', async () => {
+	it('should keep a single tab stop so that Tab leaves the diagram elements', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} />);
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('role'))
-			.toBe('button');
-		document.querySelector<SVGElement>('[data-element-id="endEvent_1"]')!.focus();
+		const start = screen.getByRole('button', {name: 'start event', exact: true});
+		await expect.element(start).toBeInTheDocument();
+
+		await userEvent.tab();
+		await expect.element(start).toHaveFocus();
+		await userEvent.tab();
+
+		await expect.element(start).not.toHaveFocus();
+		await expect.element(screen.getByRole('button', {name: 'end event', exact: true})).not.toHaveFocus();
+	});
+
+	it.for([{key: '{Enter}'}, {key: ' '}])('should select the focused element when pressing "$key"', async ({key}) => {
+		const onElementSelection = vi.fn();
+		const screen = await render(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} onElementSelection={onElementSelection} />,
+		);
+		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).toBeInTheDocument();
+		await userEvent.tab();
+
+		await userEvent.keyboard(key);
+
+		expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false);
+	});
+
+	it('should keep focus and the tab stop on the focused element when the diagram re-renders', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} />);
+		const end = screen.getByRole('button', {name: 'end event', exact: true});
+		await expect.element(end).toBeInTheDocument();
+		await userEvent.tab();
+		await userEvent.keyboard('{ArrowRight}');
+		await expect.element(end).toHaveFocus();
 
 		await screen.rerender(
-			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} nonSelectableNodeTooltipText="x" />,
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1', 'endEvent_1']}
+				customElementClasses={[['startEvent_1', 'my-class']]}
+			/>,
 		);
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="endEvent_1"]')?.getAttribute('tabindex'))
-			.toBe('0');
-		expect(document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('tabindex')).toBe('-1');
+		await expect.element(end).toHaveFocus();
+		await userEvent.tab();
+		await userEvent.tab({shift: true});
+		await expect.element(end).toHaveFocus();
 	});
 
 	it('should show the keyboard hint while an element has keyboard focus', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} />);
 		const hint = screen.getByText('Use the arrow keys to move between elements and Enter to select.');
+		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).toBeInTheDocument();
 
-		await expect
-			.poll(() => document.querySelector('[data-element-id="startEvent_1"]')?.getAttribute('tabindex'))
-			.toBe('0');
-		document.querySelector<SVGElement>('[data-element-id="startEvent_1"]')!.focus();
+		await userEvent.tab();
 
 		await expect.element(hint).toBeVisible();
+	});
+
+	it('should reset the color of sequence flows that are no longer highlighted', async () => {
+		const flowStroke = (id: string) =>
+			getComputedStyle(document.querySelector(`[data-element-id="${id}"] path`)!).stroke;
+		const renderDiagram = (highlightedSequenceFlows: string[]) => (
+			<div className="c4-ui">
+				<Diagram xml={FLOW_XML} highlightedSequenceFlows={highlightedSequenceFlows} />
+			</div>
+		);
+		const screen = await render(renderDiagram(['flow_1']));
+		await expect.poll(() => flowStroke('flow_2')).not.toBe('none');
+		const defaultStroke = flowStroke('flow_2');
+		await expect.poll(() => flowStroke('flow_1')).not.toBe(defaultStroke);
+		const highlightedStroke = flowStroke('flow_1');
+
+		await screen.rerender(renderDiagram(['flow_2']));
+
+		await expect.poll(() => flowStroke('flow_2')).toBe(highlightedStroke);
+		expect(flowStroke('flow_1')).toBe(defaultStroke);
 	});
 });
