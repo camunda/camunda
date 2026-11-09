@@ -168,7 +168,8 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
     awaitHolderCompleted(AUTO_PROCESS_ID);
 
     // then P_B emits a PUSHED event carrying the holder's lock coordinates and a request key that
-    // addresses P_K; its applier drops the holder-origin entry on P_B
+    // addresses P_K. That its applier drops the holder-origin entry on P_B is covered by
+    // MessageStartCorrelationKeyLockReleasePushedV1ApplierTest
     final var pushed =
         RecordingExporter.messageStartCorrelationKeyLockReleaseRecords(
                 MessageStartCorrelationKeyLockReleaseIntent.PUSHED)
