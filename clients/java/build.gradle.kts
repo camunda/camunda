@@ -81,6 +81,7 @@ openApiGenerate {
       "OffsetDateTime" to "String",
       // map complex String schemas to String
       "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+      "ClearableDateTime" to "String",
       "ClusterVariableResultBaseMetadataValue" to "Object",
       // OpenAPI Generator 7.21 keeps oneOf wrapper models for these filters; Maven's newer
       // generator collapses them through the metadata value mapping above.

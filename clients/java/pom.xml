@@ -364,6 +364,7 @@
             <typeMapping>OffsetDateTime=String</typeMapping>
             <!-- map complex String schemas to String -->
             <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+            <typeMapping>ClearableDateTime=String</typeMapping>
             <!-- map metadata values (oneOf string/number) to Object so they can carry their value -->
             <typeMapping>ClusterVariableResultBaseMetadataValue=Object</typeMapping>
             <!-- generates named models for inline oneOf properties -->

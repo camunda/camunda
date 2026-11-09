@@ -1236,15 +1236,13 @@ components:
           description: Assignee of the task.
           nullable: true
         dueDate:
-          type: string
-          format: date-time
-          description: The due date of the task.
-          nullable: true
+          allOf:
+            - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+          description: The due date of the task. Clear by providing an empty String.
         followUpDate:
-          type: string
-          format: date-time
-          description: The follow-up date of the task.
-          nullable: true
+          allOf:
+            - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+          description: The follow-up date of the task. Clear by providing an empty String.
         candidateUsers:
           type: array
           description: The list of candidate users of the task.
