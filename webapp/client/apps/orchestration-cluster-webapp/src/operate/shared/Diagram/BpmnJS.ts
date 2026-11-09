@@ -81,10 +81,6 @@ class BpmnJS {
 	#highlightedElementIds: string[] = [];
 	#overlaysData: OverlayData[] = [];
 	#hasOuterBorderOnSelection = false;
-
-	constructor({shouldResetStaleSequenceFlows = false}: {shouldResetStaleSequenceFlows?: boolean} = {}) {
-		this.#shouldResetStaleSequenceFlows = shouldResetStaleSequenceFlows;
-	}
 	#rootElement?: BpmnElement;
 	#customElementClasses: [elementId: string, className: string][] = [];
 	#overlaysByType = new Map<string, OverlayEntry[]>();
@@ -95,6 +91,10 @@ class BpmnJS {
 	onViewboxChange?: (isChanging: boolean) => void;
 	onRootChange?: (rootElementId: string) => void;
 	onOverlayChange?: (overlays: OverlayEntry[]) => void;
+
+	constructor({shouldResetStaleSequenceFlows = false}: {shouldResetStaleSequenceFlows?: boolean} = {}) {
+		this.#shouldResetStaleSequenceFlows = shouldResetStaleSequenceFlows;
+	}
 
 	#handleViewboxChanging = () => {
 		this.onViewboxChange?.(true);
@@ -430,11 +430,7 @@ class BpmnJS {
 	};
 
 	#destroy = () => {
-		const canvas = this.#navigatedViewer?.get('canvas');
-		if (canvas !== undefined) {
-			// canvas debounces viewbox.changed (deferUpdate) and would read the destroyed container
-			(canvas as unknown as {viewbox: () => unknown}).viewbox = () => ({});
-		}
+		this.#navigatedViewer?.get('canvas')?._viewboxChanged?.cancel?.();
 		this.#navigatedViewer?.destroy();
 	};
 

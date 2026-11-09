@@ -33,7 +33,6 @@ const ModificationBadgeOverlay: React.FC<Props> = ({container, newTokenCount, ca
 
 	return createPortal(
 		<Badge
-			data-testid="modifications-overlay"
 			variant="info"
 			role="img"
 			title={label}
@@ -41,14 +40,14 @@ const ModificationBadgeOverlay: React.FC<Props> = ({container, newTokenCount, ca
 		>
 			{newTokenCount > 0 && (
 				<>
-					<Plus aria-hidden data-testid="badge-plus-icon" />
+					<Plus aria-hidden />
 					{newTokenCount}
 				</>
 			)}
 			{newTokenCount > 0 && cancelledTokenCount > 0 && ','}
 			{cancelledTokenCount > 0 && (
 				<>
-					<Minus aria-hidden data-testid="badge-minus-icon" />
+					<Minus aria-hidden />
 					{cancelledTokenCount}
 				</>
 			)}

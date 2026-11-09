@@ -84,27 +84,23 @@ function findNearestInDirection(from: SVGElement, candidates: SVGElement[], [dx,
 		return {x: left + width / 2, y: top + height / 2};
 	};
 	const origin = center(from);
-	let best: SVGElement | undefined;
-	let bestScore = Infinity;
 
-	candidates.forEach((candidate) => {
-		if (candidate === from) {
-			return;
-		}
-		const {x, y} = center(candidate);
-		const along = (x - origin.x) * dx + (y - origin.y) * dy;
-		const across = Math.abs((x - origin.x) * dy) + Math.abs((y - origin.y) * dx);
-		if (along <= 0 || across > along * 2) {
-			return;
-		}
-		const score = Math.hypot(along, across);
-		if (score < bestScore) {
-			best = candidate;
-			bestScore = score;
-		}
-	});
-
-	return best;
+	return candidates.reduce<{element?: SVGElement; score: number}>(
+		(best, candidate) => {
+			if (candidate === from) {
+				return best;
+			}
+			const {x, y} = center(candidate);
+			const along = (x - origin.x) * dx + (y - origin.y) * dy;
+			const across = Math.abs((x - origin.x) * dy) + Math.abs((y - origin.y) * dx);
+			if (along <= 0 || across > along * 2) {
+				return best;
+			}
+			const score = Math.hypot(along, across);
+			return score < best.score ? {element: candidate, score} : best;
+		},
+		{score: Infinity},
+	).element;
 }
 
 function getElementTypeKey(type: string | undefined) {
@@ -153,6 +149,8 @@ function Diagram({
 	const {isMinimapOpen, handleMinimapToggle, resetMinimap} = useMinimap(diagramCanvasRef, viewerRef, isDiagramRendered);
 
 	const hasUserAdjustedViewRef = useRef(false);
+	const hasObservedInitialSizeRef = useRef(false);
+	const resizeFrameRef = useRef(0);
 
 	const handleZoomIn = useCallback(() => {
 		hasUserAdjustedViewRef.current = true;
@@ -173,15 +171,14 @@ function Diagram({
 			return;
 		}
 
-		let hasObservedInitialSize = false;
-		let frame = 0;
+		hasObservedInitialSizeRef.current = false;
 		const observer = new ResizeObserver(() => {
-			if (!hasObservedInitialSize) {
-				hasObservedInitialSize = true;
+			if (!hasObservedInitialSizeRef.current) {
+				hasObservedInitialSizeRef.current = true;
 				return;
 			}
-			cancelAnimationFrame(frame);
-			frame = requestAnimationFrame(() => {
+			cancelAnimationFrame(resizeFrameRef.current);
+			resizeFrameRef.current = requestAnimationFrame(() => {
 				if (hasUserAdjustedViewRef.current) {
 					viewerRef.current?.notifyResize();
 				} else {
@@ -205,20 +202,13 @@ function Diagram({
 		return () => {
 			container.removeEventListener('wheel', markAdjusted);
 			container.removeEventListener('pointermove', markDragged);
-			cancelAnimationFrame(frame);
+			cancelAnimationFrame(resizeFrameRef.current);
 			observer.disconnect();
 		};
 	}, []);
 
-	useEffect(() => {
-		if (!isDiagramRendered || diagramCanvasRef.current === null) {
-			return;
-		}
-
-		const canvas = diagramCanvasRef.current;
-		canvas.querySelector('svg')?.setAttribute('tabindex', '-1');
-
-		const getLabel = (element: Element) => {
+	const getElementLabel = useCallback(
+		(element: Element) => {
 			const elementId = element.getAttribute('data-element-id') ?? '';
 			const name = viewerRef.current?.getElementName(elementId)?.trim();
 			const typeKey = getElementTypeKey(viewerRef.current?.getElementType(elementId));
@@ -232,31 +222,23 @@ function Diagram({
 				return t('operate.shared.diagram.elementLabel', {name, type});
 			}
 			return name || type || '';
-		};
+		},
+		[t],
+	);
 
+	useEffect(() => {
+		if (!isDiagramRendered || diagramCanvasRef.current === null) {
+			return;
+		}
+
+		const canvas = diagramCanvasRef.current;
+		canvas.querySelector('svg')?.setAttribute('tabindex', '-1');
 		canvas
-			.querySelectorAll('[role="button"]:not(.op-selectable), [role="img"][data-element-id]:not(.op-non-selectable)')
-			.forEach((element) => {
-				['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby'].forEach((attribute) =>
-					element.removeAttribute(attribute),
-				);
-			});
-
-		const selectable = [...canvas.querySelectorAll<SVGElement>('.op-selectable')];
-		const tabStop =
-			selectable.find((element) => element === document.activeElement) ??
-			selectable.find((element) => element.classList.contains('op-selected')) ??
-			selectable[0];
-		selectable.forEach((element) => {
-			element.setAttribute('tabindex', element === tabStop ? '0' : '-1');
-			element.setAttribute('role', 'button');
-			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
-			element.setAttribute('aria-label', getLabel(element));
-			element.setAttribute('aria-describedby', keyboardHintId);
-		});
+			.querySelectorAll('[role="img"][data-element-id]:not(.op-non-selectable)')
+			.forEach((element) => ['role', 'aria-label'].forEach((attribute) => element.removeAttribute(attribute)));
 
 		canvas.querySelectorAll('.op-non-selectable').forEach((element) => {
-			const label = getLabel(element);
+			const label = getElementLabel(element);
 			element.setAttribute('role', 'img');
 			element.setAttribute(
 				'aria-label',
@@ -267,11 +249,43 @@ function Diagram({
 		isDiagramRendered,
 		renderCount,
 		selectableElements,
-		selectedElementIds,
 		customElementClasses,
 		nonSelectableNodeTooltipText,
+		getElementLabel,
+	]);
+
+	useEffect(() => {
+		if (!isDiagramRendered || diagramCanvasRef.current === null) {
+			return;
+		}
+
+		const canvas = diagramCanvasRef.current;
+		canvas.querySelectorAll('[role="button"]:not(.op-selectable)').forEach((element) => {
+			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby'].forEach((attribute) =>
+				element.removeAttribute(attribute),
+			);
+		});
+
+		const selectable = [...canvas.querySelectorAll<SVGElement>('.op-selectable')];
+		const tabStop =
+			selectable.find((element) => element === document.activeElement) ??
+			selectable.find((element) => element.classList.contains('op-selected')) ??
+			selectable[0];
+		selectable.forEach((element) => {
+			element.setAttribute('tabindex', element === tabStop ? '0' : '-1');
+			element.setAttribute('role', 'button');
+			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
+			element.setAttribute('aria-label', getElementLabel(element));
+			element.setAttribute('aria-describedby', keyboardHintId);
+		});
+	}, [
+		isDiagramRendered,
+		renderCount,
+		selectableElements,
+		selectedElementIds,
+		customElementClasses,
 		keyboardHintId,
-		t,
+		getElementLabel,
 	]);
 
 	const handleCanvasKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
