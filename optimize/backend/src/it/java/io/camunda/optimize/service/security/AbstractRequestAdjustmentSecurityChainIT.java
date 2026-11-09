@@ -19,6 +19,7 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
+import org.glassfish.jersey.client.ClientProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -36,6 +37,9 @@ import org.springframework.test.context.ActiveProfiles;
 abstract class AbstractRequestAdjustmentSecurityChainIT extends AbstractIT {
 
   private Client client;
+  // The bean the context path is set on. Restarting Optimize swaps the extension's context, so the
+  // reset must target this instance, not whatever the extension returns after the restart.
+  private ConfigurationService configurationServiceBeforeRestart;
   private String originalContextPath;
 
   /** The servlet context path to boot with; empty for none. */
@@ -53,19 +57,25 @@ abstract class AbstractRequestAdjustmentSecurityChainIT extends AbstractIT {
 
   @BeforeEach
   void bootWithCslEnabled() {
-    final ConfigurationService configurationService =
-        embeddedOptimizeExtension.getConfigurationService();
-    originalContextPath = configurationService.getContextPath().orElse(null);
+    configurationServiceBeforeRestart = embeddedOptimizeExtension.getConfigurationService();
+    originalContextPath = configurationServiceBeforeRestart.getContextPath().orElse(null);
     if (!contextPath().isEmpty()) {
-      configurationService.setContextPath(contextPath());
+      configurationServiceBeforeRestart.setContextPath(contextPath());
     }
     startAndUseNewOptimizeInstance();
     client = ClientBuilder.newClient();
+    client.property(
+        ClientProperties.CONNECT_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
+    client.property(
+        ClientProperties.READ_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
+    client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
   }
 
   @AfterEach
   void closeClient() {
-    embeddedOptimizeExtension.getConfigurationService().setContextPath(originalContextPath);
+    if (configurationServiceBeforeRestart != null) {
+      configurationServiceBeforeRestart.setContextPath(originalContextPath);
+    }
     if (client != null) {
       client.close();
     }
@@ -96,10 +106,6 @@ abstract class AbstractRequestAdjustmentSecurityChainIT extends AbstractIT {
     final String serverRoot =
         endpointWithContextPath.substring(
             0, endpointWithContextPath.length() - contextPath().length());
-    return client
-        .target(serverRoot + path)
-        .property("jersey.config.client.followRedirects", false)
-        .request()
-        .get();
+    return client.target(serverRoot + path).request().get();
   }
 }
