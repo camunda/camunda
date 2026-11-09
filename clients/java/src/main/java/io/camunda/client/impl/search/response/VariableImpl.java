@@ -45,8 +45,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
-    metadata =
-        item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
+    metadata = item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
@@ -59,8 +58,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
-    metadata =
-        item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
+    metadata = item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
@@ -110,9 +108,18 @@ public class VariableImpl implements Variable {
   }
 
   @Override
+  @JsonIgnore
+  public boolean isRedacted() {
+    return Variable.super.isRedacted();
+  }
+
+  @Override
   public <T> T getValueAsType(final Class<T> type) {
     if (Boolean.TRUE.equals(isTruncated())) {
       throw new IllegalStateException("Cannot return truncated value as type " + type);
+    }
+    if (isRedacted()) {
+      throw new IllegalStateException("Cannot return redacted value as type " + type);
     }
     return jsonMapper.fromJson(value, type);
   }

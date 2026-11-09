@@ -15,10 +15,12 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.search.enums.ProtectionMode;
 import java.util.Set;
 
 /** Describes how a variable is treated, for example which protections apply to its value. */
+@ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
 public interface VariableMetadata {
 
   /** The protections applied to the variable. */

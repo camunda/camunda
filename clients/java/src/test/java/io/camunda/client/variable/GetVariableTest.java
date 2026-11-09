@@ -16,6 +16,7 @@
 package io.camunda.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
@@ -71,7 +72,54 @@ public class GetVariableTest extends ClientRestTest {
     final Variable variable = client.newVariableGetRequest(variableKey).send().join();
 
     // then
-    assertThat(variable.getMetadata().getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
+    assertThat(variable.getMetadata().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldRecognizeRedactedVariableAndRefuseToReadItsValueAsType() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .value("\"\"")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.isRedacted()).isTrue();
+    assertThatThrownBy(() -> variable.getValueAsType(String.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("redacted");
+  }
+
+  @Test
+  void shouldNotTreatVariableWithoutProtectionsAsRedacted() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .value("\"text\"")
+            .metadata(new VariableMetadata().protectionModes(Collections.emptyList())));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.isRedacted()).isFalse();
+    assertThat(variable.getValueAsType(String.class)).isEqualTo("text");
   }
 }

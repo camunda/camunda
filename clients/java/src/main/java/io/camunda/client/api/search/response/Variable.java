@@ -15,6 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.ExperimentalApi;
+import io.camunda.client.api.search.enums.ProtectionMode;
+
 public interface Variable {
   /* The key of the variable */
   Long getVariableKey();
@@ -50,10 +53,25 @@ public interface Variable {
    *
    * @return the variable metadata, or {@code null} if the server did not return any
    */
+  @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
   VariableMetadata getMetadata();
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
+
+  /**
+   * Checks whether the value of the variable was redacted. A redacted value cannot be recovered and
+   * is read back as an empty string, so it must not be interpreted as the original value.
+   *
+   * @return {@code true} if the {@link ProtectionMode#REDACT} protection applies to the variable
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
+  default boolean isRedacted() {
+    final VariableMetadata metadata = getMetadata();
+    return metadata != null
+        && metadata.getProtectionModes() != null
+        && metadata.getProtectionModes().contains(ProtectionMode.REDACT);
+  }
 
   /**
    * Deserializes the variable's JSON value into the given type.
@@ -61,7 +79,7 @@ public interface Variable {
    * @param type the class to deserialize the value into
    * @param <T> the target type
    * @return the deserialized value
-   * @throws IllegalStateException if the variable value is truncated
+   * @throws IllegalStateException if the variable value is truncated or redacted
    */
   <T> T getValueAsType(Class<T> type);
 }

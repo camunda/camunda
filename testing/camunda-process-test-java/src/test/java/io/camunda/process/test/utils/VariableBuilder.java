@@ -82,6 +82,9 @@ public class VariableBuilder implements Variable {
     if (Boolean.TRUE.equals(isTruncated)) {
       throw new IllegalStateException("Cannot return truncated value as type " + type);
     }
+    if (isRedacted()) {
+      throw new IllegalStateException("Cannot return redacted value as type " + type);
+    }
     if (jsonMapper == null) {
       throw new IllegalStateException(
           "jsonMapper not set on VariableBuilder. Please set it using setJsonMapper() before calling getValueAsType().");
