@@ -51,23 +51,25 @@ const VARIANT_CLASS_NAMES = {
 // element corner are re-centred on that corner using their own size. Pills with a deliberate horizontal offset
 // (such as completed end events) keep their position. The centred flag is set on the container instead of
 // React state, so a re-created overlay never paints (or animates) an uncentred frame.
+const EDGE_TOLERANCE_PX = 0.5;
+
 const centreOnCorner = (container: HTMLElement): void => {
 	const overlay = container.parentElement;
 	const elementId = overlay?.parentElement?.getAttribute('data-container-id');
 	if (!overlay || !elementId) {
 		return;
 	}
-	const visual = container.ownerDocument.querySelector<SVGGraphicsElement>(
-		`[data-element-id="${elementId}"] .djs-visual`,
-	);
+	const visual = overlay
+		.closest('.djs-container')
+		?.querySelector<SVGGraphicsElement>(`[data-element-id="${elementId}"] .djs-visual`);
 	if (!visual) {
 		return;
 	}
 	const {x, y, width, height} = visual.getBBox();
 	const left = parseFloat(overlay.style.left);
 	const top = parseFloat(overlay.style.top);
-	const isLeftEdge = left === x;
-	const isRightEdge = left === x + width;
+	const isLeftEdge = Math.abs(left - x) < EDGE_TOLERANCE_PX;
+	const isRightEdge = Math.abs(left - (x + width)) < EDGE_TOLERANCE_PX;
 	if (Number.isNaN(top) || (!isLeftEdge && !isRightEdge)) {
 		return;
 	}
