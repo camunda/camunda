@@ -90,6 +90,32 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @Test
+  void shouldAcceptBearerTokenWhoseAudiencesIncludeThePublicApiAudience() throws Exception {
+    // given
+    authenticate(bearer(List.of("other", PUBLIC_API_AUDIENCE)));
+
+    // when
+    final var result = filter("/api/public/collection");
+
+    // then
+    assertThat(result.response().getStatus()).isEqualTo(200);
+    assertThat(result.chain().getRequest()).isNotNull();
+  }
+
+  @Test
+  void shouldRejectBearerTokenWhoseAudiencesExcludeThePublicApiAudience() throws Exception {
+    // given
+    authenticate(bearer(List.of("other1", "other2")));
+
+    // when
+    final var result = filter("/api/public/collection");
+
+    // then
+    assertThat(result.response().getStatus()).isEqualTo(401);
+    assertThat(result.chain().getRequest()).isNull();
+  }
+
+  @Test
   void shouldAcceptSaasTokenWithThisClusterId() throws Exception {
     // given
     final var saas = OptimizePublicApiAccessFilter.forSaas(PUBLIC_API_AUDIENCE, "cluster-1");
