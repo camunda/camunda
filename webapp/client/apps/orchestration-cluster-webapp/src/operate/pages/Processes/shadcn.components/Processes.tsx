@@ -17,6 +17,7 @@ import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/sh
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
 import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
+import {getInlineCondition} from '../VariablesFilter/variableConditions';
 import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
@@ -51,7 +52,7 @@ const Processes: React.FC<Props> = ({search}) => {
 		tenantId: search.tenantId,
 	});
 	const instancesSearch = useMemo<ProcessesSearch>(() => ({...search, variable}), [search, variable]);
-	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
+	const inlineVariableCondition = getInlineCondition(variable);
 	const {
 		processInstanceKey,
 		parentProcessInstanceKey,

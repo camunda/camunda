@@ -11,7 +11,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {Button} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
 import {Title} from '#/operate/shared/FiltersPanel/styled';
-import {isValueRequired, type VariableCondition} from './variableConditions';
+import {getInlineCondition, isValueRequired, type VariableCondition} from './variableConditions';
 import {useVariableConditions} from './variableFilterStore';
 import {SingleConditionFields} from './SingleConditionFields';
 import {ConditionItem, ConditionList} from './styled';
@@ -21,7 +21,7 @@ const VariablesFilter: React.FC = () => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const conditions = useVariableConditions();
-	const showInlineForm = conditions.length === 0 || (conditions.length === 1 && conditions[0]?.operator === 'equals');
+	const showInlineForm = conditions.length === 0 || getInlineCondition(conditions) !== undefined;
 
 	const getConditionLabel = ({name, operator, value}: VariableCondition) => {
 		const label = `${name} ${t(`operate.processes.variableFilter.operators.${operator}`)}`;

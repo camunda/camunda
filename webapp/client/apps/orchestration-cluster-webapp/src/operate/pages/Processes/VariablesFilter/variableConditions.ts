@@ -22,6 +22,11 @@ function isValueRequired(operator: VariableOperator) {
 	return operator !== 'exists' && operator !== 'doesNotExist';
 }
 
+function getInlineCondition(conditions: VariableCondition[]): VariableCondition | undefined {
+	const [condition] = conditions;
+	return conditions.length === 1 && condition?.operator === 'equals' ? condition : undefined;
+}
+
 function parseScalar(input: string): unknown {
 	try {
 		return JSON.parse(input);
@@ -105,6 +110,7 @@ function toVariableEntry({name, operator, value}: VariableCondition): VariableEn
 export {
 	VARIABLE_OPERATORS,
 	isValueRequired,
+	getInlineCondition,
 	smartTransformValue,
 	validateCondition,
 	hasErrors,
