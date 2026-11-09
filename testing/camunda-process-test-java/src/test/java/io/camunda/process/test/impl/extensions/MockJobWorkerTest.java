@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -335,7 +336,8 @@ public class MockJobWorkerTest {
   void shouldMatchJobVariablesNormalizedWithConfiguredMapperForVariablesTable() throws Exception {
     // given: the job variables carry an Integer, but the VariablesTable carries a Long. The mapper
     // is configured to coerce numbers to Long, so the values are normalized and match.
-    when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(new CamundaObjectMapper());
+    final CamundaObjectMapper jsonMapper = spy(new CamundaObjectMapper());
+    when(camundaClient.getConfiguration().getJsonMapper()).thenReturn(jsonMapper);
     when(activatedJob.getVariablesAsMap()).thenReturn(Collections.singletonMap("count", 1));
 
     final VariablesTable variablesTable =
@@ -353,6 +355,9 @@ public class MockJobWorkerTest {
                 .newCompleteCommand(activatedJob)
                 .variables(Collections.singletonMap("matched", true)))
         .send();
+
+    verify(jsonMapper).toJson(1);
+    verify(jsonMapper).toJson(1L);
   }
 
   @Test
@@ -460,8 +465,7 @@ public class MockJobWorkerTest {
             Collections.singletonMap("address", Collections.singletonMap("city", "Berlin")));
 
     final VariablesTable variablesTable =
-        VariablesTable.when(
-                Collections.singletonMap("address", Collections.singletonMap("city", "London")))
+        VariablesTable.when(Collections.singletonMap("address", Collections.emptyMap()))
             .thenReturn(Collections.singletonMap("partially", true))
             .when(Collections.singletonMap("address", Collections.singletonMap("city", "Berlin")))
             .thenReturn(Collections.singletonMap("matched", true));
