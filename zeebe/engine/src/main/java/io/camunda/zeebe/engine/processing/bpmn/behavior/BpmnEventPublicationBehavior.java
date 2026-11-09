@@ -151,6 +151,7 @@ public final class BpmnEventPublicationBehavior {
     record.setThrowElementId(throwElementId);
     record.setEscalationCode(BufferUtil.bufferAsString(escalationCode));
     record.setProcessInstanceKey(context.getProcessInstanceKey());
+    record.setStorageOrdinal(context.getStorageOrdinal());
 
     final var escalationCatchEvent = findEscalationCatchEvent(escalationCode, context);
 
