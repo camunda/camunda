@@ -59,7 +59,10 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
         .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
         .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets())
-        .withConnectorsLogger(runtimeConfiguration.getConnectorsLoggerName());
+        .withConnectorsLogger(runtimeConfiguration.getConnectorsLoggerName())
+        .withManagedScriptsEnabled(runtimeConfiguration.isManagedScriptsEnabled())
+        .withManagedScriptsPythonVersion(runtimeConfiguration.getManagedScriptsPythonVersion())
+        .withManagedScriptsNodeVersion(runtimeConfiguration.getManagedScriptsNodeVersion());
 
     runtimeConfiguration
         .getConnectorsExposedPorts()

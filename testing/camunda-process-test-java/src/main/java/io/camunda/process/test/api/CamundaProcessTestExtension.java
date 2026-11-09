@@ -614,6 +614,51 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Enable or disable managed scripts. If enabled, the Connectors runtime is enabled too, and runs
+   * the Python and JavaScript scripts of managed-script tasks with the {@code local} provider. The
+   * runtime starts from an image built from the Connectors image, with Python and Node.js added.
+   * The image is built on the first run and reused by the next runs. Managed scripts are disabled
+   * by default.
+   *
+   * <p>A task links its script by the name of the deployed resource, such as {@code sum.py}: deploy
+   * the script under that name, not under its classpath path.
+   *
+   * <p>To test a process without running its scripts, keep managed scripts disabled and mock the
+   * job worker of the job type {@code io.camunda:managed-script:1}.
+   *
+   * @param enabled set to true to enable managed scripts
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withManagedScriptsEnabled(final boolean enabled) {
+    runtimeBuilder.withManagedScriptsEnabled(enabled);
+    return this;
+  }
+
+  /**
+   * Configure the Python version that managed scripts run with, such as {@code 3.13}. By default,
+   * the latest version of the package repository of the Connectors image.
+   *
+   * @param version the Python version, 3.10 or later
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withManagedScriptsPythonVersion(final String version) {
+    runtimeBuilder.withManagedScriptsPythonVersion(version);
+    return this;
+  }
+
+  /**
+   * Configure the Node.js major version that managed scripts run with, such as {@code 22}. By
+   * default, the latest version of the package repository of the Connectors image.
+   *
+   * @param version the Node.js major version, 20 or later
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withManagedScriptsNodeVersion(final String version) {
+    runtimeBuilder.withManagedScriptsNodeVersion(version);
+    return this;
+  }
+
+  /**
    * Configure the Connectors Docker image name of the runtime.
    *
    * @param dockerImageName the Docker image name to use
