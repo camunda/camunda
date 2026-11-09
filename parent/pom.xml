@@ -270,7 +270,7 @@
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
     <plugin.version.openapi-generator>7.27.0</plugin.version.openapi-generator>
     <!-- PIT mutation testing; the Maven plugin version also selects the PIT core version -->
-    <plugin.version.pitest>1.30.1</plugin.version.pitest>
+    <plugin.version.pitest>1.30.2</plugin.version.pitest>
     <!-- Gradle counterpart of pitest-maven, read by the Gradle build only -->
     <!-- renovate: datasource=maven depName=info.solidsoft.gradle.pitest:gradle-pitest-plugin -->
     <plugin.version.pitest-gradle>1.19.0</plugin.version.pitest-gradle>
