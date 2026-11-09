@@ -378,8 +378,10 @@ jobs:
             if npx playwright install --with-deps chromium; then
               exit 0
             fi
-            echo "Playwright browser install failed (attempt ${attempt}/3); retrying after backoff..."
-            sleep "$((attempt * 30))"
+            if [ "$attempt" -lt 3 ]; then
+              echo "Playwright browser install failed (attempt ${attempt}/3); retrying after backoff..."
+              sleep "$((attempt * 30))"
+            fi
           done
           echo "Playwright browser install failed after 3 attempts" >&2
           exit 1
