@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregation
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregationSource;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeDateHistogramAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeTermsAggregation.Builder;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator;
@@ -22,7 +23,6 @@ import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SearchCompositeAggregatorTransformer
@@ -50,12 +50,12 @@ public class SearchCompositeAggregatorTransformer
     return builder.build();
   }
 
-  private List<Map<String, CompositeAggregationSource>> toCompositeAggregationSource(
+  private List<NamedValue<CompositeAggregationSource>> toCompositeAggregationSource(
       final List<SearchAggregator> aggregators) {
     return aggregators.stream()
         .map(
             agg ->
-                Map.of(
+                new NamedValue<>(
                     agg.getName(),
                     CompositeAggregationSource.of(
                         sourceBuilder ->

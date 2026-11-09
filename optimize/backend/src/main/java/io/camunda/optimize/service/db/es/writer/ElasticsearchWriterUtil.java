@@ -39,7 +39,7 @@ public final class ElasticsearchWriterUtil {
     return Script.of(
         b ->
             b.lang(ScriptLanguage.Painless)
-                .source(inlineUpdateScript)
+                .source(src -> src.scriptString(inlineUpdateScript))
                 .params(
                     params.entrySet().stream()
                         .collect(
@@ -49,14 +49,17 @@ public final class ElasticsearchWriterUtil {
   public static Script createDefaultScriptWithJsonParams(
       final String inlineUpdateScript, final Map<String, JsonData> params) {
     return Script.of(
-        b -> b.lang(ScriptLanguage.Painless).source(inlineUpdateScript).params(params));
+        b ->
+            b.lang(ScriptLanguage.Painless)
+                .source(src -> src.scriptString(inlineUpdateScript))
+                .params(params));
   }
 
   public static Script createDefaultScriptWithSpecificDtoParams(
       final String inlineUpdateScript, final Map<String, Object> params) {
     return Script.of(
         b -> {
-          b.lang(ScriptLanguage.Painless).source(inlineUpdateScript);
+          b.lang(ScriptLanguage.Painless).source(src -> src.scriptString(inlineUpdateScript));
           if (params != null) {
             b.params(
                 params.entrySet().stream()
@@ -67,6 +70,7 @@ public final class ElasticsearchWriterUtil {
   }
 
   public static Script createDefaultScript(final String inlineUpdateScript) {
-    return Script.of(b -> b.lang(ScriptLanguage.Painless).source(inlineUpdateScript));
+    return Script.of(
+        b -> b.lang(ScriptLanguage.Painless).source(src -> src.scriptString(inlineUpdateScript)));
   }
 }

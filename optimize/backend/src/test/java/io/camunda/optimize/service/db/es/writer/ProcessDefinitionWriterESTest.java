@@ -172,7 +172,8 @@ class ProcessDefinitionWriterESTest {
               assertThat(clause.term().field()).isEqualTo(DEFINITION_DELETED);
               assertThat(clause.term().value().booleanValue()).isFalse();
             });
-    assertThat(scriptCaptor.getValue().source()).isEqualTo("ctx._source.onboarded = true");
+    assertThat(scriptCaptor.getValue().source().scriptString())
+        .isEqualTo("ctx._source.onboarded = true");
   }
 
   private ProcessDefinitionOptimizeDto definition(final String id) {
