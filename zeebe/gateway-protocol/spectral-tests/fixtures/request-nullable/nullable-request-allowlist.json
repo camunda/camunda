@@ -1,0 +1,13 @@
+{
+  "$comment": "Fixture-local allowlist for the no-nullable-request-properties rule, loaded via SPECTRAL_NULLABLE_REQUEST_ALLOWLIST by helpers.js.",
+  "exceptions": [
+    {
+      "reason": "Fixture: allowlisted field of an allowlisted operation.",
+      "fields": { "allowlistedPatch": ["changeset.dueDate"] }
+    },
+    {
+      "reason": "Fixture: allowlisted nullable body schema.",
+      "fields": { "allowlistedRoot": ["<root>"] }
+    }
+  ]
+}
