@@ -52,6 +52,13 @@ ARG JATTACH_CHECKSUM_ARM64
 # connection to github.com. On its own --retry covers a timeout and the HTTP
 # 408, 429, 500, 502, 503 and 504 responses, none of which an SSL connect error
 # (exit 35) is, so without it the download fails on the first attempt.
+#
+# github.com's release-download gateway can return 504 for well over a minute at
+# a time (one such outage, ~90s long, failed every attempt and sank this build).
+# A fixed 5s delay over 5 retries only spans ~25s, too short to outlast it, so
+# the window is widened: dropping --retry-delay lets curl back off exponentially
+# and --retry-max-time keeps retrying for up to three minutes, while
+# --connect-timeout bounds each individual attempt.
 # hadolint ignore=DL4006,DL3018
 RUN apk add -q --no-cache curl && \
     if [ "${TARGETARCH}" = "amd64" ]; then \
@@ -61,7 +68,7 @@ RUN apk add -q --no-cache curl && \
       BINARY="linux-arm64"; \
       CHECKSUM="${JATTACH_CHECKSUM_ARM64}"; \
     fi && \
-    curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors \
+    curl -fsSL --retry 8 --retry-max-time 180 --retry-all-errors --connect-timeout 30 \
       "https://github.com/jattach/jattach/releases/download/${JATTACH_VERSION}/jattach-${BINARY}.tgz" \
       -o jattach.tgz && \
     echo "${CHECKSUM} jattach.tgz" | sha256sum -c && \
