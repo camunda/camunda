@@ -16,6 +16,8 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 public final class ActorTaskQueue extends ActorTaskQueueHead {
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
+  private static final int MIN_STALE_NODES_TO_SKIP = 16;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
   public ActorTaskQueue() {
@@ -38,21 +40,51 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * Attempts to steal a task from this list. The operation does not actually remove the task.
    * Instead, it modifies the task's state.
    *
+   * <p>Nodes whose task was already claimed stay in the list until the owner pops them. A claim
+   * only ever increments the task's state count, so such a node can never be claimed again. To
+   * avoid walking long runs of them on every attempt (e.g. while the owner is blocked and the list
+   * keeps growing), such runs are unlinked from the {@code prev} chain, which is only used for
+   * stealing. Short runs are left in place, so that the common case does not write to shared nodes.
+   *
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    ActorTaskQueueNode node = tail;
+    // newest node kept in the prev chain, and the number of stale nodes walked after it
+    ActorTaskQueueNode keep = null;
+    int skipped = 0;
+    final ActorTaskQueueNode start = tail;
+    ActorTaskQueueNode node = start;
 
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
+        skipStaleNodes(keep, node, skipped);
         return task;
       }
 
-      node = node.prev;
+      final ActorTaskQueueNode older = node.prev;
+      if (keep == null || keep == start || older == null) {
+        // the tail cannot be unlinked and is still written by producers, so the walk keeps the tail
+        // and the node after it; a node without prev is still being appended
+        skipStaleNodes(keep, node, skipped);
+        keep = node;
+        skipped = 0;
+      } else {
+        skipped++;
+      }
+
+      node = older;
     }
 
+    skipStaleNodes(keep, node, skipped);
     return null;
+  }
+
+  private static void skipStaleNodes(
+      final ActorTaskQueueNode keep, final ActorTaskQueueNode next, final int skipped) {
+    if (skipped >= MIN_STALE_NODES_TO_SKIP && next != null && keep.prev != next) {
+      UnsafeApi.putReferenceRelease(keep, PREV_OFFSET, next);
+    }
   }
 
   public ActorTask pop() {
