@@ -138,6 +138,11 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
     private ActorMetrics actorMetrics = ActorMetrics.disabled();
+    // SPIKE: simplified scheduler (fair shared queue, run-next slots, one timer thread, one group)
+    static final boolean SIMPLE_SCHEDULING_ENABLED =
+        Boolean.parseBoolean(System.getProperty("zeebe.actor.simpleScheduler", "true"));
+    private boolean simpleScheduling;
+    private TimerService timerService;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -257,9 +262,27 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
       }
     }
 
+    boolean isSimpleScheduling() {
+      return simpleScheduling;
+    }
+
+    TimerService getTimerService() {
+      return timerService;
+    }
+
     public ActorScheduler build() {
       initActorThreadFactory();
+      // the controlled test scheduler (custom thread factory) drives ActorThreads itself
+      simpleScheduling =
+          SIMPLE_SCHEDULING_ENABLED && actorThreadFactory instanceof DefaultActorThreadFactory;
+      if (simpleScheduling) {
+        timerService = new TimerService(actorClock, schedulerName);
+      }
       initCpuBoundActorThreadGroup();
+      if (simpleScheduling) {
+        // one group for all actors; blocking work goes through ActorControl#runBlocking
+        ioBoundActorGroup = cpuBoundActorGroup;
+      }
       initIoBoundActorThreadGroup();
       initActorExecutor();
       return new ActorScheduler(this);

@@ -12,11 +12,15 @@ import static io.camunda.zeebe.scheduler.ActorThread.ensureCalledFromActorThread
 import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.AllCompletedFutureConsumer;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.future.FutureContinuationRunnable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -70,6 +74,36 @@ public class ActorControl implements ConcurrencyControl {
    * @param action
    * @return
    */
+  /**
+   * SPIKE: runs a blocking call (file I/O, a long JNI call such as a RocksDB checkpoint, ...) on a
+   * separate blocking pool instead of an actor thread. Continue on the actor with {@code
+   * runOnCompletion(future, ...)}; the actor stays responsive meanwhile.
+   */
+  public <T> ActorFuture<T> runBlocking(final Callable<T> callable) {
+    final CompletableActorFuture<T> future = new CompletableActorFuture<>();
+    BlockingPool.EXECUTOR.execute(
+        () -> {
+          try {
+            future.complete(callable.call());
+          } catch (final Throwable t) {
+            future.completeExceptionally(t);
+          }
+        });
+    return future;
+  }
+
+  /** SPIKE: platform threads, created on demand and kept 60 s, for {@link #runBlocking}. */
+  private static final class BlockingPool {
+    private static final AtomicInteger COUNTER = new AtomicInteger();
+    static final ExecutorService EXECUTOR =
+        Executors.newCachedThreadPool(
+            r ->
+                Thread.ofPlatform()
+                    .daemon()
+                    .name("zb-blocking-" + COUNTER.getAndIncrement())
+                    .unstarted(r));
+  }
+
   public ActorFuture<Void> call(final Runnable action) {
     final Callable<Void> c =
         () -> {

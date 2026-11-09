@@ -19,10 +19,12 @@ import java.util.concurrent.CompletableFuture;
 public final class ActorExecutor {
   private final ActorThreadGroup cpuBoundThreads;
   private final ActorThreadGroup ioBoundThreads;
+  private final TimerService timerService;
 
   public ActorExecutor(final ActorSchedulerBuilder builder) {
     ioBoundThreads = builder.getIoBoundActorThreads();
     cpuBoundThreads = builder.getCpuBoundActorThreads();
+    timerService = builder.getTimerService();
   }
 
   /**
@@ -35,6 +37,7 @@ public final class ActorExecutor {
   }
 
   public ActorFuture<Void> submitIoBoundTask(final ActorTask task) {
+    task.ioBound = true;
     return submitTask(task, ioBoundThreads);
   }
 
@@ -49,11 +52,22 @@ public final class ActorExecutor {
   }
 
   public void start() {
+    if (timerService != null) {
+      timerService.start();
+    }
     cpuBoundThreads.start();
-    ioBoundThreads.start();
+    if (ioBoundThreads != cpuBoundThreads) {
+      ioBoundThreads.start();
+    }
   }
 
   public CompletableFuture<Void> closeAsync() {
+    if (timerService != null) {
+      timerService.stop();
+    }
+    if (ioBoundThreads == cpuBoundThreads) {
+      return cpuBoundThreads.closeAsync();
+    }
     return CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
   }
 

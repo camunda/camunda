@@ -22,6 +22,8 @@ public abstract class ActorThreadGroup {
   protected final String groupName;
   protected final ActorThread[] threads;
   protected final WorkStealingGroup tasks;
+  private final FairTaskScheduler fair;
+  private final TimerService timerService;
   protected final int numOfThreads;
   private final String schedulerName;
 
@@ -34,7 +36,14 @@ public abstract class ActorThreadGroup {
     this.numOfThreads = numOfThreads;
     this.schedulerName = schedulerName;
 
-    tasks = new WorkStealingGroup(numOfThreads);
+    if (builder.isSimpleScheduling()) {
+      fair = new FairTaskScheduler(numOfThreads, CpuThreadGroup.simpleSizing(builder)[1]);
+      tasks = null;
+    } else {
+      fair = null;
+      tasks = new WorkStealingGroup(numOfThreads);
+    }
+    timerService = builder.getTimerService();
 
     threads = new ActorThread[numOfThreads];
 
@@ -47,17 +56,32 @@ public abstract class ActorThreadGroup {
                   threadName,
                   t,
                   this,
-                  tasks,
+                  fair != null ? fair : tasks,
                   builder.getActorClock(),
                   builder.getActorTimerQueue(),
                   builder.getActorMetrics(),
-                  builder.getIdleStrategySupplier().get());
+                  fair != null ? fair.newIdleStrategy() : builder.getIdleStrategySupplier().get());
 
       threads[t] = thread;
     }
   }
 
   public void submit(final ActorTask actorTask) {
+    if (fair != null) {
+      actorTask.schedulingState.set(ActorTask.TaskSchedulingState.QUEUED);
+      final ActorThread current = ActorThread.current();
+      if (current != null
+          && current.getActorThreadGroup() == this
+          && current.getCurrentTask() != actorTask) {
+        // woken by a job running on this worker: run it next, here
+        fair.pushRunNext(current.getRunnerId(), actorTask);
+      } else {
+        // from outside the group, or a task re-submitting itself after its turn
+        fair.enqueue(actorTask);
+      }
+      return;
+    }
+
     final ActorThread current = ActorThread.current();
     if (current != null && current.getActorThreadGroup() == this) {
       tasks.submit(actorTask, current.getRunnerId());
@@ -72,6 +96,17 @@ public abstract class ActorThreadGroup {
     for (final ActorThread actorThread : threads) {
       actorThread.start();
     }
+    if (fair != null) {
+      fair.start(threads);
+    }
+  }
+
+  boolean isSimpleScheduling() {
+    return fair != null;
+  }
+
+  TimerService getTimerService() {
+    return timerService;
   }
 
   public String getSchedulerName() {
@@ -80,6 +115,9 @@ public abstract class ActorThreadGroup {
 
   public CompletableFuture<Void> closeAsync() {
     Loggers.ACTOR_LOGGER.debug("Closing actor thread ground '{}'", groupName);
+    if (fair != null) {
+      fair.stop();
+    }
 
     final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[numOfThreads];
 

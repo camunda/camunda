@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class ActorTask {
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
+  private static final int JOB_BUDGET = Integer.getInteger("zeebe.actor.jobBudget", 128);
   private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
       LIFECYCLE_UPDATER =
           AtomicReferenceFieldUpdater.newUpdater(
@@ -46,6 +47,8 @@ public class ActorTask {
   boolean shouldYield;
   final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
   final AtomicLong stateCount = new AtomicLong(0);
+  // SPIKE: submitted with SchedulingHints.ioBound(), i.e. expected to block now and then
+  volatile boolean ioBound;
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
@@ -120,8 +123,20 @@ public class ActorTask {
   public boolean execute(final ActorThread runner) {
     schedulingState.set(TaskSchedulingState.ACTIVE);
 
+    // SPIKE: with simplified scheduling, an actor yields after a budget of jobs so that other
+    // actors get the worker too; the remaining jobs run on its next turn, in order
+    final int budget =
+        actorThreadGroup != null && actorThreadGroup.isSimpleScheduling()
+            ? JOB_BUDGET
+            : Integer.MAX_VALUE;
+    int executed = 0;
+
     boolean resubmit = false;
     while (!resubmit && (currentJob != null || poll())) {
+      if (executed++ >= budget) {
+        resubmit = true;
+        break;
+      }
       currentJob.execute(runner);
 
       switch (currentJob.schedulingState) {

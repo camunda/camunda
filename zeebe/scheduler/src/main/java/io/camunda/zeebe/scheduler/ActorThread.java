@@ -50,6 +50,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private final TaskScheduler taskScheduler;
   private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
   private final ActorThreadGroup actorThreadGroup;
+  // SPIKE: simplified scheduling: timers live in one timer thread, jobs are not pooled
+  private final TimerService timerService;
+  private final boolean poolJobs;
   private volatile ActorThreadState state;
 
   public ActorThread(
@@ -87,6 +90,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     this.clock = clock != null ? clock : new DefaultActorClock();
     timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     actorThreadGroup = threadGroup;
+    final boolean simple = threadGroup != null && threadGroup.isSimpleScheduling();
+    timerService = simple ? threadGroup.getTimerService() : null;
+    poolJobs = !simple;
     this.taskScheduler = taskScheduler;
     this.idleStrategy = new ActorTaskRunnerIdleStrategy(idleStrategy);
   }
@@ -145,12 +151,19 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
   /** Must be called from this thread, schedules a job to be run later. */
   public void scheduleTimer(final TimerSubscription timer) {
-    timerJobQueue.schedule(timer, clock);
+    if (timerService != null) {
+      timerService.schedule(timer, clock);
+    } else {
+      timerJobQueue.schedule(timer, clock);
+    }
   }
 
   /** Must be called from this thread, remove a scheduled job. */
   public void removeTimer(final TimerSubscription timer) {
-    timerJobQueue.remove(timer);
+    if (timerService == null) {
+      timerJobQueue.remove(timer);
+    }
+    // else: cancellation is lazy, the cancelled subscription ignores its expiry
   }
 
   /**
@@ -188,6 +201,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   public ActorJob newJob() {
+    if (!poolJobs) {
+      return new ActorJob();
+    }
     ActorJob job = jobs.poll();
 
     if (job == null) {
@@ -198,6 +214,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   void recycleJob(final ActorJob j) {
+    if (!poolJobs) {
+      return;
+    }
     j.reset();
     jobs.offer(j);
   }
