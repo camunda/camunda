@@ -29,7 +29,7 @@ class OptimizePublicApiAccessFilterTest {
   private static final String PUBLIC_API_AUDIENCE = "optimize-public-api";
 
   private final OptimizePublicApiAccessFilter filter =
-      new OptimizePublicApiAccessFilter(PUBLIC_API_AUDIENCE);
+      OptimizePublicApiAccessFilter.forSelfManaged(PUBLIC_API_AUDIENCE);
 
   @AfterEach
   void clearSecurityContext() {
@@ -90,6 +90,36 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   @Test
+  void shouldAcceptSaasTokenWithThisClusterId() throws Exception {
+    // given
+    final var saas = OptimizePublicApiAccessFilter.forSaas(PUBLIC_API_AUDIENCE, "cluster-1");
+    authenticate(saasBearer("cluster-1"));
+
+    // when
+    final var result = filter(saas, "/api/public/collection");
+
+    // then
+    assertThat(result.response().getStatus()).isEqualTo(200);
+    assertThat(result.chain().getRequest()).isNotNull();
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = "cluster-2")
+  void shouldRejectSaasTokenWithoutThisClusterId(final String clusterId) throws Exception {
+    // given a public API token without the cluster id claim, or with another cluster's id
+    final var saas = OptimizePublicApiAccessFilter.forSaas(PUBLIC_API_AUDIENCE, "cluster-1");
+    authenticate(saasBearer(clusterId));
+
+    // when
+    final var result = filter(saas, "/api/public/collection");
+
+    // then
+    assertThat(result.response().getStatus()).isEqualTo(401);
+    assertThat(result.chain().getRequest()).isNull();
+  }
+
+  @Test
   void shouldRejectBearerTokenWithoutAudience() throws Exception {
     // given a token without an 'aud' claim
     authenticate(
@@ -110,7 +140,7 @@ class OptimizePublicApiAccessFilterTest {
   void shouldRejectEveryRequestWhenNoPublicApiAudienceIsConfigured(final String audience)
       throws Exception {
     // given a token that carries the same blank audience
-    final var unconfigured = new OptimizePublicApiAccessFilter(audience);
+    final var unconfigured = OptimizePublicApiAccessFilter.forSelfManaged(audience);
     authenticate(bearer(audience == null ? PUBLIC_API_AUDIENCE : audience));
     final var request = new MockHttpServletRequest("GET", "/api/public/collection");
     final var response = new MockHttpServletResponse();
@@ -139,6 +169,11 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   private Result filter(final String path) throws Exception {
+    return filter(filter, path);
+  }
+
+  private static Result filter(final OptimizePublicApiAccessFilter filter, final String path)
+      throws Exception {
     final var request = new MockHttpServletRequest("GET", path);
     final var response = new MockHttpServletResponse();
     final var chain = new MockFilterChain();
@@ -151,12 +186,28 @@ class OptimizePublicApiAccessFilterTest {
   }
 
   private static JwtAuthenticationToken bearer(final String audience) {
+    return bearer(List.of(audience));
+  }
+
+  private static JwtAuthenticationToken bearer(final List<String> audience) {
     return new JwtAuthenticationToken(
         Jwt.withTokenValue("token")
             .header("alg", "RS256")
             .subject("client")
-            .audience(List.of(audience))
+            .audience(audience)
             .build());
+  }
+
+  private static JwtAuthenticationToken saasBearer(final String clusterId) {
+    final var token =
+        Jwt.withTokenValue("token")
+            .header("alg", "RS256")
+            .subject("client")
+            .audience(List.of(PUBLIC_API_AUDIENCE));
+    if (clusterId != null) {
+      token.claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId);
+    }
+    return new JwtAuthenticationToken(token.build());
   }
 
   private record Result(MockHttpServletResponse response, MockFilterChain chain) {}

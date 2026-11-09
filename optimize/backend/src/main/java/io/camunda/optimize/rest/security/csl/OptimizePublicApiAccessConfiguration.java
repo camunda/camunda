@@ -33,20 +33,22 @@ public class OptimizePublicApiAccessConfiguration {
   @Conditional(CCSMCondition.class)
   public SecurityHeadersCustomizer ccsmPublicApiAccessFilterCustomizer(
       final ConfigurationService configurationService) {
-    return customizer(configurationService.getOptimizeApiConfiguration().getAudience());
+    return customizer(
+        OptimizePublicApiAccessFilter.forSelfManaged(
+            configurationService.getOptimizeApiConfiguration().getAudience()));
   }
 
-  /** The audience that the legacy SaaS public API decoder validated. */
+  /** The audience and cluster id that the legacy SaaS public API decoder validated. */
   @Bean
   @Conditional(CCSaaSCondition.class)
   public SecurityHeadersCustomizer ccsaasPublicApiAccessFilterCustomizer(
       final ConfigurationService configurationService) {
+    final var cloud = configurationService.getAuthConfiguration().getCloudAuthConfiguration();
     return customizer(
-        configurationService.getAuthConfiguration().getCloudAuthConfiguration().getAudience());
+        OptimizePublicApiAccessFilter.forSaas(cloud.getAudience(), cloud.getClusterId()));
   }
 
-  private static SecurityHeadersCustomizer customizer(final String publicApiAudience) {
-    final var filter = new OptimizePublicApiAccessFilter(publicApiAudience);
+  private static SecurityHeadersCustomizer customizer(final OptimizePublicApiAccessFilter filter) {
     return http -> http.addFilterAfter(filter, AuthorizationFilter.class);
   }
 }

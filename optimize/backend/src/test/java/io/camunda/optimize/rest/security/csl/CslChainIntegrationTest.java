@@ -174,12 +174,14 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsm() throws Exception {
-    assertBearerWithoutPublicApiAudienceRejected(ccsmRunner());
+    assertBearerRejectedOnPublicApi(
+        ccsmRunner(), signBearerToken(), "bearer token without the public API audience");
   }
 
   @Test
   void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsm() throws Exception {
-    assertBearerWithPublicApiAudienceAuthenticates(ccsmRunner(), CCSM_PUBLIC_API_AUDIENCE);
+    assertBearerAuthenticatesOnPublicApi(
+        ccsmRunner(), signBearerToken(CCSM_PUBLIC_API_AUDIENCE, null));
   }
 
   @Test
@@ -258,12 +260,23 @@ class CslChainIntegrationTest {
 
   @Test
   void shouldRejectBearerTokenWithoutPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerWithoutPublicApiAudienceRejected(ccsaasRunner());
+    assertBearerRejectedOnPublicApi(
+        ccsaasRunner(), signBearerToken(), "bearer token without the public API audience");
+  }
+
+  @Test
+  void shouldRejectBearerTokenWithoutClusterIdOnPublicApiForCcsaas() throws Exception {
+    // the shared chain accepts a token without the cluster id claim; the public API does not
+    assertBearerRejectedOnPublicApi(
+        ccsaasRunner(),
+        signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, null),
+        "public API token without the cluster id claim");
   }
 
   @Test
   void shouldAuthenticateBearerTokenWithPublicApiAudienceForCcsaas() throws Exception {
-    assertBearerWithPublicApiAudienceAuthenticates(ccsaasRunner(), CCSAAS_PUBLIC_API_AUDIENCE);
+    assertBearerAuthenticatesOnPublicApi(
+        ccsaasRunner(), signBearerToken(CCSAAS_PUBLIC_API_AUDIENCE, "cluster-1"));
   }
 
   @Test
@@ -637,9 +650,8 @@ class CslChainIntegrationTest {
   }
 
   /** A token without the public API audience, such as a user's login token. */
-  private void assertBearerWithoutPublicApiAudienceRejected(
-      final WebApplicationContextRunner runner) throws Exception {
-    final String token = signBearerToken();
+  private void assertBearerRejectedOnPublicApi(
+      final WebApplicationContextRunner runner, final String token, final String description) {
     runner.run(
         ctx -> {
           final Filter proxy = resolveSecurityFilter(ctx);
@@ -652,18 +664,15 @@ class CslChainIntegrationTest {
           proxy.doFilter(request, response, downstream);
 
           assertThat(response.getStatus())
-              .as(
-                  "bearer token without the public API audience, body: %s",
-                  response.getContentAsString())
+              .as("%s, body: %s", description, response.getContentAsString())
               .isEqualTo(401);
           assertThat(downstream.getRequest()).isNull();
         });
   }
 
-  /** The control for the two rejections above: a public API client still gets through. */
-  private void assertBearerWithPublicApiAudienceAuthenticates(
-      final WebApplicationContextRunner runner, final String audience) throws Exception {
-    final String token = signBearerToken(audience);
+  /** The control for the rejections above: a public API client still gets through. */
+  private void assertBearerAuthenticatesOnPublicApi(
+      final WebApplicationContextRunner runner, final String token) {
     runner.run(
         ctx -> {
           final Filter proxy = resolveSecurityFilter(ctx);
@@ -1175,11 +1184,15 @@ class CslChainIntegrationTest {
   }
 
   private static String signBearerToken() throws Exception {
-    return signBearerToken(null);
+    return signBearerToken(null, null);
   }
 
-  /** A signed bearer token, with the given audience, or without one when it is null. */
-  private static String signBearerToken(final String audience) throws Exception {
+  /**
+   * A signed bearer token with the given audience and SaaS cluster id claim, each left out when it
+   * is null.
+   */
+  private static String signBearerToken(final String audience, final String clusterId)
+      throws Exception {
     final var header = new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(server.kid()).build();
     final var claims =
         new JWTClaimsSet.Builder()
@@ -1188,6 +1201,7 @@ class CslChainIntegrationTest {
             .audience(audience)
             .issueTime(Date.from(Instant.now()))
             .expirationTime(Date.from(Instant.now().plusSeconds(60)))
+            .claim(OptimizeCloudClusterValidator.CLUSTER_CLAIM, clusterId)
             .build();
     final var jwt = new SignedJWT(header, claims);
     jwt.sign(server.signer());
