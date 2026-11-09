@@ -23,6 +23,7 @@ import {
   findUserTask,
   getProcessInstance,
   resumeProcessInstance,
+  resumeProcessInstanceAfterSuspension,
   runProcessInstanceBatch,
   searchUserTasks,
   startUserTaskInstances,
@@ -47,34 +48,48 @@ const cancelingListeners = new Map<string, string>();
 
 test.describe('User Task Suspension API', () => {
   test.afterAll(async ({request}) => {
-    await Promise.all(
-      instancesToCancel.map((key) => cancelProcessInstance(key)),
+    const cancellations = await Promise.allSettled(
+      instancesToCancel.map((key) =>
+        cancelProcessInstance(key, {
+          ignorePendingCancellation: cancelingListeners.has(key),
+        }),
+      ),
     );
     // A failed listener test must not leave cancellation waiting on its job.
-    for (const [processInstanceKey, jobType] of cancelingListeners) {
-      await expect(async () => {
-        const instance = await getProcessInstance(request, processInstanceKey);
-        if (instance.state === 'TERMINATED') {
-          return;
-        }
-        const jobs = await activateJobsByType(
-          request,
-          jobType,
-          processInstanceKey,
-          [],
-          1,
-          1000,
-        );
-        for (const job of jobs) {
-          await completeJob(request, job.jobKey);
-        }
-        expect(
-          (await getProcessInstance(request, processInstanceKey)).state,
-        ).toBe('TERMINATED');
-      }).toPass(extendedAssertionOptions);
-    }
+    const listeners = await Promise.allSettled(
+      [...cancelingListeners].map(async ([processInstanceKey, jobType]) => {
+        await expect(async () => {
+          const instance = await getProcessInstance(
+            request,
+            processInstanceKey,
+          );
+          if (instance.state === 'TERMINATED') {
+            return;
+          }
+          const jobs = await activateJobsByType(
+            request,
+            jobType,
+            processInstanceKey,
+            [],
+            1,
+            1000,
+          );
+          for (const job of jobs) {
+            await completeJob(request, job.jobKey);
+          }
+          expect(
+            (await getProcessInstance(request, processInstanceKey)).state,
+          ).toBe('TERMINATED');
+        }).toPass(extendedAssertionOptions);
+      }),
+    );
     instancesToCancel.length = 0;
     cancelingListeners.clear();
+    expect(
+      [...cancellations, ...listeners].filter(
+        (result) => result.status === 'rejected',
+      ),
+    ).toEqual([]);
   });
 
   test('The isSuspended filter splits suspended and active tasks', async ({
@@ -457,7 +472,6 @@ test.describe('User Task Suspension API', () => {
       1,
       false,
     );
-    instancesToCancel.push(childTask.processInstanceKey);
     await suspendAndExpectSuspended(request, parentKey);
 
     await expectUserTaskSuspended(request, childTask.userTaskKey, false);
@@ -512,7 +526,7 @@ test.describe('User Task Suspension API', () => {
       204,
     );
     await assertStatusCode(
-      await resumeProcessInstance(request, processInstanceKey),
+      await resumeProcessInstanceAfterSuspension(request, processInstanceKey),
       204,
     );
     await expectProcessState(

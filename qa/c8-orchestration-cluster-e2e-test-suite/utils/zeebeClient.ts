@@ -8,7 +8,7 @@
 
 import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
-import {Camunda8} from '@camunda8/sdk';
+import {Camunda8, HTTPError} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {sleep} from './sleep';
 
@@ -111,13 +111,28 @@ const createSingleInstance = async (
 // this suite already relies on for teardown. Pass ignoreNotFound: false when
 // the cancellation itself drives the assertion (e.g. finalizing a drain), so a
 // 404 there surfaces instead of letting the next assertion pass vacuously.
+// Teardown can also tolerate an already-pending cancellation, but other
+// INVALID_STATE conflicts must still surface.
 const cancelProcessInstance = async (
   processInstanceKey: string,
-  {ignoreNotFound = true}: {ignoreNotFound?: boolean} = {},
+  {
+    ignoreNotFound = true,
+    ignorePendingCancellation = false,
+  }: {ignoreNotFound?: boolean; ignorePendingCancellation?: boolean} = {},
 ) => {
   return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
     const status = e?.status ?? e?.code ?? e?.response?.status;
     if (ignoreNotFound && (status === 404 || status === 'NOT_FOUND')) {
+      return;
+    }
+    if (
+      ignorePendingCancellation &&
+      e instanceof HTTPError &&
+      e.status === 409 &&
+      e.title === 'INVALID_STATE' &&
+      typeof e.detail === 'string' &&
+      e.detail.includes('a cancel request is already in progress')
+    ) {
       return;
     }
     throw e;

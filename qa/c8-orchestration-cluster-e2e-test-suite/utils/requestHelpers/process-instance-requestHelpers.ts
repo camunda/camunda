@@ -8,7 +8,12 @@
 
 import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {expect} from '@playwright/test';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {
+  assertInvalidState,
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+} from '../http';
 import {
   DEFAULT_PAGE_LIMIT,
   defaultAssertionOptions,
@@ -357,6 +362,25 @@ export async function resumeProcessInstance(
     }),
     {headers: jsonHeaders(), ...(data !== undefined && {data})},
   );
+}
+
+export async function resumeProcessInstanceAfterSuspension(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  const response = await resumeProcessInstance(request, processInstanceKey);
+  if (response.status() !== 409) {
+    return response;
+  }
+  await assertInvalidState(response);
+  expect((await response.json()).detail).toContain('SUSPENDING');
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'SUSPENDED',
+    extendedAssertionOptions,
+  );
+  return resumeProcessInstance(request, processInstanceKey);
 }
 
 export async function getProcessInstance(
