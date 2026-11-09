@@ -15,6 +15,9 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 public final class ActorTaskQueue extends ActorTaskQueueHead {
+  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
+  private static final int MIN_STALE_NODES_TO_SKIP = 16;
+
   private static final VarHandle HEAD;
   private static final VarHandle TAIL;
 
@@ -30,8 +33,6 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
 
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
-  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
-  private static final int MIN_STALE_NODES_TO_SKIP = 16;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
   /**
