@@ -25,7 +25,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -98,7 +98,7 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   protected CreateProcessInstanceCommandImpl setVariablesInternal(
-      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+      final String variables, final Map<String, VariableMetadata> variablesMetadata) {
     grpcRequestObjectBuilder.setVariables(variables);
     grpcRequestObjectBuilder.clearVariablesMetadata();
     grpcRequestObjectBuilder.putAllVariablesMetadata(

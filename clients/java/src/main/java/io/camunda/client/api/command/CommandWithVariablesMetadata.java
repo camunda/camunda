@@ -42,25 +42,25 @@ public interface CommandWithVariablesMetadata<T> extends CommandWithVariables<T>
    * @throws IllegalArgumentException if the metadata names a variable that is not set by this
    *     command
    */
-  T variables(String variables, Map<String, VariableMetadataInput> variablesMetadata);
+  T variables(String variables, Map<String, VariableMetadata> variablesMetadata);
 
   /**
    * Like {@link CommandWithVariables#variables(Object)}, with variables metadata. See {@link
    * #variables(String, Map)}.
    */
-  T variables(Object variables, Map<String, VariableMetadataInput> variablesMetadata);
+  T variables(Object variables, Map<String, VariableMetadata> variablesMetadata);
 
   /**
    * Like {@link CommandWithVariables#variables(InputStream)}, with variables metadata. See {@link
    * #variables(String, Map)}.
    */
-  T variables(InputStream variables, Map<String, VariableMetadataInput> variablesMetadata);
+  T variables(InputStream variables, Map<String, VariableMetadata> variablesMetadata);
 
   /**
    * Like {@link CommandWithVariables#variables(Map)}, with variables metadata. See {@link
    * #variables(String, Map)}.
    */
-  T variables(Map<String, Object> variables, Map<String, VariableMetadataInput> variablesMetadata);
+  T variables(Map<String, Object> variables, Map<String, VariableMetadata> variablesMetadata);
 
   /**
    * Like {@link CommandWithVariables#variable(String, Object)}, and declares how the variable is
@@ -72,14 +72,14 @@ public interface CommandWithVariablesMetadata<T> extends CommandWithVariables<T>
    *     metadata set on the command before.
    * @return the builder for this command
    */
-  T variable(String key, Object value, VariableMetadataInput variableMetadata);
+  T variable(String key, Object value, VariableMetadata variableMetadata);
 
   /**
    * Like {@link CommandWithVariables#addVariable(String, Object)}, with variables metadata. The
    * metadata replaces the metadata set for the same variable before. The metadata of the other
    * variables is kept.
    */
-  T addVariable(String key, Object value, VariableMetadataInput variableMetadata);
+  T addVariable(String key, Object value, VariableMetadata variableMetadata);
 
   /**
    * Like {@link CommandWithVariables#addVariables(Map)}, with variables metadata. The metadata
@@ -89,6 +89,5 @@ public interface CommandWithVariablesMetadata<T> extends CommandWithVariables<T>
    * @throws IllegalArgumentException if the metadata names a variable that is not set by this
    *     command
    */
-  T addVariables(
-      Map<String, Object> variables, Map<String, VariableMetadataInput> variablesMetadata);
+  T addVariables(Map<String, Object> variables, Map<String, VariableMetadata> variablesMetadata);
 }

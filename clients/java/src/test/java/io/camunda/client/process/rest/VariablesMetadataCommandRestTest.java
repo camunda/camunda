@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.search.enums.ProtectionMode;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
@@ -50,8 +50,8 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .addVariable("a", 1, VariableMetadataInput.redacted())
-        .addVariable("b", 2, VariableMetadataInput.redacted())
+        .addVariable("a", 1, VariableMetadata.redacted())
+        .addVariable("b", 2, VariableMetadata.redacted())
         .addVariable("c", 3)
         .send()
         .join();
@@ -75,9 +75,9 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .addVariable("x", 1, VariableMetadataInput.redacted())
-        .addVariable("x", 2, VariableMetadataInput.of())
-        .addVariables(variables, Collections.singletonMap("y", VariableMetadataInput.redacted()))
+        .addVariable("x", 1, VariableMetadata.redacted())
+        .addVariable("x", 2, VariableMetadata.of())
+        .addVariables(variables, Collections.singletonMap("y", VariableMetadata.redacted()))
         .addVariable("y", 5)
         .send()
         .join();
@@ -95,7 +95,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
   public void shouldNotQueueVariablesWhenAddedMetadataIsRejected() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
-    final Map<String, VariableMetadataInput> invalidMetadata = new HashMap<>();
+    final Map<String, VariableMetadata> invalidMetadata = new HashMap<>();
     invalidMetadata.put("password", null);
     final CreateProcessInstanceCommandStep3 command =
         client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion();
@@ -118,14 +118,14 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
   public void shouldKeepAccumulatedStateWhenReplacingMetadataIsRejected() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
-    final Map<String, VariableMetadataInput> invalidMetadata = new HashMap<>();
+    final Map<String, VariableMetadata> invalidMetadata = new HashMap<>();
     invalidMetadata.put("password", null);
     final CreateProcessInstanceCommandStep3 command =
         client
             .newCreateInstanceCommand()
             .bpmnProcessId("testProcess")
             .latestVersion()
-            .addVariable("secret", "val", VariableMetadataInput.redacted());
+            .addVariable("secret", "val", VariableMetadata.redacted());
 
     // when
     assertThatThrownBy(
@@ -150,7 +150,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .variable("a", 1, VariableMetadataInput.redacted())
+        .variable("a", 1, VariableMetadata.redacted())
         .variable("b", 2)
         .send()
         .join();
@@ -168,21 +168,19 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
             .newCreateInstanceCommand()
             .bpmnProcessId("testProcess")
             .latestVersion()
-            .addVariable("password", "x", VariableMetadataInput.redacted());
+            .addVariable("password", "x", VariableMetadata.redacted());
 
     // when
     assertThatThrownBy(
             () ->
                 command.addVariables(
-                    Collections.singletonMap("name", "z"),
-                    VariableMetadataInput.redacted("pasword")))
+                    Collections.singletonMap("name", "z"), VariableMetadata.redacted("pasword")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("pasword");
     assertThatThrownBy(
             () ->
                 command.variables(
-                    Collections.singletonMap("name", "z"),
-                    VariableMetadataInput.redacted("pasword")))
+                    Collections.singletonMap("name", "z"), VariableMetadata.redacted("pasword")))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("pasword");
     command.send().join();
@@ -206,7 +204,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .bpmnProcessId("testProcess")
         .latestVersion()
         .addVariable("password", "x")
-        .addVariables(Collections.emptyMap(), VariableMetadataInput.redacted("password"))
+        .addVariables(Collections.emptyMap(), VariableMetadata.redacted("password"))
         .send()
         .join();
 
@@ -245,8 +243,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .bpmnProcessId("testProcess")
         .latestVersion()
         .variables(
-            variables,
-            VariableMetadataInput.of(ProtectionMode.REDACT).forVariables("password", "token"))
+            variables, VariableMetadata.of(ProtectionMode.REDACT).forVariables("password", "token"))
         .send()
         .join();
 
@@ -270,7 +267,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .addVariables(variables, VariableMetadataInput.redacted("a", "b"))
+        .addVariables(variables, VariableMetadata.redacted("a", "b"))
         .send()
         .join();
 
@@ -291,7 +288,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .addVariable("a", 1, VariableMetadataInput.builder().protectionModes().build())
+        .addVariable("a", 1, VariableMetadata.builder().protectionModes().build())
         .send()
         .join();
 

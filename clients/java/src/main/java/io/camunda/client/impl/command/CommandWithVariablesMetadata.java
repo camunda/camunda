@@ -16,7 +16,7 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,14 +30,14 @@ import java.util.Map;
  */
 public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariables<T> {
 
-  private final Map<String, VariableMetadataInput> accumulatedVariablesMetadata = new HashMap<>();
+  private final Map<String, VariableMetadata> accumulatedVariablesMetadata = new HashMap<>();
 
   public CommandWithVariablesMetadata(final JsonMapper jsonMapper) {
     super(jsonMapper);
   }
 
   public T variables(
-      final InputStream variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+      final InputStream variables, final Map<String, VariableMetadata> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
     ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     return applyWithMetadata(
@@ -46,7 +46,7 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
   }
 
   public T variables(
-      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+      final String variables, final Map<String, VariableMetadata> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
     ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     return applyWithMetadata(
@@ -55,8 +55,7 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
   }
 
   public T variables(
-      final Map<String, Object> variables,
-      final Map<String, VariableMetadataInput> variablesMetadata) {
+      final Map<String, Object> variables, final Map<String, VariableMetadata> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
     ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     return applyWithMetadata(
@@ -64,15 +63,14 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
   }
 
   public T variables(
-      final Object variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+      final Object variables, final Map<String, VariableMetadata> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
     ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
     return applyWithMetadata(
         replacingWithObject(variables), validatedVariablesMetadata(variablesMetadata));
   }
 
-  public T variable(
-      final String key, final Object value, final VariableMetadataInput variableMetadata) {
+  public T variable(final String key, final Object value, final VariableMetadata variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
     ArgumentUtil.ensureNotNull("variableMetadata", variableMetadata);
     return applyWithMetadata(
@@ -80,7 +78,7 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
   }
 
   public T addVariable(
-      final String key, final Object value, final VariableMetadataInput variableMetadata) {
+      final String key, final Object value, final VariableMetadata variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
     ArgumentUtil.ensureNotNull("variableMetadata", variableMetadata);
     return addVariables(
@@ -88,16 +86,14 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
   }
 
   public T addVariables(
-      final Map<String, Object> variables,
-      final Map<String, VariableMetadataInput> variablesMetadata) {
+      final Map<String, Object> variables, final Map<String, VariableMetadata> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
     ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    final Map<String, VariableMetadataInput> addedMetadata =
+    final Map<String, VariableMetadata> addedMetadata =
         validatedVariablesMetadata(variablesMetadata);
     final VariablesUpdate update = adding(variables);
 
-    final Map<String, VariableMetadataInput> allMetadata =
-        new HashMap<>(accumulatedVariablesMetadata);
+    final Map<String, VariableMetadata> allMetadata = new HashMap<>(accumulatedVariablesMetadata);
     allMetadata.putAll(addedMetadata);
     return applyWithMetadata(update, allMetadata);
   }
@@ -116,7 +112,7 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
    * is none, in which case the request carries none.
    */
   protected abstract T setVariablesInternal(
-      String variables, Map<String, VariableMetadataInput> variablesMetadata);
+      String variables, Map<String, VariableMetadata> variablesMetadata);
 
   @Override
   protected final T setVariablesInternal(final String variables) {
@@ -128,8 +124,8 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
    * accumulated state, so that a call that fails leaves what was accumulated before untouched.
    */
   private T applyWithMetadata(
-      final VariablesUpdate update, final Map<String, VariableMetadataInput> variablesMetadata) {
-    final Map<String, VariableMetadataInput> metadata = new HashMap<>(variablesMetadata);
+      final VariablesUpdate update, final Map<String, VariableMetadata> variablesMetadata) {
+    final Map<String, VariableMetadata> metadata = new HashMap<>(variablesMetadata);
     metadata
         .keySet()
         .forEach(
@@ -149,9 +145,9 @@ public abstract class CommandWithVariablesMetadata<T> extends CommandWithVariabl
     return result;
   }
 
-  private static Map<String, VariableMetadataInput> validatedVariablesMetadata(
-      final Map<String, VariableMetadataInput> variablesMetadata) {
-    final Map<String, VariableMetadataInput> result = new HashMap<>();
+  private static Map<String, VariableMetadata> validatedVariablesMetadata(
+      final Map<String, VariableMetadata> variablesMetadata) {
+    final Map<String, VariableMetadata> result = new HashMap<>();
     variablesMetadata.forEach(
         (name, value) -> {
           ArgumentUtil.ensureNotNull("variable name in variablesMetadata", name);

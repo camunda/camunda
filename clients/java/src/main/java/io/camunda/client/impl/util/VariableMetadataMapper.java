@@ -15,10 +15,9 @@
  */
 package io.camunda.client.impl.util;
 
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.search.enums.ProtectionMode;
 import io.camunda.client.protocol.rest.ProtectionModeEnum;
-import io.camunda.client.protocol.rest.VariableMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,14 +29,15 @@ public final class VariableMetadataMapper {
   private VariableMetadataMapper() {}
 
   /** Returns {@code null} when there is nothing to send. */
-  public static Map<String, VariableMetadata> toRest(
-      final Map<String, VariableMetadataInput> variablesMetadata) {
-    final Map<String, VariableMetadata> result = new LinkedHashMap<>();
+  public static Map<String, io.camunda.client.protocol.rest.VariableMetadata> toRest(
+      final Map<String, VariableMetadata> variablesMetadata) {
+    final Map<String, io.camunda.client.protocol.rest.VariableMetadata> result =
+        new LinkedHashMap<>();
     variablesMetadata.forEach(
         (name, variableMetadata) ->
             result.put(
                 name,
-                new VariableMetadata()
+                new io.camunda.client.protocol.rest.VariableMetadata()
                     .protectionModes(
                         variableMetadata.getProtectionModes().stream()
                             .map(mode -> EnumUtil.convert(mode, ProtectionModeEnum.class))
@@ -46,7 +46,7 @@ public final class VariableMetadataMapper {
   }
 
   public static Map<String, GatewayOuterClass.VariableMetadata> toGrpc(
-      final Map<String, VariableMetadataInput> variablesMetadata) {
+      final Map<String, VariableMetadata> variablesMetadata) {
     final Map<String, GatewayOuterClass.VariableMetadata> result = new LinkedHashMap<>();
     variablesMetadata.forEach(
         (name, variableMetadata) -> {

@@ -20,13 +20,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.VariableMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
@@ -69,7 +69,7 @@ public final class SetVariablesTest extends ClientTest {
         .newSetVariablesCommand(123)
         .variables(
             "{\"secret\": \"val\"}",
-            Collections.singletonMap("secret", VariableMetadataInput.redacted()))
+            Collections.singletonMap("secret", VariableMetadata.redacted()))
         .send()
         .join();
 
@@ -77,7 +77,7 @@ public final class SetVariablesTest extends ClientTest {
     final SetVariablesRequest request = gatewayService.getLastRequest();
     assertThat(request.getVariablesMetadataMap()).containsOnlyKeys("secret");
     assertThat(request.getVariablesMetadataMap().get("secret").getProtectionModesList())
-        .containsExactly(VariableMetadata.ProtectionMode.REDACT);
+        .containsExactly(GatewayOuterClass.VariableMetadata.ProtectionMode.REDACT);
   }
 
   @Test
@@ -88,7 +88,7 @@ public final class SetVariablesTest extends ClientTest {
     // when
     client
         .newSetVariablesCommand(123)
-        .variable("a", 1, VariableMetadataInput.builder().protectionModes().build())
+        .variable("a", 1, VariableMetadata.builder().protectionModes().build())
         .send()
         .join();
 

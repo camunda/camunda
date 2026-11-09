@@ -16,13 +16,13 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.enums.ProtectionMode;
-import io.camunda.client.api.search.response.VariableMetadata;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.EnumUtil;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class VariableMetadataImpl implements VariableMetadata {
+public class VariableMetadataImpl implements Variable.Metadata {
 
   private final Set<ProtectionMode> protectionModes;
 

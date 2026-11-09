@@ -18,7 +18,6 @@ package io.camunda.client.impl.search.response;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.api.search.response.VariableMetadata;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.protocol.rest.VariableSearchResult;
@@ -33,7 +32,7 @@ public class VariableImpl implements Variable {
   private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
-  private final VariableMetadata metadata;
+  private final Metadata metadata;
   @JsonIgnore private final JsonMapper jsonMapper;
 
   public VariableImpl(final VariableSearchResult item, final JsonMapper jsonMapper) {
@@ -98,7 +97,7 @@ public class VariableImpl implements Variable {
   }
 
   @Override
-  public VariableMetadata getMetadata() {
+  public Metadata getMetadata() {
     return metadata;
   }
 

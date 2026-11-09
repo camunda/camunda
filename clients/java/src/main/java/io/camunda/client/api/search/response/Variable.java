@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.search.enums.ProtectionMode;
+import java.util.Set;
 
 public interface Variable {
   /* The key of the variable */
@@ -54,7 +55,7 @@ public interface Variable {
    * @return the variable metadata, or {@code null} if the server did not return any
    */
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
-  VariableMetadata getMetadata();
+  Metadata getMetadata();
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
@@ -67,7 +68,7 @@ public interface Variable {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
   default boolean isRedacted() {
-    final VariableMetadata metadata = getMetadata();
+    final Metadata metadata = getMetadata();
     return metadata != null
         && metadata.getProtectionModes() != null
         && metadata.getProtectionModes().contains(ProtectionMode.REDACT);
@@ -82,4 +83,12 @@ public interface Variable {
    * @throws IllegalStateException if the variable value is truncated or redacted
    */
   <T> T getValueAsType(Class<T> type);
+
+  /** Describes how a variable is treated, for example which protections apply to its value. */
+  @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
+  interface Metadata {
+
+    /** The protections applied to the variable. */
+    Set<ProtectionMode> getProtectionModes();
+  }
 }

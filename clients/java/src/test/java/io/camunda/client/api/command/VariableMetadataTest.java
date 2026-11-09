@@ -22,16 +22,16 @@ import io.camunda.client.api.search.enums.ProtectionMode;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-class VariableMetadataInputTest {
+class VariableMetadataTest {
 
   @Test
   void shouldReplaceProtectionsDeclaredOnTheBuilderBefore() {
     // given
-    final VariableMetadataInput.Builder builder =
-        VariableMetadataInput.builder().protectionModes(ProtectionMode.REDACT);
+    final VariableMetadata.Builder builder =
+        VariableMetadata.builder().protectionModes(ProtectionMode.REDACT);
 
     // when
-    final VariableMetadataInput metadata = builder.protectionModes().build();
+    final VariableMetadata metadata = builder.protectionModes().build();
 
     // then
     // the last declaration wins, declaring no modes replaces the earlier ones with none
@@ -41,30 +41,30 @@ class VariableMetadataInputTest {
   @Test
   void shouldHaveNoProtectionsByDefault() {
     // when / then
-    assertThat(VariableMetadataInput.builder().build().getProtectionModes()).isEmpty();
-    assertThat(VariableMetadataInput.of()).isEqualTo(VariableMetadataInput.builder().build());
+    assertThat(VariableMetadata.builder().build().getProtectionModes()).isEmpty();
+    assertThat(VariableMetadata.of()).isEqualTo(VariableMetadata.builder().build());
   }
 
   @Test
   void shouldRejectUnknownProtectionMode() {
     // when / then
-    assertThatThrownBy(() -> VariableMetadataInput.of(ProtectionMode.UNKNOWN_ENUM_VALUE))
+    assertThatThrownBy(() -> VariableMetadata.of(ProtectionMode.UNKNOWN_ENUM_VALUE))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("UNKNOWN_ENUM_VALUE");
     assertThatThrownBy(
             () ->
-                VariableMetadataInput.of(
+                VariableMetadata.of(
                     Arrays.asList(ProtectionMode.REDACT, ProtectionMode.UNKNOWN_ENUM_VALUE)))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> VariableMetadataInput.of((ProtectionMode) null))
+    assertThatThrownBy(() -> VariableMetadata.of((ProtectionMode) null))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldNotChangeTheBuilderWhenAModeIsRejected() {
     // given
-    final VariableMetadataInput.Builder builder =
-        VariableMetadataInput.builder().protectionModes(ProtectionMode.REDACT);
+    final VariableMetadata.Builder builder =
+        VariableMetadata.builder().protectionModes(ProtectionMode.REDACT);
 
     // when
     assertThatThrownBy(() -> builder.protectionModes(ProtectionMode.UNKNOWN_ENUM_VALUE))

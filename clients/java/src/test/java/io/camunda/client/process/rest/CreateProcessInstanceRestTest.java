@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
@@ -97,7 +97,7 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .variable("secret", "val", VariableMetadataInput.redacted())
+        .variable("secret", "val", VariableMetadata.redacted())
         .send()
         .join();
 

@@ -21,7 +21,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -138,7 +138,7 @@ public final class SetVariablesCommandImpl
 
   @Override
   protected SetVariablesCommandStep2 setVariablesInternal(
-      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
+      final String variables, final Map<String, VariableMetadata> variablesMetadata) {
     grpcRequestObjectBuilder.setVariables(variables);
     grpcRequestObjectBuilder.clearVariablesMetadata();
     grpcRequestObjectBuilder.putAllVariablesMetadata(

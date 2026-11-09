@@ -34,7 +34,7 @@ import java.util.Set;
  *     .newCreateInstanceCommand()
  *     .bpmnProcessId("order-process")
  *     .latestVersion()
- *     .addVariable("password", "secret", VariableMetadataInput.redacted())
+ *     .addVariable("password", "secret", VariableMetadata.redacted())
  *     .send();
  * }</pre>
  *
@@ -52,11 +52,11 @@ import java.util.Set;
  * variable is not supported.
  */
 @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
-public final class VariableMetadataInput {
+public final class VariableMetadata {
 
   private final Set<ProtectionMode> protectionModes;
 
-  private VariableMetadataInput(final Set<ProtectionMode> protectionModes) {
+  private VariableMetadata(final Set<ProtectionMode> protectionModes) {
     final Set<ProtectionMode> copy = EnumSet.noneOf(ProtectionMode.class);
     copy.addAll(protectionModes);
     this.protectionModes = Collections.unmodifiableSet(copy);
@@ -68,47 +68,46 @@ public final class VariableMetadataInput {
 
   /**
    * Declares the given protection modes, for example {@code
-   * VariableMetadataInput.of(ProtectionMode.REDACT)}. Without any mode, the variable has no
-   * protections.
+   * VariableMetadata.of(ProtectionMode.REDACT)}. Without any mode, the variable has no protections.
    *
    * @throws IllegalArgumentException if a mode is {@code null} or {@link
    *     ProtectionMode#UNKNOWN_ENUM_VALUE}
    */
-  public static VariableMetadataInput of(final ProtectionMode... protectionModes) {
+  public static VariableMetadata of(final ProtectionMode... protectionModes) {
     return builder().protectionModes(protectionModes).build();
   }
 
   /** Like {@link #of(ProtectionMode...)}, for a collection of protection modes. */
-  public static VariableMetadataInput of(final Collection<ProtectionMode> protectionModes) {
+  public static VariableMetadata of(final Collection<ProtectionMode> protectionModes) {
     return builder().protectionModes(protectionModes).build();
   }
 
   /** Redacts the variable value irrecoverably before it is stored. */
-  public static VariableMetadataInput redacted() {
+  public static VariableMetadata redacted() {
     return of(ProtectionMode.REDACT);
   }
 
   /**
    * Redacts the values of the given variables irrecoverably before they are stored, for example
-   * {@code addVariables(map, VariableMetadataInput.redacted("password", "token"))}. Same as {@code
+   * {@code addVariables(map, VariableMetadata.redacted("password", "token"))}. Same as {@code
    * redacted().forVariables(variableNames)}.
    *
    * @param variableNames the names of the variables to redact
    * @return the metadata keyed by variable name
    */
-  public static Map<String, VariableMetadataInput> redacted(final String... variableNames) {
+  public static Map<String, VariableMetadata> redacted(final String... variableNames) {
     return redacted().forVariables(variableNames);
   }
 
   /**
    * Applies this metadata to each of the given variables, for example {@code variables(map,
-   * VariableMetadataInput.redacted().forVariables("password", "token"))}.
+   * VariableMetadata.redacted().forVariables("password", "token"))}.
    *
    * @param variableNames the names of the variables this metadata applies to
    * @return the metadata keyed by variable name
    */
-  public Map<String, VariableMetadataInput> forVariables(final String... variableNames) {
-    final Map<String, VariableMetadataInput> result = new LinkedHashMap<>();
+  public Map<String, VariableMetadata> forVariables(final String... variableNames) {
+    final Map<String, VariableMetadata> result = new LinkedHashMap<>();
     for (final String variableName : variableNames) {
       result.put(variableName, this);
     }
@@ -122,8 +121,8 @@ public final class VariableMetadataInput {
 
   @Override
   public boolean equals(final Object o) {
-    return o instanceof VariableMetadataInput
-        && Objects.equals(protectionModes, ((VariableMetadataInput) o).protectionModes);
+    return o instanceof VariableMetadata
+        && Objects.equals(protectionModes, ((VariableMetadata) o).protectionModes);
   }
 
   @Override
@@ -133,7 +132,7 @@ public final class VariableMetadataInput {
 
   @Override
   public String toString() {
-    return "VariableMetadataInput{protectionModes=" + protectionModes + '}';
+    return "VariableMetadata{protectionModes=" + protectionModes + '}';
   }
 
   public static final class Builder {
@@ -164,8 +163,8 @@ public final class VariableMetadataInput {
       return this;
     }
 
-    public VariableMetadataInput build() {
-      return new VariableMetadataInput(protectionModes);
+    public VariableMetadata build() {
+      return new VariableMetadata(protectionModes);
     }
   }
 }

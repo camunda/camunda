@@ -18,10 +18,9 @@ package io.camunda.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.client.api.command.VariableMetadataInput;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.protocol.rest.ProtectionModeEnum;
 import io.camunda.client.protocol.rest.SetVariableRequest;
-import io.camunda.client.protocol.rest.VariableMetadata;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
@@ -54,7 +53,7 @@ public class SetVariablesRestTest extends ClientRestTest {
     // when
     client
         .newSetVariablesCommand(123)
-        .variables(variables, Collections.singletonMap("secret", VariableMetadataInput.redacted()))
+        .variables(variables, Collections.singletonMap("secret", VariableMetadata.redacted()))
         .send()
         .join();
 
@@ -63,7 +62,7 @@ public class SetVariablesRestTest extends ClientRestTest {
     Assertions.assertThat(request.getVariablesMetadata())
         .containsOnlyKeys("secret")
         .extractingByKey("secret")
-        .extracting(VariableMetadata::getProtectionModes)
+        .extracting(io.camunda.client.protocol.rest.VariableMetadata::getProtectionModes)
         .isEqualTo(Collections.singletonList(ProtectionModeEnum.REDACT));
   }
 
