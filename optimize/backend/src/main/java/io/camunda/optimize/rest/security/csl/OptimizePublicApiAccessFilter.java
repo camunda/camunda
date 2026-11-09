@@ -13,9 +13,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -32,7 +34,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * handlers perform no per-user authorization, because they serve machine clients. So on these
  * paths, this filter answers {@code 401} unless the request carries a bearer token whose audience
  * contains the public API audience: {@code api.audience} for Self-Managed, the cloud API audience
- * for SaaS. These are the audiences that the legacy public API decoders validated.
+ * for SaaS. In SaaS, the token must also carry this cluster's id. These are the checks that the
+ * legacy public API decoders made.
  */
 public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 
@@ -55,12 +58,9 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
           PathPatternRequestMatcher.withDefaults().matcher(INGESTION_VARIABLE_PATTERN));
 
   private final String publicApiAudience;
+  private final String clusterId;
 
-  /**
-   * @param publicApiAudience the audience a public API token must carry; when it is blank, every
-   *     request on the public paths is denied, as the legacy audience validation did
-   */
-  public OptimizePublicApiAccessFilter(final String publicApiAudience) {
+  private OptimizePublicApiAccessFilter(final String publicApiAudience, final String clusterId) {
     if (publicApiAudience == null || publicApiAudience.isBlank()) {
       this.publicApiAudience = null;
       LOG.warn(
@@ -71,6 +71,27 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
     } else {
       this.publicApiAudience = publicApiAudience;
     }
+    this.clusterId = clusterId;
+  }
+
+  /**
+   * @param publicApiAudience the audience a public API token must carry; when it is blank, every
+   *     request on the public paths is denied, as the legacy audience validation did
+   */
+  public static OptimizePublicApiAccessFilter forSelfManaged(final String publicApiAudience) {
+    return new OptimizePublicApiAccessFilter(publicApiAudience, null);
+  }
+
+  /**
+   * @param publicApiAudience see {@link #forSelfManaged(String)}
+   * @param clusterId the cluster id a public API token must carry in its cluster id claim. The
+   *     shared chain accepts a token without the claim, because the login token has none; the
+   *     legacy public API decoder required it.
+   */
+  public static OptimizePublicApiAccessFilter forSaas(
+      final String publicApiAudience, final String clusterId) {
+    return new OptimizePublicApiAccessFilter(
+        publicApiAudience, Objects.requireNonNull(clusterId, "clusterId must not be null"));
   }
 
   @Override
@@ -84,22 +105,46 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
-    if (SecurityContextHolder.getContext().getAuthentication()
-        instanceof final JwtAuthenticationToken jwtAuthentication) {
-      // a token without an 'aud' claim has a null audience list
-      final List<String> audience = jwtAuthentication.getToken().getAudience();
-      if (publicApiAudience != null && audience != null && audience.contains(publicApiAudience)) {
-        filterChain.doFilter(request, response);
-        return;
-      }
-      LOG.debug(
-          "Denying bearer request at {}: the token's audience is not the public API audience",
-          request.getRequestURI());
-    } else {
-      LOG.debug(
-          "Denying request at {}: the public API accepts only a bearer token, not a session",
-          request.getRequestURI());
+    final Denial denial = check();
+    if (denial == null) {
+      filterChain.doFilter(request, response);
+      return;
     }
+    LOG.debug("Denying request at {}: {}", request.getRequestURI(), denial.reason);
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+  }
+
+  private Denial check() {
+    if (!(SecurityContextHolder.getContext().getAuthentication()
+        instanceof final JwtAuthenticationToken jwtAuthentication)) {
+      return Denial.NOT_A_BEARER_TOKEN;
+    }
+    if (publicApiAudience == null) {
+      return Denial.NO_AUDIENCE_CONFIGURED;
+    }
+    final Jwt token = jwtAuthentication.getToken();
+    // a token without an 'aud' claim has a null audience list
+    final List<String> audience = token.getAudience();
+    if (audience == null || !audience.contains(publicApiAudience)) {
+      return Denial.WRONG_AUDIENCE;
+    }
+    if (clusterId != null
+        && !clusterId.equals(token.getClaims().get(OptimizeCloudClusterValidator.CLUSTER_CLAIM))) {
+      return Denial.WRONG_CLUSTER;
+    }
+    return null;
+  }
+
+  private enum Denial {
+    NOT_A_BEARER_TOKEN("the public API accepts only a bearer token, not a session"),
+    NO_AUDIENCE_CONFIGURED("no public API audience is configured"),
+    WRONG_AUDIENCE("the token's audience is not the public API audience"),
+    WRONG_CLUSTER("the token does not carry this cluster's id");
+
+    private final String reason;
+
+    Denial(final String reason) {
+      this.reason = reason;
+    }
   }
 }
