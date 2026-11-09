@@ -611,11 +611,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         # predictable read rates.
         io-rate-bytes-per-second: 0 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_IORATEBYTESPERSECOND
         # Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a safety
-        # cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}. Only checked
-        # when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total memory directly,
-        # via {@link #memoryFraction}, so this cap does not apply there). The value must be greater than 0 and
-        # at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means RocksDB is
-        # never allowed to use more than 50% of total system memory.
+        # cap on top of the memory configured via {@link #memoryAllocationStrategy}. The value must be greater
+        # than 0 and at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means
+        # RocksDB is never allowed to use more than 50% of total system memory.
         max-memory-fraction: -1 # Type: Double, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
         # performance optimization: if you set a value greater than zero, it will keep track and cap the
