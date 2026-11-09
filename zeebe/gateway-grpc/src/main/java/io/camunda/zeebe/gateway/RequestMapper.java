@@ -439,7 +439,7 @@ public final class RequestMapper extends RequestUtil {
       final GatewayOuterClass.VariableMetadata.ProtectionMode mode) {
     return switch (mode) {
       case REDACT -> ProtectionMode.REDACT;
-      case UNRECOGNIZED ->
+      case PROTECTION_MODE_UNSPECIFIED, UNRECOGNIZED ->
           throw new IllegalArgumentException(
               "Expected protection mode to be one of %s, but it was not recognized"
                   .formatted(List.of(ProtectionMode.values())));
