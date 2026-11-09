@@ -18,9 +18,13 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 
 /**
- * Resumes a suspended job like {@link JobResumedApplier}, except for a job with an open secret
- * resolution incident. That job goes back to {@link State#WAITING_FOR_SECRET_RESOLUTION}, the state
- * the incident put it in, so only resolving the incident hands it out again.
+ * Makes a suspended job activatable again when its process instance is resumed, using the type,
+ * tenant and priority from the stored job. Does nothing unless the job is in {@link
+ * State#SUSPENDED}, so a job that a worker or a failure owns is never re-inserted into the index. A
+ * job with an open secret resolution incident goes back to {@link
+ * State#WAITING_FOR_SECRET_RESOLUTION} instead, so only resolving the incident hands it out again;
+ * any other secret-waiting job is re-parked by its next activation if its secrets are still
+ * missing.
  */
 public final class JobResumedV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
