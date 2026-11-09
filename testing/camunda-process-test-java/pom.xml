@@ -21,7 +21,7 @@
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
     <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
-    <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Renovate keeps it current; when updating manually, also change the same value in build.gradle.kts. -->
+    <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Renovate keeps it current; when updating manually, also change the same value in build.gradle.kts. The release workflow overrides it with the release version for X.Y.0 releases, because Connectors X.Y.0 is published after Camunda X.Y.0. -->
     <io.camunda.process.test.connectorsDockerImageVersion>8.10.3</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
