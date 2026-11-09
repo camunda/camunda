@@ -36,13 +36,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 
+  /** Also listed in {@link OptimizeSecurityPathAdapter#apiPaths()}, which must keep both. */
+  static final String PUBLIC_API_PATTERN = "/api/public/**";
+
+  static final String INGESTION_VARIABLE_PATTERN = "/api/ingestion/variable";
+
   private static final Logger LOG = LoggerFactory.getLogger(OptimizePublicApiAccessFilter.class);
-  private static final String PUBLIC_API_PATTERN = "/api/public/**";
-  private static final String INGESTION_VARIABLE_PATTERN = "/api/ingestion/variable";
 
   /**
    * Spring's path patterns decode each path segment before they match, as the request mapping does,
-   * so an encoded path such as {@code /api/p%75blic/collection} cannot skip this filter.
+   * so an encoded path such as {@code /api/p%75blic/collection} cannot skip this filter. The
+   * ingestion pattern does not match a trailing slash; that is safe while trailing-slash matching
+   * stays off in Spring MVC, its default since Spring 6.
    */
   private static final RequestMatcher PUBLIC_API_PATHS =
       new OrRequestMatcher(
