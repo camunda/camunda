@@ -49,8 +49,8 @@ public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
     return Set.of(
         // Bearer-only surface for public API clients: OptimizePublicApiAccessFilter rejects the
         // session and tokens without the public API audience on these two paths.
-        "/api/public/**",
-        "/api/ingestion/variable",
+        OptimizePublicApiAccessFilter.PUBLIC_API_PATTERN,
+        OptimizePublicApiAccessFilter.INGESTION_VARIABLE_PATTERN,
         // Internal API, reachable with a bearer token as well as the session.
         "/api/alert/**",
         "/api/analysis/**",
