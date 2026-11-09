@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
@@ -153,6 +154,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -4618,10 +4620,7 @@ final class JsonSerializableToJsonTest {
                     .setBatchOperationKey(12345L)
                     .setItems(
                         List.of(
-                            new BatchOperationItem()
-                                .setItemKey(1L)
-                                .setProcessInstanceKey(2L)
-                                .setRootProcessInstanceKey(3L),
+                            new BatchOperationItem(1L, 2L, 3L, 1001),
                             new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L)))
                     .setStorageOrdinal(14),
         """
@@ -4631,15 +4630,17 @@ final class JsonSerializableToJsonTest {
                       "itemKey": 1,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": 3,
+                      "storageOrdinal": 1001,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 72
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": -1,
+                      "storageOrdinal": 0,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 70
                     }
                   ],
                   "batchOperationKey": 12345,
@@ -4658,12 +4659,44 @@ final class JsonSerializableToJsonTest {
             () ->
                 new BatchOperationExecutionRecord()
                     .setBatchOperationKey(12345L)
-                    .setItemKeys(Set.of(1L, 2L))
+                    .setItems(
+                        List.of(
+                            new BatchOperationExecutionItem(1L, 1001),
+                            new BatchOperationExecutionItem(2L, 1002)))
                     .setStorageOrdinal(15),
         """
                 {
                   "batchOperationKey": 12345,
                   "itemKeys": [1, 2],
+                  "items": [
+                    { "itemKey": 1, "storageOrdinal": 1001 },
+                    { "itemKey": 2, "storageOrdinal": 1002 }
+                  ],
+                  "storageOrdinal": 15
+                }
+                """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////// BatchOperationExecutionRecord with keys only
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationExecutionRecord with keys only",
+        (Supplier<BatchOperationExecutionRecord>)
+            () ->
+                new BatchOperationExecutionRecord()
+                    .setBatchOperationKey(12345L)
+                    .setItemKeys(new TreeSet<>(Set.of(1L, 2L)))
+                    .setStorageOrdinal(15),
+        """
+                {
+                  "batchOperationKey": 12345,
+                  "itemKeys": [1, 2],
+                  "items": [
+                    { "itemKey": 1, "storageOrdinal": 0 },
+                    { "itemKey": 2, "storageOrdinal": 0 }
+                  ],
                   "storageOrdinal": 15
                 }
                 """
@@ -4681,6 +4714,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "batchOperationKey": 12345,
                   "itemKeys": [],
+                  "items": [],
                   "storageOrdinal": 0
                 }
                 """
