@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build and post the daily load-test results table to Slack.
 
-Renders a side-by-side metrics table — one column per variant — from the end-of-soak metric
-snapshots and posts it to the reliability-testing Slack channel via an incoming webhook. Invoked
-by the `notify-results` job of `.github/workflows/camunda-daily-load-tests.yml`.
+Renders a side-by-side metrics table (a Slack `table` block), one column per variant, from the
+end-of-soak metric snapshots and posts it to the reliability-testing Slack channel via an incoming
+webhook. Invoked by the `notify-results` job of
+`.github/workflows/camunda-daily-load-tests.yml`.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml`, which holds the
 display metadata of the metrics that `loadtestctl report` collects with
@@ -95,21 +96,20 @@ def fmt(v, q):
         return f'{n:.{dec}f}{(" " + unit) if unit else ""}'
 
 
-lw = max(len('Metric'), *(len(q['description']) for q in queries))
-col_widths = {
-    v['label']: max(len(v['label']), *(len(fmt(v['results'].get(q['name']), q)) for q in queries))
-    for v in variants
-}
-
-header = f"{'Metric':<{lw}}" + ''.join(f"  {label:<{w}}" for label, w in col_widths.items())
-sep    = '-' * (lw + sum(2 + w for w in col_widths.values()))
-rows   = [
-    f"{q['description']:<{lw}}" + ''.join(
-        f"  {fmt(v['results'].get(q['name']), q):<{col_widths[v['label']]}}" for v in variants
-    )
+# Native Slack table block: renders as a real table instead of padded monospace text.
+# Slack rejects empty cells, and fmt() never returns an empty string.
+labels = [v['label'] for v in variants]
+table_rows = [[{'type': 'raw_text', 'text': 'Metric'}] + [{'type': 'raw_text', 'text': label} for label in labels]]
+table_rows += [
+    [{'type': 'raw_text', 'text': q['description']}]
+    + [{'type': 'raw_text', 'text': fmt(v['results'].get(q['name']), q)} for v in variants]
     for q in queries
 ]
-table  = '\n'.join([header, sep] + rows)
+table_block = {
+    'type': 'table',
+    'column_settings': [{'is_wrapped': True}] + [{'align': 'right'}] * len(variants),
+    'rows': table_rows,
+}
 
 # All variants' Grafana links share one time range, anchored to the first (primary) variant's
 # soak end — mirrors prior behavior, which always anchored the range on gRPC's soak end.
@@ -145,13 +145,7 @@ if dash_links:
         },
     })
 
-blocks.append({
-    'type': 'section',
-    'text': {
-        'type': 'mrkdwn',
-        'text': '```\n' + table + '\n```',
-    },
-})
+blocks.append(table_block)
 
 if flamegraph_links:
     blocks.append({
