@@ -42,6 +42,11 @@ if [[ ! -f "${report}" ]]; then
   printf '%s\n' '{"errors":[{"message":"No Playwright report was produced by this leg (json-report/results.json was never written)."}],"suites":[]}' > "${report}"
 fi
 
+# Counts and failing test names, before the verdict so they read first in the
+# job summary. Reporting only: it always exits 0 and never affects the verdict.
+SUMMARY_TITLE="${SUMMARY_TITLE:-Test results}" \
+  node "${GITHUB_WORKSPACE}/.github/scripts/e2e-run-summary.mjs" "${report}" || true
+
 if [[ "${gating}" != "changed" ]]; then
   echo "Gating on the whole suite (Playwright exit ${pw_exit})."
   exit "${pw_exit}"

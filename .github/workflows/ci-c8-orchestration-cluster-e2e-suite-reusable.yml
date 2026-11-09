@@ -251,6 +251,7 @@ jobs:
           CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          SUMMARY_TITLE: "Orchestration Cluster API tests — Mode ${{ matrix.camunda_mode }}"
           # Keep in sync with this job's timeout-minutes below.
           JOB_TIMEOUT_MIN: "50"
         run: |
@@ -474,6 +475,7 @@ jobs:
           DATABASE: "RDBMS"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          SUMMARY_TITLE: "Orchestration Cluster API tests (H2/RDBMS) — Mode ${{ matrix.camunda_mode }}"
           # Keep in sync with this job's timeout-minutes below.
           JOB_TIMEOUT_MIN: "58"
         run: |
@@ -753,6 +755,7 @@ jobs:
           OPTIMIZE_BASE_URL: "http://localhost:8083"
           CHANGED_SPECS: ${{ inputs.changed-specs }}
           GATING: ${{ inputs.gating }}
+          SUMMARY_TITLE: "Orchestration Cluster E2E tests — Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }}"
           # Keep in sync with this job's timeout-minutes below.
           JOB_TIMEOUT_MIN: "48"
         run: |
