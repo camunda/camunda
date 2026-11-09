@@ -91,7 +91,8 @@ class DataAvailabilityIT {
       return new BeanPostProcessor() {
         @Override
         public Object postProcessAfterInitialization(final Object bean, final String beanName) {
-          if (!(bean instanceof final CamundaClient client)) {
+          if (!(bean instanceof final CamundaClient client)
+              || "queryCamundaClient".equals(beanName)) {
             return bean;
           }
           final var spy = spy(client);
