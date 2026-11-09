@@ -912,6 +912,54 @@ class ExpressionProcessorTest {
   }
 
   @Nested
+  class EvaluateVariableMappingExpressionWithLabelTest {
+
+    @Test
+    void shouldNameMappingKindAndTargetVariableOnEvaluationFailure() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.inputMappingExpression(List.of("order", "id"));
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(input mapping expression of target variable 'order.id')");
+    }
+
+    @Test
+    void shouldOnlyNameMappingKindWhenNoSingleTargetIsKnown() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.outputMappingExpression(null);
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(output mapping expression)")
+          .doesNotContain("target variable");
+    }
+  }
+
+  @Nested
   class EvaluateMessageCorrelationKeyExpressionWithLabelTest {
 
     @Test

@@ -610,7 +610,30 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateVariableMappingExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Evaluates the source expression of a single variable mapping, labeling the message of a failing
+   * or timed out evaluation with the given {@link ExpressionLabel} so it identifies whether an
+   * input or an output mapping failed and which target it writes to.
+   *
+   * @param expression the mapping's source expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @param tenantId the tenant owning the scope, used to resolve variables in multi-tenant setups
+   * @param label describes the business role of this expression; pass {@link ExpressionLabel#NONE}
+   *     for the generic wording
+   * @return either the evaluation result as buffer, or a failure with {@link
+   *     ErrorType#IO_MAPPING_ERROR}
+   * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
+   */
+  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
         .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
         .map(EvaluationResult::toBuffer);
   }
