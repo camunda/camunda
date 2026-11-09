@@ -1,0 +1,22 @@
+# Gradle counterpart of build-zeebe: packages the Zeebe distribution TAR ball.
+# The caller must have set up Gradle (gradle/actions/setup-gradle) before.
+
+---
+name: Build Zeebe (Gradle)
+description: Builds the Zeebe distribution TAR ball with Gradle
+
+outputs:
+  distball:
+    description: "The path to the Zeebe distribution TAR ball"
+    value: ${{ steps.build.outputs.distball }}
+
+runs:
+  using: composite
+  steps:
+    - name: Package Zeebe
+      id: build
+      shell: bash
+      run: |
+        ./gradlew --no-daemon --console=plain -Pskip.fe.build :camunda-zeebe:distTar
+        DISTBALL=$(ls dist/build/distributions/camunda-zeebe-*.tar.gz)
+        echo "distball=${DISTBALL}" >> "$GITHUB_OUTPUT"

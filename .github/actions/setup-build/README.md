@@ -11,6 +11,8 @@ individual jobs don't repeat the same bootstrap. In one step it:
 - installs the JDK (`actions/setup-java`);
 - registers the Maven problem matcher and configures the Maven cache
   (via [`setup-maven-cache`](../setup-maven-cache));
+- when `build-tool` is `gradle`, sets up Gradle (`gradle/actions/setup-gradle`) instead of the
+  Maven cache; only pushes to `main` and `stable/*` write the Gradle cache, other runs read it;
 - merges Camunda Nexus + Google Central mirrors with any extra mirrors/servers and
   writes `settings.xml`;
 - optionally sets the build time zone;
@@ -44,6 +46,7 @@ Vault/WIF hang (see that action's README).
 | minimus                           | Log into Minimus with a CI account (disabled for fork PRs)               | false    | `"false"` |
 | java-distribution                 | Java distribution to install                                             | false    | `temurin` |
 | java-version                      | JDK version to install                                                   | false    | `"21"`    |
+| build-tool                        | `maven` or `gradle`; `gradle` sets up Gradle and skips the Maven cache   | false    | `maven`   |
 | maven-cache-key-modifier          | Modifier for the Maven cache key                                         | false    | `shared`  |
 | maven-cache-download-timeout-mins | Minutes the Maven cache restore may spend on one segment before aborting | false    | `"3"`     |
 | maven-mirrors                     | JSON list of extra Maven mirrors (merged with Nexus, extras win)         | false    | `'[]'`    |
