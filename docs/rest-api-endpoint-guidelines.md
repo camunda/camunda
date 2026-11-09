@@ -1563,6 +1563,32 @@ conditioning (those use different mechanisms). If a new case needs nested
 request paths or non-scalar matchers, extend this section and the
 `present-when-shape` rule together rather than overloading the existing shape.
 
+### 2.19 Clearable values (`x-clearable`)
+
+Some request fields have three states: omitted or `null` keeps the persisted value, a value sets
+it, and an empty string clears it. Do not declare such a field with a typed `format` such as
+`date-time` alone: `""` is not a valid date-time, so the schema would reject the documented way
+to clear the field, and generated SDKs would type the field so that it cannot hold `""`.
+
+Reference a schema that accepts both, and mark it with `x-clearable: true`:
+
+```yaml
+dueDate:
+  allOf:
+    - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+  description: The due date of the task. Clear by providing an empty String.
+```
+
+`ClearableDateTime` is an `anyOf` of a `date-time` string and an empty string (`maxLength: 0`).
+`x-clearable` tells SDK generators to keep the typed value (for example a date-time type) and
+add an explicit way to clear it, rather than generating a string union. The gateway and the Java
+client map `ClearableDateTime` to `String` (`typeMappings` in `gateways/gateway-model` and
+`clients/java`, in both the Maven and Gradle builds).
+
+The Spectral rule `clearable-properties-accept-empty-string` fails any property whose
+description says it is cleared or reset by providing an empty string while it still declares a
+`format`.
+
 ---
 
 ## 3. Spectral linting & custom rules
