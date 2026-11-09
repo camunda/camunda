@@ -78,6 +78,15 @@ test('an all-green run says so', () => {
   assert.match(r.written, /All executed tests passed/);
 });
 
+// Skipped tests are in the total, so a run where nothing executed must not
+// read as a success.
+test('an all-skipped run does not claim success', () => {
+  const r = run({suites: [{specs: [spec('skip', 'skipped')]}]});
+  assert.match(r.written, /\| 1 \| 0 \| 0 \| 0 \| 1 \|/);
+  assert.doesNotMatch(r.written, /All executed tests passed/);
+  assert.match(r.written, /every test in the report was skipped/);
+});
+
 test('run-level errors are flagged, not reported as all green', () => {
   const r = run({
     errors: [{message: 'load failure'}],

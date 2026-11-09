@@ -112,8 +112,10 @@ function render({counts, failures}, runErrors) {
       );
     }
     lines.push('');
-  } else if (counts.total > 0 && runErrors === 0) {
+  } else if (counts.passed + counts.flaky > 0 && runErrors === 0) {
     lines.push('All executed tests passed.', '');
+  } else if (counts.total > 0 && counts.passed + counts.flaky === 0) {
+    lines.push('No test passed: every test in the report was skipped.', '');
   }
 
   if (runErrors > 0) {
