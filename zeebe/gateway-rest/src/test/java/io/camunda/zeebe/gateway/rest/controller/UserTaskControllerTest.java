@@ -60,6 +60,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -237,6 +238,42 @@ public class UserTaskControllerTest extends RestControllerTest {
         .extractingByKey("secret")
         .extracting(VariableMetadataValue::getProtectionModes)
         .isEqualTo(Set.of(ProtectionMode.REDACT));
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldRejectCompletionWithMalformedVariablesMetadata(final String baseUrl) {
+    // given
+    final var request =
+        """
+            {
+              "variables": {
+                "card": "1234"
+              },
+              "variablesMetadata": {
+                "card": null
+              }
+            }""";
+
+    // when
+    final var problem =
+        webClient
+            .post()
+            .uri(baseUrl + "/1/completion")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isBadRequest()
+            .expectBody(ProblemDetail.class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    assertThat(problem).isNotNull();
+    assertThat(problem.getDetail()).contains("'card'");
+    Mockito.verifyNoInteractions(userTaskServices);
   }
 
   @ParameterizedTest
