@@ -7,6 +7,12 @@ internal fun VersionCatalogBuilder.catalogCloudLibraries() {
   library("com-azure-azure-sdk-bom", "com.azure", "azure-sdk-bom").versionRef("azure-sdk")
   library("com-azure-azure-core", "com.azure", "azure-core").withoutVersion()
   library("com-azure-azure-identity", "com.azure", "azure-identity").withoutVersion()
+  library(
+      "com-azure-azure-security-keyvault-secrets",
+      "com.azure",
+      "azure-security-keyvault-secrets",
+    )
+    .withoutVersion()
   library("com-azure-azure-storage-blob", "com.azure", "azure-storage-blob").withoutVersion()
   library("com-azure-azure-storage-blob-batch", "com.azure", "azure-storage-blob-batch")
     .withoutVersion()
