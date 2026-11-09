@@ -1,0 +1,2 @@
+FROM camunda/camunda:SNAPSHOT
+COPY main.jar /usr/local/camunda/lib/zeebe-scheduler-8.11.0-SNAPSHOT.jar

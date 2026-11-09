@@ -1,0 +1,7 @@
+# build output, local paths, logs and images of the benchmark runs
+classes/
+jars/
+e2e/*.jar
+deps.cp
+*.log
+hs_err_*.log
