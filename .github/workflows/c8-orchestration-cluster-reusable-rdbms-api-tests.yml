@@ -368,8 +368,21 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: |
+          # `--with-deps` fetches browser OS packages from the Ubuntu apt
+          # mirrors, which intermittently refuse connections and fail the whole
+          # nightly run. Retry with backoff so a transient mirror/CDN blip no
+          # longer aborts the job.
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "Playwright browser install failed (attempt ${attempt}/3); retrying after backoff..."
+            sleep "$((attempt * 30))"
+          done
+          echo "Playwright browser install failed after 3 attempts" >&2
+          exit 1
 
       - name: Run API tests
         env:
