@@ -23,13 +23,13 @@ import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
 import java.time.Duration;
-import java.util.concurrent.Future;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.utility.DockerImageName;
 
 public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
@@ -48,7 +48,7 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
     applyDefaultConfiguration();
   }
 
-  public ConnectorsContainer(final Future<String> image) {
+  public ConnectorsContainer(final RemoteDockerImage image) {
     super(image);
     applyDefaultConfiguration();
   }

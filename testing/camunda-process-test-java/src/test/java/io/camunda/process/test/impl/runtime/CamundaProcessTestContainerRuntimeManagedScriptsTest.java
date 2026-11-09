@@ -43,6 +43,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CamundaProcessTestContainerRuntimeManagedScriptsTest {
 
+  // The first Connectors version with managed scripts.
+  private static final String CONNECTORS_VERSION = "8.11.0";
+
   @Mock private ContainerFactory containerFactory;
 
   @Mock(answer = Answers.RETURNS_SELF)
@@ -103,6 +106,7 @@ class CamundaProcessTestContainerRuntimeManagedScriptsTest {
     CamundaProcessTestContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
         .withManagedScriptsEnabled(true)
+        .withConnectorsDockerImageVersion(CONNECTORS_VERSION)
         .withConnectorsEnv(ManagedScriptsImage.ENV_MANAGED_CODE_LOCAL_DIRECTORY, "/tmp/custom")
         .build();
 
@@ -124,6 +128,7 @@ class CamundaProcessTestContainerRuntimeManagedScriptsTest {
             .withContainerFactory(containerFactory)
             .withConnectorsEnabled(false)
             .withManagedScriptsEnabled(true)
+            .withConnectorsDockerImageVersion(CONNECTORS_VERSION)
             .build();
 
     // when
@@ -141,11 +146,28 @@ class CamundaProcessTestContainerRuntimeManagedScriptsTest {
         CamundaProcessTestContainerRuntime.newBuilder()
             .withContainerFactory(containerFactory)
             .withManagedScriptsEnabled(true)
+            .withConnectorsDockerImageVersion(CONNECTORS_VERSION)
             .withManagedScriptsNodeVersion("18");
 
     // when/then
     assertThatThrownBy(builder::build)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid Node.js version '18'");
+  }
+
+  @Test
+  void shouldRejectAConnectorsVersionWithoutManagedScripts() {
+    // given
+    final CamundaProcessTestRuntimeBuilder builder =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withContainerFactory(containerFactory)
+            .withManagedScriptsEnabled(true)
+            .withConnectorsDockerImageVersion("8.10.2");
+
+    // when/then
+    assertThatThrownBy(builder::build)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Managed scripts need Connectors 8.11 or later");
+    verify(containerFactory, never()).createManagedScriptsConnectorsContainer(any(), anyBoolean());
   }
 }
