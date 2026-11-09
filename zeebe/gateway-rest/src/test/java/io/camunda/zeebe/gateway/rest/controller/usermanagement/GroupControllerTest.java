@@ -340,6 +340,53 @@ public class GroupControllerTest {
   @Nested
   @WebMvcTest(GroupController.class)
   @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.method=basic",
+        "camunda.security.authentication.oidc.groups-claim=g1"
+      })
+  public class CamundaGroupsEnabledUnderBasicAuthWithGroupsClaimTest extends RestControllerTest {
+
+    @MockitoBean private ServiceRegistry serviceRegistry;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+
+    @BeforeEach
+    void setup() {
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(cslProperties.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+      when(serviceRegistry.groupServices(any())).thenReturn(groupServices);
+    }
+
+    @Test
+    void shouldServeTheGroupsApiBecauseBasicAuthIgnoresTheGroupsClaim() {
+      // given
+      final String groupId = "g1";
+      when(groupServices.deleteGroup(eq(groupId), any()))
+          .thenReturn(CompletableFuture.completedFuture(new GroupRecord().setGroupId(groupId)));
+
+      // when
+      webClient
+          .delete()
+          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isNoContent();
+
+      // then
+      verify(groupServices, times(1)).deleteGroup(eq(groupId), any());
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
