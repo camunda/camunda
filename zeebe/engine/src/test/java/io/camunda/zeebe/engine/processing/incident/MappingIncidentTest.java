@@ -50,6 +50,12 @@ public final class MappingIncidentTest {
           .withEngineConfig(
               c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
 
+  @ClassRule
+  public static final EngineRule ENGINE_ORDERED_INPUT =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              c -> c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED));
+
   private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -117,7 +123,28 @@ public final class MappingIncidentTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEventValue.getErrorMessage())
-        .contains("Assertion failure on evaluate the expression");
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression)");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedInputMapping() {
+    // given
+    ENGINE_ORDERED_INPUT.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE_ORDERED_INPUT.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
   }
 
   @Test
