@@ -83,19 +83,21 @@ final class ActorTaskQueueConcurrencyTest {
           Thread.ofPlatform()
               .name("producer-" + i)
               .start(
-                  () -> {
-                    while (producing.get()) {
-                      final var task = ready.poll();
-                      if (task == null) {
-                        Thread.onSpinWait();
-                        continue;
-                      }
-                      if (!queued.get(task).compareAndSet(false, true)) {
-                        error.compareAndSet(null, "task appended while already queued");
-                      }
-                      queue.append(task);
-                    }
-                  }));
+                  failOnException(
+                      error,
+                      () -> {
+                        while (producing.get()) {
+                          final var task = ready.poll();
+                          if (task == null) {
+                            Thread.onSpinWait();
+                            continue;
+                          }
+                          if (!queued.get(task).compareAndSet(false, true)) {
+                            error.compareAndSet(null, "task appended while already queued");
+                          }
+                          queue.append(task);
+                        }
+                      })));
     }
 
     final List<Thread> consumers = new ArrayList<>();
@@ -106,20 +108,22 @@ final class ActorTaskQueueConcurrencyTest {
           Thread.ofPlatform()
               .name(owner ? "owner" : "thief-" + i)
               .start(
-                  () -> {
-                    while (consuming.get()) {
-                      final var task = owner ? queue.pop() : queue.trySteal();
-                      if (task == null) {
-                        Thread.onSpinWait();
-                        continue;
-                      }
-                      if (!queued.get(task).compareAndSet(true, false)) {
-                        error.compareAndSet(null, "task claimed twice for one append");
-                      }
-                      claims.incrementAndGet();
-                      ready.add(task);
-                    }
-                  }));
+                  failOnException(
+                      error,
+                      () -> {
+                        while (consuming.get()) {
+                          final var task = owner ? queue.pop() : queue.trySteal();
+                          if (task == null) {
+                            Thread.onSpinWait();
+                            continue;
+                          }
+                          if (!queued.get(task).compareAndSet(true, false)) {
+                            error.compareAndSet(null, "task claimed twice for one append");
+                          }
+                          claims.incrementAndGet();
+                          ready.add(task);
+                        }
+                      })));
     }
 
     Thread.sleep(ROUND.toMillis());
@@ -130,7 +134,7 @@ final class ActorTaskQueueConcurrencyTest {
 
     // every appended task must come back; a hidden claimable node would leave it in the queue
     final long deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
-    while (ready.size() < taskCount && System.nanoTime() < deadline) {
+    while (ready.size() < taskCount && error.get() == null && System.nanoTime() < deadline) {
       Thread.sleep(1);
     }
     consuming.set(false);
@@ -148,6 +152,18 @@ final class ActorTaskQueueConcurrencyTest {
     }
 
     return new Result(error.get(), ready.size(), claims.get(), drained);
+  }
+
+  /** A failed queue operation only ends its own thread; record it so the round fails. */
+  private static Runnable failOnException(
+      final AtomicReference<String> error, final Runnable body) {
+    return () -> {
+      try {
+        body.run();
+      } catch (final Throwable t) {
+        error.compareAndSet(null, Thread.currentThread().getName() + " failed: " + t);
+      }
+    };
   }
 
   private record Result(String error, int returned, long claims, boolean drained) {}
