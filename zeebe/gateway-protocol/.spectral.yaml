@@ -104,6 +104,31 @@ rules:
       field: description
       function: truthy
 
+  clearable-properties-accept-empty-string:
+    description: >-
+      A property that is cleared by an empty string must not declare a format, such as
+      date-time, that the empty string violates. Reference a clearable schema (x-clearable)
+      instead; see section 2.19 of docs/rest-api-endpoint-guidelines.md.
+    severity: error
+    resolved: false
+    given: $..properties[*]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          if:
+            required: [description]
+            properties:
+              description:
+                type: string
+                pattern: "(?:[Cc]lear|[Rr]eset)[a-z ]* by providing an empty [Ss]tring"
+          then:
+            not:
+              required: [format]
+    message: >-
+      Property is cleared by an empty string, so it must not declare a format: reference a
+      clearable schema (x-clearable) instead.
+
   operation-key-properties-must-be-strings:
     description: "`...Key` parameters must be of type `string`."
     severity: warn

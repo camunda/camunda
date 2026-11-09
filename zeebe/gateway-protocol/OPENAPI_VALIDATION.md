@@ -15,6 +15,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Schema compliance with OpenAPI 3.0 JSON Schema spec
   - Custom naming conventions (e.g., no "flow node" terminology)
   - Property description requirements
+  - Clearable properties (cleared by an empty string) must not declare a `format` the empty string violates
   - Key property type validation (`...Key` properties must be strings)
   - Eventually-consistent annotation validation (every operation must declare `x-eventually-consistent` as `true` or `false`; command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
