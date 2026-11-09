@@ -22,6 +22,7 @@ import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.containers.ManagedScriptsImage;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
 import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
 import io.camunda.process.test.impl.runtime.logging.LogEntry;
@@ -89,7 +90,8 @@ public class CamundaProcessTestContainerRuntime
 
     camundaClientBuilderFactory = builder.getConfiguredCamundaClientBuilderFactory();
     isMultiTenancyEnabled = builder.isMultiTenancyEnabled();
-    connectorsEnabled = builder.isConnectorsEnabled();
+    // Managed scripts run in the Connectors runtime.
+    connectorsEnabled = builder.isConnectorsEnabled() || builder.isManagedScriptsEnabled();
 
     network = Network.newNetwork();
 
@@ -176,10 +178,7 @@ public class CamundaProcessTestContainerRuntime
   private ConnectorsContainer createConnectorsContainer(
       final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ConnectorsContainer container =
-        containerFactory
-            .createConnectorsContainer(
-                builder.getConnectorsDockerImageName(), builder.getConnectorsDockerImageVersion())
-            .withImagePullPolicy(getImagePullPolicy(builder.getConnectorsDockerImageVersion()))
+        newConnectorsContainer(builder)
             .withLogConsumer(
                 createContainerJsonLogger(
                     builder.getConnectorsLoggerName(), ConnectorsLogEntry.class))
@@ -194,10 +193,34 @@ public class CamundaProcessTestContainerRuntime
       container.withMultiTenancy();
     }
 
+    if (builder.isManagedScriptsEnabled()) {
+      // Before the environment of the user, which can change it.
+      container.withEnv(ManagedScriptsImage.envVars());
+    }
+
     container.withEnv(builder.getConnectorsEnvVars());
     builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
 
     return container;
+  }
+
+  private ConnectorsContainer newConnectorsContainer(
+      final CamundaProcessTestRuntimeBuilder builder) {
+    final String imageName = builder.getConnectorsDockerImageName();
+    final String imageVersion = builder.getConnectorsDockerImageVersion();
+    if (!builder.isManagedScriptsEnabled()) {
+      return containerFactory
+          .createConnectorsContainer(imageName, imageVersion)
+          .withImagePullPolicy(getImagePullPolicy(imageVersion));
+    }
+    // The image is built locally: the pull policy applies to its base image only.
+    final ManagedScriptsImage image =
+        new ManagedScriptsImage(
+            imageName + ":" + imageVersion,
+            builder.getManagedScriptsPythonVersion(),
+            builder.getManagedScriptsNodeVersion());
+    return containerFactory.createManagedScriptsConnectorsContainer(
+        image, shouldAlwaysPullImage(imageVersion));
   }
 
   @Override

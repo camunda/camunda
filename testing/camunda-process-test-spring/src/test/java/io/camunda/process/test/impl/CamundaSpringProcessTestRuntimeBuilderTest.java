@@ -152,6 +152,30 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
   }
 
   @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED", "SHARED"})
+  void shouldConfigureManagedScripts(final CamundaProcessTestRuntimeMode runtimeMode) {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
+    runtimeConfiguration.setManagedScriptsEnabled(true);
+    runtimeConfiguration.setManagedScriptsPythonVersion("3.12");
+    runtimeConfiguration.setManagedScriptsNodeVersion("22");
+
+    // when
+    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+
+    // then
+    assertThat(runtimeBuilder.isManagedScriptsEnabled()).isTrue();
+    assertThat(runtimeBuilder.getManagedScriptsPythonVersion()).isEqualTo("3.12");
+    assertThat(runtimeBuilder.getManagedScriptsNodeVersion()).isEqualTo("22");
+  }
+
+  @ParameterizedTest
   @EnumSource(CamundaProcessTestRuntimeMode.class)
   void shouldConfigureClusterSecrets(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
