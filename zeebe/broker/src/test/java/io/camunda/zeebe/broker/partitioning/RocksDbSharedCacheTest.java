@@ -200,18 +200,43 @@ class RocksDbSharedCacheTest {
   }
 
   @Test
-  void shouldNotFailAllocatingMoreThanHalfOfRamIfFraction() {
-    // when
+  void shouldThrowIfFractionExceedsMaxMemoryFraction() {
+    // given
     rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
     rocksdbCfg.setMemoryFraction(0.600);
     rocksdbCfg.setMaxMemoryFraction(0.500);
-    final int partitionsCount = 1;
 
-    // we try to allocate 60% of ram to rocksdb, and the max is 50%, but
-    // since we are in FRACTION mode it should be allowed.
+    // when
     try (final var managementFactoryMock = mockMemoryEnvironment(1024L * 1024 * 1024)) {
-      assertThatCode(() -> rocksdbCfg.validateRocksDbMemory(partitionsCount))
-          .doesNotThrowAnyException();
+      final var throwable =
+          catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(DEFAULT_PARTITION_COUNT));
+
+      // then
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Expected the allocated memory for RocksDB to be below or equal 50.00 % of ram memory");
+    }
+  }
+
+  @Test
+  void shouldThrowIfMemoryMinimumExceedsMaxMemoryFraction() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.FRACTION);
+    rocksdbCfg.setMemoryFraction(0.1);
+    rocksdbCfg.setMemoryMinimum(DataSize.ofMegabytes(512));
+    rocksdbCfg.setMaxMemoryFraction(0.25);
+
+    // when
+    try (final var managementFactoryMock = mockMemoryEnvironment(1024L * 1024 * 1024)) {
+      final var throwable =
+          catchThrowable(() -> rocksdbCfg.validateRocksDbMemory(DEFAULT_PARTITION_COUNT));
+
+      // then
+      assertThat(throwable)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Expected the allocated memory for RocksDB to be below or equal 25.00 % of ram memory, but was 50.00 %");
     }
   }
 

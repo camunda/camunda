@@ -82,12 +82,9 @@ public final class RocksdbCfg implements ConfigurationEntry {
       // check that memoryFraction is between 0 and 1 and warn if it is too high
       warnIfTooHighFraction();
       validateMemoryMinimum();
-    } else {
-      // for strategies other than FRACTION which are static sizes, we check if maxMemoryFraction is
-      // correctly set, and if so, we validate the allocated memory does not go above the threshold.
-      validateMaxMemoryFraction(totalMemorySize, blockCacheBytes);
     }
 
+    validateMaxMemoryFraction(totalMemorySize, blockCacheBytes);
     validateExpectedRocksDBMemoryUsageDoesNotExceedSystemMemory(
         totalMemorySize, blockCacheBytes, partitionsPerBrokerCount);
 
