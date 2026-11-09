@@ -39,15 +39,16 @@ visits it and hand-out cost returns to zero.
 
 Transition table:
 
-|           From state            |      Event      |                   Guard                   |                                    Effect                                     |
-|---------------------------------|-----------------|-------------------------------------------|-------------------------------------------------------------------------------|
-| `ACTIVATABLE`                   | `Job.SUSPENDED` | job is in `ACTIVATABLE`                   | state set to `SUSPENDED`, job removed from activatable index                  |
-| `WAITING_FOR_SECRET_RESOLUTION` | `Job.SUSPENDED` | job is in `WAITING_FOR_SECRET_RESOLUTION` | state set to `SUSPENDED`; suspension overrides secret-waiting                 |
-| `SUSPENDED`                     | `Job.SUSPENDED` | job is in `SUSPENDED`                     | no-op (idempotent)                                                            |
-| other state                     | `Job.SUSPENDED` | job is not suspendable                    | no-op                                                                         |
-| `SUSPENDED`                     | `Job.RESUMED`   | job is in `SUSPENDED`                     | state set to `ACTIVATABLE`, job re-inserted by its type, tenant, and priority |
-| other state                     | `Job.RESUMED`   | job is not in `SUSPENDED`                 | no-op                                                                         |
-| any state                       | job deletion    | —                                         | job record and state removed, same as any other job                           |
+|           From state            |       Event        |                                     Guard                                      |                                      Effect                                       |
+|---------------------------------|--------------------|--------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `ACTIVATABLE`                   | `Job.SUSPENDED`    | job is in `ACTIVATABLE`                                                        | state set to `SUSPENDED`, job removed from activatable index                      |
+| `WAITING_FOR_SECRET_RESOLUTION` | `Job.SUSPENDED`    | job is in `WAITING_FOR_SECRET_RESOLUTION`                                      | state set to `SUSPENDED`; suspension overrides secret-waiting                     |
+| `SUSPENDED`                     | `Job.SUSPENDED`    | job is in `SUSPENDED`                                                          | no-op (idempotent)                                                                |
+| other state                     | `Job.SUSPENDED`    | job is not suspendable                                                         | no-op                                                                             |
+| `SUSPENDED`                     | `Job.RESUMED`      | job is in `SUSPENDED` (v2: and has no open `SECRET_RESOLUTION_ERROR` incident) | state set to `ACTIVATABLE`, job re-inserted by its type, tenant, and priority     |
+| `SUSPENDED`                     | `Job.RESUMED` (v2) | job is in `SUSPENDED` and has an open `SECRET_RESOLUTION_ERROR` incident       | state set to `WAITING_FOR_SECRET_RESOLUTION`; job stays off the activatable index |
+| other state                     | `Job.RESUMED`      | job is not in `SUSPENDED`                                                      | no-op                                                                             |
+| any state                       | job deletion       | —                                                                              | job record and state removed, same as any other job                               |
 
 Each guard returns silently instead of throwing, because an exception in an event applier bans the
 process instance, or fails the partition on replay. The precondition is enforced by the guard, not
@@ -77,8 +78,9 @@ is paid once per walk step, and once per resume cycle, not on every poll.
   Skipping such jobs while collecting an activation batch was rejected for the same per-poll cost
   as in the alternatives below.
 - **Resume:** a `RESUME_JOBS` command searches `JOBS_BY_PROCESS_INSTANCE` (see D5) from the resume
-  cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and calls
-  `BpmnJobActivationBehavior.publishWork` so stream and poll workers see the job again, before
+  cursor, finds the first `SUSPENDED` entry it reaches, appends `Job.RESUMED` for it, and, if that
+  made the job `ACTIVATABLE`, calls `BpmnJobActivationBehavior.publishWork` so stream and poll
+  workers see the job again (see the secret incident note below), before
   appending the next `RESUME_JOBS` for what it did not reach. One job per cycle bounds each cycle's
   batch to that job's own hand-out cost, the same limit any other hand-out already has: publishing a
   job a stream is waiting for appends a `JobBatch.ACTIVATED` on top of `Job.RESUMED`, carrying the
@@ -93,6 +95,9 @@ is paid once per walk step, and once per resume cycle, not on every poll.
   unless its element instance is terminating (see D3).
 - **Secret-waiting:** overridden to `SUSPENDED` so a later secret resolution cannot put the job back
   into the hand-out index while the instance is suspended.
+- **Open secret resolution incident:** resume puts the job back to `WAITING_FOR_SECRET_RESOLUTION`
+  and does not publish it, so only resolving the incident hands it out
+  ([#67521](https://github.com/camunda/camunda/issues/67521)).
 
 **D3. Most worker lifecycle commands need no new handling; `JobTimeOut` is the exception that
 re-suspends an already-activated job.**

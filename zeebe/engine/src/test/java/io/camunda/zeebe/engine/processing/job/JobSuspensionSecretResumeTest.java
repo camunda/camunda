@@ -23,9 +23,13 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -36,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -48,11 +53,13 @@ import org.junit.rules.TestWatcher;
 /**
  * Covers resume of a job that was suspended while waiting for secret resolution. Resume must mirror
  * long-poll activation: restart resolution when references are uncached and withhold hand-out;
- * publish work immediately when secrets are already cached.
+ * publish work immediately when secrets are already cached. A job with an open secret resolution
+ * incident is the exception: it keeps waiting for the incident, whatever the cache holds.
  */
 public final class JobSuspensionSecretResumeTest {
 
   private static final String SECRET_NAME = "token";
+  private static final String MISSING_SECRET_NAME = "missingToken";
   private static final String SECRET_VALUE = "resolved-secret";
 
   @Rule public final EngineRule engine;
@@ -60,6 +67,8 @@ public final class JobSuspensionSecretResumeTest {
 
   private final CountDownLatch allowResolve = new CountDownLatch(1);
   private final RecordingJobStreamer jobStreamer = new RecordingJobStreamer();
+  private final Map<String, String> storedSecrets =
+      new ConcurrentHashMap<>(Map.of(SECRET_NAME, SECRET_VALUE));
 
   public JobSuspensionSecretResumeTest() {
     engine =
@@ -69,7 +78,7 @@ public final class JobSuspensionSecretResumeTest {
                 new SecretStoreRegistry(
                     Map.of(
                         SecretStoreRegistry.DEFAULT_STORE_ID,
-                        new GatedSecretStore(allowResolve, Map.of(SECRET_NAME, SECRET_VALUE)))))
+                        new GatedSecretStore(allowResolve, storedSecrets))))
             .withEngineConfig(config -> config.setSecretResolutionInterval(Duration.ofMillis(100)));
   }
 
@@ -157,6 +166,71 @@ public final class JobSuspensionSecretResumeTest {
     assertThat(jobStream.getActivatedJobs().get(0).jobKey()).isEqualTo(jobKey);
   }
 
+  @Test
+  public void shouldNotHandOutJobWithOpenSecretIncidentOnResume() {
+    // given - a job gets a secret resolution incident for a missing secret. The secret is then
+    // added and cached through another job, so the cache no longer holds the hand-out back
+    allowResolve.countDown();
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createSecretJobInstance(jobType, MISSING_SECRET_NAME);
+    final long jobKey = jobKeyOf(processInstanceKey);
+    final long incidentKey = raiseSecretIncident(jobType, jobKey);
+
+    storedSecrets.put(MISSING_SECRET_NAME, SECRET_VALUE);
+    cacheSecretThroughAnotherJob(MISSING_SECRET_NAME);
+
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    RecordingExporter.jobRecords(JobIntent.SUSPENDED).withRecordKey(jobKey).await();
+    final RecordingJobStream jobStream = addJobStream(jobType);
+
+    // when
+    final long resumedPosition =
+        engine.processInstance().withInstanceKey(processInstanceKey).resume().getPosition();
+
+    // then - the job is neither pushed on resume nor handed to a poll while the incident is open
+    assertThat(activatedJobKeysUntil(resumedPosition)).doesNotContain(jobKey);
+    final Record<JobBatchRecordValue> whileIncidentOpen =
+        engine.jobs().withType(jobType).withRequestStreamId(2).withRequestId(2L).activate();
+    assertThat(whileIncidentOpen.getValue().getJobKeys()).isEmpty();
+
+    // and - resolving the incident hands the job out
+    engine.incident().ofInstance(processInstanceKey).withKey(incidentKey).resolve();
+    await("push once the incident is resolved")
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
+    assertThat(jobStream.getActivatedJobs().get(0).jobKey()).isEqualTo(jobKey);
+  }
+
+  @Test
+  public void shouldNotRequestResolutionOnResumeForJobWithOpenSecretIncident() {
+    // given - a job with a secret resolution incident, suspended while a stream waits for its type
+    allowResolve.countDown();
+    final String jobType = Strings.newRandomValidBpmnId();
+    final long processInstanceKey = createSecretJobInstance(jobType, MISSING_SECRET_NAME);
+    final long jobKey = jobKeyOf(processInstanceKey);
+    raiseSecretIncident(jobType, jobKey);
+
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    final long suspendedPosition =
+        RecordingExporter.jobRecords(JobIntent.SUSPENDED)
+            .withRecordKey(jobKey)
+            .getFirst()
+            .getPosition();
+    addJobStream(jobType);
+
+    // when
+    final long resumedPosition =
+        engine.processInstance().withInstanceKey(processInstanceKey).resume().getPosition();
+
+    // then - resume leaves the job waiting for its incident instead of resolving its secret again
+    final List<Long> requestedJobKeys =
+        RecordingExporter.records()
+            .between(suspendedPosition, resumedPosition)
+            .filter(r -> r.getIntent() == SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .flatMap(r -> ((SecretReferenceRecordValue) r.getValue()).getJobKeys().stream())
+            .toList();
+    assertThat(requestedJobKeys).doesNotContain(jobKey);
+  }
+
   private RecordingJobStream addJobStream(final String jobType) {
     final DirectBuffer worker = BufferUtil.wrapString("test");
     final var jobActivationProperties =
@@ -169,6 +243,10 @@ public final class JobSuspensionSecretResumeTest {
   }
 
   private long createSecretJobInstance(final String jobType) {
+    return createSecretJobInstance(jobType, SECRET_NAME);
+  }
+
+  private long createSecretJobInstance(final String jobType, final String secretName) {
     final String processId = Strings.newRandomValidBpmnId();
     engine
         .deployment()
@@ -180,7 +258,7 @@ public final class JobSuspensionSecretResumeTest {
                     t ->
                         t.zeebeJobType(jobType)
                             .zeebeInputExpression(
-                                "\"Bearer \"+camunda.secrets." + SECRET_NAME, "authorization"))
+                                "\"Bearer \"+camunda.secrets." + secretName, "authorization"))
                 .done())
         .deploy();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
@@ -208,16 +286,46 @@ public final class JobSuspensionSecretResumeTest {
     assertThat(requested.getValue().getJobKeys()).contains(jobKey);
   }
 
+  /** Polls the job so its missing secret fails to resolve, and returns the incident it raises. */
+  private long raiseSecretIncident(final String jobType, final long jobKey) {
+    final Record<JobBatchRecordValue> polled =
+        engine.jobs().withType(jobType).withRequestStreamId(1).withRequestId(1L).activate();
+    assertThat(polled.getValue().getJobs()).isEmpty();
+    return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withJobKey(jobKey)
+        .withErrorType(ErrorType.SECRET_RESOLUTION_ERROR)
+        .getFirst()
+        .getKey();
+  }
+
+  /** Resolves the secret for a job of another instance, which puts the secret in the cache. */
+  private void cacheSecretThroughAnotherJob(final String secretName) {
+    final String otherJobType = Strings.newRandomValidBpmnId();
+    createSecretJobInstance(otherJobType, secretName);
+    engine.jobs().withType(otherJobType).withRequestStreamId(3).withRequestId(3L).activate();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_COMPLETED)
+        .withSecretReference(secretName)
+        .await();
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.BATCH_JOBS_REACTIVATED)
+        .withSecretReference(secretName)
+        .await();
+  }
+
+  private List<Long> activatedJobKeysUntil(final long position) {
+    return RecordingExporter.records()
+        .limit(r -> r.getPosition() >= position)
+        .filter(r -> r.getIntent() == JobBatchIntent.ACTIVATED)
+        .flatMap(r -> ((JobBatchRecordValue) r.getValue()).getJobKeys().stream())
+        .toList();
+  }
+
   /**
    * Blocks {@link #resolve} until the test opens the latch, so secret completion cannot race past
-   * process-instance suspend or resume.
+   * process-instance suspend or resume. Reads the given map on every call, so a test can add a
+   * secret after the store has already been asked for it.
    */
   private record GatedSecretStore(CountDownLatch allowResolve, Map<String, String> secrets)
       implements SecretStore {
-    private GatedSecretStore(final CountDownLatch allowResolve, final Map<String, String> secrets) {
-      this.allowResolve = allowResolve;
-      this.secrets = Map.copyOf(secrets);
-    }
 
     @Override
     public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
