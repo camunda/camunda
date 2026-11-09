@@ -259,6 +259,15 @@ jobs:
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
 
+          # CPT 8.X.0 must default to Connectors 8.X.0. That image is only published after the
+          # Camunda release (Connectors depends on it), so it cannot be pinned in the POM without
+          # breaking CI until then. Override it for the published artifacts only; Renovate moves
+          # the branch to the published version afterwards. Patch releases keep the Renovate value.
+          CONNECTORS_ARG=""
+          if [[ "${IS_STABLE_VERSION}" == "true" && "${RELEASE_PATCH}" == "0" ]]; then
+            CONNECTORS_ARG="-Dio.camunda.process.test.connectorsDockerImageVersion=${RELEASE_VERSION}"
+          fi
+
           # release:perform clones into target/ and runs `git ls-remote` from
           # java.io.tmpdir. actions/checkout's credentials only apply inside the work
           # tree, and the scm.url that prepare recorded in release.properties carries
@@ -279,7 +288,7 @@ jobs:
             -DskipQaBuild=true \
             -P-autoFormat \
             ${PROFILE_FLAGS} \
-            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
+            -Darguments="-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -DwaitMaxTime=${CENTRAL_WAIT_MAX_TIME} ${CONNECTORS_ARG} ${ARGUMENTS_PROFILE} -Dgpg.passphrase=\"${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}\""
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory

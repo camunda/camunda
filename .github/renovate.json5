@@ -136,12 +136,15 @@
       enabled: true,
     },
     {
-      description: "For stable branches, prevent minor/major connectors bundle Docker image updates in process test.",
+      description: "For stable branches, prevent minor/major connectors bundle Docker image updates in the process test Gradle build. The pom is restricted to the branch's own minor line by its custom manager instead, see the rule below.",
       matchManagers: [
         "custom.regex",
       ],
       matchPackageNames: [
         "camunda/connectors-bundle",
+      ],
+      matchFileNames: [
+        "testing/camunda-process-test-java/build.gradle.kts",
       ],
       matchBaseBranches: [
         "/^stable\\/8\\..*/",
@@ -151,6 +154,41 @@
         "major",
       ],
       enabled: false,
+    },
+    {
+      description: "For stable branches, allow the connectors bundle Docker image in the process test pom to move from the previous minor line to the branch's own line (e.g. 8.10.5 to 8.11.0 on stable/8.11) once it is published. The custom manager restricts candidates to the branch's line, so no other minor can be proposed.",
+      matchManagers: [
+        "custom.regex",
+      ],
+      matchPackageNames: [
+        "camunda/connectors-bundle",
+      ],
+      matchFileNames: [
+        "testing/camunda-process-test-java/pom.xml",
+      ],
+      matchBaseBranches: [
+        "/^stable\\/8\\..*/",
+      ],
+      matchUpdateTypes: [
+        "minor",
+      ],
+      enabled: true,
+    },
+    {
+      description: "On main, track the latest released connectors bundle Docker image in the process test pom regardless of the pom's version line. Overrides the line restriction of the custom manager, which only applies to stable branches.",
+      matchManagers: [
+        "custom.regex",
+      ],
+      matchPackageNames: [
+        "camunda/connectors-bundle",
+      ],
+      matchFileNames: [
+        "testing/camunda-process-test-java/pom.xml",
+      ],
+      matchBaseBranches: [
+        "main",
+      ],
+      extractVersion: "^(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
     {
       description: "Disable npm patch updates for frontend apps on stable branches.",
@@ -970,14 +1008,25 @@
       ],
     },
     {
-      description: "Track the connectors bundle Docker image override in process test pom.",
+      description: "Track the connectors bundle Docker image override in process test pom. CPT 8.X.0 is released with Connectors 8.X.0 (set by the release workflow), so on stable branches candidates are restricted to the minor line of the pom's parent version.",
       customType: "regex",
       managerFilePatterns: [
         "/testing/camunda-process-test-java/pom\\.xml$/",
+      ],
+      matchStrings: [
+        "<parent>[\\s\\S]*?<version>(?<branchLine>\\d+\\.\\d+)\\.\\d+[^<]*</version>[\\s\\S]*?<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
+      ],
+      depNameTemplate: "camunda/connectors-bundle",
+      datasourceTemplate: "docker",
+      extractVersionTemplate: "^(?<version>{{{branchLine}}}\\.\\d+)$",
+    },
+    {
+      description: "Track the connectors bundle Docker image override in process test Gradle build.",
+      customType: "regex",
+      managerFilePatterns: [
         "/testing/camunda-process-test-java/build\\.gradle\\.kts$/",
       ],
       matchStrings: [
-        "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
         "\"io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion\" to \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
       ],
       depNameTemplate: "camunda/connectors-bundle",
