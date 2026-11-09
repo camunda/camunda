@@ -291,6 +291,7 @@ runs:
 
         maven-change:
           - 'bom/**'
+          - '.github/conftest-pom/**'
           - 'build-tools/**'
           - 'dist/**'
           - 'parent/**'
