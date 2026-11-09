@@ -77,11 +77,13 @@ const Filters: React.FC = observer(() => {
     delete filterValues.processDefinitionId;
     delete filterValues.processDefinitionVersion;
   }
-  const {conditions} = variableFilterStore;
-  const inlineVariableValues =
-    conditions.length === 1 && conditions[0]?.operator === 'equals'
-      ? {variableName: conditions[0].name, variableValues: conditions[0].value}
-      : {};
+  const {inlineCondition} = variableFilterStore;
+  const inlineVariableValues = inlineCondition
+    ? {
+        variableName: inlineCondition.name,
+        variableValues: inlineCondition.value,
+      }
+    : {};
 
   return (
     <Form<ProcessInstancesFilter>
