@@ -38,6 +38,9 @@ paths:
                   $ref: 'keys.yaml#/components/schemas/OperationReference'
               required:
                 - resources
+              x-properties-added-in-version:
+                - propertyName: operationReference
+                  addedInVersion: "8.11"
       responses:
         "200":
           description: The resources are deployed.
