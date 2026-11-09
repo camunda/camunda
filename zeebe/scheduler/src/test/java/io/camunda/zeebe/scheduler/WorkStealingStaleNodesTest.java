@@ -8,12 +8,14 @@
 package io.camunda.zeebe.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -101,24 +103,88 @@ final class WorkStealingStaleNodesTest {
   }
 
   @Test
-  void shouldPopTasksInOrderAfterStaleNodesWereSkipped() {
-    // given
+  void shouldKeepOwnerOrderAfterStaleRunWasUnlinked() {
+    // given -- two older live tasks, followed by a long run of nodes of a task claimed elsewhere
     final var queue = new ActorTaskQueue();
     final var other = new ActorTaskQueue();
     final var first = new ActorTask(new Actor() {});
+    final var second = new ActorTask(new Actor() {});
     final var claimedElsewhere = new ActorTask(new Actor() {});
-    final var last = new ActorTask(new Actor() {});
     queue.append(first);
-    queue.append(claimedElsewhere);
-    queue.append(last);
+    queue.append(second);
+    for (int i = 0; i < 100; i++) {
+      queue.append(claimedElsewhere);
+    }
     other.append(claimedElsewhere);
     assertThat(other.pop()).isSameAs(claimedElsewhere);
-    assertThat(queue.trySteal()).isSameAs(last);
-    assertThat(queue.trySteal()).isSameAs(first);
-    queue.append(last);
 
-    // when + then -- the owner's view (next chain) is unaffected
-    assertThat(queue.pop()).isSameAs(last);
+    // when -- a steal walks the stale run, unlinks it and takes the newest live task
+    assertThat(queue.trySteal()).isSameAs(second);
+
+    // then -- the run was unlinked: only the tail, the node after it, second and first are walked
+    assertThat(countNodes(queue)).isEqualTo(4);
+
+    // when -- more tasks are appended after the compaction
+    final var third = new ActorTask(new Actor() {});
+    final var fourth = new ActorTask(new Actor() {});
+    queue.append(third);
+    queue.append(fourth);
+
+    // then -- the owner still pops the remaining live tasks in FIFO order and drains the queue
+    assertThat(queue.pop()).isSameAs(first);
+    assertThat(queue.pop()).isSameAs(third);
+    assertThat(queue.pop()).isSameAs(fourth);
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+
+    // and the drained queue is usable again, by thieves and by the owner
+    queue.append(first);
+    assertThat(queue.trySteal()).isSameAs(first);
+    queue.append(second);
+    assertThat(queue.pop()).isSameAs(second);
+    assertThat(queue.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldNotSkipPastNodeThatIsStillBeingAppended() {
+    // given -- a waiting task behind a long run of stale nodes
+    final var queue = new ActorTaskQueue();
+    final var other = new ActorTaskQueue();
+    final var waiting = new ActorTask(new Actor() {});
+    final var claimedElsewhere = new ActorTask(new Actor() {});
+    queue.append(waiting);
+    for (int i = 0; i < 100; i++) {
+      queue.append(claimedElsewhere);
+    }
+    final long staleCount = claimedElsewhere.getStateCount();
+    other.append(claimedElsewhere);
+    assertThat(other.pop()).isSameAs(claimedElsewhere);
+
+    // and an append that is in progress: the tail was swapped, but the links are not set yet
+    final ActorTaskQueueNode previousTail = queue.tail;
+    final var appending = new ActorTaskQueueNode();
+    appending.setTask(claimedElsewhere);
+    appending.stateCount = staleCount;
+    queue.tail = appending;
+    // and a later append that completed, so the unfinished link is in the middle of the chain; its
+    // task is claimed elsewhere as well
+    queue.append(claimedElsewhere);
+    assertThat(claimedElsewhere.claim(claimedElsewhere.getStateCount())).isTrue();
+
+    // when
+    final var stolen = queue.trySteal();
+
+    // then -- the walk stops at the unfinished link without writing past it
+    assertThat(stolen).isNull();
+    assertThat(appending.prev).isNull();
+    assertThat(countNodes(queue)).isEqualTo(2);
+
+    // when -- the append completes
+    previousTail.nextOrdered(appending);
+    appending.prevOrdered(previousTail);
+
+    // then -- the waiting task is reachable again, and the owner drains the whole list
+    assertThat(queue.trySteal()).isSameAs(waiting);
     assertThat(queue.pop()).isNull();
     assertThat(queue.isEmpty()).isTrue();
   }
@@ -130,6 +196,11 @@ final class WorkStealingStaleNodesTest {
    */
   @Test
   void shouldNotBurnCpuOnIdleIoThreadsWhileOneIoThreadIsBlocked() throws Exception {
+    assumeTrue(THREAD_MX.isThreadCpuTimeSupported(), "thread CPU time is not supported");
+    if (!THREAD_MX.isThreadCpuTimeEnabled()) {
+      THREAD_MX.setThreadCpuTimeEnabled(true);
+    }
+
     final var results = new ArrayList<Result>();
     for (final int ioThreads : new int[] {2, 4, 8}) {
       results.add(runScenario(ioThreads, Duration.ofSeconds(5)));
@@ -186,20 +257,24 @@ final class WorkStealingStaleNodesTest {
                   }
                 });
 
+    final var release = new CountDownLatch(1);
     try {
-      final var ioThreadIds = ioThreadIds("zb-fs-workers");
+      // only the IO threads of this scheduler; other test classes may run schedulers in parallel
+      final var ioThreadIds = ioThreadIds(builder.getIoBoundActorThreads());
       final var queues = ioQueues(builder.getIoBoundActorThreads());
 
       // baseline: same external load, nothing blocked
       Thread.sleep(500);
       final long baselineCpu = measureCpu(ioThreadIds, window, () -> {});
 
-      // blocked: one IO thread runs a job that blocks for longer than the measuring window
-      final long blockMs = window.toMillis() + 1_000;
+      // blocked: one IO thread runs a job that stays blocked until released
       final var blockStarted = new CountDownLatch(1);
-      blocker.block(blockMs, blockStarted);
-      blockStarted.await(5, TimeUnit.SECONDS);
+      blocker.block(blockStarted, release);
+      assertThat(blockStarted.await(5, TimeUnit.SECONDS))
+          .describedAs("blocking job started")
+          .isTrue();
       final long blockerTid = blocker.blockedThreadId.get();
+      final long[] pingsBefore = targets.stream().mapToLong(PingActor::pings).toArray();
       final var maxStale = new AtomicLong();
       final long blockedCpu =
           measureCpu(
@@ -211,6 +286,15 @@ final class WorkStealingStaleNodesTest {
                 }
               });
 
+      // the owner stayed blocked for the whole window, and stealing kept every actor running: a
+      // wakeup that lands in the blocked thread's queue only runs if it is stolen
+      assertThat(blocker.isBlocked()).describedAs("blocking job still running").isTrue();
+      for (int i = 0; i < targets.size(); i++) {
+        assertThat(targets.get(i).pings())
+            .describedAs("jobs of actor %d run while an IO thread is blocked", i)
+            .isGreaterThan(pingsBefore[i] + 100);
+      }
+
       return new Result(
           ioThreads,
           baselineCpu / (double) window.toNanos(),
@@ -220,6 +304,7 @@ final class WorkStealingStaleNodesTest {
       running.set(false);
       feeder.join();
       // let the blocked job finish so the scheduler can stop
+      release.countDown();
       blocker.awaitUnblocked();
       scheduler.stop().get(30, TimeUnit.SECONDS);
     }
@@ -241,18 +326,14 @@ final class WorkStealingStaleNodesTest {
     long sum = 0;
     for (final long id : threadIds) {
       final long cpu = THREAD_MX.getThreadCpuTime(id);
-      if (cpu > 0) {
-        sum += cpu;
-      }
+      assertThat(cpu).describedAs("CPU time of thread %d", id).isNotNegative();
+      sum += cpu;
     }
     return sum;
   }
 
-  private static List<Long> ioThreadIds(final String prefix) {
-    return Thread.getAllStackTraces().keySet().stream()
-        .filter(t -> t.getName().startsWith(prefix))
-        .map(Thread::threadId)
-        .toList();
+  private static List<Long> ioThreadIds(final ActorThreadGroup group) {
+    return Arrays.stream(group.threads).map(Thread::threadId).toList();
   }
 
   private static ActorTaskQueue[] ioQueues(final ActorThreadGroup group) throws Exception {
@@ -277,10 +358,14 @@ final class WorkStealingStaleNodesTest {
       int ioThreads, double baselineCores, double blockedCores, long maxStaleNodes) {}
 
   private static final class PingActor extends Actor {
-    private long pings;
+    private final AtomicLong pings = new AtomicLong();
 
     void ping() {
-      actor.run(() -> pings++);
+      actor.run(pings::incrementAndGet);
+    }
+
+    long pings() {
+      return pings.get();
     }
   }
 
@@ -288,20 +373,24 @@ final class WorkStealingStaleNodesTest {
     private final AtomicLong blockedThreadId = new AtomicLong(-1);
     private final CountDownLatch unblocked = new CountDownLatch(1);
 
-    void block(final long millis, final CountDownLatch started) {
+    void block(final CountDownLatch started, final CountDownLatch release) {
       actor.run(
           () -> {
             blockedThreadId.set(Thread.currentThread().threadId());
             started.countDown();
             try {
               // stands in for slow blocking file I/O (e.g. snapshot checkpoint or deletion)
-              Thread.sleep(millis);
+              release.await(60, TimeUnit.SECONDS);
             } catch (final InterruptedException e) {
               Thread.currentThread().interrupt();
             } finally {
               unblocked.countDown();
             }
           });
+    }
+
+    boolean isBlocked() {
+      return unblocked.getCount() > 0;
     }
 
     void awaitUnblocked() throws InterruptedException {
