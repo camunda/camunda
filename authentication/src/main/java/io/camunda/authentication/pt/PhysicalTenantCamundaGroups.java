@@ -13,6 +13,8 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
@@ -34,14 +36,17 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * default}, which is what the environment entry holds; without them, both bind {@code
  * camunda.security.authentication} from the environment.
  */
+@NullMarked
 public final class PhysicalTenantCamundaGroups {
 
   // Every tenant, the default one included, resolved from the environment.
   private final Map<String, Boolean> byTenant = new HashMap<>();
+  private final boolean defaultTenantValue;
 
   public PhysicalTenantCamundaGroups(final Environment environment) {
     PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
         .forEach((tenantId, config) -> byTenant.put(tenantId, config.isCamundaGroupsEnabled()));
+    defaultTenantValue = Boolean.TRUE.equals(byTenant.get(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   /**
@@ -53,7 +58,8 @@ public final class PhysicalTenantCamundaGroups {
    * @param clusterConfig the cluster authentication configuration, or {@code null} if there is none
    */
   public boolean isCamundaGroupsEnabled(
-      final String physicalTenantId, final AuthenticationConfiguration clusterConfig) {
+      final @Nullable String physicalTenantId,
+      final @Nullable AuthenticationConfiguration clusterConfig) {
     final Boolean tenantValue =
         physicalTenantId == null || DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
             ? null
@@ -72,7 +78,7 @@ public final class PhysicalTenantCamundaGroups {
    */
   public boolean isCamundaGroupsEnabled(final String physicalTenantId) {
     final Boolean tenantValue = byTenant.get(physicalTenantId);
-    return tenantValue != null ? tenantValue : byTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
+    return tenantValue != null ? tenantValue : defaultTenantValue;
   }
 
   /** Whether some tenant manages its groups in Camunda, so the Groups API must exist. */
