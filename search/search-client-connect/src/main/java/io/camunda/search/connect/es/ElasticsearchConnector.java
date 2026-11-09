@@ -118,9 +118,9 @@ public final class ElasticsearchConnector {
 
     final var defaultHeaders = new ArrayList<Header>();
     defaultHeaders.add(
-        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"));
+        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=9"));
     defaultHeaders.add(
-        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
+        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=9"));
     // Credentials go out with every request instead of in answer to a 401 challenge. A server that
     // lets anonymous users through for some requests never challenges them, so those requests
     // would run as anonymous. The Elasticsearch 8 client sent credentials with every request, so
@@ -140,10 +140,7 @@ public final class ElasticsearchConnector {
         .setHttpClientConfigCallback(
             httpClientBuilder ->
                 configureHttpClient(
-                    httpClientBuilder,
-                    configuration,
-                    pluginRepository.asRequestInterceptor(),
-                    ElasticsearchCompatibilityInterceptor.INSTANCE))
+                    httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
         .build();
   }
 
