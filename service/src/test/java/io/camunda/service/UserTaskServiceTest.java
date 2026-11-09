@@ -45,10 +45,14 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskLookupRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -781,6 +785,58 @@ public class UserTaskServiceTest {
       // then
       assertThat(result.getUserTask().getUserTaskKey()).isEqualTo(123L);
       assertThat(result.getLifecycleState()).isEqualTo(UserTaskLifecycleState.CREATED);
+    }
+  }
+
+  @Nested
+  class CompleteUserTask {
+
+    private StubbedBrokerClient brokerClient;
+    private UserTaskServices completeServices;
+
+    @BeforeEach
+    void setUp() {
+      brokerClient = new StubbedBrokerClient();
+      final var executorProvider = mock(ApiServicesExecutorProvider.class);
+      when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+      completeServices =
+          new UserTaskServices(
+              PHYSICAL_TENANT_ID,
+              brokerClient,
+              mock(SecurityContextProvider.class),
+              client,
+              formServices,
+              elementInstanceServices,
+              variableServices,
+              auditLogServices,
+              processCache,
+              executorProvider,
+              mock(BrokerRequestAuthorizationConverter.class));
+    }
+
+    @Test
+    void shouldCompleteUserTaskWithVariablesMetadata() {
+      // given
+      brokerClient.registerHandler(
+          BrokerUserTaskCompletionRequest.class,
+          request -> new BrokerResponse<>(new UserTaskRecord()));
+      final var metadata =
+          Map.<String, VariableMetadataValue>of(
+              "secret",
+              new VariableMetadataRecord().setProtectionModes(List.of(ProtectionMode.REDACT)));
+
+      // when
+      completeServices
+          .completeUserTask(123L, Map.of("secret", "v"), metadata, "complete", authentication)
+          .join();
+
+      // then
+      final BrokerUserTaskCompletionRequest request = brokerClient.getSingleBrokerRequest();
+      assertThat(request.getRequestWriter().getVariablesMetadata())
+          .containsOnlyKeys("secret")
+          .extractingByKey("secret")
+          .extracting(VariableMetadataValue::getProtectionModes)
+          .isEqualTo(Set.of(ProtectionMode.REDACT));
     }
   }
 }

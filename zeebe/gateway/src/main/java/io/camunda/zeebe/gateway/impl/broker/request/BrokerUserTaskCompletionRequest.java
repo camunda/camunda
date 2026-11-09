@@ -9,9 +9,12 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.gateway.validation.VariablesMetadataValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class BrokerUserTaskCompletionRequest extends BrokerExecuteCommand<UserTaskRecord> {
@@ -32,6 +35,14 @@ public class BrokerUserTaskCompletionRequest extends BrokerExecuteCommand<UserTa
     VariableNameLengthValidator.validateVariableNameLength(variables, maxVariableNameLength);
     requestDto.setUserTaskKey(key).setVariables(variables).setAction(action);
     request.setKey(key);
+  }
+
+  public BrokerUserTaskCompletionRequest setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    VariablesMetadataValidator.validateVariablesMetadata(
+        requestDto.getVariablesBuffer(), variablesMetadata);
+    requestDto.setVariablesMetadata(variablesMetadata);
+    return this;
   }
 
   @Override

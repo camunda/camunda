@@ -72,9 +72,10 @@ public class UserTaskController {
       @PathVariable final long userTaskKey,
       @RequestBody(required = false) final UserTaskCompletionRequest completionRequest) {
 
-    return completeUserTask(
-        physicalTenantId,
-        RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey));
+    return RequestMapper.toUserTaskCompletionRequest(completionRequest, userTaskKey)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            request -> completeUserTask(physicalTenantId, request));
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/lookup")
@@ -291,6 +292,7 @@ public class UserTaskController {
             userTaskServices.completeUserTask(
                 request.userTaskKey(),
                 request.variables(),
+                request.variablesMetadata(),
                 request.action(),
                 authenticationProvider.getCamundaAuthentication()));
   }

@@ -41,6 +41,8 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -850,7 +852,7 @@ class UserTaskToolsTest extends OperationalToolsTest {
     @Test
     void shouldCompleteUserTaskByKey() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -870,13 +872,13 @@ class UserTaskToolsTest extends OperationalToolsTest {
               textContent ->
                   assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
 
-      verify(userTaskServices).completeUserTask(eq(5L), eq(Map.of()), eq(""), any());
+      verify(userTaskServices).completeUserTask(eq(5L), eq(Map.of()), eq(Map.of()), eq(""), any());
     }
 
     @Test
     void shouldCompleteUserTaskWithVariablesAndAction() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
           .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
 
       // when
@@ -902,13 +904,49 @@ class UserTaskToolsTest extends OperationalToolsTest {
                   assertThat(textContent.text()).isEqualTo("User task with key 5 completed."));
 
       verify(userTaskServices)
-          .completeUserTask(eq(5L), eq(Map.of("approved", true)), eq("customAction"), any());
+          .completeUserTask(
+              eq(5L), eq(Map.of("approved", true)), eq(Map.of()), eq("customAction"), any());
+    }
+
+    @Test
+    void shouldForwardVariablesMetadataOnCompleteUserTask() {
+      // given
+      when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
+          .thenReturn(CompletableFuture.completedFuture(new UserTaskRecord()));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder("completeUserTask")
+                  .arguments(
+                      Map.of(
+                          "userTaskKey",
+                          5L,
+                          "completionOptions",
+                          Map.of(
+                              "variables",
+                              Map.of("secret", "v"),
+                              "variablesMetadata",
+                              Map.of("secret", Map.of("protectionModes", List.of("REDACT"))))))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      final ArgumentCaptor<Map<String, VariableMetadataValue>> metadataCaptor =
+          ArgumentCaptor.captor();
+      verify(userTaskServices)
+          .completeUserTask(eq(5L), any(), metadataCaptor.capture(), anyString(), any());
+      assertThat(metadataCaptor.getValue())
+          .containsOnlyKeys("secret")
+          .extractingByKey("secret")
+          .extracting(VariableMetadataValue::getProtectionModes)
+          .isEqualTo(Set.of(ProtectionMode.REDACT));
     }
 
     @Test
     void shouldFailCompleteUserTaskOnException() {
       // given
-      when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+      when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.NOT_FOUND)));

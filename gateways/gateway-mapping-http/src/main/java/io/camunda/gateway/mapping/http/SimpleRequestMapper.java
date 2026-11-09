@@ -79,7 +79,7 @@ public class SimpleRequestMapper {
         (ProcessInstanceCreationInstruction) instruction, multiTenancyEnabled);
   }
 
-  private static @Nullable Map<String, VariableMetadata> mapVariablesMetadata(
+  static @Nullable Map<String, VariableMetadata> mapVariablesMetadata(
       final @Nullable Map<String, io.camunda.gateway.protocol.model.simple.VariableMetadata>
           variablesMetadata) {
     if (variablesMetadata == null) {
