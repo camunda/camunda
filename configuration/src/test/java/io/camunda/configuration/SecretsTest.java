@@ -698,6 +698,76 @@ class SecretsTest {
   }
 
   @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net",
+        "camunda.secrets.stores.azure.default.path-prefix=camunda-",
+        "camunda.secrets.stores.azure.default.container-secret=all-secrets",
+        "camunda.secrets.stores.azure.default.managed-identity-client-id=client-id",
+        "camunda.secrets.stores.azure.default.authority-host=https://login.microsoftonline.us",
+        "camunda.secrets.stores.azure.default.max-retries=5",
+        "camunda.secrets.stores.azure.default.call-timeout=10s",
+        "camunda.secrets.stores.azure.default.attempt-timeout=3s"
+      })
+  class WithAzureStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAzureStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindEveryAzureStoreProperty() {
+      // given every camunda.secrets.stores.azure.default.* property is set (see
+      // @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named azure store is present with every property bound
+      assertThat(secrets.getStores().getAzure()).containsOnlyKeys("default");
+      final var store = secrets.getStores().getAzure().get("default");
+      assertThat(store.getVaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
+      assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+      assertThat(store.getContainerSecret()).isEqualTo("all-secrets");
+      assertThat(store.getManagedIdentityClientId()).isEqualTo("client-id");
+      assertThat(store.getAuthorityHost()).isEqualTo("https://login.microsoftonline.us");
+      assertThat(store.getMaxRetries()).isEqualTo(5);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(10));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(3));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net"
+      })
+  class WithOnlyAzureVaultUrlConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithOnlyAzureVaultUrlConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultEveryAzureStorePropertyButTheVaultUrl() {
+      // given only the vault URL is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final var store =
+          unifiedConfiguration.getCamunda().getSecrets().getStores().getAzure().get("default");
+
+      // then every other property has its documented default
+      assertThat(store.getPathPrefix()).isNull();
+      assertThat(store.getContainerSecret()).isNull();
+      assertThat(store.getManagedIdentityClientId()).isNull();
+      assertThat(store.getAuthorityHost()).isNull();
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
   class WithoutCacheConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
 

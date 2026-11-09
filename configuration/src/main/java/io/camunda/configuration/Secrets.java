@@ -35,6 +35,14 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
  *   <li>{@code camunda.secrets.stores.env.<id>.prefix}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.vault-url}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.path-prefix}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.container-secret}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.managed-identity-client-id}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.authority-host}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.max-retries}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.call-timeout}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.attempt-timeout}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -57,10 +65,11 @@ public class Secrets {
 
   /**
    * Default upper bound on one call to a cloud secret store, retries included, and on a single
-   * attempt within it. Shared by the AWS and GCP stores so both are bounded the same way; mirrored
-   * by {@code AwsSecretsManagerStoreConfig#DEFAULT_CALL_TIMEOUT} and {@code
-   * GcpSecretManagerStoreConfig#DEFAULT_CALL_TIMEOUT} in the store modules, which this module
-   * cannot depend on. Keep them in sync.
+   * attempt within it. Shared by the AWS, GCP and Azure stores so all are bounded the same way;
+   * mirrored by {@code AwsSecretsManagerStoreConfig#DEFAULT_CALL_TIMEOUT}, {@code
+   * GcpSecretManagerStoreConfig#DEFAULT_CALL_TIMEOUT} and {@code
+   * AzureKeyVaultStoreConfig#DEFAULT_CALL_TIMEOUT} in the store modules, which this module cannot
+   * depend on. Keep them in sync.
    */
   private static final Duration DEFAULT_CALL_TIMEOUT = Duration.ofSeconds(5);
 
@@ -167,6 +176,7 @@ public class Secrets {
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
     private Map<String, EnvStore> env = new LinkedHashMap<>();
+    private Map<String, AzureKeyVaultStore> azure = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -211,6 +221,14 @@ public class Secrets {
 
     public void setEnv(final Map<String, EnvStore> env) {
       this.env = env;
+    }
+
+    public Map<String, AzureKeyVaultStore> getAzure() {
+      return azure;
+    }
+
+    public void setAzure(final Map<String, AzureKeyVaultStore> azure) {
+      this.azure = azure;
     }
   }
 
@@ -738,6 +756,152 @@ public class Secrets {
                   + fullLength);
         }
       }
+    }
+  }
+
+  /**
+   * Configuration for an Azure Key Vault store. Sign-in is meant to be identity-based only (managed
+   * identity, workload identity, or a service principal from the standard {@code AZURE_*}
+   * environment variables), so no static credentials are accepted here by design.
+   *
+   * <p>Signing in and reading the vault are not implemented yet (camunda/camunda#67225,
+   * camunda/camunda#67226): until then the store resolves every reference as not found.
+   */
+  public static class AzureKeyVaultStore {
+
+    /**
+     * Default number of retries for a throttled or transient request; mirrored by {@code
+     * AzureKeyVaultStoreConfig#DEFAULT_MAX_RETRIES} in the store module, which this module cannot
+     * depend on. Keep them in sync.
+     */
+    private static final int DEFAULT_MAX_RETRIES = 3;
+
+    /**
+     * URL of the vault holding the secrets, such as {@code https://my-vault.vault.azure.net}.
+     * Required.
+     */
+    private @Nullable String vaultUrl;
+
+    /**
+     * Optional prefix prepended, with no separator inserted, to every reference name to form the
+     * Key Vault secret name (e.g. {@code camunda-} plus reference {@code db-password} reads secret
+     * {@code camunda-db-password}). When omitted, references map to bare secret names. Applies to
+     * {@link #containerSecret} as well. Key Vault secret names allow only {@code [0-9A-Za-z-]}, so
+     * use e.g. {@code camunda-} rather than {@code camunda/}.
+     */
+    private @Nullable String pathPrefix;
+
+    /**
+     * Opt-in: instead of one Key Vault secret per reference, treat every reference as a JSON key
+     * inside this one named secret (e.g. {@code app-config}). The secret's value must be a flat
+     * JSON object mapping each reference name to a string value (e.g. {@code {"db-password":
+     * "s3cr3t"}}).
+     */
+    private @Nullable String containerSecret;
+
+    /**
+     * Client id of the user-assigned managed identity to sign in with, so each physical tenant can
+     * use its own identity. When omitted, the system-assigned identity or whichever identity the
+     * environment provides is used.
+     */
+    private @Nullable String managedIdentityClientId;
+
+    /**
+     * Microsoft Entra authority host to sign in against, for sovereign clouds (e.g. {@code
+     * https://login.microsoftonline.us}). When omitted, the public cloud is used.
+     */
+    private @Nullable String authorityHost;
+
+    /**
+     * How many times a throttled or transient request to the vault is retried. Defaults to {@code
+     * 3}.
+     */
+    private int maxRetries = DEFAULT_MAX_RETRIES;
+
+    /**
+     * Upper bound on one call to Key Vault, retries included. The background secret resolution
+     * calls the store from an IO-bound actor thread shared with every partition's exporter, so an
+     * unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Defaults to 5
+     * seconds.
+     */
+    private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
+
+    /**
+     * Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume
+     * the whole {@link #callTimeout} budget. Defaults to 2 seconds.
+     */
+    private Duration attemptTimeout = DEFAULT_ATTEMPT_TIMEOUT;
+
+    public @Nullable String getVaultUrl() {
+      return vaultUrl;
+    }
+
+    public void setVaultUrl(final @Nullable String vaultUrl) {
+      this.vaultUrl = vaultUrl;
+    }
+
+    public @Nullable String getPathPrefix() {
+      return pathPrefix;
+    }
+
+    public void setPathPrefix(final @Nullable String pathPrefix) {
+      this.pathPrefix = pathPrefix;
+    }
+
+    public @Nullable String getContainerSecret() {
+      return containerSecret;
+    }
+
+    public void setContainerSecret(final @Nullable String containerSecret) {
+      this.containerSecret = containerSecret;
+    }
+
+    public @Nullable String getManagedIdentityClientId() {
+      return managedIdentityClientId;
+    }
+
+    public void setManagedIdentityClientId(final @Nullable String managedIdentityClientId) {
+      this.managedIdentityClientId = managedIdentityClientId;
+    }
+
+    public @Nullable String getAuthorityHost() {
+      return authorityHost;
+    }
+
+    public void setAuthorityHost(final @Nullable String authorityHost) {
+      this.authorityHost = authorityHost;
+    }
+
+    public int getMaxRetries() {
+      return maxRetries;
+    }
+
+    public void setMaxRetries(final int maxRetries) {
+      this.maxRetries = maxRetries;
+    }
+
+    public Duration getCallTimeout() {
+      return callTimeout;
+    }
+
+    /**
+     * @param callTimeout the configured value, or {@code null}, bound to the default the same way
+     *     an unset property is, so an explicitly empty value does not leave the store unbounded
+     */
+    public void setCallTimeout(final @Nullable Duration callTimeout) {
+      this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
+    }
+
+    public Duration getAttemptTimeout() {
+      return attemptTimeout;
+    }
+
+    /**
+     * @param attemptTimeout the configured value, or {@code null}, bound to the same outcome {@code
+     *     callTimeout} already has for an empty value
+     */
+    public void setAttemptTimeout(final @Nullable Duration attemptTimeout) {
+      this.attemptTimeout = attemptTimeout == null ? DEFAULT_ATTEMPT_TIMEOUT : attemptTimeout;
     }
   }
 }

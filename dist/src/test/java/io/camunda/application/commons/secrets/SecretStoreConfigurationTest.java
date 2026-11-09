@@ -31,6 +31,7 @@ import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
 import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -635,6 +636,86 @@ class SecretStoreConfigurationTest {
         .withMessageContaining("reserved prefix 'ZEEBE_'");
   }
 
+  @Test
+  void shouldBuildAzureKeyVaultStoreEvenWithoutAReachableVault() {
+    // given a vault URL nothing answers on; building the store must not call Azure, so startup does
+    // not depend on the vault being reachable
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.azure.default.vault-url",
+                "https://unreachable.vault.azure.net"));
+
+    // when
+    final var registries = registries(resolver);
+
+    // then the azure branch is what built the store, not the noop fallback or another store type
+    assertThat(
+            defaultStoreOf(registries, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .is(AzureKeyVaultSecretStore.class))
+        .isTrue();
+  }
+
+  @Test
+  void shouldBuildAzureKeyVaultStoreOnlyForThePhysicalTenantThatConfiguresIt() {
+    // given an azure store configured for pt1 alone
+    final var resolver =
+        resolverFor(tenantWithAzureStore("pt1", "vault-url", "https://pt1.vault.azure.net"));
+
+    // when
+    final var registries = registries(resolver);
+
+    // then pt1 reads from its vault and the default tenant stays on the noop fallback
+    assertThat(defaultStoreOf(registries, "pt1").is(AzureKeyVaultSecretStore.class)).isTrue();
+    assertThatIsNoopStore(defaultStoreOf(registries, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  @Test
+  void shouldThrowWhenAzureStoreHasNoVaultUrl() {
+    // given a pt1 azure store under the only supported id that sets everything but the vault URL
+    final var resolver =
+        resolverFor(tenantWithAzureStore("pt1", "managed-identity-client-id", "pt1-client-id"));
+
+    // when / then — the message names the tenant-scoped property to set
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining(
+            "camunda.physical-tenants.pt1.secrets.stores.azure.default.vault-url");
+  }
+
+  @Test
+  void shouldThrowWhenFileAndAzureStoresCombinedExceedOne() {
+    // given one file store and one azure store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.default.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.azure.default.vault-url",
+                    "https://my-vault.vault.azure.net"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldThrowWhenAzureStoreIsNotNamedDefault() {
+    // given a single azure store under an id no secret reference can address
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.azure.main.vault-url", "https://my-vault.vault.azure.net"));
+
+    // when / then — the property named carries the azure type segment the operator wrote
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("the only supported store id is 'default'")
+        .withMessageContaining("camunda.secrets.stores.azure.main")
+        .withMessageContaining("camunda.secrets.stores.azure.default");
+  }
+
   @ParameterizedTest
   @MethodSource("buildFailures")
   void shouldCloseAlreadyBuiltStoresWhenALaterTenantFailsToBuild(final Throwable buildFailure)
@@ -1035,6 +1116,18 @@ class SecretStoreConfigurationTest {
     return Map.of(
         tenant + ".secrets.stores.env.default.prefix",
         prefix,
+        tenant + ".security.initialization.default-roles.admin.users[0]",
+        tenantId + "-admin",
+        tenant + ".data.secondary-storage.elasticsearch.index-prefix",
+        tenantId);
+  }
+
+  private static Map<String, Object> tenantWithAzureStore(
+      final String tenantId, final String storeProperty, final String value) {
+    final var tenant = "camunda.physical-tenants." + tenantId;
+    return Map.of(
+        tenant + ".secrets.stores.azure.default." + storeProperty,
+        value,
         tenant + ".security.initialization.default-roles.admin.users[0]",
         tenantId + "-admin",
         tenant + ".data.secondary-storage.elasticsearch.index-prefix",
