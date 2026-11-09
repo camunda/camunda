@@ -328,13 +328,15 @@ public final class EventHandle {
           tenantId);
       return false;
     }
-    if (process.isDraining() && LOG.isDebugEnabled()) {
-      LOG.debug(
-          "Skipping start-event instance creation: process '{}' version {} (key {}, tenant '{}') is draining and no longer accepts new instances.",
-          BufferUtil.bufferAsString(process.getBpmnProcessId()),
-          process.getVersion(),
-          process.getKey(),
-          tenantId);
+    if (process.isDraining()) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(
+            "Skipping start-event instance creation: process '{}' version {} (key {}, tenant '{}') is draining and no longer accepts new instances.",
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            process.getVersion(),
+            process.getKey(),
+            tenantId);
+      }
       return false;
     }
     return true;
