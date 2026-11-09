@@ -193,6 +193,8 @@ identity commands were distributed on the same queue before, every partition swi
 has applied the whole update. A partition that is already at that version or a newer one rejects
 the switch and still acknowledges the distribution.
 
+The switch of versions automatically invalidates the identity caches of the engine.
+
 Partitions switch independently, so for a short time some partitions may still authorize with the
 old policy while others already use the new one.
 

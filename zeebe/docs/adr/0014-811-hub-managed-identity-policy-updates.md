@@ -124,6 +124,8 @@ polling cursor advances in the same step as the version.
 - **Hub-client reads current policyVersion and sequenceNo** How can this hub-client component get to
   know this sequence number to receive the correct updates?
   - https://github.com/camunda/pdp-initiative-ea-identity--access-at-scale/issues/52
+- **React on rejected identity commands** The identity processors can reject commands if they are invalid. The chunk processors never notice. Currently we do a full pre-validation but there is still a small risk.
+  - https://github.com/camunda/camunda-security-library/issues/801
 
 ## Source
 
