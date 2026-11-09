@@ -74,16 +74,6 @@ public final class MappingExpressionProcessor {
    * Evaluates the given expression against this processor's pre-scoped context.
    *
    * @param source the expression to evaluate
-   * @return either the evaluation result as a MsgPack buffer, or a failure
-   */
-  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(final Expression source) {
-    return evaluateVariableMappingExpression(source, ExpressionLabel.NONE);
-  }
-
-  /**
-   * Evaluates the given expression against this processor's pre-scoped context.
-   *
-   * @param source the expression to evaluate
    * @param label identifies the mapping in the failure message, if any
    * @return either the evaluation result as a MsgPack buffer, or a failure
    */

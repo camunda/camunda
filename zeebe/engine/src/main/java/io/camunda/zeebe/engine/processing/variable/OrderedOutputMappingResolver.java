@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
@@ -40,7 +41,9 @@ public final class OrderedOutputMappingResolver implements MappingResolver<Outpu
     final var boundProcessor = processor.prependContext(resultBuilder::get);
 
     for (final OutputMapping mapping : outputMappings.mappings()) {
-      final var result = boundProcessor.evaluateVariableMappingExpression(mapping.source());
+      final var result =
+          boundProcessor.evaluateVariableMappingExpression(
+              mapping.source(), ExpressionLabel.outputMappingExpression(mapping.targetPath()));
       if (result.isLeft()) {
         return Either.left(result.getLeft());
       }

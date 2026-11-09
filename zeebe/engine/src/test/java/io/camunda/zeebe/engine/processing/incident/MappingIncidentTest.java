@@ -51,10 +51,12 @@ public final class MappingIncidentTest {
               c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
 
   @ClassRule
-  public static final EngineRule ENGINE_ORDERED_INPUT =
+  public static final EngineRule ENGINE_ORDERED_INPUT_AND_OUTPUT =
       EngineRule.singlePartition()
           .withEngineConfig(
-              c -> c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED));
+              c ->
+                  c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED)
+                      .setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
 
   private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
@@ -130,11 +132,11 @@ public final class MappingIncidentTest {
   @Test
   public void shouldNameTargetVariableOfFailingOrderedInputMapping() {
     // given
-    ENGINE_ORDERED_INPUT.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+    ENGINE_ORDERED_INPUT_AND_OUTPUT.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
 
     // when
     final long processInstanceKey =
-        ENGINE_ORDERED_INPUT.processInstance().ofBpmnProcessId("process").create();
+        ENGINE_ORDERED_INPUT_AND_OUTPUT.processInstance().ofBpmnProcessId("process").create();
 
     // then
     final var incident =
@@ -145,6 +147,31 @@ public final class MappingIncidentTest {
     assertThat(incident.getValue().getErrorMessage())
         .contains("Assertion failure on evaluate the expression")
         .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedOutputMapping() {
+    // given
+    ENGINE_ORDERED_INPUT_AND_OUTPUT.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
+    final long processInstanceKey =
+        ENGINE_ORDERED_INPUT_AND_OUTPUT.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    ENGINE_ORDERED_INPUT_AND_OUTPUT
+        .job()
+        .withType("test")
+        .ofInstance(processInstanceKey)
+        .complete();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(output mapping expression of target variable 'foo')");
   }
 
   @Test
