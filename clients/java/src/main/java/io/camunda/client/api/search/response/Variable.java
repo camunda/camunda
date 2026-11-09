@@ -52,10 +52,14 @@ public interface Variable {
   /**
    * Returns how the variable is treated, for example which protections apply to its value.
    *
+   * <p>This is a default method, so that existing implementations of this interface keep compiling.
+   *
    * @return the variable metadata, or {@code null} if the server did not return any
    */
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
-  Metadata getMetadata();
+  default Metadata getMetadata() {
+    return null;
+  }
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
