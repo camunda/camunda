@@ -48,9 +48,10 @@ class ManagedScriptsImageIT {
 
   @Test
   void shouldUseTheInterpretersAndTheUserOfACustomImage() {
-    // given: a custom image, on another base, with the interpreters and its own user
+    // given: a custom image, on another base, with the interpreters and its own user. Built
+    // locally: with a registry, a registry mirror of Testcontainers does not apply to it.
     final String customImage =
-        new ImageFromDockerfile("camunda-process-test/custom-connectors-it")
+        new ImageFromDockerfile("localhost/camunda-process-test/custom-connectors-it")
             .withDockerfileFromBuilder(
                 dockerfile ->
                     dockerfile
