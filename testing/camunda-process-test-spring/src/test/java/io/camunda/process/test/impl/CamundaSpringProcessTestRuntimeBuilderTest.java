@@ -163,6 +163,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     runtimeConfiguration.setRuntimeMode(runtimeMode);
     runtimeConfiguration.setManagedScriptsEnabled(true);
+    // The first Connectors version with managed scripts.
+    runtimeConfiguration.setConnectorsDockerImageVersion("8.11.0");
     runtimeConfiguration.setManagedScriptsPythonVersion("3.12");
     runtimeConfiguration.setManagedScriptsNodeVersion("22");
 
