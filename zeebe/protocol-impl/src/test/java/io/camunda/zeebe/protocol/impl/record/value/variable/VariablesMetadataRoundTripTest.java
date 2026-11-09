@@ -38,8 +38,14 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class VariablesMetadataRoundTripTest {
 
@@ -94,337 +100,28 @@ final class VariablesMetadataRoundTripTest {
     assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
   }
 
-  @Test
-  void shouldKeepVariablesMetadataOfMessage() {
-    // given
-    final var record =
-        new MessageRecord()
-            .setName("message")
-            .setCorrelationKey("key")
-            .setTimeToLive(0L)
-            .setVariablesMetadata(METADATA);
-
+  @ParameterizedTest
+  @MethodSource("recordsCarryingVariables")
+  void shouldKeepVariablesMetadataWhenSerialized(final UnifiedRecordValue record) {
     // when
-    final var copy = new MessageRecord();
+    final var copy = UnifiedRecordValue.fromValueType(record.valueType());
     copy.wrap(serialize(record), 0, record.getLength());
 
     // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
+    assertThat(copy).isEqualTo(record);
   }
 
-  @Test
-  void shouldCopyVariablesMetadataOfMessage() {
-    // given
-    final var record =
-        new MessageRecord()
-            .setName("message")
-            .setCorrelationKey("key")
-            .setTimeToLive(0L)
-            .setVariablesMetadata(METADATA);
-
+  @ParameterizedTest
+  @MethodSource("copyableRecordsCarryingVariables")
+  void shouldKeepVariablesMetadataWhenCopied(
+      final UnifiedRecordValue record,
+      final BiConsumer<UnifiedRecordValue, UnifiedRecordValue> wrap) {
     // when
-    final var copy = new MessageRecord();
-    copy.wrap(record);
+    final var copy = UnifiedRecordValue.fromValueType(record.valueType());
+    wrap.accept(copy, record);
 
     // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfMessageSubscription() {
-    // given
-    final var record =
-        new MessageSubscriptionRecord()
-            .setProcessInstanceKey(1L)
-            .setElementInstanceKey(2L)
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageSubscriptionRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfMessageSubscription() {
-    // given
-    final var record =
-        new MessageSubscriptionRecord()
-            .setProcessInstanceKey(1L)
-            .setElementInstanceKey(2L)
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageSubscriptionRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfProcessMessageSubscription() {
-    // given
-    final var record =
-        new ProcessMessageSubscriptionRecord()
-            .setSubscriptionPartitionId(1)
-            .setProcessInstanceKey(1L)
-            .setElementInstanceKey(2L)
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ProcessMessageSubscriptionRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfProcessMessageSubscription() {
-    // given
-    final var record =
-        new ProcessMessageSubscriptionRecord()
-            .setSubscriptionPartitionId(1)
-            .setProcessInstanceKey(1L)
-            .setElementInstanceKey(2L)
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ProcessMessageSubscriptionRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfMessageStartEventSubscription() {
-    // given
-    final var record = new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageStartEventSubscriptionRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfMessageStartEventSubscription() {
-    // given
-    final var record = new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageStartEventSubscriptionRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfMessageStartProcessInstanceRequest() {
-    // given
-    final var record =
-        new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageStartProcessInstanceRequestRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfMessageStartProcessInstanceRequest() {
-    // given
-    final var record =
-        new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new MessageStartProcessInstanceRequestRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfSignal() {
-    // given
-    final var record = new SignalRecord().setSignalName("signal").setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new SignalRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfSignal() {
-    // given
-    final var record = new SignalRecord().setSignalName("signal").setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new SignalRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfConditionalEvaluation() {
-    // given
-    final var record = new ConditionalEvaluationRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ConditionalEvaluationRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfConditionalEvaluation() {
-    // given
-    final var record = new ConditionalEvaluationRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ConditionalEvaluationRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfProcessEvent() {
-    // given
-    final var record =
-        new ProcessEventRecord()
-            .setScopeKey(1L)
-            .setTargetElementIdBuffer(wrapString("element"))
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ProcessEventRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfProcessEvent() {
-    // given
-    final var record =
-        new ProcessEventRecord()
-            .setScopeKey(1L)
-            .setTargetElementIdBuffer(wrapString("element"))
-            .setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ProcessEventRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfCompensationSubscription() {
-    // given
-    final var record = new CompensationSubscriptionRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new CompensationSubscriptionRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfCompensationSubscription() {
-    // given
-    final var record = new CompensationSubscriptionRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new CompensationSubscriptionRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfProcessInstanceResult() {
-    // given
-    final var record = new ProcessInstanceResultRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new ProcessInstanceResultRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldKeepVariablesMetadataOfUserTask() {
-    // given
-    final var record = new UserTaskRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new UserTaskRecord();
-    copy.wrap(serialize(record), 0, record.getLength());
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
-    assertThat(copy.getVariablesMetadata().get("secret").getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
-  }
-
-  @Test
-  void shouldCopyVariablesMetadataOfUserTask() {
-    // given
-    final var record = new UserTaskRecord().setVariablesMetadata(METADATA);
-
-    // when
-    final var copy = new UserTaskRecord();
-    copy.wrap(record);
-
-    // then
-    assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+    assertThat(copy).isEqualTo(record);
   }
 
   @Test
@@ -486,6 +183,67 @@ final class VariablesMetadataRoundTripTest {
     assertThat(previous.version.getValue()).isEqualTo(3);
     assertThat(MsgPackConverter.convertToMap(previous.variables.getValue()))
         .containsExactly(Map.entry("foo", "bar"));
+  }
+
+  private static Stream<Named<?>> recordsCarryingVariables() {
+    return Stream.concat(
+        copyableRecordsCarryingVariables().map(arguments -> (Named<?>) arguments.get()[0]),
+        Stream.of(named(new ProcessInstanceResultRecord().setVariablesMetadata(METADATA))));
+  }
+
+  private static Stream<Arguments> copyableRecordsCarryingVariables() {
+    return Stream.of(
+        copiedBy(
+            new MessageRecord()
+                .setName("message")
+                .setCorrelationKey("key")
+                .setTimeToLive(0L)
+                .setVariablesMetadata(METADATA),
+            MessageRecord::wrap),
+        copiedBy(
+            new MessageSubscriptionRecord()
+                .setProcessInstanceKey(1L)
+                .setElementInstanceKey(2L)
+                .setVariablesMetadata(METADATA),
+            MessageSubscriptionRecord::wrap),
+        copiedBy(
+            new ProcessMessageSubscriptionRecord()
+                .setSubscriptionPartitionId(1)
+                .setProcessInstanceKey(1L)
+                .setElementInstanceKey(2L)
+                .setVariablesMetadata(METADATA),
+            ProcessMessageSubscriptionRecord::wrap),
+        copiedBy(
+            new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA),
+            MessageStartEventSubscriptionRecord::wrap),
+        copiedBy(
+            new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA),
+            MessageStartProcessInstanceRequestRecord::wrap),
+        copiedBy(
+            new SignalRecord().setSignalName("signal").setVariablesMetadata(METADATA),
+            SignalRecord::wrap),
+        copiedBy(
+            new ConditionalEvaluationRecord().setVariablesMetadata(METADATA),
+            ConditionalEvaluationRecord::wrap),
+        copiedBy(
+            new ProcessEventRecord()
+                .setScopeKey(1L)
+                .setTargetElementIdBuffer(wrapString("element"))
+                .setVariablesMetadata(METADATA),
+            ProcessEventRecord::wrap),
+        copiedBy(
+            new CompensationSubscriptionRecord().setVariablesMetadata(METADATA),
+            CompensationSubscriptionRecord::wrap),
+        copiedBy(new UserTaskRecord().setVariablesMetadata(METADATA), UserTaskRecord::wrap));
+  }
+
+  private static <T extends UnifiedRecordValue> Arguments copiedBy(
+      final T record, final BiConsumer<T, T> wrap) {
+    return Arguments.of(named(record), wrap);
+  }
+
+  private static Named<UnifiedRecordValue> named(final UnifiedRecordValue record) {
+    return Named.named(record.getClass().getSimpleName(), record);
   }
 
   private static UnsafeBuffer serialize(final UnifiedRecordValue record) {
