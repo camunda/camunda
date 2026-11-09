@@ -257,7 +257,8 @@ jobs:
         run: |
           # Start TCP proxy on port 443 (requires sudo for privileged port)
           # Use full path since sudo doesn't inherit PATH
-          sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
+          sudo --preserve-env=TELEPORT_PROXY,TELEPORT_AUTH_SERVER,TELEPORT_IDENTITY_FILE \
+            "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
           sleep 5
 
           # Verify tunnel is running
