@@ -103,6 +103,35 @@ final class WorkStealingStaleNodesTest {
   }
 
   @Test
+  void shouldUnlinkStaleRunAtThreshold() {
+    // given -- a waiting task behind stale nodes; the walk always keeps the tail and the node after
+    // it, so exactly MIN_STALE_NODES_TO_SKIP stale nodes lie between those and the waiting task
+    final var victim =
+        queueWithWaitingTaskBehindStaleNodes(ActorTaskQueue.MIN_STALE_NODES_TO_SKIP + 2);
+
+    // when
+    final var stolen = victim.queue.trySteal();
+
+    // then -- the run is unlinked: only the tail, the node after it and the stolen node are walked
+    assertThat(stolen).isSameAs(victim.waiting);
+    assertThat(countNodes(victim.queue)).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotUnlinkStaleRunBelowThreshold() {
+    // given -- one stale node less than in shouldUnlinkStaleRunAtThreshold
+    final int staleNodes = ActorTaskQueue.MIN_STALE_NODES_TO_SKIP + 1;
+    final var victim = queueWithWaitingTaskBehindStaleNodes(staleNodes);
+
+    // when
+    final var stolen = victim.queue.trySteal();
+
+    // then -- the run is left in place
+    assertThat(stolen).isSameAs(victim.waiting);
+    assertThat(countNodes(victim.queue)).isEqualTo(staleNodes + 1);
+  }
+
+  @Test
   void shouldKeepOwnerOrderAfterStaleRunWasUnlinked() {
     // given -- two older live tasks, followed by a long run of nodes of a task claimed elsewhere
     final var queue = new ActorTaskQueue();
@@ -187,6 +216,68 @@ final class WorkStealingStaleNodesTest {
     assertThat(queue.trySteal()).isSameAs(waiting);
     assertThat(queue.pop()).isNull();
     assertThat(queue.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldUnlinkStaleRunUpToNodeThatIsStillBeingAppended() {
+    // given -- a waiting task behind stale nodes, then an append that is in progress: the tail was
+    // swapped, but the links are not set yet
+    final var queue = new ActorTaskQueue();
+    final var other = new ActorTaskQueue();
+    final var waiting = new ActorTask(new Actor() {});
+    final var claimedElsewhere = new ActorTask(new Actor() {});
+    queue.append(waiting);
+    for (int i = 0; i < 100; i++) {
+      queue.append(claimedElsewhere);
+    }
+    final long staleCount = claimedElsewhere.getStateCount();
+    other.append(claimedElsewhere);
+    assertThat(other.pop()).isSameAs(claimedElsewhere);
+
+    final ActorTaskQueueNode previousTail = queue.tail;
+    final var appending = new ActorTaskQueueNode();
+    appending.setTask(claimedElsewhere);
+    appending.stateCount = staleCount;
+    queue.tail = appending;
+    // and a long run of later appends that completed, all claimed elsewhere
+    final int laterAppends = ActorTaskQueue.MIN_STALE_NODES_TO_SKIP + 4;
+    for (int i = 0; i < laterAppends; i++) {
+      queue.append(claimedElsewhere);
+    }
+    assertThat(claimedElsewhere.claim(claimedElsewhere.getStateCount())).isTrue();
+    assertThat(countNodes(queue)).isEqualTo(laterAppends + 1);
+
+    // when
+    final var stolen = queue.trySteal();
+
+    // then -- the stale run before the unfinished link is unlinked, nothing past it is written
+    assertThat(stolen).isNull();
+    assertThat(appending.prev).isNull();
+    assertThat(countNodes(queue)).isEqualTo(3);
+
+    // when -- the append completes
+    previousTail.nextOrdered(appending);
+    appending.prevOrdered(previousTail);
+
+    // then -- the waiting task is reachable again, and the owner drains the whole list
+    assertThat(queue.trySteal()).isSameAs(waiting);
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+  }
+
+  /** Appends a waiting task, then {@code staleNodes} nodes of a task that was claimed elsewhere. */
+  private static Victim queueWithWaitingTaskBehindStaleNodes(final int staleNodes) {
+    final var queue = new ActorTaskQueue();
+    final var other = new ActorTaskQueue();
+    final var waiting = new ActorTask(new Actor() {});
+    final var claimedElsewhere = new ActorTask(new Actor() {});
+    queue.append(waiting);
+    for (int i = 0; i < staleNodes; i++) {
+      queue.append(claimedElsewhere);
+    }
+    other.append(claimedElsewhere);
+    assertThat(other.pop()).isSameAs(claimedElsewhere);
+    return new Victim(queue, waiting);
   }
 
   /**
@@ -397,4 +488,6 @@ final class WorkStealingStaleNodesTest {
       unblocked.await(30, TimeUnit.SECONDS);
     }
   }
+
+  private record Victim(ActorTaskQueue queue, ActorTask waiting) {}
 }
