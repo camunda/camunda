@@ -29,7 +29,10 @@ public final class CombinedOutputMappingResolver implements MappingResolver<Outp
   @Override
   public Either<Failure, DirectBuffer> resolve(
       final OutputMappings mappings, final MappingExpressionProcessor processor) {
+    // the combined expression covers all mappings, so a target can only be named for a lone one
+    final var targetPath =
+        mappings.mappings().size() == 1 ? mappings.mappings().getFirst().targetPath() : null;
     return processor.evaluateVariableMappingExpression(
-        mappings.combinedExpression(), ExpressionLabel.outputMappingExpression(null));
+        mappings.combinedExpression(), ExpressionLabel.outputMappingExpression(targetPath));
   }
 }

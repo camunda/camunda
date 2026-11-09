@@ -121,6 +121,35 @@ public final class MappingIncidentTest {
 
     assertThat(incidentEventValue.getErrorMessage())
         .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldOnlyNameKindOfCombinedInputMappingsWithSeveralTargets() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "failingTask",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeInputExpression("assert(foo, foo != null)", "foo")
+                        .zeebeInputExpression("\"bar\"", "baz"))
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
         .contains("(input mapping expression)");
   }
 

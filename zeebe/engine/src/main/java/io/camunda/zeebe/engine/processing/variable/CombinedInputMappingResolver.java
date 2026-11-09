@@ -43,7 +43,10 @@ public final class CombinedInputMappingResolver implements MappingResolver<Input
   @Override
   public Either<Failure, DirectBuffer> resolve(
       final InputMappings mappings, final MappingExpressionProcessor processor) {
+    // the combined expression covers all mappings, so a target can only be named for a lone one
+    final var targetPath =
+        mappings.mappings().size() == 1 ? mappings.mappings().getFirst().targetPath() : null;
     return processor.evaluateVariableMappingExpression(
-        mappings.combinedExpression(), ExpressionLabel.inputMappingExpression(null));
+        mappings.combinedExpression(), ExpressionLabel.inputMappingExpression(targetPath));
   }
 }
