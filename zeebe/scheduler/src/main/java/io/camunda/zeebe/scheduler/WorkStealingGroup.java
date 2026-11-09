@@ -15,12 +15,20 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class WorkStealingGroup implements TaskScheduler {
   private final int numOfThreads;
   private final ActorTaskQueue[] taskQueues;
+  // per thief thread, one cursor for the queue of each other thread
+  private final ActorTaskQueue.StealCursor[][] stealCursors;
 
   public WorkStealingGroup(final int numOfThreads) {
     this.numOfThreads = numOfThreads;
     taskQueues = new ActorTaskQueue[numOfThreads];
     for (int i = 0; i < numOfThreads; i++) {
       taskQueues[i] = new ActorTaskQueue();
+    }
+    stealCursors = new ActorTaskQueue.StealCursor[numOfThreads][numOfThreads];
+    for (int thief = 0; thief < numOfThreads; thief++) {
+      for (int victim = 0; victim < numOfThreads; victim++) {
+        stealCursors[thief][victim] = new ActorTaskQueue.StealCursor();
+      }
     }
   }
 
@@ -81,7 +89,8 @@ public final class WorkStealingGroup implements TaskScheduler {
       final int runnerId = i % numOfThreads;
 
       if (runnerId != currentThread.getRunnerId()) {
-        final ActorTask stolenActor = taskQueues[runnerId].trySteal();
+        final ActorTask stolenActor =
+            taskQueues[runnerId].trySteal(stealCursors[currentThread.getRunnerId()][runnerId]);
 
         if (stolenActor != null) {
           return stolenActor;
