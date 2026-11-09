@@ -46,6 +46,8 @@ public class ActorTask {
   boolean shouldYield;
   final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
   final AtomicLong stateCount = new AtomicLong(0);
+  // SPIKE: the virtual thread running this task, if the scheduler runs in virtual-thread mode
+  volatile VirtualActorRunner virtualRunner;
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> startingFuture = new CompletableActorFuture<>();
   private final CompletableActorFuture<Void> jobStartingTaskFuture = new CompletableActorFuture<>();
@@ -69,6 +71,7 @@ public class ActorTask {
   /** called when the task is initially scheduled. */
   public ActorFuture<Void> onTaskScheduled(final ActorThreadGroup actorThreadGroup) {
     this.actorThreadGroup = actorThreadGroup;
+    virtualRunner = null;
     // reset previous state to allow re-scheduling
     closeFuture.close();
     closeFuture.setAwaitingResult();

@@ -24,6 +24,8 @@ public abstract class ActorThreadGroup {
   protected final WorkStealingGroup tasks;
   protected final int numOfThreads;
   private final String schedulerName;
+  private final boolean virtualThreads;
+  private final ActorSchedulerBuilder builder;
 
   public ActorThreadGroup(
       final String groupName,
@@ -33,12 +35,18 @@ public abstract class ActorThreadGroup {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
     this.schedulerName = schedulerName;
+    this.builder = builder;
+    // a custom thread factory (e.g. the controlled test scheduler) needs real ActorThreads
+    virtualThreads =
+        VirtualActorRunner.ENABLED
+            && builder.getActorThreadFactory() instanceof ActorScheduler.DefaultActorThreadFactory;
 
     tasks = new WorkStealingGroup(numOfThreads);
 
-    threads = new ActorThread[numOfThreads];
+    // SPIKE: in virtual-thread mode every actor runs on its own virtual thread; no platform threads
+    threads = new ActorThread[virtualThreads ? 0 : numOfThreads];
 
-    for (int t = 0; t < numOfThreads; t++) {
+    for (int t = 0; t < threads.length; t++) {
       final String threadName = String.format("%s-%d", groupName, t);
       final ActorThread thread =
           builder
@@ -58,6 +66,11 @@ public abstract class ActorThreadGroup {
   }
 
   public void submit(final ActorTask actorTask) {
+    if (virtualThreads) {
+      submitVirtual(actorTask);
+      return;
+    }
+
     final ActorThread current = ActorThread.current();
     if (current != null && current.getActorThreadGroup() == this) {
       tasks.submit(actorTask, current.getRunnerId());
@@ -65,6 +78,22 @@ public abstract class ActorThreadGroup {
       final int threadId = ThreadLocalRandom.current().nextInt(numOfThreads);
       tasks.submit(actorTask, threadId);
       threads[threadId].hintWorkAvailable();
+    }
+  }
+
+  private void submitVirtual(final ActorTask actorTask) {
+    actorTask.schedulingState.set(ActorTask.TaskSchedulingState.QUEUED);
+    VirtualActorRunner runner = actorTask.virtualRunner;
+    if (runner == null) {
+      // only the initial submit from ActorExecutor gets here, on the scheduling thread
+      runner =
+          new VirtualActorRunner(
+              actorTask, this, builder.getActorClock(), builder.getActorMetrics());
+      actorTask.virtualRunner = runner;
+      runner.wakeup();
+      runner.start();
+    } else {
+      runner.wakeup();
     }
   }
 
@@ -81,9 +110,9 @@ public abstract class ActorThreadGroup {
   public CompletableFuture<Void> closeAsync() {
     Loggers.ACTOR_LOGGER.debug("Closing actor thread ground '{}'", groupName);
 
-    final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[numOfThreads];
+    final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[threads.length];
 
-    for (int i = 0; i < numOfThreads; i++) {
+    for (int i = 0; i < threads.length; i++) {
       final ActorThread thread = threads[i];
       try {
         terminationFutures[i] = thread.close();

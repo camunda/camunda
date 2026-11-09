@@ -38,8 +38,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
-  public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
-      new ManyToManyConcurrentArrayQueue<>(1024 * 24);
+  /** Context of the actor whose virtual thread is the current thread (virtual-thread mode). */
+  static final ThreadLocal<ActorThread> VIRTUAL_CONTEXT = new ThreadLocal<>();
+
+  public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks;
   protected final ActorTimerQueue timerJobQueue;
   protected ActorTaskRunnerIdleStrategy idleStrategy;
   ActorTask currentTask;
@@ -48,7 +50,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private final ActorClock clock;
   private final int threadId;
   private final TaskScheduler taskScheduler;
-  private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
+  private final BoundedArrayQueue<ActorJob> jobs;
   private final ActorThreadGroup actorThreadGroup;
   private volatile ActorThreadState state;
 
@@ -81,11 +83,19 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final ActorMetrics actorMetrics,
       final IdleStrategy idleStrategy) {
     this.actorMetrics = actorMetrics;
+    // a virtual-thread context belongs to a single actor and has no task scheduler, so it needs
+    // much smaller queues than a platform actor thread shared by many actors
+    final boolean virtualContext = taskScheduler == null;
+    submittedCallbacks = new ManyToManyConcurrentArrayQueue<>(virtualContext ? 1024 : 1024 * 24);
+    jobs = new BoundedArrayQueue<>(virtualContext ? 64 : 2048);
     setName(name);
     state = ActorThreadState.NEW;
     threadId = id;
     this.clock = clock != null ? clock : new DefaultActorClock();
-    timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
+    timerJobQueue =
+        timerQueue != null
+            ? timerQueue
+            : new ActorTimerQueue(this.clock, virtualContext ? 16 : 128);
     actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
     this.idleStrategy = new ActorTaskRunnerIdleStrategy(idleStrategy);
@@ -166,9 +176,44 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
      * This implementation takes advantage of the fact that ActorTaskRunner extends Thread
      * itself. If we can cast down, the current thread is the current ActorTaskRunner.
      */
-    return Thread.currentThread() instanceof ActorThread
-        ? (ActorThread) Thread.currentThread()
-        : null;
+    final Thread thread = Thread.currentThread();
+    if (thread instanceof final ActorThread actorThread) {
+      return actorThread;
+    }
+    return thread.isVirtual() ? VIRTUAL_CONTEXT.get() : null;
+  }
+
+  /**
+   * Virtual-thread mode: runs one turn of the current task on the calling virtual thread, with the
+   * same metrics, MDC and error handling as {@link #doWork()}.
+   *
+   * @return whether the task wants to run again
+   */
+  boolean executeOnVirtualThread() {
+    final var metrics = currentTask.getActorMetrics();
+    boolean resubmit = false;
+    try (final var timer = metrics.startExecutionTimer()) {
+      final var properties = currentTask.getActor().getContext();
+      for (final var property : properties.entrySet()) {
+        MDC.put(property.getKey(), property.getValue());
+      }
+
+      try {
+        resubmit = currentTask.execute(this);
+      } catch (final Throwable e) {
+        FATAL_ERROR_HANDLER.handleError(e);
+        LOG.error("Unexpected error occurred in task {}", currentTask, e);
+      } finally {
+        clock.update();
+        properties.keySet().forEach(MDC::remove);
+      }
+    } finally {
+      if (metrics.isEnabled()) {
+        metrics.updateJobQueueLength(currentTask.estimateQueueLength());
+        metrics.countExecution();
+      }
+    }
+    return resubmit;
   }
 
   public static ActorThread ensureCalledFromActorThread(final String methodName) {
