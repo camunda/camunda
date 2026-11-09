@@ -10,13 +10,13 @@ package io.camunda.zeebe.starter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 
@@ -35,12 +35,13 @@ class StarterTest {
 
     // when
     new Starter(
-        mock(CamundaClientConfiguration.class),
         properties,
         registry,
         mock(StarterLivenessIndicator.class),
         mock(ProcessDeployer.class),
         mock(ProcessInstanceCreator.class),
+        Optional.empty(),
+        Optional.empty(),
         mock(ApplicationContext.class));
 
     // then
