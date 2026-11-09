@@ -16,9 +16,9 @@ import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.TaskScheduler;
 
 class StarterTest {
 
@@ -38,11 +38,8 @@ class StarterTest {
         properties,
         registry,
         mock(StarterLivenessIndicator.class),
-        mock(ProcessDeployer.class),
-        mock(ProcessInstanceCreator.class),
-        Optional.empty(),
-        Optional.empty(),
-        mock(ApplicationContext.class));
+        mock(TaskScheduler.class),
+        mock(ApplicationEventPublisher.class));
 
     // then
     final var gauge = registry.find(StarterMetricsDoc.CLIENT_INFO.getName()).gauge();
