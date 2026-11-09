@@ -572,6 +572,10 @@ paths:
     $ref: 'variables.yaml#/paths/~1variables~1{variableKey}'
 
 components:
+  schemas:
+    # No endpoint returns this schema, so it is listed here for clients to generate it.
+    AuthenticatedCamundaUserResult:
+      $ref: 'authentication.yaml#/components/schemas/AuthenticatedCamundaUserResult'
   securitySchemes:
     bearerAuth:
       type: http

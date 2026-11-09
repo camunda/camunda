@@ -9,6 +9,7 @@
 import {reactQueryClient} from './reactQueryClient';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {z} from 'zod';
+import {currentUserSchema, endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 
 type RequestError =
 	| {
@@ -48,6 +49,17 @@ async function requestCsrfToken(input: Request) {
 	}
 }
 
+const currentUserUrlPattern = new URLPattern({pathname: `*${endpoints.getCurrentUser.getUrl()}`});
+const anonymousCurrentUserSchema = currentUserSchema.pick({isAnonymous: true});
+
+async function isAnonymousCurrentUser(response: Response) {
+	if (!currentUserUrlPattern.test(response.url)) {
+		return false;
+	}
+
+	return anonymousCurrentUserSchema.safeParse(await response.json().catch(() => null)).data?.isAnonymous === true;
+}
+
 async function request(
 	input: RequestInfo,
 	{skipSessionCheck} = {skipSessionCheck: false},
@@ -72,19 +84,21 @@ async function request(
 		}
 
 		const response = await fetch(input);
+		const isAnonymous = response.ok && (await isAnonymousCurrentUser(response.clone()));
+		const isUnauthorized = response.status === 401 || isAnonymous;
 
-		if (response.ok) {
+		if (response.ok && !isUnauthorized) {
 			authenticationStore.activateSession();
 		}
 
 		storeCsrfTokenFromResponse(response);
 
-		if (!skipSessionCheck && response.status === 401) {
+		if (!skipSessionCheck && isUnauthorized) {
 			authenticationStore.disableSession();
 			reactQueryClient.clear();
 		}
 
-		if (response.ok) {
+		if (response.ok && !isUnauthorized) {
 			return {
 				response,
 				error: null,

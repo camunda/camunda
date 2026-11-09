@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
 import {C3Navigation} from '@camunda/camunda-composite-components';
-import type {CurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
@@ -62,7 +62,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 }
 
 type Props = {
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	license: License;
 };
 

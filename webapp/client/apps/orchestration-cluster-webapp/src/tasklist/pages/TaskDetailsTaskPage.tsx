@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useNavigate} from '@tanstack/react-router';
 import {useCallback} from 'react';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
@@ -16,7 +16,7 @@ import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/co
 
 type Props = {
 	task: UserTask;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	search: TasklistIndexSearch;
 	formSchema: string | null;
 	variables: Variable[];
