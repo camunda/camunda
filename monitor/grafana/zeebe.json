@@ -18207,7 +18207,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} - camunda_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} - (camunda_client_worker_job_refused_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} or camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} * 0)) by (namespace, type)",
+                        "expr": "sum(camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} - camunda_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} - (camunda_client_worker_job_refused_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} or camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} * 0) - (camunda_client_worker_job_expired_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} or camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} * 0)) by (namespace, type)",
                         "format": "time_series",
                         "interval": "",
                         "intervalFactor": 1,
