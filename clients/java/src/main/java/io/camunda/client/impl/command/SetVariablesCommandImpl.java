@@ -35,13 +35,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest.Builder;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class SetVariablesCommandImpl extends CommandWithVariables<SetVariablesCommandStep2>
+public final class SetVariablesCommandImpl
+    extends CommandWithVariablesMetadata<SetVariablesCommandStep2>
     implements SetVariablesCommandStep1, SetVariablesCommandStep2 {
 
   private final GatewayStub asyncStub;
@@ -134,11 +134,6 @@ public final class SetVariablesCommandImpl extends CommandWithVariables<SetVaria
     grpcRequestObjectBuilder.setLocal(local);
     httpRequestObject.setLocal(local);
     return this;
-  }
-
-  @Override
-  public SetVariablesCommandStep2 setVariablesInternal(final String variables) {
-    return setVariablesInternal(variables, Collections.emptyMap());
   }
 
   @Override

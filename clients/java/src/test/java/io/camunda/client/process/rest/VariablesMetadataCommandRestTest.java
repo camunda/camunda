@@ -63,7 +63,7 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldKeepProtectionsDeclaredBeforeForTheSameVariable() {
+  public void shouldLetTheLastDeclarationForAVariableWin() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
     final Map<String, Object> variables = new HashMap<>();
@@ -76,19 +76,17 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .bpmnProcessId("testProcess")
         .latestVersion()
         .addVariable("x", 1, VariableMetadataInput.redacted())
-        .addVariable("x", 2, VariableMetadataInput.builder().build())
-        .addVariables(variables, VariableMetadataInput.redacted().forVariables("x", "y"))
-        .addVariable("y", 5, VariableMetadataInput.of())
+        .addVariable("x", 2, VariableMetadataInput.of())
+        .addVariables(variables, Collections.singletonMap("y", VariableMetadataInput.redacted()))
+        .addVariable("y", 5)
         .send()
         .join();
 
     // then
-    // later declarations for a variable add to the earlier ones instead of replacing them
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariablesMetadata()).containsOnlyKeys("x", "y");
-    assertThat(request.getVariablesMetadata().get("x").getProtectionModes())
-        .containsExactly(ProtectionModeEnum.REDACT);
+    assertThat(request.getVariablesMetadata().get("x").getProtectionModes()).isEmpty();
     assertThat(request.getVariablesMetadata().get("y").getProtectionModes())
         .containsExactly(ProtectionModeEnum.REDACT);
   }
@@ -162,7 +160,43 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
   }
 
   @Test
-  public void shouldNotSendVariableMetadataThatDeclaresNoProtectionModes() {
+  public void shouldRejectMetadataForAVariableThatIsNotSet() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+    final CreateProcessInstanceCommandStep3 command =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("testProcess")
+            .latestVersion()
+            .addVariable("password", "x", VariableMetadataInput.redacted());
+
+    // when
+    assertThatThrownBy(
+            () ->
+                command.addVariables(
+                    Collections.singletonMap("name", "z"),
+                    VariableMetadataInput.redacted("pasword")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("pasword");
+    assertThatThrownBy(
+            () ->
+                command.variables(
+                    Collections.singletonMap("name", "z"),
+                    VariableMetadataInput.redacted("pasword")))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("pasword");
+    command.send().join();
+
+    // then
+    // the rejected calls changed nothing
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getVariables()).containsOnlyKeys("password");
+    assertThat(request.getVariablesMetadata()).containsOnlyKeys("password");
+  }
+
+  @Test
+  public void shouldAcceptMetadataForAVariableThatWasSetBefore() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
 
@@ -171,16 +205,28 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         .newCreateInstanceCommand()
         .bpmnProcessId("testProcess")
         .latestVersion()
-        .addVariable("a", 1, VariableMetadataInput.builder().build())
-        .addVariable("b", 2, VariableMetadataInput.redacted())
+        .addVariable("password", "x")
+        .addVariables(Collections.emptyMap(), VariableMetadataInput.redacted("password"))
         .send()
         .join();
 
     // then
-    // an entry without declared protection modes would change the modes the variable already has
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
-    assertThat(request.getVariablesMetadata()).containsOnlyKeys("b");
+    assertThat(request.getVariablesMetadata()).containsOnlyKeys("password");
+  }
+
+  @Test
+  public void shouldRejectMissingVariableMetadata() {
+    // given
+    final CreateProcessInstanceCommandStep3 command =
+        client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion();
+
+    // when / then
+    assertThatThrownBy(() -> command.variable("a", 1, null))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> command.addVariable("a", 1, null))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -211,6 +257,31 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldRedactSeveralVariablesByName() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("a", 1);
+    variables.put("b", 2);
+    variables.put("c", 3);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("testProcess")
+        .latestVersion()
+        .addVariables(variables, VariableMetadataInput.redacted("a", "b"))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getVariables()).containsOnlyKeys("a", "b", "c");
+    assertThat(request.getVariablesMetadata()).containsOnlyKeys("a", "b");
+  }
+
+  @Test
   public void shouldSendExplicitlyEmptyProtectionModes() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
@@ -230,18 +301,6 @@ public class VariablesMetadataCommandRestTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariablesMetadata()).containsOnlyKeys("a");
     assertThat(request.getVariablesMetadata().get("a").getProtectionModes()).isEmpty();
-  }
-
-  @Test
-  public void shouldRejectMetadataForCommandsWithoutSupport() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCompleteCommand(1L)
-                    .variable("secret", "val", VariableMetadataInput.redacted()))
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("does not support variables metadata");
   }
 
   @Test

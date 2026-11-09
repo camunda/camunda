@@ -16,64 +16,61 @@
 package io.camunda.client.api.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.search.enums.ProtectionMode;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class VariableMetadataInputTest {
 
   @Test
-  void shouldKeepProtectionsOfBothWhenCombined() {
+  void shouldReplaceProtectionsDeclaredOnTheBuilderBefore() {
     // given
-    final VariableMetadataInput redacted = VariableMetadataInput.redacted();
-    final VariableMetadataInput other = VariableMetadataInput.of(ProtectionMode.UNKNOWN_ENUM_VALUE);
+    final VariableMetadataInput.Builder builder =
+        VariableMetadataInput.builder().protectionModes(ProtectionMode.REDACT);
 
     // when
-    final VariableMetadataInput combined = redacted.and(other);
+    final VariableMetadataInput metadata = builder.protectionModes().build();
 
     // then
-    assertThat(combined.getProtectionModes())
-        .containsExactlyInAnyOrder(ProtectionMode.REDACT, ProtectionMode.UNKNOWN_ENUM_VALUE);
-    assertThat(redacted.getProtectionModes()).containsExactly(ProtectionMode.REDACT);
-    assertThat(other.getProtectionModes()).containsExactly(ProtectionMode.UNKNOWN_ENUM_VALUE);
+    // the last declaration wins, declaring no modes replaces the earlier ones with none
+    assertThat(metadata.getProtectionModes()).isEmpty();
   }
 
   @Test
-  void shouldTreatDeclaringNothingAsNeutralWhenCombined() {
-    // given
-    final VariableMetadataInput nothing = VariableMetadataInput.builder().build();
-
+  void shouldHaveNoProtectionsByDefault() {
     // when / then
-    assertThat(nothing.and(VariableMetadataInput.redacted()))
-        .isEqualTo(VariableMetadataInput.redacted());
-    assertThat(VariableMetadataInput.redacted().and(nothing))
-        .isEqualTo(VariableMetadataInput.redacted());
-    assertThat(nothing.and(nothing).getProtectionModes()).isNull();
+    assertThat(VariableMetadataInput.builder().build().getProtectionModes()).isEmpty();
+    assertThat(VariableMetadataInput.of()).isEqualTo(VariableMetadataInput.builder().build());
   }
 
   @Test
-  void shouldStayExplicitlyEmptyWhenCombinedWithEmpty() {
-    // given
-    final VariableMetadataInput empty = VariableMetadataInput.of();
-
+  void shouldRejectUnknownProtectionMode() {
     // when / then
-    assertThat(empty.and(empty).getProtectionModes()).isEmpty();
-    assertThat(empty.and(VariableMetadataInput.redacted()).getProtectionModes())
-        .containsExactly(ProtectionMode.REDACT);
+    assertThatThrownBy(() -> VariableMetadataInput.of(ProtectionMode.UNKNOWN_ENUM_VALUE))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("UNKNOWN_ENUM_VALUE");
+    assertThatThrownBy(
+            () ->
+                VariableMetadataInput.of(
+                    Arrays.asList(ProtectionMode.REDACT, ProtectionMode.UNKNOWN_ENUM_VALUE)))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> VariableMetadataInput.of((ProtectionMode) null))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  void shouldAccumulateProtectionsDeclaredOnTheBuilder() {
+  void shouldNotChangeTheBuilderWhenAModeIsRejected() {
+    // given
+    final VariableMetadataInput.Builder builder =
+        VariableMetadataInput.builder().protectionModes(ProtectionMode.REDACT);
+
     // when
-    final VariableMetadataInput metadata =
-        VariableMetadataInput.builder()
-            .protectionModes(ProtectionMode.REDACT)
-            .protectionModes(ProtectionMode.UNKNOWN_ENUM_VALUE)
-            .protectionModes()
-            .build();
+    assertThatThrownBy(() -> builder.protectionModes(ProtectionMode.UNKNOWN_ENUM_VALUE))
+        .isInstanceOf(IllegalArgumentException.class);
 
     // then
-    assertThat(metadata.getProtectionModes())
-        .containsExactlyInAnyOrder(ProtectionMode.REDACT, ProtectionMode.UNKNOWN_ENUM_VALUE);
+    assertThat(builder.build().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
   }
 }

@@ -15,9 +15,17 @@
  */
 package io.camunda.client.api.search.enums;
 
+import io.camunda.client.api.ExperimentalApi;
+
 /** The kind of protection applied to a variable value. */
+@ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
 public enum ProtectionMode {
   /** Irrecoverably replaces the value before it reaches secondary storage. */
   REDACT,
+
+  /**
+   * A protection mode this client does not know, for example one added by a newer server. It is
+   * only ever returned, and is rejected when it is declared on a variable.
+   */
   UNKNOWN_ENUM_VALUE
 }

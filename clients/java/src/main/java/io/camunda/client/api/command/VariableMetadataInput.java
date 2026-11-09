@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.search.enums.ProtectionMode;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,10 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Declares how a variable is treated when it is written, for example which protections apply to its
- * value.
- *
- * <p>Usage:
+ * Describes how a variable is treated when it is written, for example that its value is redacted.
  *
  * <pre>{@code
  * client
@@ -40,49 +38,28 @@ import java.util.Set;
  *     .send();
  * }</pre>
  *
- * <h2>What you can declare</h2>
- *
- * Only what you declare is sent. The protection modes can be declared in three ways:
+ * <p>The metadata of a variable replaces the metadata it had before, it is never merged with it.
+ * This is also how the engine treats it. A later declaration for the same variable can therefore
+ * remove a protection that an earlier one declared. On a command:
  *
  * <ul>
- *   <li><b>Some modes</b>, for example {@code VariableMetadataInput.of(ProtectionMode.REDACT)}: the
- *       variable is protected with these modes.
- *   <li><b>Nothing</b>, for example {@code VariableMetadataInput.builder().build()}: no metadata is
- *       sent, so the variable keeps the protections it already has.
- *   <li><b>An empty set of modes</b>, for example {@code VariableMetadataInput.of()}: the variable
- *       loses its protections.
+ *   <li>{@code addVariable(...)} and {@code addVariables(...)} replace the metadata of the
+ *       variables they set and keep the metadata of the other variables.
+ *   <li>{@code variable(...)} and {@code variables(...)} replace all variables and all metadata.
  * </ul>
  *
- * <h2>Declarations add up</h2>
- *
- * Declaring more protections does not replace earlier ones when you use the builder, {@link
- * #and(VariableMetadataInput)}, {@code addVariable(...)} or {@code addVariables(...)}. For example,
- * redacting a variable in one call and masking it in another leaves it with both protections.
- *
- * <p>{@code variable(...)} and {@code variables(...)} work differently: like the variables
- * themselves, they replace everything set on the command before, including the metadata. A
- * replacement can therefore drop protections declared earlier, for example when it declares an
- * empty set of modes or no metadata at all. Do not rely on protections surviving a replacement.
- *
- * <h2>Creating and applying</h2>
- *
- * Instances are immutable. Use {@link #redacted()} or {@link #of(ProtectionMode...)} for the common
- * cases, and {@link #forVariables(String...)} to apply the same metadata to several variables by
- * name.
+ * <p>The metadata is keyed by the name of a top-level variable. Protecting a property inside a
+ * variable is not supported.
  */
+@ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
 public final class VariableMetadataInput {
 
-  /** {@code null} when no protection modes were declared, which is different from an empty set. */
   private final Set<ProtectionMode> protectionModes;
 
   private VariableMetadataInput(final Set<ProtectionMode> protectionModes) {
-    this.protectionModes = protectionModes == null ? null : unmodifiableCopyOf(protectionModes);
-  }
-
-  private static Set<ProtectionMode> unmodifiableCopyOf(final Set<ProtectionMode> modes) {
     final Set<ProtectionMode> copy = EnumSet.noneOf(ProtectionMode.class);
-    copy.addAll(modes);
-    return Collections.unmodifiableSet(copy);
+    copy.addAll(protectionModes);
+    this.protectionModes = Collections.unmodifiableSet(copy);
   }
 
   public static Builder builder() {
@@ -90,9 +67,12 @@ public final class VariableMetadataInput {
   }
 
   /**
-   * Declares exactly the given protection modes, for example {@code
-   * VariableMetadataInput.of(ProtectionMode.REDACT)}. Declaring no modes at all is explicit and
-   * removes the protections the variable has.
+   * Declares the given protection modes, for example {@code
+   * VariableMetadataInput.of(ProtectionMode.REDACT)}. Without any mode, the variable has no
+   * protections.
+   *
+   * @throws IllegalArgumentException if a mode is {@code null} or {@link
+   *     ProtectionMode#UNKNOWN_ENUM_VALUE}
    */
   public static VariableMetadataInput of(final ProtectionMode... protectionModes) {
     return builder().protectionModes(protectionModes).build();
@@ -103,37 +83,25 @@ public final class VariableMetadataInput {
     return builder().protectionModes(protectionModes).build();
   }
 
-  /** Declares that the variable value is irrecoverably redacted before it is stored. */
+  /** Redacts the variable value irrecoverably before it is stored. */
   public static VariableMetadataInput redacted() {
     return of(ProtectionMode.REDACT);
   }
 
   /**
-   * Combines this metadata with the other one, keeping the protections of both, for example {@code
-   * redacted().and(masked())}. Declaring nothing is neutral: combined with metadata that declares
-   * something, the result declares just that.
+   * Redacts the values of the given variables irrecoverably before they are stored, for example
+   * {@code addVariables(map, VariableMetadataInput.redacted("password", "token"))}. Same as {@code
+   * redacted().forVariables(variableNames)}.
    *
-   * @param other the metadata to add to this one
-   * @return new metadata that declares the protections of both, this one if the other declares
-   *     nothing
+   * @param variableNames the names of the variables to redact
+   * @return the metadata keyed by variable name
    */
-  public VariableMetadataInput and(final VariableMetadataInput other) {
-    Objects.requireNonNull(other, "other");
-    if (other.protectionModes == null) {
-      return this;
-    }
-    if (protectionModes == null) {
-      return other;
-    }
-    final Set<ProtectionMode> combined = EnumSet.noneOf(ProtectionMode.class);
-    combined.addAll(protectionModes);
-    combined.addAll(other.protectionModes);
-    return new VariableMetadataInput(combined);
+  public static Map<String, VariableMetadataInput> redacted(final String... variableNames) {
+    return redacted().forVariables(variableNames);
   }
 
   /**
-   * Applies this metadata to each of the given variables, for the commands that take the variables
-   * metadata keyed by variable name, for example {@code variables(map,
+   * Applies this metadata to each of the given variables, for example {@code variables(map,
    * VariableMetadataInput.redacted().forVariables("password", "token"))}.
    *
    * @param variableNames the names of the variables this metadata applies to
@@ -147,12 +115,7 @@ public final class VariableMetadataInput {
     return Collections.unmodifiableMap(result);
   }
 
-  /**
-   * The protections declared for the variable.
-   *
-   * @return the declared protections, an empty set if the protections are to be removed, or {@code
-   *     null} if none were declared and the variable keeps the protections it has
-   */
+  /** The protections of the variable, empty if it has none. */
   public Set<ProtectionMode> getProtectionModes() {
     return protectionModes;
   }
@@ -174,20 +137,29 @@ public final class VariableMetadataInput {
   }
 
   public static final class Builder {
-    private Set<ProtectionMode> protectionModes;
+    private final Set<ProtectionMode> protectionModes = EnumSet.noneOf(ProtectionMode.class);
 
     private Builder() {}
 
-    /** Declares the protections of the variable, in addition to any declared before. */
+    /** Sets the protections of the variable, replacing any set before. */
     public Builder protectionModes(final ProtectionMode... protectionModes) {
       return protectionModes(Arrays.asList(protectionModes));
     }
 
-    /** Declares the protections of the variable, in addition to any declared before. */
+    /**
+     * Sets the protections of the variable, replacing any set before.
+     *
+     * @throws IllegalArgumentException if a mode is {@code null} or {@link
+     *     ProtectionMode#UNKNOWN_ENUM_VALUE}, which only stands for a mode this client does not
+     *     know and cannot be sent
+     */
     public Builder protectionModes(final Collection<ProtectionMode> protectionModes) {
-      if (this.protectionModes == null) {
-        this.protectionModes = EnumSet.noneOf(ProtectionMode.class);
+      for (final ProtectionMode mode : protectionModes) {
+        if (mode == null || mode == ProtectionMode.UNKNOWN_ENUM_VALUE) {
+          throw new IllegalArgumentException("Cannot declare protection mode " + mode);
+        }
       }
+      this.protectionModes.clear();
       this.protectionModes.addAll(protectionModes);
       return this;
     }

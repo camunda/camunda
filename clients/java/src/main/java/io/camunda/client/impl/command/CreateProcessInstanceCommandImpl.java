@@ -47,7 +47,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TerminateProcessInsta
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -56,7 +55,7 @@ import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateProcessInstanceCommandImpl
-    extends CommandWithVariables<CreateProcessInstanceCommandImpl>
+    extends CommandWithVariablesMetadata<CreateProcessInstanceCommandImpl>
     implements CreateProcessInstanceCommandStep1,
         CreateProcessInstanceCommandStep2,
         CreateProcessInstanceCommandStep3 {
@@ -95,11 +94,6 @@ public final class CreateProcessInstanceCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     requestTimeout(requestTimeout);
     useRest = preferRestOverGrpc;
-  }
-
-  @Override
-  protected CreateProcessInstanceCommandImpl setVariablesInternal(final String variables) {
-    return setVariablesInternal(variables, Collections.emptyMap());
   }
 
   @Override

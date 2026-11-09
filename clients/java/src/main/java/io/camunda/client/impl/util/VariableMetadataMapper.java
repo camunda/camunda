@@ -24,11 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * Maps variables metadata to the requests. Only what is explicitly declared is mapped: a variable
- * whose metadata declares no protection modes gets no entry at all, so that it does not change the
- * protection modes the variable already has.
- */
+/** Maps variables metadata to the requests. */
 public final class VariableMetadataMapper {
 
   private VariableMetadataMapper() {}
@@ -38,17 +34,14 @@ public final class VariableMetadataMapper {
       final Map<String, VariableMetadataInput> variablesMetadata) {
     final Map<String, VariableMetadata> result = new LinkedHashMap<>();
     variablesMetadata.forEach(
-        (name, variableMetadata) -> {
-          if (variableMetadata.getProtectionModes() != null) {
+        (name, variableMetadata) ->
             result.put(
                 name,
                 new VariableMetadata()
                     .protectionModes(
                         variableMetadata.getProtectionModes().stream()
                             .map(mode -> EnumUtil.convert(mode, ProtectionModeEnum.class))
-                            .collect(Collectors.toList())));
-          }
-        });
+                            .collect(Collectors.toList()))));
     return result.isEmpty() ? null : result;
   }
 
@@ -57,15 +50,13 @@ public final class VariableMetadataMapper {
     final Map<String, GatewayOuterClass.VariableMetadata> result = new LinkedHashMap<>();
     variablesMetadata.forEach(
         (name, variableMetadata) -> {
-          if (variableMetadata.getProtectionModes() != null) {
-            final GatewayOuterClass.VariableMetadata.Builder builder =
-                GatewayOuterClass.VariableMetadata.newBuilder();
-            for (final ProtectionMode mode : variableMetadata.getProtectionModes()) {
-              builder.addProtectionModes(
-                  EnumUtil.convert(mode, GatewayOuterClass.VariableMetadata.ProtectionMode.class));
-            }
-            result.put(name, builder.build());
+          final GatewayOuterClass.VariableMetadata.Builder builder =
+              GatewayOuterClass.VariableMetadata.newBuilder();
+          for (final ProtectionMode mode : variableMetadata.getProtectionModes()) {
+            builder.addProtectionModes(
+                EnumUtil.convert(mode, GatewayOuterClass.VariableMetadata.ProtectionMode.class));
           }
+          result.put(name, builder.build());
         });
     return result;
   }

@@ -16,7 +16,6 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.VariableMetadataInput;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,139 +25,102 @@ public abstract class CommandWithVariables<T> {
 
   protected final JsonMapper objectMapper;
   private final Map<String, Object> accumulatedVariables = new HashMap<>();
-  private final Map<String, VariableMetadataInput> accumulatedVariablesMetadata = new HashMap<>();
 
   public CommandWithVariables(final JsonMapper jsonMapper) {
     objectMapper = jsonMapper;
   }
 
   public T variables(final InputStream variables) {
-    return variables(variables, Collections.emptyMap());
-  }
-
-  public T variables(
-      final InputStream variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    final String validatedVariables = objectMapper.validateJson("variables", variables);
-    return replaceVariables(
-        validatedVariables,
-        parseVariables(validatedVariables),
-        validatedVariablesMetadata(variablesMetadata));
+    return apply(replacingWithJson(objectMapper.validateJson("variables", variables)));
   }
 
   public T variables(final String variables) {
-    return variables(variables, Collections.emptyMap());
-  }
-
-  public T variables(
-      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    final String validatedVariables = objectMapper.validateJson("variables", variables);
-    return replaceVariables(
-        validatedVariables,
-        parseVariables(validatedVariables),
-        validatedVariablesMetadata(variablesMetadata));
+    return apply(replacingWithJson(objectMapper.validateJson("variables", variables)));
   }
 
   public T variables(final Map<String, Object> variables) {
-    return variables(variables, Collections.emptyMap());
-  }
-
-  public T variables(
-      final Map<String, Object> variables,
-      final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    return replaceVariables(
-        objectMapper.toJson(variables),
-        new HashMap<>(variables),
-        validatedVariablesMetadata(variablesMetadata));
+    return apply(replacingWithMap(variables));
   }
 
   public T variables(final Object variables) {
-    return variables(variables, Collections.emptyMap());
-  }
-
-  public T variables(
-      final Object variables, final Map<String, VariableMetadataInput> variablesMetadata) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    final String serializedVariables = objectMapper.toJson(variables);
-    final Object transformedVariables = objectMapper.transform(variables, Object.class);
-    return replaceVariables(
-        serializedVariables,
-        new HashMap<>(ArgumentUtil.ensureJsonObject("variables", transformedVariables)),
-        validatedVariablesMetadata(variablesMetadata));
+    return apply(replacingWithObject(variables));
   }
 
   public T variable(final String key, final Object value) {
-    return variable(key, value, null);
-  }
-
-  public T variable(
-      final String key, final Object value, final VariableMetadataInput variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put(key, value);
-    final Map<String, VariableMetadataInput> metadata = new HashMap<>();
-    if (variableMetadata != null) {
-      metadata.put(key, variableMetadata);
-    }
-    return replaceVariables(objectMapper.toJson(variables), variables, metadata);
+    return apply(replacingWithEntry(key, value));
   }
 
   public T addVariable(final String key, final Object value) {
-    return addVariable(key, value, null);
-  }
-
-  public T addVariable(
-      final String key, final Object value, final VariableMetadataInput variableMetadata) {
     ArgumentUtil.ensureNotNull("key", key);
-    return addVariables(
-        Collections.singletonMap(key, value),
-        variableMetadata == null
-            ? Collections.emptyMap()
-            : Collections.singletonMap(key, variableMetadata));
+    return apply(adding(Collections.singletonMap(key, value)));
   }
 
   public T addVariables(final Map<String, Object> variables) {
-    return addVariables(variables, Collections.emptyMap());
+    ArgumentUtil.ensureNotNull("variables", variables);
+    return apply(adding(variables));
   }
 
-  public T addVariables(
-      final Map<String, Object> variables,
-      final Map<String, VariableMetadataInput> variablesMetadata) {
-    ArgumentUtil.ensureNotNull("variables", variables);
-    ArgumentUtil.ensureNotNull("variablesMetadata", variablesMetadata);
-    final Map<String, VariableMetadataInput> addedMetadata =
-        validatedVariablesMetadata(variablesMetadata);
+  /**
+   * Hands the new variables to the command and only then makes them the accumulated variables, so
+   * that a call that fails leaves what was accumulated before untouched.
+   */
+  protected T apply(final VariablesUpdate update) {
+    final T result = setVariablesInternal(update.serializedVariables);
+    replaceAccumulatedVariables(update.variables);
+    return result;
+  }
 
+  /** The variables that replace all accumulated variables, from a validated JSON document. */
+  protected final VariablesUpdate replacingWithJson(final String validatedVariables) {
+    if (validatedVariables == null || validatedVariables.trim().isEmpty()) {
+      return new VariablesUpdate(validatedVariables, new HashMap<>(), true);
+    }
+    final Object parsedVariables = objectMapper.fromJson(validatedVariables, Object.class);
+    if (parsedVariables == null) {
+      return new VariablesUpdate(validatedVariables, new HashMap<>(), true);
+    }
+    return new VariablesUpdate(
+        validatedVariables,
+        new HashMap<>(ArgumentUtil.ensureJsonObject("variables", parsedVariables)),
+        true);
+  }
+
+  /** The variables that replace all accumulated variables, from a map. */
+  protected final VariablesUpdate replacingWithMap(final Map<String, Object> variables) {
+    return new VariablesUpdate(objectMapper.toJson(variables), new HashMap<>(variables), true);
+  }
+
+  /** The variables that replace all accumulated variables, from an object. */
+  protected final VariablesUpdate replacingWithObject(final Object variables) {
+    final String serializedVariables = objectMapper.toJson(variables);
+    final Object transformedVariables = objectMapper.transform(variables, Object.class);
+    return new VariablesUpdate(
+        serializedVariables,
+        new HashMap<>(ArgumentUtil.ensureJsonObject("variables", transformedVariables)),
+        true);
+  }
+
+  /** A single variable that replaces all accumulated variables. */
+  protected final VariablesUpdate replacingWithEntry(final String key, final Object value) {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(key, value);
+    return new VariablesUpdate(objectMapper.toJson(variables), variables, true);
+  }
+
+  /** The accumulated variables with the given variables added to them. */
+  protected final VariablesUpdate adding(final Map<String, Object> variables) {
     final Map<String, Object> allVariables = new HashMap<>(accumulatedVariables);
     allVariables.putAll(variables);
-    final Map<String, VariableMetadataInput> allMetadata =
-        new HashMap<>(accumulatedVariablesMetadata);
-    addedMetadata.forEach(
-        (name, metadata) -> allMetadata.merge(name, metadata, VariableMetadataInput::and));
-
-    return replaceVariables(objectMapper.toJson(allVariables), allVariables, allMetadata);
-  }
-
-  private Map<String, Object> parseVariables(final String variables) {
-    if (variables == null || variables.trim().isEmpty()) {
-      return new HashMap<>();
-    }
-    final Object parsedVariables = objectMapper.fromJson(variables, Object.class);
-    if (parsedVariables == null) {
-      return new HashMap<>();
-    }
-    return new HashMap<>(ArgumentUtil.ensureJsonObject("variables", parsedVariables));
+    return new VariablesUpdate(objectMapper.toJson(allVariables), allVariables, false);
   }
 
   protected final void resetAccumulatedVariables() {
     accumulatedVariables.clear();
-    accumulatedVariablesMetadata.clear();
   }
 
   protected final void replaceAccumulatedVariables(final Map<String, Object> variables) {
@@ -166,54 +128,25 @@ public abstract class CommandWithVariables<T> {
     accumulatedVariables.putAll(variables);
   }
 
-  private static Map<String, VariableMetadataInput> validatedVariablesMetadata(
-      final Map<String, VariableMetadataInput> variablesMetadata) {
-    final Map<String, VariableMetadataInput> result = new HashMap<>();
-    variablesMetadata.forEach(
-        (name, value) -> {
-          ArgumentUtil.ensureNotNull("variable name in variablesMetadata", name);
-          ArgumentUtil.ensureNotNull("variablesMetadata of variable '" + name + "'", value);
-          result.put(name, value);
-        });
-    return result;
-  }
-
-  /**
-   * Hands the complete variables and variables metadata to the command and only then makes them the
-   * accumulated state, so that a call that fails leaves what was accumulated before untouched.
-   * Everything that can fail, such as validating and serializing, has to happen before this is
-   * called.
-   */
-  private T replaceVariables(
-      final String serializedVariables,
-      final Map<String, Object> variables,
-      final Map<String, VariableMetadataInput> variablesMetadata) {
-    final T result =
-        setVariablesInternal(
-            serializedVariables, Collections.unmodifiableMap(new HashMap<>(variablesMetadata)));
-    replaceAccumulatedVariables(variables);
-    accumulatedVariablesMetadata.clear();
-    accumulatedVariablesMetadata.putAll(variablesMetadata);
-    return result;
-  }
-
   protected abstract T setVariablesInternal(String variables);
 
   /**
-   * Called on every change of the variables, with the complete variables metadata of the command,
-   * keyed by variable name. The map is empty when none was given, in which case the request should
-   * not carry any variables metadata.
+   * The complete variables of the command after a call, computed before anything is changed.
    *
-   * <p>Commands whose request supports variables metadata override this. By default non-empty
-   * variables metadata is rejected rather than silently dropped, as a dropped protection would leak
-   * the value.
+   * <p>Everything that can fail, such as validating and serializing, happens while this is created.
    */
-  protected T setVariablesInternal(
-      final String variables, final Map<String, VariableMetadataInput> variablesMetadata) {
-    if (!variablesMetadata.isEmpty()) {
-      throw new UnsupportedOperationException(
-          getClass().getSimpleName() + " does not support variables metadata");
+  protected static final class VariablesUpdate {
+    final String serializedVariables;
+    final Map<String, Object> variables;
+    final boolean replacesAll;
+
+    private VariablesUpdate(
+        final String serializedVariables,
+        final Map<String, Object> variables,
+        final boolean replacesAll) {
+      this.serializedVariables = serializedVariables;
+      this.variables = variables;
+      this.replacesAll = replacesAll;
     }
-    return setVariablesInternal(variables);
   }
 }

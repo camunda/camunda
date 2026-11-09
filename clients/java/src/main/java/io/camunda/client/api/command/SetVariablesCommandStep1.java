@@ -22,7 +22,8 @@ import java.util.Map;
 
 public interface SetVariablesCommandStep1
     extends CommandWithCommunicationApiStep<SetVariablesCommandStep1>,
-        CommandWithVariables<SetVariablesCommandStep2> {
+        CommandWithVariables<SetVariablesCommandStep2>,
+        CommandWithVariablesMetadata<SetVariablesCommandStep2> {
   /**
    * Sets the variables document from a JSON string.
    *

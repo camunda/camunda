@@ -81,23 +81,6 @@ public final class SetVariablesTest extends ClientTest {
   }
 
   @Test
-  public void shouldNotSendVariableMetadataThatDeclaresNoProtectionModes() {
-    // given
-    gatewayService.onSetVariablesRequest(345);
-
-    // when
-    client
-        .newSetVariablesCommand(123)
-        .variable("a", 1, VariableMetadataInput.builder().build())
-        .send()
-        .join();
-
-    // then
-    final SetVariablesRequest request = gatewayService.getLastRequest();
-    assertThat(request.getVariablesMetadataMap()).isEmpty();
-  }
-
-  @Test
   public void shouldSendExplicitlyEmptyProtectionModes() {
     // given
     gatewayService.onSetVariablesRequest(345);
