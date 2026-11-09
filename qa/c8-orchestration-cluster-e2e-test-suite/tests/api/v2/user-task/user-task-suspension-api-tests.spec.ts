@@ -6,22 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {APIRequestContext, expect, test} from '@playwright/test';
-import type {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {expect, test} from '@playwright/test';
 import {
   activateJobsByType,
   activateSingleJob,
+  assignUserTask,
   completeJob,
   completeUserTask,
   createInstanceOnceDeployed,
+  deployProcessModel,
   deployUserTaskProcess,
-  expectBatchState,
-  expectProcessInstanceCount,
   expectProcessState,
   expectUserTaskAssigned,
+  expectUserTasks,
+  expectUserTaskSuspended,
   findUserTask,
   getProcessInstance,
   resumeProcessInstance,
+  runProcessInstanceBatch,
+  searchUserTasks,
+  startUserTaskInstances,
   suspendAndExpectSuspended,
   suspendProcessInstance,
 } from '@requestHelpers';
@@ -36,176 +40,10 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {
-  cancelProcessInstance,
-  deployWithSubstitutions,
-} from '../../../../utils/zeebeClient';
-
-interface UserTask {
-  userTaskKey: string;
-  processInstanceKey: string;
-  elementId: string;
-  state: string;
-  assignee: string | null;
-  isSuspended: boolean;
-}
+import {cancelProcessInstance} from '../../../../utils/zeebeClient';
 
 const instancesToCancel: string[] = [];
 const cancelingListeners = new Map<string, string>();
-
-async function createTrackedInstance(
-  processDefinitionId: string,
-  variables?: JSONDoc,
-) {
-  const instance = await createInstanceOnceDeployed(
-    processDefinitionId,
-    1,
-    variables,
-  );
-  instancesToCancel.push(instance.processInstanceKey);
-  return instance.processInstanceKey;
-}
-
-async function startUserTasks(
-  request: APIRequestContext,
-  prefix: string,
-  count = 1,
-) {
-  const processDefinitionId = uniquePrefixedId(prefix);
-  await deployUserTaskProcess(processDefinitionId);
-  const processInstanceKeys: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const processInstanceKey = await createTrackedInstance(processDefinitionId);
-    processInstanceKeys.push(processInstanceKey);
-  }
-  const userTaskKeys = await Promise.all(
-    processInstanceKeys.map((processInstanceKey) =>
-      findUserTask(
-        request,
-        processInstanceKey,
-        'CREATED',
-        undefined,
-        extendedAssertionOptions,
-      ),
-    ),
-  );
-  await expectTasks(request, {processDefinitionId}, userTaskKeys, false);
-  return {processDefinitionId, processInstanceKeys, userTaskKeys};
-}
-
-async function searchUserTasks(
-  request: APIRequestContext,
-  filter: Record<string, unknown>,
-) {
-  const response = await request.post(buildUrl('/user-tasks/search'), {
-    headers: jsonHeaders(),
-    data: {filter, page: {limit: 1000}},
-  });
-  await assertStatusCode(response, 200);
-  const body: {items: UserTask[]; page: {totalItems: number}} =
-    await response.json();
-  return {items: body.items, totalItems: body.page.totalItems};
-}
-
-async function expectTasks(
-  request: APIRequestContext,
-  filter: Record<string, unknown>,
-  expected: number | string[],
-  isSuspended?: boolean,
-): Promise<UserTask[]> {
-  let tasks: UserTask[] = [];
-  await expect(async () => {
-    const {items, totalItems} = await searchUserTasks(request, filter);
-    const count = typeof expected === 'number' ? expected : expected.length;
-    expect(totalItems).toBe(count);
-    expect(items).toHaveLength(count);
-    if (Array.isArray(expected)) {
-      expect(items.map((task) => task.userTaskKey).sort()).toEqual(
-        [...expected].sort(),
-      );
-    }
-    if (isSuspended !== undefined) {
-      for (const task of items) {
-        expect(task.isSuspended).toBe(isSuspended);
-      }
-    }
-    tasks = items;
-  }).toPass(extendedAssertionOptions);
-  return tasks;
-}
-
-async function expectTaskSuspended(
-  request: APIRequestContext,
-  userTaskKey: string,
-  expected: boolean,
-) {
-  const [task] = await expectTasks(
-    request,
-    {userTaskKey},
-    [userTaskKey],
-    expected,
-  );
-  return task;
-}
-
-function assignTask(request: APIRequestContext, userTaskKey: string) {
-  return request.post(
-    buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
-    {headers: jsonHeaders(), data: {assignee: 'demo'}},
-  );
-}
-
-async function deployModel(
-  modelId: string,
-  substitutions: Record<string, string> = {},
-) {
-  const processDefinitionId = uniquePrefixedId(modelId);
-  await deployWithSubstitutions(`./resources/${modelId}.bpmn`, {
-    [modelId]: processDefinitionId,
-    ...substitutions,
-  });
-  return processDefinitionId;
-}
-
-async function runBatch(
-  request: APIRequestContext,
-  path: '/process-instances/suspension' | '/process-instances/resumption',
-  processDefinitionId: string,
-  sourceState: string,
-  targetState: string,
-  count: number,
-) {
-  await expectProcessInstanceCount(
-    request,
-    {processDefinitionId, state: sourceState},
-    count,
-    extendedAssertionOptions,
-  );
-  const response = await request.post(buildUrl(path), {
-    headers: jsonHeaders(),
-    data: {filter: {processDefinitionId}},
-  });
-  await assertStatusCode(response, 200);
-  const {batchOperationKey} = await response.json();
-  await expectBatchState(request, batchOperationKey, 'COMPLETED');
-  await expect(async () => {
-    const result = await request.get(
-      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
-      {headers: jsonHeaders()},
-    );
-    await assertStatusCode(result, 200);
-    const batch = await result.json();
-    expect(batch.operationsTotalCount).toBe(count);
-    expect(batch.operationsCompletedCount).toBe(count);
-    expect(batch.operationsFailedCount).toBe(0);
-  }).toPass(extendedAssertionOptions);
-  await expectProcessInstanceCount(
-    request,
-    {processDefinitionId, state: targetState},
-    count,
-    extendedAssertionOptions,
-  );
-}
 
 test.describe('User Task Suspension API', () => {
   test.afterAll(async ({request}) => {
@@ -243,23 +81,28 @@ test.describe('User Task Suspension API', () => {
     request,
   }) => {
     const {processDefinitionId, processInstanceKeys, userTaskKeys} =
-      await startUserTasks(request, 'ut-susp-filter', 2);
+      await startUserTaskInstances(
+        request,
+        'ut-susp-filter',
+        instancesToCancel,
+        2,
+      );
     await suspendAndExpectSuspended(request, processInstanceKeys[0]);
-    await expectTaskSuspended(request, userTaskKeys[0], true);
+    await expectUserTaskSuspended(request, userTaskKeys[0], true);
 
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: true},
       [userTaskKeys[0]],
       true,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: false},
       [userTaskKeys[1]],
       false,
     );
-    const allTasks = await expectTasks(
+    const allTasks = await expectUserTasks(
       request,
       {processDefinitionId},
       userTaskKeys,
@@ -274,35 +117,43 @@ test.describe('User Task Suspension API', () => {
     request,
   }) => {
     const {processDefinitionId, processInstanceKeys, userTaskKeys} =
-      await startUserTasks(request, 'ut-susp-intersection', 3);
+      await startUserTaskInstances(
+        request,
+        'ut-susp-intersection',
+        instancesToCancel,
+        3,
+      );
     for (const userTaskKey of userTaskKeys.slice(0, 2)) {
-      await assertStatusCode(await assignTask(request, userTaskKey), 204);
+      await assertStatusCode(
+        await assignUserTask(request, userTaskKey, 'demo'),
+        204,
+      );
       await expectUserTaskAssigned(request, userTaskKey, 'demo');
     }
     for (const index of [0, 2]) {
       await suspendAndExpectSuspended(request, processInstanceKeys[index]);
-      await expectTaskSuspended(request, userTaskKeys[index], true);
+      await expectUserTaskSuspended(request, userTaskKeys[index], true);
     }
 
-    const [assignedTask] = await expectTasks(
+    const [assignedTask] = await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: true, assignee: 'demo'},
       [userTaskKeys[0]],
       true,
     );
     expect(assignedTask.assignee).toBe('demo');
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: false, state: 'CREATED'},
       [userTaskKeys[1]],
       false,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: false, state: 'COMPLETED'},
       0,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: true},
       [userTaskKeys[0], userTaskKeys[2]],
@@ -314,12 +165,13 @@ test.describe('User Task Suspension API', () => {
     request,
   }) => {
     const count = 10;
-    const {processDefinitionId, userTaskKeys} = await startUserTasks(
+    const {processDefinitionId, userTaskKeys} = await startUserTaskInstances(
       request,
       'ut-susp-batch',
+      instancesToCancel,
       count,
     );
-    await runBatch(
+    await runProcessInstanceBatch(
       request,
       '/process-instances/suspension',
       processDefinitionId,
@@ -327,14 +179,14 @@ test.describe('User Task Suspension API', () => {
       'SUSPENDED',
       count,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: true},
       userTaskKeys,
       true,
     );
 
-    await runBatch(
+    await runProcessInstanceBatch(
       request,
       '/process-instances/resumption',
       processDefinitionId,
@@ -342,7 +194,7 @@ test.describe('User Task Suspension API', () => {
       'ACTIVE',
       count,
     );
-    const resumed = await expectTasks(
+    const resumed = await expectUserTasks(
       request,
       {processDefinitionId},
       userTaskKeys,
@@ -351,22 +203,23 @@ test.describe('User Task Suspension API', () => {
     expect(resumed.map((task) => task.state)).toEqual(
       Array(count).fill('CREATED'),
     );
-    await expectTasks(request, {processDefinitionId, isSuspended: true}, 0);
+    await expectUserTasks(request, {processDefinitionId, isSuspended: true}, 0);
   });
 
   test('A second suspension marks the task again', async ({request}) => {
-    const {processInstanceKeys, userTaskKeys} = await startUserTasks(
+    const {processInstanceKeys, userTaskKeys} = await startUserTaskInstances(
       request,
       'ut-susp-cycle',
+      instancesToCancel,
     );
     for (let cycle = 0; cycle < 2; cycle++) {
       await suspendAndExpectSuspended(request, processInstanceKeys[0]);
-      await expectTaskSuspended(request, userTaskKeys[0], true);
+      await expectUserTaskSuspended(request, userTaskKeys[0], true);
       await assertStatusCode(
         await resumeProcessInstance(request, processInstanceKeys[0]),
         204,
       );
-      const resumed = await expectTaskSuspended(
+      const resumed = await expectUserTaskSuspended(
         request,
         userTaskKeys[0],
         false,
@@ -379,19 +232,23 @@ test.describe('User Task Suspension API', () => {
     request,
   }) => {
     const {processDefinitionId, processInstanceKeys, userTaskKeys} =
-      await startUserTasks(request, 'ut-susp-invalid', 2);
+      await startUserTaskInstances(
+        request,
+        'ut-susp-invalid',
+        instancesToCancel,
+        2,
+      );
     await suspendAndExpectSuspended(request, processInstanceKeys[0]);
-    await expectTaskSuspended(request, userTaskKeys[0], true);
+    await expectUserTaskSuspended(request, userTaskKeys[0], true);
     for (const isSuspended of ['true', 'yes', 1, {}]) {
       await test.step(`Reject isSuspended=${JSON.stringify(isSuspended)}`, async () => {
-        const response = await request.post(buildUrl('/user-tasks/search'), {
-          headers: jsonHeaders(),
-          data: {filter: {processDefinitionId, isSuspended}},
+        const response = await searchUserTasks(request, {
+          filter: {processDefinitionId, isSuspended},
         });
         await assertBadRequest(response, /isSuspended/);
       });
     }
-    const unfiltered = await expectTasks(
+    const unfiltered = await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: null},
       userTaskKeys,
@@ -403,9 +260,8 @@ test.describe('User Task Suspension API', () => {
   });
 
   test('Sorting user tasks by isSuspended is rejected', async ({request}) => {
-    const response = await request.post(buildUrl('/user-tasks/search'), {
-      headers: jsonHeaders(),
-      data: {sort: [{field: 'isSuspended', order: 'ASC'}]},
+    const response = await searchUserTasks(request, {
+      sort: [{field: 'isSuspended', order: 'ASC'}],
     });
     await assertStatusCode(response, 400);
     expect(await response.json()).toMatchObject({
@@ -416,13 +272,18 @@ test.describe('User Task Suspension API', () => {
 
   test('Finished tasks never report suspended', async ({request}) => {
     const {processDefinitionId, processInstanceKeys, userTaskKeys} =
-      await startUserTasks(request, 'ut-susp-finished', 2);
+      await startUserTaskInstances(
+        request,
+        'ut-susp-finished',
+        instancesToCancel,
+        2,
+      );
     await assertStatusCode(
       await completeUserTask(request, userTaskKeys[0]),
       204,
     );
     await suspendAndExpectSuspended(request, processInstanceKeys[1]);
-    await expectTaskSuspended(request, userTaskKeys[1], true);
+    await expectUserTaskSuspended(request, userTaskKeys[1], true);
     await cancelProcessInstance(processInstanceKeys[1], {
       ignoreNotFound: false,
     });
@@ -431,14 +292,14 @@ test.describe('User Task Suspension API', () => {
       ['COMPLETED', userTaskKeys[0]],
       ['CANCELED', userTaskKeys[1]],
     ]) {
-      const [terminalTask] = await expectTasks(
+      const [terminalTask] = await expectUserTasks(
         request,
         {processDefinitionId, state},
         [userTaskKey],
         false,
       );
       expect(terminalTask.state).toBe(state);
-      await expectTasks(
+      await expectUserTasks(
         request,
         {processDefinitionId, state, isSuspended: true},
         0,
@@ -450,14 +311,16 @@ test.describe('User Task Suspension API', () => {
     request,
   }) => {
     const count = 200;
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'user_task_suspension_multi_instance',
     );
-    const processInstanceKey = await createTrackedInstance(
+    const {processInstanceKey} = await createInstanceOnceDeployed(
       processDefinitionId,
+      1,
       {items: Array.from({length: count}, (_, index) => index + 1)},
     );
-    const before = await expectTasks(
+    instancesToCancel.push(processInstanceKey);
+    const before = await expectUserTasks(
       request,
       {processInstanceKey, state: 'CREATED'},
       count,
@@ -471,13 +334,13 @@ test.describe('User Task Suspension API', () => {
     // No exporter read may delay these commands until all tasks are marked.
     const [completion, assignment] = await Promise.all([
       completeUserTask(request, before[0].userTaskKey),
-      assignTask(request, before[1].userTaskKey),
+      assignUserTask(request, before[1].userTaskKey, 'demo'),
     ]);
     await assertStatusCode(suspension, 204);
     await assertInvalidState(completion);
     await assertInvalidState(assignment);
 
-    const after = await expectTasks(
+    const after = await expectUserTasks(
       request,
       {processInstanceKey},
       before.map((task) => task.userTaskKey),
@@ -498,11 +361,20 @@ test.describe('User Task Suspension API', () => {
   test('Every multi-instance and parallel task is marked and cleared', async ({
     request,
   }) => {
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'user_task_suspension_parallel',
     );
-    const processInstanceKey = await createTrackedInstance(processDefinitionId);
-    const tasks = await expectTasks(request, {processInstanceKey}, 4, false);
+    const {processInstanceKey} = await createInstanceOnceDeployed(
+      processDefinitionId,
+      1,
+    );
+    instancesToCancel.push(processInstanceKey);
+    const tasks = await expectUserTasks(
+      request,
+      {processInstanceKey},
+      4,
+      false,
+    );
     expect(
       tasks.filter((task) => task.elementId === 'multi_task'),
     ).toHaveLength(3);
@@ -512,13 +384,13 @@ test.describe('User Task Suspension API', () => {
     const keys = tasks.map((task) => task.userTaskKey);
 
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await expectTasks(request, {processInstanceKey}, keys, true);
+    await expectUserTasks(request, {processInstanceKey}, keys, true);
     await assertStatusCode(
       await resumeProcessInstance(request, processInstanceKey),
       204,
     );
-    await expectTasks(request, {processInstanceKey}, keys, false);
-    await expectTasks(request, {processInstanceKey, isSuspended: true}, 0);
+    await expectUserTasks(request, {processInstanceKey}, keys, false);
+    await expectUserTasks(request, {processInstanceKey, isSuspended: true}, 0);
   });
 
   test('Tasks in embedded and non-interrupting event subprocesses are marked', async ({
@@ -526,21 +398,28 @@ test.describe('User Task Suspension API', () => {
   }) => {
     const messageName = uniquePrefixedId('ut-susp-message');
     const correlationKey = uniquePrefixedId('ut-susp-correlation');
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'user_task_suspension_subprocesses',
       {'name="suspension-review-message"': `name="${messageName}"`},
     );
-    const processInstanceKey = await createTrackedInstance(
+    const {processInstanceKey} = await createInstanceOnceDeployed(
       processDefinitionId,
+      1,
       {correlationKey},
     );
-    await expectTasks(request, {processInstanceKey}, 1, false);
+    instancesToCancel.push(processInstanceKey);
+    await expectUserTasks(request, {processInstanceKey}, 1, false);
     const publication = await request.post(buildUrl('/messages/publication'), {
       headers: jsonHeaders(),
       data: {name: messageName, correlationKey, timeToLive: 60_000},
     });
     await assertStatusCode(publication, 200);
-    const tasks = await expectTasks(request, {processInstanceKey}, 2, false);
+    const tasks = await expectUserTasks(
+      request,
+      {processInstanceKey},
+      2,
+      false,
+    );
     expect(tasks.map((task) => task.elementId).sort()).toEqual([
       'embedded_task',
       'message_task',
@@ -548,12 +427,12 @@ test.describe('User Task Suspension API', () => {
     const keys = tasks.map((task) => task.userTaskKey);
 
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await expectTasks(request, {processInstanceKey}, keys, true);
+    await expectUserTasks(request, {processInstanceKey}, keys, true);
     await assertStatusCode(
       await resumeProcessInstance(request, processInstanceKey),
       204,
     );
-    await expectTasks(request, {processInstanceKey}, keys, false);
+    await expectUserTasks(request, {processInstanceKey}, keys, false);
   });
 
   test('A called child task stays active when its parent is suspended', async ({
@@ -561,11 +440,18 @@ test.describe('User Task Suspension API', () => {
   }) => {
     const childId = uniquePrefixedId('ut-susp-child');
     await deployUserTaskProcess(childId);
-    const parentId = await deployModel('call_user_task_process_process', {
-      'processId="process_with_task_listener"': `processId="${childId}"`,
-    });
-    const parentKey = await createTrackedInstance(parentId);
-    const [childTask] = await expectTasks(
+    const parentId = await deployProcessModel(
+      'call_user_task_process_process',
+      {
+        'processId="process_with_task_listener"': `processId="${childId}"`,
+      },
+    );
+    const {processInstanceKey: parentKey} = await createInstanceOnceDeployed(
+      parentId,
+      1,
+    );
+    instancesToCancel.push(parentKey);
+    const [childTask] = await expectUserTasks(
       request,
       {processDefinitionId: childId},
       1,
@@ -574,7 +460,7 @@ test.describe('User Task Suspension API', () => {
     instancesToCancel.push(childTask.processInstanceKey);
     await suspendAndExpectSuspended(request, parentKey);
 
-    await expectTaskSuspended(request, childTask.userTaskKey, false);
+    await expectUserTaskSuspended(request, childTask.userTaskKey, false);
     await assertStatusCode(
       await completeUserTask(request, childTask.userTaskKey),
       204,
@@ -606,11 +492,20 @@ test.describe('User Task Suspension API', () => {
   test('Resuming immediately after suspension leaves no task marked', async ({
     request,
   }) => {
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'user_task_suspension_parallel',
     );
-    const processInstanceKey = await createTrackedInstance(processDefinitionId);
-    const tasks = await expectTasks(request, {processInstanceKey}, 4, false);
+    const {processInstanceKey} = await createInstanceOnceDeployed(
+      processDefinitionId,
+      1,
+    );
+    instancesToCancel.push(processInstanceKey);
+    const tasks = await expectUserTasks(
+      request,
+      {processInstanceKey},
+      4,
+      false,
+    );
 
     await assertStatusCode(
       await suspendProcessInstance(request, processInstanceKey),
@@ -626,7 +521,7 @@ test.describe('User Task Suspension API', () => {
       'ACTIVE',
       extendedAssertionOptions,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processInstanceKey},
       tasks.map((task) => task.userTaskKey),
@@ -644,14 +539,14 @@ test.describe('User Task Suspension API', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
-    await expectTasks(request, {processInstanceKey}, 4, false);
+    await expectUserTasks(request, {processInstanceKey}, 4, false);
   });
 
   test('Cancelling a suspended instance runs its canceling task listener', async ({
     request,
   }) => {
     const jobType = uniquePrefixedId('ut-susp-canceling');
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'process_with_task_listener',
       {
         'eventType="completing"': 'eventType="canceling"',
@@ -659,7 +554,11 @@ test.describe('User Task Suspension API', () => {
         'type="blocker"': `type="${jobType}"`,
       },
     );
-    const processInstanceKey = await createTrackedInstance(processDefinitionId);
+    const {processInstanceKey} = await createInstanceOnceDeployed(
+      processDefinitionId,
+      1,
+    );
+    instancesToCancel.push(processInstanceKey);
     cancelingListeners.set(processInstanceKey, jobType);
     const userTaskKey = await findUserTask(
       request,
@@ -669,7 +568,7 @@ test.describe('User Task Suspension API', () => {
       extendedAssertionOptions,
     );
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await expectTaskSuspended(request, userTaskKey, true);
+    await expectUserTaskSuspended(request, userTaskKey, true);
 
     await cancelProcessInstance(processInstanceKey, {ignoreNotFound: false});
     const jobKey = await activateSingleJob(
@@ -685,7 +584,7 @@ test.describe('User Task Suspension API', () => {
       'TERMINATED',
       extendedAssertionOptions,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processInstanceKey, state: 'CANCELED'},
       [userTaskKey],
@@ -696,70 +595,79 @@ test.describe('User Task Suspension API', () => {
   test('Sequential multi-instance tasks advance only after resumption', async ({
     request,
   }) => {
-    const processDefinitionId = await deployModel(
+    const processDefinitionId = await deployProcessModel(
       'user_task_suspension_multi_instance',
       {
         'isSequential="false"': 'isSequential="true"',
         'inputCollection="=items"': 'inputCollection="=[1,2,3]"',
       },
     );
-    const processInstanceKey = await createTrackedInstance(processDefinitionId);
-    const [first] = await expectTasks(
+    const {processInstanceKey} = await createInstanceOnceDeployed(
+      processDefinitionId,
+      1,
+    );
+    instancesToCancel.push(processInstanceKey);
+    const [first] = await expectUserTasks(
       request,
       {processInstanceKey, state: 'CREATED'},
       1,
       false,
     );
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await expectTaskSuspended(request, first.userTaskKey, true);
+    await expectUserTaskSuspended(request, first.userTaskKey, true);
     await assertInvalidState(
       await completeUserTask(request, first.userTaskKey),
     );
-    await expectTasks(request, {processInstanceKey}, [first.userTaskKey], true);
+    await expectUserTasks(
+      request,
+      {processInstanceKey},
+      [first.userTaskKey],
+      true,
+    );
 
     await assertStatusCode(
       await resumeProcessInstance(request, processInstanceKey),
       204,
     );
-    await expectTaskSuspended(request, first.userTaskKey, false);
+    await expectUserTaskSuspended(request, first.userTaskKey, false);
     await assertStatusCode(
       await completeUserTask(request, first.userTaskKey),
       204,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {userTaskKey: first.userTaskKey, state: 'COMPLETED'},
       [first.userTaskKey],
       false,
     );
-    const [second] = await expectTasks(
+    const [second] = await expectUserTasks(
       request,
       {processInstanceKey, state: 'CREATED'},
       1,
       false,
     );
     expect(second.userTaskKey).not.toBe(first.userTaskKey);
-    await expectTasks(request, {processInstanceKey}, 2, false);
+    await expectUserTasks(request, {processInstanceKey}, 2, false);
     await suspendAndExpectSuspended(request, processInstanceKey);
-    await expectTaskSuspended(request, second.userTaskKey, true);
-    await expectTaskSuspended(request, first.userTaskKey, false);
+    await expectUserTaskSuspended(request, second.userTaskKey, true);
+    await expectUserTaskSuspended(request, first.userTaskKey, false);
 
     await assertStatusCode(
       await resumeProcessInstance(request, processInstanceKey),
       204,
     );
-    await expectTaskSuspended(request, second.userTaskKey, false);
+    await expectUserTaskSuspended(request, second.userTaskKey, false);
     await assertStatusCode(
       await completeUserTask(request, second.userTaskKey),
       204,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {userTaskKey: second.userTaskKey, state: 'COMPLETED'},
       [second.userTaskKey],
       false,
     );
-    const [third] = await expectTasks(
+    const [third] = await expectUserTasks(
       request,
       {processInstanceKey, state: 'CREATED'},
       1,
@@ -778,12 +686,12 @@ test.describe('User Task Suspension API', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
-    await expectTasks(
+    await expectUserTasks(
       request,
       {processInstanceKey, state: 'COMPLETED'},
       [first.userTaskKey, second.userTaskKey, third.userTaskKey],
       false,
     );
-    await expectTasks(request, {processInstanceKey, isSuspended: true}, 0);
+    await expectUserTasks(request, {processInstanceKey, isSuspended: true}, 0);
   });
 });

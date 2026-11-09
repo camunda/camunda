@@ -331,9 +331,13 @@ async function countProcessInstances(
 
 async function runBatchAndWaitForCompletion(
   request: APIRequestContext,
-  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
+  endpoint:
+    | '/process-instances/cancellation'
+    | '/process-instances/deletion'
+    | '/process-instances/suspension'
+    | '/process-instances/resumption',
   filter: Record<string, unknown>,
-): Promise<void> {
+): Promise<string> {
   const res = await request.post(buildUrl(endpoint), {
     headers: jsonHeaders(),
     data: {filter},
@@ -352,6 +356,43 @@ async function runBatchAndWaitForCompletion(
   const batchKey = json.batchOperationKey;
 
   await expectBatchState(request, batchKey, 'COMPLETED');
+  return batchKey;
+}
+
+export async function runProcessInstanceBatch(
+  request: APIRequestContext,
+  path: '/process-instances/suspension' | '/process-instances/resumption',
+  processDefinitionId: string,
+  sourceState: string,
+  targetState: string,
+  count: number,
+) {
+  await expectProcessInstanceCount(
+    request,
+    {processDefinitionId, state: sourceState},
+    count,
+    extendedAssertionOptions,
+  );
+  const batchOperationKey = await runBatchAndWaitForCompletion(request, path, {
+    processDefinitionId,
+  });
+  await expect(async () => {
+    const result = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(result, 200);
+    const batch = await result.json();
+    expect(batch.operationsTotalCount).toBe(count);
+    expect(batch.operationsCompletedCount).toBe(count);
+    expect(batch.operationsFailedCount).toBe(0);
+  }).toPass(extendedAssertionOptions);
+  await expectProcessInstanceCount(
+    request,
+    {processDefinitionId, state: targetState},
+    count,
+    extendedAssertionOptions,
+  );
 }
 
 export type SuspendableProcessInstance = ProcessInstanceItem & {
