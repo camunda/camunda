@@ -15,6 +15,8 @@ const INTEGER_RE = /^-?(?:0|[1-9]\d*)$/;
 const JSON_STRING_OR_NUMBER_RE =
   /"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
 const UNSAFE_INTEGER_MARKER = '\0unsafe-integer:';
+// The marker as `JSON.stringify` writes it, wrapped in the quotes of its string.
+const ENCODED_UNSAFE_INTEGER_RE = /"\\u0000unsafe-integer:(-?\d+)"/g;
 
 /**
  * Parses JSON like `JSON.parse`, but reads integers a double cannot represent
@@ -35,22 +37,13 @@ const parseJson = (input: string): unknown => {
   );
 };
 
-/** Encodes a value like `JSON.stringify`, but also supports `BigInt`. */
-const encodeJson = (value: unknown): string => {
-  if (typeof value === 'bigint') {
-    return value.toString();
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(encodeJson).join(',')}]`;
-  }
-  if (typeof value === 'object' && value !== null) {
-    const members = Object.entries(value).map(
-      ([key, member]) => `${JSON.stringify(key)}:${encodeJson(member)}`,
-    );
-    return `{${members.join(',')}}`;
-  }
-  return JSON.stringify(value);
-};
+/** Encodes a value like `JSON.stringify`, but writes `BigInt` as an integer. */
+const encodeJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, member: unknown) =>
+    typeof member === 'bigint'
+      ? `${UNSAFE_INTEGER_MARKER}${member.toString()}`
+      : member,
+  ).replace(ENCODED_UNSAFE_INTEGER_RE, '$1');
 
 const parseScalar = (input: string): unknown => {
   try {
