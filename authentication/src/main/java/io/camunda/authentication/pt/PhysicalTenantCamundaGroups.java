@@ -26,6 +26,13 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * <p>The web app configuration and the Groups API use this one source, so the UI offers group
  * management exactly where the API allows it. A tenant that is not configured uses the {@code
  * default} tenant's groups mode.
+ *
+ * <p>The {@code default} tenant comes from the cluster configuration bean in one overload and from
+ * the environment in the other. Both hold the same configuration: with physical tenants, {@code
+ * PhysicalTenantSecurityConfiguration#physicalTenantClusterAuthUnification} replaces the bean's
+ * authentication with {@link PhysicalTenantAuthConfigurations#forPhysicalTenant} for {@code
+ * default}, which is what the environment entry holds; without them, both bind {@code
+ * camunda.security.authentication} from the environment.
  */
 public final class PhysicalTenantCamundaGroups {
 
