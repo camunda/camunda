@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
- * Variants of the variables methods of {@link CommandWithVariables} that also declare how
+ * Adds variants of the variables methods of {@link CommandWithVariables} that also declare how
  * individual variables are treated, for example which protections apply to their values.
  *
  * <p>Only the commands that support variables metadata implement this interface.
@@ -28,7 +28,7 @@ import java.util.Map;
  * @param <T> the type of the command, returned to continue building it
  */
 @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
-public interface CommandWithVariablesMetadata<T> {
+public interface CommandWithVariablesMetadata<T> extends CommandWithVariables<T> {
 
   /**
    * Like {@link CommandWithVariables#variables(String)}, and declares how individual variables are
