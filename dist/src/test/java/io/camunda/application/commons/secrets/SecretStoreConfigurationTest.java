@@ -10,8 +10,12 @@ package io.camunda.application.commons.secrets;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +36,7 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
+import io.camunda.secretstore.azure.AzureKeyVaultStoreConfig;
 import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -56,6 +61,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedConstruction;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -668,6 +674,75 @@ class SecretStoreConfigurationTest {
     // then pt1 reads from its vault and the default tenant stays on the noop fallback
     assertThat(defaultStoreOf(registries, "pt1").is(AzureKeyVaultSecretStore.class)).isTrue();
     assertThatIsNoopStore(defaultStoreOf(registries, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  @Test
+  void shouldBuildEachTenantsAzureStoreFromItsOwnVaultAndIdentity() {
+    // given every setting for the default tenant's store, and pt1 overriding vault and identity
+    final var properties = new HashMap<String, Object>();
+    final var store = "camunda.secrets.stores.azure.default.";
+    properties.put(store + "vault-url", "https://default.vault.azure.net");
+    properties.put(store + "path-prefix", "camunda-");
+    properties.put(store + "container-secret", "bundle");
+    properties.put(store + "managed-identity-client-id", "default-client-id");
+    properties.put(store + "authority-host", "https://login.microsoftonline.us");
+    properties.put(store + "max-retries", "1");
+    properties.put(store + "call-timeout", "4s");
+    properties.put(store + "attempt-timeout", "1s");
+    properties.putAll(tenantWithAzureStore("pt1", "vault-url", "https://pt1.vault.azure.net"));
+    properties.put(
+        "camunda.physical-tenants.pt1.secrets.stores.azure.default.managed-identity-client-id",
+        "pt1-client-id");
+    final var resolver = resolverFor(properties);
+    final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
+
+    // when
+    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
+      registries(resolver);
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+    }
+
+    // then the default tenant's store gets every setting, unchanged by pt1's overrides
+    assertThat(built.getAllValues())
+        .contains(
+            new AzureKeyVaultStoreConfig(
+                "https://default.vault.azure.net",
+                "camunda-",
+                "bundle",
+                "default-client-id",
+                "https://login.microsoftonline.us",
+                1,
+                Duration.ofSeconds(4),
+                Duration.ofSeconds(1)));
+    // and pt1's store uses its own vault and identity
+    assertThat(built.getAllValues())
+        .extracting(
+            AzureKeyVaultStoreConfig::vaultUrl, AzureKeyVaultStoreConfig::managedIdentityClientId)
+        .containsExactlyInAnyOrder(
+            tuple("https://default.vault.azure.net", "default-client-id"),
+            tuple("https://pt1.vault.azure.net", "pt1-client-id"));
+  }
+
+  @Test
+  void shouldBuildAzureStoreWithTheStoreModulesDefaultsWhenOnlyTheVaultIsSet() {
+    // given only the vault URL, so every other setting takes the configuration module's default,
+    // which restates the store module's because the configuration module cannot depend on it
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.azure.default.vault-url",
+                "https://my-vault.vault.azure.net"));
+    final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
+
+    // when
+    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
+      registries(resolver);
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()));
+    }
+
+    // then the two modules' defaults have not drifted apart
+    assertThat(built.getValue())
+        .isEqualTo(AzureKeyVaultStoreConfig.of("https://my-vault.vault.azure.net"));
   }
 
   @Test
