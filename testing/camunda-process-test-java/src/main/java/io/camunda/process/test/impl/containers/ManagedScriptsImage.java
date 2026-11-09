@@ -29,6 +29,7 @@ import org.testcontainers.images.PullPolicy;
 import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.ImageNameSubstitutor;
 import org.testcontainers.utility.LazyFuture;
 
 /**
@@ -57,6 +58,11 @@ public final class ManagedScriptsImage {
   private static final int MIN_PYTHON_MINOR_VERSION = 10;
   private static final int MIN_NODE_MAJOR_VERSION = 20;
 
+  // The first Connectors version with managed scripts.
+  private static final int MIN_CONNECTORS_MAJOR_VERSION = 8;
+  private static final int MIN_CONNECTORS_MINOR_VERSION = 11;
+
+  private static final Pattern CONNECTORS_VERSION = Pattern.compile("(\\d+)\\.(\\d+)(?:[.-]|$)");
   private static final Pattern PYTHON_VERSION = Pattern.compile("3\\.(\\d+)");
   private static final Pattern NODE_VERSION = Pattern.compile("(\\d+)");
 
@@ -94,9 +100,17 @@ public final class ManagedScriptsImage {
    *     empty string for root
    */
   public String dockerfile(final String baseImageUser) {
+    return dockerfile(baseImage, baseImageUser);
+  }
+
+  /**
+   * @param fromImage the resolved Connectors image, which is the configured one unless an image
+   *     name substitutor of Testcontainers, such as a registry mirror, changes it
+   */
+  String dockerfile(final String fromImage, final String baseImageUser) {
     // apk needs root. The Connectors image runs as 1001, but a custom image can use another user.
     final StringBuilder dockerfile =
-        new StringBuilder().append("FROM ").append(baseImage).append("\n").append("USER 0\n");
+        new StringBuilder().append("FROM ").append(fromImage).append("\n").append("USER 0\n");
     dockerfile.append("RUN ");
     if (!hasPinnedVersion) {
       // A custom image that has the interpreters already is used as it is, whatever its base.
@@ -119,7 +133,11 @@ public final class ManagedScriptsImage {
 
   /** The name of the built image, which changes with its Dockerfile only. */
   public String imageName(final String baseImageUser) {
-    return IMAGE_NAME + ":" + sha256(dockerfile(baseImageUser)).substring(0, 12);
+    return imageName(baseImage, baseImageUser);
+  }
+
+  String imageName(final String fromImage, final String baseImageUser) {
+    return IMAGE_NAME + ":" + sha256(dockerfile(fromImage, baseImageUser)).substring(0, 12);
   }
 
   /**
@@ -127,7 +145,15 @@ public final class ManagedScriptsImage {
    *
    * @param pullBaseImage whether to pull the Connectors image, for a mutable tag
    */
-  public Future<String> build(final boolean pullBaseImage) {
+  public RemoteDockerImage build(final boolean pullBaseImage) {
+    // The built image exists locally only: a registry mirror or a pull policy must not apply to it.
+    // They apply to the Connectors image, when it is resolved.
+    return new RemoteDockerImage(buildLazily(pullBaseImage))
+        .withImageNameSubstitutor(ImageNameSubstitutor.noop())
+        .withImagePullPolicy(imageName -> false);
+  }
+
+  private Future<String> buildLazily(final boolean pullBaseImage) {
     return new LazyFuture<String>() {
       @Override
       protected String resolve() {
@@ -139,15 +165,15 @@ public final class ManagedScriptsImage {
         final ContainerConfig config =
             DockerClientFactory.lazyClient().inspectImageCmd(resolvedBaseImage).exec().getConfig();
         final String user = config == null ? null : config.getUser();
-        return build(user).get();
+        return build(resolvedBaseImage, user).get();
       }
     };
   }
 
-  ImageFromDockerfile build(final String baseImageUser) {
+  ImageFromDockerfile build(final String fromImage, final String baseImageUser) {
     // Not deleted on exit: the image and its layers are reused by the next runs.
-    return new ImageFromDockerfile(imageName(baseImageUser), false)
-        .withFileFromString("Dockerfile", dockerfile(baseImageUser));
+    return new ImageFromDockerfile(imageName(fromImage, baseImageUser), false)
+        .withFileFromString("Dockerfile", dockerfile(fromImage, baseImageUser));
   }
 
   private String missingInterpretersMessage() {
@@ -160,6 +186,32 @@ public final class ManagedScriptsImage {
         + ". Base it on camunda/connectors-bundle, or install "
         + interpreters
         + " in it.";
+  }
+
+  /**
+   * Rejects a Connectors version without managed scripts, instead of a test that waits for script
+   * jobs nobody handles. A version that is not a release version, such as {@code latest} or a
+   * custom tag, is accepted.
+   */
+  public static void checkConnectorsVersion(final String connectorsVersion) {
+    if (connectorsVersion == null) {
+      return;
+    }
+    final Matcher matcher = CONNECTORS_VERSION.matcher(connectorsVersion.trim());
+    if (!matcher.lookingAt()) {
+      return;
+    }
+    final int major = Integer.parseInt(matcher.group(1));
+    final int minor = Integer.parseInt(matcher.group(2));
+    if (major < MIN_CONNECTORS_MAJOR_VERSION
+        || (major == MIN_CONNECTORS_MAJOR_VERSION && minor < MIN_CONNECTORS_MINOR_VERSION)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Managed scripts need Connectors %d.%d or later, but the Connectors Docker image"
+                  + " version is '%s'. Set a newer version with"
+                  + " withConnectorsDockerImageVersion().",
+              MIN_CONNECTORS_MAJOR_VERSION, MIN_CONNECTORS_MINOR_VERSION, connectorsVersion));
+    }
   }
 
   private static String pythonPackage(final String version) {

@@ -18,12 +18,16 @@ package io.camunda.process.test.impl.containers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.concurrent.Future;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.images.ImagePullPolicy;
+import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.utility.DockerImageName;
 
 class ManagedScriptsImageTest {
 
@@ -132,7 +136,7 @@ class ManagedScriptsImageTest {
   void shouldKeepTheBuiltImage() {
     // when
     final ImageFromDockerfile image =
-        new ManagedScriptsImage(BASE_IMAGE, null, null).build(CONNECTORS_USER);
+        new ManagedScriptsImage(BASE_IMAGE, null, null).build(BASE_IMAGE, CONNECTORS_USER);
 
     // then
     assertThat(image.isDeleteOnExit()).isFalse();
@@ -141,10 +145,69 @@ class ManagedScriptsImageTest {
   @Test
   void shouldBuildLazily() {
     // when: no Docker is needed until the container starts
-    final Future<String> image = new ManagedScriptsImage(BASE_IMAGE, null, null).build(true);
+    final RemoteDockerImage image = new ManagedScriptsImage(BASE_IMAGE, null, null).build(true);
 
     // then
     assertThat(image.isDone()).isFalse();
+  }
+
+  @Test
+  void shouldNeitherSubstituteNorPullTheBuiltImage() {
+    // when
+    final RemoteDockerImage image = new ManagedScriptsImage(BASE_IMAGE, null, null).build(true);
+
+    // then: the built image exists locally only. A Future: assert on its fields as an object.
+    final Object builtImage = image;
+    assertThat(builtImage)
+        .extracting("imageNameSubstitutor")
+        .extracting(substitutor -> substitutor.getClass().getSimpleName())
+        .isEqualTo("NoopImageNameSubstitutor");
+    assertThat(builtImage)
+        .extracting("imagePullPolicy", InstanceOfAssertFactories.type(ImagePullPolicy.class))
+        .satisfies(
+            policy -> assertThat(policy.shouldPull(DockerImageName.parse(BASE_IMAGE))).isFalse());
+  }
+
+  @Test
+  void shouldBuildFromTheResolvedBaseImage() {
+    // given: a registry mirror substitutes the Connectors image
+    final ManagedScriptsImage image = new ManagedScriptsImage(BASE_IMAGE, null, null);
+    final String mirroredImage = "mirror.example.com/camunda/connectors-bundle:8.11.0";
+
+    // when
+    final ImageFromDockerfile built = image.build(mirroredImage, CONNECTORS_USER);
+
+    // then
+    assertThat(image.dockerfile(mirroredImage, CONNECTORS_USER))
+        .startsWith("FROM " + mirroredImage + "\n");
+    assertThat(built.getDockerImageName())
+        .isEqualTo(image.imageName(mirroredImage, CONNECTORS_USER))
+        .isNotEqualTo(image.imageName(CONNECTORS_USER));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"8.10.2", "8.10-SNAPSHOT", "8.9.0", "7.22.0"})
+  void shouldRejectAConnectorsVersionWithoutManagedScripts(final String version) {
+    assertThatThrownBy(() -> ManagedScriptsImage.checkConnectorsVersion(version))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Managed scripts need Connectors 8.11 or later")
+        .hasMessageContaining("'" + version + "'");
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(
+      strings = {
+        "8.11.0",
+        "8.11-SNAPSHOT",
+        "8.12.0-alpha1",
+        "9.0.0",
+        "latest",
+        "SNAPSHOT",
+        "custom"
+      })
+  void shouldAcceptAConnectorsVersionWithManagedScripts(final String version) {
+    ManagedScriptsImage.checkConnectorsVersion(version);
   }
 
   @Test
