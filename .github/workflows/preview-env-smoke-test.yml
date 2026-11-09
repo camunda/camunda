@@ -220,9 +220,17 @@ jobs:
           TELEPORT_APP: camunda-ci-ingress-gateway-443
           PREVIEW_HOST: ${{ matrix.deployment.host }}
         run: |
-          # Start TCP proxy on port 443 (requires sudo for privileged port)
-          # Use full path since sudo doesn't inherit PATH
-          sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
+          # Start TCP proxy on port 443 (requires sudo for privileged port).
+          # Use full path since sudo doesn't inherit PATH. sudo resets the
+          # environment and the runner's sudoers policy rejects '-E'
+          # ("preserving the entire environment is not supported"), so tsh under
+          # sudo never sees the TELEPORT_PROXY / TELEPORT_IDENTITY_FILE vars the
+          # auth step exported and fails with "No proxy address specified". Pass
+          # them as explicit flags instead of relying on sudo to carry them.
+          sudo "$(which tsh)" \
+            --proxy "${TELEPORT_PROXY}" \
+            --identity "${TELEPORT_IDENTITY_FILE}" \
+            proxy app "${TELEPORT_APP}" --port 443 --debug &
           sleep 5
 
           # Verify tunnel is running
