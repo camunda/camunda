@@ -86,8 +86,6 @@ jobs:
       run:
         working-directory: ./c8run
     steps:
-      # Git for Windows caps paths at 260 chars (MAX_PATH) unless core.longpaths is set; some
-      # repo paths (e.g. Playwright snapshot names) exceed it and make checkout fail.
       - name: Enable long paths for git
         if: runner.os == 'Windows'
         shell: bash
@@ -255,8 +253,6 @@ jobs:
     timeout-minutes: 15
     needs: camunda-dist-build
     steps:
-      # Git for Windows caps paths at 260 chars (MAX_PATH) unless core.longpaths is set; some
-      # repo paths (e.g. Playwright snapshot names) exceed it and make checkout fail.
       - name: Enable long paths for git
         if: runner.os == 'Windows'
         shell: bash
@@ -435,8 +431,6 @@ jobs:
         shell: bash
         working-directory: ./c8run
     steps:
-      # Git for Windows caps paths at 260 chars (MAX_PATH) unless core.longpaths is set; some
-      # repo paths (e.g. Playwright snapshot names) exceed it and make checkout fail.
       - name: Enable long paths for git
         if: runner.os == 'Windows'
         shell: bash
@@ -535,8 +529,6 @@ jobs:
         shell: bash
         working-directory: ./c8run
     steps:
-      # Git for Windows caps paths at 260 chars (MAX_PATH) unless core.longpaths is set; some
-      # repo paths (e.g. Playwright snapshot names) exceed it and make checkout fail.
       - name: Enable long paths for git
         if: runner.os == 'Windows'
         shell: bash
