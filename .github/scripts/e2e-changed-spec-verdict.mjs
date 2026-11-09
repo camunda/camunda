@@ -78,9 +78,15 @@ try {
 // on the nightly/on-demand run, but the issue's contract is that only the PR's own
 // changed tests gate the merge.
 if (changed.size === 0) {
-  console.log(
-    'No added/modified spec files in this PR; nothing to block on in this job.',
-  );
+  const message =
+    'No added/modified spec files in this PR; nothing to block on in this job.';
+  console.log(message);
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    fs.appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `## Changed-spec verdict\n\n${message}\n`,
+    );
+  }
   process.exit(0);
 }
 
