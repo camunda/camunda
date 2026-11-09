@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -25,8 +26,10 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import org.jspecify.annotations.Nullable;
 
 public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<HistoryDeletionRecord> {
 
@@ -68,12 +71,19 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private void deleteProcessInstance(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
 
+    // read once before any check so every rejection of a still active instance carries the
+    // ordinal stored for it, not the one the caller knew
+    final var processInstance = elementInstanceState.getInstance(recordValue.getResourceKey());
+    if (processInstance != null) {
+      recordValue.setResourceStorageOrdinal(processInstance.getValue().getStorageOrdinal());
+    }
+
     validateAuthorization(
             command,
             AuthorizationResourceType.PROCESS_DEFINITION,
             PermissionType.DELETE_PROCESS_INSTANCE,
             recordValue.getProcessId())
-        .flatMap(this::validateProcessInstanceDoesNotExist)
+        .flatMap(record -> validateProcessInstanceDoesNotExist(record, processInstance))
         .ifRightOrLeft(
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
@@ -85,6 +95,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteProcessDefinition(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
@@ -135,17 +146,17 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteDecisionRequirements(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
-      final HistoryDeletionRecord record) {
-    final var processInstanceKey = record.getResourceKey();
-    if (elementInstanceState.getInstance(processInstanceKey) != null) {
+      final HistoryDeletionRecord record, final @Nullable ElementInstance processInstance) {
+    if (processInstance != null) {
       final var rejection =
           new Rejection(
               RejectionType.INVALID_STATE,
-              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, processInstanceKey));
+              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, record.getResourceKey()));
       return Either.left(rejection);
     }
     return Either.right(record);
