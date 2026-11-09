@@ -491,6 +491,48 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCompleteJobWithResultClearingCorrectedDates() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "type": "userTask",
+              "corrections": {
+                "dueDate": "",
+                "followUpDate": ""
+              }
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(
+            eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture(), isNull(), isNull(), any());
+
+    assertThat(jobResultArgumentCaptor.getValue().getCorrections())
+        .isEqualTo(new JobResultCorrections().setDueDate("").setFollowUpDate(""));
+    assertThat(jobResultArgumentCaptor.getValue().getCorrectedAttributes())
+        .containsExactly(UserTaskRecord.DUE_DATE, UserTaskRecord.FOLLOW_UP_DATE);
+  }
+
+  @Test
   void shouldCompleteJobWithResultWithCorrectionsPartiallySet() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any(), any(), any(), any()))
