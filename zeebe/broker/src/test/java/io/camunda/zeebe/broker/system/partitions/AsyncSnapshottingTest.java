@@ -10,7 +10,10 @@ package io.camunda.zeebe.broker.system.partitions;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -157,18 +160,19 @@ public final class AsyncSnapshottingTest {
 
   @Test
   public void shouldNotPersistSnapshotUntilLastProcessedPositionIsCommitted() {
-    // given a processor that processed a record above the commit index whose result wrote nothing,
-    // leaving the written position behind the processed one
+    // given a processor that processed a record above the commit index while the snapshot was
+    // taken, whose result wrote nothing, leaving the written position behind the processed one
     when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(10L))
         .thenReturn(CompletableActorFuture.completed(50L));
     when(mockStreamProcessor.getLastWrittenPositionAsync())
         .thenReturn(CompletableActorFuture.completed(10L));
     createSnapshotDirector(StreamProcessorMode.PROCESSING);
     final var snapshot = asyncSnapshotDirector.forceSnapshot();
-    verify(mockStreamProcessor, timeout(10000)).getLastWrittenPositionAsync();
 
     // when only the written position is committed
     setCommitPosition(10L);
+    verify(mockStreamProcessor, timeout(10000)).getLastWrittenPositionAsync();
 
     // then the snapshot is held back, because the state it captured includes position 50
     Awaitility.await("the snapshot is not persisted")
@@ -178,6 +182,34 @@ public final class AsyncSnapshottingTest {
     assertThat(persistedSnapshotStore.getLatestSnapshot()).isEmpty();
 
     // when the processed position is committed too
+    setCommitPosition(50L);
+
+    // then
+    assertThat(snapshot.join()).isNotNull();
+    assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotUntilLastProcessedPositionIsCommitted() {
+    // given a leader that processed records before they were committed
+    when(mockStreamProcessor.getLastProcessedPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(50L));
+    when(mockStreamProcessor.getLastWrittenPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(50L));
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+
+    // when
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+    setCommitPosition(10L);
+
+    // then no snapshot is taken, because the snapshot position cannot be found in the committed log
+    Awaitility.await("the snapshot is not taken")
+        .during(Duration.ofMillis(500))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !snapshot.isDone());
+    verify(snapshotController, never()).takeTransientSnapshot(anyLong(), anyBoolean());
+
+    // when the processed position is committed
     setCommitPosition(50L);
 
     // then
