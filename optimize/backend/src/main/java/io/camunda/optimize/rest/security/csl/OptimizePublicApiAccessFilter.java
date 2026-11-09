@@ -14,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -59,6 +61,9 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
 
   private final String publicApiAudience;
   private final String clusterId;
+  // The first denial for each reason logs a WARN, so a broken client or configuration shows up at
+  // the default log level; later ones log at DEBUG.
+  private final Set<Denial> reportedDenials = ConcurrentHashMap.newKeySet();
 
   private OptimizePublicApiAccessFilter(final String publicApiAudience, final String clusterId) {
     if (publicApiAudience == null || publicApiAudience.isBlank()) {
@@ -110,7 +115,14 @@ public final class OptimizePublicApiAccessFilter extends OncePerRequestFilter {
       filterChain.doFilter(request, response);
       return;
     }
-    LOG.debug("Denying request at {}: {}", request.getRequestURI(), denial.reason);
+    if (reportedDenials.add(denial)) {
+      LOG.warn(
+          "Denying request at {}: {}. Later denials for this reason are logged at DEBUG.",
+          request.getRequestURI(),
+          denial.reason);
+    } else {
+      LOG.debug("Denying request at {}: {}", request.getRequestURI(), denial.reason);
+    }
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
