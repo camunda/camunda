@@ -40,9 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -66,7 +64,6 @@ public class ProcessInstanceCreator implements AutoCloseable {
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
   private final StarterLivenessIndicator livenessIndicator;
-  private final ConfigurableApplicationContext applicationContext;
   private final List<StartListener> startListeners = new CopyOnWriteArrayList<>();
   private final AtomicLong businessKey = new AtomicLong(0);
 
@@ -80,14 +77,12 @@ public class ProcessInstanceCreator implements AutoCloseable {
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final PayloadReader payloadReader,
-      final StarterLivenessIndicator livenessIndicator,
-      final ConfigurableApplicationContext applicationContext) {
+      final StarterLivenessIndicator livenessIndicator) {
     this.loaderClient = loaderClient;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.payloadReader = payloadReader;
     this.livenessIndicator = livenessIndicator;
-    this.applicationContext = applicationContext;
 
     responseLatencyTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
@@ -154,8 +149,10 @@ public class ProcessInstanceCreator implements AutoCloseable {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
             return;
           } catch (final Error e) {
-            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
-            // fail the application instead.
+            // An Error escaping a scheduleAtFixedRate task silently cancels
+            // all future runs, so mark the application as failed: it will
+            // stop further scheduling and will report as "not alive" through
+            // its liveness probe.
             fail(e);
             return;
           }
@@ -258,10 +255,9 @@ public class ProcessInstanceCreator implements AutoCloseable {
   }
 
   private void fail(final Throwable cause) {
-    if (applicationContext.isActive()) {
-      LOG.error("Starter failed, stopping the application", cause);
-      System.exit(SpringApplication.exit(applicationContext, () -> 1));
-    }
+    LOG.error("Starter failed, stopping the creation of process instances", cause);
+    livenessIndicator.recordFatal(cause);
+    executor.shutdown();
   }
 
   /**

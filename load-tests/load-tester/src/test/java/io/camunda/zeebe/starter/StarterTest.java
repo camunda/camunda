@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
@@ -108,12 +107,7 @@ class StarterTest {
             loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
     final var creator =
         new ProcessInstanceCreator(
-            loaderClient,
-            properties,
-            registry,
-            payloadReader,
-            livenessIndicator,
-            mock(ConfigurableApplicationContext.class));
+            loaderClient, properties, registry, payloadReader, livenessIndicator);
     final var availabilityMeter =
         new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
     final var starter =
