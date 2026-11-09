@@ -4835,10 +4835,12 @@ final class JsonSerializableToJsonTest {
                         List.of(
                             new UnsafeBuffer(MsgPackConverter.convertToMsgPack("1")),
                             new UnsafeBuffer(MsgPackConverter.convertToMsgPack("2")),
-                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("3")))),
+                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("3"))))
+                    .setStorageOrdinal(1234),
         """
                 {
-                  "inputCollection": ["1", "2", "3"]
+                  "inputCollection": ["1", "2", "3"],
+                  "storageOrdinal": 1234
                 }
                 """
       },
@@ -4852,7 +4854,8 @@ final class JsonSerializableToJsonTest {
         (Supplier<MultiInstanceRecord>) MultiInstanceRecord::new,
         """
                 {
-                  "inputCollection": []
+                  "inputCollection": [],
+                  "storageOrdinal": 0
                 }
                 """
       },

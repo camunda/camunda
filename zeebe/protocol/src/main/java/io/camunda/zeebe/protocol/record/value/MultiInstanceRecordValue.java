@@ -25,10 +25,12 @@ import org.immutables.value.Value;
  * Represents a multi instance related command or event.
  *
  * <p>See {@link MultiInstanceIntent} for intents.
+ *
+ * @see StorageOrdinalRelated
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMultiInstanceRecordValue.Builder.class)
-public interface MultiInstanceRecordValue extends RecordValue {
+public interface MultiInstanceRecordValue extends RecordValue, StorageOrdinalRelated {
 
   /** Returns the input collection */
   List<String> getInputCollection();
