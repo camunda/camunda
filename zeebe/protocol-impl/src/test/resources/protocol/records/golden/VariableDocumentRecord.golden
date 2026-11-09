@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -25,6 +26,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   // Static StringValue keys for property names
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
   private static final StringValue UPDATE_SEMANTICS_KEY = new StringValue("updateSemantics");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final LongProperty scopeKeyProperty = new LongProperty(SCOPE_KEY_KEY);
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
@@ -32,11 +34,14 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
           UPDATE_SEMANTICS_KEY,
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
 
   public VariableDocumentRecord() {
-    super(2);
-    declareProperty(scopeKeyProperty).declareProperty(updateSemanticsProperty);
+    super(3);
+    declareProperty(scopeKeyProperty)
+        .declareProperty(updateSemanticsProperty)
+        .declareProperty(storageOrdinalProp);
     declareProperties(variablesPropertyGroup);
   }
 
@@ -44,7 +49,8 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     setScopeKey(other.getScopeKey())
         .setVariables(other.getVariablesBuffer())
         .setUpdateSemantics(other.getUpdateSemantics())
-        .setVariablesMetadata(other.getVariablesMetadata());
+        .setVariablesMetadata(other.getVariablesMetadata())
+        .setStorageOrdinal(other.getStorageOrdinal());
 
     return this;
   }
@@ -67,6 +73,16 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   public VariableDocumentRecord setUpdateSemantics(
       final VariableDocumentUpdateSemantic updateSemantics) {
     updateSemanticsProperty.setValue(updateSemantics);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public VariableDocumentRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 
@@ -98,7 +114,8 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
 
   @Override
   public int hashCode() {
-    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesPropertyGroup);
+    return Objects.hash(
+        scopeKeyProperty, updateSemanticsProperty, storageOrdinalProp, variablesPropertyGroup);
   }
 
   @Override
@@ -114,6 +131,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     final VariableDocumentRecord that = (VariableDocumentRecord) o;
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
+        && Objects.equals(storageOrdinalProp, that.storageOrdinalProp)
         && Objects.equals(variablesPropertyGroup, that.variablesPropertyGroup);
   }
 
