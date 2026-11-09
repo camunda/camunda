@@ -48,10 +48,13 @@ public interface PolicyUpdateRecordValue extends RecordValue {
   /** The ID that groups the chunks of one update. */
   String getUpdateId();
 
-  /** The 0-based index of this chunk, which is also its position in the apply order. */
+  /**
+   * The 0-based index of this chunk, which is also its position in the apply order, or -1 if not
+   * set.
+   */
   int getChunkIndex();
 
-  /** The total number of chunks of the update. */
+  /** The total number of chunks of the update, or -1 if not set. */
   int getChunkCount();
 
   List<TenantRecordValue> getTenants();
@@ -70,7 +73,7 @@ public interface PolicyUpdateRecordValue extends RecordValue {
 
   List<PolicyMembershipEntryValue> getMembershipDeletes();
 
-  List<AuthorizationRecordValue> getAuthorizationDeletes();
+  List<PolicyAuthorizationDeleteEntryValue> getAuthorizationDeletes();
 
   /** Why the update failed or was aborted, or empty if it did not. */
   String getErrorMessage();

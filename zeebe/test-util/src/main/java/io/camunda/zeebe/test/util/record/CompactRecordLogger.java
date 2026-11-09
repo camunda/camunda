@@ -2295,11 +2295,13 @@ public class CompactRecordLogger {
         .append(value.getPolicyVersion());
     result.append(" seqNo:").append(value.getSeqNo());
     result.append(" update:").append(value.getUpdateId());
-    result
-        .append(" chunk:")
-        .append(value.getChunkIndex() + 1)
-        .append("/")
-        .append(value.getChunkCount());
+    if (value.getChunkCount() > 0) {
+      result
+          .append(" chunk:")
+          .append(value.getChunkIndex() + 1)
+          .append("/")
+          .append(value.getChunkCount());
+    }
     if (!value.getErrorMessage().isEmpty()) {
       result.append(" error:").append(value.getErrorMessage());
     }

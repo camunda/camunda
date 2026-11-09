@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyAuthorizationDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
@@ -72,7 +73,14 @@ final class PolicyUpdateRecordTest {
             .setAuthorizations(List.<AuthorizationRecordValue>of(authorization))
             .setDeletes(List.<PolicyDeleteEntryValue>of(delete))
             .setMembershipDeletes(List.<PolicyMembershipEntryValue>of(membership))
-            .setAuthorizationDeletes(List.<AuthorizationRecordValue>of(authorization))
+            .setAuthorizationDeletes(
+                List.<PolicyAuthorizationDeleteEntryValue>of(
+                    new PolicyAuthorizationDeleteEntry()
+                        .setOwnerType(AuthorizationOwnerType.ROLE)
+                        .setOwnerId("role-a")
+                        .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                        .setResourceMatcher(AuthorizationResourceMatcher.ID)
+                        .setResourceId("process-a")))
             .setErrorMessage("failed");
 
     // when
@@ -125,7 +133,18 @@ final class PolicyUpdateRecordTest {
               assertThat(d.getId()).isEqualTo("rule-old");
             });
     assertThat(copy.getMembershipDeletes()).hasSize(1);
-    assertThat(copy.getAuthorizationDeletes()).hasSize(1);
+    assertThat(copy.getAuthorizationDeletes())
+        .singleElement()
+        .satisfies(
+            d -> {
+              assertThat(d.getOwnerType()).isEqualTo(AuthorizationOwnerType.ROLE);
+              assertThat(d.getOwnerId()).isEqualTo("role-a");
+              assertThat(d.getResourceType())
+                  .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
+              assertThat(d.getResourceMatcher()).isEqualTo(AuthorizationResourceMatcher.ID);
+              assertThat(d.getResourceId()).isEqualTo("process-a");
+              assertThat(d.getResourcePropertyName()).isEmpty();
+            });
     assertThat(copy.getErrorMessage()).isEqualTo("failed");
   }
 
@@ -144,8 +163,34 @@ final class PolicyUpdateRecordTest {
     assertThat(record.getBasePolicyVersion()).isZero();
     assertThat(record.getSeqNo()).isZero();
     assertThat(record.getUpdateId()).isEmpty();
+    assertThat(record.getChunkIndex()).isEqualTo(-1);
+    assertThat(record.getChunkCount()).isEqualTo(-1);
     assertThat(record.getTenants()).isEmpty();
     assertThat(record.getDeletes()).isEmpty();
     assertThat(record.getErrorMessage()).isEmpty();
+  }
+
+  @Test
+  void shouldCopyAuthorizationDeleteWithoutResourceMatcher() {
+    // given
+    final var delete =
+        new PolicyAuthorizationDeleteEntry()
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setOwnerId("alice");
+
+    // when
+    final var record =
+        new PolicyUpdateRecord()
+            .setAuthorizationDeletes(List.<PolicyAuthorizationDeleteEntryValue>of(delete));
+
+    // then
+    assertThat(record.getAuthorizationDeletes())
+        .singleElement()
+        .satisfies(
+            d -> {
+              assertThat(d.getOwnerId()).isEqualTo("alice");
+              assertThat(d.getResourceMatcher())
+                  .isEqualTo(AuthorizationResourceMatcher.UNSPECIFIED);
+            });
   }
 }

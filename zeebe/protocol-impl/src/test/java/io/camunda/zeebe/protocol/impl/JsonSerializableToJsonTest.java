@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizationDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -5492,7 +5493,7 @@ final class JsonSerializableToJsonTest {
                                 .setMemberId("user-2")))
                     .setAuthorizationDeletes(
                         List.of(
-                            new AuthorizationRecord()
+                            new PolicyAuthorizationDeleteEntry()
                                 .setOwnerType(AuthorizationOwnerType.USER)
                                 .setOwnerId("user-2")
                                 .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
@@ -5583,14 +5584,12 @@ final class JsonSerializableToJsonTest {
           ],
           "authorizationDeletes": [
             {
-              "authorizationKey": -1,
-              "ownerId": "user-2",
               "ownerType": "USER",
+              "ownerId": "user-2",
               "resourceType": "PROCESS_DEFINITION",
               "resourceMatcher": "ANY",
               "resourceId": "*",
-              "resourcePropertyName": "",
-              "permissionTypes": []
+              "resourcePropertyName": ""
             }
           ],
           "errorMessage": "failed"
@@ -5607,8 +5606,8 @@ final class JsonSerializableToJsonTest {
           "basePolicyVersion": 0,
           "seqNo": 0,
           "updateId": "",
-          "chunkIndex": 0,
-          "chunkCount": 0,
+          "chunkIndex": -1,
+          "chunkCount": -1,
           "tenants": [],
           "roles": [],
           "groups": [],

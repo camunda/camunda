@@ -18,7 +18,11 @@ package io.camunda.zeebe.protocol.record.value;
 /**
  * The entity kinds a policy update can delete or use as a membership target. Tenants are not part
  * of {@link EntityType} because they cannot be members, but they can be deleted and can be the
- * target of a membership.
+ * target of a membership. Mapping rules can be deleted but are never a membership target.
+ *
+ * <p>Users and clients are not listed on purpose: they come from the identity provider and are not
+ * entities of a policy. A policy refers to them only as members and as authorization owners, so it
+ * never deletes them or uses them as a membership target.
  */
 public enum PolicyUpdateEntityType {
   UNSPECIFIED,

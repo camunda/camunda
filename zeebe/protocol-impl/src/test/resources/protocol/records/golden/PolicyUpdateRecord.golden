@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyAuthorizationDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
@@ -44,8 +45,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
   private final LongProperty basePolicyVersionProp = new LongProperty("basePolicyVersion", 0);
   private final LongProperty seqNoProp = new LongProperty("seqNo", 0);
   private final StringProperty updateIdProp = new StringProperty("updateId", "");
-  private final IntegerProperty chunkIndexProp = new IntegerProperty("chunkIndex", 0);
-  private final IntegerProperty chunkCountProp = new IntegerProperty("chunkCount", 0);
+  private final IntegerProperty chunkIndexProp = new IntegerProperty("chunkIndex", -1);
+  private final IntegerProperty chunkCountProp = new IntegerProperty("chunkCount", -1);
 
   private final ArrayProperty<TenantRecord> tenantsProp =
       new ArrayProperty<>("tenants", TenantRecord::new);
@@ -62,8 +63,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
       new ArrayProperty<>("deletes", PolicyDeleteEntry::new);
   private final ArrayProperty<PolicyMembershipEntry> membershipDeletesProp =
       new ArrayProperty<>("membershipDeletes", PolicyMembershipEntry::new);
-  private final ArrayProperty<AuthorizationRecord> authorizationDeletesProp =
-      new ArrayProperty<>("authorizationDeletes", AuthorizationRecord::new);
+  private final ArrayProperty<PolicyAuthorizationDeleteEntry> authorizationDeletesProp =
+      new ArrayProperty<>("authorizationDeletes", PolicyAuthorizationDeleteEntry::new);
 
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
@@ -250,14 +251,14 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<AuthorizationRecordValue> getAuthorizationDeletes() {
+  public List<PolicyAuthorizationDeleteEntryValue> getAuthorizationDeletes() {
     return authorizationDeletesProp.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setAuthorizationDeletes(
-      final Collection<AuthorizationRecordValue> authorizations) {
+      final Collection<PolicyAuthorizationDeleteEntryValue> deletes) {
     authorizationDeletesProp.reset();
-    authorizations.forEach(auth -> copyAuthorization(authorizationDeletesProp.add(), auth));
+    deletes.forEach(delete -> copyAuthorizationDelete(authorizationDeletesProp.add(), delete));
     return this;
   }
 
@@ -318,6 +319,18 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setTargetId(source.getTargetId())
         .setMemberType(source.getMemberType())
         .setMemberId(source.getMemberId());
+  }
+
+  private static void copyAuthorizationDelete(
+      final PolicyAuthorizationDeleteEntry target,
+      final PolicyAuthorizationDeleteEntryValue source) {
+    target
+        .setOwnerType(source.getOwnerType())
+        .setOwnerId(source.getOwnerId())
+        .setResourceType(source.getResourceType())
+        .setResourceMatcher(source.getResourceMatcher())
+        .setResourceId(source.getResourceId())
+        .setResourcePropertyName(source.getResourcePropertyName());
   }
 
   private static void copyAuthorization(
