@@ -335,6 +335,28 @@ On the new stable branch, update `DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION` and
 [`CamundaProcessTestRuntimeDefaults`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntimeDefaults.java)
 to match the released minor version (e.g. `8.9-SNAPSHOT` for the `8.9.0` release).
 
+### Connectors version (no manual step)
+
+The Connectors image that CPT uses by default is the Maven property
+`io.camunda.process.test.connectorsDockerImageVersion` in
+[`camunda-process-test-java/pom.xml`](camunda-process-test-java/pom.xml) (the same literal exists in
+`build.gradle.kts`). It is a fixed version, not `${project.version}`, because Connectors follow their
+own release cycle and publish `X.Y.Z` only **after** Camunda `X.Y.Z`, as Connectors depends on the
+Camunda release. Nobody needs to edit it at release time:
+
+- **Renovate** keeps it current. On `main` it follows the latest Connectors release. On a stable
+  branch it is restricted to the minor line of the branch (read from the POM's parent version), so
+  `stable/8.11` moves from `8.10.x` to `8.11.0` as soon as that image exists and then follows the
+  `8.11.x` patches. The rules are in `.github/renovate.json5`.
+- **Minor releases (`X.Y.0`)**: the `Maven Perform Release` step of
+  `.github/workflows/camunda-platform-release.yml` overrides the property with the release version
+  for the published artifacts only. CPT `X.Y.0` therefore defaults to Connectors `X.Y.0`. The POM on
+  the branch is not changed, so CI keeps using the last published image. Until Connectors `X.Y.0` is
+  published, users of CPT `X.Y.0` can't start the Connectors container.
+- **Patch releases (`X.Y.Z`)**: no override. They ship the version Renovate has set at that time.
+- **Gradle** has no project version next to the literal, so on stable branches it only follows patch
+  updates. When a new stable branch is cut, update it by hand if the Gradle build matters.
+
 ### Add a compatibility-test entry
 
 In `.github/workflows/camunda-process-test-compatibility-trigger.yml`, add a `matrix` entry for the
