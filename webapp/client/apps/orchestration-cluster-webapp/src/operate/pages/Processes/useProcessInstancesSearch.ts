@@ -9,6 +9,7 @@
 import {useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import {ForbiddenError} from '#/shared/errors';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
@@ -16,6 +17,7 @@ import {mapProcessInstancesFilter, mapProcessInstancesSort, type ProcessesSearch
 
 const PAGE_LIMIT = 50;
 const RUNNING_INSTANCES_REFETCH_INTERVAL_MS = 5000;
+const MAX_RETRIES = 3;
 
 /**
  * Fetches process instances matching the current filter/sort with infinite scroll. Disabled (no
@@ -32,6 +34,7 @@ function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = t
 		queryKey: ['processInstances', filter, sort] as const,
 		enabled: filter !== undefined,
 		staleTime: 5000,
+		retry: (failureCount, error) => !(error instanceof ForbiddenError) && failureCount < MAX_RETRIES,
 		refetchInterval: isPollingEnabled && isShowingRunningInstances ? RUNNING_INSTANCES_REFETCH_INTERVAL_MS : false,
 		queryFn: async ({pageParam}): Promise<QueryProcessInstancesResponseBody> => {
 			const {response, error} = await request(
@@ -59,6 +62,8 @@ function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = t
 
 	const {
 		data,
+		error,
+		refetch,
 		status,
 		isFetching,
 		isPlaceholderData,
@@ -72,6 +77,8 @@ function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = t
 
 	return {
 		status,
+		error,
+		refetch,
 		isFetching,
 		isPlaceholderData,
 		isFetchingPreviousPage,

@@ -1388,7 +1388,9 @@
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
 					"tableLabel": "Process instances",
 					"loadingPreviousPage": "Loading previous process instances",
-					"loadingNextPage": "Loading next process instances"
+					"loadingNextPage": "Loading next process instances",
+					"errorTitle": "Couldn't fetch data",
+					"errorDescription": "Something went wrong while loading the instances. Try again."
 				},
 				"diagramHeader": {
 					"title": "Process",

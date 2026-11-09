@@ -1376,7 +1376,9 @@
 					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
 					"tableLabel": "Prozessinstanzen",
 					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
-					"loadingNextPage": "Nächste Prozessinstanzen werden geladen"
+					"loadingNextPage": "Nächste Prozessinstanzen werden geladen",
+					"errorTitle": "Daten konnten nicht abgerufen werden",
+					"errorDescription": "Beim Laden der Instanzen ist ein Fehler aufgetreten. Versuchen Sie es erneut."
 				},
 				"diagramHeader": {
 					"title": "Prozess",

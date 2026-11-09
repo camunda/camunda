@@ -1379,7 +1379,9 @@
 					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
 					"tableLabel": "Instances de processus",
 					"loadingPreviousPage": "Chargement des instances de processus précédentes",
-					"loadingNextPage": "Chargement des instances de processus suivantes"
+					"loadingNextPage": "Chargement des instances de processus suivantes",
+					"errorTitle": "Impossible de récupérer les données",
+					"errorDescription": "Une erreur s'est produite lors du chargement des instances. Réessayez."
 				},
 				"diagramHeader": {
 					"title": "Processus",
