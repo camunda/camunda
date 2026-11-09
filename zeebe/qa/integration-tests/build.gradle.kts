@@ -138,3 +138,11 @@ tasks.withType<Test>().configureEach {
     jvmArgs("-Xmx3g")
   }
 }
+
+// read by PhysicalTenantEnvSecretIsolationIT's environment-variable secret stores; mirrors the
+// failsafe <environmentVariables> in pom.xml
+tasks.named<Test>("it") {
+  environment("PT_ENV_SECRET_IT_TENANTA_API_KEY", "value-of-tenant-a")
+  environment("PT_ENV_SECRET_IT_TENANTB_API_KEY", "value-of-tenant-b")
+  environment("PT_ENV_SECRET_IT_TENANTB_ONLY_B", "only-tenant-b")
+}
