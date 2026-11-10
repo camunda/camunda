@@ -135,12 +135,11 @@ describe('<Diagram />', () => {
 		expect(getComputedStyle(diagram).getPropertyValue('--cds-layer-01')).not.toBe('');
 	});
 
-	it('should hide BPMN branding after XML import', async () => {
+	it('should show BPMN branding after XML import', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} />);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByTitle('Powered by bpmn.io')).toBeInTheDocument();
-		await expect.element(screen.getByTitle('Powered by bpmn.io')).not.toBeVisible();
+		await expect.element(screen.getByTitle('Powered by bpmn.io')).toBeVisible();
 	});
 
 	it('should call onElementSelection when a selectable element is clicked', async () => {

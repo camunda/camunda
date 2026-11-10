@@ -266,10 +266,6 @@
 		--viewer-layer: var(--neutral-background-medium);
 	}
 
-	.bjs-powered-by {
-		display: none;
-	}
-
 	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
 		stroke: var(--info-action-default) !important;
 	}
