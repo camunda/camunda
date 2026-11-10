@@ -53,15 +53,14 @@ Each step ends with a check. Do not continue until it holds.
 ### 1. Preflight (read-only)
 
 - The plan `P to R` exists on the base branch. If not, stop and add it first.
-- `project.previousVersion` in `optimize/pom.xml` is the previous minor's GA version (unchanged for
-  patch releases; the release workflow only updates it on `.0` releases).
 - `optimize/pom.xml` is at `R-SNAPSHOT`, and neither the tag `R-optimize` nor the release branch
   exists yet.
 - The Optimize integration tests (Elasticsearch and OpenSearch) and the E2E tests are green on the
-  base branch. Look at the latest completed `optimize-ci.yml` run on the branch. If a job failed
-  with "The runner has received a shutdown signal", that is infrastructure: re-run only the failed
-  job and judge the new result. Otherwise, if they are red, stop and tell the user. Do not release
-  over red Optimize ITs.
+  base branch head. They run in three separate workflows, so check the latest completed run of each
+  for the head commit: `optimize-ci.yml`, `optimize-e2e-tests-sm.yml` and
+  `optimize-e2e-test-cloud.yml`. If a job failed with "The runner has received a shutdown signal",
+  that is infrastructure: re-run only the failed job and judge the new result. Otherwise, if they
+  are red, stop and tell the user. Do not release over red Optimize ITs or E2E tests.
 - Pom-only PRs run the Optimize backend ITs on the stable branch (`maven-change` in
   `optimize-backend-changes`). If a bump PR shows the ITs as skipped, find out why.
 - Every CVE or fix PR the user wants in this release has merged into the base branch.
@@ -165,14 +164,17 @@ where it stopped:
 
 To re-run after the tag and release commits were pushed, without a force-push:
 
-1. Revert the release and next-iteration commits in a worktree off the release branch with
+1. **Confirm first that the artifact repository accepts a redeploy of `<R>`**, because the Maven
+   artifacts were already deployed. This worked for 8.7.31 (the second run passed "Perform
+   release"), but it is not guaranteed, so ask the CI owners if unsure. Do not change any shared ref
+   before this is confirmed. If redeploy is not allowed, keep the tag and the release commits as
+   they are and release the next patch instead.
+2. Revert the release and next-iteration commits in a worktree off the release branch with
    `git revert --no-commit <next-iteration-sha> <release-sha>`, commit, and push normally.
-2. Check that the tree equals the commit before the release: `git diff <pre-release-sha> HEAD` must
+3. Check that the tree equals the commit before the release: `git diff <pre-release-sha> HEAD` must
    be empty and the pom must be back at `<R>-SNAPSHOT`.
-3. Delete the tag: `git push origin :refs/tags/<R>-optimize`.
-4. Run the release workflow again with the same inputs. The Maven artifacts for `<R>` were already
-   deployed, so confirm with the CI owners that the artifact repository accepts a redeploy. If it
-   does not, release the next patch instead.
+4. Delete the tag: `git push origin :refs/tags/<R>-optimize`.
+5. Run the release workflow again with the same inputs.
 
 Never force-push a release branch. Use a revert.
 
