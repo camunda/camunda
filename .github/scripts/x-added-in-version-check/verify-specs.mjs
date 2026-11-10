@@ -681,6 +681,8 @@ function fixHintForProperty(e) {
         `        - propertyName: ${quotedName}`,
         `          addedInVersion: "${e.expected}"`,
         "```",
+        "",
+        `If \`${e.actual}\` is the version in which clients of this endpoint could first use \`${e.propName}\`, and \`${e.expected}\` isn't, keep \`${e.actual}\` and add \`addedInVersionOverride: "${e.actual}"\` to the same entry instead (see "Overriding the computed version" in the check's README). Never restructure the spec (for example, move properties into an \`allOf\` base) to satisfy this check: that changes the generated SDK types.`,
       ].join("\n");
     }
     case "UNEXPECTED_ANNOTATION_ON_SUPPRESSED":

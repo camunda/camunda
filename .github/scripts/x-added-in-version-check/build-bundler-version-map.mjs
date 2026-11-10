@@ -15,6 +15,8 @@ import 'dotenv/config';
 import { writeFileSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync } from 'fs';
 import { fetchAndBundle, specDirForRef } from 'camunda-schema-bundler';
 import YAML from 'yaml';
+import { collapseSiblingVariants } from './sibling-variant-collapse.mjs';
+import { collapseBackwardsCompat } from './backwards-compat-collapse.mjs';
 
 const yaml = { load: (source) => YAML.parse(source) };
 
@@ -445,6 +447,8 @@ async function main() {
 
   let previousOps = null;
   let previousProps = null;
+  // The bundled spec of the last (newest) version, for the sibling-variant collapse.
+  let latestSpec = null;
 
   for (const version of VERSIONS) {
     const ref = VERSION_REFS[version] ?? `${version}.0`;
@@ -546,6 +550,7 @@ async function main() {
     }
 
     const spec = result.spec;
+    latestSpec = spec;
     console.log(`    Bundled: ${result.stats.pathCount} paths, ${result.stats.schemaCount} schemas`);
 
     // Build operation → source file map, schema → source file map,
@@ -818,43 +823,24 @@ async function main() {
     }
   }
 
-  // Backwards-compat collapse: when a property re-appears in a later version
-  // on a different schema branch (oneOf split, sibling reintroduction for
-  // backwards-compatibility), branch-tagging gives every occurrence its own
-  // entry. Collapse to the MIN version across the (endpoint, location,
-  // property) triple ONLY when a fully-tagless ancestor exists — i.e. the
-  // property had a pre-polymorphic-split flat form. Without a tagless
-  // ancestor (e.g. discriminator-wrapper child re-declaring the discriminator),
-  // each branch keeps its own version because it represents a genuinely-new
-  // YAML location.
+  // Backwards-compat collapse: see backwards-compat-collapse.mjs. Runs before
+  // the sibling-variant collapse; the order is part of the contract tested in
+  // test/collapse-pipeline.test.mjs.
+  collapseBackwardsCompat(versionMap);
+
+  // Sibling-variant collapse: a property repeated on sibling oneOf/anyOf
+  // branches of the same request or response, with an identical schema, gets
+  // the earliest version among them, even without a tagless ancestor. See
+  // sibling-variant-collapse.mjs and camunda/camunda#67987.
   {
-    const cmp = (a, b) => {
-      const [aMaj, aMin] = a.split('.').map(Number);
-      const [bMaj, bMin] = b.split('.').map(Number);
-      return aMaj - bMaj || aMin - bMin;
-    };
-    const hasLeadingBranch = (qname) => /^[A-Z][^.|]*\./.test(qname);
-    const isTagless = (qname) => !qname.includes('|') && !hasLeadingBranch(qname);
-    const normalizeQname = (qname) =>
-      qname.replace(/\|[^.]+/g, '').replace(/^[A-Z][^.|]*\./, '');
-    const byTriple = new Map();
-    for (const val of Object.values(versionMap.properties)) {
-      const k = `${val.endpoint}|||${val.location}|||${normalizeQname(val.qualifiedName)}`;
-      let bucket = byTriple.get(k);
-      if (!bucket) {
-        bucket = { hasTagless: false, min: val.version, entries: [] };
-        byTriple.set(k, bucket);
-      }
-      bucket.entries.push(val);
-      if (isTagless(val.qualifiedName)) bucket.hasTagless = true;
-      if (cmp(val.version, bucket.min) < 0) bucket.min = val.version;
+    const { collapsed, skipped } = collapseSiblingVariants(versionMap, latestSpec);
+    for (const c of collapsed) {
+      console.log(`  sibling-variant collapse: ${c.propKey}  ${c.from} -> ${c.to}`);
     }
-    for (const bucket of byTriple.values()) {
-      if (!bucket.hasTagless) continue;
-      for (const val of bucket.entries) {
-        if (cmp(bucket.min, val.version) < 0) val.version = bucket.min;
-      }
-    }
+    console.log(
+      `  sibling-variant collapse: ${collapsed.length} collapsed, ` +
+      `${skipped.length} groups kept apart because their schemas differ`,
+    );
   }
 
   // ─── Summary ───────────────────────────────────────────────────────────────

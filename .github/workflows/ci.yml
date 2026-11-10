@@ -2758,10 +2758,13 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.VERIFIER_DIR }}
+      - name: Test verifier
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
+        run: npm test
       - name: Build verifier artefacts (endpoint-map + version-map)
         working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
-          # build-artefacts.mjs runs the vendored build-bundler-version-map.mjs
+          # build-artefacts.mjs runs build-bundler-version-map.mjs
           # directly, which uses LATEST_BRANCH as the camunda/camunda ref to
           # bundle as the next (in-development) version. Must be the commit
           # the step above checked out, otherwise the difference between the
