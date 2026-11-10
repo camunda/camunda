@@ -14,9 +14,8 @@ runs in production. It backs fact 3 in [write-behind-cache-design.md](write-behi
   hand. Every behavior and helper counted as production has callers itself.
 - **Limits:** this is static analysis of the source text. Line numbers are left out because they go
   stale; search for `Class#method`.
-- **Correction:** the design doc said "about 219 iteration call sites in 35 state classes". That
-  figure came from a plain text search that also matched `List#forEach`, `String#isEmpty`,
-  `Stream#count` and similar. The real number is 137.
+- **Point access:** the design doc's figure of 626 point reads and writes was counted the same way,
+  for `get`, `exists`, `insert`, `update`, `upsert`, `deleteExisting` and `deleteIfExists`.
 
 ## Summary
 

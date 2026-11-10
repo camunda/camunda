@@ -39,11 +39,12 @@ or using the cache as durable storage.
    - RocksDB lags behind (its processed position is below the lower bound). The log can then be
      compacted past records that replay still needs.
    - The checkpoint captures half a transaction. The restored state is then corrupt.
-3. **Iteration is everywhere.** The engine has about 219 iteration call sites in 35 state classes
-   (`whileEqualPrefix`, `whileTrue`, `whileTrueReverse`, `forEach`, `isEmpty`, `count`), next to
-   about 764 point-access sites. Ordered prefix scans are core: due timers, job deadlines, children
-   of an element instance, variables of a scope. A hash cache can't serve them, and RocksDB alone is
-   stale under write-behind.
+3. **Iteration is everywhere.** The engine iterates column families at 137 call sites in 47 state
+   classes, next to 626 point reads and writes (`get`, `exists`, `insert`, `update`, `upsert`,
+   `delete…`). 79 of the 137 run per command, 19 of those also during replay, and only 12 never run
+   in production; [engine-state-iteration.md](engine-state-iteration.md) lists them all. Ordered
+   prefix scans are core: due timers, job deadlines, children of an element instance, variables of
+   a scope. A hash cache can't serve them, and RocksDB alone is stale under write-behind.
 4. **Several actors share the DB.** Contexts are created by StreamProcessor, ExporterDirector,
    StateQueryService, backup/checkpoint state, DbPositionSupplier and migrations. Each context is
    single-threaded, but the store must be thread-safe across contexts.
