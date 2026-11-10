@@ -9,9 +9,6 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -25,44 +22,31 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.EngineMetricsDoc;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.micrometer.core.instrument.Counter;
 import java.util.HashSet;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableBoolean;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.io.DirectBufferInputStream;
+import org.jspecify.annotations.Nullable;
 
 public final class DbProcessState implements MutableProcessState {
 
   public static final String PROCESS_DEFINITION_RESTORE_KEY_VALUE = "process-definition-restore";
   private static final int DEFAULT_VERSION_VALUE = 0;
 
-  private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
-  private final Cache<TenantIdAndProcessIdAndVersion, DeployedProcess>
-      processesByTenantAndProcessIdAndVersionCache;
-  private final Cache<TenantIdAndProcessDefinitionKey, DeployedProcess> processByTenantAndKeyCache;
-  private final Cache<TenantIdAndProcessIdAndDeploymentKey, Long>
-      processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache;
+  private final ProcessDefinitionCache processCache;
 
   /** [tenant id | process definition key] => process */
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedProcess> processColumnFamily;
@@ -133,7 +117,6 @@ public final class DbProcessState implements MutableProcessState {
       final TransactionContext transactionContext,
       final EngineConfiguration config,
       final BpmnTransformer transformer) {
-    this.transformer = transformer;
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
@@ -217,33 +200,9 @@ public final class DbProcessState implements MutableProcessState {
             processDefinitionRestoreKey,
             DbNil.INSTANCE);
 
-    final var collectedDoc = EngineMetricsDoc.PROCESS_CACHE_COLLECTED;
-    final var collectedCounter =
-        Counter.builder(collectedDoc.getName())
-            .description(collectedDoc.getDescription())
-            .register(zeebeDb.getMeterRegistry());
-
-    processByTenantAndKeyCache =
-        newProcessCacheBuilder(config)
-            // both caches hold the same values, so counting one avoids double-counting
-            .<TenantIdAndProcessDefinitionKey, DeployedProcess>removalListener(
-                notification -> {
-                  if (notification.getCause() == RemovalCause.COLLECTED) {
-                    collectedCounter.increment();
-                  }
-                })
-            .build();
-    processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
-    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
-  }
-
-  private static CacheBuilder<Object, Object> newProcessCacheBuilder(
-      final EngineConfiguration config) {
-    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
-    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
-    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
-    return config.isProcessCacheSoftValues() ? builder.softValues() : builder;
+    processCache =
+        new ProcessDefinitionCache(
+            config, transformer, new ColumnFamilyProcessLoader(), zeebeDb.getMeterRegistry());
   }
 
   @Override
@@ -308,7 +267,7 @@ public final class DbProcessState implements MutableProcessState {
     final var process = processColumnFamily.get(tenantAwareProcessDefinitionKey);
     process.setState(state);
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
-    updateInMemoryState(process);
+    processCache.cache(process);
   }
 
   @Override
@@ -320,7 +279,7 @@ public final class DbProcessState implements MutableProcessState {
     process.setState(PersistedProcessState.DRAINING);
     process.setDeleteHistory(processRecord.isDeleteHistory());
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
-    updateInMemoryState(process);
+    processCache.cache(process);
   }
 
   @Override
@@ -349,7 +308,7 @@ public final class DbProcessState implements MutableProcessState {
     processColumnFamily.update(tenantAwareProcessDefinitionKey, process);
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.upsert(
         tenantAwareProcessIdAndDeploymentKey, fkProcessDefinitionKey);
-    invalidateCaches(
+    processCache.invalidate(
         tenantId,
         process.getBpmnProcessId(),
         processDefinitionKey,
@@ -387,7 +346,7 @@ public final class DbProcessState implements MutableProcessState {
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
         tenantAwareProcessIdAndDeploymentKey);
 
-    invalidateCaches(
+    processCache.invalidate(
         processRecord.getTenantId(),
         processRecord.getBpmnProcessIdBuffer(),
         processRecord.getProcessDefinitionKey(),
@@ -477,7 +436,7 @@ public final class DbProcessState implements MutableProcessState {
     if (processByIdAndVersionColumnFamily.exists(tenantAwareProcessIdAndVersionKey)) {
       processByIdAndVersionColumnFamily.update(tenantAwareProcessIdAndVersionKey, process);
     }
-    updateInMemoryState(process);
+    processCache.cache(process);
   }
 
   @Override
@@ -490,27 +449,6 @@ public final class DbProcessState implements MutableProcessState {
   public boolean hasRunProcessDefinitionRestore() {
     processDefinitionRestoreKey.wrapString(PROCESS_DEFINITION_RESTORE_KEY_VALUE);
     return processDefinitionRestoreColumnFamily.exists(processDefinitionRestoreKey);
-  }
-
-  private void invalidateCaches(
-      final String tenantId,
-      final DirectBuffer bpmnProcessId,
-      final long processDefinitionKey,
-      final long deploymentKey,
-      final int version) {
-    final var tenantIdAndProcessIdAndVersion =
-        new TenantIdAndProcessIdAndVersion(tenantId, bpmnProcessId, version);
-    processesByTenantAndProcessIdAndVersionCache.invalidate(tenantIdAndProcessIdAndVersion);
-
-    final var tenantIdAndProcessDefinitionKey =
-        new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
-    final var cached = processByTenantAndKeyCache.getIfPresent(tenantIdAndProcessDefinitionKey);
-    processByTenantAndKeyCache.invalidate(tenantIdAndProcessDefinitionKey);
-
-    final var tenantIdAndProcessIdAndDeploymentKey =
-        new TenantIdAndProcessIdAndDeploymentKey(tenantId, bpmnProcessId, deploymentKey);
-    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidate(
-        tenantIdAndProcessIdAndDeploymentKey);
   }
 
   private void persistProcess(final long processDefinitionKey, final ProcessRecord processRecord) {
@@ -533,83 +471,11 @@ public final class DbProcessState implements MutableProcessState {
     versionManager.addResourceVersion(bpmnProcessId, version, processRecord.getTenantId());
   }
 
-  // is called on getters, if process is not in memory
-  private DeployedProcess updateInMemoryState(final PersistedProcess persistedProcess) {
-    final PersistedProcess copiedProcess = copy(persistedProcess);
-
-    final BpmnModelInstance modelInstance =
-        readModelInstanceFromBuffer(copiedProcess.getResource());
-    // pin the pipeline to the versions frozen at deploy time (absent slots resolve to v1)
-    final List<ExecutableProcess> definitions =
-        transformer.transformDefinitions(modelInstance, copiedProcess.getTransformerVersions());
-
-    final ExecutableProcess executableProcess =
-        definitions.stream()
-            .filter(
-                process -> BufferUtil.equals(persistedProcess.getBpmnProcessId(), process.getId()))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new NoSuchElementException(
-                        String.format(
-                            "Expected to find executable process in persisted process with key '%s',"
-                                + " but after transformation no such executable process could be found.",
-                            persistedProcess.getKey())));
-
-    final DeployedProcess deployedProcess = new DeployedProcess(executableProcess, copiedProcess);
-
-    addProcessToInMemoryState(deployedProcess);
-
-    return deployedProcess;
-  }
-
-  private static PersistedProcess copy(final PersistedProcess persistedProcess) {
-    // we have to copy to store this in cache
-    final byte[] bytes = new byte[persistedProcess.getLength()];
-    final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
-    persistedProcess.write(buffer, 0);
-
-    final PersistedProcess copiedProcess = new PersistedProcess();
-    copiedProcess.wrap(buffer, 0, persistedProcess.getLength());
-    return copiedProcess;
-  }
-
-  private BpmnModelInstance readModelInstanceFromBuffer(final DirectBuffer buffer) {
-    try (final DirectBufferInputStream stream = new DirectBufferInputStream(buffer)) {
-      return Bpmn.readModelFromStream(stream);
-    }
-  }
-
-  private void addProcessToInMemoryState(final DeployedProcess deployedProcess) {
-    final DirectBuffer bpmnProcessId = deployedProcess.getBpmnProcessId();
-
-    final var key =
-        new TenantIdAndProcessDefinitionKey(
-            deployedProcess.getTenantId(), deployedProcess.getKey());
-    processByTenantAndKeyCache.put(key, deployedProcess);
-
-    final var tenantIdAndProcessIdAndVersion =
-        new TenantIdAndProcessIdAndVersion(
-            deployedProcess.getTenantId(), bpmnProcessId, deployedProcess.getVersion());
-
-    processesByTenantAndProcessIdAndVersionCache.put(
-        tenantIdAndProcessIdAndVersion, deployedProcess);
-  }
-
   @Override
   public DeployedProcess getLatestProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
     final long latestVersion = versionManager.getLatestResourceVersion(processIdBuffer, tenantId);
-    final var tenantIdAndProcessIdAndVersion =
-        new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, latestVersion);
-    final var cachedProcess =
-        processesByTenantAndProcessIdAndVersionCache.getIfPresent(tenantIdAndProcessIdAndVersion);
-
-    if (cachedProcess == null) {
-      processId.wrapBuffer(processIdBuffer);
-      return lookupProcessByIdAndPersistedVersion(latestVersion, tenantId);
-    }
-    return cachedProcess;
+    return processCache.getProcessByProcessIdAndVersion(tenantId, processIdBuffer, latestVersion);
   }
 
   /**
@@ -648,15 +514,7 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public DeployedProcess getProcessByProcessIdAndVersion(
       final DirectBuffer processId, final int version, final String tenantId) {
-    final var tenantIdAndProcessIdAndVersion =
-        new TenantIdAndProcessIdAndVersion(tenantId, processId, version);
-    final var cachedProcess =
-        processesByTenantAndProcessIdAndVersionCache.getIfPresent(tenantIdAndProcessIdAndVersion);
-
-    if (cachedProcess == null) {
-      return lookupPersistenceState(processId, version, tenantId);
-    }
-    return cachedProcess;
+    return processCache.getProcessByProcessIdAndVersion(tenantId, processId, version);
   }
 
   @Override
@@ -678,32 +536,13 @@ public final class DbProcessState implements MutableProcessState {
   @Override
   public DeployedProcess getProcessByProcessIdAndDeploymentKey(
       final DirectBuffer processIdBuffer, final long deploymentKey, final String tenantId) {
-    final var tenantIdAndProcessIdAndDeploymentKey =
-        new TenantIdAndProcessIdAndDeploymentKey(tenantId, processIdBuffer, deploymentKey);
-    var cachedProcessDefinitionKey =
-        processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.getIfPresent(
-            tenantIdAndProcessIdAndDeploymentKey);
-
-    if (cachedProcessDefinitionKey == null) {
-      cachedProcessDefinitionKey =
-          lookupPersistenceStateForProcessDefinitionKey(processIdBuffer, deploymentKey, tenantId);
-    }
-
-    return (cachedProcessDefinitionKey != null)
-        ? getProcessByKeyAndTenant(cachedProcessDefinitionKey, tenantId)
-        : null;
+    return processCache.getProcessByProcessIdAndDeploymentKey(
+        tenantId, processIdBuffer, deploymentKey);
   }
 
   @Override
   public DeployedProcess getProcessByKeyAndTenant(final long key, final String tenantId) {
-    final var tenantIdAndProcessDefinitionKey = new TenantIdAndProcessDefinitionKey(tenantId, key);
-    final DeployedProcess cachedProcess =
-        processByTenantAndKeyCache.getIfPresent(tenantIdAndProcessDefinitionKey);
-
-    if (cachedProcess == null) {
-      return lookupPersistenceStateForProcessByKey(key, tenantId);
-    }
-    return cachedProcess;
+    return processCache.getProcessByKey(tenantId, key);
   }
 
   @Override
@@ -765,9 +604,7 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void clearCache() {
-    processByTenantAndKeyCache.invalidateAll();
-    processesByTenantAndProcessIdAndVersionCache.invalidateAll();
-    processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.invalidateAll();
+    processCache.invalidateAll();
     versionManager.clear();
   }
 
@@ -776,27 +613,7 @@ public final class DbProcessState implements MutableProcessState {
       final long processDefinitionKey,
       final String tenantId,
       final ExecutableProcess executableProcess) {
-    tenantIdKey.wrapString(tenantId);
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-
-    final PersistedProcess persistedProcess =
-        processColumnFamily.get(tenantAwareProcessDefinitionKey);
-    if (persistedProcess == null) {
-      throw new IllegalStateException(
-          "Expected to cache process with key '%d' for tenant '%s', but it is not persisted"
-              .formatted(processDefinitionKey, tenantId));
-    }
-    if (!BufferUtil.equals(executableProcess.getId(), persistedProcess.getBpmnProcessId())) {
-      throw new IllegalStateException(
-          "Expected to cache process with key '%d' for tenant '%s' and bpmnProcessId '%s', but the given executable process has bpmnProcessId '%s'"
-              .formatted(
-                  processDefinitionKey,
-                  tenantId,
-                  bufferAsString(persistedProcess.getBpmnProcessId()),
-                  bufferAsString(executableProcess.getId())));
-    }
-
-    addProcessToInMemoryState(new DeployedProcess(executableProcess, copy(persistedProcess)));
+    processCache.cache(tenantId, processDefinitionKey, executableProcess);
   }
 
   @Override
@@ -869,76 +686,44 @@ public final class DbProcessState implements MutableProcessState {
     return partitions;
   }
 
-  private DeployedProcess lookupProcessByIdAndPersistedVersion(
-      final long latestVersion, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    processVersion.wrapLong(latestVersion);
+  /** Reads processes from the column families for the {@link ProcessDefinitionCache}. */
+  private final class ColumnFamilyProcessLoader implements PersistedProcessLoader {
 
-    final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
+    @Override
+    public @Nullable PersistedProcess findProcessByKey(
+        final String tenantId, final long processDefinitionKey) {
+      tenantIdKey.wrapString(tenantId);
+      DbProcessState.this.processDefinitionKey.wrapLong(processDefinitionKey);
+      return processColumnFamily.get(tenantAwareProcessDefinitionKey);
+    }
 
-    if (processWithVersionAndId != null) {
+    @Override
+    public @Nullable PersistedProcess findProcessByProcessIdAndVersion(
+        final String tenantId, final DirectBuffer bpmnProcessId, final long version) {
+      tenantIdKey.wrapString(tenantId);
+      processId.wrapBuffer(bpmnProcessId);
+      processVersion.wrapLong(version);
+
+      final PersistedProcess processWithVersionAndId =
+          processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
+      if (processWithVersionAndId == null) {
+        return null;
+      }
       // the by-version copy is written once at deployment and goes stale when the state changes
-      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
+      return findProcessByKey(tenantId, processWithVersionAndId.getKey());
     }
-    return null;
-  }
 
-  private DeployedProcess lookupPersistenceState(
-      final DirectBuffer processIdBuffer, final int version, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    processId.wrapBuffer(processIdBuffer);
-    processVersion.wrapLong(version);
+    @Override
+    public @Nullable Long findProcessDefinitionKeyByDeploymentKey(
+        final String tenantId, final DirectBuffer bpmnProcessId, final long deploymentKey) {
+      tenantIdKey.wrapString(tenantId);
+      processId.wrapBuffer(bpmnProcessId);
+      DbProcessState.this.deploymentKey.wrapLong(deploymentKey);
 
-    final PersistedProcess processWithVersionAndId =
-        processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
-
-    if (processWithVersionAndId != null) {
-      // the by-version copy is written once at deployment and goes stale when the state changes
-      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
+      final var foreignKey =
+          processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.get(
+              tenantAwareProcessIdAndDeploymentKey);
+      return foreignKey != null ? foreignKey.inner().wrappedKey().getValue() : null;
     }
-    // does not exist in persistence and in memory state
-    return null;
   }
-
-  private DeployedProcess lookupPersistenceStateForProcessByKey(
-      final long processDefinitionKey, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-
-    final PersistedProcess processWithKey =
-        processColumnFamily.get(tenantAwareProcessDefinitionKey);
-    if (processWithKey != null) {
-      return updateInMemoryState(processWithKey);
-    }
-    // does not exist in persistence and in memory state
-    return null;
-  }
-
-  private Long lookupPersistenceStateForProcessDefinitionKey(
-      final DirectBuffer processIdBuffer, final long deploymentKey, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    processId.wrapBuffer(processIdBuffer);
-    this.deploymentKey.wrapLong(deploymentKey);
-
-    final var foreignKey =
-        processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.get(
-            tenantAwareProcessIdAndDeploymentKey);
-    if (foreignKey != null) {
-      final var processDefinitionKey = foreignKey.inner().wrappedKey().getValue();
-      processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache.put(
-          new TenantIdAndProcessIdAndDeploymentKey(tenantId, processIdBuffer, deploymentKey),
-          processDefinitionKey);
-      return processDefinitionKey;
-    }
-    // does not exist in persistence and in memory state
-    return null;
-  }
-
-  record TenantIdAndProcessIdAndVersion(String tenantId, DirectBuffer processId, long Version) {}
-
-  record TenantIdAndProcessDefinitionKey(String tenantId, long processDefinitionKey) {}
-
-  record TenantIdAndProcessIdAndDeploymentKey(
-      String tenantId, DirectBuffer processId, long deploymentKey) {}
 }
