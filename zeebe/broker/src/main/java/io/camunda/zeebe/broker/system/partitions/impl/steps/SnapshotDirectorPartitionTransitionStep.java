@@ -32,7 +32,10 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
             || targetRole == Role.INACTIVE)) {
       final var director = context.getSnapshotDirector();
       context.getComponentHealthMonitor().removeComponent(director);
-      context.getRaftPartition().getServer().removeCommittedEntryListener(director);
+      final var logStream = context.getLogStream();
+      if (logStream != null) {
+        logStream.removeCommittedPositionListener(director);
+      }
       final ActorFuture<Void> future = director.closeAsync();
       future.onComplete(
           (ok, error) -> {
@@ -81,7 +84,9 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
                 context.setSnapshotDirector(director);
                 context.getComponentHealthMonitor().registerComponent(director);
                 if (targetRole == Role.LEADER) {
-                  server.addCommittedEntryListener(director);
+                  // through the log stream rather than Raft, so that it also hears of commits to a
+                  // log storage that does not commit through Raft
+                  context.getLogStream().registerCommittedPositionListener(director);
 
                   // Raft server will only notify if there is a new entry commited. If the node has
                   // just restarted or transitioned to leader, but there are no new processing

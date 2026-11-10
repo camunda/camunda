@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -38,9 +38,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftApplicationEntryCommittedPositionListener,
-        HealthMonitorable,
-        SnapshotTransferService.TakeSnapshot {
+    implements CommittedPositionListener, HealthMonitorable, SnapshotTransferService.TakeSnapshot {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -388,6 +386,10 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
+  public void onCommittedPosition(final long highestPosition) {
+    newPositionCommitted(highestPosition);
+  }
+
   public void onCommit(final long committedPosition) {
     newPositionCommitted(committedPosition);
   }
