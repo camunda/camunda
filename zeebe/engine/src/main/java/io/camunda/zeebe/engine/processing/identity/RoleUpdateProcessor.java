@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -28,11 +27,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to update role with ID '%s', but a role with this ID does not exist.";
-  public static final String ROLE_PROTECTED_ERROR_MESSAGE =
-      "Expected to update role with ID '%s', which is a default role and cannot be modified.";
   private final RoleState roleState;
+  private final RoleValidator roleValidator;
   private final KeyGenerator keyGenerator;
   private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
@@ -42,11 +38,13 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
 
   public RoleUpdateProcessor(
       final RoleState roleState,
+      final RoleValidator roleValidator,
       final KeyGenerator keyGenerator,
       final PermissionsBehavior permissionsBehavior,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.roleState = roleState;
+    this.roleValidator = roleValidator;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
     stateWriter = writers.state();
@@ -58,34 +56,21 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var roleId = record.getRoleId();
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
-            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, roleId);
+            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, record.getRoleId());
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    if (roleId != null && DefaultRole.ids().contains(roleId)) {
-      final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.INVALID_STATE, errorMessage);
+    final var validation = roleValidator.validateUpdate(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
-    final var persistedRecord = roleState.getRole(record.getRoleId());
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var persistedRole = persistedRecord.get();
+    final var persistedRole = roleState.getRole(record.getRoleId()).orElseThrow();
     record.setRoleKey(persistedRole.getRoleKey());
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.UPDATED, record);
     responseWriter.writeAcceptedResponseOnCommand(
@@ -103,5 +88,10 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     stateWriter.appendFollowUpEvent(
         command.getValue().getRoleKey(), RoleIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void reject(final TypedRecord<RoleRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 }
