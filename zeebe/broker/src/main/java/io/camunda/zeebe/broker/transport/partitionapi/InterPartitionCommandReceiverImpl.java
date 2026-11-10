@@ -58,6 +58,17 @@ final class InterPartitionCommandReceiverImpl {
   }
 
   ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
+    return handle(memberId, message).thenAccept(written -> {}, concurrencyControl);
+  }
+
+  /**
+   * Handles a message in the same way for every source. A caller that must know what happened to
+   * the message, for example because it removes the message from a mailbox, uses the result.
+   *
+   * @return a future that completes with true if the command is written to the log, and with false
+   *     if it was dropped or the log did not take it
+   */
+  ActorFuture<Boolean> handle(final MemberId memberId, final byte[] message) {
     LOG.trace("Received message from {}", memberId);
 
     final var decoded = decoder.decodeMessage(message);
@@ -69,7 +80,7 @@ final class InterPartitionCommandReceiverImpl {
           decoded.metadata.getIntent(),
           memberId,
           decoded.checkpointId);
-      return CompletableActorFuture.completed();
+      return CompletableActorFuture.completed(false);
     }
 
     if (shouldTakeSnapshot(decoded)) {
@@ -83,31 +94,33 @@ final class InterPartitionCommandReceiverImpl {
                       decoded.checkpointId,
                       error);
                 }
-                writeCheckpointAndCommand(
-                    memberId, decoded, error == null ? snapshotId : Optional.empty());
-                return CompletableActorFuture.completed();
+                return CompletableActorFuture.completed(
+                    writeCheckpointAndCommand(
+                        memberId, decoded, error == null ? snapshotId : Optional.empty()));
               },
               concurrencyControl);
     }
 
-    writeCheckpointAndCommand(memberId, decoded, Optional.empty());
-    return CompletableActorFuture.completed();
+    return CompletableActorFuture.completed(
+        writeCheckpointAndCommand(memberId, decoded, Optional.empty()));
   }
 
-  private void writeCheckpointAndCommand(
+  private boolean writeCheckpointAndCommand(
       final MemberId memberId, final DecodedMessage decoded, final Optional<String> snapshotId) {
     if (isNewCheckpoint(decoded)) {
       final var checkpointWritten = writeCheckpoint(decoded, snapshotId);
       if (checkpointWritten.isLeft()) {
         // It's unsafe to write this record without first writing the checkpoint, bail out early.
         logCheckpointFailure(memberId, decoded, checkpointWritten);
-        return;
+        return false;
       }
     } else {
       releaseSnapshotReservation(decoded.checkpointId, snapshotId);
     }
 
-    writeCommand(decoded).ifLeft(failure -> logWriteFailure(memberId, decoded, failure));
+    final var commandWritten = writeCommand(decoded);
+    commandWritten.ifLeft(failure -> logWriteFailure(memberId, decoded, failure));
+    return commandWritten.isRight();
   }
 
   private void logCheckpointFailure(

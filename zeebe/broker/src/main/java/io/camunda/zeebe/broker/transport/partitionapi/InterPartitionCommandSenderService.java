@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import org.jspecify.annotations.Nullable;
 
 public final class InterPartitionCommandSenderService extends Actor
     implements InterPartitionCommandSender, CheckpointListener, TopologyPartitionListener {
@@ -29,8 +30,23 @@ public final class InterPartitionCommandSenderService extends Actor
       final PartitionId partitionId,
       final ClusterCommunicationService communicationService,
       final String sendingSubjectPrefix) {
+    this(partitionId, communicationService, sendingSubjectPrefix, null, null);
+  }
+
+  /**
+   * @param mailbox the path for partitions that are out of reach, or null to not use a mailbox
+   * @param simulatedZone see {@link InterPartitionCommandSenderImpl}. Null in a real deployment.
+   */
+  public InterPartitionCommandSenderService(
+      final PartitionId partitionId,
+      final ClusterCommunicationService communicationService,
+      final String sendingSubjectPrefix,
+      final @Nullable InterPartitionMailbox mailbox,
+      final @Nullable String simulatedZone) {
     super("InterPartitionCommandSenderService", partitionId);
-    commandSender = new InterPartitionCommandSenderImpl(communicationService, sendingSubjectPrefix);
+    commandSender =
+        new InterPartitionCommandSenderImpl(
+            communicationService, sendingSubjectPrefix, mailbox, simulatedZone);
   }
 
   @Override

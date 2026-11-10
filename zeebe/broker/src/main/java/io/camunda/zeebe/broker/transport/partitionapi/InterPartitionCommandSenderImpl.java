@@ -14,6 +14,11 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderEncoder;
+import io.camunda.zeebe.mailbox.GossipViewReachability;
+import io.camunda.zeebe.mailbox.LeaderInfo;
+import io.camunda.zeebe.mailbox.LeaderView;
+import io.camunda.zeebe.mailbox.MessageRouter;
+import io.camunda.zeebe.mailbox.ZoneFilteredLeaderView;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -22,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
+import java.util.Optional;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.NullMarked;
@@ -41,11 +47,39 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
   private CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
   private final String sendingSubjectPrefix;
+  private final @Nullable InterPartitionMailbox mailbox;
+  private final MessageRouter router;
 
   public InterPartitionCommandSenderImpl(
       final ClusterCommunicationService communicationService, final String sendingSubjectPrefix) {
+    this(communicationService, sendingSubjectPrefix, null, null);
+  }
+
+  /**
+   * @param mailbox the path for partitions that are out of reach, or null to not use a mailbox.
+   *     Then a command to a partition without a known leader is not sent.
+   * @param simulatedZone for tests and a proof of concept in one network. If set, the leaders of
+   *     other zones count as out of reach, as they are when the regions are separated. Null in a
+   *     real deployment.
+   */
+  public InterPartitionCommandSenderImpl(
+      final ClusterCommunicationService communicationService,
+      final String sendingSubjectPrefix,
+      final @Nullable InterPartitionMailbox mailbox,
+      final @Nullable String simulatedZone) {
     this.communicationService = communicationService;
     this.sendingSubjectPrefix = sendingSubjectPrefix;
+    this.mailbox = mailbox;
+
+    final LeaderView knownLeaders =
+        partitionId ->
+            Optional.ofNullable(partitionLeaders.get(partitionId))
+                .map(leader -> new LeaderInfo(leader.id(), leader.zone()));
+    final LeaderView visibleLeaders =
+        simulatedZone == null
+            ? knownLeaders
+            : new ZoneFilteredLeaderView(knownLeaders, simulatedZone);
+    router = new MessageRouter(new GossipViewReachability(visibleLeaders));
   }
 
   @Override
@@ -75,8 +109,12 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final @Nullable Long recordKey,
       final UnifiedRecordValue command,
       final @Nullable AuthInfo authInfo) {
+    final var mailboxPath =
+        mailbox != null && router.route(receiverPartitionId) == MessageRouter.Route.MAILBOX
+            ? mailbox
+            : null;
     final var partitionLeader = partitionLeaders.get(receiverPartitionId);
-    if (partitionLeader == null) {
+    if (mailboxPath == null && partitionLeader == null) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
           valueType,
@@ -86,11 +124,11 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
     }
 
     LOG.trace(
-        "Sending command {} {} to partition {}, leader {}",
+        "Sending command {} {} to partition {}, {}",
         valueType,
         intent,
         receiverPartitionId,
-        partitionLeader);
+        mailboxPath != null ? "through the mailbox" : "leader " + partitionLeader);
 
     final var message =
         Encoder.encode(
@@ -102,6 +140,11 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
             recordKey,
             command,
             authInfo);
+
+    if (mailboxPath != null) {
+      mailboxPath.send(receiverPartitionId, message);
+      return;
+    }
 
     communicationService.unicast(
         sendingSubjectPrefix + receiverPartitionId,

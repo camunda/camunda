@@ -33,7 +33,7 @@ import org.slf4j.Logger;
  * failure, are ignored. The sender is responsible for recognizing failures and retrying.
  */
 public final class InterPartitionCommandReceiverActor extends Actor
-    implements DiskSpaceUsageListener, CheckpointListener {
+    implements DiskSpaceUsageListener, CheckpointListener, MailboxCommandHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
   private final InterPartitionCommandReceiverImpl receiver;
@@ -98,6 +98,50 @@ public final class InterPartitionCommandReceiverActor extends Actor
       previousMessageHandled =
           previousMessageHandled.andThen(
               (ignored, previousError) -> handleMessage(memberId, message), actor::submit);
+    }
+  }
+
+  /**
+   * Handles a message from the mailbox. It joins the same queue as the messages from the network,
+   * so a command is never written before the checkpoint it depends on. Unlike a message from the
+   * network, the outcome is reported, because the mailbox removes the message only after its
+   * command is in the log.
+   */
+  @Override
+  public ActorFuture<Boolean> handleMailboxMessage(final MemberId sender, final byte[] message) {
+    final var result = new CompletableActorFuture<Boolean>();
+    actor.run(
+        () -> {
+          final ActorFuture<Boolean> handled;
+          if (previousMessageHandled.isDone()) {
+            handled = handleMailboxMessageNow(sender, message);
+          } else {
+            handled =
+                previousMessageHandled.andThen(
+                    (ignored, previousError) -> handleMailboxMessageNow(sender, message),
+                    actor::submit);
+          }
+          previousMessageHandled = handled.thenAccept(written -> {}, actor::submit);
+          handled.onComplete(
+              (written, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                } else {
+                  result.complete(written);
+                }
+              },
+              actor);
+        });
+    return result;
+  }
+
+  private ActorFuture<Boolean> handleMailboxMessageNow(
+      final MemberId sender, final byte[] message) {
+    try {
+      return receiver.handle(sender, message);
+    } catch (final RuntimeException e) {
+      LOG.error("Error while handling message from the mailbox", e);
+      return CompletableActorFuture.completedExceptionally(e);
     }
   }
 
