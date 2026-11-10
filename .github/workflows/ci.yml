@@ -1021,13 +1021,15 @@ jobs:
               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      # Must cover the same modules as maven-dependency-snapshot.yml, which submits the base
+      # snapshot the vulnerability gate diffs against.
       - name: Submit Maven dependency snapshot
         id: submit
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
         with:
           token: ${{ github.token }}
           maven-args: >-
-            -pl bom,clients/java,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-4-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -pl bom,clients/java,clients/spring-boot-starter-camunda-sdk,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-4-starter,zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: submit-maven-snapshot-maven

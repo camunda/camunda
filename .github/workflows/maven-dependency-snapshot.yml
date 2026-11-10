@@ -70,19 +70,27 @@ jobs:
               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
-      # Scope to shipped modules only (mirrors JAVA_PROJECTS in zeebe-snyk.yml).
-      # -am resolves the full transitive tree including BOM-pinned versions.
-      # The Spring Boot starter was renamed between main and stable branches, so detect dynamically.
-      - name: Detect Spring Boot starter module path
+      # Scope to shipped modules only. -am resolves the full transitive tree including BOM-pinned
+      # versions.
+      # The PR-side snapshot in ci.yml (pr-maven-snapshot) must cover the same modules: the
+      # vulnerability gate diffs that snapshot against this one, so a module present only on the
+      # PR side has all of its dependencies reported as newly added.
+      # The Spring Boot starters differ between main and stable branches (stable/8.7 ships the SDK
+      # starter plus the Spring Boot 3 and 4 starters), so include every one that exists.
+      - name: Detect Spring Boot starter module paths
         run: |
-          if [ -d "clients/camunda-spring-boot-starter" ]; then
-            echo "SPRING_STARTER_MODULE=clients/camunda-spring-boot-starter" >> "$GITHUB_ENV"
-          elif [ -d "clients/spring-boot-starter-camunda-sdk" ]; then
-            echo "SPRING_STARTER_MODULE=clients/spring-boot-starter-camunda-sdk" >> "$GITHUB_ENV"
-          else
-            echo "ERROR: neither clients/camunda-spring-boot-starter nor clients/spring-boot-starter-camunda-sdk found" >&2
+          modules=()
+          for m in clients/camunda-spring-boot-starter clients/spring-boot-starter-camunda-sdk \
+                   clients/camunda-spring-boot-3-starter clients/camunda-spring-boot-4-starter; do
+            if [ -d "$m" ]; then
+              modules+=("$m")
+            fi
+          done
+          if [ "${#modules[@]}" -eq 0 ]; then
+            echo "ERROR: no Spring Boot starter module found under clients/" >&2
             exit 1
           fi
+          (IFS=,; echo "SPRING_STARTER_MODULES=${modules[*]}") >> "$GITHUB_ENV"
       # Warm ~/.m2 (incl. the incremental-module-builder build extension) with retries so a
       # transient Nexus mirror blip during resolution can't fail the snapshot submission (INC-8321).
       # The submission step below then resolves from the local repo instead of re-hitting Nexus.
@@ -103,7 +111,7 @@ jobs:
           shell: bash
           command: >-
             ./mvnw -B -U -T1C dependency:go-offline
-            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULE }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULES }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
       - name: Submit Maven dependency snapshot
@@ -111,7 +119,7 @@ jobs:
         with:
           token: ${{ github.token }}
           maven-args: >-
-            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULE }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
+            -pl bom,clients/java,${{ env.SPRING_STARTER_MODULES }},zeebe/bpmn-model,zeebe/exporter-api,zeebe/gateway-protocol-impl,zeebe/protocol
             -am
             -Dquickly
           correlator: ${{ github.job }}-maven
