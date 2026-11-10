@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_suspension_parallel" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="user_task_suspension_parallel" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>start_split</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="start_split" sourceRef="start" targetRef="split" />
+    <bpmn:parallelGateway id="split">
+      <bpmn:incoming>start_split</bpmn:incoming>
+      <bpmn:outgoing>split_multi</bpmn:outgoing>
+      <bpmn:outgoing>split_single</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="split_multi" sourceRef="split" targetRef="multi_task" />
+    <bpmn:userTask id="multi_task" name="Review item">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>split_multi</bpmn:incoming>
+      <bpmn:outgoing>multi_join</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=[1,2,3]" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="multi_join" sourceRef="multi_task" targetRef="join" />
+    <bpmn:sequenceFlow id="split_single" sourceRef="split" targetRef="single_task" />
+    <bpmn:userTask id="single_task" name="Review summary">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>split_single</bpmn:incoming>
+      <bpmn:outgoing>single_join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="single_join" sourceRef="single_task" targetRef="join" />
+    <bpmn:parallelGateway id="join">
+      <bpmn:incoming>multi_join</bpmn:incoming>
+      <bpmn:incoming>single_join</bpmn:incoming>
+      <bpmn:outgoing>join_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="join_end" sourceRef="join" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>join_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_suspension_parallel">
+    <bpmndi:BPMNPlane id="Plane_suspension_parallel" bpmnElement="user_task_suspension_parallel">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="100" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="split_di" bpmnElement="split">
+        <dc:Bounds x="190" y="145" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="multi_task_di" bpmnElement="multi_task">
+        <dc:Bounds x="300" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="single_task_di" bpmnElement="single_task">
+        <dc:Bounds x="300" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="join_di" bpmnElement="join">
+        <dc:Bounds x="460" y="145" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="570" y="152" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="start_split_di" bpmnElement="start_split">
+        <di:waypoint x="136" y="170" />
+        <di:waypoint x="190" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="split_multi_di" bpmnElement="split_multi">
+        <di:waypoint x="215" y="145" />
+        <di:waypoint x="215" y="100" />
+        <di:waypoint x="300" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="split_single_di" bpmnElement="split_single">
+        <di:waypoint x="215" y="195" />
+        <di:waypoint x="215" y="240" />
+        <di:waypoint x="300" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="multi_join_di" bpmnElement="multi_join">
+        <di:waypoint x="400" y="100" />
+        <di:waypoint x="485" y="100" />
+        <di:waypoint x="485" y="145" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="single_join_di" bpmnElement="single_join">
+        <di:waypoint x="400" y="240" />
+        <di:waypoint x="485" y="240" />
+        <di:waypoint x="485" y="195" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="join_end_di" bpmnElement="join_end">
+        <di:waypoint x="510" y="170" />
+        <di:waypoint x="570" y="170" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

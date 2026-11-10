@@ -174,6 +174,18 @@ export async function createInstanceOnceDeployed(
   }
 }
 
+export async function deployProcessModel(
+  modelId: string,
+  substitutions: Record<string, string> = {},
+) {
+  const processDefinitionId = uniquePrefixedId(modelId);
+  await deployWithSubstitutions(`./resources/${modelId}.bpmn`, {
+    [modelId]: processDefinitionId,
+    ...substitutions,
+  });
+  return processDefinitionId;
+}
+
 /**
  * Process id and job type are substituted together so a parallel worker's poller
  * cannot activate another test's job.

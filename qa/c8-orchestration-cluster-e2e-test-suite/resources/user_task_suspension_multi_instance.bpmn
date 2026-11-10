@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_suspension_multi_instance" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="user_task_suspension_multi_instance" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>start_task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="start_task" sourceRef="start" targetRef="review" />
+    <bpmn:userTask id="review" name="Review item">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>start_task</bpmn:incoming>
+      <bpmn:outgoing>task_end</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false">
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="task_end" sourceRef="review" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>task_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_suspension_multi_instance">
+    <bpmndi:BPMNPlane id="Plane_suspension_multi_instance" bpmnElement="user_task_suspension_multi_instance">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="100" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review_di" bpmnElement="review">
+        <dc:Bounds x="200" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="370" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="start_task_di" bpmnElement="start_task">
+        <di:waypoint x="136" y="120" />
+        <di:waypoint x="200" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="task_end_di" bpmnElement="task_end">
+        <di:waypoint x="300" y="120" />
+        <di:waypoint x="370" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
