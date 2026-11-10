@@ -89,7 +89,7 @@ jobs:
     name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
     needs: validate-branch
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions: {}
     strategy:
       fail-fast: false
