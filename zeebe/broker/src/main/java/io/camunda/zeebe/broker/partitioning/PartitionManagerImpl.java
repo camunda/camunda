@@ -65,6 +65,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +118,8 @@ public final class PartitionManagerImpl
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final FeatureFlags featureFlags,
       final SecretStoreRegistry secretStoreRegistry,
-      final TopologyManagerImpl topologyManager) {
+      final TopologyManagerImpl topologyManager,
+      final @Nullable DataSource engineStateDataSource) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -159,7 +162,8 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            engineStateDataSource);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

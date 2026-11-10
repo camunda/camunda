@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,7 @@ public class SpringBrokerBridge {
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
   private Function<String, Runnable> tenantSchemaInitializer;
+  private DataSource engineStateDataSource;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -126,6 +128,15 @@ public class SpringBrokerBridge {
   public Optional<Runnable> getSchemaInitializer(final String physicalTenantId) {
     return Optional.ofNullable(tenantSchemaInitializer)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /** Experimental: registers the connection pool of the RDBMS engine state. */
+  public void registerEngineStateDataSource(final DataSource engineStateDataSource) {
+    this.engineStateDataSource = engineStateDataSource;
+  }
+
+  public Optional<DataSource> getEngineStateDataSource() {
+    return Optional.ofNullable(engineStateDataSource);
   }
 
   /**

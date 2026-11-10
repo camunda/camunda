@@ -60,6 +60,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Class encapsulating all the information about a partition that are needed during bootstrap and
@@ -96,6 +98,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ZeebeDb zeebeDb;
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
+  private @Nullable DataSource engineStateDataSource;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
   private QueryService queryService;
@@ -328,6 +331,15 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
+  }
+
+  @Override
+  public @Nullable DataSource getEngineStateDataSource() {
+    return engineStateDataSource;
+  }
+
+  public void setEngineStateDataSource(final @Nullable DataSource engineStateDataSource) {
+    this.engineStateDataSource = engineStateDataSource;
   }
 
   @Override

@@ -9,6 +9,8 @@ package io.camunda.zeebe.db.impl.jdbc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.sql.BatchUpdateException;
@@ -16,10 +18,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLTransientException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 final class JdbcTransactionContextTest {
 
+  private String url;
   private Connection connection;
   private Connection observer;
   private JdbcTransactionContext context;
@@ -38,7 +44,7 @@ final class JdbcTransactionContextTest {
 
   @BeforeEach
   void setUp() throws SQLException {
-    final var url = "jdbc:h2:mem:" + UUID.randomUUID();
+    url = "jdbc:h2:mem:" + UUID.randomUUID();
     connection = DriverManager.getConnection(url);
     observer = DriverManager.getConnection(url);
     try (final var statement = observer.createStatement()) {
@@ -66,7 +72,7 @@ final class JdbcTransactionContextTest {
     transaction.commit();
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a", 2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a", 2L, "b"));
     assertThat(participant.flushes).isOne();
     assertThat(participant.resets).isOne();
     assertThat(participant.staged).isEmpty();
@@ -101,7 +107,7 @@ final class JdbcTransactionContextTest {
     next.commit();
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(2L, "b"));
   }
 
   @Test
@@ -110,7 +116,7 @@ final class JdbcTransactionContextTest {
     context.runInTransaction(() -> participant.stage(1, "a"));
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
     assertThat(participant.resets).isOne();
   }
 
@@ -130,7 +136,7 @@ final class JdbcTransactionContextTest {
     // then
     assertThat(visibleAfterInner).isEmpty();
     assertThat(participant.flushes).isOne();
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "outer", 2L, "inner"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "outer", 2L, "inner"));
   }
 
   @Test
@@ -189,7 +195,7 @@ final class JdbcTransactionContextTest {
     context.runInTransaction(() -> participant.stage(2, "b"));
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(2L, "b"));
   }
 
   @Test
@@ -205,7 +211,7 @@ final class JdbcTransactionContextTest {
         // then
         .isExactlyInstanceOf(RuntimeException.class)
         .hasCauseInstanceOf(SQLException.class);
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "conflict"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "conflict"));
     assertThat(participant.resets).isZero();
     assertThat(participant.staged).hasSize(2);
 
@@ -214,7 +220,7 @@ final class JdbcTransactionContextTest {
     transaction.commit();
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a", 2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a", 2L, "b"));
     assertThat(participant.resets).isOne();
   }
 
@@ -238,7 +244,7 @@ final class JdbcTransactionContextTest {
     transaction.commit();
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a", 2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a", 2L, "b"));
     assertThat(participant.flushes).isEqualTo(2);
     assertThat(participant.resets).isOne();
   }
@@ -256,7 +262,7 @@ final class JdbcTransactionContextTest {
 
     // then
     assertThat(visibleBeforeCommit).isEmpty();
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a", 2L, "b"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a", 2L, "b"));
   }
 
   @Test
@@ -271,7 +277,7 @@ final class JdbcTransactionContextTest {
 
     // then
     assertThat(visibleBeforeCommit).isEmpty();
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
   }
 
   @Test
@@ -291,9 +297,9 @@ final class JdbcTransactionContextTest {
     transaction.commit();
 
     // then
-    assertThat(ownView).containsExactlyEntriesOf(Map.of(1L, "direct"));
+    assertThat(ownView).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "direct"));
     assertThat(observerView).isEmpty();
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "direct"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "direct"));
   }
 
   @ParameterizedTest
@@ -315,7 +321,7 @@ final class JdbcTransactionContextTest {
     transaction.commit();
 
     // then
-    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
   }
 
   @Test
@@ -330,6 +336,109 @@ final class JdbcTransactionContextTest {
         // then
         .isExactlyInstanceOf(RuntimeException.class)
         .hasCauseInstanceOf(SQLException.class);
+  }
+
+  @Test
+  void shouldFlushStagedWritesOnNewConnectionWhenCommitIsRetriedAfterConnectionBroke()
+      throws Exception {
+    // given
+    final var borrowed = new ArrayList<Connection>();
+    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
+    final var pooledContext = new JdbcTransactionContext(connections);
+    pooledContext.register(participant);
+    final var transaction = pooledContext.getCurrentTransaction();
+    participant.stage(1, "a");
+    final var broken = pooledContext.connection();
+    broken.close();
+
+    // when
+    assertThatThrownBy(transaction::commit)
+        // then
+        .isInstanceOf(ZeebeDbException.class);
+    assertThat(participant.staged).hasSize(1);
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
+    assertThat(borrowed).hasSize(2);
+    final var replacement = pooledContext.connection();
+    assertThat(replacement).isSameAs(borrowed.getLast()).isNotSameAs(broken);
+    assertThat(replacement.getAutoCommit()).isFalse();
+
+    // when
+    connections.close();
+
+    // then
+    assertThat(replacement.isClosed()).isTrue();
+  }
+
+  @Test
+  void shouldReplaceConnectionWhenCommitFailsWithConnectionError() throws Exception {
+    // given
+    final var borrowed = new ArrayList<Connection>();
+    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
+    final var pooledContext = new JdbcTransactionContext(connections);
+    pooledContext.register(participant);
+    final var transaction = pooledContext.getCurrentTransaction();
+    participant.stage(1, "a");
+    participant.failNextFlushWith = new SQLException("connection lost", "08006");
+    final var first = pooledContext.connection();
+
+    // when
+    assertThatThrownBy(transaction::commit)
+        // then
+        .isInstanceOf(ZeebeDbException.class);
+    assertThat(first.isClosed()).isTrue();
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
+    assertThat(pooledContext.connection()).isNotSameAs(first);
+  }
+
+  @Test
+  void shouldKeepConnectionWhenCommitFailsWithOtherError() throws Exception {
+    // given
+    final var borrowed = new ArrayList<Connection>();
+    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
+    final var pooledContext = new JdbcTransactionContext(connections);
+    pooledContext.register(participant);
+    insertFromObserver(1, "conflict");
+    final var transaction = pooledContext.getCurrentTransaction();
+    participant.stage(1, "a");
+
+    // when
+    assertThatThrownBy(transaction::commit)
+        // then
+        .isExactlyInstanceOf(RuntimeException.class);
+    assertThat(borrowed).hasSize(1);
+    assertThat(pooledContext.connection()).isSameAs(borrowed.getFirst());
+    assertThat(borrowed.getFirst().isClosed()).isFalse();
+  }
+
+  @Test
+  void shouldDiscardBrokenConnectionOnRollback() throws Exception {
+    // given
+    final var borrowed = new ArrayList<Connection>();
+    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
+    final var pooledContext = new JdbcTransactionContext(connections);
+    pooledContext.register(participant);
+    final var transaction = pooledContext.getCurrentTransaction();
+    participant.stage(1, "a");
+    final var broken = pooledContext.connection();
+    broken.close();
+
+    // when
+    transaction.rollback();
+    pooledContext.runInTransaction(() -> participant.stage(2, "b"));
+
+    // then
+    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(2L, "b"));
+    assertThat(pooledContext.connection()).isNotSameAs(broken);
   }
 
   /**
@@ -349,6 +458,19 @@ final class JdbcTransactionContextTest {
             Named.of("connection failure", new SQLException("connection refused", "08006"))),
         Arguments.of(Named.of("batch with retryable SQLState", batchFailure)),
         Arguments.of(Named.of("batch wrapping retryable error", wrappedBatchFailure)));
+  }
+
+  /** A data source handing out a new connection to the test database on every call. */
+  private DataSource dataSourceRecording(final List<Connection> borrowed) throws SQLException {
+    final var dataSource = mock(DataSource.class);
+    when(dataSource.getConnection())
+        .thenAnswer(
+            ignored -> {
+              final var newConnection = DriverManager.getConnection(url);
+              borrowed.add(newConnection);
+              return newConnection;
+            });
+    return dataSource;
   }
 
   private Map<Long, String> visibleRows() throws SQLException {

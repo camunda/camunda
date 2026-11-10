@@ -13,10 +13,18 @@ package io.camunda.zeebe.broker.system.configuration;
  * on every start.
  */
 public final class RdbmsEngineStateCfg {
+  private static final int DEFAULT_POOL_SIZE = 4;
+
   private boolean enabled = false;
   private String url;
   private String username;
   private String password;
+
+  /**
+   * Each partition holds one connection while its stream processor runs, so the pool needs at least
+   * one connection per partition on this broker.
+   */
+  private int poolSize = DEFAULT_POOL_SIZE;
 
   public boolean isEnabled() {
     return enabled;
@@ -50,6 +58,14 @@ public final class RdbmsEngineStateCfg {
     this.password = password;
   }
 
+  public int getPoolSize() {
+    return poolSize;
+  }
+
+  public void setPoolSize(final int poolSize) {
+    this.poolSize = poolSize;
+  }
+
   @Override
   public String toString() {
     return "RdbmsEngineStateCfg{"
@@ -61,6 +77,9 @@ public final class RdbmsEngineStateCfg {
         + ", username='"
         + username
         + '\''
-        + ", password='<redacted>'}";
+        + ", password='<redacted>'"
+        + ", poolSize="
+        + poolSize
+        + '}';
   }
 }

@@ -58,6 +58,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import javax.sql.DataSource;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -315,6 +316,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
+  }
+
+  @Override
+  public DataSource getEngineStateDataSource() {
+    return null;
   }
 
   @Override

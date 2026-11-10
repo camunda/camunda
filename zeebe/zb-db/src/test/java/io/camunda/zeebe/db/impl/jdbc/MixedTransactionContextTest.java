@@ -84,7 +84,7 @@ final class MixedTransactionContextTest {
     // then
     assertThat(rocksDbCommittedDuringFlush).containsExactly(false);
     assertThat(isCommittedInRocksDb(1)).isTrue();
-    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(1L, 10L));
+    assertThat(committedJdbcRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, 10L));
   }
 
   @Test
@@ -107,7 +107,7 @@ final class MixedTransactionContextTest {
     next.commit();
     assertThat(isCommittedInRocksDb(1)).isFalse();
     assertThat(isCommittedInRocksDb(2)).isTrue();
-    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(2L, 20L));
+    assertThat(committedJdbcRows()).containsExactlyInAnyOrderEntriesOf(Map.of(2L, 20L));
   }
 
   @Test
@@ -128,7 +128,7 @@ final class MixedTransactionContextTest {
     assertThat(committedAfterInner).containsExactly(false, false);
     assertThat(isCommittedInRocksDb(1)).isTrue();
     assertThat(isCommittedInRocksDb(2)).isTrue();
-    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(1L, 10L, 2L, 20L));
+    assertThat(committedJdbcRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, 10L, 2L, 20L));
   }
 
   @Test

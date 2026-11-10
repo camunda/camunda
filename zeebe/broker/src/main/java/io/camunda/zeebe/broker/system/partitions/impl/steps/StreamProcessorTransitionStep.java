@@ -25,6 +25,7 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,9 +171,12 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var builder = StreamProcessor.builder();
     final var rdbmsEngineStateCfg = experimentalCfg.getRdbmsEngineState();
     if (rdbmsEngineStateCfg.isEnabled()) {
+      final var dataSource =
+          Objects.requireNonNull(
+              context.getEngineStateDataSource(),
+              "Expected an engine state DataSource, since the RDBMS engine state is enabled");
       final var mixedDb =
-          RdbmsEngineStateDb.open(
-              context.getZeebeDb(), rdbmsEngineStateCfg, context.getPartitionId());
+          RdbmsEngineStateDb.open(context.getZeebeDb(), dataSource, context.getPartitionId());
       builder.zeebeDb(mixedDb).addLifecycleListener(new MixedDbCloser(mixedDb));
     } else {
       builder.zeebeDb(context.getZeebeDb());
@@ -218,7 +222,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .build();
   }
 
-  /** Closes the JDBC connection of the mixed engine state; the RocksDB db stays open. */
+  /**
+   * Returns the JDBC connection of the mixed engine state to its pool; the RocksDB db stays open.
+   */
   private record MixedDbCloser(MixedZeebeDb<?> mixedDb) implements StreamProcessorLifecycleAware {
 
     @Override
