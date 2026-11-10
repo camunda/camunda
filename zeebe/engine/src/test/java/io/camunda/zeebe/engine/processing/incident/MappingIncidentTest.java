@@ -43,12 +43,15 @@ public final class MappingIncidentTest {
 
   // Pinned to ORDERED: the test below verifies that ORDERED evaluates failing sources on
   // superseded duplicate targets, which is ORDERED-specific behavior (COMBINED resolves
-  // duplicates at expression-build time and never evaluates the superseded source).
+  // duplicates at expression-build time and never evaluates the superseded source). Input mappings
+  // are pinned too, so the mapping failure messages can be asserted with their target variable.
   @ClassRule
   public static final EngineRule ENGINE_ORDERED =
       EngineRule.singlePartition()
           .withEngineConfig(
-              c -> c.setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
+              c ->
+                  c.setInputMappingMode(EngineConfiguration.InputMappingMode.ORDERED)
+                      .setOutputMappingMode(EngineConfiguration.OutputMappingMode.ORDERED));
 
   private static final BpmnModelInstance PROCESS_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
@@ -117,7 +120,78 @@ public final class MappingIncidentTest {
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     assertThat(incidentEventValue.getErrorMessage())
-        .contains("Assertion failure on evaluate the expression");
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldOnlyNameKindOfCombinedInputMappingsWithSeveralTargets() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask(
+                "failingTask",
+                t ->
+                    t.zeebeJobType("test")
+                        .zeebeInputExpression("assert(foo, foo != null)", "foo")
+                        .zeebeInputExpression("\"bar\"", "baz"))
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression)");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedInputMapping() {
+    // given
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_INPUT_MAPPING).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(input mapping expression of target variable 'foo')");
+  }
+
+  @Test
+  public void shouldNameTargetVariableOfFailingOrderedOutputMapping() {
+    // given
+    ENGINE_ORDERED.deployment().withXmlResource(PROCESS_OUTPUT_MAPPING).deploy();
+    final long processInstanceKey =
+        ENGINE_ORDERED.processInstance().ofBpmnProcessId("process").create();
+
+    // when
+    ENGINE_ORDERED.job().withType("test").ofInstance(processInstanceKey).complete();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
+    assertThat(incident.getValue().getErrorMessage())
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(output mapping expression of target variable 'foo')");
   }
 
   @Test

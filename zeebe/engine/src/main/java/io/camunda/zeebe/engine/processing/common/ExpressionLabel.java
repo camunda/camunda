@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -122,6 +123,30 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
   /** Labels an expression as the follow-up date expression of a user task. */
   public static ExpressionLabel followUpDateExpression(final DirectBuffer userTaskId) {
     return new ExpressionLabel("follow-up date expression", userTask(userTaskId));
+  }
+
+  /**
+   * Labels an expression as the source expression of an input mapping. Pass the mapping's target
+   * path to name the variable it writes to, or {@code null} when the failing expression combines
+   * several mappings and no single target is known.
+   */
+  public static ExpressionLabel inputMappingExpression(final @Nullable List<String> targetPath) {
+    return new ExpressionLabel(
+        "input mapping expression", targetPath == null ? null : mappingTarget(targetPath));
+  }
+
+  /**
+   * Labels an expression as the source expression of an output mapping. Pass the mapping's target
+   * path to name the variable it writes to, or {@code null} when the failing expression combines
+   * several mappings and no single target is known.
+   */
+  public static ExpressionLabel outputMappingExpression(final @Nullable List<String> targetPath) {
+    return new ExpressionLabel(
+        "output mapping expression", targetPath == null ? null : mappingTarget(targetPath));
+  }
+
+  private static String mappingTarget(final List<String> targetPath) {
+    return "target variable '%s'".formatted(String.join(".", targetPath));
   }
 
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {

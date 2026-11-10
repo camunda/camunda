@@ -754,7 +754,8 @@ class ExpressionProcessorTest {
           Arguments.of(
               (ProcessorMethod)
                   (processor, expression) ->
-                      processor.evaluateVariableMappingExpression(expression, -1L, "tenant"),
+                      processor.evaluateVariableMappingExpression(
+                          expression, -1L, "tenant", ExpressionLabel.NONE),
               "evaluateVariableMappingExpression"));
     }
 
@@ -846,7 +847,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=\"abc\"");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -859,7 +862,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("={y: x}");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -872,7 +877,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=null");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -888,7 +895,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=unknown_var");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -901,13 +910,63 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isLeft();
       Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
       Assertions.assertThat(result.getLeft().getMessage())
           .contains("Assertion failure on evaluate the expression");
+    }
+  }
+
+  @Nested
+  class EvaluateVariableMappingExpressionWithLabelTest {
+
+    @Test
+    void shouldNameMappingKindAndTargetVariableOnEvaluationFailure() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.inputMappingExpression(List.of("order", "id"));
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(input mapping expression of target variable 'order.id')");
+    }
+
+    @Test
+    void shouldOnlyNameMappingKindWhenNoSingleTargetIsKnown() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.outputMappingExpression(null);
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(output mapping expression)")
+          .doesNotContain("target variable");
     }
   }
 

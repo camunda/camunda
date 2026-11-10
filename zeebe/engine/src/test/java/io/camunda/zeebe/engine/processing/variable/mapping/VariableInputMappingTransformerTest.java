@@ -15,6 +15,7 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.engine.processing.variable.InputMappingResultBuilder;
@@ -260,7 +261,7 @@ final class VariableInputMappingTransformerTest {
     for (final var mapping : inputMappings.mappings()) {
       final var buffer =
           ep.prependContext(name -> Either.left(resultBuilder.get(name)))
-              .evaluateVariableMappingExpression(mapping.source(), -1L, "");
+              .evaluateVariableMappingExpression(mapping.source(), -1L, "", ExpressionLabel.NONE);
       if (buffer.isLeft()) {
         throw new IllegalStateException("Evaluation failed: " + buffer.getLeft().getMessage());
       }
