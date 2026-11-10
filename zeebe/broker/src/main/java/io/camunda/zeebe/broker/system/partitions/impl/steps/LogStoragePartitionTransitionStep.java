@@ -34,9 +34,11 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     if (logStorage != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
-      final var server = context.getRaftPartition().getServer();
-      server.removeCommitListener(logStorage);
-      server.removeCommittedEntryListener(logStorage.committedPositionNotifier());
+      if (logStorage instanceof final AtomixLogStorage atomixLogStorage) {
+        final var server = context.getRaftPartition().getServer();
+        server.removeCommitListener(atomixLogStorage);
+        server.removeCommittedEntryListener(atomixLogStorage.committedPositionNotifier());
+      }
       context.setLogStorage(null);
     }
     return CompletableActorFuture.completed(null);

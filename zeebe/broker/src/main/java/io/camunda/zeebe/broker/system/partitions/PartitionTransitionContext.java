@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
@@ -101,9 +101,9 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   Collection<ExporterDescriptor> getExportedDescriptors();
 
-  AtomixLogStorage getLogStorage();
+  LogStorage getLogStorage();
 
-  void setLogStorage(AtomixLogStorage logStorage);
+  void setLogStorage(LogStorage logStorage);
 
   int getMaxFragmentSize();
 
