@@ -10,13 +10,13 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.util.unit.DataSize;
 
-public class DataCfgTest {
+final class DataCfgTest {
 
   @Test
-  public void shouldUseDefaultFreeSpaceConfig() {
+  void shouldUseDefaultFreeSpaceConfig() {
     // when
     final DataCfg dataCfg = new DataCfg();
     dataCfg.init(new BrokerCfg(), "/base");
@@ -28,7 +28,7 @@ public class DataCfgTest {
   }
 
   @Test
-  public void shouldOverrideWhenOldWatermarksConfigProvided() {
+  void shouldOverrideWhenOldWatermarksConfigProvided() {
     // when
     final DataCfg dataCfg = new DataCfg();
     dataCfg.setDiskUsageMonitoringInterval(Duration.ofMinutes(5));
@@ -38,5 +38,23 @@ public class DataCfgTest {
     // then
     assertThat(dataCfg.getDisk().getMonitoringInterval()).isEqualTo(Duration.ofMinutes(5));
     assertThat(dataCfg.getDisk().isEnableMonitoring()).isFalse();
+  }
+
+  @Test
+  void shouldDisableRdbmsEngineStateByDefault() {
+    // when
+    final DataCfg dataCfg = new DataCfg();
+
+    // then
+    assertThat(dataCfg.getRdbmsEngineState().isEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldUseSmallRdbmsEngineStatePoolByDefault() {
+    // when
+    final DataCfg dataCfg = new DataCfg();
+
+    // then
+    assertThat(dataCfg.getRdbmsEngineState().getPoolSize()).isEqualTo(4);
   }
 }

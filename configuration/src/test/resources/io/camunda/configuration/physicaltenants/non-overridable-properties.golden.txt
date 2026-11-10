@@ -97,10 +97,15 @@ data.primary-storage.disk.free-space.processing
 data.primary-storage.disk.free-space.replication
 data.primary-storage.disk.monitoring-enabled
 data.primary-storage.disk.monitoring-interval
+data.primary-storage.rdbms.password
+data.primary-storage.rdbms.pool-size
+data.primary-storage.rdbms.url
+data.primary-storage.rdbms.username
 data.primary-storage.rocks-db.max-memory-fraction
 data.primary-storage.rocks-db.memory-allocation-strategy
 data.primary-storage.rocks-db.memory-fraction
 data.primary-storage.rocks-db.memory-limit
+data.primary-storage.type
 data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key

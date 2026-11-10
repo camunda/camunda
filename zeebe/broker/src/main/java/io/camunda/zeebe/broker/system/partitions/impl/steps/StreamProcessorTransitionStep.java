@@ -169,7 +169,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     final var builder = StreamProcessor.builder();
-    final var rdbmsEngineStateCfg = experimentalCfg.getRdbmsEngineState();
+    final var rdbmsEngineStateCfg = context.getBrokerCfg().getData().getRdbmsEngineState();
     if (rdbmsEngineStateCfg.isEnabled()) {
       final var dataSource =
           Objects.requireNonNull(

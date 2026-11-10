@@ -38,6 +38,7 @@ public final class DataCfg implements ConfigurationEntry {
   private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
   private BackupCfg backup = new BackupCfg();
+  private RdbmsEngineStateCfg rdbmsEngineState = new RdbmsEngineStateCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -164,6 +165,14 @@ public final class DataCfg implements ConfigurationEntry {
     this.backup = backup;
   }
 
+  public RdbmsEngineStateCfg getRdbmsEngineState() {
+    return rdbmsEngineState;
+  }
+
+  public void setRdbmsEngineState(final RdbmsEngineStateCfg rdbmsEngineState) {
+    this.rdbmsEngineState = rdbmsEngineState;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
@@ -191,6 +200,8 @@ public final class DataCfg implements ConfigurationEntry {
         + disk
         + ", backup="
         + backup
+        + ", rdbmsEngineState="
+        + rdbmsEngineState
         + '}';
   }
 }
