@@ -6,10 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, notFound} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
+import {OperationsLog} from '#/operate/pages/OperationsLog/shadcn.components/OperationsLog';
+import {operationsLogSearchSchema, stripLegacyFilters} from '#/operate/pages/OperationsLog/operationsLog.schema';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/operations-log')({
-	beforeLoad: () => {
-		throw notFound({routeId: '/_shadcn/_auth/operate-preview'});
+	validateSearch: operationsLogSearchSchema,
+	search: {middlewares: [stripLegacyFilters]},
+	head: () => ({meta: [{title: t('operate.operationsLog.pageTitle')}]}),
+	component: function OperationsLogRoute() {
+		return <OperationsLog {...Route.useSearch()} />;
 	},
 });

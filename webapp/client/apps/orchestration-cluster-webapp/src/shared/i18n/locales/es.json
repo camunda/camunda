@@ -2107,7 +2107,12 @@
 					"parentEntity": "Entidad principal",
 					"details": "Detalles",
 					"actor": "Actor",
-					"date": "Fecha"
+					"date": "Fecha",
+					"result": "Resultado",
+					"actions": "Acciones",
+					"tableLabel": "Registro de operaciones",
+					"loadingPreviousPage": "Cargando entradas anteriores del registro",
+					"loadingNextPage": "Cargando entradas siguientes del registro"
 				},
 				"emptyState": {
 					"noItemsTitle": "Aún no hay elementos en el registro de operaciones",

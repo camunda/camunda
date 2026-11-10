@@ -53,6 +53,11 @@ type Props = {
 	auditLog: AuditLog;
 };
 
+type DetailsModalState = {
+	isOpen: boolean;
+	auditLog?: AuditLog;
+};
+
 type RowProps = {
 	icon?: React.ReactNode;
 	label: React.ReactNode;
@@ -332,3 +337,4 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 };
 
 export {OperationsLogDetailsModal};
+export type {DetailsModalState};
