@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
+import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toAnonymousCamundaUser;
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
@@ -66,11 +67,17 @@ public class AuthenticationController {
             () -> request -> securityProperties.getAuthorizations().isEnabled());
   }
 
+  /**
+   * Returns the current user. A caller without an identity gets 401 on a protected API. On an
+   * unprotected API no credentials can authenticate it, so it gets an anonymous result instead.
+   */
   @CamundaGetMapping(path = "/me")
   public ResponseEntity<CamundaUserResult> getCurrentUser() {
     final var authenticatedUser = camundaUserPort.getCurrentUser();
     if (authenticatedUser == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+      return isAnonymousOnUnprotectedApi()
+          ? ResponseEntity.ok(toAnonymousCamundaUser())
+          : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     final var tenants = resolveTenants(authenticatedUser.tenants());
     return ResponseEntity.ok(toCamundaUser(authenticatedUser, tenants));
@@ -108,6 +115,13 @@ public class AuthenticationController {
                     q,
                     authentication,
                     authorizationEnabled.isAuthorizationEnabled(request)));
+  }
+
+  private boolean isAnonymousOnUnprotectedApi() {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return authentication != null
+        && authentication.isAnonymous()
+        && !securityProperties.isApiProtected();
   }
 
   private ResponseEntity<OwnAuthorizationSearchResult> searchOwn(

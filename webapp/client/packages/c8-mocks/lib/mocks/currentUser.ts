@@ -17,6 +17,7 @@ const currentUser: CurrentUser = {
 	tenants: [],
 	groups: [],
 	canLogout: true,
+	isAnonymous: false,
 	authorizedComponents: ['*'],
 	email: 'demo@camunda.com',
 };
@@ -36,6 +37,7 @@ const currentUserWithC8Links: CurrentUser = {
 	tenants: [],
 	groups: [],
 	canLogout: true,
+	isAnonymous: false,
 	authorizedComponents: ['*'],
 	email: 'demo-with-c8links@camunda.com',
 };
@@ -60,6 +62,7 @@ const currentUserWithTenants: CurrentUser = {
 	],
 	groups: [],
 	canLogout: true,
+	isAnonymous: false,
 	authorizedComponents: ['*'],
 	email: 'demo-with-tenants@camunda.com',
 };
@@ -73,6 +76,7 @@ const currentUserWithGroups: CurrentUser = {
 	tenants: [],
 	groups: ['admin', 'customer-support', 'guest'],
 	canLogout: true,
+	isAnonymous: false,
 	authorizedComponents: ['*'],
 	email: 'demo-groups@camunda.com',
 };
@@ -86,6 +90,7 @@ const currentUnauthorizedUser: CurrentUser = {
 	tenants: [],
 	groups: ['admin', 'customer-support', 'guest'],
 	canLogout: true,
+	isAnonymous: false,
 	authorizedComponents: ['operate'],
 	email: 'demo-unauthorized@camunda.com',
 };

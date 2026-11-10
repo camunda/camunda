@@ -10,9 +10,10 @@ import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
 
 const currentUserSchema = z.object({
-	username: z.string(),
-	displayName: z.string(),
-	email: z.string(),
+	isAnonymous: z.boolean(),
+	username: z.string().nullable(),
+	displayName: z.string().nullable(),
+	email: z.string().nullable(),
 	authorizedComponents: z.array(z.string()),
 	tenants: z.array(
 		z.object({

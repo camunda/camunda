@@ -7,8 +7,9 @@
  */
 
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AuthenticatedCurrentUser} from '../../src/shared/http/currentUser';
 
-function createCurrentUser(overrides?: Partial<CurrentUser>): CurrentUser {
+function createCurrentUser(overrides?: Partial<AuthenticatedCurrentUser>): AuthenticatedCurrentUser {
 	return {
 		username: 'demo',
 		displayName: 'Demo User',
@@ -20,8 +21,25 @@ function createCurrentUser(overrides?: Partial<CurrentUser>): CurrentUser {
 		tenants: [],
 		groups: [],
 		canLogout: true,
+		isAnonymous: false,
 		...overrides,
 	};
 }
 
-export {createCurrentUser};
+function createAnonymousCurrentUser(): CurrentUser {
+	return {
+		username: null,
+		displayName: null,
+		email: null,
+		salesPlanType: null,
+		authorizedComponents: ['*'],
+		roles: [],
+		c8Links: {},
+		tenants: [],
+		groups: [],
+		canLogout: false,
+		isAnonymous: true,
+	};
+}
+
+export {createAnonymousCurrentUser, createCurrentUser};
