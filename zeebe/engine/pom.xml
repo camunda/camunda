@@ -88,11 +88,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db-rocksdb</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-db-api</artifactId>
     </dependency>
 
@@ -187,6 +182,12 @@
     </dependency>
 
     <!-- TEST DEPENDENCIES -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-rocksdb</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>

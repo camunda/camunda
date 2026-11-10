@@ -12,7 +12,7 @@ dependencies {
   api(project(":zeebe-scheduler"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-msgpack-value"))
-  implementation(project(":zeebe-db-rocksdb"))
+  testImplementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-logstreams"))
   implementation(project(":zeebe-protocol-impl"))

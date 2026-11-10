@@ -19,7 +19,7 @@ dependencies {
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(project(":zeebe-protocol"))
-  implementation(project(":zeebe-db-rocksdb"))
+  testImplementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-msgpack-core"))

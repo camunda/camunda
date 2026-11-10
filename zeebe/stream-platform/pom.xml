@@ -67,11 +67,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db-rocksdb</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-db-api</artifactId>
     </dependency>
 
@@ -93,6 +88,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-rocksdb</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
