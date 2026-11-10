@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ColumnFamilyContext;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbIterator;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
@@ -32,7 +33,6 @@ import org.rocksdb.Checkpoint;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 
 final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
@@ -134,7 +134,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
               cfContext.withPrefixKey(
                   new DbNullKey(),
                   (prefixKey, prefixLength) -> {
-                    try (final RocksIterator iterator = db.newIterator(readOptions)) {
+                    try (final var iterator = new RocksDbIterator(db.newIterator(readOptions))) {
                       RawTransactionalColumnFamily.forEachPreallocated(
                           iterator,
                           cf,

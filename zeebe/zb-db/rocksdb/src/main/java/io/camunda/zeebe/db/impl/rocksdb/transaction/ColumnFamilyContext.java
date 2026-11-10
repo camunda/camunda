@@ -10,7 +10,6 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
-import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.ObjIntConsumer;
@@ -116,8 +115,8 @@ public class ColumnFamilyContext {
     }
   }
 
-  ByteBuffer keyWithColumnFamily(final DbKey key) {
-    final var bytes = ByteBuffer.allocate(Long.BYTES + key.getLength());
+  byte[] keyWithColumnFamily(final DbKey key) {
+    final var bytes = new byte[Long.BYTES + key.getLength()];
     final var buffer = new UnsafeBuffer(bytes);
 
     buffer.putLong(0, columnFamilyPrefix, ZeebeDbConstants.ZB_DB_BYTE_ORDER);

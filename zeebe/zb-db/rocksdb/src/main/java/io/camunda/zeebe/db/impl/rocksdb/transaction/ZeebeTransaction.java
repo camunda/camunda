@@ -18,7 +18,6 @@ import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatchWithIndex;
 import org.rocksdb.WriteOptions;
 
@@ -94,8 +93,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     }
   }
 
-  public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
-    return writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options));
+  public DbIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
+    return new RocksDbIterator(
+        writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options)));
   }
 
   void resetTransaction() {
