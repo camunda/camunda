@@ -66,7 +66,7 @@
     <version.error-prone>2.52.0</version.error-prone>
     <version.nullaway>0.14.3</version.nullaway>
     <!-- override with -Derrorprone.skip, see the errorprone-skip profile -->
-    <!-- off-by-default checks promoted to errors; keep in sync with buildlogic.java-conventions -->
+    <!-- off-by-default checks promoted to errors; Gradle reads this property as well -->
     <error-prone.checks>-XepDisableAllWarnings -Xep:LockNotBeforeTry:ERROR -Xep:HashCodeInObjectsHash:ERROR -Xep:ObjectsHashCodePrimitive:ERROR</error-prone.checks>
     <version.grpc>1.85.1</version.grpc>
     <version.gson>2.15.0</version.gson>
