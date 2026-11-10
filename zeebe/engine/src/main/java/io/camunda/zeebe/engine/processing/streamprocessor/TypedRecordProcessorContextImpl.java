@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
@@ -48,7 +49,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final ProcessingStateStoresFactory stateStoresFactory) {
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
@@ -62,7 +64,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
         new ProcessingDbState(
             partitionId,
             zeebeDb,
-            context.getTransactionContext(),
+            stateStoresFactory.create(partitionId, zeebeDb, context.getTransactionContext()),
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,

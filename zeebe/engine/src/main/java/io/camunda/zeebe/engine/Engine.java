@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
@@ -77,14 +78,28 @@ public class Engine implements RecordProcessor {
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
   private final EngineSecurityConfig securityConfig;
+  private final ProcessingStateStoresFactory stateStoresFactory;
 
   public Engine(
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final EngineConfiguration config,
       final EngineSecurityConfig securityConfig) {
+    this(
+        typedRecordProcessorFactory,
+        config,
+        securityConfig,
+        ProcessingStateStoresFactory.rocksDb());
+  }
+
+  public Engine(
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final EngineConfiguration config,
+      final EngineSecurityConfig securityConfig,
+      final ProcessingStateStoresFactory stateStoresFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
     this.securityConfig = securityConfig;
+    this.stateStoresFactory = stateStoresFactory;
   }
 
   /**
@@ -133,7 +148,7 @@ public class Engine implements RecordProcessor {
 
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
-            recordProcessorContext, writers, config, securityConfig);
+            recordProcessorContext, writers, config, securityConfig, stateStoresFactory);
     processingState = typedProcessorContext.getProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
     suspensionBehavior = new SuspensionBehavior(processingState);

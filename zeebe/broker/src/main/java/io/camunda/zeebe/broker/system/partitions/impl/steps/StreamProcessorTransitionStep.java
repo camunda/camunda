@@ -12,8 +12,11 @@ import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
 import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
 import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
 import io.camunda.zeebe.engine.Engine;
+import io.camunda.zeebe.engine.state.MixedStateStores;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -141,9 +144,19 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var experimentalCfg = context.getBrokerCfg().getExperimental();
     final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
 
+    final var rdbmsEngineStateCfg = context.getBrokerCfg().getData().getRdbmsEngineState();
+    final ProcessingStateStoresFactory stateStoresFactory =
+        rdbmsEngineStateCfg.isEnabled()
+            ? (partitionId, zeebeDb, transactionContext) ->
+                new MixedStateStores(
+                    partitionId, zeebeDb, (MixedTransactionContext) transactionContext)
+            : ProcessingStateStoresFactory.rocksDb();
     final var engine =
         new Engine(
-            context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
+            context.getTypedRecordProcessorFactory(),
+            engineCfg,
+            context.getSecurityConfig(),
+            stateStoresFactory);
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
 
@@ -169,7 +182,6 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     final var builder = StreamProcessor.builder();
-    final var rdbmsEngineStateCfg = context.getBrokerCfg().getData().getRdbmsEngineState();
     if (rdbmsEngineStateCfg.isEnabled()) {
       final var dataSource =
           Objects.requireNonNull(
