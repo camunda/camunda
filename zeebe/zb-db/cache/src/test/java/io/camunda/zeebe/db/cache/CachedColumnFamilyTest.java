@@ -218,20 +218,8 @@ final class CachedColumnFamilyTest {
   }
 
   private WriteBehindStore<TestColumnFamily> stalledStore() {
-    final var defaults = WriteBehindConfiguration.DEFAULT;
     return new WriteBehindStore<>(
-        backend.db(),
-        new WriteBehindConfiguration(
-            defaults.cacheMaxBytes(),
-            defaults.maxPendingBytes(),
-            defaults.batchSize(),
-            Duration.ofHours(1),
-            defaults.queueSize(),
-            defaults.concurrencyLevel(),
-            defaults.coalescing(),
-            defaults.writeThroughMaxKeys(),
-            defaults.writeThroughMaxBytes(),
-            defaults.drainTimeout()));
+        backend.db(), new TestConfiguration().maxWriteDelay(Duration.ofHours(1)).build());
   }
 
   private static DbForeignKey<DbLong> foreignKey(final long value) {

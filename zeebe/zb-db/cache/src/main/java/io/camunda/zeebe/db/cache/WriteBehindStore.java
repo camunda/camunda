@@ -44,6 +44,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private static final int OPTIMISTIC_READ_ATTEMPTS = 3;
 
   private final WriteBehindConfiguration configuration;
+  private final int optimisticReadAttempts;
   private final DirtyIndex dirtyIndex = new DirtyIndex();
   private final ReentrantLock commitLock = new ReentrantLock();
   private final StampedLock publishLock = new StampedLock();
@@ -59,7 +60,19 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
   WriteBehindStore(
       final ZeebeDb<ColumnFamilyNames> backend, final WriteBehindConfiguration configuration) {
+    this(backend, configuration, OPTIMISTIC_READ_ATTEMPTS);
+  }
+
+  /**
+   * @param optimisticReadAttempts how often a point read tries without a lock before it reads under
+   *     {@code publishLock}'s read side
+   */
+  WriteBehindStore(
+      final ZeebeDb<ColumnFamilyNames> backend,
+      final WriteBehindConfiguration configuration,
+      final int optimisticReadAttempts) {
     this.configuration = configuration;
+    this.optimisticReadAttempts = optimisticReadAttempts;
     loaderWriter =
         new BackendLoaderWriter<>(
             backend, dirtyIndex, publishLock, () -> lastPublishedSeq, this::signalFlushed);
@@ -156,7 +169,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
     failIfFailed();
 
-    for (int attempt = 0; attempt < OPTIMISTIC_READ_ATTEMPTS; attempt++) {
+    for (int attempt = 0; attempt < optimisticReadAttempts; attempt++) {
       final long stamp = publishLock.tryOptimisticRead();
       if (stamp == 0) {
         continue;

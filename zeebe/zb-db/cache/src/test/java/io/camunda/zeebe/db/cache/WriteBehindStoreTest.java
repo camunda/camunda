@@ -185,20 +185,13 @@ final class WriteBehindStoreTest {
 
   private WriteBehindStore<TestColumnFamily> store(
       final Duration maxWriteDelay, final long cacheMaxBytes, final long maxPendingBytes) {
-    final var defaults = WriteBehindConfiguration.DEFAULT;
     return new WriteBehindStore<>(
         backend.db(),
-        new WriteBehindConfiguration(
-            cacheMaxBytes,
-            maxPendingBytes,
-            defaults.batchSize(),
-            maxWriteDelay,
-            defaults.queueSize(),
-            defaults.concurrencyLevel(),
-            defaults.coalescing(),
-            defaults.writeThroughMaxKeys(),
-            defaults.writeThroughMaxBytes(),
-            defaults.drainTimeout()));
+        new TestConfiguration()
+            .maxWriteDelay(maxWriteDelay)
+            .cacheMaxBytes(cacheMaxBytes)
+            .maxPendingBytes(maxPendingBytes)
+            .build());
   }
 
   private static CacheKey key(final int key) {
