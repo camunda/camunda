@@ -26,6 +26,7 @@
       <arg column="parent_key" javaType="_long"/>
       <arg column="process_instance_key" javaType="_long"/>
       <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="parent_process_instance_key" javaType="_long"/>
       <arg column="process_definition_key" javaType="_long"/>
       <arg column="tenant_id" javaType="String"/>
       <arg column="bpmn_process_id" javaType="String"/>
@@ -39,7 +40,7 @@
 
   <sql id="elementInstanceColumns">
     element_instance_key, parent_key, process_instance_key, root_process_instance_key,
-    process_definition_key, tenant_id, bpmn_process_id, business_id, element_id, bpmn_element_type,
+    parent_process_instance_key, process_definition_key, tenant_id, bpmn_process_id, business_id, element_id, bpmn_element_type,
     state, payload
   </sql>
 
@@ -109,20 +110,24 @@
       <include refid="excludeKeys"/>
   </select>
 
-  <!-- Only root process instances with a business id have one, see the changelog. -->
+  <!--
+    Only process instances have a business id, and only the root ones (without parent process
+    instance) count, see the changelog.
+  -->
   <select id="selectProcessInstanceKeysByBusinessId" resultType="_long">
     SELECT element_instance_key
     FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
       AND bpmn_process_id = #{bpmnProcessId} AND business_id = #{businessId}
+      AND parent_process_instance_key = -1
     ORDER BY element_instance_key
   </select>
 
   <insert id="insertElementInstance">
     INSERT INTO CAM_RU_ELEMENT_INSTANCE (partition_id, <include refid="elementInstanceColumns"/>)
     VALUES (#{partitionId}, #{row.key}, #{row.parentKey}, #{row.processInstanceKey},
-      #{row.rootProcessInstanceKey}, #{row.processDefinitionKey}, #{row.tenantId},
-      #{row.bpmnProcessId}, #{row.businessId,jdbcType=VARCHAR}, #{row.elementId},
+      #{row.rootProcessInstanceKey}, #{row.parentProcessInstanceKey}, #{row.processDefinitionKey},
+      #{row.tenantId}, #{row.bpmnProcessId}, #{row.businessId,jdbcType=VARCHAR}, #{row.elementId},
       #{row.bpmnElementType}, #{row.state}, #{row.payload})
   </insert>
 
@@ -130,6 +135,7 @@
     UPDATE CAM_RU_ELEMENT_INSTANCE
     SET parent_key = #{row.parentKey}, process_instance_key = #{row.processInstanceKey},
       root_process_instance_key = #{row.rootProcessInstanceKey},
+      parent_process_instance_key = #{row.parentProcessInstanceKey},
       process_definition_key = #{row.processDefinitionKey}, tenant_id = #{row.tenantId},
       bpmn_process_id = #{row.bpmnProcessId}, business_id = #{row.businessId,jdbcType=VARCHAR},
       element_id = #{row.elementId},

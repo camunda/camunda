@@ -113,13 +113,15 @@ interface ElementInstanceMapper {
    * An element instance: the serialized {@link ElementInstance} plus the columns derived from it
    * for queries. The root process instance key is the process instance key for a root process
    * instance, and for instances created before the record carried a root process instance key. The
-   * business id is null unless the row is a root process instance with a business id.
+   * parent process instance key is -1 unless the row belongs to a called process instance. The
+   * business id is null unless the row is a process instance with a business id.
    */
   record ElementInstanceRow(
       long key,
       long parentKey,
       long processInstanceKey,
       long rootProcessInstanceKey,
+      long parentProcessInstanceKey,
       long processDefinitionKey,
       String tenantId,
       String bpmnProcessId,

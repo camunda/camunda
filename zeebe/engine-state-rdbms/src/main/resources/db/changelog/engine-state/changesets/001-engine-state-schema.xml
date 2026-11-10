@@ -34,12 +34,17 @@
     Hybrid row: the full ElementInstance is kept as its msgpack payload (the source of truth for
     reads). The remaining columns are derived from it on every write so they can be queried and
     indexed. parent_key is -1 for process instances, same as in the RocksDB state.
+    parent_process_instance_key is the record's, -1 unless the row belongs to a called process
+    instance.
 
-    business_id is the business id of a root process instance, and NULL for every other row,
-    including a root process instance without business id (Oracle stores an empty string as NULL
-    anyway). It replaces the RocksDB index of process instances by business id, which holds the
-    same entries: the appliers insert an entry exactly when a root process instance is created with
-    or assigned a business id, and delete it in the same applier that removes the instance.
+    business_id is the business id of a process instance, root or called, and NULL for every other
+    row, including a process instance without business id (Oracle stores an empty string as NULL
+    anyway). Its rows with parent_process_instance_key -1 replace the RocksDB index of process
+    instances by business id, which holds the same entries: the appliers insert an entry exactly
+    when a process instance without parent process instance is created with or assigned a business
+    id, and delete it in the same applier that removes the instance. The root_process_instance_key
+    can't tell a root instance: it falls back to the own key for records written before it existed,
+    also for called instances. Uniqueness is enforced by the engine, hence the index is not unique.
   -->
   <changeSet id="create-element-instance" author="camunda">
     <createTable tableName="CAM_RU_ELEMENT_INSTANCE">
@@ -56,6 +61,9 @@
         <constraints nullable="false"/>
       </column>
       <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="parent_process_instance_key" type="BIGINT">
         <constraints nullable="false"/>
       </column>
       <column name="process_definition_key" type="BIGINT">
@@ -97,6 +105,7 @@
       <column name="tenant_id"/>
       <column name="bpmn_process_id"/>
       <column name="business_id"/>
+      <column name="parent_process_instance_key"/>
     </createIndex>
   </changeSet>
 
