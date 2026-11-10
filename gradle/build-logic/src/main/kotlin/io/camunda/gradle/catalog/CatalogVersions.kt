@@ -158,6 +158,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("objenesis", pomVersion("version.objenesis"))
   version("okio-jvm", pomVersion("version.okio-jvm"))
   version("opentelemetry", pomVersion("version.opentelemetry"))
+  version("opentelemetry-semconv", pomVersion("version.opentelemetry-semconv"))
   version("opensearch", pomVersion("version.opensearch.client"))
   version("opensearch-java", pomVersion("version.opensearch-java"))
   // from clients/camunda-spring-boot-starter/pom.xml
