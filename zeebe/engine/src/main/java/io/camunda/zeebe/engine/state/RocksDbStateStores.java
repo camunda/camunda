@@ -101,7 +101,8 @@ import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
 import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
-import io.camunda.zeebe.engine.state.variable.DbVariableState;
+import io.camunda.zeebe.engine.state.variable.DbVariableStore;
+import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
 
@@ -119,7 +120,7 @@ public class RocksDbStateStores implements ProcessingStateStores {
 
   @Override
   public MutableVariableState variableState() {
-    return new DbVariableState(zeebeDb, transactionContext);
+    return new VariableStateImpl(new DbVariableStore(zeebeDb, transactionContext));
   }
 
   @Override
