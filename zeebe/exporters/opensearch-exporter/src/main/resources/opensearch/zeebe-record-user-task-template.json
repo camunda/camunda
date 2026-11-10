@@ -79,6 +79,9 @@
             "variables": {
               "enabled": false
             },
+            "variablesMetadata": {
+              "enabled": false
+            },
             "customHeaders": {
               "enabled": false
             },

@@ -11,15 +11,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalStartedProcessInstanceValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -31,30 +31,29 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
   // Static StringValue keys for property names
   public static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
-  public static final StringValue VARIABLES_KEY = new StringValue("variables");
   public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   public static final StringValue STARTED_PROCESS_INSTANCES_KEY =
       new StringValue("startedProcessInstances");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<ConditionalStartedProcessInstance> startedProcessInstancesProp =
       new ArrayProperty<>(STARTED_PROCESS_INSTANCES_KEY, ConditionalStartedProcessInstance::new);
 
   public ConditionalEvaluationRecord() {
-    super(4);
+    super(3);
     declareProperty(processDefinitionKeyProp)
-        .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
         .declareProperty(startedProcessInstancesProp);
+    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final ConditionalEvaluationRecord other) {
     processDefinitionKeyProp.setValue(other.getProcessDefinitionKey());
-    variablesProp.setValue(other.getVariablesBuffer());
+    variablesPropertyGroup.copyFrom(other.variablesPropertyGroup);
     tenantIdProp.setValue(other.getTenantId());
 
     startedProcessInstancesProp.reset();
@@ -82,16 +81,27 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public ConditionalEvaluationRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
+    return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public ConditionalEvaluationRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
     return this;
   }
 

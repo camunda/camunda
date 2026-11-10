@@ -19,16 +19,33 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class VariablesMetadataRoundTripTest {
 
@@ -81,6 +98,30 @@ final class VariablesMetadataRoundTripTest {
     // then
     assertThat(copy).isEqualTo(record);
     assertThat(copy.getVariablesMetadata()).containsOnlyKeys("secret", "plain");
+  }
+
+  @ParameterizedTest
+  @MethodSource("recordsCarryingVariables")
+  void shouldKeepVariablesMetadataWhenSerialized(final UnifiedRecordValue record) {
+    // when
+    final var copy = UnifiedRecordValue.fromValueType(record.valueType());
+    copy.wrap(serialize(record), 0, record.getLength());
+
+    // then
+    assertThat(copy).isEqualTo(record);
+  }
+
+  @ParameterizedTest
+  @MethodSource("copyableRecordsCarryingVariables")
+  void shouldKeepVariablesMetadataWhenCopied(
+      final UnifiedRecordValue record,
+      final BiConsumer<UnifiedRecordValue, UnifiedRecordValue> wrap) {
+    // when
+    final var copy = UnifiedRecordValue.fromValueType(record.valueType());
+    wrap.accept(copy, record);
+
+    // then
+    assertThat(copy).isEqualTo(record);
   }
 
   @Test
@@ -144,11 +185,80 @@ final class VariablesMetadataRoundTripTest {
         .containsExactly(Map.entry("foo", "bar"));
   }
 
+  /**
+   * Every record carrying variables. {@link ProcessInstanceResultRecord} is only listed here,
+   * because it has no {@code wrap(T)} copy method.
+   */
+  private static Stream<Named<?>> recordsCarryingVariables() {
+    return Stream.concat(
+        copyableRecords().map(copyable -> named(copyable.record())),
+        Stream.of(named(new ProcessInstanceResultRecord().setVariablesMetadata(METADATA))));
+  }
+
+  private static Stream<Arguments> copyableRecordsCarryingVariables() {
+    return copyableRecords()
+        .map(copyable -> Arguments.of(named(copyable.record()), copyable.wrap()));
+  }
+
+  private static Stream<CopyableRecord<?>> copyableRecords() {
+    return Stream.of(
+        new CopyableRecord<>(
+            new MessageRecord()
+                .setName("message")
+                .setCorrelationKey("key")
+                .setTimeToLive(0L)
+                .setVariablesMetadata(METADATA),
+            MessageRecord::wrap),
+        new CopyableRecord<>(
+            new MessageSubscriptionRecord()
+                .setProcessInstanceKey(1L)
+                .setElementInstanceKey(2L)
+                .setVariablesMetadata(METADATA),
+            MessageSubscriptionRecord::wrap),
+        new CopyableRecord<>(
+            new ProcessMessageSubscriptionRecord()
+                .setSubscriptionPartitionId(1)
+                .setProcessInstanceKey(1L)
+                .setElementInstanceKey(2L)
+                .setVariablesMetadata(METADATA),
+            ProcessMessageSubscriptionRecord::wrap),
+        new CopyableRecord<>(
+            new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA),
+            MessageStartEventSubscriptionRecord::wrap),
+        new CopyableRecord<>(
+            new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA),
+            MessageStartProcessInstanceRequestRecord::wrap),
+        new CopyableRecord<>(
+            new SignalRecord().setSignalName("signal").setVariablesMetadata(METADATA),
+            SignalRecord::wrap),
+        new CopyableRecord<>(
+            new ConditionalEvaluationRecord().setVariablesMetadata(METADATA),
+            ConditionalEvaluationRecord::wrap),
+        new CopyableRecord<>(
+            new ProcessEventRecord()
+                .setScopeKey(1L)
+                .setTargetElementIdBuffer(wrapString("element"))
+                .setVariablesMetadata(METADATA),
+            ProcessEventRecord::wrap),
+        new CopyableRecord<>(
+            new CompensationSubscriptionRecord().setVariablesMetadata(METADATA),
+            CompensationSubscriptionRecord::wrap),
+        new CopyableRecord<>(
+            new UserTaskRecord().setVariablesMetadata(METADATA), UserTaskRecord::wrap));
+  }
+
+  private static Named<UnifiedRecordValue> named(final UnifiedRecordValue record) {
+    return Named.named(record.getClass().getSimpleName(), record);
+  }
+
   private static UnsafeBuffer serialize(final UnifiedRecordValue record) {
     final var buffer = new UnsafeBuffer(new byte[record.getLength()]);
     record.write(buffer, 0);
     return buffer;
   }
+
+  /** A record carrying variables, paired with its own {@code wrap(T)} copy method. */
+  private record CopyableRecord<T extends UnifiedRecordValue>(T record, BiConsumer<T, T> wrap) {}
 
   /**
    * The properties of {@link ProcessInstanceCreationRecord} as an older broker declares them: in

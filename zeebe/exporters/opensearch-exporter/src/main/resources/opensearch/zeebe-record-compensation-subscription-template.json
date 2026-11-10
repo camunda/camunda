@@ -57,6 +57,9 @@
             },
             "variables": {
               "enabled": false
+            },
+            "variablesMetadata": {
+              "enabled": false
             }
           }
         }
