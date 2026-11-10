@@ -61,8 +61,8 @@ public final class ProcessInstanceSuspensionMessageSubscriptionBehavior {
    * putting the PI-side row into {@code CLOSING} state, enqueues the subscription in the
    * pending-retry transient index, and sends the {@code MESSAGE_SUBSCRIPTION.DELETE} command to the
    * message partition as a side-effect. On failover, {@link
-   * io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState#onRecovered} re-adds
-   * all {@code CLOSING} rows to the transient index so the {@link
+   * io.camunda.zeebe.engine.processing.message.PendingSubscriptionRecoveryScheduler} re-adds all
+   * {@code CLOSING} rows to the transient index so the {@link
    * PendingProcessMessageSubscriptionCheckScheduler} picks them up and resends the close command.
    *
    * <p>When the delete ack arrives, {@link ProcessMessageSubscriptionDeleteProcessor} reads that
