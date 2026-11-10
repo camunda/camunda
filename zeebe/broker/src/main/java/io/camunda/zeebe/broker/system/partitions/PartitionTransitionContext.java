@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -104,6 +105,13 @@ public interface PartitionTransitionContext extends PartitionContext {
   LogStorage getLogStorage();
 
   void setLogStorage(LogStorage logStorage);
+
+  /**
+   * @return the repository to store the partition's log in, or null to store it with Atomix
+   */
+  @Nullable LogBlockRepository getLogBlockRepository();
+
+  void setLogBlockRepository(@Nullable LogBlockRepository logBlockRepository);
 
   int getMaxFragmentSize();
 

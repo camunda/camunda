@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -74,6 +75,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
+  private final Map<String, IntFunction<LogBlockRepository>> logBlockRepositories;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
 
@@ -109,6 +111,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
       final Map<String, IntFunction<Long>> exportedPositionSuppliers,
+      final Map<String, IntFunction<LogBlockRepository>> logBlockRepositories,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -128,6 +131,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
+    this.logBlockRepositories = Map.copyOf(logBlockRepositories);
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
@@ -180,6 +184,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public @Nullable IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
     return exportedPositionSuppliers.get(physicalTenantId);
+  }
+
+  @Override
+  public @Nullable IntFunction<LogBlockRepository> getLogBlockRepositoryFactory(
+      final String physicalTenantId) {
+    return logBlockRepositories.get(physicalTenantId);
   }
 
   @Override

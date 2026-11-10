@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -76,6 +77,7 @@ public final class SystemContextLoader {
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
   private Map<String, IntFunction<Long>> exportedPositionSuppliers = Map.of();
+  private Map<String, IntFunction<LogBlockRepository>> logBlockRepositories = Map.of();
   private SecretStoreRegistries secretStoreRegistries = new SecretStoreRegistries(Map.of());
   private ResolvedDataDirectory resolvedDataDirectory;
 
@@ -187,6 +189,16 @@ public final class SystemContextLoader {
   }
 
   /**
+   * Per physical tenant, creates the repository a partition stores its log in when the RDBMS log
+   * storage is enabled. A tenant without an entry keeps the Atomix log storage.
+   */
+  public SystemContextLoader withLogBlockRepositories(
+      final Map<String, IntFunction<LogBlockRepository>> logBlockRepositories) {
+    this.logBlockRepositories = logBlockRepositories;
+    return this;
+  }
+
+  /**
    * The configured secret stores and their caches per physical tenant. The same instances back the
    * Spring-side bean and the broker partitions, so the background secret-resolution flow and job
    * activation read and populate the same caches.
@@ -231,6 +243,7 @@ public final class SystemContextLoader {
         oidcClaimsProviderFactory,
         searchClientsProxy,
         exportedPositionSuppliers,
+        logBlockRepositories,
         nodeIdProvider,
         physicalTenantResolver);
   }

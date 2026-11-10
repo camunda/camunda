@@ -133,6 +133,7 @@ public final class SystemContextTestFactory {
         authConfig -> oidcClaimsProvider,
         searchClientsProxy,
         Map.of(),
+        Map.of(),
         nodeIdProvider,
         physicalTenantIds);
   }
@@ -207,6 +208,7 @@ public final class SystemContextTestFactory {
         authConfig -> jwtDecoder,
         authConfig -> oidcClaimsProvider,
         searchClientsProxy,
+        Map.of(),
         Map.of(),
         nodeIdProvider,
         physicalTenantIds);
