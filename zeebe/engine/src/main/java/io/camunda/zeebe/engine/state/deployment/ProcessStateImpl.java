@@ -166,8 +166,10 @@ public final class ProcessStateImpl implements MutableProcessState {
 
   @Override
   public void deleteProcessAndRepointVersionTag(final ProcessRecord processRecord) {
+    // read before deleting: a store may keep the lookup on the process row itself
+    final long indexedKey = findVersionTagLookup(processRecord);
     deleteProcessExceptVersionTag(processRecord);
-    updateVersionTagOnDelete(processRecord);
+    updateVersionTagOnDelete(processRecord, indexedKey);
   }
 
   @Override
@@ -414,15 +416,22 @@ public final class ProcessStateImpl implements MutableProcessState {
    * Points the version tag lookup at the latest remaining version with the deleted process' tag, if
    * it pointed at the deleted process, or removes it if no other version has that tag.
    */
-  private void updateVersionTagOnDelete(final ProcessRecord processRecord) {
+  private long findVersionTagLookup(final ProcessRecord processRecord) {
+    final var versionTag = processRecord.getVersionTag();
+    if (versionTag.isBlank()) {
+      return ProcessStore.NO_PROCESS;
+    }
+    return store.findProcessKeyByVersionTag(
+        processRecord.getTenantId(), processRecord.getBpmnProcessIdBuffer(), versionTag);
+  }
+
+  private void updateVersionTagOnDelete(final ProcessRecord processRecord, final long indexedKey) {
     final var deletedVersionTag = processRecord.getVersionTag();
     if (deletedVersionTag.isBlank()) {
       return;
     }
     final var tenantId = processRecord.getTenantId();
     final var processId = processRecord.getBpmnProcessIdBuffer();
-    final long indexedKey =
-        store.findProcessKeyByVersionTag(tenantId, processId, deletedVersionTag);
     if (indexedKey != processRecord.getProcessDefinitionKey()) {
       return;
     }

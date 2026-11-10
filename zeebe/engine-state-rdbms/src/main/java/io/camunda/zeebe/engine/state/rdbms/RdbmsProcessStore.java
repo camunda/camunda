@@ -67,8 +67,7 @@ import org.jspecify.annotations.Nullable;
  *   <li>{@link #forEachVersion} stops when the visitor returns false.
  *   <li>The lookups by deployment key and by version tag are columns of the process, and the digest
  *       a column of the version info. A lookup is moved from the process that has it when it is set
- *       for another one, and the version tag lookup is remembered when its process is deleted, see
- *       {@link DeletedVersionTagLookups}.
+ *       for another one, and it goes away with its process.
  * </ul>
  *
  * <p>The version infos of the process ids are kept in memory, as they are read for every process
@@ -104,7 +103,6 @@ public final class RdbmsProcessStore implements ProcessStore {
   private final EntityCache<String, PartitionStateRow> partitionState;
 
   private final VersionInfoCache versionInfos = new VersionInfoCache();
-  private final DeletedVersionTagLookups deletedVersionTagLookups = new DeletedVersionTagLookups();
 
   public RdbmsProcessStore(final JdbcTransactionContext transactionContext, final int partitionId) {
     rdbms = new EngineStateRdbms(transactionContext, partitionId);
@@ -144,7 +142,6 @@ public final class RdbmsProcessStore implements ProcessStore {
             EngineStateMapper::deletePartitionState);
 
     transactionContext.addTransactionListener(versionInfos);
-    transactionContext.addTransactionListener(deletedVersionTagLookups);
   }
 
   @Override
@@ -183,12 +180,6 @@ public final class RdbmsProcessStore implements ProcessStore {
     // older processes have no deployment key, so there may be no lookup to delete
     clearDeploymentLookup(
         tenantId, processRecord.getBpmnProcessId(), processRecord.getDeploymentKey());
-    if (row.versionTagLookup() != null) {
-      // the row's lookup goes with it, but the version tag lookup of the RocksDB state survives
-      // the deletion of its process until the caller has looked at it
-      deletedVersionTagLookups.add(
-          tenantId, row.bpmnProcessId(), row.versionTagLookup(), processDefinitionKey);
-    }
   }
 
   @Override
@@ -243,7 +234,6 @@ public final class RdbmsProcessStore implements ProcessStore {
     clearVersionTagLookup(tenantId, processId, versionTag);
     final var process = Objects.requireNonNull(processes.get(processDefinitionKey));
     processes.update(process.withLookups(process.deploymentKeyLookup(), versionTag));
-    deletedVersionTagLookups.remove(tenantId, processId, versionTag);
   }
 
   @Override
@@ -251,11 +241,7 @@ public final class RdbmsProcessStore implements ProcessStore {
       final String tenantId, final DirectBuffer bpmnProcessId, final String versionTag) {
     final var bpmnProcessIdString = bufferAsString(bpmnProcessId);
     final var rows = rowsWithVersionTagLookup(tenantId, bpmnProcessIdString, versionTag);
-    if (!rows.isEmpty()) {
-      return rows.getFirst().processDefinitionKey();
-    }
-    final var deletedKey = deletedVersionTagLookups.get(tenantId, bpmnProcessIdString, versionTag);
-    return deletedKey == null ? NO_PROCESS : deletedKey;
+    return rows.isEmpty() ? NO_PROCESS : rows.getFirst().processDefinitionKey();
   }
 
   @Override
@@ -263,7 +249,6 @@ public final class RdbmsProcessStore implements ProcessStore {
       final String tenantId, final DirectBuffer bpmnProcessId, final String versionTag) {
     final var bpmnProcessIdString = bufferAsString(bpmnProcessId);
     clearVersionTagLookup(tenantId, bpmnProcessIdString, versionTag);
-    deletedVersionTagLookups.remove(tenantId, bpmnProcessIdString, versionTag);
   }
 
   @Override
@@ -660,40 +645,4 @@ public final class RdbmsProcessStore implements ProcessStore {
    * appliers do that in the transaction of the deletion, so nothing is kept for long, and it is not
    * persisted. A rollback forgets what its transaction added, as the process is back then.
    */
-  private static final class DeletedVersionTagLookups implements TransactionListener {
-
-    private record Key(String tenantId, String bpmnProcessId, String versionTag) {}
-
-    private final Map<Key, Long> deleted = new HashMap<>();
-    private final Set<Key> addedInTransaction = new HashSet<>();
-
-    void add(
-        final String tenantId,
-        final String bpmnProcessId,
-        final String versionTag,
-        final long processDefinitionKey) {
-      final var key = new Key(tenantId, bpmnProcessId, versionTag);
-      deleted.put(key, processDefinitionKey);
-      addedInTransaction.add(key);
-    }
-
-    @Nullable Long get(final String tenantId, final String bpmnProcessId, final String versionTag) {
-      return deleted.get(new Key(tenantId, bpmnProcessId, versionTag));
-    }
-
-    void remove(final String tenantId, final String bpmnProcessId, final String versionTag) {
-      deleted.remove(new Key(tenantId, bpmnProcessId, versionTag));
-    }
-
-    @Override
-    public void onCommit() {
-      addedInTransaction.clear();
-    }
-
-    @Override
-    public void onRollback() {
-      addedInTransaction.forEach(deleted::remove);
-      addedInTransaction.clear();
-    }
-  }
 }
