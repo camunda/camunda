@@ -373,7 +373,9 @@ export async function resumeProcessInstanceAfterSuspension(
     return response;
   }
   await assertInvalidState(response);
-  expect((await response.json()).detail).toContain('SUSPENDING');
+  expect((await response.json()).detail).toContain(
+    'it is still suspending; retry once it is suspended',
+  );
   await expectProcessState(
     request,
     processInstanceKey,
