@@ -192,6 +192,85 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldMapOrGroupsOfProcessDefinitionSearch() {
+    // given
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+              "filter": {
+                "tenantId": "tenant-a",
+                "$or": [
+                  { "processDefinitionId": { "$like": "*invoice*" } },
+                  { "name": { "$like": "*invoice*" } }
+                ]
+              }
+            }""";
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(captor.capture(), any());
+    final var filter = captor.getValue().filter();
+    assertThat(filter.tenantIds()).containsExactly("tenant-a");
+    assertThat(filter.orFilters()).hasSize(2);
+    assertThat(filter.orFilters().get(0).processDefinitionIdOperations())
+        .containsExactly(Operation.like("*invoice*"));
+    assertThat(filter.orFilters().get(1).nameOperations())
+        .containsExactly(Operation.like("*invoice*"));
+  }
+
+  @Test
+  void shouldTreatEmptyOrListAsNoOr() {
+    // given
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class), any()))
+        .thenReturn(SEARCH_QUERY_RESULT);
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"filter\": {\"$or\": []}}")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var captor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(captor.capture(), any());
+    assertThat(captor.getValue().filter().orFilters()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectEmptyOrEntry() {
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"filter\": {\"$or\": [{}]}}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verify(processDefinitionServices, never()).search(any(ProcessDefinitionQuery.class), any());
+  }
+
+  @Test
   public void shouldReturn404ForInvalidProcessDefinitionKey() {
     // given
     when(processDefinitionServices.getByKey(eq(17L), any()))
