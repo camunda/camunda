@@ -563,10 +563,26 @@ public class SchemaManager implements CloseableSilently {
     }
   }
 
+  /**
+   * Removes all documents from the live indices.
+   *
+   * <p>If schema creation is enabled, deletes and creates the indices again. The time this takes
+   * does not depend on the number of documents. Otherwise, deletes the documents from each index,
+   * because the schema is managed externally and the indices must stay in place.
+   *
+   * @return the names of the emptied indices
+   */
   public List<String> truncateIndices() {
     final var indices =
         allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
-    indices.forEach(searchEngineClient::truncateIndex);
+    if (config.schemaManager().isCreateSchema()) {
+      indices.forEach(searchEngineClient::deleteIndexIfExists);
+      initialiseIndices();
+    } else {
+      LOG.warn(
+          "Deleting documents one index at a time, as [createSchema] is false; this can take long on large indices");
+      indices.forEach(searchEngineClient::truncateIndex);
+    }
     return indices;
   }
 
