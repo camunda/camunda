@@ -58,10 +58,13 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 		toTime?: string;
 	}) => {
 		if (fromDate !== undefined && fromTime !== undefined && toDate !== undefined && toTime !== undefined) {
+			const fromDay = parseCompleteDate(fromDate);
+			const toDay = parseCompleteDate(toDate);
+			const isReversed = fromDay !== undefined && toDay !== undefined && fromDay > toDay;
 			try {
 				onApply({
-					fromDateTime: new Date(`${fromDate} ${fromTime}`),
-					toDateTime: new Date(`${toDate} ${toTime}`),
+					fromDateTime: new Date(`${isReversed ? toDate : fromDate} ${fromTime}`),
+					toDateTime: new Date(`${isReversed ? fromDate : toDate} ${toTime}`),
 				});
 			} catch (e) {
 				logger.error(e);
@@ -86,7 +89,12 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 							}
 						}}
 					>
-						<DialogContent data-testid="date-range-modal" size="md" aria-describedby={undefined}>
+						<DialogContent
+							data-testid="date-range-modal"
+							size="md"
+							aria-describedby={undefined}
+							dismissOnOutsideClick={false}
+						>
 							<DialogHeader>
 								<DialogTitle>{title}</DialogTitle>
 							</DialogHeader>

@@ -7,12 +7,13 @@
  */
 
 import {useQuery} from '@tanstack/react-query';
-import {Alert, Heading, PageLayout, Spinner} from '@camunda/design-system';
+import {Heading, PageLayout, Spinner} from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import type {OperationsLogSearch} from '../operationsLog.schema';
 import {resolvedDefinitionQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import {DefinitionAlert} from './DefinitionAlert';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 
@@ -67,15 +68,14 @@ const OperationsLog: React.FC<OperationsLogSearch> = (search) => {
 						<Spinner className="p-4" label={t('operate.operationsLog.filters.resolvingDefinition')} />
 					) : needsLookup && isError ? (
 						<div className="p-4">
-							<Alert
+							<DefinitionAlert
 								variant="destructive"
-								role="alert"
 								title={t('operate.operationsLog.filters.definitionLookupFailed')}
 							/>
 						</div>
 					) : !isResolved ? (
 						<div className="p-4">
-							<Alert variant="warning" title={t('operate.operationsLog.filters.definitionUnavailable')} />
+							<DefinitionAlert variant="warning" title={t('operate.operationsLog.filters.definitionUnavailable')} />
 						</div>
 					) : (
 						<InstancesTable

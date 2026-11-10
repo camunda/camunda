@@ -46,6 +46,7 @@ const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum)
 const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
+	'[&_[data-slot=table-head]]:whitespace-normal!',
 ].join(' ');
 
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
@@ -268,6 +269,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 				loadingPreviousPageLabel={t('operate.operationsLog.table.loadingPreviousPage')}
 				loadingNextPageLabel={t('operate.operationsLog.table.loadingNextPage')}
 				isFetching={isLoading}
+				loadingRowCount={5}
 				emptyState={isLoading ? undefined : emptyState}
 				hideHeaderWhenEmpty
 				pagination={{

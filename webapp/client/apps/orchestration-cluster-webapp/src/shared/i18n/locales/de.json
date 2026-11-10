@@ -2138,7 +2138,8 @@
 					"actor": "Akteur",
 					"actorPlaceholder": "Benutzername oder Client-ID",
 					"timestampDateRange": "Zeitstempel-Datumsbereich",
-					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern"
+					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern",
+					"noProcessesFound": "Keine Prozesse gefunden"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Batch-Vorgang {{key}} anzeigen",
@@ -2433,7 +2434,9 @@
 					"copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Option(en) auswählen"
+					"chooseOption": "Option(en) auswählen",
+					"search": "Suchen...",
+					"noResults": "Keine Ergebnisse gefunden"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Löschen",

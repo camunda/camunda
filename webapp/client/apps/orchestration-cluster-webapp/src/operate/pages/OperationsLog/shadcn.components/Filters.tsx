@@ -13,7 +13,6 @@ import {useNavigate} from '@tanstack/react-router';
 import {useQuery} from '@tanstack/react-query';
 import {Field, Form} from 'react-final-form';
 import {
-	Alert,
 	Combobox,
 	Heading,
 	Label,
@@ -46,6 +45,7 @@ import {
 	selectedDefinitionsQuery,
 } from '#/operate/shared/queries/processDefinitions.queries';
 import type {OperationsLogSearch} from '../operationsLog.schema';
+import {DefinitionAlert} from './DefinitionAlert';
 
 const ALL_VERSIONS = 'all';
 const ALL_RESULTS = 'all';
@@ -211,6 +211,7 @@ const Filters: React.FC<Props> = ({search}) => {
 													value={selectedItem ? getProcessItemKey(selectedItem) : ''}
 													placeholder={t('operate.processes.filters.searchByName')}
 													searchPlaceholder={t('operate.processes.filters.searchByName')}
+													emptyIndicator={t('operate.operationsLog.filters.noProcessesFound')}
 													disabled={
 														isProcessListPending || isProcessListError || (isMultiTenancyEnabled && !values.tenantId)
 													}
@@ -250,9 +251,8 @@ const Filters: React.FC<Props> = ({search}) => {
 									)}
 								</Field>
 								{isProcessListError && (
-									<Alert
+									<DefinitionAlert
 										variant="destructive"
-										role="alert"
 										title={t('operate.operationsLog.filters.definitionsListFailed')}
 									/>
 								)}
@@ -413,7 +413,7 @@ const ProcessVersionSelect: React.FC<{
 				</Select>
 			</div>
 			{isError && (
-				<Alert variant="destructive" role="alert" title={t('operate.operationsLog.filters.definitionsListFailed')} />
+				<DefinitionAlert variant="destructive" title={t('operate.operationsLog.filters.definitionsListFailed')} />
 			)}
 		</>
 	);

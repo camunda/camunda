@@ -211,6 +211,23 @@ describe('<OperationsLog />', () => {
 			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
 		});
 
+		it('should offer sorting only once the first audit response has arrived', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({
+					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [DECISION_LOG]})),
+					delay: 1000,
+				}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Operation type'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Operation type'})).toBeVisible();
+		});
+
 		it('should show the filtered empty message only after a successful empty response', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),

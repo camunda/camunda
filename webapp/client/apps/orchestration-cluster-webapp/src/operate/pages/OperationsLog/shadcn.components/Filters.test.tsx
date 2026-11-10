@@ -383,6 +383,42 @@ describe('Operations Log saved filters', () => {
 		await expect.element(screen.getByText('unscoped-actor')).not.toBeInTheDocument();
 	});
 
+	it('should let the user dismiss the unavailable definition alert', async ({worker}) => {
+		worker.use(
+			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				return HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: body.filter?.isLatestVersion ? [A_VERSION_1] : [],
+					}),
+				);
+			}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
+		);
+		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&processDefinitionId=invoice&processDefinitionVersion=42');
+		await expect.element(screen.getByText(DEFINITION_UNAVAILABLE)).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Dismiss'}));
+
+		await expect.element(screen.getByText(DEFINITION_UNAVAILABLE)).not.toBeInTheDocument();
+	});
+
+	it('should keep the timestamp range dialog open when the user clicks outside of it', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+			mockQueryAuditLogsEndpoint({successResponse: EMPTY_AUDIT}),
+		);
+		const screen = await renderPage();
+		await userEvent.click(screen.getByRole('button', {name: 'Timestamp date range'}));
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+
+		await userEvent.click(document.body, {position: {x: 2, y: 2}});
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
 	it('should block a selected version when process resolution fails even if decision names fail', async ({worker}) => {
 		worker.use(
 			mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 503})}),

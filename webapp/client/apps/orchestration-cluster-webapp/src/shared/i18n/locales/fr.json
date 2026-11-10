@@ -2141,7 +2141,8 @@
 					"actor": "Acteur",
 					"actorPlaceholder": "Nom d'utilisateur ou ID client",
 					"timestampDateRange": "Plage de dates de l'horodatage",
-					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage"
+					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage",
+					"noProcessesFound": "Aucun processus trouvé"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Afficher l'opération de lot {{key}}",
@@ -2436,7 +2437,9 @@
 					"copyFailed": "Impossible de copier dans le presse-papiers"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choisir une ou plusieurs options"
+					"chooseOption": "Choisir une ou plusieurs options",
+					"search": "Rechercher...",
+					"noResults": "Aucun résultat trouvé"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Supprimer",

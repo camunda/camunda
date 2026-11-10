@@ -2150,7 +2150,8 @@
 					"actor": "Actor",
 					"actorPlaceholder": "Username or client ID",
 					"timestampDateRange": "Timestamp date range",
-					"filterByTimestampDateRange": "Filter by timestamp date range"
+					"filterByTimestampDateRange": "Filter by timestamp date range",
+					"noProcessesFound": "No processes found"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "View batch operation {{key}}",
@@ -2445,7 +2446,9 @@
 					"copyFailed": "Couldn't copy to clipboard"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choose option(s)"
+					"chooseOption": "Choose option(s)",
+					"search": "Search...",
+					"noResults": "No results found"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Delete",
