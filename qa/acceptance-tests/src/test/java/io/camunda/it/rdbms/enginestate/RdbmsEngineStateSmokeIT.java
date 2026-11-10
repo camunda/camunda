@@ -27,9 +27,10 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
- * Smoke test for the experimental mixed engine state: element instances live in PostgreSQL, the
- * rest of the engine state in RocksDB. It checks that a process instance runs end to end and that
- * its element instances appear in and disappear from the database.
+ * Smoke test for the experimental mixed engine state: element instances and process definitions
+ * live in PostgreSQL, the rest of the engine state in RocksDB. It checks that a deployed process is
+ * stored in the database, and that a process instance runs end to end and its element instances
+ * appear in and disappear from the database.
  */
 @Tag("rdbms")
 @TestInstance(Lifecycle.PER_CLASS)
@@ -62,21 +63,25 @@ final class RdbmsEngineStateSmokeIT {
   }
 
   @Test
-  void shouldStoreElementInstancesInPostgres() throws SQLException {
+  void shouldStoreProcessDefinitionsAndElementInstancesInPostgres() throws SQLException {
     // given
     final var processId = "mixed-engine-state";
     final var jobType = "mixed-engine-state-task";
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(jobType))
-                .endEvent()
-                .done(),
-            "process.bpmn")
-        .send()
-        .join();
+    final var deployment =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType(jobType))
+                    .endEvent()
+                    .done(),
+                "process.bpmn")
+            .send()
+            .join();
+    final long processDefinitionKey =
+        deployment.getProcesses().getFirst().getProcessDefinitionKey();
+    assertThat(countProcessDefinitionRows(processDefinitionKey, processId)).isOne();
 
     // when
     final long processInstanceKey =
@@ -112,6 +117,24 @@ final class RdbmsEngineStateSmokeIT {
     Awaitility.await("element instances of the completed process instance are removed")
         .untilAsserted(
             () -> assertThat(countRows("process_instance_key", processInstanceKey)).isZero());
+  }
+
+  private long countProcessDefinitionRows(final long processDefinitionKey, final String processId)
+      throws SQLException {
+    try (final var connection =
+            DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        final var statement =
+            connection.prepareStatement(
+                "SELECT COUNT(*) FROM CAM_RU_PROCESS_DEFINITION"
+                    + " WHERE process_definition_key = ? AND bpmn_process_id = ? AND version = 1")) {
+      statement.setLong(1, processDefinitionKey);
+      statement.setString(2, processId);
+      try (final var result = statement.executeQuery()) {
+        result.next();
+        return result.getLong(1);
+      }
+    }
   }
 
   private long countRows(final String column, final long key) throws SQLException {
