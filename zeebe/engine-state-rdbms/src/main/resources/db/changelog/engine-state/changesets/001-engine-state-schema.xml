@@ -215,4 +215,151 @@
     </createIndex>
   </changeSet>
 
+  <!-- Process definitions and their lookups, as stored by RdbmsProcessStore. -->
+
+  <!--
+    Deployed processes. Hybrid row: the full PersistedProcess, including the BPMN resource, is
+    kept as its msgpack payload (the source of truth for reads); the other columns are derived
+    from it on every write so they can be queried and indexed. version_tag is NULL for a process
+    without one, since Oracle stores an empty string as NULL anyway. deployment_key is -1 for a
+    process deployed before processes knew their deployment.
+
+    The lookups by deployment key and by version tag are the indexed columns deployment_key_lookup
+    and version_tag_lookup. They are not derived from the other columns, but set and cleared by the
+    same writes as the RocksDB state's lookup entries, and can disagree with the definitions:
+    processes deployed before 8.6 have no deployment lookup (NULL), and deleting a process with the
+    Process:DELETED v1 applier clears the version tag lookup even if other versions carry the tag.
+    At most one process of a process id has a given lookup value. NULL never matches a lookup.
+  -->
+  <changeSet id="create-process-definition" author="camunda">
+    <createTable tableName="CAM_RU_PROCESS_DEFINITION">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_definition_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="bpmn_process_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="version" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="version_tag" type="${engineState.textType}"/>
+      <column name="deployment_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="resource_name" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="state" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="deployment_key_lookup" type="BIGINT"/>
+      <column name="version_tag_lookup" type="${engineState.textType}"/>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_PROCESS_DEFINITION"
+      constraintName="CAM_RU_PROCESS_DEFINITION_PKEY"
+      columnNames="partition_id, process_definition_key"/>
+    <!-- not unique: like the RocksDB state, a version may be stored again under another key -->
+    <createIndex tableName="CAM_RU_PROCESS_DEFINITION" indexName="CAM_RU_PROCESS_DEFINITION_BY_VERSION">
+      <column name="partition_id"/>
+      <column name="tenant_id"/>
+      <column name="bpmn_process_id"/>
+      <column name="version"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_PROCESS_DEFINITION" indexName="CAM_RU_PROCESS_DEFINITION_BY_DEPLOYMENT">
+      <column name="partition_id"/>
+      <column name="tenant_id"/>
+      <column name="bpmn_process_id"/>
+      <column name="deployment_key_lookup"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_PROCESS_DEFINITION" indexName="CAM_RU_PROCESS_DEFINITION_BY_VERSION_TAG">
+      <column name="partition_id"/>
+      <column name="tenant_id"/>
+      <column name="bpmn_process_id"/>
+      <column name="version_tag_lookup"/>
+    </createIndex>
+  </changeSet>
+
+  <!--
+    The versions of a process id: the highest version ever deployed, so versions are never
+    reused after a deletion, and the versions that still exist. The payload is the VersionInfo;
+    the version columns are derived from it for readability. The digest is the checksum of the
+    latest deployed version, to detect duplicates; NULL if there is none, while the row, i.e. the
+    version info, exists.
+  -->
+  <changeSet id="create-process-version" author="camunda">
+    <createTable tableName="CAM_RU_PROCESS_VERSION">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="bpmn_process_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="highest_version" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="latest_version" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="digest" type="${engineState.binaryType}"/>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_PROCESS_VERSION"
+      constraintName="CAM_RU_PROCESS_VERSION_PKEY"
+      columnNames="partition_id, tenant_id, bpmn_process_id"/>
+  </changeSet>
+
+  <!--
+    The partitions that still owe a drain report before a process definition can be deleted.
+    pending_partition_id is that partition, partition_id the one storing the row.
+  -->
+  <changeSet id="create-pending-process-deletion" author="camunda">
+    <createTable tableName="CAM_RU_PENDING_PROCESS_DELETION">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_definition_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="pending_partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_PENDING_PROCESS_DELETION"
+      constraintName="CAM_RU_PENDING_PROCESS_DELETION_PKEY"
+      columnNames="partition_id, process_definition_key, pending_partition_id"/>
+  </changeSet>
+
+  <!--
+    Values of a partition's state by key, e.g. the marker that the startup restore of process
+    definitions ran. A marker is a row, whose value may be NULL.
+  -->
+  <changeSet id="create-partition-state" author="camunda">
+    <createTable tableName="CAM_RU_PARTITION_STATE">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="state_key" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="value" type="${engineState.textType}"/>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_PARTITION_STATE"
+      constraintName="CAM_RU_PARTITION_STATE_PKEY"
+      columnNames="partition_id, state_key"/>
+  </changeSet>
+
 </databaseChangeLog>
