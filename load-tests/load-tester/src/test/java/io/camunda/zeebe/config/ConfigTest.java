@@ -103,7 +103,7 @@ class ConfigTest {
     assertThat(suspenderCfg.getTargetInstances()).isEqualTo(1);
     assertThat(suspenderCfg.getJobCount()).isEqualTo(500);
     assertThat(suspenderCfg.getSubscriptionCount()).isEqualTo(500);
-    assertThat(suspenderCfg.getUserTaskCount()).isZero();
+    assertThat(suspenderCfg.getUserTaskCount()).isEqualTo(500);
     assertThat(suspenderCfg.getTimerCount()).isEqualTo(2000);
     assertThat(suspenderCfg.getTimerDuration()).hasSeconds(30);
     assertThat(suspenderCfg.getWarmup()).hasSeconds(20);

@@ -74,8 +74,8 @@ public class SuspenderProperties {
   private int jobCount = 500;
   private int subscriptionCount = 500;
   // User tasks per target instance, suspended and resumed together with the jobs and subscriptions.
-  // Zero (the default) leaves the user task branch empty, so it completes immediately.
-  private int userTaskCount = 0;
+  // Zero leaves the user task branch empty, so it completes immediately.
+  private int userTaskCount = 500;
 
   // Buffered-command backlog: each target instance carries this many short timers. While the
   // instance is suspended each timer comes due exactly once and its trigger is buffered (an

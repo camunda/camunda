@@ -52,7 +52,7 @@ Any dip that lines up with the target's suspend/resume events is the blast radiu
 - **~500 message subscriptions:** a parallel multi-instance receive task (500 elements) with
   distinct correlation keys, **never correlated** — they stay open and add to the SUSPEND record.
 - **Optional user tasks:** a parallel multi-instance user task (`user-task-count` elements,
-  default `0` = none), never completed. User task suspension was added after this plan was first
+  default `500`, `0` = none), never completed. User task suspension was added after this plan was first
   written (#65160); the JMH benchmarks show it costs about as much per element as a job (~0.1 ms),
   so this branch checks that the same holds on a real cluster under load. User tasks are suspended
   in the same walk as jobs and subscriptions, so they add to the SUSPEND/RESUME work on the
@@ -227,7 +227,7 @@ these also mark the exact suspend/resume timestamps for lining up against victim
 - `zeebe_buffered_commands_events_total{action="buffered"|"drained"|"dropped"}` — the backlog
 - `zeebe_process_instance_resume_duration` — full resume incl. buffered-command drain
 
-## What to measure (single run, within-run baseline)
+## What to measure (A/B pair, plus within-run baseline)
 
 The target is recreated each cycle with an idle `batch-interval` gap where it is gone, so the run
 is its own baseline: **victim metrics during the quiet gap = "normal", at the suspend/resume
@@ -254,12 +254,33 @@ untouched); target mode adds the heavy suspend/resume. Use a generous `batch-int
 the quiet baseline window each cycle is easy to read.
 
 ```bash
-gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+gh workflow run camunda-load-test.yml --ref 64707-suspend-resume-saas-load-test \
   -f name=blast-suspend \
-  -f ref=59933-suspend-resume-load-testing \
+  -f ref=64707-suspend-resume-saas-load-test \
   -f scenario=typical \
   -f ttl=1 \
   -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.generate-resume-correlations=true --set global.extraConfig.load-tester.suspender.batch-interval=60s"
+```
+
+### A/B pair (what we run for #64707)
+
+Two runs, identical except for the suspension itself, started together so they share conditions.
+Both create, fan out and cancel the same heavy target each cycle (500 jobs, 500 message
+subscriptions, 500 user tasks and 2000 timers per instance); only A suspends and resumes it.
+
+- **A (suspend on):** `suspend-enabled=true`
+- **B (suspend off):** `suspend-enabled=false` — isolates the fan-out and timer effect without
+  suspension, so any difference between A and B is attributable to suspend/resume.
+
+```bash
+for arm in a-suspend:true b-no-suspend:false; do
+  gh workflow run camunda-load-test.yml --ref 64707-suspend-resume-saas-load-test \
+    -f name="susp-${arm%%:*}" \
+    -f ref=64707-suspend-resume-saas-load-test \
+    -f scenario=typical \
+    -f ttl=1 \
+    -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.suspend-enabled=${arm##*:} --set global.extraConfig.load-tester.suspender.batch-interval=60s"
+done
 ```
 
 Per cycle: ~20 s warmup (create + fan-out) → suspend → 30 s hold → resume (drain) → 15 s settle →
@@ -285,9 +306,9 @@ one batch operation. No count cap — at a low creation rate this is naturally ~
 at T5 suspend all, hold, at T10 resume all, at T15 suspend all, … — each phase 5 min apart.
 
 ```bash
-gh workflow run camunda-load-test.yml --ref 59933-suspend-resume-load-testing \
+gh workflow run camunda-load-test.yml --ref 64707-suspend-resume-saas-load-test \
   -f name=batch-suspend \
-  -f ref=59933-suspend-resume-load-testing \
+  -f ref=64707-suspend-resume-saas-load-test \
   -f scenario=realistic \
   -f ttl=1 \
   -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=BATCH --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
