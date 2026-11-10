@@ -73,6 +73,7 @@
     <module>rebalance</module>
     <module>dynamic-node-id-provider</module>
     <module>mailbox-api</module>
+    <module>mailbox</module>
   </modules>
 
   <profiles>

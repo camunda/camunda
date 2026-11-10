@@ -62,6 +62,8 @@ public interface MailboxStore {
    * @param maxMessages the most messages to return, at least 1
    * @param claimTimeout how long the claim stays valid
    * @return the claimed messages, empty if none is available
+   * @throws IllegalArgumentException if {@code claimerId} is blank or {@code maxMessages} is below
+   *     1
    */
   List<InboxMessage> claim(
       int partitionId, String claimerId, int maxMessages, Duration claimTimeout);

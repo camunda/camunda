@@ -8,6 +8,7 @@
 package io.camunda.zeebe.mailbox.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -65,6 +66,20 @@ public abstract class MailboxStoreContractTest {
     assertThat(claimed).extracting(InboxMessage::requestId).containsExactly(1L, 2L, 3L);
     assertThat(claimed).extracting(InboxMessage::sequence).isSorted();
     assertThat(claimed).extracting(InboxMessage::deliveryCount).containsOnly(1);
+  }
+
+  @Test
+  void shouldRejectClaimWithBlankClaimerId() {
+    // when / then
+    assertThatThrownBy(() -> store.claim(partition, " ", 10, CLAIM_TIMEOUT))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldRejectClaimOfLessThanOneMessage() {
+    // when / then
+    assertThatThrownBy(() -> store.claim(partition, "leader-a", 0, CLAIM_TIMEOUT))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test

@@ -235,6 +235,8 @@ registerProject(":dynamic-node-id-provider", "zeebe/dynamic-node-id-provider")
 
 registerProject(":zeebe-mailbox-api", "zeebe/mailbox-api")
 
+registerProject(":zeebe-mailbox", "zeebe/mailbox")
+
 registerProject(":camunda-process-test-java", "testing/camunda-process-test-java")
 
 registerProject(":camunda-process-test-coverage", "testing/camunda-process-test-coverage")
