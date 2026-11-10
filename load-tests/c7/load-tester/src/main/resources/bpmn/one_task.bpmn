@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- C7 equivalent of the C8 load-tester bpmn/one_task.bpmn: start -> external task -> end. -->
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  id="Definitions_benchmark" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="benchmark" name="One task process" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="start" name="start">
+      <bpmn:outgoing>flow1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="task" name="task" camunda:type="external" camunda:topic="benchmark-task">
+      <bpmn:incoming>flow1</bpmn:incoming>
+      <bpmn:outgoing>flow2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow1" sourceRef="start" targetRef="task" />
+    <bpmn:endEvent id="end" name="end">
+      <bpmn:incoming>flow2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="flow2" sourceRef="task" targetRef="end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="benchmark">
+      <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+        <dc:Bounds x="179" y="103" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_di" bpmnElement="task">
+        <dc:Bounds x="292" y="81" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+        <dc:Bounds x="464" y="103" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow1_di" bpmnElement="flow1">
+        <di:waypoint x="215" y="121" />
+        <di:waypoint x="292" y="121" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow2_di" bpmnElement="flow2">
+        <di:waypoint x="392" y="121" />
+        <di:waypoint x="464" y="121" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

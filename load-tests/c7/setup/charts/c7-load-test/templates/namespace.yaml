@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace | quote }}
+  labels:
+    camunda.io/purpose: load-test
+    camunda.io/created-by: {{ .Values.author | quote }}
+    deadline-date: {{ .Values.deadlineDate | quote }}
+    registry: harbor
+  {{- with .Values.topologyZone }}
+  annotations:
+    topology.kubernetes.io/zone: {{ . | quote }}
+  {{- end }}

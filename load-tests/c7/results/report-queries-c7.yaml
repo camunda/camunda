@@ -1,0 +1,167 @@
+# C7 query set for `loadtestctl report` (camunda/camunda load-tests/loadtestctl).
+#
+#   loadtestctl report <namespace> --queries report-queries-c7.yaml --start ... --end ...
+#
+# Same schema and variables as the packaged C8 report-queries.yaml:
+#   $NAMESPACE      Prometheus namespace label (local: "local", GKE: "c7-<name>", ECS: "ecs-<prefix>-c7")
+#   $DURATION_S     report window, e.g. 1800s
+#   $RATE_INTERVAL  short rate interval for windowed samples
+#   $SAMPLE_STEP    subquery resolution
+#
+# Keys that measure the same thing as in the C8 report use the same key, so C7 and C8
+# rows can be joined: process_instances_per_second, process_instance_execution_p50_ms,
+# process_instance_execution_p99_ms, response_latency_p50_ms, response_latency_p99_ms.
+
+queries:
+  - key: namespace
+    description: The namespace label this report was generated for.
+    header: Namespace
+    valueLabel: namespace
+    query: |-
+      max by (namespace) (max_over_time(c7_process_instances_total{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: engine_nodes
+    description: Number of engine instances that reported metrics during the window.
+    header: Engines
+    query: |-
+      count(count by (pod) (max_over_time(c7_process_instances_total{namespace="$NAMESPACE"}[$DURATION_S])))
+
+  - key: worker_nodes
+    description: Number of external task worker instances that reported metrics during the window.
+    header: Workers
+    query: |-
+      count(count by (pod) (max_over_time(worker_tasks_received_total{namespace="$NAMESPACE"}[$DURATION_S])))
+
+  - key: starter_rate_requested
+    description: Start requests sent per second by the starter (the configured load).
+    header: Requested PI/s
+    query: |-
+      sum(rate(starter_process_instances_submissions_total{namespace="$NAMESPACE", outcome="sent"}[$DURATION_S]))
+
+  - key: process_instances_started_per_second
+    description: Process instances started per second, counted by the engine on commit.
+    header: Started PI/s
+    query: |-
+      sum(rate(c7_process_instances_total{namespace="$NAMESPACE", event="started"}[$DURATION_S]))
+
+  - key: process_instances_per_second
+    description: Process instances completed per second, counted by the engine on commit. Same key as the
+      C8 report (completed PROCESS element instances).
+    header: PI
+    query: |-
+      sum(rate(c7_process_instances_total{namespace="$NAMESPACE", event="completed"}[$DURATION_S]))
+
+  - key: external_tasks_per_second
+    description: External tasks completed per second (C8 equivalent jobs_per_second).
+    header: Ext tasks
+    query: |-
+      sum(rate(c7_external_tasks_total{namespace="$NAMESPACE", event="completed"}[$DURATION_S]))
+
+  - key: process_instance_execution_p50_ms
+    description: Process instance duration, end minus start time from history (p50, ms). One quantile over
+      the whole window.
+    header: PIExec p50
+    query: |-
+      1000 * histogram_quantile(0.50, sum(rate(c7_process_instance_duration_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
+
+  - key: process_instance_execution_p99_ms
+    description: Process instance duration, end minus start time from history (p99, ms).
+    header: PIExec p99
+    query: |-
+      1000 * histogram_quantile(0.99, sum(rate(c7_process_instance_duration_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])) by (le))
+
+  - key: response_latency_p50_ms
+    description: Start request round trip measured by the starter (p50, ms).
+    header: Response p50 (ms)
+    query: |-
+      1000 * histogram_quantile(0.50, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
+
+  - key: response_latency_p99_ms
+    description: Start request round trip measured by the starter (p99, ms).
+    header: Response p99 (ms)
+    query: |-
+      1000 * histogram_quantile(0.99, sum by (le) (rate(starter_response_latency_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
+
+  - key: external_task_wait_p99_ms
+    description: Time from external task creation until a worker received it (p99, ms).
+    header: TaskWait p99 (ms)
+    query: |-
+      1000 * histogram_quantile(0.99, sum by (le) (rate(worker_task_wait_seconds_bucket{namespace="$NAMESPACE"}[$DURATION_S])))
+
+  - key: start_failure_percent
+    description: Share of answered start requests that failed (HTTP error, timeout, I/O).
+    header: Start fail (%)
+    query: |-
+      100 * (sum(rate(starter_process_instances_started_total{namespace="$NAMESPACE", outcome="failure"}[$DURATION_S])) or vector(0)) / sum(rate(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: engine_transactions_per_second
+    description: Top-level engine commands per second (one command = one database transaction).
+    header: Engine tx/s
+    query: |-
+      sum(rate(c7_command_duration_seconds_count{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: optimistic_locking_per_second
+    description: Engine commands rolled back with OptimisticLockingException per second.
+    header: OptLock/s
+    query: |-
+      sum(rate(c7_command_duration_seconds_count{namespace="$NAMESPACE", outcome="optimistic_locking"}[$DURATION_S])) or vector(0)
+
+  - key: open_external_tasks_max
+    description: Highest number of open external tasks (backlog) during the window.
+    header: Backlog max
+    query: |-
+      max_over_time(sum(cnpg_c7_runtime_external_tasks{namespace="$NAMESPACE"})[$DURATION_S:$SAMPLE_STEP])
+
+  - key: engine_cpu_used_p50
+    description: Engine CPU in cores (JVM process CPU), p50 of samples across the window, max over engines.
+    header: Engine CPU p50
+    query: |-
+      quantile_over_time(0.50, (max(process_cpu_usage{namespace="$NAMESPACE", application="c7-engine"} * system_cpu_count{namespace="$NAMESPACE", application="c7-engine"}))[$DURATION_S:$SAMPLE_STEP])
+
+  - key: engine_cpu_used_p99
+    description: Engine CPU in cores (JVM process CPU), p99 of samples across the window, max over engines.
+    header: Engine CPU p99
+    query: |-
+      quantile_over_time(0.99, (max(process_cpu_usage{namespace="$NAMESPACE", application="c7-engine"} * system_cpu_count{namespace="$NAMESPACE", application="c7-engine"}))[$DURATION_S:$SAMPLE_STEP])
+
+  - key: engine_heap_gib
+    description: Max engine heap used during the window (GiB).
+    header: Engine heap
+    query: |-
+      max_over_time(max(sum by (pod) (jvm_memory_used_bytes{namespace="$NAMESPACE", application="c7-engine", area="heap"}))[$DURATION_S:$SAMPLE_STEP]) / 1024^3
+
+  - key: db_pool_pending_avg
+    description: Average threads waiting for a database connection in the engine pool.
+    header: Pool pending
+    query: |-
+      avg_over_time(sum(hikaricp_connections_pending{namespace="$NAMESPACE", application="c7-engine"})[$DURATION_S:$SAMPLE_STEP])
+
+  - key: db_commits_per_second
+    description: PostgreSQL committed transactions per second.
+    header: DB commits/s
+    query: |-
+      sum(rate(cnpg_c7_db_xact_commit{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: db_rows_written_per_second
+    description: PostgreSQL rows inserted + updated + deleted per second.
+    header: DB rows/s
+    query: |-
+      sum(rate(cnpg_c7_db_tup_inserted{namespace="$NAMESPACE"}[$DURATION_S])) + sum(rate(cnpg_c7_db_tup_updated{namespace="$NAMESPACE"}[$DURATION_S])) + sum(rate(cnpg_c7_db_tup_deleted{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: wal_kib_per_process_instance
+    description: WAL KiB per completed process instance. Not available on Aurora (see CloudWatch results).
+    header: WAL KiB/PI
+    query: |-
+      sum(rate(cnpg_c7_wal_wal_bytes{namespace="$NAMESPACE"}[$DURATION_S])) / sum(rate(c7_process_instances_total{namespace="$NAMESPACE", event="completed"}[$DURATION_S])) / 1024
+
+  - key: history_process_instances_end
+    description: Rows in ACT_HI_PROCINST at the end of the window (growing state).
+    header: Hist PIs
+    query: |-
+      max(cnpg_c7_table_rows{namespace="$NAMESPACE", table="act_hi_procinst"})
+
+  - key: db_size_gib_end
+    description: Database size at the end of the window (GiB).
+    header: DB size (GiB)
+    query: |-
+      max(cnpg_c7_db_size_bytes{namespace="$NAMESPACE"}) / 1024^3

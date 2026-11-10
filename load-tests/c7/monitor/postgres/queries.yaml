@@ -1,0 +1,160 @@
+# Custom PostgreSQL metrics for the C7 benchmark.
+#
+# One file, two consumers:
+#   - local:      prometheus-community/postgres-exporter (PG_EXPORTER_EXTEND_QUERY_PATH)
+#   - Kubernetes: CNPG Cluster spec.monitoring.customQueriesConfigMap
+# CNPG prefixes every metric with "cnpg_". The local Prometheus adds the same
+# prefix via metric_relabel_configs, so one Grafana dashboard serves both.
+#
+# Metric name = <query key>_<column>, e.g. cnpg_c7_table_rows{table="act_hi_procinst"}.
+
+c7_table:
+  query: |
+    SELECT relname AS table,
+           n_live_tup AS rows,
+           n_dead_tup AS dead_rows,
+           n_tup_ins AS inserted,
+           n_tup_upd AS updated,
+           n_tup_del AS deleted,
+           pg_total_relation_size(relid) AS total_bytes,
+           pg_indexes_size(relid) AS index_bytes,
+           coalesce(seq_scan, 0) AS seq_scan,
+           coalesce(idx_scan, 0) AS idx_scan
+    FROM pg_stat_user_tables
+    WHERE relname LIKE 'act\_%'
+  target_databases: ["camunda"]
+  metrics:
+    - table:
+        usage: "LABEL"
+        description: "Engine table"
+    - rows:
+        usage: "GAUGE"
+        description: "Estimated live rows (growing state, e.g. act_hi_procinst)"
+    - dead_rows:
+        usage: "GAUGE"
+        description: "Dead rows waiting for vacuum"
+    - inserted:
+        usage: "COUNTER"
+        description: "Rows inserted"
+    - updated:
+        usage: "COUNTER"
+        description: "Rows updated"
+    - deleted:
+        usage: "COUNTER"
+        description: "Rows deleted"
+    - total_bytes:
+        usage: "GAUGE"
+        description: "Table size including indexes and TOAST"
+    - index_bytes:
+        usage: "GAUGE"
+        description: "Index size"
+    - seq_scan:
+        usage: "COUNTER"
+        description: "Sequential scans"
+    - idx_scan:
+        usage: "COUNTER"
+        description: "Index scans"
+
+c7_db:
+  query: |
+    SELECT pg_database_size(datname) AS size_bytes,
+           xact_commit, xact_rollback,
+           blks_hit, blks_read,
+           tup_returned, tup_fetched, tup_inserted, tup_updated, tup_deleted,
+           deadlocks, temp_bytes
+    FROM pg_stat_database
+    WHERE datname = current_database()
+  target_databases: ["camunda"]
+  metrics:
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Database size"
+    - xact_commit:
+        usage: "COUNTER"
+        description: "Committed transactions"
+    - xact_rollback:
+        usage: "COUNTER"
+        description: "Rolled back transactions"
+    - blks_hit:
+        usage: "COUNTER"
+        description: "Buffer cache hits"
+    - blks_read:
+        usage: "COUNTER"
+        description: "Blocks read from disk"
+    - tup_returned:
+        usage: "COUNTER"
+        description: "Rows returned by scans"
+    - tup_fetched:
+        usage: "COUNTER"
+        description: "Rows fetched by index scans"
+    - tup_inserted:
+        usage: "COUNTER"
+        description: "Rows inserted"
+    - tup_updated:
+        usage: "COUNTER"
+        description: "Rows updated"
+    - tup_deleted:
+        usage: "COUNTER"
+        description: "Rows deleted"
+    - deadlocks:
+        usage: "COUNTER"
+        description: "Deadlocks"
+    - temp_bytes:
+        usage: "COUNTER"
+        description: "Bytes written to temp files"
+
+c7_wal:
+  query: |
+    SELECT wal_records, wal_fpi, wal_bytes::float8 AS wal_bytes
+    FROM pg_stat_wal
+  metrics:
+    - wal_records:
+        usage: "COUNTER"
+        description: "WAL records generated"
+    - wal_fpi:
+        usage: "COUNTER"
+        description: "WAL full page images"
+    - wal_bytes:
+        usage: "COUNTER"
+        description: "WAL bytes generated"
+
+c7_runtime:
+  query: |
+    SELECT (SELECT count(*) FROM act_ru_ext_task) AS external_tasks,
+           (SELECT count(*) FROM act_ru_ext_task WHERE lock_exp_time_ > now()) AS external_tasks_locked,
+           (SELECT count(*) FROM act_ru_execution WHERE parent_id_ IS NULL) AS process_instances,
+           (SELECT count(*) FROM act_ru_job) AS jobs
+  target_databases: ["camunda"]
+  metrics:
+    - external_tasks:
+        usage: "GAUGE"
+        description: "Open external tasks (backlog)"
+    - external_tasks_locked:
+        usage: "GAUGE"
+        description: "External tasks locked by a worker"
+    - process_instances:
+        usage: "GAUGE"
+        description: "Running process instances"
+    - jobs:
+        usage: "GAUGE"
+        description: "Jobs (timers, async continuations, batch jobs)"
+
+c7_activity:
+  query: |
+    SELECT coalesce(state, 'none') AS state,
+           coalesce(wait_event_type, 'none') AS wait_event_type,
+           count(*) AS connections
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+    GROUP BY 1, 2
+  target_databases: ["camunda"]
+  metrics:
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - wait_event_type:
+        usage: "LABEL"
+        description: "Wait event type (Lock, IO, LWLock, ...)"
+    - connections:
+        usage: "GAUGE"
+        description: "Connections by state and wait event type"

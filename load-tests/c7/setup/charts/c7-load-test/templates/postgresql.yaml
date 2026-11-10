@@ -1,0 +1,90 @@
+{{- if .Values.postgresql.enabled }}
+{{- $nodeSelector := .Values.postgresql.nodeSelector | default .Values.global.nodeSelector }}
+{{- $tolerations := .Values.postgresql.tolerations | default .Values.global.tolerations }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.postgresql.clusterName }}-camunda
+  labels:
+    cnpg.io/reload: "true"
+type: kubernetes.io/basic-auth
+data:
+  username: {{ .Values.postgresql.database.user | b64enc | quote }}
+  password: {{ .Values.postgresql.database.password | b64enc | quote }}
+---
+# C7 metrics (table growth, WAL, runtime backlog), exposed by CNPG as cnpg_c7_*.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.postgresql.clusterName }}-c7-queries
+  labels:
+    cnpg.io/reload: "true"
+data:
+  queries: |
+    {{- .Files.Get "files/postgres-queries.yaml" | nindent 4 }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.postgresql.clusterName }}
+spec:
+  description: PostgreSQL for the Camunda 7 engine
+  inheritedMetadata:
+    labels:
+      camunda.io/created-by: {{ .Values.author | quote }}
+  instances: 1
+  {{- with .Values.postgresql.image }}
+  imageName: {{ .registry }}/{{ .repository }}:{{ .tag }}
+  {{- end }}
+  resources:
+    {{- toYaml .Values.postgresql.resources | nindent 4 }}
+  storage:
+    {{- toYaml .Values.postgresql.storage | nindent 4 }}
+  affinity:
+    nodeSelector:
+      {{- with .Values.topologyZone }}
+      topology.kubernetes.io/zone: {{ . | quote }}
+      {{- end }}
+      {{- with $nodeSelector }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+    {{- with $tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  postgresql:
+    shared_preload_libraries:
+      {{- toYaml .Values.postgresql.shared_preload_libraries | nindent 6 }}
+    parameters:
+      {{- toYaml .Values.postgresql.parameters | nindent 6 }}
+  postgresUID: {{ .Values.postgresql.postgresUID }}
+  postgresGID: {{ .Values.postgresql.postgresGID }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgresql.database.name }}
+      owner: {{ .Values.postgresql.database.user }}
+      secret:
+        name: {{ .Values.postgresql.clusterName }}-camunda
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS pg_stat_statements
+  monitoring:
+    customQueriesConfigMap:
+      - name: {{ .Values.postgresql.clusterName }}-c7-queries
+        key: queries
+  managed:
+    services:
+      disabledDefaultServices: [ro, r]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ .Values.postgresql.clusterName }}
+  labels:
+    {{- toYaml .Values.monitoring.labels | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: {{ .Values.postgresql.clusterName }}
+  podMetricsEndpoints:
+    - port: metrics
+{{- end }}
