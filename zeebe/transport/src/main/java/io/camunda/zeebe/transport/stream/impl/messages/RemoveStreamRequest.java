@@ -59,7 +59,7 @@ public final class RemoveStreamRequest implements BufferReader, BufferWriter {
 
   @Override
   public int hashCode() {
-    return Objects.hash(streamId);
+    return Objects.hashCode(streamId);
   }
 
   @Override

@@ -68,7 +68,7 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getValue());
+    return Objects.hashCode(getValue());
   }
 
   @Override

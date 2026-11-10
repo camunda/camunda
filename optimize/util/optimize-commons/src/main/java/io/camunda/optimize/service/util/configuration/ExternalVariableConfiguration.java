@@ -33,7 +33,7 @@ public class ExternalVariableConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(importConfiguration);
+    return Objects.hashCode(importConfiguration);
   }
 
   @Override

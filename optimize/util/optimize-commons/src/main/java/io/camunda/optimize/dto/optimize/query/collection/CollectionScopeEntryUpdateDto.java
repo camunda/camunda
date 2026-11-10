@@ -39,7 +39,7 @@ public class CollectionScopeEntryUpdateDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(tenants);
+    return Objects.hashCode(tenants);
   }
 
   @Override
