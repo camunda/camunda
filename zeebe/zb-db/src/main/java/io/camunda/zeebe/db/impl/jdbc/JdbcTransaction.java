@@ -81,6 +81,9 @@ final class JdbcTransaction implements ZeebeDbTransaction {
       if (connection != null) {
         rollbackConnectionQuietly(connection, e);
       }
+      for (final var participant : participants) {
+        participant.commitFailed();
+      }
       if (connections.discardIfBroken(e)) {
         throw new ZeebeDbException("JDBC connection broke during commit, retry on a new one", e);
       }
