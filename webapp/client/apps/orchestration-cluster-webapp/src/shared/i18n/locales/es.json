@@ -2248,6 +2248,15 @@
 					"retry": "Reintentar",
 					"retrying": "Reintentando cargar los elementos"
 				},
+				"ds": {
+					"itemsTable": {
+						"tableLabel": "Elementos de la operación por lotes",
+						"loadingPreviousPage": "Cargando elementos anteriores",
+						"loadingNextPage": "Cargando más elementos",
+						"expandFailure": "Mostrar los detalles del fallo",
+						"collapseFailure": "Ocultar los detalles del fallo"
+					}
+				},
 				"actions": {
 					"suspend": "Suspender",
 					"resume": "Reanudar",

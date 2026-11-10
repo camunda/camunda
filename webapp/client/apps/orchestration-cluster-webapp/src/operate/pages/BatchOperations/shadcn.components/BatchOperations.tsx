@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect, useMemo} from 'react';
 import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {createLink, useNavigate} from '@tanstack/react-router';
@@ -64,7 +65,7 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 				defaultOrder: 'DESC' as const,
 				render: (row: BatchOperation) => (
 					<BatchOperationLink
-						to="/operate/batch-operations/$batchOperationKey"
+						to={`${OPERATE_BASE}/batch-operations/$batchOperationKey` as const}
 						params={{batchOperationKey: row.batchOperationKey}}
 					>
 						{formatOperationType(row.batchOperationType)}

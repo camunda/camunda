@@ -229,7 +229,12 @@ async function waitForBatchOperationTransition(
 	}
 }
 
-function useBatchOperationActions(batchOperationKey: string) {
+type BatchOperationsRoute = '/operate/batch-operations' | '/operate-preview/batch-operations';
+
+function useBatchOperationActions(
+	batchOperationKey: string,
+	batchOperationsRoute: BatchOperationsRoute = '/operate/batch-operations',
+) {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
@@ -285,7 +290,7 @@ function useBatchOperationActions(batchOperationKey: string) {
 					isDismissable: true,
 				}),
 			);
-			void navigate({to: '/operate/batch-operations', replace: true});
+			void navigate({to: batchOperationsRoute, replace: true});
 			return;
 		}
 
