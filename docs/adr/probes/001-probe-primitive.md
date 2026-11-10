@@ -33,21 +33,25 @@ the same HTTP request, without creating a process instance.
 
 ## Options considered
 
-- **A. A generic standalone job.** A job created by an API call, with no process instance. Rejected:
-  it changes the job API and the meaning of a job for every consumer (Operate, Tasklist, exporters,
-  incidents and retries all assume a process), and a job has no way to carry an answer back to a
-  waiting caller. The standalone job POC is not used (D8).
-- **B. Jobs without a process.** The same records as a job, with the process fields left empty.
-  Rejected for the same reasons: the job API must not change (D1), and a job waits in `ACTIVATABLE`
-  without limit, where a probe has a user waiting and must end at a deadline (specification
-  section 6.1).
+- **A. A generic standalone job** (`POST /v2/jobs/standalone`). Rejected: the result is a job
+  without a process, which breaks the job API (see B). The exporters did not see it, so a request
+  could run code with secrets and leave almost no trace. And the job goes to the worker's job
+  handler, so it can start a connector operation, for example a write to S3. The standalone job POC
+  is not used (D8).
+- **B. A closed validation API on jobs without a process**
+  (`POST /v2/connectors/configurations/validation`, job kind `CONFIGURATION_VALIDATION` on a
+  reserved job type). Rejected: every job must name its process, so such a job carries a fake
+  `processInstanceKey` of -1 and every consumer must know that -1 means "no process", while the job
+  API must not change (D1). Every job consumer must change: exporters, job search and metrics all
+  need special code. And the mechanism does not match the contract: it still needs a value type,
+  intents, an authorization resource and expiry of its own.
 - **C. A direct call from the client to the runtime (phase 1).** Kept for phase 1, not extended:
   it cannot reach hybrid or outbound-only runtimes, cannot serve Desktop Modeler, and resolves
   secrets in the runtime rather than in the cluster.
-- **D. A system process instance.** A hidden process with a service task, created with result.
-  Rejected: every probe would create a process instance, its variables would be exported and shown
-  in Operate, and a metadata answer (business names, possibly large) would land on exported records,
-  which D42 forbids.
+- **D. A system process instance with a connector task.** Rejected: each validation shows in
+  Operate and counts as a process instance in the usage metrics. A failed validation creates an
+  incident unless the process models the error. And draft configurations do not fit the rule that
+  secret references are static at deployment.
 - **E. A dedicated probe primitive. Chosen.** Its own value types, state and endpoints in the
   engine, borrowing the job activation model for transport, secrets and authorization, so that
   workers reach it the way they already reach jobs and the job API stays unchanged (D1).
