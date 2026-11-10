@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
 public interface PartitionTransitionContext extends PartitionContext {
@@ -120,6 +122,14 @@ public interface PartitionTransitionContext extends PartitionContext {
    * contains both the shared properties and the properties overridden for the physical tenant.
    */
   BrokerCfg getBrokerCfg();
+
+  /**
+   * Returns how this partition uses the cross-region mailbox. Empty if the broker has no mailbox,
+   * which is the case unless a provider supplies one.
+   */
+  default Optional<MailboxSetup> getMailboxSetup() {
+    return Optional.empty();
+  }
 
   EngineSecurityConfig getSecurityConfig();
 

@@ -22,6 +22,8 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.rdbms.MyBatisLogBlockRepository;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
+import io.camunda.zeebe.broker.mailbox.MailboxSetups;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -90,6 +92,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -118,6 +121,7 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final Optional<MailboxSetup> mailboxSetup;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -151,6 +155,7 @@ public final class ZeebePartitionFactory {
       final @Nullable RdbmsEngineStateResources engineState) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
+    mailboxSetup = MailboxSetups.load(brokerCfg);
     this.localBroker = localBroker;
     this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
@@ -238,6 +243,7 @@ public final class ZeebePartitionFactory {
           new MyBatisLogBlockRepository(logSessionFactory, partitionId.number()));
     }
     context.setEngineState(engineState);
+    context.setMailboxSetup(mailboxSetup.orElse(null));
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());

@@ -14,6 +14,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.backupapi.CheckpointSnapshotReserver;
 import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -38,6 +40,7 @@ public final class InterPartitionCommandReceiverActor extends Actor
   private final ClusterCommunicationService communicationService;
   private final InterPartitionCommandReceiverImpl receiver;
   private final List<String> receivingSubjects;
+  private final @Nullable InterPartitionMailboxReceiver mailboxReceiver;
   private ActorFuture<Void> previousMessageHandled = CompletableActorFuture.completed();
 
   public InterPartitionCommandReceiverActor(
@@ -48,12 +51,45 @@ public final class InterPartitionCommandReceiverActor extends Actor
       final SnapshotTrigger snapshotTrigger,
       final CheckpointState checkpointState,
       final List<String> receivingSubjects) {
+    this(
+        partitionId,
+        communicationService,
+        logStreamWriter,
+        snapshotStore,
+        snapshotTrigger,
+        checkpointState,
+        receivingSubjects,
+        null,
+        "");
+  }
+
+  /**
+   * @param mailboxSetup if set, the actor also takes the commands that other partitions left in the
+   *     inbox of this partition. It does so from when it starts until it closes, that is, while
+   *     this node leads the partition.
+   * @param claimerId identifies this node in the inbox. Not used without a mailbox.
+   */
+  public InterPartitionCommandReceiverActor(
+      final PartitionId partitionId,
+      final ClusterCommunicationService communicationService,
+      final LogStreamWriter logStreamWriter,
+      final PersistedSnapshotStore snapshotStore,
+      final SnapshotTrigger snapshotTrigger,
+      final CheckpointState checkpointState,
+      final List<String> receivingSubjects,
+      final @Nullable MailboxSetup mailboxSetup,
+      final String claimerId) {
     super("InterPartitionCommandReceiverActor", partitionId);
     this.communicationService = communicationService;
     final var snapshotReserver =
         new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, snapshotReserver, actor);
     this.receivingSubjects = receivingSubjects;
+    mailboxReceiver =
+        mailboxSetup == null
+            ? null
+            : new InterPartitionMailboxReceiver(
+                this, mailboxSetup.store(), partitionId.number(), claimerId, mailboxSetup.config());
   }
 
   @Override
@@ -62,7 +98,17 @@ public final class InterPartitionCommandReceiverActor extends Actor
   }
 
   @Override
+  protected void onActorStarted() {
+    if (mailboxReceiver != null) {
+      mailboxReceiver.start();
+    }
+  }
+
+  @Override
   protected void onActorClosing() {
+    if (mailboxReceiver != null) {
+      mailboxReceiver.close();
+    }
     receivingSubjects.forEach(communicationService::unsubscribe);
   }
 

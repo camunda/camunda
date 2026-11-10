@@ -13,15 +13,20 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.backupapi.SnapshotTrigger;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionMailbox;
+import io.camunda.zeebe.mailbox.InboxSender;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class InterPartitionCommandServiceStep implements PartitionTransitionStep {
 
@@ -120,7 +125,9 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
             context.getPersistedSnapshotStore(),
             snapshotTrigger(context),
             checkpointState,
-            receivingSubjects);
+            receivingSubjects,
+            mailboxSetup(context).orElse(null),
+            context.getMemberId().id());
     context
         .getActorSchedulingService()
         .submitActor(receiver)
@@ -135,6 +142,17 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
               }
             });
     return future;
+  }
+
+  /**
+   * The mailbox is for the default physical tenant only, because the inbox is addressed by the
+   * partition number, which other tenants repeat.
+   */
+  private Optional<MailboxSetup> mailboxSetup(final PartitionTransitionContext context) {
+    return Objects.equals(
+            context.partitionId().group(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        ? context.getMailboxSetup()
+        : Optional.empty();
   }
 
   private SnapshotTrigger snapshotTrigger(final PartitionTransitionContext context) {
@@ -152,9 +170,27 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
     final var partitionId = context.partitionId();
     final var sendingSubject = TOPIC_PREFIX.formatted(partitionId.group());
 
+    final var mailboxSetup = mailboxSetup(context);
+    final var mailbox =
+        mailboxSetup
+            .map(
+                setup ->
+                    InterPartitionMailbox.using(
+                        new InboxSender(
+                            setup.store(),
+                            // Each partition sender needs its own id, because request ids are only
+                            // unique for one sender.
+                            "%s-p%d".formatted(context.getMemberId().id(), partitionId.number()),
+                            setup.senderExecutor(),
+                            InstantSource.system())))
+            .orElse(null);
     final var sender =
         new InterPartitionCommandSenderService(
-            context.partitionId(), context.getClusterCommunicationService(), sendingSubject);
+            context.partitionId(),
+            context.getClusterCommunicationService(),
+            sendingSubject,
+            mailbox,
+            mailboxSetup.map(MailboxSetup::simulatedZone).orElse(null));
     final var actorStarted = context.getActorSchedulingService().submitActor(sender);
     actorStarted.onComplete(
         (ignore, error) -> {

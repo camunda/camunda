@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -61,6 +62,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -128,6 +130,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final BrokerClient brokerClient;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private ClusterConfigurationService clusterConfigurationService;
+  private @Nullable MailboxSetup mailboxSetup;
 
   public PartitionStartupAndTransitionContextImpl(
       final BrokerMemberId memberId,
@@ -518,6 +521,15 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
     dynamicPartitionConfig = partitionConfig;
+  }
+
+  @Override
+  public Optional<MailboxSetup> getMailboxSetup() {
+    return Optional.ofNullable(mailboxSetup);
+  }
+
+  public void setMailboxSetup(final @Nullable MailboxSetup mailboxSetup) {
+    this.mailboxSetup = mailboxSetup;
   }
 
   @Override
