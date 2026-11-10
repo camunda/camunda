@@ -134,6 +134,6 @@ final class EngineStateMyBatis {
 
   @FunctionalInterface
   interface MapperCall<T> {
-    T apply(EngineStateMapper mapper) throws SQLException;
+    T apply(EngineStateMapper mapper);
   }
 }

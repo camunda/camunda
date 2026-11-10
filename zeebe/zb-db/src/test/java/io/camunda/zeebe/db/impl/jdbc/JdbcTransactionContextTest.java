@@ -96,6 +96,79 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
+  void shouldCommitCallThatIsNotInATransaction() throws Exception {
+    // given
+    participant.stage(1, "a");
+
+    // when
+    final int result = context.call(() -> 42);
+
+    // then
+    assertThat(result).isEqualTo(42);
+    assertThat(participant.flushes).isOne();
+    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+  }
+
+  @Test
+  void shouldJoinCurrentTransactionInCall() throws Exception {
+    // given
+    final var transaction = context.getCurrentTransaction();
+    participant.stage(1, "a");
+
+    // when
+    context.call(() -> null);
+
+    // then
+    assertThat(participant.flushes).isZero();
+    transaction.commit();
+    assertThat(participant.flushes).isOne();
+  }
+
+  @Test
+  void shouldTranslateSqlExceptionOfCall() {
+    // when - then
+    assertThatThrownBy(
+            () ->
+                context.call(
+                    () -> {
+                      throw new SQLTransientException("busy");
+                    }))
+        .isInstanceOf(ZeebeDbException.class);
+    assertThatThrownBy(
+            () ->
+                context.call(
+                    () -> {
+                      throw new SQLException("duplicate key", "23505");
+                    }))
+        .isInstanceOf(RuntimeException.class)
+        .isNotInstanceOf(ZeebeDbException.class);
+  }
+
+  @Test
+  void shouldRegisterSharedParticipantOnce() throws Exception {
+    // given
+    final var created = new ArrayList<StagingParticipant>();
+    final var first =
+        context.participant(
+            StagingParticipant.class,
+            () -> {
+              final var newParticipant = new StagingParticipant();
+              created.add(newParticipant);
+              return newParticipant;
+            });
+
+    // when
+    final var second = context.participant(StagingParticipant.class, StagingParticipant::new);
+    final var transaction = context.getCurrentTransaction();
+    transaction.commit();
+
+    // then
+    assertThat(second).isSameAs(first);
+    assertThat(created).hasSize(1);
+    assertThat(first.flushes).isOne();
+  }
+
+  @Test
   void shouldNotifyListenersOfCommit() throws Exception {
     // given
     final var outcomes = new ArrayList<String>();

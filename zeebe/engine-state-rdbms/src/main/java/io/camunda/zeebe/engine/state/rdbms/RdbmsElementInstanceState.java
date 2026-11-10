@@ -26,13 +26,10 @@ import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ElementInstanceRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PayloadRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowKey;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowRow;
-import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Loader;
-import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Writer;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -82,7 +79,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       Comparator.comparing(TakenSequenceFlowRow::gatewayElementId)
           .thenComparing(TakenSequenceFlowRow::sequenceFlowElementId);
 
-  private final JdbcTransactionContext transactionContext;
+  private final EngineStateRdbms rdbms;
   private final int partitionId;
   private final MutableVariableState variableState;
 
@@ -96,12 +93,12 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final MutableVariableState variableState) {
-    this.transactionContext = transactionContext;
+    rdbms = new EngineStateRdbms(transactionContext, partitionId);
     this.partitionId = partitionId;
     this.variableState = variableState;
 
     elementInstances =
-        cache(
+        rdbms.cache(
             "element instance",
             ElementInstanceRow::key,
             EngineStateMapper::selectElementInstance,
@@ -109,7 +106,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
             EngineStateMapper::updateElementInstance,
             EngineStateMapper::deleteElementInstance);
     takenSequenceFlows =
-        cache(
+        rdbms.cache(
             "taken sequence flow",
             TakenSequenceFlowRow::key,
             EngineStateMapper::selectTakenSequenceFlow,
@@ -117,7 +114,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
             EngineStateMapper::updateTakenSequenceFlow,
             EngineStateMapper::deleteTakenSequenceFlow);
     awaitResults =
-        cache(
+        rdbms.cache(
             "await process instance result",
             PayloadRow::key,
             EngineStateMapper::selectAwaitResult,
@@ -125,7 +122,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
             EngineStateMapper::updateAwaitResult,
             EngineStateMapper::deleteAwaitResult);
     runtimeInstructions =
-        cache(
+        rdbms.cache(
             "runtime instructions",
             PayloadRow::key,
             EngineStateMapper::selectRuntimeInstructions,
@@ -133,7 +130,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
             EngineStateMapper::updateRuntimeInstructions,
             EngineStateMapper::deleteRuntimeInstructions);
     businessIds =
-        cache(
+        rdbms.cache(
             "process instance by business id",
             BusinessIdRow::key,
             EngineStateMapper::selectBusinessId,
@@ -154,79 +151,60 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final long key,
       final ProcessInstanceRecord value,
       final ProcessInstanceIntent state) {
-    return inTransaction(
-        () -> {
-          final ElementInstance instance;
-          if (parent == null) {
-            instance = new ElementInstance(key, state, value);
-          } else {
-            instance = new ElementInstance(key, parent, state, value);
-            updateInstance(parent);
-          }
-          createInstance(instance);
-          return instance;
-        });
+    final ElementInstance instance;
+    if (parent == null) {
+      instance = new ElementInstance(key, state, value);
+    } else {
+      instance = new ElementInstance(key, parent, state, value);
+      updateInstance(parent);
+    }
+    createInstance(instance);
+    return instance;
   }
 
   @Override
   public void removeInstance(final long key) {
-    inTransaction(
-        () -> {
-          final var instance = readInstance(key);
-          if (instance == null) {
-            return null;
-          }
-          elementInstances.delete(key);
-          variableState.removeScope(key);
-          awaitResults.delete(key);
-          for (final var takenSequenceFlow : readTakenSequenceFlows(key, null)) {
-            takenSequenceFlows.delete(takenSequenceFlow.key());
-          }
+    final var instance = readInstance(key);
+    if (instance == null) {
+      return;
+    }
+    elementInstances.delete(key);
+    variableState.removeScope(key);
+    awaitResults.delete(key);
+    for (final var takenSequenceFlow : readTakenSequenceFlows(key, null)) {
+      takenSequenceFlows.delete(takenSequenceFlow.key());
+    }
 
-          final long parent = instance.getParentKey();
-          if (parent > 0) {
-            final var parentInstance = readInstance(parent);
-            if (parentInstance == null) {
-              throw new IllegalStateException(
-                  String.format(
-                      "Expected to find parent instance for element instance with key %d, but none was found.",
-                      parent));
-            }
-            parentInstance.decrementChildCount();
-            updateInstance(parentInstance);
-          }
-          return null;
-        });
+    final long parent = instance.getParentKey();
+    if (parent > 0) {
+      final var parentInstance = readInstance(parent);
+      if (parentInstance == null) {
+        throw new IllegalStateException(
+            String.format(
+                "Expected to find parent instance for element instance with key %d, but none was found.",
+                parent));
+      }
+      parentInstance.decrementChildCount();
+      updateInstance(parentInstance);
+    }
   }
 
   @Override
   public void createInstance(final ElementInstance instance) {
-    inTransaction(
-        () -> {
-          elementInstances.insert(toRow(instance));
-          variableState.createScope(instance.getKey(), instance.getParentKey());
-          return null;
-        });
+    elementInstances.insert(toRow(instance));
+    variableState.createScope(instance.getKey(), instance.getParentKey());
   }
 
   @Override
   public void updateInstance(final ElementInstance scopeInstance) {
-    inTransaction(
-        () -> {
-          elementInstances.update(toRow(scopeInstance));
-          return null;
-        });
+    elementInstances.update(toRow(scopeInstance));
   }
 
   @Override
   public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
-    inTransaction(
-        () -> {
-          final var scopeInstance = readInstance(key);
-          modifier.accept(scopeInstance);
-          updateInstance(scopeInstance);
-          return null;
-        });
+    final var scopeInstance = readInstance(key);
+    modifier.accept(scopeInstance);
+    updateInstance(scopeInstance);
   }
 
   @Override
@@ -234,13 +212,8 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final long processInstanceKey,
       final String tenantId,
       final AwaitProcessInstanceResultMetadata metadata) {
-    inTransaction(
-        () -> {
-          awaitResults.insert(
-              new PayloadRow(
-                  processInstanceKey, processInstanceKey, tenantId, serialize(metadata)));
-          return null;
-        });
+    awaitResults.insert(
+        new PayloadRow(processInstanceKey, processInstanceKey, tenantId, serialize(metadata)));
   }
 
   @Override
@@ -251,46 +224,38 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
     final var key =
         new TakenSequenceFlowKey(
             flowScopeKey, bufferAsString(gatewayElementId), bufferAsString(sequenceFlowElementId));
-    inTransaction(
-        () -> {
-          final var takenSequenceFlow = takenSequenceFlows.get(key);
-          if (takenSequenceFlow == null) {
-            final var flowScope = elementInstances.get(flowScopeKey);
-            if (flowScope == null) {
-              throw new IllegalStateException(
-                  String.format(
-                      "Expected to take sequence flow '%s' to gateway '%s' in flow scope %d,"
-                          + " but the flow scope does not exist",
-                      key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
-            }
-            takenSequenceFlows.insert(
-                new TakenSequenceFlowRow(
-                    key.flowScopeKey(),
-                    key.gatewayElementId(),
-                    key.sequenceFlowElementId(),
-                    flowScope.processInstanceKey(),
-                    flowScope.rootProcessInstanceKey(),
-                    flowScope.tenantId(),
-                    1));
-          } else {
-            takenSequenceFlows.update(
-                takenSequenceFlow.withTimesTaken(takenSequenceFlow.timesTaken() + 1));
-          }
-          return null;
-        });
+    final var takenSequenceFlow = takenSequenceFlows.get(key);
+    if (takenSequenceFlow == null) {
+      final var flowScope = elementInstances.get(flowScopeKey);
+      if (flowScope == null) {
+        throw new IllegalStateException(
+            String.format(
+                "Expected to take sequence flow '%s' to gateway '%s' in flow scope %d,"
+                    + " but the flow scope does not exist",
+                key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
+      }
+      takenSequenceFlows.insert(
+          new TakenSequenceFlowRow(
+              key.flowScopeKey(),
+              key.gatewayElementId(),
+              key.sequenceFlowElementId(),
+              flowScope.processInstanceKey(),
+              flowScope.rootProcessInstanceKey(),
+              flowScope.tenantId(),
+              1));
+    } else {
+      takenSequenceFlows.update(
+          takenSequenceFlow.withTimesTaken(takenSequenceFlow.timesTaken() + 1));
+    }
   }
 
   @Override
   public void decrementNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    inTransaction(
-        () -> {
-          for (final var takenSequenceFlow :
-              readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId))) {
-            decrement(takenSequenceFlow);
-          }
-          return null;
-        });
+    for (final var takenSequenceFlow :
+        readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId))) {
+      decrement(takenSequenceFlow);
+    }
   }
 
   @Override
@@ -301,19 +266,15 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
     final var key =
         new TakenSequenceFlowKey(
             flowScopeKey, bufferAsString(gatewayElementId), bufferAsString(sequenceFlowElementId));
-    inTransaction(
-        () -> {
-          final var takenSequenceFlow = takenSequenceFlows.get(key);
-          if (takenSequenceFlow == null) {
-            throw new IllegalStateException(
-                String.format(
-                    "Expected to decrement the number of taken sequence flow '%s' of gateway '%s'"
-                        + " in flow scope %d, but it was never taken",
-                    key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
-          }
-          decrement(takenSequenceFlow);
-          return null;
-        });
+    final var takenSequenceFlow = takenSequenceFlows.get(key);
+    if (takenSequenceFlow == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to decrement the number of taken sequence flow '%s' of gateway '%s'"
+                  + " in flow scope %d, but it was never taken",
+              key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
+    }
+    decrement(takenSequenceFlow);
   }
 
   @Override
@@ -335,22 +296,13 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions) {
     final var instructions = new RuntimeInstructions();
     instructions.setRuntimeInstructions(runtimeInstructions);
-    inTransaction(
-        () -> {
-          this.runtimeInstructions.insert(
-              new PayloadRow(
-                  processInstanceKey, processInstanceKey, tenantId, serialize(instructions)));
-          return null;
-        });
+    this.runtimeInstructions.insert(
+        new PayloadRow(processInstanceKey, processInstanceKey, tenantId, serialize(instructions)));
   }
 
   @Override
   public void removeRuntimeInstructions(final long processInstanceKey) {
-    inTransaction(
-        () -> {
-          runtimeInstructions.delete(processInstanceKey);
-          return null;
-        });
+    runtimeInstructions.delete(processInstanceKey);
   }
 
   @Override
@@ -359,23 +311,13 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
-    inTransaction(
-        () -> {
-          // only root process instances have a business id: without its row, it is its own root
-          final var processInstance = elementInstances.get(processInstanceKey);
-          final long rootProcessInstanceKey =
-              processInstance == null
-                  ? processInstanceKey
-                  : processInstance.rootProcessInstanceKey();
-          businessIds.insert(
-              new BusinessIdRow(
-                  businessId,
-                  processDefinitionId,
-                  tenantId,
-                  processInstanceKey,
-                  rootProcessInstanceKey));
-          return null;
-        });
+    // only root process instances have a business id: without its row, it is its own root
+    final var processInstance = elementInstances.get(processInstanceKey);
+    final long rootProcessInstanceKey =
+        processInstance == null ? processInstanceKey : processInstance.rootProcessInstanceKey();
+    businessIds.insert(
+        new BusinessIdRow(
+            businessId, processDefinitionId, tenantId, processInstanceKey, rootProcessInstanceKey));
   }
 
   @Override
@@ -384,12 +326,8 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
-    inTransaction(
-        () -> {
-          businessIds.delete(
-              new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey));
-          return null;
-        });
+    businessIds.delete(
+        new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey));
   }
 
   @Override
@@ -398,21 +336,18 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       // -1 marks "no instance" so we skip the lookup
       return null;
     }
-    return inTransaction(() -> readInstance(key));
+    return readInstance(key);
   }
 
   @Override
   public List<ElementInstance> getChildren(final long parentKey) {
-    return inTransaction(
-        () -> {
-          final List<ElementInstance> children = new ArrayList<>();
-          if (parentKey >= 0 && readInstance(parentKey) != null) {
-            for (final var child : readChildren(parentKey)) {
-              children.add(toInstance(child));
-            }
-          }
-          return children;
-        });
+    final List<ElementInstance> children = new ArrayList<>();
+    if (parentKey >= 0 && readInstance(parentKey) != null) {
+      for (final var child : readChildren(parentKey)) {
+        children.add(toInstance(child));
+      }
+    }
+    return children;
   }
 
   @Override
@@ -425,19 +360,15 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
 
   @Override
   public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
-    inTransaction(
-        () -> {
-          final var committedKeys = read(mapper -> mapper.selectChildKeys(partitionId, parentKey));
-          final var childKeys =
-              elementInstances.queryKeys(
-                  committedKeys, row -> row.parentKey() == parentKey, Comparator.naturalOrder());
-          for (final long childKey : childKeys) {
-            if (!visitor.apply(childKey)) {
-              break;
-            }
-          }
-          return null;
-        });
+    final var committedKeys = rdbms.read(mapper -> mapper.selectChildKeys(partitionId, parentKey));
+    final var childKeys =
+        elementInstances.queryKeys(
+            committedKeys, row -> row.parentKey() == parentKey, Comparator.naturalOrder());
+    for (final long childKey : childKeys) {
+      if (!visitor.apply(childKey)) {
+        break;
+      }
+    }
   }
 
   @Override
@@ -446,129 +377,104 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final long startAtKey,
       final BiFunction<Long, ElementInstance, Boolean> visitor,
       final Predicate<ElementInstance> filter) {
-    inTransaction(
-        () -> {
-          for (final var child : readChildren(parentKey)) {
-            // a start key of -1 means: start at the first child of the parent
-            if (startAtKey != -1 && child.key() < startAtKey) {
-              continue;
-            }
-            final var childInstance = toInstance(child);
-            if (filter.test(childInstance) && !visitor.apply(child.key(), childInstance)) {
-              break;
-            }
-          }
-          return null;
-        });
+    for (final var child : readChildren(parentKey)) {
+      // a start key of -1 means: start at the first child of the parent
+      if (startAtKey != -1 && child.key() < startAtKey) {
+        continue;
+      }
+      final var childInstance = toInstance(child);
+      if (filter.test(childInstance) && !visitor.apply(child.key(), childInstance)) {
+        break;
+      }
+    }
   }
 
   @Override
   public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
       final long processInstanceKey) {
-    return inTransaction(
-        () -> {
-          final var row = awaitResults.get(processInstanceKey);
-          return row == null
-              ? null
-              : wrapCopy(new AwaitProcessInstanceResultMetadata(), row.payload());
-        });
+    final var row = awaitResults.get(processInstanceKey);
+    return row == null ? null : wrapCopy(new AwaitProcessInstanceResultMetadata(), row.payload());
   }
 
   @Override
   public int getNumberOfTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    return inTransaction(
-        () -> readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId)).size());
+    return readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId)).size();
   }
 
   @Override
   public int getNumberOfTakenSequenceFlows(final long flowScopeKey) {
-    return inTransaction(() -> readTakenSequenceFlows(flowScopeKey, null).size());
+    return readTakenSequenceFlows(flowScopeKey, null).size();
   }
 
   @Override
   public Set<DirectBuffer> getTakenSequenceFlows(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    return inTransaction(
-        () -> {
-          final Set<DirectBuffer> sequenceFlowIds = new LinkedHashSet<>();
-          for (final var takenSequenceFlow :
-              readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId))) {
-            sequenceFlowIds.add(wrapString(takenSequenceFlow.sequenceFlowElementId()));
-          }
-          return sequenceFlowIds;
-        });
+    final Set<DirectBuffer> sequenceFlowIds = new LinkedHashSet<>();
+    for (final var takenSequenceFlow :
+        readTakenSequenceFlows(flowScopeKey, bufferAsString(gatewayElementId))) {
+      sequenceFlowIds.add(wrapString(takenSequenceFlow.sequenceFlowElementId()));
+    }
+    return sequenceFlowIds;
   }
 
   @Override
   public void visitTakenSequenceFlows(
       final long flowScopeKey, final TakenSequenceFlowVisitor visitor) {
-    inTransaction(
-        () -> {
-          for (final var takenSequenceFlow : readTakenSequenceFlows(flowScopeKey, null)) {
-            visitor.visit(
-                flowScopeKey,
-                wrapString(takenSequenceFlow.gatewayElementId()),
-                wrapString(takenSequenceFlow.sequenceFlowElementId()),
-                takenSequenceFlow.timesTaken());
-          }
-          return null;
-        });
+    for (final var takenSequenceFlow : readTakenSequenceFlows(flowScopeKey, null)) {
+      visitor.visit(
+          flowScopeKey,
+          wrapString(takenSequenceFlow.gatewayElementId()),
+          wrapString(takenSequenceFlow.sequenceFlowElementId()),
+          takenSequenceFlow.timesTaken());
+    }
   }
 
   @Override
   public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
-    return inTransaction(
-        () -> {
-          final var committedKeys =
-              read(
-                  mapper ->
-                      mapper.selectProcessInstanceKeysByDefinition(
-                          partitionId, processDefinitionKey));
-          return elementInstances.queryKeys(
-              committedKeys,
-              row -> isProcessInstanceOf(row, processDefinitionKey),
-              Comparator.naturalOrder());
-        });
+    final var committedKeys =
+        rdbms.read(
+            mapper ->
+                mapper.selectProcessInstanceKeysByDefinition(partitionId, processDefinitionKey));
+    return elementInstances.queryKeys(
+        committedKeys,
+        row -> isProcessInstanceOf(row, processDefinitionKey),
+        Comparator.naturalOrder());
   }
 
   @Override
   public boolean hasActiveProcessInstances(
       final long processDefinitionKey, final List<Long> bannedInstances) {
-    return inTransaction(
-        () -> {
-          final var stagedProcessInstances =
-              elementInstances.stagedMatching(
-                  row ->
-                      isProcessInstanceOf(row, processDefinitionKey)
-                          && !bannedInstances.contains(row.key()));
-          if (!stagedProcessInstances.isEmpty()) {
-            return true;
-          }
-          // banned instances don't count as active, staged rows are checked above
-          final List<Long> excludedKeys = new ArrayList<>(bannedInstances);
-          excludedKeys.addAll(elementInstances.stagedKeys());
-          return !read(mapper ->
-                  mapper.selectAnyProcessInstanceByDefinition(
-                      partitionId, processDefinitionKey, excludedKeys.toArray(Long[]::new)))
-              .isEmpty();
-        });
+    final var stagedProcessInstances =
+        elementInstances.stagedMatching(
+            row ->
+                isProcessInstanceOf(row, processDefinitionKey)
+                    && !bannedInstances.contains(row.key()));
+    if (!stagedProcessInstances.isEmpty()) {
+      return true;
+    }
+    // banned instances don't count as active, staged rows are checked above
+    final List<Long> excludedKeys = new ArrayList<>(bannedInstances);
+    excludedKeys.addAll(elementInstances.stagedKeys());
+    return !rdbms
+        .read(
+            mapper ->
+                mapper.selectAnyProcessInstanceByDefinition(
+                    partitionId, processDefinitionKey, excludedKeys.toArray(Long[]::new)))
+        .isEmpty();
   }
 
   @Override
   public List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       final long processInstanceKey, final String elementId) {
-    return inTransaction(
-        () -> {
-          final var row = runtimeInstructions.get(processInstanceKey);
-          if (row == null) {
-            return List.of();
-          }
-          final var instructions = wrapCopy(new RuntimeInstructions(), row.payload());
-          return instructions.getRuntimeInstructions().stream()
-              .filter(instruction -> instruction.getAfterElementId().equals(elementId))
-              .toList();
-        });
+    final var row = runtimeInstructions.get(processInstanceKey);
+    if (row == null) {
+      return List.of();
+    }
+    final var instructions = wrapCopy(new RuntimeInstructions(), row.payload());
+    return instructions.getRuntimeInstructions().stream()
+        .filter(instruction -> instruction.getAfterElementId().equals(elementId))
+        .toList();
   }
 
   @Override
@@ -577,57 +483,34 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final String processDefinitionId,
       final String tenantId,
       final Predicate<Long> ignoreWhen) {
-    return inTransaction(
-        () -> {
-          final var committed =
-              read(
-                  mapper ->
-                      mapper.selectBusinessIds(
-                          partitionId, businessId, processDefinitionId, tenantId));
-          final var entries =
-              businessIds.query(
-                  committed,
-                  row ->
-                      row.businessId().equals(businessId)
-                          && row.processDefinitionId().equals(processDefinitionId)
-                          && row.tenantId().equals(tenantId),
-                  Comparator.comparingLong(BusinessIdRow::processInstanceKey));
-          for (final var entry : entries) {
-            if (!ignoreWhen.test(entry.processInstanceKey())) {
-              return true;
-            }
-          }
-          return false;
-        });
+    final var committed =
+        rdbms.read(
+            mapper ->
+                mapper.selectBusinessIds(partitionId, businessId, processDefinitionId, tenantId));
+    final var entries =
+        businessIds.query(
+            committed,
+            row ->
+                row.businessId().equals(businessId)
+                    && row.processDefinitionId().equals(processDefinitionId)
+                    && row.tenantId().equals(tenantId),
+            Comparator.comparingLong(BusinessIdRow::processInstanceKey));
+    for (final var entry : entries) {
+      if (!ignoreWhen.test(entry.processInstanceKey())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
   public long getActiveProcessInstanceCount() {
-    return inTransaction(
-        () -> {
-          final var stagedKeys = elementInstances.stagedKeys().toArray(Long[]::new);
-          final long committed =
-              read(mapper -> mapper.countProcessInstances(partitionId, stagedKeys));
-          final long staged =
-              elementInstances.stagedMatching(row -> row.bpmnElementType() == PROCESS_TYPE).size();
-          return committed + staged;
-        });
-  }
-
-  private <K, E> EntityCache<K, E> cache(
-      final String entityName,
-      final Function<E, K> keyOf,
-      final Loader<K, E> loader,
-      final Writer<E> inserter,
-      final Writer<E> updater,
-      final Writer<K> deleter) {
-    final var cache =
-        new EntityCache<>(
-            entityName,
-            new MyBatisEntityPersister<>(
-                transactionContext, partitionId, keyOf, loader, inserter, updater, deleter));
-    transactionContext.register(cache);
-    return cache;
+    final var stagedKeys = elementInstances.stagedKeys().toArray(Long[]::new);
+    final long committed =
+        rdbms.read(mapper -> mapper.countProcessInstances(partitionId, stagedKeys));
+    final long staged =
+        elementInstances.stagedMatching(row -> row.bpmnElementType() == PROCESS_TYPE).size();
+    return committed + staged;
   }
 
   private void decrement(final TakenSequenceFlowRow takenSequenceFlow) {
@@ -645,14 +528,14 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
         && row.processDefinitionKey() == processDefinitionKey;
   }
 
-  private @Nullable ElementInstance readInstance(final long key) throws SQLException {
+  private @Nullable ElementInstance readInstance(final long key) {
     final var row = elementInstances.get(key);
     return row == null ? null : toInstance(row);
   }
 
   /** The children of the given parent, ordered by key. */
-  private List<ElementInstanceRow> readChildren(final long parentKey) throws SQLException {
-    final var committed = read(mapper -> mapper.selectChildren(partitionId, parentKey));
+  private List<ElementInstanceRow> readChildren(final long parentKey) {
+    final var committed = rdbms.read(mapper -> mapper.selectChildren(partitionId, parentKey));
     return elementInstances.query(
         committed,
         row -> row.parentKey() == parentKey,
@@ -664,9 +547,9 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
    * gateways if the gateway id is null.
    */
   private List<TakenSequenceFlowRow> readTakenSequenceFlows(
-      final long flowScopeKey, final @Nullable String gatewayElementId) throws SQLException {
+      final long flowScopeKey, final @Nullable String gatewayElementId) {
     final var committed =
-        read(
+        rdbms.read(
             mapper -> mapper.selectTakenSequenceFlows(partitionId, flowScopeKey, gatewayElementId));
     return takenSequenceFlows.query(
         committed,
@@ -674,16 +557,6 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
             row.flowScopeKey() == flowScopeKey
                 && (gatewayElementId == null || gatewayElementId.equals(row.gatewayElementId())),
         BY_GATEWAY_AND_SEQUENCE_FLOW);
-  }
-
-  private <T> T read(final EngineStateMyBatis.MapperCall<T> call) throws SQLException {
-    return EngineStateMyBatis.read(transactionContext.connection(), call);
-  }
-
-  private <T> T inTransaction(final SqlOperation<T> operation) {
-    final List<T> result = new ArrayList<>(1);
-    transactionContext.runInTransaction(() -> result.add(operation.run()));
-    return result.getFirst();
   }
 
   private static ElementInstanceRow toRow(final ElementInstance instance) {
@@ -713,10 +586,5 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
 
   private static ElementInstance toInstance(final ElementInstanceRow row) {
     return wrapCopy(new ElementInstance(), row.payload());
-  }
-
-  @FunctionalInterface
-  private interface SqlOperation<T> {
-    T run() throws SQLException;
   }
 }

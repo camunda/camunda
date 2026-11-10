@@ -13,6 +13,10 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link TransactionContext} backed by a JDBC connection of a {@link JdbcConnectionSource}.
@@ -28,6 +32,7 @@ public final class JdbcTransactionContext implements TransactionContext {
 
   private final JdbcConnectionSource connections;
   private final JdbcTransaction transaction;
+  private final Map<Class<?>, JdbcTransactionParticipant> sharedParticipants = new HashMap<>();
 
   /** A context on a fixed connection, which is never replaced or closed by this context. */
   public JdbcTransactionContext(final Connection connection) {
@@ -59,13 +64,43 @@ public final class JdbcTransactionContext implements TransactionContext {
     transaction.register(participant);
   }
 
+  /**
+   * Returns the participant of the given type, registering a new one the first time it is asked
+   * for, so that several users of this context can share a single participant.
+   */
+  public <T extends JdbcTransactionParticipant> T participant(
+      final Class<T> type, final Supplier<T> factory) {
+    final var existing = sharedParticipants.get(type);
+    if (existing != null) {
+      return type.cast(existing);
+    }
+    final var created = factory.get();
+    sharedParticipants.put(type, created);
+    register(created);
+    return created;
+  }
+
   @Override
   public void runInTransaction(final TransactionOperation operations) {
+    call(
+        () -> {
+          operations.run();
+          return null;
+        });
+  }
+
+  /**
+   * Like {@link #runInTransaction(TransactionOperation)}, but returns the result of the operation.
+   * Checked exceptions, in particular {@link SQLException}s, are translated like the ones of a
+   * commit: a recoverable one becomes a {@link io.camunda.zeebe.db.ZeebeDbException}, any other a
+   * runtime exception.
+   */
+  public <T> @Nullable T call(final JdbcOperation<T> operation) {
     try {
       if (transaction.isInCurrentTransaction()) {
-        operations.run();
+        return operation.run();
       } else {
-        runInNewTransaction(operations);
+        return callInNewTransaction(operation);
       }
     } catch (final RuntimeException e) {
       throw e;
@@ -87,11 +122,12 @@ public final class JdbcTransactionContext implements TransactionContext {
     transaction.addListener(listener);
   }
 
-  private void runInNewTransaction(final TransactionOperation operations) throws Exception {
+  private <T> @Nullable T callInNewTransaction(final JdbcOperation<T> operation) throws Exception {
     transaction.begin();
     try {
-      operations.run();
+      final T result = operation.run();
       transaction.commit();
+      return result;
     } catch (final Exception e) {
       try {
         transaction.rollback();
@@ -100,5 +136,11 @@ public final class JdbcTransactionContext implements TransactionContext {
       }
       throw e;
     }
+  }
+
+  /** An operation that runs in a transaction. */
+  @FunctionalInterface
+  public interface JdbcOperation<T> {
+    @Nullable T run() throws Exception;
   }
 }
