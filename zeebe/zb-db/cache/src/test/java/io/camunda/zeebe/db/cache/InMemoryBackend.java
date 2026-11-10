@@ -17,10 +17,10 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -28,12 +28,12 @@ import org.jspecify.annotations.Nullable;
 /**
  * A backend that keeps each column family in a sorted map. It supports only what the pass-through
  * column families use: {@code get}, {@code upsert} and {@code deleteIfExists}, and transactions
- * that run their operations directly.
+ * that run their operations directly. It is safe to use from several threads.
  */
 final class InMemoryBackend {
 
   private final Map<TestColumnFamily, NavigableMap<byte[], byte[]>> data =
-      new EnumMap<>(TestColumnFamily.class);
+      new ConcurrentHashMap<>();
   private final AtomicInteger transactions = new AtomicInteger();
   private final ZeebeDb<TestColumnFamily> db;
 
@@ -63,7 +63,8 @@ final class InMemoryBackend {
   }
 
   private NavigableMap<byte[], byte[]> rows(final TestColumnFamily columnFamily) {
-    return data.computeIfAbsent(columnFamily, cf -> new TreeMap<>(Arrays::compareUnsigned));
+    return data.computeIfAbsent(
+        columnFamily, cf -> new ConcurrentSkipListMap<>(Arrays::compareUnsigned));
   }
 
   private TransactionContext createContext() {
