@@ -185,62 +185,70 @@ final class VariablesMetadataRoundTripTest {
         .containsExactly(Map.entry("foo", "bar"));
   }
 
+  /**
+   * Every record carrying variables. {@link ProcessInstanceResultRecord} is only listed here,
+   * because it has no {@code wrap(T)} copy method.
+   */
   private static Stream<Named<?>> recordsCarryingVariables() {
     return Stream.concat(
-        copyableRecordsCarryingVariables().map(arguments -> (Named<?>) arguments.get()[0]),
+        copyableRecords().map(copyable -> named(copyable.record())),
         Stream.of(named(new ProcessInstanceResultRecord().setVariablesMetadata(METADATA))));
   }
 
   private static Stream<Arguments> copyableRecordsCarryingVariables() {
+    return copyableRecords()
+        .map(copyable -> Arguments.of(named(copyable.record()), copyable.wrap()));
+  }
+
+  private static Stream<CopyableRecord<?>> copyableRecords() {
     return Stream.of(
-        copiedBy(
+        new CopyableRecord<>(
             new MessageRecord()
                 .setName("message")
                 .setCorrelationKey("key")
                 .setTimeToLive(0L)
                 .setVariablesMetadata(METADATA),
             MessageRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new MessageSubscriptionRecord()
                 .setProcessInstanceKey(1L)
                 .setElementInstanceKey(2L)
                 .setVariablesMetadata(METADATA),
             MessageSubscriptionRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new ProcessMessageSubscriptionRecord()
                 .setSubscriptionPartitionId(1)
                 .setProcessInstanceKey(1L)
                 .setElementInstanceKey(2L)
                 .setVariablesMetadata(METADATA),
             ProcessMessageSubscriptionRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new MessageStartEventSubscriptionRecord().setVariablesMetadata(METADATA),
             MessageStartEventSubscriptionRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new MessageStartProcessInstanceRequestRecord().setVariablesMetadata(METADATA),
             MessageStartProcessInstanceRequestRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new SignalRecord().setSignalName("signal").setVariablesMetadata(METADATA),
             SignalRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new ConditionalEvaluationRecord().setVariablesMetadata(METADATA),
             ConditionalEvaluationRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new ProcessEventRecord()
                 .setScopeKey(1L)
                 .setTargetElementIdBuffer(wrapString("element"))
                 .setVariablesMetadata(METADATA),
             ProcessEventRecord::wrap),
-        copiedBy(
+        new CopyableRecord<>(
             new CompensationSubscriptionRecord().setVariablesMetadata(METADATA),
             CompensationSubscriptionRecord::wrap),
-        copiedBy(new UserTaskRecord().setVariablesMetadata(METADATA), UserTaskRecord::wrap));
+        new CopyableRecord<>(
+            new UserTaskRecord().setVariablesMetadata(METADATA), UserTaskRecord::wrap));
   }
 
-  private static <T extends UnifiedRecordValue> Arguments copiedBy(
-      final T record, final BiConsumer<T, T> wrap) {
-    return Arguments.of(named(record), wrap);
-  }
+  /** A record carrying variables, paired with its own {@code wrap(T)} copy method. */
+  private record CopyableRecord<T extends UnifiedRecordValue>(T record, BiConsumer<T, T> wrap) {}
 
   private static Named<UnifiedRecordValue> named(final UnifiedRecordValue record) {
     return Named.named(record.getClass().getSimpleName(), record);
