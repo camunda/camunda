@@ -15,6 +15,9 @@ on:
       - '**/pom.xml'
       - 'bom/**'
       - 'parent/**'
+      # A change to the scanned module set must refresh the base snapshot. The vulnerability
+      # gate only uses push-triggered snapshots, so a manual dispatch would not count.
+      - '.github/workflows/maven-dependency-snapshot.yml'
   workflow_dispatch:
 
 defaults:
