@@ -27,8 +27,9 @@ import io.camunda.zeebe.engine.state.conditional.DbConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.deployment.DbProcessStore;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
+import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
@@ -144,7 +145,12 @@ public class RocksDbStateStores implements ProcessingStateStores {
   @Override
   public MutableProcessState processState(
       final EngineConfiguration config, final BpmnTransformer transformer) {
-    return new DbProcessState(zeebeDb, transactionContext, config, transformer);
+    return new ProcessStateImpl(
+        new DbProcessStore(zeebeDb, transactionContext),
+        config,
+        transformer,
+        transactionContext,
+        zeebeDb.getMeterRegistry());
   }
 
   @Override
