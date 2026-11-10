@@ -9,7 +9,16 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
@@ -17,15 +26,25 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.TermMismatchException;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.NotLeaderException;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Optional;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -140,6 +159,134 @@ class LogStoragePartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStorage()).isNull();
+  }
+
+  @Nested
+  class WithRdbmsLogStorage {
+
+    private final LogBlockRepository repository = mock(LogBlockRepository.class);
+
+    @BeforeEach
+    void setup() {
+      transitionContext.setLogBlockRepository(repository);
+      when(repository.claimTerm(anyLong())).thenReturn(true);
+      when(raftPartition.term()).thenReturn(1L);
+    }
+
+    @AfterEach
+    void closeStorage() {
+      if (transitionContext.getLogStorage() instanceof final RdbmsLogStorage storage) {
+        storage.close();
+      }
+    }
+
+    @Test
+    void shouldClaimTermAndInstallWritableStorageForLeader() {
+      // given
+      initializeContext(Role.FOLLOWER);
+
+      // when
+      transitionTo(Role.LEADER);
+
+      // then
+      verify(repository).claimTerm(1);
+      assertThat(transitionContext.getLogStorage()).isInstanceOf(RdbmsLogStorage.class);
+      verify(raftServer, never()).addCommitListener(any());
+    }
+
+    @Test
+    void shouldFailTransitionWhenHigherTermHoldsThePartition() {
+      // given
+      initializeContext(Role.FOLLOWER);
+      when(repository.claimTerm(1)).thenReturn(false);
+      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
+
+      // when + then
+      assertThatThrownBy(() -> step.transitionTo(transitionContext, 1, Role.LEADER).join())
+          .hasCauseInstanceOf(NotLeaderException.class);
+    }
+
+    @Test
+    void shouldNotClaimTermWhenRaftTermChanged() {
+      // given
+      initializeContext(Role.FOLLOWER);
+      when(raftServer.getTerm()).thenReturn(2L);
+      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
+
+      // when + then
+      assertThatThrownBy(() -> step.transitionTo(transitionContext, 1, Role.LEADER).join())
+          .hasCauseInstanceOf(NotLeaderException.class);
+      verify(repository, never()).claimTerm(anyLong());
+    }
+
+    @Test
+    void shouldInstallReadOnlyStorageForFollower() {
+      // given
+      initializeContext(Role.LEADER);
+
+      // when
+      transitionTo(Role.FOLLOWER);
+
+      // then
+      final var storage = transitionContext.getLogStorage();
+      assertThat(storage).isInstanceOf(RdbmsLogStorage.class);
+      assertThatThrownBy(() -> append(storage)).isInstanceOf(UnsupportedOperationException.class);
+      verify(repository, never()).claimTerm(anyLong());
+    }
+
+    @Test
+    void shouldCloseStorageOfPreviousRole() {
+      // given
+      initializeContext(Role.FOLLOWER);
+      transitionTo(Role.LEADER);
+      final var leaderStorage = transitionContext.getLogStorage();
+
+      // when
+      transitionTo(Role.FOLLOWER);
+
+      // then the closed storage drops appends instead of writing them
+      append(leaderStorage);
+      verify(repository, after(200).never()).append(anyLong(), any());
+    }
+
+    @Test
+    void shouldStepDownWhenStorageFailsInItsTerm() {
+      // given
+      initializeContext(Role.FOLLOWER);
+      transitionTo(Role.LEADER);
+      doThrow(new TermMismatchException(1, 1)).when(repository).append(anyLong(), any());
+
+      // when
+      append(transitionContext.getLogStorage());
+
+      // then
+      verify(raftPartition, timeout(5_000)).stepDown();
+    }
+
+    @Test
+    void shouldNotStepDownWhenStorageFailsAfterTermChanged() {
+      // given
+      initializeContext(Role.FOLLOWER);
+      transitionTo(Role.LEADER);
+      doThrow(new TermMismatchException(1, 1)).when(repository).append(anyLong(), any());
+      when(raftPartition.term()).thenReturn(2L);
+
+      // when
+      append(transitionContext.getLogStorage());
+
+      // then
+      await()
+          .until(
+              () ->
+                  mockingDetails(repository).getInvocations().stream()
+                      .anyMatch(invocation -> invocation.getMethod().getName().equals("append")));
+      verify(raftPartition, after(200).never()).stepDown();
+    }
+
+    private void append(final LogStorage storage) {
+      storage.append(
+          1, 1, new DirectBufferWriter(new UnsafeBuffer(new byte[] {1})), new AppendListener() {});
+    }
   }
 
   private void initializeContext(final Role currentRole) {
