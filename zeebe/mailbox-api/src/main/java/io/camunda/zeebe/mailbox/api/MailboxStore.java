@@ -16,7 +16,7 @@ import java.util.Set;
 
 /**
  * Storage of the cross-region mailbox. It holds a {@code partition inbox} for each partition, a
- * {@code gateway outbox} for responses, and a registry that maps gateways to numeric stream ids.
+ * {@code gateway outbox} for responses, and a record of the leader of each partition.
  *
  * <p>An implementation must pass {@code MailboxStoreContractTest} from the test-jar of this module.
  *
@@ -133,24 +133,6 @@ public interface MailboxStore {
    * @return the responses that exist, in any order
    */
   List<OutboxResponse> takeResponses(GatewayId gatewayId, Set<Long> requestIds);
-
-  // ---- Gateway registry ----
-
-  /**
-   * Returns the numeric stream id of a gateway and creates it if needed. The same gateway always
-   * receives the same id, and different gateways receive different ids. A broker stores this id in
-   * the records of a request, and later finds the gateway with {@link #findGateway(int)}.
-   *
-   * @param gatewayId the gateway
-   * @return its stream id
-   */
-  int registerGateway(GatewayId gatewayId);
-
-  /**
-   * @param streamId a stream id that {@link #registerGateway(GatewayId)} returned
-   * @return the gateway, or empty if the id is unknown
-   */
-  Optional<GatewayId> findGateway(int streamId);
 
   // ---- Partition leaders ----
 

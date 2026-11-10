@@ -430,58 +430,6 @@ public abstract class MailboxStoreContractTest {
     assertThat(taken.get(0).payload()).isEqualTo(new byte[] {1});
   }
 
-  // ---- Gateway registry ----
-
-  @Test
-  void shouldReturnTheSameStreamIdForTheSameGateway() {
-    // given
-    final var gateway = newGateway();
-
-    // when
-    final var first = store.registerGateway(gateway);
-    final var second = store.registerGateway(gateway);
-
-    // then
-    assertThat(second).isEqualTo(first);
-  }
-
-  @Test
-  void shouldReturnDifferentStreamIdsForDifferentGateways() {
-    // when
-    final var first = store.registerGateway(newGateway());
-    final var second = store.registerGateway(newGateway());
-
-    // then
-    assertThat(second).isNotEqualTo(first);
-  }
-
-  @Test
-  void shouldFindARegisteredGatewayByStreamId() {
-    // given
-    final var gateway = newGateway();
-    final var streamId = store.registerGateway(gateway);
-
-    // when
-    final var found = store.findGateway(streamId);
-
-    // then
-    assertThat(found).contains(gateway);
-  }
-
-  @Test
-  void shouldNotMapAnotherStreamIdToTheGateway() {
-    // given
-    final var gateway = newGateway();
-    final var streamId = store.registerGateway(gateway);
-    final var otherStreamId = streamId == Integer.MAX_VALUE ? streamId - 1 : streamId + 1;
-
-    // when
-    final var found = store.findGateway(otherStreamId);
-
-    // then
-    assertThat(found.orElse(null)).isNotEqualTo(gateway);
-  }
-
   // ---- Partition leaders ----
 
   @Test

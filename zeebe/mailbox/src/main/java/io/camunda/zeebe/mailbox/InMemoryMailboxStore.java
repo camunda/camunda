@@ -41,11 +41,8 @@ public final class InMemoryMailboxStore implements MailboxStore {
   private final Map<Integer, TreeMap<Long, InboxEntry>> inboxes = new HashMap<>();
   private final Map<InboxKey, Long> sequenceByKey = new HashMap<>();
   private final Map<GatewayId, Map<Long, OutboxEntry>> outboxes = new HashMap<>();
-  private final Map<GatewayId, Integer> streamIdByGateway = new HashMap<>();
-  private final Map<Integer, GatewayId> gatewayByStreamId = new HashMap<>();
   private final Map<Integer, PartitionLeader> leaders = new HashMap<>();
   private long nextSequence = 1;
-  private int nextStreamId = 1;
 
   public InMemoryMailboxStore() {
     this(InstantSource.system());
@@ -162,22 +159,6 @@ public final class InMemoryMailboxStore implements MailboxStore {
       }
     }
     return taken;
-  }
-
-  @Override
-  public synchronized int registerGateway(final GatewayId gatewayId) {
-    return streamIdByGateway.computeIfAbsent(
-        gatewayId,
-        id -> {
-          final var streamId = nextStreamId++;
-          gatewayByStreamId.put(streamId, id);
-          return streamId;
-        });
-  }
-
-  @Override
-  public synchronized Optional<GatewayId> findGateway(final int streamId) {
-    return Optional.ofNullable(gatewayByStreamId.get(streamId));
   }
 
   @Override
