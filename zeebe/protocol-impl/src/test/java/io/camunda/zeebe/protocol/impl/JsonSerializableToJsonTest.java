@@ -5761,11 +5761,13 @@ final class JsonSerializableToJsonTest {
             () ->
                 new AgentHistoryBatchRecord()
                     .setAgentInstanceKey(2251799813685251L)
-                    .setHistoryItemIds(List.of("item-config-1", "item-config-2")),
+                    .setHistoryItemIds(List.of("item-config-1", "item-config-2"))
+                    .setStorageOrdinal(1234),
         """
         {
           "agentInstanceKey": 2251799813685251,
-          "historyItemIds": ["item-config-1", "item-config-2"]
+          "historyItemIds": ["item-config-1", "item-config-2"],
+          "storageOrdinal": 1234
         }
         """
       },
@@ -5775,7 +5777,8 @@ final class JsonSerializableToJsonTest {
         """
         {
           "agentInstanceKey": -1,
-          "historyItemIds": []
+          "historyItemIds": [],
+          "storageOrdinal": 0
         }
         """
       },
