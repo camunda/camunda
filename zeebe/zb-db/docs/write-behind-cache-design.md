@@ -584,7 +584,16 @@ two modules, with package names unchanged (§4.1):
 
 The cache module adds a third child to `zeebe-db` (Phase 2).
 
-### Phase 1: structural refactor in `zeebe-db-rocksdb`, no behaviour change (`refactor:` commits)
+### Phase 1: structural refactor in `zeebe-db-rocksdb`, no behaviour change (done)
+
+This has landed. Where the code settled differently from the steps below:
+
+- `ZeebeTransaction` is the interface; today's class is `WriteBatchTransaction`. `newIterator`
+  takes the scanned prefix (the WBWI implementation ignores it).
+- The raw-access interface is `RawDbAccess`, reached through `ZeebeTransactionDb#rawAccess()`. Its
+  batch is a `RawBatch`, and recoverable errors surface as `ZeebeDbException`.
+- The contract tests are abstract `*ContractTest` classes with an abstract `createFactory()`. The
+  RocksDB suite subclasses them under the old names, and the test-jar carries the abstract ones.
 
 1. Add `DbIterator`, including the buffer-filling `key(byte[])`/`value(byte[])` overloads, and a
    `RocksIterator` adapter. Switch `TransactionalColumnFamily`, `RawTransactionalColumnFamily`
