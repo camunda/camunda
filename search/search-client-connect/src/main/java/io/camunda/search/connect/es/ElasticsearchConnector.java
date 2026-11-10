@@ -33,7 +33,6 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.message.BasicHeader;
@@ -126,7 +125,7 @@ public final class ElasticsearchConnector {
     // lets anonymous users through for some requests never challenges them, so those requests
     // would run as anonymous. The Elasticsearch 8 client sent credentials with every request, so
     // do the same.
-    basicAuthorizationHeader(configuration)
+    SecurityUtil.basicAuthorizationHeader(configuration.getUsername(), configuration.getPassword())
         .ifPresentOrElse(
             defaultHeaders::add,
             () ->
@@ -263,22 +262,6 @@ public final class ElasticsearchConnector {
           .toArray(HttpHost[]::new);
     }
     return new HttpHost[] {getHttpHost(elsConfig)};
-  }
-
-  private static Optional<Header> basicAuthorizationHeader(
-      final ConnectConfiguration configuration) {
-    final var username = configuration.getUsername();
-    final var password = configuration.getPassword();
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      return Optional.empty();
-    }
-    final var credentials = username + ":" + password;
-    return Optional.of(
-        new BasicHeader(
-            HttpHeaders.AUTHORIZATION,
-            "Basic "
-                + Base64.getEncoder()
-                    .encodeToString(credentials.getBytes(StandardCharsets.UTF_8))));
   }
 
   private void setupProxy(

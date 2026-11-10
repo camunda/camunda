@@ -23,6 +23,7 @@ import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.search.connect.util.SecurityUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,10 +42,8 @@ import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBu
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
@@ -197,21 +196,13 @@ public class ElasticsearchClientBuilder {
     // would run as anonymous. The Elasticsearch 8 client sent credentials with every request, so
     // do the same.
     final var esConfig = configurationService.getElasticSearchConfiguration();
-    if (esConfig.getSecurityUsername() == null || esConfig.getSecurityPassword() == null) {
-      LOGGER.debug(
-          "Elasticsearch username and password not provided, skipping connection credential setup.");
-    } else {
-      final String credentials =
-          esConfig.getSecurityUsername() + ":" + esConfig.getSecurityPassword();
-      restClientBuilder.setDefaultHeaders(
-          new Header[] {
-            new BasicHeader(
-                HttpHeaders.AUTHORIZATION,
-                "Basic "
-                    + Base64.getEncoder()
-                        .encodeToString(credentials.getBytes(StandardCharsets.UTF_8)))
-          });
-    }
+    SecurityUtil.basicAuthorizationHeader(
+            esConfig.getSecurityUsername(), esConfig.getSecurityPassword())
+        .ifPresentOrElse(
+            header -> restClientBuilder.setDefaultHeaders(new Header[] {header}),
+            () ->
+                LOGGER.debug(
+                    "Elasticsearch username and password not provided, skipping connection credential setup."));
 
     return restClientBuilder;
   }

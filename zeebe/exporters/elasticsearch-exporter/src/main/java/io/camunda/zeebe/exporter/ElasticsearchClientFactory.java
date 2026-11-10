@@ -14,6 +14,7 @@ import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
+import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.message.BasicHeader;
@@ -69,13 +69,13 @@ final class ElasticsearchClientFactory {
         new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"));
     defaultHeaders.add(
         new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
-    if (config.hasAuthenticationPresent()) {
-      // Credentials go out with every request instead of in answer to a 401 challenge. A server
-      // that lets anonymous users through for some requests never challenges them, so those
-      // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
-      // request, so do the same.
-      defaultHeaders.add(basicAuthorizationHeader(config));
-    }
+    // Credentials go out with every request instead of in answer to a 401 challenge. A server
+    // that lets anonymous users through for some requests never challenges them, so those
+    // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
+    // request, so do the same.
+    SecurityUtil.basicAuthorizationHeader(
+            config.getAuthentication().getUsername(), config.getAuthentication().getPassword())
+        .ifPresent(defaultHeaders::add);
     final Rest5ClientBuilder builder =
         Rest5Client.builder(httpHosts)
             .setDefaultHeaders(defaultHeaders.toArray(Header[]::new))
@@ -112,15 +112,6 @@ final class ElasticsearchClientFactory {
     }
 
     return builder;
-  }
-
-  private static Header basicAuthorizationHeader(final ElasticsearchExporterConfiguration config) {
-    final var credentials =
-        config.getAuthentication().getUsername() + ":" + config.getAuthentication().getPassword();
-    return new BasicHeader(
-        HttpHeaders.AUTHORIZATION,
-        "Basic "
-            + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8)));
   }
 
   private void setupProxy(
