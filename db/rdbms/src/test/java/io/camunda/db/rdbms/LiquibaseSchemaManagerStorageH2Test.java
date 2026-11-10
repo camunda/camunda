@@ -118,6 +118,35 @@ class LiquibaseSchemaManagerStorageH2Test {
       }
     }
 
+    @Test
+    void shouldKeepOneTermPerPartition() throws Exception {
+      // given
+      insertPartitionTerm(1, 3);
+
+      // when / then
+      assertThatThrownBy(() -> insertPartitionTerm(1, 4)).isInstanceOf(SQLException.class);
+      try (final var connection = dataSource.getConnection();
+          final var statement =
+              connection.prepareStatement(
+                  "SELECT TERM FROM STORAGE_LOG_PARTITION WHERE PARTITION_ID = 1");
+          final var result = statement.executeQuery()) {
+        assertThat(result.next()).isTrue();
+        assertThat(result.getLong("TERM")).isEqualTo(3);
+        assertThat(result.next()).isFalse();
+      }
+    }
+
+    private void insertPartitionTerm(final int partitionId, final long term) throws SQLException {
+      try (final var connection = dataSource.getConnection();
+          final var statement =
+              connection.prepareStatement(
+                  "INSERT INTO STORAGE_LOG_PARTITION (PARTITION_ID, TERM) VALUES (?, ?)")) {
+        statement.setInt(1, partitionId);
+        statement.setLong(2, term);
+        statement.executeUpdate();
+      }
+    }
+
     private void insertBlock(
         final int partitionId, final long lowPosition, final long highPosition, final byte[] data)
         throws SQLException {
