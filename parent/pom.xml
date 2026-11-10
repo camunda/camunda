@@ -501,7 +501,13 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-db</artifactId>
+        <artifactId>zeebe-db-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-db-rocksdb</artifactId>
         <version>${project.version}</version>
       </dependency>
 

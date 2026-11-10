@@ -70,7 +70,7 @@ dependencies {
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-backup-store-azure"))
   implementation(project(":zeebe-backup-store-s3"))
-  implementation(project(":zeebe-db"))
+  implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":camunda-db-rdbms"))
   implementation(project(":zeebe-gateway-rest"))
   implementation(project(":zeebe-atomix-messaging-api"))
