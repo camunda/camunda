@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -15,7 +16,9 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -97,95 +100,116 @@ final class ActorTaskQueueConcurrencyTest {
     final var error = new AtomicReference<String>();
 
     final List<Thread> producers = new ArrayList<>();
-    for (int i = 0; i < PRODUCERS; i++) {
-      producers.add(
-          Thread.ofPlatform()
-              .name("producer-" + i)
-              .start(
-                  failOnException(
-                      error,
-                      () -> {
-                        while (producing.get()) {
-                          final var task = ready.poll();
-                          if (task == null) {
-                            Thread.onSpinWait();
-                            continue;
-                          }
-                          if (!queued.get(task).compareAndSet(false, true)) {
-                            error.compareAndSet(null, "task appended while already queued");
-                          }
-                          queue.append(task);
-                        }
-                      })));
-    }
-
     final List<Thread> consumers = new ArrayList<>();
-    final int consumerCount = THIEVES + (ownerPops ? 1 : 0);
-    for (int i = 0; i < consumerCount; i++) {
-      final boolean owner = ownerPops && i == 0;
-      consumers.add(
-          Thread.ofPlatform()
-              .name(owner ? "owner" : "thief-" + i)
-              .start(
-                  failOnException(
-                      error,
-                      () -> {
-                        // like an actor thread: one cursor per thief for this queue
-                        final var cursor = new ActorTaskQueue.StealCursor();
-                        final var random = ThreadLocalRandom.current();
-                        boolean popping = true;
-                        long phaseEnd = System.nanoTime();
-                        while (consuming.get()) {
-                          if (owner && ownerMode == Owner.INTERMITTENT) {
-                            if (System.nanoTime() > phaseEnd) {
-                              popping = !popping;
-                              phaseEnd = System.nanoTime() + random.nextLong(100_000, 3_000_000);
-                            }
-                            if (!popping) {
+    try {
+      for (int i = 0; i < PRODUCERS; i++) {
+        producers.add(
+            Thread.ofPlatform()
+                .daemon(true)
+                .name("producer-" + i)
+                .start(
+                    failOnException(
+                        error,
+                        () -> {
+                          while (producing.get() && !Thread.currentThread().isInterrupted()) {
+                            final var task = ready.poll();
+                            if (task == null) {
                               Thread.onSpinWait();
                               continue;
                             }
+                            if (!queued.get(task).compareAndSet(false, true)) {
+                              error.compareAndSet(null, "task appended while already queued");
+                            }
+                            queue.append(task);
                           }
-                          final var task = owner ? queue.pop() : queue.trySteal(cursor);
-                          if (task == null) {
-                            Thread.onSpinWait();
-                            continue;
-                          }
-                          if (!queued.get(task).compareAndSet(true, false)) {
-                            error.compareAndSet(null, "task claimed twice for one append");
-                          }
-                          claims.incrementAndGet();
-                          ready.add(task);
-                        }
-                      })));
-    }
-
-    Thread.sleep(ROUND.toMillis());
-    producing.set(false);
-    for (final var producer : producers) {
-      producer.join();
-    }
-
-    // every appended task must come back; a hidden claimable node would leave it in the queue
-    final long deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
-    while (ready.size() < taskCount && error.get() == null && System.nanoTime() < deadline) {
-      Thread.sleep(1);
-    }
-    consuming.set(false);
-    for (final var consumer : consumers) {
-      consumer.join();
-    }
-
-    boolean drained = false;
-    if (ownerPops) {
-      // only stale nodes are left; the owner drains them
-      while (queue.pop() != null) {
-        error.compareAndSet(null, "claimed a task after all tasks were returned");
+                        })));
       }
-      drained = queue.isEmpty();
-    }
 
-    return new Result(error.get(), ready.size(), claims.get(), drained);
+      final int consumerCount = THIEVES + (ownerPops ? 1 : 0);
+      for (int i = 0; i < consumerCount; i++) {
+        final boolean owner = ownerPops && i == 0;
+        consumers.add(
+            Thread.ofPlatform()
+                .daemon(true)
+                .name(owner ? "owner" : "thief-" + i)
+                .start(
+                    failOnException(
+                        error,
+                        () -> {
+                          // like an actor thread: one cursor per thief for this queue
+                          final var cursor = new ActorTaskQueue.StealCursor();
+                          final var random = ThreadLocalRandom.current();
+                          boolean popping = true;
+                          long phaseEnd = System.nanoTime();
+                          while (consuming.get() && !Thread.currentThread().isInterrupted()) {
+                            if (owner && ownerMode == Owner.INTERMITTENT) {
+                              if (System.nanoTime() > phaseEnd) {
+                                popping = !popping;
+                                phaseEnd = System.nanoTime() + random.nextLong(100_000, 3_000_000);
+                              }
+                              if (!popping) {
+                                Thread.onSpinWait();
+                                continue;
+                              }
+                            }
+                            final var task = owner ? queue.pop() : queue.trySteal(cursor);
+                            if (task == null) {
+                              Thread.onSpinWait();
+                              continue;
+                            }
+                            if (!queued.get(task).compareAndSet(true, false)) {
+                              error.compareAndSet(null, "task claimed twice for one append");
+                            }
+                            claims.incrementAndGet();
+                            ready.add(task);
+                          }
+                        })));
+      }
+
+      new CountDownLatch(1).await(ROUND.toMillis(), TimeUnit.MILLISECONDS);
+      producing.set(false);
+      await().atMost(DRAIN_TIMEOUT).until(() -> producers.stream().noneMatch(Thread::isAlive));
+
+      // every appended task must come back; a hidden claimable node would leave it in the queue
+      await().atMost(DRAIN_TIMEOUT).until(() -> ready.size() >= taskCount || error.get() != null);
+      if (ownerPops) {
+        await().atMost(DRAIN_TIMEOUT).until(() -> queue.isEmpty() || error.get() != null);
+      }
+      consuming.set(false);
+      await().atMost(DRAIN_TIMEOUT).until(() -> consumers.stream().noneMatch(Thread::isAlive));
+
+      return new Result(error.get(), ready.size(), claims.get(), queue.isEmpty());
+    } finally {
+      producing.set(false);
+      consuming.set(false);
+      final var workers = new ArrayList<>(producers);
+      workers.addAll(consumers);
+      workers.forEach(Thread::interrupt);
+      joinWorkers(workers);
+    }
+  }
+
+  private static void joinWorkers(final List<Thread> workers) {
+    boolean interrupted = Thread.interrupted();
+    final long deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
+    try {
+      for (final var worker : workers) {
+        while (worker.isAlive() && System.nanoTime() < deadline) {
+          try {
+            worker.join(Duration.ofNanos(Math.max(1, deadline - System.nanoTime())));
+          } catch (final InterruptedException e) {
+            interrupted = true;
+          }
+        }
+      }
+      assertThat(workers)
+          .allSatisfy(
+              worker -> assertThat(worker.isAlive()).describedAs(worker.getName()).isFalse());
+    } finally {
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   /** A failed queue operation only ends its own thread; record it so the round fails. */

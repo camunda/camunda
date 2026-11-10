@@ -52,9 +52,10 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * <p>Nodes whose task was already claimed stay in the list until the owner pops them. A claim
    * only ever increments the task's state count, so such a node can never be claimed again. While
    * the owner is blocked and the list keeps growing, walking those nodes on every attempt is
-   * expensive. The cursor remembers the run of stale nodes that the previous attempt of the same
-   * thief walked, and the walk jumps over it when it reaches it again. The list itself is only
-   * read.
+   * expensive. The cursor remembers a historical run and a recent prefix of stale nodes. A
+   * successful steal above the historical run advances the prefix, so draining a burst of live
+   * tasks does not repeatedly scan the tasks just stolen. A walk connecting the two runs merges
+   * them. The list itself is only read.
    *
    * @param cursor remembers the walk of the previous attempt; must only be used by one thread and
    *     for this queue
@@ -63,6 +64,8 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   public ActorTask trySteal(final StealCursor cursor) {
     final ActorTaskQueueNode skipFrom = cursor.newest;
     final ActorTaskQueueNode skipTo = cursor.oldest;
+    final ActorTaskQueueNode prefixFrom = cursor.prefixNewest;
+    final ActorTaskQueueNode prefixTo = cursor.prefixOldest;
     // every node this walk visits or jumps over is stale or claimed by it, and they are contiguous
     ActorTaskQueueNode newest = null;
     ActorTaskQueueNode oldest = null;
@@ -71,6 +74,15 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
     ActorTaskQueueNode node = tail;
 
     while (node != null && node != empty) {
+      if (node == prefixFrom) {
+        if (newest == null) {
+          newest = prefixFrom;
+        }
+        oldest = prefixTo;
+        node = prefixTo.prev;
+        continue;
+      }
+
       if (node == skipFrom) {
         reachedRun = true;
         if (newest == null) {
@@ -88,9 +100,12 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
       }
       oldest = node;
       if (claimed) {
-        // a claim above the remembered run says nothing about the nodes between: keep the run
         if (reachedRun) {
           cursor.remember(newest, oldest);
+        } else {
+          // Keep the historical run across an unchecked gap, but remember this stale prefix too.
+          cursor.prefixNewest = newest;
+          cursor.prefixOldest = oldest;
         }
         return task;
       }
@@ -169,24 +184,30 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   }
 
   /**
-   * Remembers, for one thief and one queue, the run of stale nodes that its last steal attempt
-   * walked: from {@code newest} back to {@code oldest}, following {@code prev}. Thieves never
-   * change the list, nodes are never reused, and a claimed node stays claimed, so the run stays
-   * stale and linked for as long as the walk can reach it. Confined to the thread of the thief.
+   * Remembers, for one thief and one queue, two runs of stale nodes following {@code prev}: a
+   * historical run and the prefix walked by a successful steal above it. Each run contains only
+   * stale or just-claimed nodes; the gap between them may contain live tasks and must be walked.
+   * Thieves never change the list and nodes are never reused. Confined to the thief's thread.
    *
-   * <p>Until the next attempt replaces them, the two nodes stay referenced even if the owner popped
-   * them meanwhile.
+   * <p>Only four endpoints are retained, even across nested bursts. If a steal stops above the
+   * recent prefix, it replaces that prefix; the displaced intermediate run may be walked again. A
+   * failed steal or a walk reaching the historical run merges the visited nodes into one run.
+   * Endpoints can retain popped tasks until a later attempt replaces them.
    */
   public static final class StealCursor {
     // package-private for tests
     ActorTaskQueueNode newest;
     ActorTaskQueueNode oldest;
+    private ActorTaskQueueNode prefixNewest;
+    private ActorTaskQueueNode prefixOldest;
 
     private void remember(final ActorTaskQueueNode newest, final ActorTaskQueueNode oldest) {
       if (this.newest != newest || this.oldest != oldest) {
         this.newest = newest;
         this.oldest = oldest;
       }
+      prefixNewest = null;
+      prefixOldest = null;
     }
   }
 }

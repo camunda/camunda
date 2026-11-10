@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.management.ManagementFactory;
@@ -21,8 +22,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Idle actor threads must not burn CPU in {@link
@@ -40,6 +45,147 @@ import org.junit.jupiter.api.Test;
 final class WorkStealingStaleNodesTest {
 
   private static final ThreadMXBean THREAD_MX = ManagementFactory.getThreadMXBean();
+
+  @ParameterizedTest
+  @ValueSource(ints = {100, 1_000, 10_000})
+  void shouldDrainBurstsWithoutRescanningStolenTasksOrHistoricalRun(final int burstSize) {
+    // given
+    final var queue = new ActorTaskQueue();
+    final var cursor = new ActorTaskQueue.StealCursor();
+    final var history = new CountingTask();
+    appendStale(queue, history, 10_000);
+    assertThat(queue.trySteal(cursor)).isNull();
+    final long historyClaims = history.claims;
+
+    for (int burst = 0; burst < 3; burst++) {
+      final var tasks = new ArrayList<CountingTask>();
+      for (int i = 0; i < burstSize; i++) {
+        final var task = new CountingTask();
+        tasks.add(task);
+        queue.append(task);
+      }
+
+      // when
+      for (int i = burstSize - 1; i >= 0; i--) {
+        assertThat(queue.trySteal(cursor)).isSameAs(tasks.get(i));
+      }
+      assertThat(queue.trySteal(cursor)).isNull();
+
+      // then
+      assertThat(tasks).allSatisfy(task -> assertThat(task.claims).isEqualTo(1));
+      assertThat(history.claims).isEqualTo(historyClaims);
+    }
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldRememberSuccessfulWalkWithoutHistoricalRun() {
+    // given
+    final var queue = new ActorTaskQueue();
+    final var cursor = new ActorTaskQueue.StealCursor();
+    final var waiting = new CountingTask();
+    final var stale = new CountingTask();
+    queue.append(waiting);
+    appendStale(queue, stale, 100);
+
+    // when
+    assertThat(queue.trySteal(cursor)).isSameAs(waiting);
+    final long claims = stale.claims;
+    assertThat(queue.trySteal(cursor)).isNull();
+
+    // then
+    assertThat(waiting.claims).isEqualTo(1);
+    assertThat(stale.claims).isEqualTo(claims);
+  }
+
+  @Test
+  void shouldMergePrefixAndHistoryWithoutSkippingLiveGap() {
+    // given
+    final var queue = new ActorTaskQueue();
+    final var cursor = new ActorTaskQueue.StealCursor();
+    final var history = new CountingTask();
+    appendStale(queue, history, 100);
+    assertThat(queue.trySteal(cursor)).isNull();
+    final long historyClaims = history.claims;
+    final var gap = new CountingTask();
+    final var prefix = new CountingTask();
+    queue.append(gap);
+    queue.append(prefix);
+    assertThat(queue.trySteal(cursor)).isSameAs(prefix);
+
+    // when
+    assertThat(queue.trySteal(cursor)).isSameAs(gap);
+    for (int i = 0; i < 10; i++) {
+      assertThat(queue.trySteal(cursor)).isNull();
+    }
+
+    // then
+    assertThat(gap.claims).isEqualTo(1);
+    assertThat(prefix.claims).isEqualTo(1);
+    assertThat(history.claims).isEqualTo(historyClaims);
+  }
+
+  @Test
+  void shouldFollowCompletedAppendBehindRememberedPrefix() {
+    // given
+    final var queue = new ActorTaskQueue();
+    final var cursor = new ActorTaskQueue.StealCursor();
+    appendStale(queue, new CountingTask(), 100);
+    assertThat(queue.trySteal(cursor)).isNull();
+    final var waiting = new CountingTask();
+    queue.append(waiting);
+    final var previousTail = queue.tail;
+    final var task = new CountingTask();
+    final var appending = new ActorTaskQueueNode();
+    appending.setTask(task);
+    appending.stateCount = task.getStateCount();
+    queue.tail = appending;
+    assertThat(queue.trySteal(cursor)).isSameAs(task);
+    assertThat(queue.trySteal(cursor)).isNull();
+
+    // when
+    previousTail.nextOrdered(appending);
+    appending.prevOrdered(previousTail);
+
+    // then
+    assertThat(queue.trySteal(cursor)).isSameAs(waiting);
+    assertThat(queue.trySteal(cursor)).isNull();
+    assertThat(task.claims).isEqualTo(1);
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldPreserveLiveGapsAcrossNestedBurstsAndOwnerPops() {
+    // given
+    final var queue = new ActorTaskQueue();
+    final var cursor = new ActorTaskQueue.StealCursor();
+    appendStale(queue, new CountingTask(), 100);
+    assertThat(queue.trySteal(cursor)).isNull();
+    final var older = new CountingTask();
+    final var first = new CountingTask();
+    queue.append(older);
+    queue.append(first);
+    assertThat(queue.trySteal(cursor)).isSameAs(first);
+    final var middle = new CountingTask();
+    final var newest = new CountingTask();
+    queue.append(middle);
+    queue.append(newest);
+
+    // when
+    assertThat(queue.trySteal(cursor)).isSameAs(newest);
+    assertThat(queue.pop()).isSameAs(older);
+    assertThat(queue.trySteal(cursor)).isSameAs(middle);
+    assertThat(queue.trySteal(cursor)).isNull();
+
+    // then
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+    assertThat(queue.trySteal(cursor)).isNull();
+    queue.append(first);
+    assertThat(queue.trySteal(cursor)).isSameAs(first);
+  }
 
   @Test
   void shouldNotWalkStaleNodesAgainAfterFailedSteal() {
@@ -220,6 +366,7 @@ final class WorkStealingStaleNodesTest {
    * CPU used by the IO thread group with and without the blocked thread.
    */
   @Test
+  @Tag("performance")
   void shouldNotBurnCpuOnIdleIoThreadsWhileOneIoThreadIsBlocked() throws Exception {
     assumeTrue(THREAD_MX.isThreadCpuTimeSupported(), "thread CPU time is not supported");
     if (!THREAD_MX.isThreadCpuTimeEnabled()) {
@@ -255,39 +402,44 @@ final class WorkStealingStaleNodesTest {
             .setCpuBoundActorThreadCount(1)
             .setIoBoundActorThreadCount(ioThreads);
     final var scheduler = builder.build();
-    scheduler.start();
-
     final var targets = new ArrayList<PingActor>();
-    for (int i = 0; i < 4; i++) {
-      final var target = new PingActor();
-      scheduler.submitActor(target, SchedulingHints.ioBound()).join();
-      targets.add(target);
-    }
     final var blocker = new BlockingActor();
-    scheduler.submitActor(blocker, SchedulingHints.ioBound()).join();
 
     // external producer: wakes up IO actors from a non-actor thread, so every wakeup is appended
     // to the queue of a random IO thread
     final var running = new AtomicBoolean(true);
+    final var feederFailure = new AtomicReference<Throwable>();
     final var feeder =
         Thread.ofPlatform()
             .name("external-feeder")
-            .start(
+            .daemon(true)
+            .uncaughtExceptionHandler((thread, failure) -> feederFailure.set(failure))
+            .unstarted(
                 () -> {
-                  while (running.get()) {
+                  while (running.get() && !Thread.currentThread().isInterrupted()) {
                     targets.forEach(PingActor::ping);
                     LockSupport.parkNanos(50_000);
                   }
                 });
 
     final var release = new CountDownLatch(1);
+    scheduler.start();
     try {
+      for (int i = 0; i < 4; i++) {
+        final var target = new PingActor();
+        scheduler.submitActor(target, SchedulingHints.ioBound()).get(5, TimeUnit.SECONDS);
+        targets.add(target);
+      }
+      scheduler.submitActor(blocker, SchedulingHints.ioBound()).get(5, TimeUnit.SECONDS);
+      feeder.start();
       // only the IO threads of this scheduler; other test classes may run schedulers in parallel
       final var ioThreadIds = ioThreadIds(builder.getIoBoundActorThreads());
       final var queues = ioQueues(builder.getIoBoundActorThreads());
 
       // baseline: same external load, nothing blocked
-      Thread.sleep(500);
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .until(() -> targets.stream().allMatch(t -> t.pings() > 100));
       final long baselineCpu = measureCpu(ioThreadIds, window, () -> {});
 
       // blocked: one IO thread runs a job that stays blocked until released
@@ -317,6 +469,7 @@ final class WorkStealingStaleNodesTest {
             .describedAs("jobs of actor %d run while an IO thread is blocked", i)
             .isGreaterThan(pingsBefore[i] + 100);
       }
+      assertThat(feederFailure.get()).describedAs("external feeder failure").isNull();
 
       return new Result(
           ioThreads,
@@ -325,11 +478,17 @@ final class WorkStealingStaleNodesTest {
           maxStale.get());
     } finally {
       running.set(false);
-      feeder.join();
-      // let the blocked job finish so the scheduler can stop
       release.countDown();
-      blocker.awaitUnblocked();
-      scheduler.stop().get(30, TimeUnit.SECONDS);
+      feeder.interrupt();
+      try {
+        if (feeder.isAlive()) {
+          assertThat(feeder.join(Duration.ofSeconds(5)))
+              .describedAs("external feeder stopped")
+              .isTrue();
+        }
+      } finally {
+        scheduler.stop().get(30, TimeUnit.SECONDS);
+      }
     }
   }
 
@@ -403,6 +562,20 @@ final class WorkStealingStaleNodesTest {
   private record Result(
       int ioThreads, double baselineCores, double blockedCores, long maxStaleNodes) {}
 
+  private static final class CountingTask extends ActorTask {
+    private long claims;
+
+    private CountingTask() {
+      super(new Actor() {});
+    }
+
+    @Override
+    public boolean claim(final long stateCount) {
+      claims++;
+      return super.claim(stateCount);
+    }
+  }
+
   private static final class PingActor extends Actor {
     private final AtomicLong pings = new AtomicLong();
 
@@ -437,10 +610,6 @@ final class WorkStealingStaleNodesTest {
 
     boolean isBlocked() {
       return unblocked.getCount() > 0;
-    }
-
-    void awaitUnblocked() throws InterruptedException {
-      unblocked.await(30, TimeUnit.SECONDS);
     }
   }
 }
