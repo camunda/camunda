@@ -47,7 +47,11 @@ function OverlayPortals() {
 
 function OverlayCount() {
 	const overlays = useContext(DiagramOverlayContext);
-	return <span data-testid="overlay-count">{overlays.length}</span>;
+	return (
+		<span role="status" aria-label="Overlay count">
+			{overlays.length}
+		</span>
+	);
 }
 
 function SelectedElementOverlay({selectedElementRef}: {selectedElementRef?: SVGElement}) {
@@ -71,7 +75,7 @@ describe('<Diagram />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		const diagram = document.querySelector<HTMLElement>('[data-testid="diagram"]')!;
+		const diagram = screen.getByRole('region', {name: 'Diagram'}).element();
 
 		expect(getComputedStyle(diagram).getPropertyValue('--cds-text-primary')).not.toBe('');
 		expect(getComputedStyle(diagram).getPropertyValue('--cds-layer-01')).not.toBe('');
@@ -123,6 +127,27 @@ describe('<Diagram />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
+	});
+
+	it('should keep focus on a diagram control when overlays update', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'a', position: {top: 0, left: 0}}]}
+			/>,
+		);
+		const zoomIn = screen.getByRole('button', {name: 'Zoom in diagram'});
+		await expect.element(zoomIn).toBeVisible();
+		(zoomIn.element() as HTMLElement).focus();
+
+		await screen.rerender(
+			<Diagram
+				xml={BPMN_XML}
+				overlaysData={[{type: OVERLAY_TYPE, elementId: 'startEvent_1', payload: 'b', position: {top: 0, left: 0}}]}
+			/>,
+		);
+
+		await expect.element(zoomIn).toHaveFocus();
 	});
 
 	it('should expose overlay containers via DiagramOverlayContext', async () => {
@@ -190,7 +215,7 @@ describe('<Diagram />', () => {
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByTestId('overlay-count')).toHaveTextContent('0');
+		await expect.element(screen.getByRole('status', {name: 'Overlay count'})).toHaveTextContent('0');
 	});
 
 	it('should toggle minimap button label when shown and hidden', async () => {

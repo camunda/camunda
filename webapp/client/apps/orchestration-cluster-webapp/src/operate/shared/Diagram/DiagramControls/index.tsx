@@ -8,6 +8,7 @@
 
 import {Add, CenterCircle, Subtract, Maximize, Minimize, Plan, Download} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
+import {downloadXml} from '../downloadXml';
 import {ControlsContainer, ButtonsGroup, ControlButton, MinimapButton} from './styled';
 
 type Props = {
@@ -33,19 +34,8 @@ function DiagramControls({
 }: Props) {
 	const {t} = useTranslation();
 	const handleDownload = () => {
-		if (!download) {
-			return;
-		}
-		const url = URL.createObjectURL(new Blob([download.xml], {type: 'application/xml'}));
-		const link = document.createElement('a');
-		link.href = url;
-		link.download = download.filename;
-		document.body.appendChild(link);
-		try {
-			link.click();
-		} finally {
-			link.remove();
-			setTimeout(() => URL.revokeObjectURL(url), 0);
+		if (download) {
+			downloadXml(download);
 		}
 	};
 

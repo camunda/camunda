@@ -182,7 +182,7 @@ test('should match the diagram panel header snapshot with a long process name an
 	await page.goto(`${operatePreviewProcessesPage.processesUrl}?active=true&process=order&version=1`);
 
 	const panel = operatePreviewProcessesPage.diagramPanel;
-	await expect(panel.getByTestId('diagram-canvas')).toBeVisible();
+	await expect(panel.getByRole('region', {name: 'Diagram', exact: true})).toBeVisible();
 	await expect(panel.getByRole('button', {name: /Delete Process Definition/})).toBeVisible();
 	await expect(panel.locator('header')).toHaveScreenshot();
 });
