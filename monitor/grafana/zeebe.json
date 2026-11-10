@@ -27041,7 +27041,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of jobs of jobs activated by the client.",
+          "description": "Rate of jobs of jobs activated by the client. The job type is only available for workers created through the Spring Boot starter; workers of the plain Java client are shown as a single series without a job type.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -27126,11 +27126,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (namespace, workerName, jobType)",
+              "expr": "sum(rate(camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (namespace, type)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "Worker Name:{{workerName}}-Job Type:{{jobType}}",
+              "legendFormat": "{{namespace}} - Job Type:{{type}}",
               "range": true,
               "refId": "A"
             }
@@ -27143,7 +27143,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "Rate of jobs of jobs handled by the worker.",
+          "description": "Rate of jobs of jobs handled by the worker. The job type is only available for workers created through the Spring Boot starter; workers of the plain Java client are shown as a single series without a job type.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -27228,11 +27228,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (namespace, workerName, jobType)",
+              "expr": "sum(rate(camunda_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (namespace, type)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "Worker Name:{{workerName}}-Job Type:{{jobType}}",
+              "legendFormat": "{{namespace}} - Job Type:{{type}}",
               "range": true,
               "refId": "A"
             }
@@ -27245,7 +27245,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "description": "The difference between jobs created and jobs handled.",
+          "description": "Jobs activated but not yet handled, refused or expired. The job type is only available for workers created through the Spring Boot starter; workers of the plain Java client are shown as a single series without a job type.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -27330,11 +27330,11 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(zeebe_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"} - zeebe_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) by (namespace, workerName, jobType)",
+              "expr": "sum by (namespace, type) (camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) - sum by (namespace, type) (camunda_client_worker_job_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) - (sum by (namespace, type) (camunda_client_worker_job_refused_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) or sum by (namespace, type) (camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) * 0) - (sum by (namespace, type) (camunda_client_worker_job_expired_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) or sum by (namespace, type) (camunda_client_worker_job_activated_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}) * 0)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "Worker Name:{{workerName}}-Job Type:{{jobType}}",
+              "legendFormat": "{{namespace}} - Job Type:{{type}}",
               "range": true,
               "refId": "A"
             },
