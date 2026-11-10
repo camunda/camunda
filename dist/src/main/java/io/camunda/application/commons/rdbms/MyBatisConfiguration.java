@@ -158,6 +158,7 @@ public class MyBatisConfiguration {
     final var dataSource =
         dataSourceProperties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
     dataSource.setPoolName("camunda-rdbms-exporter");
+    dataSource.setMinimumIdle(2);
     return dataSource;
   }
 

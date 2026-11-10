@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.db;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
@@ -21,6 +22,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -49,6 +51,15 @@ class RdbmsExporterConnectionPoolIT {
   @Autowired DataSource dataSource;
   @Autowired RdbmsService rdbmsService;
   @Autowired ProcessInstanceDbReader searchProcessInstanceReader;
+
+  @Autowired
+  @Qualifier("rdbmsExporterDataSource")
+  HikariDataSource rdbmsExporterDataSource;
+
+  @Test
+  void shouldKeepTwoIdleExporterConnectionsByDefault() {
+    assertThat(rdbmsExporterDataSource.getMinimumIdle()).isEqualTo(2);
+  }
 
   @Test
   void shouldExportWhileSearchesHoldAllConnectionsOfTheMainPool() throws Exception {
