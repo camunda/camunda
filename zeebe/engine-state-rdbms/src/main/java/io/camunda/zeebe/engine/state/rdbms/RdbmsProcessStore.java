@@ -212,6 +212,10 @@ public final class RdbmsProcessStore implements ProcessStore {
     }
   }
 
+  /**
+   * Not derived from the deployment key column, as it disagrees for the deployment key -1, see the
+   * changelog of the process definition table.
+   */
   @Override
   public void putProcessKeyByDeploymentKey(
       final String tenantId,

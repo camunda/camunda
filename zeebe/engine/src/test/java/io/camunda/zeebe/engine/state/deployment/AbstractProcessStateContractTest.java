@@ -909,6 +909,31 @@ public abstract class AbstractProcessStateContractTest {
   }
 
   @Test
+  public void shouldGetLastProcessStoredByDeploymentKeyWithoutDeploymentKey() {
+    // given - processes without deployment key: one created by Process:CREATED v1 (no lookup), two
+    // by v2 from deployments distributed by a pre-8.6 partition (lookup of -1)
+    final var createdV1 = creatingProcessRecord("process", 1);
+    final var createdV2 = creatingProcessRecord("process", 2);
+    final var createdV2Later = creatingProcessRecord("process", 3);
+    for (final var process : List.of(createdV1, createdV2, createdV2Later)) {
+      process.setDeploymentKey(-1L);
+      processState.putProcess(process.getKey(), process);
+    }
+    processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(createdV2);
+    processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(createdV2Later);
+
+    // when
+    final var deployedProcess =
+        processState.getProcessByProcessIdAndDeploymentKey(wrapString("process"), -1L, TENANT_ID);
+
+    // then - neither the first nor every process with deployment key -1
+    assertThat(deployedProcess)
+        .isNotNull()
+        .extracting(DeployedProcess::getKey)
+        .isEqualTo(createdV2Later.getKey());
+  }
+
+  @Test
   public void shouldGetProcessByProcessIdAndVersionTag() {
     // given
     final var processId1 = "process-1";

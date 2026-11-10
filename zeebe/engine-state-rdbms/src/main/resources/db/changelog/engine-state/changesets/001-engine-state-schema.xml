@@ -239,6 +239,14 @@
     processes deployed before 8.6 have no deployment lookup (NULL), and deleting a process with the
     Process:DELETED v1 applier clears the version tag lookup even if other versions carry the tag.
     At most one process of a process id has a given lookup value. NULL never matches a lookup.
+
+    deployment_key_lookup is not redundant to deployment_key. For a deployment key > 0 they agree:
+    a deployment contains a process id once, and Process:CREATED v2 and Deployment:RECONSTRUCTED
+    set both together. But a partition that gets a deployment from a pre-8.6 partition during a
+    rolling update creates its processes with Process:CREATED v2 and deployment key -1, and each
+    takes over the single lookup of -1, while the processes of Process:CREATED v1 and
+    Deployment:DISTRIBUTED have -1 without lookup. A call activity with binding type deployment in a
+    process without deployment key looks up -1, and RocksDB finds only the last such v2 process.
   -->
   <changeSet id="create-process-definition" author="camunda">
     <createTable tableName="CAM_RU_PROCESS_DEFINITION">
