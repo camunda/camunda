@@ -52,8 +52,10 @@ import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientFactoryTest {
+  // an instance field, so every test gets its own server: the class runs its tests concurrently
+  // and WireMock resets stubs and the request journal before each test
   @RegisterExtension
-  static WireMockExtension esServer =
+  final WireMockExtension esServer =
       WireMockExtension.newInstance()
           .options(WireMockConfiguration.wireMockConfig().dynamicPort())
           .build();
