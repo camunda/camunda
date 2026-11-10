@@ -136,8 +136,12 @@ test.describe('User Task Suspension API', () => {
         request,
         'ut-susp-intersection',
         instancesToCancel,
-        3,
+        4,
       );
+    await assertStatusCode(
+      await completeUserTask(request, userTaskKeys[3]),
+      204,
+    );
     for (const userTaskKey of userTaskKeys.slice(0, 2)) {
       await assertStatusCode(
         await assignUserTask(request, userTaskKey, 'demo'),
@@ -166,7 +170,8 @@ test.describe('User Task Suspension API', () => {
     await expectUserTasks(
       request,
       {processDefinitionId, isSuspended: false, state: 'COMPLETED'},
-      0,
+      [userTaskKeys[3]],
+      false,
     );
     await expectUserTasks(
       request,
@@ -322,7 +327,7 @@ test.describe('User Task Suspension API', () => {
     }
   });
 
-  test('Task commands are rejected immediately after suspension is requested', async ({
+  test('Task completion and assignment are rejected after suspension is requested', async ({
     request,
   }) => {
     const count = 200;
@@ -346,7 +351,6 @@ test.describe('User Task Suspension API', () => {
       request,
       processInstanceKey,
     );
-    // No exporter read may delay these commands until all tasks are marked.
     const [completion, assignment] = await Promise.all([
       completeUserTask(request, before[0].userTaskKey),
       assignUserTask(request, before[1].userTaskKey, 'demo'),
@@ -525,6 +529,8 @@ test.describe('User Task Suspension API', () => {
       await suspendProcessInstance(request, processInstanceKey),
       204,
     );
+    // A 204 can acknowledge SUSPENDING, where resume returns 409. That
+    // transient rejection is accepted before retrying once after SUSPENDED.
     await assertStatusCode(
       await resumeProcessInstanceAfterSuspension(request, processInstanceKey),
       204,
