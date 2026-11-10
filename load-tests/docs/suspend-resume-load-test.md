@@ -286,6 +286,7 @@ for arm in a-suspend:true b-no-suspend:false; do
     -f ttl=1 \
     -f enable-optimize=false \
     -f perform-read-benchmarks=false \
+    -f stable-vms=true \
     -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.suspend-enabled=${arm##*:} --set global.extraConfig.load-tester.suspender.timer-count=200 --set global.extraConfig.load-tester.suspender.timer-duration=8m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.settle=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
 done
 ```
@@ -293,6 +294,26 @@ done
 Per cycle: 5 min warmup (create + fan-out) → suspend → 5 min hold (the timers come due at 8 min,
 inside the hold) → resume (drain) → 5 min settle → cancel → 5 min quiet. Add
 `generate-resume-correlations=true` to also create a correlation burst on resume.
+
+Use `stable-vms=true`: on the default spot VMs, broker pods get preempted and rescheduled during
+the run. Each failover causes a burst of dropped requests and resets the per-broker counters, which
+makes both the drop counts and the suspend/resume counters unusable for an A/B comparison.
+
+### C/D pair: batch suspend/resume of ordinary instances
+
+- **C (batch):** each cycle suspends all active `realistic` parent instances with one batch
+  operation, holds them 5 min, resumes them all with one batch operation, then waits 5 min.
+  Suspension does not cascade to call activity children: they keep running, and their completions
+  buffer in the suspended parent until resume.
+- **D (baseline):** the same `realistic` load without the suspender.
+
+```bash
+R=64707-suspend-resume-saas-load-test
+common=(-f ref=$R -f scenario=realistic -f ttl=1 -f enable-optimize=false -f perform-read-benchmarks=false -f stable-vms=true)
+gh workflow run camunda-load-test.yml --ref $R -f name=susp-c-batch "${common[@]}" \
+  -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.mode=BATCH --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
+gh workflow run camunda-load-test.yml --ref $R -f name=susp-d-baseline "${common[@]}"
+```
 
 The run does **not stop on its own** — it loops until the namespace is deleted or the `ttl` (days)
 expires. Collect ~30–60 min of cycles, then tear down:
