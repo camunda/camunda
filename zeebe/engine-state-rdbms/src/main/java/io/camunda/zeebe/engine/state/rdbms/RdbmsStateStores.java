@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.RocksDbStateStores;
+import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -55,7 +56,11 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   @Override
   public MutableProcessState processState(
       final EngineConfiguration config, final BpmnTransformer transformer) {
-    return new RdbmsProcessState(
-        mixedContext.jdbc(), partitionId, config, transformer, zeebeDb.getMeterRegistry());
+    return new ProcessStateImpl(
+        new RdbmsProcessStore(mixedContext.jdbc(), partitionId),
+        config,
+        transformer,
+        mixedContext.jdbc(),
+        zeebeDb.getMeterRegistry());
   }
 }

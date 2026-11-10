@@ -131,7 +131,7 @@ class DbProcessStateTransformerVersionTest {
 
   @Test
   void shouldSelectPinnedV2HandlerOnCacheMissRoundTrip() {
-    // given — a DbProcessState backed by a custom transformer that has a v2 SIGNAL handler
+    // given — a RocksDB process state backed by a custom transformer that has a v2 SIGNAL handler
     final var v2Ran = new AtomicBoolean(false);
     final var customTransformer =
         BpmnFactory.createTransformer(
@@ -142,8 +142,12 @@ class DbProcessStateTransformerVersionTest {
         TransformerSlot.SIGNAL, 2, () -> new RecordingSignalTransformer(v2Ran));
 
     final var processState =
-        new DbProcessState(
-            zeebeDb, transactionContext, new EngineConfiguration(), customTransformer);
+        new ProcessStateImpl(
+            new DbProcessStore(zeebeDb, transactionContext),
+            new EngineConfiguration(),
+            customTransformer,
+            transactionContext,
+            zeebeDb.getMeterRegistry());
 
     final var model =
         Bpmn.createExecutableProcess("signal-proc")

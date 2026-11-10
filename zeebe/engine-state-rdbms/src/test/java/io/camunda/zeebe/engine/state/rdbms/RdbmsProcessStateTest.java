@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.deployment.AbstractProcessStateContractTest;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.sql.Connection;
@@ -236,12 +237,12 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
         .isOne();
   }
 
-  private RdbmsProcessState newProcessState(final JdbcTransactionContext context) {
-    return new RdbmsProcessState(
-        context,
-        partitionId,
+  private ProcessStateImpl newProcessState(final JdbcTransactionContext context) {
+    return new ProcessStateImpl(
+        new RdbmsProcessStore(context, partitionId),
         new EngineConfiguration(),
         newTransformer(),
+        context,
         new SimpleMeterRegistry());
   }
 
