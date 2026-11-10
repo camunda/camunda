@@ -14,5 +14,5 @@ import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
  * MCP-specific process definition filter modifying the {@link ProcessDefinitionFilter} to hide
  * fields from MCP clients to avoid unnecessary context bloat.
  */
-@JsonIgnoreProperties("tenantId")
+@JsonIgnoreProperties({"$or", "tenantId"})
 public interface McpProcessDefinitionFilter {}
