@@ -541,7 +541,6 @@ jobs:
       contents: read
     env:
       C8RUN_SECRETS_MODE: ${{ matrix.secrets_mode }}
-      TENANT_SECRET_VALUE: pt1-only-secret-value
       # env mode reads the secrets from these; local mode ignores them. `c8run secrets list`
       # reads them from the test step's environment, so they are set for the whole job.
       C8RUN_SECRETS_ENV_PREFIX: C8E2E_
@@ -611,8 +610,9 @@ jobs:
           cp ../../e2e_tests/physical-tenants-auth.yaml .
           printf '%s' 'pt1-e2e-password' | "$c8run" physical-tenants add pt1 --username alice --password-stdin
           # c8run secrets set is disabled in env mode, where the job's C8E2E_* variables hold the secrets.
+          # The value is inlined, not read from an env variable, so c8run start can't pass it on unprefixed.
           if [[ "$C8RUN_SECRETS_MODE" == "local" ]]; then
-            printf '%s' "$TENANT_SECRET_VALUE" | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+            printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
           fi
           "$c8run" start --no-browser --config physical-tenants-auth.yaml
         working-directory: ${{ env.C8RUN_E2E_DIR }}
@@ -623,6 +623,7 @@ jobs:
           PHYSICAL_TENANT: pt1
           C8RUN_AUTH: alice:pt1-e2e-password
           C8RUN_DEFAULT_AUTH: demo:demo
+          TENANT_SECRET_VALUE: pt1-only-secret-value
           CHECK_MISSING_SECRET: "1"
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}

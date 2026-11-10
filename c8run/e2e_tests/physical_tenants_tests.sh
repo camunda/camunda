@@ -12,7 +12,8 @@
 # Set SECRETS_LIST_EXPECT to a secret name (with C8RUN_DIR) to verify `c8run secrets list` prints it
 # and no secret value.
 # Set CONNECTOR_ENV_PREFIX to C8RUN_SECRETS_ENV_PREFIX (with C8RUN_DIR, Linux only) to verify each
-# connectors runtime's environment holds no other tenant's secret variables.
+# connectors runtime's environment holds no other tenant's secret variables, nor the other tenant's
+# TENANT_SECRET_VALUE or DEFAULT_SECRET_VALUE under any name.
 # Use C8RUN_AUTH for the tenant login and C8RUN_DEFAULT_AUTH for the default tenant login.
 set -euo pipefail
 
@@ -187,6 +188,13 @@ if [[ -n "${CONNECTOR_ENV_PREFIX:-}" ]]; then
                 ! grep -qi "^${CONNECTOR_ENV_PREFIX}${tenant_upper}_" <<<"$default_env" || fail "the default connectors runtime sees $tenant's secret variables"
                 grep -qi "^${CONNECTOR_ENV_PREFIX}${tenant_upper}_" <<<"$tenant_env" || fail "$tenant's connectors runtime lacks its own secret variables"
                 ! grep -qi "^${CONNECTOR_ENV_PREFIX}DEFAULT_" <<<"$tenant_env" || fail "$tenant's connectors runtime sees the default tenant's secret variables"
+                # Catches a secret passed on under any other variable name, which the prefix checks miss.
+                if [[ -n "${TENANT_SECRET_VALUE:-}" ]] && grep -qF "=$TENANT_SECRET_VALUE" <<<"$default_env"; then
+                        fail "the default connectors runtime sees $tenant's secret value"
+                fi
+                if [[ -n "${DEFAULT_SECRET_VALUE:-}" ]] && grep -qF "=$DEFAULT_SECRET_VALUE" <<<"$tenant_env"; then
+                        fail "$tenant's connectors runtime sees the default tenant's secret value"
+                fi
         else
                 printf "\nSkipping connectors runtime environment test: it reads /proc, which only Linux has\n"
         fi
