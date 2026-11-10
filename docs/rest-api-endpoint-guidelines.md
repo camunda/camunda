@@ -57,6 +57,7 @@ v2/
 ├── filters.yaml               ← Advanced filter schemas (string, integer, date-time)
 ├── keys.yaml                  ← Key type schemas (LongKey, ProcessDefinitionKey, …)
 ├── identifiers.yaml           ← Identifier types (TenantId, ProcessDefinitionId, …)
+├── common-schemas.yaml        ← Value schemas shared across domains (ClearableDateTime, …)
 ├── cursors.yaml               ← Cursor schemas for pagination
 ├── <domain>.yaml              ← Per-domain paths + schemas (e.g., process-definitions.yaml)
 ```
@@ -1575,7 +1576,7 @@ Reference a schema that accepts both, and mark it with `x-clearable: true`:
 ```yaml
 dueDate:
   allOf:
-    - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+    - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
   description: The due date of the task. Clear by providing an empty String.
 ```
 

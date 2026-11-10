@@ -1237,11 +1237,11 @@ components:
           nullable: true
         dueDate:
           allOf:
-            - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+            - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
           description: The due date of the task. Clear by providing an empty String.
         followUpDate:
           allOf:
-            - $ref: 'user-tasks.yaml#/components/schemas/ClearableDateTime'
+            - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
           description: The follow-up date of the task. Clear by providing an empty String.
         candidateUsers:
           type: array

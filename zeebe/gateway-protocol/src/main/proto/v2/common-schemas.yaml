@@ -1,0 +1,17 @@
+# Common schemas shared across domains
+components:
+  schemas:
+    ClearableDateTime:
+      description: |
+        A date-time in RFC 3339 format, or an empty string to clear the persisted value.
+        A `null` value or omitting the property preserves the persisted value.
+      type: string
+      nullable: true
+      anyOf:
+        - type: string
+          format: date-time
+          nullable: true
+        - type: string
+          maxLength: 0
+          nullable: true
+      x-clearable: true
