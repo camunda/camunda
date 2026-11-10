@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.ExporterHistoryPurger;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
@@ -65,6 +66,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntFunction;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +119,7 @@ public final class PartitionManagerImpl
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final FeatureFlags featureFlags,
       final SecretStoreRegistry secretStoreRegistry,
+      final @Nullable IntFunction<LogBlockRepository> logBlockRepositoryFactory,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -159,7 +163,8 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            logBlockRepositoryFactory);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

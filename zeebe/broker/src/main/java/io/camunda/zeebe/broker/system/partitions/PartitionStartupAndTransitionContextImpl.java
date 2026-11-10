@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -60,6 +61,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Class encapsulating all the information about a partition that are needed during bootstrap and
@@ -98,6 +100,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ScheduledTimer metricsTimer;
   private ExporterDirector exporterDirector;
   private LogStorage logStorage;
+  private @Nullable LogBlockRepository logBlockRepository;
   private QueryService queryService;
   private long currentTerm;
   private Role currentRole;
@@ -313,6 +316,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public @Nullable LogBlockRepository getLogBlockRepository() {
+    return logBlockRepository;
+  }
+
+  @Override
+  public void setLogBlockRepository(final @Nullable LogBlockRepository logBlockRepository) {
+    this.logBlockRepository = logBlockRepository;
   }
 
   @Override

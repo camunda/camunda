@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -58,6 +59,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -76,6 +78,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private StateController stateController;
   private ExporterRepository exporterRepository;
   private LogStorage logStorage;
+  private @Nullable LogBlockRepository logBlockRepository;
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
@@ -300,6 +303,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public @Nullable LogBlockRepository getLogBlockRepository() {
+    return logBlockRepository;
+  }
+
+  @Override
+  public void setLogBlockRepository(final @Nullable LogBlockRepository logBlockRepository) {
+    this.logBlockRepository = logBlockRepository;
   }
 
   @Override

@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -79,6 +80,12 @@ public interface BrokerStartupContext {
    * no RDBMS secondary storage is configured for that tenant.
    */
   @Nullable IntFunction<Long> getExportedPositionSupplier(String physicalTenantId);
+
+  /**
+   * @return the factory of the repository each partition of the physical tenant stores its log in,
+   *     or null if the tenant uses the Atomix log storage
+   */
+  @Nullable IntFunction<LogBlockRepository> getLogBlockRepositoryFactory(String physicalTenantId);
 
   void addPartitionListener(PartitionListener partitionListener);
 
