@@ -247,9 +247,6 @@ final class VariablesMetadataRoundTripTest {
             new UserTaskRecord().setVariablesMetadata(METADATA), UserTaskRecord::wrap));
   }
 
-  /** A record carrying variables, paired with its own {@code wrap(T)} copy method. */
-  private record CopyableRecord<T extends UnifiedRecordValue>(T record, BiConsumer<T, T> wrap) {}
-
   private static Named<UnifiedRecordValue> named(final UnifiedRecordValue record) {
     return Named.named(record.getClass().getSimpleName(), record);
   }
@@ -259,6 +256,9 @@ final class VariablesMetadataRoundTripTest {
     record.write(buffer, 0);
     return buffer;
   }
+
+  /** A record carrying variables, paired with its own {@code wrap(T)} copy method. */
+  private record CopyableRecord<T extends UnifiedRecordValue>(T record, BiConsumer<T, T> wrap) {}
 
   /**
    * The properties of {@link ProcessInstanceCreationRecord} as an older broker declares them: in

@@ -5100,7 +5100,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "tenantId": "tenant-1",
-                  "variables": {}
+                  "variables": {},
+                  "variablesMetadata": {}
                 }
                 """
       },
