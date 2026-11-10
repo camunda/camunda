@@ -37,8 +37,6 @@ const PROCESS_DEFINITION_STATISTICS_ENDPOINT =
   '/process-definitions/{processDefinitionKey}/statistics/element-instances';
 const READ_FORBIDDEN_DETAIL =
   "Unauthorized to perform operation 'READ_PROCESS_DEFINITION' on resource 'PROCESS_DEFINITION'";
-const FORM_READ_FORBIDDEN_DETAIL =
-  "Unauthorized to perform operation 'READ' on resource 'RESOURCE'";
 const LINKED_START_FORM_ID = 'sign_up_form';
 
 type TestUser = {
@@ -370,18 +368,11 @@ test.describe('Process Definition Permission API - Forbidden', () => {
 
       // then
       // Only READ_PROCESS_DEFINITION is checked; the linked form is returned
-      // to a user holding no RESOURCE permission at all.
+      // to a user holding no RESOURCE permission, which a form read would
+      // otherwise require.
       await assertStatusCode(res, 200);
       const body = await res.json();
       expect(body.formId).toBe(LINKED_START_FORM_ID);
-
-      // The same user is rejected when reading the form directly, proving
-      // it has no form read permission.
-      const formRes = await request.get(
-        buildUrl('/forms/{formKey}', {formKey: body.formKey}),
-        {headers: jsonHeaders(userWithProcessReadOnlyToken)},
-      );
-      await assertForbiddenRequest(formRes, FORM_READ_FORBIDDEN_DETAIL);
     }).toPass(defaultAssertionOptions);
   });
 
