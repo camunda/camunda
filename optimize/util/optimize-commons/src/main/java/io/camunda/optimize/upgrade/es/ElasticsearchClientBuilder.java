@@ -45,8 +45,11 @@ import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
@@ -196,6 +199,23 @@ public class ElasticsearchClientBuilder {
           httpClientBuilder.addRequestInterceptorLast(
               ElasticsearchCompatibilityInterceptor.INSTANCE);
         });
+
+    // The credentials provider only answers a 401 challenge. A server that lets anonymous users
+    // through for some requests never challenges them, so the request would run as anonymous. The
+    // Elasticsearch 8 client sent credentials with every request, so do the same.
+    final var esConfig = configurationService.getElasticSearchConfiguration();
+    if (esConfig.getSecurityUsername() != null && esConfig.getSecurityPassword() != null) {
+      final String credentials =
+          esConfig.getSecurityUsername() + ":" + esConfig.getSecurityPassword();
+      restClientBuilder.setDefaultHeaders(
+          new Header[] {
+            new BasicHeader(
+                HttpHeaders.AUTHORIZATION,
+                "Basic "
+                    + Base64.getEncoder()
+                        .encodeToString(credentials.getBytes(StandardCharsets.UTF_8)))
+          });
+    }
 
     return restClientBuilder;
   }
