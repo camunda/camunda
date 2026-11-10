@@ -70,6 +70,15 @@
     WHERE partition_id = #{partitionId} AND element_instance_key = #{key}
   </select>
 
+  <select id="selectElementInstances" resultMap="elementInstanceRow">
+    SELECT <include refid="elementInstanceColumns"/>
+    FROM CAM_RU_ELEMENT_INSTANCE
+    WHERE partition_id = #{partitionId} AND element_instance_key IN
+      <foreach collection="keys" item="key" open="(" separator="," close=")">
+        #{key}
+      </foreach>
+  </select>
+
   <select id="selectChildren" resultMap="elementInstanceRow">
     SELECT <include refid="elementInstanceColumns"/>
     FROM CAM_RU_ELEMENT_INSTANCE

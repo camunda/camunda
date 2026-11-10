@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.state.instance.JobStore.ActivatableJobKeyVisitor;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
@@ -362,7 +363,7 @@ public final class JobStateImpl implements MutableJobState {
       final DirectBuffer type,
       final List<String> tenantIds,
       final BiFunction<Long, JobRecord, Boolean> callback) {
-    forEachActivatableJobs(type, tenantIds, JobStore.NO_LIMIT_HINT, callback);
+    forEachActivatableJobs(type, tenantIds, JobStore.NO_LIMIT_HINT, callback::apply);
   }
 
   @Override
@@ -370,9 +371,23 @@ public final class JobStateImpl implements MutableJobState {
       final DirectBuffer type,
       final List<String> tenantIds,
       final int limitHint,
-      final BiFunction<Long, JobRecord, Boolean> callback) {
+      final ActivatableJobVisitor callback) {
     final BiPredicate<Long, JobRecord> jobVisitor = callback::apply;
-    store.visitActivatableJobs(type, tenantIds, limitHint, jobKey -> visitJob(jobKey, jobVisitor));
+    store.visitActivatableJobs(
+        type,
+        tenantIds,
+        limitHint,
+        new ActivatableJobKeyVisitor() {
+          @Override
+          public boolean test(final long jobKey) {
+            return visitJob(jobKey, jobVisitor);
+          }
+
+          @Override
+          public void readAhead(final long[] jobKeys) {
+            callback.readAhead(jobKeys);
+          }
+        });
   }
 
   @Override

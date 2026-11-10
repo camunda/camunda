@@ -11,13 +11,21 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
+import io.camunda.zeebe.engine.state.immutable.JobState.ActivatableJobVisitor;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
+import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -25,13 +33,19 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Counts what a commit sends to PostgreSQL. Each statement the batches execute is a round trip, so
@@ -49,6 +63,8 @@ final class EngineStateRoundTripsTest {
   private CountingSessionFactory sessions;
   private JdbcTransactionContext transactionContext;
   private MutableElementInstanceState elementInstanceState;
+  private MutableVariableState variableState;
+  private MutableJobState jobState;
 
   @BeforeAll
   static void startDatabase() throws Exception {
@@ -70,10 +86,10 @@ final class EngineStateRoundTripsTest {
     final var session =
         EngineStateDatabase.entitySession(
             transactionContext, database.nextPartitionId(), sessions.factory());
+    variableState = new VariableStateImpl(new RdbmsVariableStore(session));
     elementInstanceState =
-        new ElementInstanceStateImpl(
-            new RdbmsElementInstanceStore(session),
-            new VariableStateImpl(new RdbmsVariableStore(session)));
+        new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
+    jobState = new JobStateImpl(new RdbmsJobStore(session));
   }
 
   @AfterEach
@@ -242,6 +258,96 @@ final class EngineStateRoundTripsTest {
     final int selects = counting.otherStatements;
     transaction.rollback();
     assertThat(selects).isEqualTo(5);
+  }
+
+  @ParameterizedTest(name = "{0} jobs, requested variables ''{1}''")
+  @CsvSource({"1, ''", "10, ''", "1, a b", "10, a b"})
+  void shouldActivateJobsWithTheirVariablesInThreeQueries(
+      final int jobCount, final String requestedVariables) throws Exception {
+    // given - committed jobs of tasks in a process instance, with variables in both scopes
+    final var setup = transactionContext.getCurrentTransaction();
+    final var processInstance =
+        elementInstanceState.newInstance(
+            100,
+            record(BpmnElementType.PROCESS, "process")
+                .setElementInstancePath(List.of(List.of(100L))),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    variableState.setVariableLocal(1, 100, 2, wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    for (int i = 0; i < jobCount; i++) {
+      final long taskKey = 101 + i;
+      elementInstanceState.newInstance(
+          processInstance,
+          taskKey,
+          record(BpmnElementType.SERVICE_TASK, "task")
+              .setElementInstancePath(List.of(List.of(100L, taskKey))),
+          ProcessInstanceIntent.ELEMENT_ACTIVATED);
+      variableState.setVariableLocal(
+          2 + i, taskKey, 2, wrapString("b"), MsgPackUtil.asMsgPack(String.valueOf(i)));
+      final var job =
+          new JobRecord()
+              .setType("task")
+              .setTenantId(TENANT_ID)
+              .setProcessInstanceKey(100)
+              .setElementInstanceKey(taskKey);
+      jobState.insertJobRecordActivatable(1000 + i, job);
+      jobState.makeJobActivatableByPriority(job.getTypeBuffer(), 1000 + i, TENANT_ID, 0);
+    }
+    setup.commit();
+
+    // when - activating them like the job batch collector: prefetch the variables of the jobs
+    // read ahead, then read the document of each job
+    final List<DirectBuffer> names =
+        requestedVariables.isBlank()
+            ? List.of()
+            : Arrays.stream(requestedVariables.split(" ")).map(BufferUtil::wrapString).toList();
+    final var transaction = transactionContext.getCurrentTransaction();
+    counting.reset();
+    final Map<Long, String> documents = new LinkedHashMap<>();
+    jobState.forEachActivatableJobs(
+        wrapString("task"),
+        List.of(TENANT_ID),
+        jobCount,
+        new ActivatableJobVisitor() {
+          @Override
+          public Boolean apply(final Long key, final JobRecord job) {
+            final long scopeKey = job.getElementInstanceKey();
+            documents.put(
+                key,
+                MsgPackConverter.convertToJson(
+                    names.isEmpty()
+                        ? variableState.getVariablesAsDocument(scopeKey)
+                        : variableState.getVariablesAsDocument(scopeKey, names)));
+            return documents.size() < jobCount;
+          }
+
+          @Override
+          public void readAhead(final long[] jobKeys) {
+            final List<Long> scopeKeys = new ArrayList<>();
+            for (final long jobKey : jobKeys) {
+              scopeKeys.add(jobState.getJob(jobKey).getElementInstanceKey());
+            }
+            variableState.prefetchVariables(scopeKeys, names);
+          }
+        });
+    final int selects = counting.otherStatements;
+    for (final long jobKey : documents.keySet()) {
+      final var job = new JobRecord();
+      job.wrap(jobState.getJob(jobKey));
+      jobState.activate(jobKey, job.setDeadline(5000).setWorker("worker"));
+    }
+    final int selectsWithActivation = counting.otherStatements;
+    transaction.commit();
+
+    // then - the job page, the element instances of the jobs and the variables of their chains,
+    // whatever the number of jobs
+    assertThat(documents).hasSize(jobCount);
+    assertThat(documents.get(1000L)).isEqualTo("{\"b\":0,\"a\":1}");
+    assertThat(selects).isEqualTo(3);
+    assertThat(selectsWithActivation).isEqualTo(3);
+    assertThat(counting.batches).containsExactly(new Batch("CAM_RU_JOB", "UPDATE", jobCount));
+    System.out.printf(
+        "ROUND TRIPS activation of %d jobs (variables '%s'): %d selects, %s%n",
+        jobCount, requestedVariables, selects, counting);
   }
 
   private static ProcessInstanceRecord record(final BpmnElementType type, final String elementId) {

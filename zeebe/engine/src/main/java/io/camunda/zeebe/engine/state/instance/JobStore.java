@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -90,7 +91,7 @@ public interface JobStore {
    *     no job is left, since the visitor may reject jobs
    */
   void visitActivatableJobs(
-      DirectBuffer type, List<String> tenantIds, int limitHint, LongPredicate visitor);
+      DirectBuffer type, List<String> tenantIds, int limitHint, ActivatableJobKeyVisitor visitor);
 
   /** Enters the job's deadline, which must not be entered yet. */
   void setDeadline(long key, long deadline);
@@ -156,6 +157,17 @@ public interface JobStore {
    *     first
    */
   void visitJobsOfProcessInstance(long processInstanceKey, long startAtKey, LongPredicate visitor);
+
+  /** Visits the keys of activatable jobs: returns whether to continue with the next one. */
+  @FunctionalInterface
+  interface ActivatableJobKeyVisitor extends LongPredicate {
+
+    /**
+     * Called by a store that reads ahead, with the keys of the jobs it read, in the order it visits
+     * them next. See {@link JobState.ActivatableJobVisitor#readAhead}.
+     */
+    default void readAhead(final long[] jobKeys) {}
+  }
 
   /** Tests a deadline or backoff entry. */
   @FunctionalInterface

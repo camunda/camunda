@@ -263,7 +263,7 @@ public final class DbJobStore implements JobStore {
   }
 
   /**
-   * Ignores the limit hint.
+   * Ignores the limit hint, and reads nothing ahead.
    *
    * <p>Three-phase sequential read ensures correct activation order across the 8.10 upgrade
    * boundary:
@@ -286,7 +286,7 @@ public final class DbJobStore implements JobStore {
       final DirectBuffer type,
       final List<String> tenantIds,
       final int limitHint,
-      final LongPredicate visitor) {
+      final ActivatableJobKeyVisitor visitor) {
     jobTypeKey.wrapBuffer(type);
 
     if (isLegacyCfDrained) {

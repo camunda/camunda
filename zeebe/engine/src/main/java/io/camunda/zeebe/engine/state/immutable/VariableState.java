@@ -31,6 +31,16 @@ public interface VariableState {
 
   DirectBuffer getVariablesLocalAsDocument(long scopeKey);
 
+  /**
+   * Tells the state that the variables of the scopes will be read as documents next, so a state
+   * that reads them from a database can read them for all scopes at once. Reads see the same
+   * variables with or without it. The RocksDB state does nothing.
+   *
+   * @param names the names that the reads ask for, or empty if they read all variables
+   */
+  default void prefetchVariables(
+      final Collection<Long> scopeKeys, final Collection<DirectBuffer> names) {}
+
   boolean isEmpty();
 
   /**

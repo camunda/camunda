@@ -28,6 +28,10 @@ interface ElementInstanceMapper {
 
   // CAM_RU_ELEMENT_INSTANCE
 
+  /** The element instances of the keys that exist, in no particular order. */
+  List<ElementInstanceRow> selectElementInstances(
+      @Param("partitionId") int partitionId, @Param("keys") List<Long> keys);
+
   List<ElementInstanceRow> selectChildren(
       @Param("partitionId") int partitionId, @Param("parentKey") long parentKey);
 
