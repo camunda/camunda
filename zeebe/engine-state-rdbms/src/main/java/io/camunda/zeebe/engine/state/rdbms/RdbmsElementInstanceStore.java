@@ -12,7 +12,6 @@ import static io.camunda.zeebe.engine.state.rdbms.Payloads.wrapCopy;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.db.impl.jdbc.EntityCache;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState.TakenSequenceFlowVisitor;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -40,13 +39,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Stores the element instance state in a relational database (PostgreSQL) instead of RocksDB.
  *
- * <p>Each table has an {@link EntityCache} that stages the writes in memory and flushes them as
- * JDBC batches when the {@link JdbcTransactionContext} commits; a failed commit keeps them staged,
- * so a retried commit writes them again. Reads look at the staged writes first, so a command sees
- * its own uncommitted changes, and fall back to the database. Queries over several rows merge the
- * committed rows with the staged writes. All SQL is in the mappers. Like the RocksDB column
- * families, every operation joins the current transaction, or runs in its own transaction
- * (committed right away) if there is none.
+ * <p>The {@link EntitySession} stages the writes in memory and flushes them as JDBC batches when
+ * the {@link JdbcTransactionContext} commits; a failed commit keeps them staged, so a retried
+ * commit writes them again. Reads look at the staged writes first, so a command sees its own
+ * uncommitted changes, and fall back to the database. Queries over several rows merge the committed
+ * rows with the staged writes. All SQL is in the mappers. Like the RocksDB column families, every
+ * operation joins the current transaction, or runs in its own transaction (committed right away) if
+ * there is none.
  *
  * <p>Staged and returned values are copies of serialized payloads, so the store never shares an
  * object with a caller: mutating an instance without calling {@link
@@ -89,55 +88,38 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       Comparator.comparing(TakenSequenceFlowRow::gatewayElementId)
           .thenComparing(TakenSequenceFlowRow::sequenceFlowElementId);
 
-  private final EngineStateRdbms rdbms;
-  private final int partitionId;
+  private static final EntityType<Long, ElementInstanceRow> ELEMENT_INSTANCE =
+      new EntityType<>(
+          ElementInstanceMapper.class,
+          "ElementInstance",
+          "element instance",
+          ElementInstanceRow::key);
+  private static final EntityType<TakenSequenceFlowKey, TakenSequenceFlowRow> TAKEN_SEQUENCE_FLOW =
+      new EntityType<>(
+          ElementInstanceMapper.class,
+          "TakenSequenceFlow",
+          "taken sequence flow",
+          TakenSequenceFlowRow::key);
+  private static final EntityType<Long, PayloadRow> AWAIT_RESULT =
+      new EntityType<>(
+          ElementInstanceMapper.class,
+          "AwaitResult",
+          "await process instance result",
+          PayloadRow::key);
+  private static final EntityType<Long, PayloadRow> RUNTIME_INSTRUCTIONS =
+      new EntityType<>(
+          ElementInstanceMapper.class,
+          "RuntimeInstructions",
+          "runtime instructions",
+          PayloadRow::key);
 
-  private final EntityCache<Long, ElementInstanceRow> elementInstances;
-  private final EntityCache<TakenSequenceFlowKey, TakenSequenceFlowRow> takenSequenceFlows;
-  private final EntityCache<Long, PayloadRow> awaitResults;
-  private final EntityCache<Long, PayloadRow> runtimeInstructions;
+  private final EntitySession session;
+  private final int partitionId;
 
   public RdbmsElementInstanceStore(
       final JdbcTransactionContext transactionContext, final int partitionId) {
-    rdbms = new EngineStateRdbms(transactionContext, partitionId);
+    session = EntitySession.of(transactionContext, partitionId);
     this.partitionId = partitionId;
-
-    elementInstances =
-        rdbms.cache(
-            "element instance",
-            ElementInstanceRow::key,
-            ElementInstanceMapper.class,
-            ElementInstanceMapper::selectElementInstance,
-            ElementInstanceMapper::insertElementInstance,
-            ElementInstanceMapper::updateElementInstance,
-            ElementInstanceMapper::deleteElementInstance);
-    takenSequenceFlows =
-        rdbms.cache(
-            "taken sequence flow",
-            TakenSequenceFlowRow::key,
-            ElementInstanceMapper.class,
-            ElementInstanceMapper::selectTakenSequenceFlow,
-            ElementInstanceMapper::insertTakenSequenceFlow,
-            ElementInstanceMapper::updateTakenSequenceFlow,
-            ElementInstanceMapper::deleteTakenSequenceFlow);
-    awaitResults =
-        rdbms.cache(
-            "await process instance result",
-            PayloadRow::key,
-            ElementInstanceMapper.class,
-            ElementInstanceMapper::selectAwaitResult,
-            ElementInstanceMapper::insertAwaitResult,
-            ElementInstanceMapper::updateAwaitResult,
-            ElementInstanceMapper::deleteAwaitResult);
-    runtimeInstructions =
-        rdbms.cache(
-            "runtime instructions",
-            PayloadRow::key,
-            ElementInstanceMapper.class,
-            ElementInstanceMapper::selectRuntimeInstructions,
-            ElementInstanceMapper::insertRuntimeInstructions,
-            ElementInstanceMapper::updateRuntimeInstructions,
-            ElementInstanceMapper::deleteRuntimeInstructions);
   }
 
   @Override
@@ -156,17 +138,17 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   @Override
   public void insertInstance(final ElementInstance instance) {
-    elementInstances.insert(toRow(instance));
+    session.insert(ELEMENT_INSTANCE, toRow(instance));
   }
 
   @Override
   public void updateInstance(final ElementInstance instance) {
-    elementInstances.update(toRow(instance));
+    session.update(ELEMENT_INSTANCE, toRow(instance));
   }
 
   @Override
   public void deleteInstance(final ElementInstance instance) {
-    elementInstances.delete(instance.getKey());
+    session.delete(ELEMENT_INSTANCE, instance.getKey());
   }
 
   @Override
@@ -201,11 +183,14 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   @Override
   public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
     final var committedKeys =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class, mapper -> mapper.selectChildKeys(partitionId, parentKey));
     final var childKeys =
-        elementInstances.queryKeys(
-            committedKeys, row -> row.parentKey() == parentKey, Comparator.naturalOrder());
+        session.queryKeys(
+            ELEMENT_INSTANCE,
+            committedKeys,
+            row -> row.parentKey() == parentKey,
+            Comparator.naturalOrder());
     for (final long childKey : childKeys) {
       if (!visitor.apply(childKey)) {
         break;
@@ -219,9 +204,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final DirectBuffer gatewayElementId,
       final DirectBuffer sequenceFlowElementId) {
     final var key = takenSequenceFlowKey(flowScopeKey, gatewayElementId, sequenceFlowElementId);
-    final var takenSequenceFlow = takenSequenceFlows.get(key);
+    final var takenSequenceFlow = session.get(TAKEN_SEQUENCE_FLOW, key);
     if (takenSequenceFlow == null) {
-      final var flowScope = elementInstances.get(flowScopeKey);
+      final var flowScope = session.get(ELEMENT_INSTANCE, flowScopeKey);
       if (flowScope == null) {
         throw new IllegalStateException(
             String.format(
@@ -229,7 +214,8 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
                     + " but the flow scope does not exist",
                 key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
       }
-      takenSequenceFlows.insert(
+      session.insert(
+          TAKEN_SEQUENCE_FLOW,
           new TakenSequenceFlowRow(
               key.flowScopeKey(),
               key.gatewayElementId(),
@@ -239,7 +225,8 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
               flowScope.tenantId(),
               1));
     } else {
-      takenSequenceFlows.update(
+      session.update(
+          TAKEN_SEQUENCE_FLOW,
           takenSequenceFlow.withTimesTaken(takenSequenceFlow.timesTaken() + 1));
     }
   }
@@ -250,7 +237,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final DirectBuffer gatewayElementId,
       final DirectBuffer sequenceFlowElementId) {
     final var key = takenSequenceFlowKey(flowScopeKey, gatewayElementId, sequenceFlowElementId);
-    final var takenSequenceFlow = takenSequenceFlows.get(key);
+    final var takenSequenceFlow = session.get(TAKEN_SEQUENCE_FLOW, key);
     if (takenSequenceFlow == null) {
       throw new IllegalStateException(
           String.format(
@@ -273,7 +260,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   @Override
   public void deleteTakenSequenceFlows(final long flowScopeKey) {
     for (final var takenSequenceFlow : readTakenSequenceFlows(flowScopeKey, null)) {
-      takenSequenceFlows.delete(takenSequenceFlow.key());
+      session.delete(TAKEN_SEQUENCE_FLOW, takenSequenceFlow.key());
     }
   }
 
@@ -315,20 +302,21 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final long processInstanceKey,
       final String tenantId,
       final AwaitProcessInstanceResultMetadata metadata) {
-    awaitResults.insert(
+    session.insert(
+        AWAIT_RESULT,
         new PayloadRow(processInstanceKey, processInstanceKey, tenantId, serialize(metadata)));
   }
 
   @Override
   public @Nullable AwaitProcessInstanceResultMetadata getAwaitResult(
       final long processInstanceKey) {
-    final var row = awaitResults.get(processInstanceKey);
+    final var row = session.get(AWAIT_RESULT, processInstanceKey);
     return row == null ? null : wrapCopy(new AwaitProcessInstanceResultMetadata(), row.payload());
   }
 
   @Override
   public void deleteAwaitResult(final long processInstanceKey) {
-    awaitResults.delete(processInstanceKey);
+    session.delete(AWAIT_RESULT, processInstanceKey);
   }
 
   @Override
@@ -338,20 +326,21 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
     final var runtimeInstructions = new RuntimeInstructions();
     runtimeInstructions.setRuntimeInstructions(instructions);
-    this.runtimeInstructions.insert(
+    session.insert(
+        RUNTIME_INSTRUCTIONS,
         new PayloadRow(
             processInstanceKey, processInstanceKey, tenantId, serialize(runtimeInstructions)));
   }
 
   @Override
   public @Nullable RuntimeInstructions getRuntimeInstructions(final long processInstanceKey) {
-    final var row = runtimeInstructions.get(processInstanceKey);
+    final var row = session.get(RUNTIME_INSTRUCTIONS, processInstanceKey);
     return row == null ? null : wrapCopy(new RuntimeInstructions(), row.payload());
   }
 
   @Override
   public void deleteRuntimeInstructions(final long processInstanceKey) {
-    runtimeInstructions.delete(processInstanceKey);
+    session.delete(RUNTIME_INSTRUCTIONS, processInstanceKey);
   }
 
   @Override
@@ -369,11 +358,12 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   @Override
   public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
     final var committedKeys =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class,
             mapper ->
                 mapper.selectProcessInstanceKeysByDefinition(partitionId, processDefinitionKey));
-    return elementInstances.queryKeys(
+    return session.queryKeys(
+        ELEMENT_INSTANCE,
         committedKeys,
         row -> isProcessInstanceOf(row, processDefinitionKey),
         Comparator.naturalOrder());
@@ -383,7 +373,8 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   public boolean hasProcessInstances(
       final long processDefinitionKey, final List<Long> excludedInstances) {
     final var stagedProcessInstances =
-        elementInstances.stagedMatching(
+        session.stagedMatching(
+            ELEMENT_INSTANCE,
             row ->
                 isProcessInstanceOf(row, processDefinitionKey)
                     && !excludedInstances.contains(row.key()));
@@ -392,8 +383,8 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
     }
     // staged rows are checked above
     final List<Long> excludedKeys = new ArrayList<>(excludedInstances);
-    excludedKeys.addAll(elementInstances.stagedKeys());
-    return !rdbms
+    excludedKeys.addAll(session.stagedKeys(ELEMENT_INSTANCE));
+    return !session
         .read(
             ElementInstanceMapper.class,
             mapper ->
@@ -427,13 +418,14 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final String tenantId,
       final Predicate<Long> ignoreWhen) {
     final var committedKeys =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class,
             mapper ->
                 mapper.selectProcessInstanceKeysByBusinessId(
                     partitionId, tenantId, processDefinitionId, businessId));
     final var processInstanceKeys =
-        elementInstances.queryKeys(
+        session.queryKeys(
+            ELEMENT_INSTANCE,
             committedKeys,
             row ->
                 businessId.equals(row.businessId())
@@ -451,13 +443,15 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   @Override
   public long getActiveProcessInstanceCount() {
-    final var stagedKeys = elementInstances.stagedKeys().toArray(Long[]::new);
+    final var stagedKeys = session.stagedKeys(ELEMENT_INSTANCE).toArray(Long[]::new);
     final long committed =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class,
             mapper -> mapper.countProcessInstances(partitionId, stagedKeys));
     final long staged =
-        elementInstances.stagedMatching(row -> row.bpmnElementType() == PROCESS_TYPE).size();
+        session
+            .stagedMatching(ELEMENT_INSTANCE, row -> row.bpmnElementType() == PROCESS_TYPE)
+            .size();
     return committed + staged;
   }
 
@@ -472,9 +466,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   private void decrement(final TakenSequenceFlowRow takenSequenceFlow) {
     final int timesTaken = takenSequenceFlow.timesTaken() - 1;
     if (timesTaken > 0) {
-      takenSequenceFlows.update(takenSequenceFlow.withTimesTaken(timesTaken));
+      session.update(TAKEN_SEQUENCE_FLOW, takenSequenceFlow.withTimesTaken(timesTaken));
     } else {
-      takenSequenceFlows.delete(takenSequenceFlow.key());
+      session.delete(TAKEN_SEQUENCE_FLOW, takenSequenceFlow.key());
     }
   }
 
@@ -485,16 +479,17 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   }
 
   private @Nullable ElementInstance readInstance(final long key) {
-    final var row = elementInstances.get(key);
+    final var row = session.get(ELEMENT_INSTANCE, key);
     return row == null ? null : toInstance(row);
   }
 
   /** The children of the given parent, ordered by key. */
   private List<ElementInstanceRow> readChildren(final long parentKey) {
     final var committed =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class, mapper -> mapper.selectChildren(partitionId, parentKey));
-    return elementInstances.query(
+    return session.query(
+        ELEMENT_INSTANCE,
         committed,
         row -> row.parentKey() == parentKey,
         Comparator.comparingLong(ElementInstanceRow::key));
@@ -507,10 +502,11 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   private List<TakenSequenceFlowRow> readTakenSequenceFlows(
       final long flowScopeKey, final @Nullable String gatewayElementId) {
     final var committed =
-        rdbms.read(
+        session.read(
             ElementInstanceMapper.class,
             mapper -> mapper.selectTakenSequenceFlows(partitionId, flowScopeKey, gatewayElementId));
-    return takenSequenceFlows.query(
+    return session.query(
+        TAKEN_SEQUENCE_FLOW,
         committed,
         row ->
             row.flowScopeKey() == flowScopeKey

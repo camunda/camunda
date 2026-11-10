@@ -15,7 +15,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.db.impl.jdbc.EntityCache;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.deployment.DbProcessStore;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
@@ -50,9 +49,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Stores the process state in a relational database instead of RocksDB.
  *
- * <p>Like {@link RdbmsElementInstanceStore}, each table has an {@link EntityCache} that stages the
- * writes until the {@link JdbcTransactionContext} commits, reads see the staged writes first, and
- * every operation joins the current transaction or runs in its own. All SQL is in the mappers.
+ * <p>Like {@link RdbmsElementInstanceStore}, the {@link EntitySession} stages the writes until the
+ * {@link JdbcTransactionContext} commits, reads see the staged writes first, and every operation
+ * joins the current transaction or runs in its own. All SQL is in the mappers.
  *
  * <p>Differences to {@link DbProcessStore}, none of them observable through {@link
  * MutableProcessState}:
@@ -93,57 +92,37 @@ public final class RdbmsProcessStore implements ProcessStore {
   private static final Comparator<ProcessDefinitionRow> BY_KEY =
       Comparator.comparingLong(ProcessDefinitionRow::processDefinitionKey);
 
-  private final EngineStateRdbms rdbms;
-  private final int partitionId;
+  private static final EntityType<Long, ProcessDefinitionRow> PROCESS =
+      new EntityType<>(
+          ProcessDefinitionMapper.class,
+          "ProcessDefinition",
+          "process",
+          ProcessDefinitionRow::processDefinitionKey);
+  private static final EntityType<ProcessIdKey, ProcessVersionRow> VERSION =
+      new EntityType<>(
+          ProcessDefinitionMapper.class,
+          "ProcessVersion",
+          "process version info",
+          ProcessVersionRow::key);
+  private static final EntityType<PendingProcessDeletionRow, PendingProcessDeletionRow>
+      PENDING_DELETION =
+          new EntityType<>(
+              ProcessDefinitionMapper.class,
+              "PendingProcessDeletion",
+              "pending process deletion",
+              Function.identity());
+  private static final EntityType<String, PartitionStateRow> PARTITION_STATE =
+      new EntityType<>(
+          PartitionStateMapper.class, "PartitionState", "partition state", PartitionStateRow::key);
 
-  private final EntityCache<Long, ProcessDefinitionRow> processes;
-  private final EntityCache<ProcessIdKey, ProcessVersionRow> versions;
-  private final EntityCache<PendingProcessDeletionRow, PendingProcessDeletionRow> pendingDeletions;
-  private final EntityCache<String, PartitionStateRow> partitionState;
+  private final EntitySession session;
+  private final int partitionId;
 
   private final VersionInfoCache versionInfos = new VersionInfoCache();
 
   public RdbmsProcessStore(final JdbcTransactionContext transactionContext, final int partitionId) {
-    rdbms = new EngineStateRdbms(transactionContext, partitionId);
+    session = EntitySession.of(transactionContext, partitionId);
     this.partitionId = partitionId;
-
-    processes =
-        rdbms.cache(
-            "process",
-            ProcessDefinitionRow::processDefinitionKey,
-            ProcessDefinitionMapper.class,
-            ProcessDefinitionMapper::selectProcessDefinition,
-            ProcessDefinitionMapper::insertProcessDefinition,
-            ProcessDefinitionMapper::updateProcessDefinition,
-            ProcessDefinitionMapper::deleteProcessDefinition);
-    versions =
-        rdbms.cache(
-            "process version info",
-            ProcessVersionRow::key,
-            ProcessDefinitionMapper.class,
-            ProcessDefinitionMapper::selectProcessVersion,
-            ProcessDefinitionMapper::insertProcessVersion,
-            ProcessDefinitionMapper::updateProcessVersion,
-            ProcessDefinitionMapper::deleteProcessVersion);
-    pendingDeletions =
-        rdbms.cache(
-            "pending process deletion",
-            Function.identity(),
-            ProcessDefinitionMapper.class,
-            ProcessDefinitionMapper::selectPendingProcessDeletion,
-            ProcessDefinitionMapper::insertPendingProcessDeletion,
-            ProcessDefinitionMapper::updatePendingProcessDeletion,
-            ProcessDefinitionMapper::deletePendingProcessDeletion);
-    partitionState =
-        rdbms.cache(
-            "partition state",
-            PartitionStateRow::key,
-            PartitionStateMapper.class,
-            PartitionStateMapper::selectPartitionState,
-            PartitionStateMapper::insertPartitionState,
-            PartitionStateMapper::updatePartitionState,
-            PartitionStateMapper::deletePartitionState);
-
     transactionContext.addTransactionListener(versionInfos);
   }
 
@@ -157,8 +136,9 @@ public final class RdbmsProcessStore implements ProcessStore {
   @Override
   public void updateProcess(final String tenantId, final PersistedProcess process) {
     final var row = toRow(process);
-    final var existing = processes.get(row.processDefinitionKey());
-    processes.update(
+    final var existing = session.get(PROCESS, row.processDefinitionKey());
+    session.update(
+        PROCESS,
         existing == null
             ? row
             : row.withLookups(existing.deploymentKeyLookup(), existing.versionTagLookup()));
@@ -179,7 +159,7 @@ public final class RdbmsProcessStore implements ProcessStore {
           "Expected to delete process %d of tenant '%s', but it does not exist"
               .formatted(processDefinitionKey, tenantId));
     }
-    processes.delete(processDefinitionKey);
+    session.delete(PROCESS, processDefinitionKey);
     // older processes have no deployment key, so there may be no lookup to delete
     clearDeploymentLookup(
         tenantId, processRecord.getBpmnProcessId(), processRecord.getDeploymentKey());
@@ -189,26 +169,26 @@ public final class RdbmsProcessStore implements ProcessStore {
   public void putDigest(
       final String tenantId, final DirectBuffer bpmnProcessId, final DirectBuffer digest) {
     final var key = new ProcessIdKey(tenantId, bufferAsString(bpmnProcessId));
-    final var row = versions.get(key);
+    final var row = session.get(VERSION, key);
     if (row == null) {
       throw new ZeebeDbInconsistentException(
           "Expected to put the digest of process '%s' of tenant '%s', but no version is stored"
               .formatted(key.bpmnProcessId(), tenantId));
     }
-    versions.update(row.withDigest(bufferAsArray(digest)));
+    session.update(VERSION, row.withDigest(bufferAsArray(digest)));
   }
 
   @Override
   public @Nullable DirectBuffer getDigest(final String tenantId, final DirectBuffer bpmnProcessId) {
-    final var row = versions.get(new ProcessIdKey(tenantId, bufferAsString(bpmnProcessId)));
+    final var row = session.get(VERSION, new ProcessIdKey(tenantId, bufferAsString(bpmnProcessId)));
     return row == null || row.digest() == null ? null : new UnsafeBuffer(row.digest().clone());
   }
 
   @Override
   public void deleteDigest(final String tenantId, final DirectBuffer bpmnProcessId) {
-    final var row = versions.get(new ProcessIdKey(tenantId, bufferAsString(bpmnProcessId)));
+    final var row = session.get(VERSION, new ProcessIdKey(tenantId, bufferAsString(bpmnProcessId)));
     if (row != null && row.digest() != null) {
-      versions.update(row.withDigest(null));
+      session.update(VERSION, row.withDigest(null));
     }
   }
 
@@ -225,8 +205,8 @@ public final class RdbmsProcessStore implements ProcessStore {
     requireProcessForLookup(processDefinitionKey, "deployment key");
     // moves the lookup: another process may have it, and this one may already have it
     clearDeploymentLookup(tenantId, bufferAsString(bpmnProcessId), deploymentKey);
-    final var process = Objects.requireNonNull(processes.get(processDefinitionKey));
-    processes.update(process.withLookups(deploymentKey, process.versionTagLookup()));
+    final var process = Objects.requireNonNull(session.get(PROCESS, processDefinitionKey));
+    session.update(PROCESS, process.withLookups(deploymentKey, process.versionTagLookup()));
   }
 
   @Override
@@ -239,8 +219,8 @@ public final class RdbmsProcessStore implements ProcessStore {
     final var processId = bufferAsString(bpmnProcessId);
     // moves the lookup: another process may have it, and this one may already have it
     clearVersionTagLookup(tenantId, processId, versionTag);
-    final var process = Objects.requireNonNull(processes.get(processDefinitionKey));
-    processes.update(process.withLookups(process.deploymentKeyLookup(), versionTag));
+    final var process = Objects.requireNonNull(session.get(PROCESS, processDefinitionKey));
+    session.update(PROCESS, process.withLookups(process.deploymentKeyLookup(), versionTag));
   }
 
   @Override
@@ -297,10 +277,11 @@ public final class RdbmsProcessStore implements ProcessStore {
   @Override
   public void forEachVersion(final ResourceVisitor visitor) {
     final var committed =
-        rdbms.read(
+        session.read(
             ProcessDefinitionMapper.class, mapper -> mapper.selectProcessVersions(partitionId));
     final var rows =
-        versions.query(
+        session.query(
+            VERSION,
             committed,
             row -> true,
             Comparator.comparing(ProcessVersionRow::tenantId)
@@ -321,28 +302,29 @@ public final class RdbmsProcessStore implements ProcessStore {
   @Override
   public void addPendingDeletion(final long processDefinitionKey, final int partitionId) {
     final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
-    if (pendingDeletions.get(row) != null) {
+    if (session.get(PENDING_DELETION, row) != null) {
       throw new ZeebeDbInconsistentException(
           "Expected to add a pending deletion of process %d for partition %d, but it already exists"
               .formatted(processDefinitionKey, partitionId));
     }
-    pendingDeletions.insert(row);
+    session.insert(PENDING_DELETION, row);
   }
 
   @Override
   public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
     final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
-    if (pendingDeletions.get(row) == null) {
+    if (session.get(PENDING_DELETION, row) == null) {
       throw new ZeebeDbInconsistentException(
           "Expected to remove the pending deletion of process %d for partition %d, but it does not exist"
               .formatted(processDefinitionKey, partitionId));
     }
-    pendingDeletions.delete(row);
+    session.delete(PENDING_DELETION, row);
   }
 
   @Override
   public boolean hasPendingDeletion(final long processDefinitionKey, final int partitionId) {
-    return pendingDeletions.get(new PendingProcessDeletionRow(processDefinitionKey, partitionId))
+    return session.get(
+            PENDING_DELETION, new PendingProcessDeletionRow(processDefinitionKey, partitionId))
         != null;
   }
 
@@ -363,14 +345,14 @@ public final class RdbmsProcessStore implements ProcessStore {
   @Override
   public void markProcessDefinitionRestoreAsRun() {
     upsert(
-        partitionState,
+        PARTITION_STATE,
         PROCESS_DEFINITION_RESTORE_KEY,
         new PartitionStateRow(PROCESS_DEFINITION_RESTORE_KEY, MARKER_VALUE));
   }
 
   @Override
   public boolean hasRunProcessDefinitionRestore() {
-    return partitionState.get(PROCESS_DEFINITION_RESTORE_KEY) != null;
+    return session.get(PARTITION_STATE, PROCESS_DEFINITION_RESTORE_KEY) != null;
   }
 
   /**
@@ -387,7 +369,7 @@ public final class RdbmsProcessStore implements ProcessStore {
     while (true) {
       final long pageStart = afterKey;
       final var committed =
-          rdbms.read(
+          session.read(
               ProcessDefinitionMapper.class,
               mapper ->
                   mapper.selectProcessDefinitionsAfter(partitionId, pageStart, PROCESS_PAGE_SIZE));
@@ -395,7 +377,8 @@ public final class RdbmsProcessStore implements ProcessStore {
       // staged processes beyond the page's last committed key belong to a later page
       final long pageEnd = lastPage ? Long.MAX_VALUE : committed.getLast().processDefinitionKey();
       final var page =
-          processes.query(
+          session.query(
+              PROCESS,
               committed,
               row ->
                   row.processDefinitionKey() > pageStart && row.processDefinitionKey() <= pageEnd,
@@ -436,7 +419,7 @@ public final class RdbmsProcessStore implements ProcessStore {
 
   /** The process that a lookup is about to point at. */
   private void requireProcessForLookup(final long processDefinitionKey, final String lookup) {
-    if (processes.get(processDefinitionKey) == null) {
+    if (session.get(PROCESS, processDefinitionKey) == null) {
       throw new ZeebeDbInconsistentException(
           "Expected to look up process %d by %s, but it does not exist"
               .formatted(processDefinitionKey, lookup));
@@ -447,7 +430,7 @@ public final class RdbmsProcessStore implements ProcessStore {
   private void clearDeploymentLookup(
       final String tenantId, final String bpmnProcessId, final long deploymentKey) {
     for (final var row : rowsWithDeploymentLookup(tenantId, bpmnProcessId, deploymentKey)) {
-      processes.update(row.withLookups(null, row.versionTagLookup()));
+      session.update(PROCESS, row.withLookups(null, row.versionTagLookup()));
     }
   }
 
@@ -455,7 +438,7 @@ public final class RdbmsProcessStore implements ProcessStore {
   private void clearVersionTagLookup(
       final String tenantId, final String bpmnProcessId, final String versionTag) {
     for (final var row : rowsWithVersionTagLookup(tenantId, bpmnProcessId, versionTag)) {
-      processes.update(row.withLookups(row.deploymentKeyLookup(), null));
+      session.update(PROCESS, row.withLookups(row.deploymentKeyLookup(), null));
     }
   }
 
@@ -485,36 +468,36 @@ public final class RdbmsProcessStore implements ProcessStore {
 
   /** The committed processes of the query, with the staged writes applied. */
   private List<ProcessDefinitionRow> queryProcesses(
-      final EngineStateMyBatis.MapperCall<ProcessDefinitionMapper, List<ProcessDefinitionRow>>
-          query,
+      final EntitySession.MapperCall<ProcessDefinitionMapper, List<ProcessDefinitionRow>> query,
       final Predicate<ProcessDefinitionRow> stagedMatches) {
-    return processes.query(rdbms.read(ProcessDefinitionMapper.class, query), stagedMatches, BY_KEY);
+    return session.query(
+        PROCESS, session.read(ProcessDefinitionMapper.class, query), stagedMatches, BY_KEY);
   }
 
   /** Inserts the process, or updates it if it exists, in which case it keeps its lookups. */
   private void upsertKeepingLookups(final ProcessDefinitionRow row) {
-    final var existing = processes.get(row.processDefinitionKey());
+    final var existing = session.get(PROCESS, row.processDefinitionKey());
     if (existing == null) {
-      processes.insert(row);
+      session.insert(PROCESS, row);
     } else {
-      processes.update(
-          row.withLookups(existing.deploymentKeyLookup(), existing.versionTagLookup()));
+      session.update(
+          PROCESS, row.withLookups(existing.deploymentKeyLookup(), existing.versionTagLookup()));
     }
   }
 
   /** Inserts the entity, or updates it if a row with its key exists. */
-  private static <K, E> void upsert(final EntityCache<K, E> cache, final K key, final E entity) {
-    if (cache.get(key) == null) {
-      cache.insert(entity);
+  private <K, E> void upsert(final EntityType<K, E> type, final K key, final E entity) {
+    if (session.get(type, key) == null) {
+      session.insert(type, entity);
     } else {
-      cache.update(entity);
+      session.update(type, entity);
     }
   }
 
   /** The row of the process, if it exists and belongs to the tenant. */
   private @Nullable ProcessDefinitionRow findRow(
       final String tenantId, final long processDefinitionKey) {
-    final var row = processes.get(processDefinitionKey);
+    final var row = session.get(PROCESS, processDefinitionKey);
     return row != null && row.tenantId().equals(tenantId) ? row : null;
   }
 
@@ -525,13 +508,14 @@ public final class RdbmsProcessStore implements ProcessStore {
   private @Nullable ProcessDefinitionRow findRowByVersion(
       final String tenantId, final String bpmnProcessId, final int version) {
     final var committed =
-        rdbms.read(
+        session.read(
             ProcessDefinitionMapper.class,
             mapper ->
                 mapper.selectProcessDefinitionsByVersion(
                     partitionId, tenantId, bpmnProcessId, version));
     final var rows =
-        processes.query(
+        session.query(
+            PROCESS,
             committed,
             row ->
                 row.tenantId().equals(tenantId)
@@ -544,10 +528,11 @@ public final class RdbmsProcessStore implements ProcessStore {
   /** The pending deletions of the process definition, ordered by partition. */
   private List<PendingProcessDeletionRow> readPendingDeletions(final long processDefinitionKey) {
     final var committed =
-        rdbms.read(
+        session.read(
             ProcessDefinitionMapper.class,
             mapper -> mapper.selectPendingProcessDeletions(partitionId, processDefinitionKey));
-    return pendingDeletions.query(
+    return session.query(
+        PENDING_DELETION,
         committed,
         row -> row.processDefinitionKey() == processDefinitionKey,
         Comparator.comparingInt(PendingProcessDeletionRow::pendingPartitionId));
@@ -586,7 +571,7 @@ public final class RdbmsProcessStore implements ProcessStore {
     VersionInfo get(final ProcessIdKey key) {
       var versionInfo = cached.get(key);
       if (versionInfo == null) {
-        final var row = versions.get(key);
+        final var row = session.get(VERSION, key);
         versionInfo =
             row == null
                 ? new VersionInfo().setHighestVersionIfHigher(DEFAULT_VERSION_VALUE)
@@ -600,16 +585,16 @@ public final class RdbmsProcessStore implements ProcessStore {
       final var versionInfo = get(key);
       changedInTransaction.add(key);
       versionInfo.addKnownVersion(version);
-      final var existing = versions.get(key);
+      final var existing = session.get(VERSION, key);
       if (existing == null) {
-        versions.insert(toRow(key, versionInfo, null));
+        session.insert(VERSION, toRow(key, versionInfo, null));
       } else {
-        versions.update(toRow(key, versionInfo, existing.digest()));
+        session.update(VERSION, toRow(key, versionInfo, existing.digest()));
       }
     }
 
     void removeVersion(final ProcessIdKey key, final long version) {
-      final var existing = versions.get(key);
+      final var existing = session.get(VERSION, key);
       if (existing == null) {
         throw new ZeebeDbInconsistentException(
             "Expected to remove version %d of process '%s' of tenant '%s', but no version is stored"
@@ -618,7 +603,7 @@ public final class RdbmsProcessStore implements ProcessStore {
       final var versionInfo = get(key);
       changedInTransaction.add(key);
       versionInfo.removeKnownVersion(version);
-      versions.update(toRow(key, versionInfo, existing.digest()));
+      session.update(VERSION, toRow(key, versionInfo, existing.digest()));
     }
 
     void clear() {
