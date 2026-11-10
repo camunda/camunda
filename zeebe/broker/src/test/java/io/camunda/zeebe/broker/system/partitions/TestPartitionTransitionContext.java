@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -42,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -75,7 +75,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ZeebeDb zeebeDB;
   private StateController stateController;
   private ExporterRepository exporterRepository;
-  private AtomixLogStorage logStorage;
+  private LogStorage logStorage;
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
@@ -293,12 +293,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public AtomixLogStorage getLogStorage() {
+  public LogStorage getLogStorage() {
     return logStorage;
   }
 
   @Override
-  public void setLogStorage(final AtomixLogStorage logStorage) {
+  public void setLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
   }
 
