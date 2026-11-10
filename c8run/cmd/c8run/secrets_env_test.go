@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	pt "github.com/camunda/camunda/c8run/internal/physicaltenants"
@@ -94,6 +95,7 @@ func TestEnvModeListForAPhysicalTenantNeedsNoLocalSecretsDirectory(t *testing.T)
 }
 
 func TestEnvironmentSecretNamesFollowTheEnvStoresRules(t *testing.T) {
+	longest := strings.Repeat("a", localsecrets.MaxNameLength)
 	env := []string{
 		"PATH=/bin",
 		"C8_DEFAULT_B=2",
@@ -103,9 +105,11 @@ func TestEnvironmentSecretNamesFollowTheEnvStoresRules(t *testing.T) {
 		"C8_DEFAULT_has.dot=x",
 		"C8_DEFAULT_=x",
 		"C8_DEFAULT_WITH_EQUALS=a=b",
+		"C8_DEFAULT_" + longest + "=x",
+		"C8_DEFAULT_" + longest + "b=x",
 	}
 
-	assert.Equal(t, []string{"A", "B", "WITH_EQUALS"}, environmentSecretNames(env, "C8_DEFAULT_"))
+	assert.Equal(t, []string{"A", "B", "WITH_EQUALS", longest}, environmentSecretNames(env, "C8_DEFAULT_"))
 }
 
 func TestEnvModeListAsksForThePrefixWhenUnset(t *testing.T) {

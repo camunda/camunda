@@ -58,7 +58,7 @@ func firstName(args []string) string {
 
 // listFromEnvironment prints the secret names this shell's environment holds for the tenant, as the
 // secrets API lists them: EnvVarSecretStore matches the prefix case included and treats an empty
-// value as no secret, and the API drops names outside the reference charset. c8run snapshots its
+// value as no secret, and the API drops names outside the reference charset or length. c8run snapshots its
 // environment at start, so this matches what it resolves when it was started from this environment.
 func (c *secretsCommand) listFromEnvironment(baseDir string, args []string) error {
 	if len(args) != 0 {
@@ -85,7 +85,7 @@ func environmentSecretNames(env []string, tenantPrefix string) []string {
 	for _, kv := range env {
 		key, value, _ := strings.Cut(kv, "=")
 		name, found := strings.CutPrefix(key, tenantPrefix)
-		if found && value != "" && environmentSecretName.MatchString(name) {
+		if found && value != "" && len(name) <= localsecrets.MaxNameLength && environmentSecretName.MatchString(name) {
 			names = append(names, name)
 		}
 	}
