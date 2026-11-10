@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestHandler;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
@@ -76,10 +77,43 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
       final DirectBuffer buffer,
       final int offset,
       final int length) {
-    actor.submit(() -> handleRequest(serverOutput, partitionId, requestId, buffer, offset, length));
+    actor.submit(
+        () -> {
+          handleRequest(serverOutput, partitionId, requestId, buffer, offset, length);
+        });
   }
 
-  private void handleRequest(
+  /**
+   * Handles a request that did not arrive over the network, for example one that a gateway left in
+   * the mailbox. The response goes to the given output, as for any request.
+   *
+   * @return a future that completes when the request is handled, that is, when its command is
+   *     written, or when an error response is written. It fails if the handling failed in a way
+   *     that left no response.
+   */
+  public final ActorFuture<Void> handleRequestFromMailbox(
+      final ServerOutput serverOutput,
+      final int partitionId,
+      final long requestId,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
+    final var result = new CompletableActorFuture<Void>();
+    actor.run(
+        () ->
+            handleRequest(serverOutput, partitionId, requestId, buffer, offset, length)
+                .onComplete(
+                    (ok, error) -> {
+                      if (error != null) {
+                        result.completeExceptionally(error);
+                      } else {
+                        result.complete(null);
+                      }
+                    }));
+    return result;
+  }
+
+  private ActorFuture<Void> handleRequest(
       final ServerOutput serverOutput,
       final int partitionId,
       final long requestId,
@@ -100,15 +134,16 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
       errorResponseWriter
           .invalidMessageTemplate(e.actualTemplate, e.expectedTemplate)
           .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
-      return;
+      return CompletableActorFuture.completed();
     } catch (final Exception e) {
       LOG.error("Failed to deserialize message", e);
       errorResponseWriter
           .malformedRequest(e)
           .tryWriteResponseOrLogFailure(serverOutput, partitionId, requestId);
-      return;
+      return CompletableActorFuture.completed();
     }
 
+    final var handled = new CompletableActorFuture<Void>();
     try {
       final var resultFuture =
           handleAsync(partitionId, requestId, requestReader, responseWriter, errorResponseWriter);
@@ -127,6 +162,7 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
                 result.get().tryWriteResponse(serverOutput, partitionId, requestId);
               }
             }
+            handled.complete(null);
           });
     } catch (final Exception e) {
       LOG.error("Error handling request on partition {}", partitionId, e);
@@ -134,7 +170,9 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends 
           .internalError(
               "Failed to handle request due to internal error; see the broker logs for more")
           .tryWriteResponse(serverOutput, partitionId, requestId);
+      handled.complete(null);
     }
+    return handled;
   }
 
   /**

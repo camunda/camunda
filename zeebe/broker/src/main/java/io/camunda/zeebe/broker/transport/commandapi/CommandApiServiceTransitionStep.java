@@ -34,7 +34,10 @@ public class CommandApiServiceTransitionStep implements PartitionTransitionStep 
           context
               .getCommandApiService()
               .registerHandlers(
-                  context.getPartitionId(), context.getLogStream(), context.getQueryService());
+                  context.getPartitionId(),
+                  term,
+                  context.getLogStream(),
+                  context.getQueryService());
       default -> context.getConcurrencyControl().createCompletedFuture();
     };
   }

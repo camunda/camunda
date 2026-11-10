@@ -25,6 +25,18 @@ public interface CommandApiService {
   ActorFuture<Void> registerHandlers(
       final int partitionId, final LogStream logStream, final QueryService queryService);
 
+  /**
+   * Registers the handlers, and records the leader of the term where leaders are recorded. The
+   * default ignores the term.
+   */
+  default ActorFuture<Void> registerHandlers(
+      final int partitionId,
+      final long term,
+      final LogStream logStream,
+      final QueryService queryService) {
+    return registerHandlers(partitionId, logStream, queryService);
+  }
+
   /** Unregisters command, query and transport handlers for the given partition. */
   ActorFuture<Void> unregisterHandlers(final int partitionId);
 

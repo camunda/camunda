@@ -269,6 +269,11 @@ public final class ZeebePartitionFactory {
     return new ConsistencyChecksSettings(settings.enablePreconditions(), false);
   }
 
+  /** How this broker uses the cross-region mailbox. Empty unless a provider supplies one. */
+  public Optional<MailboxSetup> mailboxSetup() {
+    return mailboxSetup;
+  }
+
   private List<PartitionTransitionStep> generateTransitionSteps() {
     return List.of(
         new MetricsStep(),

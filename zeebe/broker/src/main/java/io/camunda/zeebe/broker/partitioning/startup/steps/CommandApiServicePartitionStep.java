@@ -7,10 +7,15 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
+import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -36,7 +41,9 @@ public final class CommandApiServicePartitionStep implements StartupStep<Partiti
             context.partitionMetadata().id(),
             context.gatewayBrokerTransport(),
             context.schedulingService(),
-            context.brokerConfig().getExperimental().getQueryApi());
+            context.brokerConfig().getExperimental().getQueryApi(),
+            mailboxSetup(context).orElse(null),
+            context.brokerConfig().getCluster().getMemberId().id());
 
     context
         .concurrencyControl()
@@ -59,6 +66,18 @@ public final class CommandApiServicePartitionStep implements StartupStep<Partiti
             });
 
     return result;
+  }
+
+  /**
+   * The mailbox is for the default physical tenant only, because the inbox is addressed by the
+   * partition number, which other tenants repeat.
+   */
+  private static Optional<MailboxSetup> mailboxSetup(final PartitionStartupContext context) {
+    return Objects.equals(
+            context.partitionMetadata().id().group(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        ? Optional.ofNullable(context.zeebePartitionFactory())
+            .flatMap(ZeebePartitionFactory::mailboxSetup)
+        : Optional.empty();
   }
 
   @Override
