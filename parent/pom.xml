@@ -804,6 +804,20 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-mailbox-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-mailbox-api</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-search-client-plugin</artifactId>
         <version>${project.version}</version>
       </dependency>
