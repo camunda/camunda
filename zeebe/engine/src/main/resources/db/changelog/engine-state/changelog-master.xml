@@ -8,7 +8,7 @@
   -->
 <!--
   Schema of the relational engine state (RdbmsEngineStateSchema). Tracked in its own Liquibase
-  tables, ENGINE_STATE_DATABASECHANGELOG and ENGINE_STATE_DATABASECHANGELOGLOCK, so it evolves
+  tables, CAM_RU_DATABASECHANGELOG and CAM_RU_DATABASECHANGELOGLOCK, so it evolves
   independently of the RDBMS exporter schema in the same database.
 -->
 <databaseChangeLog

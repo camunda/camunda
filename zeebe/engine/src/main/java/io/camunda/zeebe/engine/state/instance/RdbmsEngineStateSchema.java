@@ -19,18 +19,18 @@ public final class RdbmsEngineStateSchema {
    * Liquibase tracking tables of the engine state changelog, separate from the RDBMS exporter's so
    * both schemas can evolve independently in the same database.
    */
-  public static final String DATABASE_CHANGELOG_TABLE = "ENGINE_STATE_DATABASECHANGELOG";
+  public static final String DATABASE_CHANGELOG_TABLE = "CAM_RU_DATABASECHANGELOG";
 
-  public static final String DATABASE_CHANGELOG_LOCK_TABLE = "ENGINE_STATE_DATABASECHANGELOGLOCK";
+  public static final String DATABASE_CHANGELOG_LOCK_TABLE = "CAM_RU_DATABASECHANGELOGLOCK";
 
   /** All engine state tables; each has a {@code partition_id} column. */
   public static final List<String> TABLES =
       List.of(
-          "element_instance",
-          "taken_sequence_flow",
-          "await_process_instance_result",
-          "runtime_instructions",
-          "process_instance_by_business_id");
+          "CAM_RU_ELEMENT_INSTANCE",
+          "CAM_RU_TAKEN_SEQUENCE_FLOW",
+          "CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT",
+          "CAM_RU_RUNTIME_INSTRUCTIONS",
+          "CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID");
 
   private RdbmsEngineStateSchema() {}
 }

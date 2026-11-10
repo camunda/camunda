@@ -117,7 +117,7 @@ final class RdbmsEngineStateSmokeIT {
                 postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         final var statement =
             connection.prepareStatement(
-                "SELECT COUNT(*) FROM element_instance WHERE " + column + " = ?")) {
+                "SELECT COUNT(*) FROM CAM_RU_ELEMENT_INSTANCE WHERE " + column + " = ?")) {
       statement.setLong(1, key);
       try (final var result = statement.executeQuery()) {
         result.next();
