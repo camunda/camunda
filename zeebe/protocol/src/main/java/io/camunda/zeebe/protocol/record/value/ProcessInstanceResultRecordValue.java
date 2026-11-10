@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
-import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -66,11 +65,4 @@ public interface ProcessInstanceResultRecordValue
    * @since 8.9
    */
   String getBusinessId();
-
-  /**
-   * @return the metadata of the variables of this record by variable name, empty if none of the
-   *     variables comes with metadata
-   * @since 8.11
-   */
-  Map<String, VariableMetadataValue> getVariablesMetadata();
 }

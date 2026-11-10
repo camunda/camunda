@@ -10,15 +10,15 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -35,6 +35,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
@@ -49,13 +50,13 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public MessageStartEventSubscriptionRecord() {
-    super(10);
+    super(11);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
@@ -64,9 +65,9 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(messageKeyProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(businessIdProp)
+        .declareProperty(variablesProp)
         .declareProperty(tenantIdProp)
         .declareProperty(storageOrdinalProp);
-    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -78,7 +79,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     messageKeyProp.setValue(record.getMessageKey());
     correlationKeyProp.setValue(record.getCorrelationKeyBuffer());
     businessIdProp.setValue(record.getBusinessIdBuffer());
-    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
+    variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
     storageOrdinalProp.setValue(record.getStorageOrdinal());
   }
@@ -190,28 +191,17 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   @Override
   public Map<String, Object> getVariables() {
-    return variablesPropertyGroup.getVariables();
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
   public MessageStartEventSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesPropertyGroup.setVariables(variables);
+    variablesProp.setValue(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesPropertyGroup.getVariablesBuffer();
-  }
-
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return variablesPropertyGroup.getMetadata();
-  }
-
-  public MessageStartEventSubscriptionRecord setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    variablesPropertyGroup.setMetadata(variablesMetadata);
-    return this;
+    return variablesProp.getValue();
   }
 
   @Override

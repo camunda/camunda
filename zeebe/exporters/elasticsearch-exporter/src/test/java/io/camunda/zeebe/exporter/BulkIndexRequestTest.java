@@ -42,8 +42,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
@@ -882,50 +880,6 @@ final class BulkIndexRequestTest {
               value ->
                   assertThat((Map<String, Object>) value)
                       .containsEntry("metadata", Map.of("protectionModes", List.of("REDACT"))));
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-        value = ValueType.class,
-        names = {
-          "COMPENSATION_SUBSCRIPTION",
-          "CONDITIONAL_EVALUATION",
-          "MESSAGE",
-          "MESSAGE_START_EVENT_SUBSCRIPTION",
-          "MESSAGE_START_PROCESS_INSTANCE_REQUEST",
-          "MESSAGE_SUBSCRIPTION",
-          "PROCESS_EVENT",
-          "PROCESS_INSTANCE_CREATION",
-          "PROCESS_INSTANCE_RESULT",
-          "PROCESS_MESSAGE_SUBSCRIPTION",
-          "SIGNAL",
-          "USER_TASK",
-          "VARIABLE_DOCUMENT"
-        })
-    void shouldIndexRecordWithoutVariablesMetadataOnPreviousVersion(final ValueType valueType) {
-      // given
-      final var record =
-          recordFactory.generateRecord(
-              valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion()));
-
-      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
-
-      // when
-      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
-
-      // then
-      assertThat(request.bulkOperations())
-          .hasSize(1)
-          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
-          .extracting(source -> source.get("value"))
-          .describedAs(
-              "Expect that %s records are NOT serialized with variablesMetadata on previous"
-                  + " version, and still without storageOrdinal",
-              valueType)
-          .allSatisfy(
-              value ->
-                  assertThat((Map<String, Object>) value)
-                      .doesNotContainKeys("variablesMetadata", "storageOrdinal"));
     }
 
     private static VariableRecord redactedVariable() {

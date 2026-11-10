@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
-import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -33,11 +32,4 @@ public interface SignalRecordValue extends RecordValueWithVariables, TenantOwned
    * @return the name of the signal
    */
   String getSignalName();
-
-  /**
-   * @return the metadata of the variables of this record by variable name, empty if none of the
-   *     variables comes with metadata
-   * @since 8.11
-   */
-  Map<String, VariableMetadataValue> getVariablesMetadata();
 }

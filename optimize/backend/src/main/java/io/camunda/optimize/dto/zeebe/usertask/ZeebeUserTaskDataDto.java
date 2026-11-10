@@ -10,7 +10,6 @@ package io.camunda.optimize.dto.zeebe.usertask;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.service.util.DateFormatterUtil;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -165,12 +164,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   @Override
   public String getBusinessId() {
     return ""; // not used in Optimize
-  }
-
-  @JsonIgnore
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return Map.of(); // not used in Optimize
   }
 
   @Override
