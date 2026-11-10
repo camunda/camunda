@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
  */
 abstract class AbstractElementInstanceStateContractTest {
 
+  protected static final String TENANT_ID = "tenant";
   private static final long PROCESS_KEY = 123;
   private static final long FLOW_SCOPE_KEY = 1L;
   private static final long OTHER_FLOW_SCOPE_KEY = 2L;
@@ -628,7 +629,9 @@ abstract class AbstractElementInstanceStateContractTest {
     variableState()
         .setVariableLocal(1, parent, PROCESS_KEY, wrapString("a"), MsgPackUtil.asMsgPack("1"));
     elementInstanceState.setAwaitResultRequestMetadata(
-        parent, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+        parent,
+        TENANT_ID,
+        new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
 
     processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
@@ -726,6 +729,7 @@ abstract class AbstractElementInstanceStateContractTest {
     // when
     elementInstanceState.setAwaitResultRequestMetadata(
         key,
+        TENANT_ID,
         new AwaitProcessInstanceResultMetadata()
             .setRequestStreamId(streamId)
             .setRequestId(requestId));
@@ -744,7 +748,9 @@ abstract class AbstractElementInstanceStateContractTest {
     elementInstanceState.newInstance(
         key, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
     elementInstanceState.setAwaitResultRequestMetadata(
-        key, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+        key,
+        TENANT_ID,
+        new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
 
     // when
     elementInstanceState.removeInstance(key);
@@ -853,7 +859,7 @@ abstract class AbstractElementInstanceStateContractTest {
 
     // when
     elementInstanceState.addRuntimeInstructions(
-        processInstanceKey, List.of(terminateAfterA, terminateAfterB));
+        processInstanceKey, TENANT_ID, List.of(terminateAfterA, terminateAfterB));
 
     // then
     assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
@@ -872,7 +878,8 @@ abstract class AbstractElementInstanceStateContractTest {
         new ProcessInstanceCreationRuntimeInstruction()
             .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
             .setAfterElementId("taskA");
-    elementInstanceState.addRuntimeInstructions(processInstanceKey, List.of(instruction));
+    elementInstanceState.addRuntimeInstructions(
+        processInstanceKey, TENANT_ID, List.of(instruction));
 
     // verify instructions exist
     assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
@@ -955,6 +962,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldReturnZeroIfNoSequenceFlowIsTaken() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -970,6 +978,9 @@ abstract class AbstractElementInstanceStateContractTest {
 
   @Test
   void shouldIncrementNumberOfTakenSequenceFlows() {
+    // given
+    createFlowScopes();
+
     // when
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
@@ -993,6 +1004,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldReturnNumberPerTakenSequenceFlows() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1012,6 +1024,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldReturnTakenSequenceFlows() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1031,6 +1044,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldVisitTakenSequenceFlowsOfFlowScope() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1062,6 +1076,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldDecrementNumbers() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1092,6 +1107,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldDecrementNumbersButKeepRemaining() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1113,6 +1129,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldDecrementSingleSequenceFlow() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1138,6 +1155,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldRemoveNumbersWhenDecrementing() {
     // given
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1153,8 +1171,7 @@ abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldRemoveNumbersWhenRemovingTheScope() {
     // given
-    elementInstanceState.newInstance(
-        FLOW_SCOPE_KEY, new ProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    createFlowScopes();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -1169,6 +1186,14 @@ abstract class AbstractElementInstanceStateContractTest {
     assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY)).isZero();
     assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(OTHER_FLOW_SCOPE_KEY))
         .isEqualTo(1);
+  }
+
+  /** Creates the flow scopes the tests take sequence flows in. */
+  private void createFlowScopes() {
+    for (final long flowScopeKey : List.of(FLOW_SCOPE_KEY, OTHER_FLOW_SCOPE_KEY)) {
+      elementInstanceState.newInstance(
+          flowScopeKey, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    }
   }
 
   protected ElementInstance createParentWithChildren(

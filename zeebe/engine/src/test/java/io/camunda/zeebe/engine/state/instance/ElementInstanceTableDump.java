@@ -25,8 +25,9 @@ final class ElementInstanceTableDump {
   private static final Logger LOG = LoggerFactory.getLogger(ElementInstanceTableDump.class);
 
   private static final String SELECT_ROWS =
-      "SELECT element_instance_key, parent_key, process_instance_key, process_definition_key,"
-          + " bpmn_element_type, state, payload FROM CAM_RU_ELEMENT_INSTANCE"
+      "SELECT element_instance_key, parent_key, process_instance_key, root_process_instance_key,"
+          + " process_definition_key, tenant_id, bpmn_process_id, element_id, bpmn_element_type,"
+          + " state, payload FROM CAM_RU_ELEMENT_INSTANCE"
           + " WHERE partition_id = ? ORDER BY element_instance_key";
 
   private ElementInstanceTableDump() {}
@@ -44,15 +45,20 @@ final class ElementInstanceTableDump {
         while (rows.next()) {
           dump.append(
               String.format(
-                  "%n  key=%d parent=%d processInstance=%d processDefinition=%d type=%s state=%s%n"
-                      + "    payload=%s",
+                  "%n  key=%d parent=%d processInstance=%d rootProcessInstance=%d"
+                      + " processDefinition=%d tenant=%s bpmnProcessId=%s elementId=%s type=%s"
+                      + " state=%s%n    payload=%s",
                   rows.getLong(1),
                   rows.getLong(2),
                   rows.getLong(3),
                   rows.getLong(4),
-                  BpmnElementType.values()[rows.getShort(5)],
-                  ProcessInstanceIntent.from(rows.getShort(6)),
-                  MsgPackConverter.convertToJson(rows.getBytes(7))));
+                  rows.getLong(5),
+                  rows.getString(6),
+                  rows.getString(7),
+                  rows.getString(8),
+                  BpmnElementType.values()[rows.getShort(9)],
+                  ProcessInstanceIntent.from(rows.getShort(10)),
+                  MsgPackConverter.convertToJson(rows.getBytes(11))));
         }
       }
     } catch (final SQLException e) {

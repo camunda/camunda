@@ -278,7 +278,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void setAwaitResultRequestMetadata(
-      final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
+      final long processInstanceKey,
+      final String tenantId,
+      final AwaitProcessInstanceResultMetadata metadata) {
     elementInstanceKey.wrapLong(processInstanceKey);
     awaitProcessInstanceResultMetadataColumnFamily.insert(elementInstanceKey, metadata);
   }
@@ -365,6 +367,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void addRuntimeInstructions(
       final long processInstanceKey,
+      final String tenantId,
       final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
 
     runtimeInstructions.setRuntimeInstructions(instructions);

@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.jdbc.EntityCache;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
+import io.camunda.zeebe.engine.state.instance.EngineStateMapper.BusinessIdKey;
 import io.camunda.zeebe.engine.state.instance.EngineStateMapper.BusinessIdRow;
 import io.camunda.zeebe.engine.state.instance.EngineStateMapper.ElementInstanceRow;
 import io.camunda.zeebe.engine.state.instance.EngineStateMapper.PayloadRow;
@@ -61,6 +62,14 @@ import org.jspecify.annotations.Nullable;
  * BpmnElementType#PROCESS}, whose {@code process_definition_key} column follows the instance (e.g.
  * on migration). Hence {@link #insertProcessInstanceKeyByDefinitionKey(long, long)} and {@link
  * #deleteProcessInstanceKeyByDefinitionKey(long, long)} do nothing.
+ *
+ * <p>Every row records the process instance, root process instance and tenant it belongs to. An
+ * element instance row takes them from its record. The other rows take them on insert from the
+ * element instance they belong to, read through the element instance cache, so usually without a
+ * query: a taken sequence flow from its flow scope, a business id from its process instance. The
+ * await result metadata and runtime instructions are stored while the process instance is created,
+ * before its element instance exists; they belong to a root process instance and get its tenant
+ * passed.
  */
 public final class RdbmsElementInstanceState implements MutableElementInstanceState {
 
@@ -78,7 +87,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
   private final EntityCache<TakenSequenceFlowKey, TakenSequenceFlowRow> takenSequenceFlows;
   private final EntityCache<Long, PayloadRow> awaitResults;
   private final EntityCache<Long, PayloadRow> runtimeInstructions;
-  private final EntityCache<BusinessIdRow, BusinessIdRow> businessIds;
+  private final EntityCache<BusinessIdKey, BusinessIdRow> businessIds;
 
   public RdbmsElementInstanceState(
       final JdbcTransactionContext transactionContext,
@@ -123,7 +132,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
     businessIds =
         cache(
             "process instance by business id",
-            Function.identity(),
+            BusinessIdRow::key,
             EngineStateMapper::selectBusinessId,
             EngineStateMapper::insertBusinessId,
             EngineStateMapper::updateBusinessId,
@@ -219,10 +228,14 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
 
   @Override
   public void setAwaitResultRequestMetadata(
-      final long processInstanceKey, final AwaitProcessInstanceResultMetadata metadata) {
+      final long processInstanceKey,
+      final String tenantId,
+      final AwaitProcessInstanceResultMetadata metadata) {
     inTransaction(
         () -> {
-          awaitResults.insert(new PayloadRow(processInstanceKey, serialize(metadata)));
+          awaitResults.insert(
+              new PayloadRow(
+                  processInstanceKey, processInstanceKey, tenantId, serialize(metadata)));
           return null;
         });
   }
@@ -239,9 +252,23 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
         () -> {
           final var takenSequenceFlow = takenSequenceFlows.get(key);
           if (takenSequenceFlow == null) {
+            final var flowScope = elementInstances.get(flowScopeKey);
+            if (flowScope == null) {
+              throw new IllegalStateException(
+                  String.format(
+                      "Expected to take sequence flow '%s' to gateway '%s' in flow scope %d,"
+                          + " but the flow scope does not exist",
+                      key.sequenceFlowElementId(), key.gatewayElementId(), flowScopeKey));
+            }
             takenSequenceFlows.insert(
                 new TakenSequenceFlowRow(
-                    key.flowScopeKey(), key.gatewayElementId(), key.sequenceFlowElementId(), 1));
+                    key.flowScopeKey(),
+                    key.gatewayElementId(),
+                    key.sequenceFlowElementId(),
+                    flowScope.processInstanceKey(),
+                    flowScope.rootProcessInstanceKey(),
+                    flowScope.tenantId(),
+                    1));
           } else {
             takenSequenceFlows.update(
                 takenSequenceFlow.withTimesTaken(takenSequenceFlow.timesTaken() + 1));
@@ -301,13 +328,15 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
   @Override
   public void addRuntimeInstructions(
       final long processInstanceKey,
+      final String tenantId,
       final List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions) {
     final var instructions = new RuntimeInstructions();
     instructions.setRuntimeInstructions(runtimeInstructions);
     inTransaction(
         () -> {
           this.runtimeInstructions.insert(
-              new PayloadRow(processInstanceKey, serialize(instructions)));
+              new PayloadRow(
+                  processInstanceKey, processInstanceKey, tenantId, serialize(instructions)));
           return null;
         });
   }
@@ -329,8 +358,19 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
       final long processInstanceKey) {
     inTransaction(
         () -> {
+          // only root process instances have a business id: without its row, it is its own root
+          final var processInstance = elementInstances.get(processInstanceKey);
+          final long rootProcessInstanceKey =
+              processInstance == null
+                  ? processInstanceKey
+                  : processInstance.rootProcessInstanceKey();
           businessIds.insert(
-              new BusinessIdRow(businessId, processDefinitionId, tenantId, processInstanceKey));
+              new BusinessIdRow(
+                  businessId,
+                  processDefinitionId,
+                  tenantId,
+                  processInstanceKey,
+                  rootProcessInstanceKey));
           return null;
         });
   }
@@ -344,7 +384,7 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
     inTransaction(
         () -> {
           businessIds.delete(
-              new BusinessIdRow(businessId, processDefinitionId, tenantId, processInstanceKey));
+              new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey));
           return null;
         });
   }
@@ -649,10 +689,23 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
         instance.getKey(),
         instance.getParentKey(),
         value.getProcessInstanceKey(),
+        rootProcessInstanceKey(value),
         value.getProcessDefinitionKey(),
+        value.getTenantId(),
+        value.getBpmnProcessId(),
+        value.getElementId(),
         (short) value.getBpmnElementType().ordinal(),
         instance.getState().value(),
         serialize(instance));
+  }
+
+  /**
+   * The root process instance key of the record, or its process instance key if it has none (e.g. a
+   * record written before it carried the root key).
+   */
+  private static long rootProcessInstanceKey(final ProcessInstanceRecord value) {
+    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
+    return rootProcessInstanceKey > 0 ? rootProcessInstanceKey : value.getProcessInstanceKey();
   }
 
   private static ElementInstance toInstance(final ElementInstanceRow row) {

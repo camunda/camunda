@@ -17,6 +17,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The rows are immutable snapshots, as the {@link io.camunda.zeebe.db.impl.jdbc.EntityCache}
  * requires: payloads are serialized msgpack and must not be modified.
+ *
+ * <p>Every row carries the process instance, root process instance and tenant it belongs to, so all
+ * rows of a process instance, a process instance tree or a tenant can be found in every table. They
+ * never change during a row's lifetime: they are set on insert, and updates keep them.
  */
 interface EngineStateMapper {
 
@@ -101,7 +105,7 @@ interface EngineStateMapper {
   // CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
 
   @Nullable BusinessIdRow selectBusinessId(
-      @Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);
+      @Param("partitionId") int partitionId, @Param("key") BusinessIdKey key);
 
   List<BusinessIdRow> selectBusinessIds(
       @Param("partitionId") int partitionId,
@@ -113,17 +117,22 @@ interface EngineStateMapper {
 
   void updateBusinessId(@Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);
 
-  void deleteBusinessId(@Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);
+  void deleteBusinessId(@Param("partitionId") int partitionId, @Param("key") BusinessIdKey key);
 
   /**
    * An element instance: the serialized {@link ElementInstance} plus the columns derived from it
-   * for queries.
+   * for queries. The root process instance key is the process instance key for a root process
+   * instance, and for instances created before the record carried a root process instance key.
    */
   record ElementInstanceRow(
       long key,
       long parentKey,
       long processInstanceKey,
+      long rootProcessInstanceKey,
       long processDefinitionKey,
+      String tenantId,
+      String bpmnProcessId,
+      String elementId,
       short bpmnElementType,
       short state,
       byte[] payload) {}
@@ -131,8 +140,15 @@ interface EngineStateMapper {
   record TakenSequenceFlowKey(
       long flowScopeKey, String gatewayElementId, String sequenceFlowElementId) {}
 
+  /** How often a sequence flow was taken; belongs to the process instance of its flow scope. */
   record TakenSequenceFlowRow(
-      long flowScopeKey, String gatewayElementId, String sequenceFlowElementId, int timesTaken) {
+      long flowScopeKey,
+      String gatewayElementId,
+      String sequenceFlowElementId,
+      long processInstanceKey,
+      long rootProcessInstanceKey,
+      String tenantId,
+      int timesTaken) {
 
     TakenSequenceFlowKey key() {
       return new TakenSequenceFlowKey(flowScopeKey, gatewayElementId, sequenceFlowElementId);
@@ -140,14 +156,33 @@ interface EngineStateMapper {
 
     TakenSequenceFlowRow withTimesTaken(final int newTimesTaken) {
       return new TakenSequenceFlowRow(
-          flowScopeKey, gatewayElementId, sequenceFlowElementId, newTimesTaken);
+          flowScopeKey,
+          gatewayElementId,
+          sequenceFlowElementId,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          tenantId,
+          newTimesTaken);
     }
   }
 
   /** A serialized value keyed by process instance key. */
-  record PayloadRow(long key, byte[] payload) {}
+  record PayloadRow(long key, long rootProcessInstanceKey, String tenantId, byte[] payload) {}
 
-  /** An entry of the business id index; the whole row is its key. */
-  record BusinessIdRow(
+  /** The key of an entry of the business id index: all its columns but the root key. */
+  record BusinessIdKey(
       String businessId, String processDefinitionId, String tenantId, long processInstanceKey) {}
+
+  /** An entry of the business id index. */
+  record BusinessIdRow(
+      String businessId,
+      String processDefinitionId,
+      String tenantId,
+      long processInstanceKey,
+      long rootProcessInstanceKey) {
+
+    BusinessIdKey key() {
+      return new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey);
+    }
+  }
 }
