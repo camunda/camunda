@@ -46,6 +46,7 @@ final class EntitySessionTest {
   private static EngineStateDatabase database;
 
   private final List<String> batches = new ArrayList<>();
+  private int selects;
   private boolean failNextBatch;
   private Connection connection;
   private int partitionId;
@@ -250,6 +251,130 @@ final class EntitySessionTest {
   }
 
   @Test
+  void shouldReadUnchangedRowOnceAndMissingRowOncePerTransaction() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    selects = 0;
+
+    // when
+    final var first = session.get(ROW, "1");
+    final var second = session.get(ROW, "1");
+    final var missing = session.get(ROW, "2");
+    final var missingAgain = session.get(ROW, "2");
+
+    // then
+    assertThat(first).isEqualTo(row("1", "a")).isSameAs(second);
+    assertThat(missing).isNull();
+    assertThat(missingAgain).isNull();
+    assertThat(selects).isEqualTo(2);
+
+    // when - a new transaction
+    transaction.commit();
+    context.getCurrentTransaction();
+    session.get(ROW, "1");
+
+    // then
+    assertThat(selects).isEqualTo(3);
+  }
+
+  @Test
+  void shouldServeRowsOfFullRowQueryWithoutSelect() throws Exception {
+    // given
+    commit(row("1", "a"), row("2", "a"), row("3", "a"));
+    context.getCurrentTransaction();
+    session.update(ROW, row("3", "a3"));
+
+    // when - 3 is staged, so the query result of it must not replace it
+    session.query(ROW, committedRows(), inGroup('a'), Comparator.comparing(PartitionStateRow::key));
+    selects = 0;
+
+    // then
+    assertThat(session.get(ROW, "1")).isEqualTo(row("1", "a"));
+    assertThat(session.get(ROW, "2")).isEqualTo(row("2", "a"));
+    assertThat(session.get(ROW, "3")).isEqualTo(row("3", "a3"));
+    assertThat(selects).isZero();
+  }
+
+  @Test
+  void shouldNotReplaceLoadedRowWithQueryResult() throws Exception {
+    // given
+    commit(row("1", "a"));
+    context.getCurrentTransaction();
+    final var loaded = session.get(ROW, "1");
+
+    // when
+    session.query(
+        ROW, List.of(row("1", "a")), inGroup('a'), Comparator.comparing(PartitionStateRow::key));
+
+    // then
+    assertThat(session.get(ROW, "1")).isSameAs(loaded);
+  }
+
+  @Test
+  void shouldPreferStagedWritesOverLoadedRows() throws Exception {
+    // given - 1 and 2 exist, 3 doesn't; all loaded
+    commit(row("1", "a"), row("2", "b"));
+    context.getCurrentTransaction();
+    session.get(ROW, "1");
+    session.get(ROW, "2");
+    session.get(ROW, "3");
+
+    // when
+    session.update(ROW, row("1", "a2"));
+    session.delete(ROW, "2");
+    session.insert(ROW, row("3", "c"));
+
+    // then
+    assertThat(session.get(ROW, "1")).isEqualTo(row("1", "a2"));
+    assertThat(session.get(ROW, "2")).isNull();
+    assertThat(session.get(ROW, "3")).isEqualTo(row("3", "c"));
+
+    // when - the staged insert is deleted again
+    session.delete(ROW, "3");
+
+    // then - the row is absent as loaded
+    assertThat(session.get(ROW, "3")).isNull();
+  }
+
+  @Test
+  void shouldReadAgainAfterRollback() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    selects = 0;
+
+    // when
+    transaction.rollback();
+    session.get(ROW, "1");
+
+    // then
+    assertThat(selects).isOne();
+  }
+
+  @Test
+  void shouldReadAgainAfterFailedCommit() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    session.insert(ROW, row("2", "b"));
+    failNextBatch = true;
+    assertThatThrownBy(transaction::commit).isInstanceOf(ZeebeDbException.class);
+    selects = 0;
+
+    // when
+    final var row = session.get(ROW, "1");
+    session.get(ROW, "1");
+
+    // then
+    assertThat(row).isEqualTo(row("1", "a"));
+    assertThat(selects).isOne();
+    assertThat(session.get(ROW, "2")).isEqualTo(row("2", "b"));
+  }
+
+  @Test
   void shouldDropStagedWritesOnRollback() throws Exception {
     // given
     commit(row("1", "a"));
@@ -383,6 +508,10 @@ final class EntitySessionTest {
             new Class<?>[] {PreparedStatement.class},
             (proxy, method, args) -> {
               final Object result = invoke(target, method, args);
+              if (method.getName().startsWith("execute")
+                  && !method.getName().equals("executeBatch")) {
+                selects++;
+              }
               if (method.getName().equals("addBatch")) {
                 rows[0]++;
               } else if (method.getName().equals("executeBatch")) {

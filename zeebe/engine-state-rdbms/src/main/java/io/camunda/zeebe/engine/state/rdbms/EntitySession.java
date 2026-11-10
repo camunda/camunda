@@ -54,8 +54,8 @@ import org.jspecify.annotations.Nullable;
  * </ul>
  *
  * <p>The session doesn't check the database on writes: an insert of an existing row or an update of
- * a missing one fails on flush. Committed rows are not cached; reads of unstaged keys always go to
- * the database. Not thread-safe, like the context it belongs to.
+ * a missing one fails on flush. Reads of unstaged keys go to the database once per transaction, see
+ * {@link #get}. Not thread-safe, like the context it belongs to.
  *
  * <p>Like a Camunda 7 command, a transaction uses one MyBatis session: it is opened on the first
  * database access, on the connection of the transaction, serves all reads and the flush, and is
@@ -73,10 +73,20 @@ import org.jspecify.annotations.Nullable;
  */
 final class EntitySession implements JdbcTransactionParticipant {
 
+  private static final Object ABSENT = new Object();
+
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
+
+  /**
+   * The committed rows loaded in this transaction by {@link #get} and full-row {@link #query}, per
+   * type and key; {@link #ABSENT} stands for a row that doesn't exist. Rows are immutable and the
+   * partition has a single writer, so a loaded row stays valid for the transaction; staged writes
+   * take precedence over it.
+   */
+  private final Map<EntityType<?, ?>, Map<Object, Object>> loaded = new HashMap<>();
 
   /** The session of the current transaction, null until its first database access. */
   private @Nullable SqlSession session;
@@ -99,7 +109,10 @@ final class EntitySession implements JdbcTransactionParticipant {
     return partitionId;
   }
 
-  /** Returns the staged row, or null if its deletion is staged, or else the committed one. */
+  /**
+   * Returns the staged row, or null if its deletion is staged, or else the committed one. A
+   * committed row is read once per transaction: the result, including a missing row, is remembered.
+   */
   <K, E> @Nullable E get(final EntityType<K, E> type, final K key) {
     return transactionContext.call(
         () -> {
@@ -107,7 +120,14 @@ final class EntitySession implements JdbcTransactionParticipant {
           if (write != null) {
             return type.cast(write.row);
           }
-          return unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
+          final var cached = loaded(type);
+          final Object known = cached.get(key);
+          if (known != null) {
+            return known == ABSENT ? null : type.cast(known);
+          }
+          final E row = unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
+          cached.put(key, row == null ? ABSENT : row);
+          return row;
         });
   }
 
@@ -193,10 +213,13 @@ final class EntitySession implements JdbcTransactionParticipant {
       final Predicate<? super E> stagedMatches,
       final Comparator<? super E> order) {
     final var writes = staged(type);
+    final var cached = loaded(type);
     final List<E> result = new ArrayList<>();
     for (final E row : dbResults) {
-      if (!writes.containsKey(type.keyOf(row))) {
+      final K key = type.keyOf(row);
+      if (!writes.containsKey(key)) {
         result.add(row);
+        cached.putIfAbsent(key, row);
       }
     }
     result.addAll(stagedMatching(type, stagedMatches));
@@ -297,16 +320,21 @@ final class EntitySession implements JdbcTransactionParticipant {
         });
   }
 
-  /** Drops all staged writes and ends the transaction's session. */
+  /** Drops all staged writes and loaded rows and ends the transaction's session. */
   @Override
   public void reset() {
     staged.values().forEach(Map::clear);
+    loaded.clear();
     closeSession();
   }
 
-  /** Keeps the staged writes for the retry, which gets a new session on the current connection. */
+  /**
+   * Keeps the staged writes for the retry, which gets a new session on the current connection. The
+   * loaded rows are dropped, the retry reads them again.
+   */
   @Override
   public void commitFailed() {
+    loaded.clear();
     closeSession();
   }
 
@@ -356,6 +384,10 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private Map<String, Object> rowParameter(final @Nullable Object row) {
     return Map.of("partitionId", partitionId, "row", Objects.requireNonNull(row));
+  }
+
+  private Map<Object, Object> loaded(final EntityType<?, ?> type) {
+    return loaded.computeIfAbsent(type, ignored -> new HashMap<>());
   }
 
   private Map<Object, Staged> staged(final EntityType<?, ?> type) {
