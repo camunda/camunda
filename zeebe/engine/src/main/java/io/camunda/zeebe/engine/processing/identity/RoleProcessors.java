@@ -31,11 +31,13 @@ public class RoleProcessors {
       final EngineSecurityConfig securityConfig,
       final MembershipStateAdapter membershipStateAdapter) {
     final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
+    final var roleValidator =
+        new RoleValidator(new StateIdentityView(processingState), securityConfig);
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.CREATE,
         new RoleCreateProcessor(
-            processingState.getRoleState(),
+            roleValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
@@ -45,6 +47,7 @@ public class RoleProcessors {
         RoleIntent.UPDATE,
         new RoleUpdateProcessor(
             processingState.getRoleState(),
+            roleValidator,
             keyGenerator,
             permissionsBehavior,
             writers,
@@ -53,18 +56,17 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.ADD_ENTITY,
         new RoleAddEntityProcessor(
-            processingState,
+            roleValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            securityConfig,
             membershipStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.REMOVE_ENTITY,
         new RoleRemoveEntityProcessor(
-            processingState,
+            roleValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
@@ -75,6 +77,7 @@ public class RoleProcessors {
         RoleIntent.DELETE,
         new RoleDeleteProcessor(
             processingState,
+            roleValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
