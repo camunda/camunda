@@ -122,4 +122,51 @@ public class GetVariableTest extends ClientRestTest {
     assertThat(variable.isRedacted()).isFalse();
     assertThat(variable.getValueAsType(String.class)).isEqualTo("text");
   }
+
+  @Test
+  void shouldReturnEmptyMetadataWhenServerReturnsNone() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(null));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getMetadata()).isNotNull();
+    assertThat(variable.getMetadata().getProtectionModes()).isEmpty();
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.REDACT)).isFalse();
+    assertThat(variable.isRedacted()).isFalse();
+  }
+
+  @Test
+  void shouldTellWhichProtectionModesApply() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.REDACT)).isTrue();
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.UNKNOWN_ENUM_VALUE))
+        .isFalse();
+  }
 }

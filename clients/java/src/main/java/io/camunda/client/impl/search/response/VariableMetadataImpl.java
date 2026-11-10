@@ -28,7 +28,7 @@ public class VariableMetadataImpl implements Variable.Metadata {
 
   public VariableMetadataImpl(final io.camunda.client.protocol.rest.VariableMetadata item) {
     final Set<ProtectionMode> modes = new LinkedHashSet<>();
-    if (item.getProtectionModes() != null) {
+    if (item != null && item.getProtectionModes() != null) {
       item.getProtectionModes()
           .forEach(mode -> modes.add(EnumUtil.convert(mode, ProtectionMode.class)));
     }

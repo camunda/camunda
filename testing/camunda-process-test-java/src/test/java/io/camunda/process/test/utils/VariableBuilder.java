@@ -17,6 +17,7 @@ package io.camunda.process.test.utils;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Variable;
+import java.util.Collections;
 
 public class VariableBuilder implements Variable {
 
@@ -27,7 +28,7 @@ public class VariableBuilder implements Variable {
   private Long processInstanceKey;
   private Long rootProcessInstanceKey;
   private String tenantId;
-  private Metadata metadata;
+  private Metadata metadata = Collections::emptySet;
   private Boolean isTruncated;
   private JsonMapper jsonMapper;
 

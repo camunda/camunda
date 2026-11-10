@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.search.enums.ProtectionMode;
+import java.util.Collections;
 import java.util.Set;
 
 public interface Variable {
@@ -54,11 +55,12 @@ public interface Variable {
    *
    * <p>This is a default method, so that existing implementations of this interface keep compiling.
    *
-   * @return the variable metadata, or {@code null} if the server did not return any
+   * @return the variable metadata, never {@code null}: it has no protection modes if the server did
+   *     not return any
    */
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
   default Metadata getMetadata() {
-    return null;
+    return Collections::emptySet;
   }
 
   /* Check if the variable is truncated */
@@ -72,10 +74,7 @@ public interface Variable {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
   default boolean isRedacted() {
-    final Metadata metadata = getMetadata();
-    return metadata != null
-        && metadata.getProtectionModes() != null
-        && metadata.getProtectionModes().contains(ProtectionMode.REDACT);
+    return getMetadata().hasProtectionMode(ProtectionMode.REDACT);
   }
 
   /**
@@ -92,7 +91,21 @@ public interface Variable {
   @ExperimentalApi("https://github.com/camunda/camunda/pull/68611")
   interface Metadata {
 
-    /** The protections applied to the variable. */
+    /**
+     * The protections applied to the variable.
+     *
+     * @return the protection modes, empty if the variable has none, never {@code null}
+     */
     Set<ProtectionMode> getProtectionModes();
+
+    /**
+     * Checks whether the given protection applies to the variable.
+     *
+     * @param protectionMode the protection to look for
+     * @return {@code true} if the variable has the given protection
+     */
+    default boolean hasProtectionMode(final ProtectionMode protectionMode) {
+      return getProtectionModes().contains(protectionMode);
+    }
   }
 }

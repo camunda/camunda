@@ -44,7 +44,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
-    metadata = item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
+    metadata = new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
@@ -57,7 +57,7 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
-    metadata = item.getMetadata() == null ? null : new VariableMetadataImpl(item.getMetadata());
+    metadata = new VariableMetadataImpl(item.getMetadata());
     this.jsonMapper = jsonMapper;
   }
 
