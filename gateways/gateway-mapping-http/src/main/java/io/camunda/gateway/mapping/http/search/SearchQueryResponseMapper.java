@@ -244,6 +244,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUSta
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
@@ -274,6 +275,9 @@ public final class SearchQueryResponseMapper {
   // the next exporter event. Preferred over a spec-incompatible `""` so ISO-8601 parsing on the
   // client still succeeds.
   private static final String EPOCH_DATE_SENTINEL = "1970-01-01T00:00:00Z";
+
+  // The value returned for a redacted variable, clients should check `metadata.protectionModes`
+  private static final String REDACTED_VARIABLE_VALUE = "";
 
   private SearchQueryResponseMapper() {}
 
@@ -1650,7 +1654,7 @@ public final class SearchQueryResponseMapper {
         .metadata(toVariableMetadata(variableEntity))
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(
-            withRedaction(
+            toResponseValue(
                 variableEntity,
                 !truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value()))
         .build();
@@ -1683,18 +1687,18 @@ public final class SearchQueryResponseMapper {
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
         .metadata(toVariableMetadata(variableEntity))
-        .value(withRedaction(variableEntity, getFullValueIfPresent(variableEntity)))
+        .value(toResponseValue(variableEntity, getFullValueIfPresent(variableEntity)))
         .build();
   }
 
   /**
-   * A redacted variable is stored with the JSON empty string {@code ""} as its value. The API
-   * returns an empty string instead, so that clients check {@code metadata.protectionModes} rather
-   * than read a value that looks real.
+   * The value the API returns for the variable: the given value, or {@link
+   * #REDACTED_VARIABLE_VALUE} if the variable is redacted. A redacted variable is stored with the
+   * JSON empty string {@code ""} as its value.
    */
-  private static String withRedaction(final VariableEntity variableEntity, final String value) {
-    return variableEntity.protectionModes().contains(VariableEntity.ProtectionMode.REDACT)
-        ? ""
+  private static String toResponseValue(final VariableEntity variableEntity, final String value) {
+    return variableEntity.protectionModes().contains(ProtectionMode.REDACT)
+        ? REDACTED_VARIABLE_VALUE
         : value;
   }
 

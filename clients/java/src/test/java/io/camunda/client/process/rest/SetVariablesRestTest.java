@@ -18,6 +18,8 @@ package io.camunda.client.process.rest;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.client.api.command.VariableMetadata;
+import io.camunda.client.protocol.rest.ProtectionModeEnum;
 import io.camunda.client.protocol.rest.SetVariableRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.StringUtil;
@@ -41,6 +43,27 @@ public class SetVariablesRestTest extends ClientRestTest {
     // thenv
     final SetVariableRequest request = gatewayService.getLastRequest(SetVariableRequest.class);
     Assertions.assertThat(request.getVariables()).containsOnly(entry("key", "val"));
+  }
+
+  @Test
+  public void shouldCommandWithVariablesMetadata() {
+    // given
+    final String variables = "{\"secret\": \"val\"}";
+
+    // when
+    client
+        .newSetVariablesCommand(123)
+        .variables(variables, Collections.singletonMap("secret", VariableMetadata.redacted()))
+        .send()
+        .join();
+
+    // then
+    final SetVariableRequest request = gatewayService.getLastRequest(SetVariableRequest.class);
+    Assertions.assertThat(request.getVariablesMetadata())
+        .containsOnlyKeys("secret")
+        .extractingByKey("secret")
+        .extracting(io.camunda.client.protocol.rest.VariableMetadata::getProtectionModes)
+        .isEqualTo(Collections.singletonList(ProtectionModeEnum.REDACT));
   }
 
   @Test

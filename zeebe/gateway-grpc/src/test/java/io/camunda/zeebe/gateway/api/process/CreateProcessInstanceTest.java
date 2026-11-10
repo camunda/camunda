@@ -257,6 +257,28 @@ public final class CreateProcessInstanceTest extends GatewayTest {
   }
 
   @Test
+  public void shouldRejectUnspecifiedProtectionMode() {
+    // given
+    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
+    stub.registerWith(brokerClient);
+
+    // the default value of the enum, as sent when a mode was not set deliberately
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+            .setVariables("{\"ssn\":\"123\"}")
+            .putVariablesMetadata(
+                "ssn", VariableMetadata.newBuilder().addProtectionModesValue(0).build())
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.createProcessInstance(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.Code.INVALID_ARGUMENT);
+  }
+
+  @Test
   public void shouldRejectVariablesMetadataOfUnknownVariable() {
     // given
     final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();

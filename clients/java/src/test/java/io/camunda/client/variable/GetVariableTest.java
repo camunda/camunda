@@ -16,12 +16,18 @@
 package io.camunda.client.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ProtectionMode;
+import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.protocol.rest.ProtectionModeEnum;
+import io.camunda.client.protocol.rest.VariableMetadata;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import java.util.Collections;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -45,5 +51,122 @@ public class GetVariableTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getVariableUrl(variableKey));
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldReturnVariableMetadata() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getMetadata().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldRecognizeRedactedVariableAndRefuseToReadItsValueAsType() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .value("\"\"")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.isRedacted()).isTrue();
+    assertThatThrownBy(() -> variable.getValueAsType(String.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("redacted");
+  }
+
+  @Test
+  void shouldNotTreatVariableWithoutProtectionsAsRedacted() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .value("\"text\"")
+            .metadata(new VariableMetadata().protectionModes(Collections.emptyList())));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.isRedacted()).isFalse();
+    assertThat(variable.getValueAsType(String.class)).isEqualTo("text");
+  }
+
+  @Test
+  void shouldReturnEmptyMetadataWhenServerReturnsNone() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(null));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getMetadata()).isNotNull();
+    assertThat(variable.getMetadata().getProtectionModes()).isEmpty();
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.REDACT)).isFalse();
+    assertThat(variable.isRedacted()).isFalse();
+  }
+
+  @Test
+  void shouldTellWhichProtectionModesApply() {
+    // given
+    final long variableKey = 1L;
+    gatewayService.onVariableRequest(
+        variableKey,
+        Instancio.create(VariableResult.class)
+            .variableKey("1")
+            .processInstanceKey("2")
+            .scopeKey("3")
+            .rootProcessInstanceKey("4")
+            .metadata(
+                new VariableMetadata()
+                    .protectionModes(Collections.singletonList(ProtectionModeEnum.REDACT))));
+
+    // when
+    final Variable variable = client.newVariableGetRequest(variableKey).send().join();
+
+    // then
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.REDACT)).isTrue();
+    assertThat(variable.getMetadata().hasProtectionMode(ProtectionMode.UNKNOWN_ENUM_VALUE))
+        .isFalse();
   }
 }

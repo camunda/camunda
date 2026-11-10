@@ -20,10 +20,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -55,6 +57,46 @@ public final class SetVariablesTest extends ClientTest {
         .containsOnly(entry("key", "val"));
 
     rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCommandWithVariablesMetadata() {
+    // given
+    gatewayService.onSetVariablesRequest(345);
+
+    // when
+    client
+        .newSetVariablesCommand(123)
+        .variables(
+            "{\"secret\": \"val\"}",
+            Collections.singletonMap("secret", VariableMetadata.redacted()))
+        .send()
+        .join();
+
+    // then
+    final SetVariablesRequest request = gatewayService.getLastRequest();
+    assertThat(request.getVariablesMetadataMap()).containsOnlyKeys("secret");
+    assertThat(request.getVariablesMetadataMap().get("secret").getProtectionModesList())
+        .containsExactly(GatewayOuterClass.VariableMetadata.ProtectionMode.REDACT);
+  }
+
+  @Test
+  public void shouldSendExplicitlyEmptyProtectionModes() {
+    // given
+    gatewayService.onSetVariablesRequest(345);
+
+    // when
+    client
+        .newSetVariablesCommand(123)
+        .variable("a", 1, VariableMetadata.builder().protectionModes().build())
+        .send()
+        .join();
+
+    // then
+    // declaring no protections is explicit, so the variable is meant to lose its protections
+    final SetVariablesRequest request = gatewayService.getLastRequest();
+    assertThat(request.getVariablesMetadataMap()).containsOnlyKeys("a");
+    assertThat(request.getVariablesMetadataMap().get("a").getProtectionModesList()).isEmpty();
   }
 
   @Test

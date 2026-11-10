@@ -33,14 +33,14 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
   }
 
   public BrokerSetVariablesRequest setVariables(final DirectBuffer variables) {
-    requestDto.setVariables(variables);
-    return this;
+    return setVariables(variables, Map.of());
   }
 
-  public BrokerSetVariablesRequest setVariablesMetadata(
+  public BrokerSetVariablesRequest setVariables(
+      final DirectBuffer variables,
       final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    VariablesMetadataValidator.validateVariablesMetadata(
-        requestDto.getVariablesBuffer(), variablesMetadata);
+    VariablesMetadataValidator.validateVariablesMetadata(variables, variablesMetadata);
+    requestDto.setVariables(variables);
     requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }

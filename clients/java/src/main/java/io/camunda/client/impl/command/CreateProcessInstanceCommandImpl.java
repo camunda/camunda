@@ -25,6 +25,7 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -32,6 +33,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
+import io.camunda.client.impl.util.VariableMetadataMapper;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
@@ -46,13 +48,14 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateProcessInstanceCommandImpl
-    extends CommandWithVariables<CreateProcessInstanceCommandImpl>
+    extends CommandWithVariablesMetadata<CreateProcessInstanceCommandImpl>
     implements CreateProcessInstanceCommandStep1,
         CreateProcessInstanceCommandStep2,
         CreateProcessInstanceCommandStep3 {
@@ -94,10 +97,15 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
-  protected CreateProcessInstanceCommandImpl setVariablesInternal(final String variables) {
+  protected CreateProcessInstanceCommandImpl setVariablesInternal(
+      final String variables, final Map<String, VariableMetadata> variablesMetadata) {
     grpcRequestObjectBuilder.setVariables(variables);
+    grpcRequestObjectBuilder.clearVariablesMetadata();
+    grpcRequestObjectBuilder.putAllVariablesMetadata(
+        VariableMetadataMapper.toGrpc(variablesMetadata));
     if (useRest) {
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+      httpRequestObject.setVariablesMetadata(VariableMetadataMapper.toRest(variablesMetadata));
     }
     return this;
   }

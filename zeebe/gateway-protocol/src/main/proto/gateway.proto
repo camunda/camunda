@@ -341,8 +341,11 @@ message CreateProcessInstanceRequest {
 message VariableMetadata {
   // The kind of protection applied to a variable value.
   enum ProtectionMode {
+    // the default value of the enum, which is never a valid protection mode. A protection mode that
+    // was not set deliberately must not turn into a protection by accident.
+    PROTECTION_MODE_UNSPECIFIED = 0;
     // irrecoverably replaces the value before it reaches secondary storage
-    REDACT = 0;
+    REDACT = 1;
   }
 
   // the protections applied to the variable

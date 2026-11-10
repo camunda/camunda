@@ -22,12 +22,14 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.command.VariableMetadata;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProtectionModeEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.RestGatewayPaths;
@@ -83,6 +85,28 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // then
     // brokers that predate variablesMetadata reject the property, even as an empty object
     assertThat(gatewayService.getLastRequest(Map.class)).doesNotContainKey("variablesMetadata");
+  }
+
+  @Test
+  public void shouldSendVariablesMetadata() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId("testProcess")
+        .latestVersion()
+        .variable("secret", "val", VariableMetadata.redacted())
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getVariablesMetadata()).containsOnlyKeys("secret");
+    assertThat(request.getVariablesMetadata().get("secret").getProtectionModes())
+        .containsExactly(ProtectionModeEnum.REDACT);
   }
 
   @Test

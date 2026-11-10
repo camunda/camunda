@@ -325,11 +325,12 @@ public final class RequestMapper extends RequestUtil {
         .setKey(grpcRequest.getProcessDefinitionKey())
         .setVersion(grpcRequest.getVersion())
         .setTenantId(ensureTenantIdSet("CreateProcessInstance", grpcRequest.getTenantId()))
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()))
+        .setVariables(
+            ensureJsonSet(grpcRequest.getVariables()),
+            toVariablesMetadata(grpcRequest.getVariablesMetadataMap()))
         .setStartInstructions(grpcRequest.getStartInstructionsList())
         .setRuntimeInstructions(grpcRequest.getRuntimeInstructionsList())
         .setTags(Set.copyOf(grpcRequest.getTagsList()))
-        .setVariablesMetadata(toVariablesMetadata(grpcRequest.getVariablesMetadataMap()))
         .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     if (grpcRequest.hasOperationReference()) {
@@ -357,11 +358,12 @@ public final class RequestMapper extends RequestUtil {
         .setKey(request.getProcessDefinitionKey())
         .setVersion(request.getVersion())
         .setTenantId(ensureTenantIdSet("CreateProcessInstanceWithResult", request.getTenantId()))
-        .setVariables(ensureJsonSet(request.getVariables()))
+        .setVariables(
+            ensureJsonSet(request.getVariables()),
+            toVariablesMetadata(request.getVariablesMetadataMap()))
         .setStartInstructions(request.getStartInstructionsList())
         .setRuntimeInstructions(request.getRuntimeInstructionsList())
         .setTags(Set.copyOf(request.getTagsList()))
-        .setVariablesMetadata(toVariablesMetadata(request.getVariablesMetadataMap()))
         .setFetchVariables(grpcRequest.getFetchVariablesList())
         .setBusinessId(ensureBusinessIdValid(request.getBusinessId()));
 
@@ -406,9 +408,10 @@ public final class RequestMapper extends RequestUtil {
     final var brokerRequest = new BrokerSetVariablesRequest();
 
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
-    brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    brokerRequest.setVariables(
+        ensureJsonSet(grpcRequest.getVariables()),
+        toVariablesMetadata(grpcRequest.getVariablesMetadataMap()));
     brokerRequest.setLocal(grpcRequest.getLocal());
-    brokerRequest.setVariablesMetadata(toVariablesMetadata(grpcRequest.getVariablesMetadataMap()));
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -436,7 +439,7 @@ public final class RequestMapper extends RequestUtil {
       final GatewayOuterClass.VariableMetadata.ProtectionMode mode) {
     return switch (mode) {
       case REDACT -> ProtectionMode.REDACT;
-      case UNRECOGNIZED ->
+      case PROTECTION_MODE_UNSPECIFIED, UNRECOGNIZED ->
           throw new IllegalArgumentException(
               "Expected protection mode to be one of %s, but it was not recognized"
                   .formatted(List.of(ProtectionMode.values())));

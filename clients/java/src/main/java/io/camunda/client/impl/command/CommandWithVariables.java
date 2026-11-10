@@ -32,64 +32,91 @@ public abstract class CommandWithVariables<T> {
 
   public T variables(final InputStream variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    final String validatedVariables = objectMapper.validateJson("variables", variables);
-    replaceAccumulatedVariables(validatedVariables);
-    return setVariablesInternal(validatedVariables);
+    return apply(replacingWithJson(objectMapper.validateJson("variables", variables)));
   }
 
   public T variables(final String variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    final String validatedVariables = objectMapper.validateJson("variables", variables);
-    replaceAccumulatedVariables(validatedVariables);
-    return setVariablesInternal(validatedVariables);
+    return apply(replacingWithJson(objectMapper.validateJson("variables", variables)));
   }
 
   public T variables(final Map<String, Object> variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    final String serializedVariables = objectMapper.toJson(variables);
-    replaceAccumulatedVariables(variables);
-    return setVariablesInternal(serializedVariables);
+    return apply(replacingWithMap(variables));
   }
 
   public T variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    final String serializedVariables = objectMapper.toJson(variables);
-    final Object transformedVariables = objectMapper.transform(variables, Object.class);
-    replaceAccumulatedVariables(ArgumentUtil.ensureJsonObject("variables", transformedVariables));
-    return setVariablesInternal(serializedVariables);
+    return apply(replacingWithObject(variables));
   }
 
   public T variable(final String key, final Object value) {
     ArgumentUtil.ensureNotNull("key", key);
-    accumulatedVariables.clear();
-    accumulatedVariables.put(key, value);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    return apply(replacingWithEntry(key, value));
   }
 
   public T addVariable(final String key, final Object value) {
     ArgumentUtil.ensureNotNull("key", key);
-    accumulatedVariables.put(key, value);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    return apply(adding(Collections.singletonMap(key, value)));
   }
 
   public T addVariables(final Map<String, Object> variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
-    accumulatedVariables.putAll(variables);
-    return setVariablesInternal(objectMapper.toJson(accumulatedVariables));
+    return apply(adding(variables));
   }
 
-  private void replaceAccumulatedVariables(final String variables) {
-    if (variables == null || variables.trim().isEmpty()) {
-      replaceAccumulatedVariables(Collections.emptyMap());
-      return;
-    }
+  /**
+   * Hands the new variables to the command and only then makes them the accumulated variables, so
+   * that a call that fails leaves what was accumulated before untouched.
+   */
+  protected T apply(final VariablesUpdate update) {
+    final T result = setVariablesInternal(update.serializedVariables);
+    replaceAccumulatedVariables(update.variables);
+    return result;
+  }
 
-    final Object parsedVariables = objectMapper.fromJson(variables, Object.class);
-    if (parsedVariables == null) {
-      replaceAccumulatedVariables(Collections.emptyMap());
-      return;
+  /** The variables that replace all accumulated variables, from a validated JSON document. */
+  protected final VariablesUpdate replacingWithJson(final String validatedVariables) {
+    if (validatedVariables == null || validatedVariables.trim().isEmpty()) {
+      return new VariablesUpdate(validatedVariables, new HashMap<>(), true);
     }
-    replaceAccumulatedVariables(ArgumentUtil.ensureJsonObject("variables", parsedVariables));
+    final Object parsedVariables = objectMapper.fromJson(validatedVariables, Object.class);
+    if (parsedVariables == null) {
+      return new VariablesUpdate(validatedVariables, new HashMap<>(), true);
+    }
+    return new VariablesUpdate(
+        validatedVariables,
+        new HashMap<>(ArgumentUtil.ensureJsonObject("variables", parsedVariables)),
+        true);
+  }
+
+  /** The variables that replace all accumulated variables, from a map. */
+  protected final VariablesUpdate replacingWithMap(final Map<String, Object> variables) {
+    return new VariablesUpdate(objectMapper.toJson(variables), new HashMap<>(variables), true);
+  }
+
+  /** The variables that replace all accumulated variables, from an object. */
+  protected final VariablesUpdate replacingWithObject(final Object variables) {
+    final String serializedVariables = objectMapper.toJson(variables);
+    final Object transformedVariables = objectMapper.transform(variables, Object.class);
+    return new VariablesUpdate(
+        serializedVariables,
+        new HashMap<>(ArgumentUtil.ensureJsonObject("variables", transformedVariables)),
+        true);
+  }
+
+  /** A single variable that replaces all accumulated variables. */
+  protected final VariablesUpdate replacingWithEntry(final String key, final Object value) {
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put(key, value);
+    return new VariablesUpdate(objectMapper.toJson(variables), variables, true);
+  }
+
+  /** The accumulated variables with the given variables added to them. */
+  protected final VariablesUpdate adding(final Map<String, Object> variables) {
+    final Map<String, Object> allVariables = new HashMap<>(accumulatedVariables);
+    allVariables.putAll(variables);
+    return new VariablesUpdate(objectMapper.toJson(allVariables), allVariables, false);
   }
 
   protected final void resetAccumulatedVariables() {
@@ -102,4 +129,24 @@ public abstract class CommandWithVariables<T> {
   }
 
   protected abstract T setVariablesInternal(String variables);
+
+  /**
+   * The complete variables of the command after a call, computed before anything is changed.
+   *
+   * <p>Everything that can fail, such as validating and serializing, happens while this is created.
+   */
+  protected static final class VariablesUpdate {
+    final String serializedVariables;
+    final Map<String, Object> variables;
+    final boolean replacesAll;
+
+    private VariablesUpdate(
+        final String serializedVariables,
+        final Map<String, Object> variables,
+        final boolean replacesAll) {
+      this.serializedVariables = serializedVariables;
+      this.variables = variables;
+      this.replacesAll = replacesAll;
+    }
+  }
 }
