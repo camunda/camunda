@@ -8,6 +8,7 @@
 
 import {type Page} from '@playwright/test';
 import {BasePage} from '#/pages/BasePage';
+import {variableRowName} from '#/shared-test-modules/variable-row';
 
 class OperatePreviewProcessInstancePage extends BasePage {
 	constructor(page: Page) {
@@ -46,8 +47,12 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
-	get bottomPanelPlaceholder() {
-		return this.page.getByText('Bottom panel placeholder');
+	get variablesList() {
+		return this.page.getByRole('table', {name: 'Variable List'});
+	}
+
+	variableRow(name: string) {
+		return this.variablesList.getByRole('row', {name: variableRowName(name)});
 	}
 
 	get incidentsTab() {

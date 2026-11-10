@@ -14,6 +14,7 @@ import {cn} from '#/shared/cn';
 type Column = {
 	cellContent: React.ReactNode;
 	width?: string;
+	className?: string;
 };
 
 type RowProps = {
@@ -52,10 +53,10 @@ const StructuredRows: React.FC<Pick<Props, 'rows' | 'verticalCellPadding' | 'cel
 		<>
 			{rows.map(({key, dataTestId, columns}) => (
 				<TableRow key={key} data-testid={dataTestId}>
-					{columns.map(({cellContent, width}, index) => (
+					{columns.map(({cellContent, width, className}, index) => (
 						<TableCell
 							key={index}
-							className={cellClassName}
+							className={cn(cellClassName, className)}
 							style={{
 								width,
 								...(verticalCellPadding ? {paddingTop: verticalCellPadding, paddingBottom: verticalCellPadding} : {}),

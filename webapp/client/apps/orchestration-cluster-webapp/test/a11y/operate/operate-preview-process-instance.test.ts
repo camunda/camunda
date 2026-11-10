@@ -15,6 +15,8 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
+	mockQueryVariablesEndpoint,
+	mockGetVariableEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -23,6 +25,7 @@ import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/o
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
@@ -103,4 +106,62 @@ test('should have no accessibility violations with the breadcrumb overflow menu 
 
 	const results = await makeAxeBuilder().include('[role="menu"]').analyze();
 	expect(results.violations).toEqual([]);
+});
+
+test.describe('Variables tab', () => {
+	test.beforeEach(({network}) => {
+		network.use(...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})));
+		network.use(
+			mockQueryVariablesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryVariablesByUserTaskResponse({
+						items: [
+							createVariable({name: 'amount', value: '100', variableKey: '1'}),
+							createVariable({name: 'customer', value: '{"name": "Ada"}', variableKey: '2'}),
+						],
+					}),
+				),
+			}),
+			mockGetVariableEndpoint({
+				successResponse: HttpResponse.json(createVariable({name: 'amount', value: '100', variableKey: '1'})),
+			}),
+		);
+	});
+
+	test('should have no accessibility violations with variables listed', async ({
+		operatePreviewProcessInstancePage,
+		makeAxeBuilder,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(operatePreviewProcessInstancePage.variableRow('amount')).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+
+	test('should have no accessibility violations while adding a variable', async ({
+		operatePreviewProcessInstancePage,
+		page,
+		makeAxeBuilder,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await page.getByRole('button', {name: 'Add Variable'}).click();
+		await expect(page.getByRole('textbox', {name: 'Name', exact: true})).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
+
+	test('should have no accessibility violations with the full value dialog open', async ({
+		operatePreviewProcessInstancePage,
+		page,
+		makeAxeBuilder,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.variableRow('amount').getByRole('button', {name: 'Open'}).click();
+		await expect(page.getByRole('dialog')).toBeVisible();
+
+		const results = await makeAxeBuilder().analyze();
+		expect(results.violations).toEqual([]);
+	});
 });
