@@ -73,6 +73,11 @@
           #{tenantId}
         </foreach>
       </if>
+      <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilterFields"/>
+    </where>
+  </sql>
+
+  <sql id="searchFilterFields">
       <!-- basic filters -->
       <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
         AND PROCESS_DEFINITION_KEY IN
@@ -135,7 +140,6 @@
           </otherwise>
         </choose>
       </if>
-    </where>
   </sql>
 
   <resultMap id="searchResultMap"
