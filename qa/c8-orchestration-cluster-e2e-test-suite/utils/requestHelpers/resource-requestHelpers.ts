@@ -10,6 +10,9 @@ import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {assertStatusCode, buildUrl, defaultHeaders, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
+import {generateUniqueId} from '../../utils/constants';
+
+type DeploymentItem = Record<string, Record<string, unknown> | undefined>;
 
 export function validateProcessDefinitionDeployment(
   deployments: unknown[],
@@ -191,8 +194,39 @@ export async function deployResourceAndGetMetadata(
   const body = await res.json();
   expect(body.deployments.length).toBeGreaterThan(deploymentIndex);
 
-  const deployment = body.deployments[deploymentIndex];
+  return resourceMetadataOf(body.deployments[deploymentIndex]);
+}
 
+interface DeployedEntity {
+  resourceName: string;
+  version: number;
+}
+
+// One entry of the `deployments` array of a POST /deployments response.
+export interface DeploymentEntry {
+  processDefinition?: DeployedEntity & {
+    processDefinitionKey: string;
+    processDefinitionId: string;
+  };
+  form?: DeployedEntity & {formKey: string; formId: string};
+  decisionDefinition?: Omit<DeployedEntity, 'resourceName'> & {
+    decisionDefinitionKey: string;
+    decisionDefinitionId: string;
+    name: string;
+  };
+  decisionRequirements?: DeployedEntity & {
+    decisionRequirementsKey: string;
+    decisionRequirementsId: string;
+  };
+  resource?: DeployedEntity & {resourceKey: string; resourceId: string};
+}
+
+// Maps one entry of a POST /deployments response to the key and id of the
+// resource it deployed. For a DMN file, pass the `decisionRequirements` entry to
+// get the key POST /resources/:key/deletion takes.
+export function resourceMetadataOf(
+  deployment: DeploymentEntry,
+): ResourceMetadata {
   if (deployment.processDefinition) {
     return {
       resourceKey: deployment.processDefinition.processDefinitionKey,
@@ -233,6 +267,217 @@ export async function deployResourceAndGetMetadata(
   throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
 }
 
+export interface DeployedResource extends ResourceMetadata {
+  deploymentKey: string;
+  resourceId: string;
+}
+
+export interface InlineResource {
+  fileName: string;
+  content: string | Buffer;
+}
+
+// A minimal valid RPA document. `id` and `versionTag` are the only fields the
+// deployment transformer reads, and versionTag is the sole way any resource
+// type can carry one.
+export function rpaResourceContent(rpaId: string, versionTag?: string): string {
+  return JSON.stringify({
+    id: rpaId,
+    name: rpaId,
+    executionPlatform: 'Camunda Cloud',
+    executionPlatformVersion: '8.8.0',
+    ...(versionTag ? {versionTag} : {}),
+    script: '*** Tasks ***\nDo nothing\n    Log    hello',
+  });
+}
+
+export function formResourceContent(formId: string, label: string): string {
+  return JSON.stringify({
+    type: 'default',
+    id: formId,
+    components: [{key: 'applicant', label, type: 'textfield'}],
+  });
+}
+
+export function inlineBpmnProcess(processId: string): InlineResource {
+  return {
+    fileName: `${processId}.bpmn`,
+    content: `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" id="Definitions_${processId}" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${processId}" isExecutable="true">
+    <bpmn:startEvent id="start" />
+  </bpmn:process>
+</bpmn:definitions>`,
+  };
+}
+
+export function inlineDmnDecision(drdId: string): InlineResource {
+  return {
+    fileName: `${drdId}.dmn`,
+    content: `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" id="${drdId}" name="${drdId}" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision_${drdId}" name="decision_${drdId}">
+    <literalExpression>
+      <text>"ok"</text>
+    </literalExpression>
+  </decision>
+</definitions>`,
+  };
+}
+
+export function inlineRpaResource(): InlineResource {
+  const rpaId = `rpa_${generateUniqueId()}`;
+  return {fileName: `${rpaId}.rpa`, content: rpaResourceContent(rpaId)};
+}
+
+export function createInlineFormData(files: InlineResource[]): FormData {
+  const formData = new FormData();
+  for (const {fileName, content} of files) {
+    const bytes = Uint8Array.from(
+      typeof content === 'string' ? Buffer.from(content, 'utf-8') : content,
+    );
+    formData.append(
+      'resources',
+      new Blob([bytes], {type: 'application/octet-stream'}),
+      fileName,
+    );
+  }
+  return formData;
+}
+
+export function deployInlineFilesRaw(
+  request: APIRequestContext,
+  files: InlineResource[],
+  headers: Record<string, string> = defaultHeaders(),
+): Promise<APIResponse> {
+  return request.post(buildUrl('/deployments'), {
+    headers,
+    multipart: createInlineFormData(files),
+  });
+}
+
+export async function deployInlineFiles(
+  request: APIRequestContext,
+  files: InlineResource[],
+): Promise<Record<string, unknown>> {
+  const res = await deployInlineFilesRaw(request, files);
+  await assertStatusCode(res, 200);
+  return res.json();
+}
+
+export async function deployInlineResources(
+  request: APIRequestContext,
+  resources: InlineResource[],
+): Promise<{deploymentKey: string; resources: DeployedResource[]}> {
+  const body = await deployInlineFiles(request, resources);
+  const deployed = (body.deployments as DeploymentItem[])
+    .filter((deployment) => deployment.resource != null)
+    .map((deployment) => {
+      const resource = deployment.resource!;
+      return {
+        deploymentKey: body.deploymentKey as string,
+        resourceKey: resource.resourceKey as string,
+        resourceName: resource.resourceName as string,
+        resourceId: resource.resourceId as string,
+        version: resource.version as number,
+      };
+    });
+
+  expect(
+    deployed.length,
+    `Expected every deployed file to be a resource, got ${JSON.stringify(body.deployments)}`,
+  ).toBe(resources.length);
+
+  return {deploymentKey: body.deploymentKey as string, resources: deployed};
+}
+
+export interface LinkedResourceBinding {
+  resourceId: string;
+  resourceType: string;
+  bindingType: 'latest' | 'deployment' | 'versionTag';
+  linkName: string;
+  versionTag?: string;
+}
+
+// Generated per test rather than kept as a fixture: the job type has to be
+// unique, because /jobs/activation has no process-instance filter and would
+// otherwise hand a parallel test's job to this one.
+export function serviceTaskWithLinkedResourcesBpmn(
+  processDefinitionId: string,
+  jobType: string,
+  linkedResources: LinkedResourceBinding[],
+): string {
+  const links = linkedResources
+    .map(
+      (link) =>
+        `<zeebe:linkedResource resourceId="${link.resourceId}" resourceType="${link.resourceType}" bindingType="${link.bindingType}" linkName="${link.linkName}"${
+          link.versionTag ? ` versionTag="${link.versionTag}"` : ''
+        } />`,
+    )
+    .join('\n            ');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_${processDefinitionId}"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="${processDefinitionId}" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_to_task</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow_to_task" sourceRef="start" targetRef="linked_task" />
+    <bpmn:serviceTask id="linked_task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="${jobType}" />
+        <zeebe:linkedResources>
+            ${links}
+        </zeebe:linkedResources>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_to_task</bpmn:incoming>
+      <bpmn:outgoing>flow_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="flow_to_end" sourceRef="linked_task" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>`;
+}
+
+export interface LinkedResourceHeader {
+  resourceType: string;
+  linkName: string;
+  resourceKey: string;
+}
+
+export function parseLinkedResourcesHeader(
+  customHeaders: unknown,
+): LinkedResourceHeader[] {
+  const linkedResources = (customHeaders as Record<string, string>)
+    ?.linkedResources;
+  expect(
+    linkedResources,
+    `Job has no linkedResources header: ${JSON.stringify(customHeaders)}`,
+  ).toBeDefined();
+  return JSON.parse(linkedResources);
+}
+
+export async function deployInlineResource(
+  request: APIRequestContext,
+  fileName: string,
+  content: string | Buffer,
+): Promise<DeployedResource> {
+  const {resources} = await deployInlineResources(request, [
+    {fileName, content},
+  ]);
+  return resources[0];
+}
+
+// The endpoint constants are exported because a spec needs the same literal a
+// second time for `validateResponse({path, ...})`. Reusing the constant keeps
+// the requested path and the validated path from drifting apart.
+export const RESOURCE_ENDPOINT = '/resources/{resourceKey}';
+export const RESOURCE_CONTENT_ENDPOINT = '/resources/{resourceKey}/content';
 export const RESOURCE_DELETION_ENDPOINT = '/resources/{resourceKey}/deletion';
 
 interface DeleteResourceOptions {
@@ -253,5 +498,29 @@ export function deleteResource(
   return request.post(buildUrl(RESOURCE_DELETION_ENDPOINT, {resourceKey}), {
     headers,
     ...(options.data === undefined ? {} : {data: options.data}),
+  });
+}
+
+interface ResourceRequestOptions {
+  headers?: Record<string, string>;
+}
+
+export function getResource(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
+  });
+}
+
+export function getResourceContent(
+  request: APIRequestContext,
+  resourceKey: string,
+  options: ResourceRequestOptions = {},
+): Promise<APIResponse> {
+  return request.get(buildUrl(RESOURCE_CONTENT_ENDPOINT, {resourceKey}), {
+    headers: options.headers ?? defaultHeaders(),
   });
 }
