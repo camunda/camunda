@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.Unit.unit;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.Subscription;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
@@ -90,10 +91,26 @@ public final class BrokerClientImpl implements BrokerClient {
         new BrokerRequestManager(
             atomixTransportAdapter,
             topologyManager,
-            new RoundRobinDispatchStrategy(),
+            newDispatchStrategy(mailbox),
             requestTimeout,
             metrics,
             mailbox);
+  }
+
+  /**
+   * A partition whose leader is recorded in the mailbox can take requests, also if the topology
+   * does not show its leader. The mailbox is for the default physical tenant only.
+   */
+  private static RoundRobinDispatchStrategy newDispatchStrategy(
+      final @Nullable GatewayMailbox mailbox) {
+    if (mailbox == null) {
+      return new RoundRobinDispatchStrategy();
+    }
+    return new RoundRobinDispatchStrategy(
+        0,
+        (group, partition) ->
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(group)
+                && mailbox.recordedLeader(partition).isPresent());
   }
 
   @Override

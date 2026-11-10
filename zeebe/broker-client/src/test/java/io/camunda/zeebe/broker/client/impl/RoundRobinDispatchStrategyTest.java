@@ -42,6 +42,40 @@ final class RoundRobinDispatchStrategyTest {
   }
 
   @Test
+  void shouldNotSkipPartitionsWithALeaderOutsideTheTopology() {
+    // given - partition 1 has no leader in the topology, but one is recorded elsewhere
+    final var dispatchStrategy =
+        new RoundRobinDispatchStrategy(0, (group, partition) -> partition == 1);
+    final var topologyManager = new TestTopologyManager();
+    topologyManager.addPartition(1, null).addPartition(2, null);
+
+    // when - then
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(1);
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldSkipPartitionsWithoutLeadersAnywhere() {
+    // given
+    final var dispatchStrategy =
+        new RoundRobinDispatchStrategy(0, (group, partition) -> partition == 3);
+    final var topologyManager = new TestTopologyManager();
+    topologyManager.addPartition(1, null).addPartition(2, null).addPartition(3, null);
+
+    // when - then
+    assertThat(
+            dispatchStrategy.determinePartition(
+                topologyManager, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .isEqualTo(3);
+  }
+
+  @Test
   void shouldSkipPartitionsWithoutLeaders() {
     // given
     final var dispatchStrategy = new RoundRobinDispatchStrategy();

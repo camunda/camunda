@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,34 +53,82 @@ final class GatewayMailboxTest {
   }
 
   @Test
-  void shouldFindTheRecordedLeader() throws Exception {
+  void shouldFindTheRecordedLeaderAfterARefresh() {
     // given
     mailbox = start(store);
     store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
 
     // when
-    final var leader = mailbox.findLeader(1).get();
+    mailbox.refreshLeaders();
 
     // then
-    assertThat(leader).contains(new PartitionLeader(1, "us_0", "us", 3));
+    assertThat(mailbox.recordedLeader(1)).contains(new PartitionLeader(1, "us_0", "us", 3));
   }
 
   @Test
-  void shouldFindNoLeaderWhenNoneIsRecorded() throws Exception {
+  void shouldFindNoLeaderWhenNoneIsRecorded() {
+    // given
+    mailbox = start(store);
+    mailbox.refreshLeaders();
+
+    // when / then
+    assertThat(mailbox.recordedLeader(1)).isEmpty();
+  }
+
+  @Test
+  void shouldNotSeeALeaderBeforeTheRefresh() {
+    // given
+    mailbox = start(store);
+    mailbox.refreshLeaders();
+
+    // when
+    store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isEmpty();
+  }
+
+  @Test
+  void shouldForgetALeaderThatWasRemoved() {
+    // given
+    mailbox = start(store);
+    store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
+    mailbox.refreshLeaders();
+    store.removeLeader(1, "us_0", 3);
+
+    // when
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isEmpty();
+  }
+
+  @Test
+  void shouldKeepTheLeadersWhenTheStoreFailsOnRefresh() {
+    // given
+    final var failing = new AtomicBoolean();
+    mailbox = start(failingWhen(failing, "findLeaders"));
+    store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
+    mailbox.refreshLeaders();
+
+    // when
+    failing.set(true);
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isPresent();
+  }
+
+  @Test
+  void shouldRefreshTheLeadersRegularly() {
     // given
     mailbox = start(store);
 
-    // when / then
-    assertThat(mailbox.findLeader(1).get()).isEmpty();
-  }
+    // when
+    store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
 
-  @Test
-  void shouldFindNoLeaderWhenTheStoreFails() throws Exception {
-    // given
-    mailbox = start(failingOn("findLeader"));
-
-    // when / then
-    assertThat(mailbox.findLeader(1).get()).isEmpty();
+    // then
+    await().atMost(Duration.ofSeconds(10)).until(() -> mailbox.recordedLeader(1).isPresent());
   }
 
   @Test
@@ -183,12 +232,16 @@ final class GatewayMailboxTest {
 
   /** A store that works as the in-memory store, except that one method fails. */
   private MailboxStore failingOn(final String method) {
+    return failingWhen(new AtomicBoolean(true), method);
+  }
+
+  private MailboxStore failingWhen(final AtomicBoolean failing, final String method) {
     return (MailboxStore)
         Proxy.newProxyInstance(
             MailboxStore.class.getClassLoader(),
             new Class<?>[] {MailboxStore.class},
             (proxy, called, args) -> {
-              if (called.getName().equals(method)) {
+              if (failing.get() && called.getName().equals(method)) {
                 throw new MailboxStoreException("down", new RuntimeException());
               }
               try {

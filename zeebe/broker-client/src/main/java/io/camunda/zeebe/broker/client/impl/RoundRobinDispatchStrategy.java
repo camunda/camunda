@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -35,12 +36,24 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
   private final ConcurrentMap<String, GroupState> groups = new ConcurrentHashMap<>();
   private final int initialOffset;
+  private final BiPredicate<String, Integer> hasLeaderOutsideTopology;
 
   public RoundRobinDispatchStrategy() {
     this(0);
   }
 
   public RoundRobinDispatchStrategy(final int initialOffset) {
+    this(initialOffset, (group, partition) -> false);
+  }
+
+  /**
+   * @param hasLeaderOutsideTopology tells whether a partition of a group has a leader that the
+   *     topology does not show, for example one that is recorded in the mailbox. Such a partition
+   *     can take requests, so it is not skipped. Must not block.
+   */
+  public RoundRobinDispatchStrategy(
+      final int initialOffset, final BiPredicate<String, Integer> hasLeaderOutsideTopology) {
+    this.hasLeaderOutsideTopology = hasLeaderOutsideTopology;
     if (initialOffset < 0) {
       throw new IllegalArgumentException(
           "Expected initialOffset to be >= 0, but got %d".formatted(initialOffset));
@@ -63,7 +76,8 @@ public final class RoundRobinDispatchStrategy implements RequestDispatchStrategy
 
     for (int i = 0; i < topology.getPartitionsCount(); i++) {
       final int partition = partitions.partitionAtOffset(state.offset().getAndIncrement());
-      if (topology.getLeaderForPartition(partition) != null) {
+      if (topology.getLeaderForPartition(partition) != null
+          || hasLeaderOutsideTopology.test(partitionGroup, partition)) {
         return partition;
       }
     }

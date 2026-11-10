@@ -217,32 +217,30 @@ final class BrokerRequestManager extends Actor {
       return false;
     }
     final var topology = topologyManager.getTopology(partitionGroup);
-    return topology != null && topology.getLeaderForPartition(request.getPartitionId()) == null;
+    if (topology == null) {
+      return false;
+    }
+    final var leader = topology.getLeaderForPartition(request.getPartitionId());
+    // when the regions are simulated, a leader of another zone is out of reach
+    final var simulatedZone = mailbox.simulatedZone();
+    return leader == null || (simulatedZone != null && !leader.isInZone(simulatedZone));
   }
 
   /**
    * Sends the request through the mailbox if the store records a leader for its partition, and
-   * otherwise runs the fallback, which is what happens without a mailbox.
+   * otherwise runs the fallback, which is what happens without a mailbox. The record is a copy that
+   * the mailbox keeps, so this does not block.
    */
   private <T> void sendThroughMailboxOr(
       final BrokerRequest<T> request,
       final CompletableFuture<BrokerResponse<T>> returnFuture,
       final Duration requestTimeout,
       final Runnable fallback) {
-    final var partitionId = request.getPartitionId();
-    // the lookup may block, so it runs on the executor of the mailbox, and the actor goes on after
-    Objects.requireNonNull(mailbox)
-        .findLeader(partitionId)
-        .whenComplete(
-            (leader, error) ->
-                actor.run(
-                    () -> {
-                      if (error == null && leader.isPresent()) {
-                        sendThroughMailbox(request, returnFuture, requestTimeout);
-                      } else {
-                        fallback.run();
-                      }
-                    }));
+    if (Objects.requireNonNull(mailbox).recordedLeader(request.getPartitionId()).isPresent()) {
+      sendThroughMailbox(request, returnFuture, requestTimeout);
+    } else {
+      fallback.run();
+    }
   }
 
   private <T> void sendThroughMailbox(

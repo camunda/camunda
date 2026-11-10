@@ -19,15 +19,20 @@ import io.camunda.zeebe.mailbox.api.MessageKind;
 import io.camunda.zeebe.mailbox.api.PartitionLeader;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * The way for a gateway to reach a partition leader that it cannot see: it asks the store where the
- * leader is, puts the request into the inbox of the partition, and collects the response from its
- * outbox.
+ * The way for a gateway to reach a partition leader that it cannot see. It keeps a copy of the
+ * leaders that the store records. For a partition with a recorded leader it puts the request into
+ * the inbox of the partition, and collects the response from its outbox.
  *
  * <p>A request is never sent again after a timeout, because the leader may have processed it.
  *
@@ -35,11 +40,19 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public final class GatewayMailbox implements AutoCloseable {
 
+  private static final Logger LOG = LoggerFactory.getLogger(GatewayMailbox.class);
+
+  /** How old the copy of the recorded leaders may get. */
+  private static final Duration LEADER_REFRESH_INTERVAL = Duration.ofSeconds(1);
+
   private final GatewayMailboxSetup setup;
   private final InboxSender sender;
   private final ResponseAwaiter awaiter;
   private final ScheduledExecutorService pollExecutor;
   private final PollLoop pollLoop;
+  private final ScheduledExecutorService leaderExecutor;
+  private final PollLoop leaderLoop;
+  private volatile Map<Integer, PartitionLeader> leaders = Map.of();
 
   public GatewayMailbox(final GatewayMailboxSetup setup) {
     this(setup, InstantSource.system());
@@ -62,27 +75,59 @@ public final class GatewayMailbox implements AutoCloseable {
             Scheduler.of(pollExecutor),
             new AdaptiveBackoff(setup.config().minPollInterval(), setup.config().maxPollInterval()),
             () -> awaiter.pollOnce() > 0);
+    // the leaders are read on a thread of their own, so a slow read does not delay the responses
+    leaderExecutor =
+        Executors.newSingleThreadScheduledExecutor(
+            runnable -> {
+              final var thread = new Thread(runnable, "gateway-mailbox-leaders");
+              thread.setDaemon(true);
+              return thread;
+            });
+    leaderLoop =
+        new PollLoop(
+            "gateway-mailbox-leaders",
+            Scheduler.of(leaderExecutor),
+            new AdaptiveBackoff(LEADER_REFRESH_INTERVAL, LEADER_REFRESH_INTERVAL),
+            () -> {
+              refreshLeaders();
+              return false;
+            });
+  }
+
+  /** The zone of this gateway if the regions are simulated in one network, otherwise null. */
+  public @Nullable String simulatedZone() {
+    return setup.simulatedZone();
   }
 
   public void start() {
     pollLoop.start();
+    leaderExecutor.execute(this::refreshLeaders);
+    leaderLoop.start();
   }
 
   /**
-   * Looks up the recorded leader of a partition.
-   *
-   * @return the leader, or empty if none is recorded or the store cannot be reached
+   * Returns the leader that the store recorded for a partition, as of the last refresh. It does not
+   * block, so the request path and the partition dispatch can call it. The copy is at most a
+   * refresh interval old.
    */
-  public CompletableFuture<Optional<PartitionLeader>> findLeader(final int partitionId) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return setup.store().findLeader(partitionId);
-          } catch (final MailboxStoreException e) {
-            return Optional.empty();
-          }
-        },
-        setup.executor());
+  public Optional<PartitionLeader> recordedLeader(final int partitionId) {
+    return Optional.ofNullable(leaders.get(partitionId));
+  }
+
+  /**
+   * Reads the recorded leaders from the store now, which also happens regularly. A failure keeps
+   * the copy that exists. It blocks, so it must not run on an actor thread.
+   */
+  public void refreshLeaders() {
+    try {
+      final var refreshed = new HashMap<Integer, PartitionLeader>();
+      for (final var leader : setup.store().findLeaders()) {
+        refreshed.put(leader.partitionId(), leader);
+      }
+      leaders = Map.copyOf(refreshed);
+    } catch (final MailboxStoreException e) {
+      LOG.warn("Could not read the leaders of the partitions from the mailbox", e);
+    }
   }
 
   /**
@@ -116,6 +161,8 @@ public final class GatewayMailbox implements AutoCloseable {
   @Override
   public void close() {
     pollLoop.close();
+    leaderLoop.close();
     pollExecutor.shutdownNow();
+    leaderExecutor.shutdownNow();
   }
 }

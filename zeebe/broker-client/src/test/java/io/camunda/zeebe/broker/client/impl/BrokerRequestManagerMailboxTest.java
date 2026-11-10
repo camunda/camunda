@@ -65,6 +65,7 @@ final class BrokerRequestManagerMailboxTest {
   private final RecordingTransport transport = new RecordingTransport();
   private final GatewayMailbox mailbox =
       new GatewayMailbox(new GatewayMailboxSetup(store, CONFIG, GATEWAY, Runnable::run));
+  private final java.util.List<GatewayMailbox> zoned = new java.util.ArrayList<>();
   private BrokerRequestManager manager;
 
   @BeforeEach
@@ -76,6 +77,7 @@ final class BrokerRequestManagerMailboxTest {
   @AfterEach
   void tearDown() {
     mailbox.close();
+    zoned.forEach(GatewayMailbox::close);
     scheduler.stop();
   }
 
@@ -84,6 +86,7 @@ final class BrokerRequestManagerMailboxTest {
     // given
     start(new TestTopologyManager().addPartition(PARTITION, null), mailbox);
     store.putLeader(new PartitionLeader(PARTITION, "us_0", "us", 1));
+    refreshed();
 
     // when
     final var response = manager.sendRequest(request(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
@@ -108,6 +111,7 @@ final class BrokerRequestManagerMailboxTest {
     // given
     start(new TestTopologyManager().addPartition(PARTITION, BrokerMemberId.from(0)), mailbox);
     store.putLeader(new PartitionLeader(PARTITION, "us_0", "us", 1));
+    refreshed();
 
     // when
     final var response = manager.sendRequest(request(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
@@ -135,6 +139,7 @@ final class BrokerRequestManagerMailboxTest {
     // given
     start(new TestTopologyManager().addPartition(PARTITION, null), null);
     store.putLeader(new PartitionLeader(PARTITION, "us_0", "us", 1));
+    refreshed();
 
     // when
     final var response = manager.sendRequest(request(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
@@ -150,6 +155,7 @@ final class BrokerRequestManagerMailboxTest {
     final var tenant = "other-tenant";
     start(new TestTopologyManager().addPartition(tenant, PARTITION, null), mailbox);
     store.putLeader(new PartitionLeader(PARTITION, "us_0", "us", 1));
+    refreshed();
 
     // when
     final var response = manager.sendRequest(request(tenant));
@@ -157,6 +163,61 @@ final class BrokerRequestManagerMailboxTest {
     // then
     assertThat(response.get().getResponse()).isEqualTo(NETWORK_RESPONSE);
     assertThat(store.claim(PARTITION, "leader", 10, Duration.ofMinutes(1))).isEmpty();
+  }
+
+  @Test
+  void shouldTreatALeaderOfAnotherZoneAsUnknownWhenTheZonesAreSimulated() throws Exception {
+    // given - the topology shows the leader, but it is in the other zone
+    final var zoned = zonedMailbox();
+    start(new TestTopologyManager().addPartition(PARTITION, BrokerMemberId.from("us", 0)), zoned);
+    store.putLeader(new PartitionLeader(PARTITION, "us_0", "us", 1));
+    refreshed();
+
+    // when
+    final var response = manager.sendRequest(request(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+    final var inboxMessage =
+        await()
+            .atMost(Duration.ofSeconds(5))
+            .until(
+                () -> store.claim(PARTITION, "leader", 10, Duration.ofMinutes(1)),
+                m -> !m.isEmpty())
+            .get(0);
+    store.putResponse(
+        new OutboxResponse(new GatewayId(GATEWAY), inboxMessage.requestId(), MAILBOX_RESPONSE));
+
+    // then
+    assertThat(response.get().getResponse()).isEqualTo(MAILBOX_RESPONSE);
+    assertThat(transport.sent.get()).isZero();
+  }
+
+  @Test
+  void shouldSendOverTheNetworkToALeaderOfTheOwnZoneWhenTheZonesAreSimulated() throws Exception {
+    // given
+    final var zoned = zonedMailbox();
+    start(new TestTopologyManager().addPartition(PARTITION, BrokerMemberId.from("eu", 0)), zoned);
+    store.putLeader(new PartitionLeader(PARTITION, "eu_0", "eu", 1));
+    refreshed();
+
+    // when
+    final var response = manager.sendRequest(request(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+
+    // then
+    assertThat(response.get().getResponse()).isEqualTo(NETWORK_RESPONSE);
+    assertThat(store.claim(PARTITION, "leader", 10, Duration.ofMinutes(1))).isEmpty();
+  }
+
+  /** Lets the mailbox see the leaders that the test put into the store. */
+  private void refreshed() {
+    mailbox.refreshLeaders();
+    zoned.forEach(GatewayMailbox::refreshLeaders);
+  }
+
+  private GatewayMailbox zonedMailbox() {
+    final var zoned =
+        new GatewayMailbox(new GatewayMailboxSetup(store, CONFIG, GATEWAY, Runnable::run, "eu"));
+    zoned.start();
+    this.zoned.add(zoned);
+    return zoned;
   }
 
   private void start(
