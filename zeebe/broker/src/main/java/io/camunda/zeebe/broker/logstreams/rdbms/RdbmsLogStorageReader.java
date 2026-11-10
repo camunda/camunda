@@ -12,6 +12,8 @@ import java.util.ArrayDeque;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reads the blocks of one partition's RDBMS log, a page of blocks per query.
@@ -19,8 +21,15 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>Follows the log as it grows: once {@link #hasNext()} has returned false, a later call queries
  * again and sees blocks committed in the meantime. Not thread-safe, like the log stream readers it
  * serves.
+ *
+ * <p>A query that fails, as when the database restarts, reads as "nothing to read yet" rather than
+ * an error: the reader keeps its place and asks again on the next call, and a failed seek is redone
+ * then. Zeebe's log consumers expect reads not to fail, as they do not on a local journal, and one
+ * failing while a partition prepares a transition would mark the partition dead.
  */
 final class RdbmsLogStorageReader implements LogStorageReader {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsLogStorageReader.class);
 
   /** Anchor before every block, so the next page starts at the first one. */
   private static final long BEFORE_FIRST_BLOCK = Long.MIN_VALUE;
@@ -33,6 +42,10 @@ final class RdbmsLogStorageReader implements LogStorageReader {
   /** Low position of the last block returned or queued; the next page starts after it. */
   private long anchor = BEFORE_FIRST_BLOCK;
 
+  private boolean seekPending;
+  private long pendingSeekPosition;
+  private boolean failing;
+
   RdbmsLogStorageReader(final LogBlockRepository repository, final int pageSize) {
     this.repository = repository;
     this.pageSize = pageSize;
@@ -42,23 +55,24 @@ final class RdbmsLogStorageReader implements LogStorageReader {
   public void seek(final long position) {
     page.clear();
     anchor = BEFORE_FIRST_BLOCK;
-    if (position < 0) {
-      return;
-    }
-
-    repository
-        .findBlockAtOrBefore(position)
-        .ifPresent(
-            block -> {
-              page.add(block);
-              anchor = block.lowPosition();
-            });
+    seekPending = position >= 0;
+    pendingSeekPosition = position;
+    completePendingSeek();
   }
 
   @Override
   public boolean hasNext() {
+    if (!completePendingSeek()) {
+      return false;
+    }
     if (page.isEmpty()) {
-      page.addAll(repository.readBlocksAfter(anchor, pageSize));
+      try {
+        page.addAll(repository.readBlocksAfter(anchor, pageSize));
+        recovered();
+      } catch (final LogBlockRepositoryException e) {
+        failed(e);
+        return false;
+      }
       if (!page.isEmpty()) {
         anchor = page.getLast().lowPosition();
       }
@@ -73,6 +87,47 @@ final class RdbmsLogStorageReader implements LogStorageReader {
     }
     currentBlock.wrap(page.remove().data());
     return currentBlock;
+  }
+
+  /**
+   * @return false if the seek is still pending because the database could not be read
+   */
+  private boolean completePendingSeek() {
+    if (!seekPending) {
+      return true;
+    }
+    try {
+      repository
+          .findBlockAtOrBefore(pendingSeekPosition)
+          .ifPresent(
+              block -> {
+                page.add(block);
+                anchor = block.lowPosition();
+              });
+      seekPending = false;
+      recovered();
+      return true;
+    } catch (final LogBlockRepositoryException e) {
+      failed(e);
+      return false;
+    }
+  }
+
+  /** Warns once per outage, rather than on every one of the consumer's retries. */
+  private void failed(final LogBlockRepositoryException error) {
+    if (!failing) {
+      failing = true;
+      LOG.warn("Failed to read the RDBMS log, will read again on the next attempt", error);
+    } else {
+      LOG.debug("Failed to read the RDBMS log again", error);
+    }
+  }
+
+  private void recovered() {
+    if (failing) {
+      failing = false;
+      LOG.info("Reading the RDBMS log again");
+    }
   }
 
   @Override

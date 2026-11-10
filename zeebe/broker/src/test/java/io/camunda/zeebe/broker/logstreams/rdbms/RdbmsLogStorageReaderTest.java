@@ -128,6 +128,50 @@ final class RdbmsLogStorageReaderTest {
     assertThat(readRemaining()).containsExactly("7..9");
   }
 
+  @Test
+  void shouldHaveNothingToReadWhileReadsFail() {
+    // given
+    appendBlocksOfThree(1, 3);
+    repository.failReads(true);
+
+    // when
+    final var hasNext = reader.hasNext();
+
+    // then
+    assertThat(hasNext).isFalse();
+  }
+
+  @Test
+  void shouldContinueWhereItWasOnceReadsWorkAgain() {
+    // given
+    appendBlocksOfThree(1, 3);
+    final var firstPage = List.of(readBlock(), readBlock());
+    repository.failReads(true);
+    assertThat(reader.hasNext()).isFalse();
+
+    // when
+    repository.failReads(false);
+
+    // then
+    assertThat(firstPage).containsExactly("1..3", "4..6");
+    assertThat(readRemaining()).containsExactly("7..9");
+  }
+
+  @Test
+  void shouldRedoSeekThatFailed() {
+    // given
+    appendBlocksOfThree(1, 3);
+    repository.failReads(true);
+    reader.seek(5);
+    assertThat(reader.hasNext()).isFalse();
+
+    // when
+    repository.failReads(false);
+
+    // then
+    assertThat(readRemaining()).containsExactly("4..6", "7..9");
+  }
+
   private void appendBlocksOfThree(final long firstPosition, final int count) {
     final var blocks = new ArrayList<LogBlock>();
     for (int i = 0; i < count; i++) {
@@ -137,6 +181,11 @@ final class RdbmsLogStorageReaderTest {
           new LogBlock(low, high, TERM, (low + ".." + high).getBytes(StandardCharsets.UTF_8)));
     }
     repository.append(TERM, blocks);
+  }
+
+  private String readBlock() {
+    final DirectBuffer block = reader.next();
+    return block.getStringWithoutLengthUtf8(0, block.capacity());
   }
 
   private List<String> readRemaining() {
