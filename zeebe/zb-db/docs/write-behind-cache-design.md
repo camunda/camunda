@@ -82,12 +82,32 @@ ordered reads of unflushed state, snapshot consistency and error handling.
 
 ### 4.1 Overview
 
+`zeebe-db` is now a parent of two modules, an interface-only API and the RocksDB implementation
+(Phase 0). The cache becomes a third module beside them:
+
+|         Module         |       Directory       |                                                                                                           Holds                                                                                                           |
+|------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `zeebe-db-api`         | `zeebe/zb-db/api`     | Interfaces only: `ZeebeDb`, `ZeebeDbFactory`, `ColumnFamily`, `TransactionContext`, `ZeebeDbTransaction`, `DbKey`/`DbValue`, the visitors, `SnapshotCopy`, `ColumnFamilyMetrics`.                                         |
+| `zeebe-db-rocksdb`     | `zeebe/zb-db/rocksdb` | Everything else: the RocksDB implementation (`impl.rocksdb`), the `Db*` key and value types, `ConsistencyChecksSettings`, `ZeebeDbException`. Phase 1 adds the `ZeebeTransaction` interface (§4.3) and `DbIterator` here. |
+| `zeebe-db-cache` (new) | `zeebe/zb-db/cache`   | The write-behind cache (package `io.camunda.zeebe.db.cache`). Depends on both modules above and on EhCache.                                                                                                               |
+
+The cache module wraps the RocksDB implementation rather than changing it:
+
+- `WriteBehindZeebeDbFactory` wraps a `ZeebeRocksDbFactory`.
+- `WriteBehindZeebeDb` implements `ZeebeDb` around a `ZeebeTransactionDb`:
+  - `createContext()` returns a `DefaultTransactionContext` over a `CachedTransaction`.
+  - `createColumnFamily` delegates to `ZeebeTransactionDb` with that context, so the typed column
+    families, consistency checks and metrics are reused unchanged.
+- The cache reaches RocksDB only through a small raw-access interface that `ZeebeTransactionDb`
+  exposes: point get, atomic batch write, `keyMayExist`, iterator and checkpoint. RocksDB types
+  never leave `zeebe-db-rocksdb`.
+
 ```mermaid
 flowchart LR
   subgraph ctx["TransactionContext (one per actor)"]
     TX["CachedTransaction<br/>tx buffer (ConcurrentSkipListMap)"]
   end
-  subgraph store["WriteBehindStore (one per ZeebeTransactionDb)"]
+  subgraph store["WriteBehindStore (one per WriteBehindZeebeDb)"]
     LOCKS["commitLock (one committer at a time)<br/>publishLock (StampedLock)"]
     DIRTY["DirtyIndex<br/>ConcurrentSkipListMap&lt;CacheKey, CachedValue&gt;<br/>unflushed versions only"]
     CACHE["EhCache heap tier<br/>CacheKey → CachedValue"]
@@ -132,6 +152,31 @@ Read paths:
     promises an instance the caller can keep.
 
 ### 4.3 Transactions: `CachedTransaction`
+
+**Which interface.** The public `ZeebeDbTransaction` in `zeebe-db-api` stays as it is: `run`,
+`commit` and `rollback`, which the stream processor calls. The byte-level operations go into a
+separate `ZeebeTransaction` interface in `zeebe-db-rocksdb` that extends it:
+
+- `put`, `get` and `delete` on raw keys
+- `newIterator(prefix)`, returning a `DbIterator`
+- the lifecycle hooks that `DefaultTransactionContext` calls (`resetTransaction`,
+  `isInCurrentTransaction`, `commitInternal`, `rollbackInternal`)
+
+Today's class becomes its `WriteBatchWithIndex` implementation, and `CachedTransaction` is the
+second implementation. `TransactionalColumnFamily`, `RawTransactionalColumnFamily`,
+`ForeignKeyChecker` and `DefaultTransactionContext` program against the interface, so neither
+implementation changes them.
+
+Two reasons for a separate interface:
+
+- **Keep raw access off the public API.** Adding these methods to `ZeebeDbTransaction` would let
+  engine and stream-platform code write raw bytes past the column families: no key prefix, no
+  consistency checks, no metrics.
+- **Drop the native handles.** Today's `put` and `get` take native RocksDB handles (the column
+  family and the read options). The interface drops them, and the RocksDB implementation holds its
+  handles itself.
+
+The cached implementation:
 
 - A per-context `ConcurrentSkipListMap<CacheKey, Op>` replaces the WBWI as the transaction buffer.
   The WBWI can't be layered on top of the cache for two reasons:
@@ -353,9 +398,10 @@ Measure this in Phase 3.
     blocked on a full queue then returns, sees the failure and throws.
 - **Failure reporting and recovery.** A partition with little traffic may not read or commit for a
   long time, so the failure can't wait for the next DB call to surface. Instead:
-  - The DB implements `HealthMonitorable` from `zeebe-util`, which is already a zb-db dependency.
-  - `ZeebeDbPartitionTransitionStep` registers it with the partition's component health monitor,
-    the same way `StreamProcessorTransitionStep` registers the stream processor.
+  - `WriteBehindZeebeDb` implements `HealthMonitorable` from `zeebe-util`.
+  - `ZeebeDbPartitionTransitionStep` registers the DB with the partition's component health monitor
+    when it is `HealthMonitorable`, the same way `StreamProcessorTransitionStep` registers the
+    stream processor.
   - On failure, the writer reports a dead `HealthReport` through
     `FailureListener#onUnrecoverableFailure`.
 
@@ -381,7 +427,9 @@ Measure this in Phase 3.
 
 ### 4.7 Snapshot barrier
 
-The barrier is taken before the snapshot store runs the checkpoint, and off the I/O pool:
+The barrier is taken before the snapshot store runs the checkpoint, and off the I/O pool.
+`prepareSnapshot()` is a new method on `ZeebeDb` in `zeebe-db-api`. Its default completes at once,
+so the plain RocksDB DB needs no change; `WriteBehindZeebeDb` overrides it:
 
 ```text
 // StateControllerImpl#takeSnapshot, before handing over to the snapshot store
@@ -437,22 +485,25 @@ try checkpoint.createCheckpoint(dir) finally resumeWriter()
 
 ### 4.8 Lifecycle and bypass
 
-- Each `ZeebeTransactionDb` (one per partition) gets its own `CacheManager` and write-behind thread
+- Each `WriteBehindZeebeDb` (one per partition) gets its own `CacheManager` and write-behind thread
   pool.
-- The `CacheManager` is added to `closables` *after* the RocksDB and options objects. `close()`
-  walks that list in reverse, so the writer stops before RocksDB is closed. In the other order, the
-  writer would call JNI on a freed handle.
+- `WriteBehindZeebeDb#close()` closes the `CacheManager` first, so the writer stops, and only then
+  closes the wrapped `ZeebeTransactionDb`. In the other order, the writer would call JNI on a freed
+  handle.
 - In runtime mode, close drops pending writes; the runtime directory is deleted afterwards anyway.
-- Only the runtime DB uses write-behind: `createDb(path)` with `avoidFlush = true`, called from
-  `StateControllerImpl#openDb`. These stay on the plain path:
-  - `createDb(path, false)`. `RocksDBSnapshotCopy` copies a whole snapshot in a single transaction
-    and then calls `compactAll()`. A heap tx buffer would hold the entire snapshot.
-  - `openSnapshotOnlyDb`, and the sanity-check factory in `RecoveryPartitionManager`.
+- Only the runtime DB is wrapped. `WriteBehindZeebeDbFactory#createDb(path)` (used by
+  `StateControllerImpl#openDb`) returns a `WriteBehindZeebeDb`. Everything else stays on the plain
+  RocksDB path, because it either delegates or never sees the wrapping factory:
+  - `createDb(path, false)` delegates. `RocksDBSnapshotCopy` copies a whole snapshot in a single
+    transaction and then calls `compactAll()`; a heap tx buffer would hold the entire snapshot.
+  - `openSnapshotOnlyDb` delegates.
+  - `RocksDBSnapshotCopy` and the sanity-check factory in `RecoveryPartitionManager` are built
+    with `ZeebeRocksDbFactory` directly.
 
 ### 4.9 Configuration
 
-Add a `WriteBehindConfiguration` record to `RocksDbConfiguration`, wired from `RocksdbCfg`, which
-already sits under `zeebe.broker.experimental.rocksdb`.
+Add a `WriteBehindConfiguration` record in `zeebe-db-cache`, wired from `RocksdbCfg`, which already
+sits under `zeebe.broker.experimental.rocksdb`. `RocksDbConfiguration` stays as it is.
 
 All sizes are per partition, so the broker-wide cost is these values times the partitions a broker
 hosts. Byte limits are what bound memory; the entry counts only shape batching.
@@ -521,40 +572,52 @@ same amount, and watch GC.
 
 ## 6. Implementation plan
 
-### Phase 0: baseline and go/no-go signal (no code)
+### Phase 0: split zb-db into API and RocksDB modules (done)
 
-- Run `EngineLargeStatePerformanceTest` (engine), `LargeStateControllerPerformanceTest` (broker), and
-  a realistic load test on `main`.
-- Turn on `accessMetrics: FINE` and `enableStatistics` to get get/put/iterate latency per column
-  family and RocksDB stall counters.
-- **Exit:** the numbers are recorded. If zb-db is a small share of processing time, stop or rescope.
+This has landed (`refactor: split zb-db into api and rocksdb modules`). `zeebe-db` is now a parent of
+two modules, with package names unchanged (§4.1):
 
-### Phase 1: structural refactor, no behaviour change (`refactor:` commits)
+- **`zeebe-db-api`** (`zeebe/zb-db/api`) holds only interfaces.
+- **`zeebe-db-rocksdb`** (`zeebe/zb-db/rocksdb`) holds everything else, including the `Db*` key and
+  value types and `ContainsForeignKeys`, whose `DbForeignKey` return type is a concrete record.
+- **Consumers** depend on `zeebe-db-rocksdb`, plus `zeebe-db-api` where they use the interfaces.
+
+The cache module adds a third child to `zeebe-db` (Phase 2).
+
+### Phase 1: structural refactor in `zeebe-db-rocksdb`, no behaviour change (`refactor:` commits)
 
 1. Add `DbIterator`, including the buffer-filling `key(byte[])`/`value(byte[])` overloads, and a
    `RocksIterator` adapter. Switch `TransactionalColumnFamily`, `RawTransactionalColumnFamily`
    (including the static `forEach*` helpers) and `ForeignKeyChecker` to it. `SnapshotOnlyDb`
    wraps its native iterator in the adapter.
-2. Turn `ZeebeTransaction` into an interface, with today's class as the WBWI implementation. The
-   existing casts keep working.
-3. Parameterize the zb-db tests over a DB factory provider (only the plain factory for now).
+2. Extract the `ZeebeTransaction` interface (§4.3) without the native handles, and make today's
+   class its `WriteBatchWithIndex` implementation. `DefaultTransactionContext` and the column
+   families use the interface, and `DefaultTransactionContext` gets a public constructor so the
+   cache module can build one. `ZeebeDbTransaction` in `zeebe-db-api` doesn't change.
+3. Add the raw-access interface on `ZeebeTransactionDb` that the cache module will use (§4.1).
+4. Turn the column family and transaction tests into contract tests over a `ZeebeDbFactory`, and
+   publish them in a test-jar, so that the cache module runs the same suite.
 
-- **Exit:** `./mvnw verify -pl zeebe/zb-db -DskipTests=false -Dquickly` is green, and
+- **Exit:** `./mvnw verify -pl zeebe/zb-db/rocksdb -DskipTests=false -Dquickly` is green, and
   `EngineLargeStatePerformanceTest` stays within its tolerance.
 
 ### Phase 2: write-behind core for point ops (`feat:`)
 
-- **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management and to
-  `zeebe/zb-db/rocksdb/pom.xml`, excluding `jaxb-runtime`. Keep the Gradle build in parity.
-- Create a new package `io.camunda.zeebe.db.impl.rocksdb.writebehind` with:
+- **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management, excluding
+  `jaxb-runtime`.
+- Create `zeebe/zb-db/cache` (artifact `zeebe-db-cache`) as a third child of `zeebe-db`.
+  - It depends on `zeebe-db-api`, `zeebe-db-rocksdb` and EhCache.
+  - Register it in `zeebe/zb-db/pom.xml` and `settings.gradle.kts` the way `api` and `rocksdb` are,
+    and keep Maven and Gradle in parity.
+- In package `io.camunda.zeebe.db.cache`, add:
   - `CacheKey`, `CachedValue`
   - `DirtyIndex`
   - `RocksDbLoaderWriter`
   - `WriteBehindStore`
   - `WriteBehindConfiguration`
   - `CachedTransaction`
-- In `ZeebeTransactionDb`: hold an optional store, have `createContext()` choose the transaction
-  type, and fix the order of `closables`.
+  - `WriteBehindZeebeDb` and `WriteBehindZeebeDbFactory`. Only the factory's `createDb(path)`
+    wraps; everything else delegates (§4.8).
 - Commit protocol with `commitLock` and `publishLock`: the read-only fast path, byte back-pressure,
   clearing the buffer only after success, and enqueue-failure handling. Validated point reads with
   a cache-free fallback, a loader that checks the DirtyIndex, and copy-on-read.
@@ -567,7 +630,7 @@ same amount, and watch GC.
 
 - Add `MergingDbIterator`. It takes the RocksDB view and the DirtyIndex range copy together, under
   `publishLock`'s read side.
-- **Exit:** the full zb-db suite is green on both factories, including
+- **Exit:** the Phase 1 contract suite is green against both factories, including
   `ColumnFamilyRandomizedPropertyTest` with more tries, and the iterator stress test passes.
 
 ### Phase 4: snapshot barrier, lifecycle and failures (`feat:`)
@@ -575,24 +638,28 @@ same amount, and watch GC.
 - Add the snapshot barrier: `ZeebeDb#prepareSnapshot()` takes `commitLock` and drains on the
   store's own thread under one deadline, then pauses the writer for the checkpoint.
   `StateControllerImpl#takeSnapshot` waits for it before handing over to the snapshot store.
-- Drain in `compactAll` too, and fix the close order.
+- Drain in `compactAll` too, and close the cache before the wrapped DB.
 - Commit transactions above `writeThroughMaxKeys` or `writeThroughMaxBytes` write-through, with
   the `lastWriteThroughSeq` check on cached reads.
 - Add writer retry, the failure latch that wakes every waiter, fail-fast, and draining without
-  writing after a failure. Make the DB a `HealthMonitorable`.
+  writing after a failure. Make `WriteBehindZeebeDb` a `HealthMonitorable`.
 - **Exit:** the snapshot, write-through and failure tests from §7 are green, plus the
   close-with-pending test.
 
 ### Phase 5: wiring and engine-level validation (`feat:` and `test:`)
 
 - **Ask first** (configuration is a public contract): add the experimental `RocksdbCfg` properties
-  and map them to `RocksDbConfiguration`.
+  and map them to `WriteBehindConfiguration`.
+- In `ZeebePartitionFactory`, wrap the partition's `ZeebeRocksDbFactory` in a
+  `WriteBehindZeebeDbFactory` when write-behind is enabled. The broker gets a dependency on
+  `zeebe-db-cache`.
 - Register the DB with the partition's component health monitor in
   `ZeebeDbPartitionTransitionStep`.
 - Add the metrics.
-- Make the test-side `DefaultZeebeDbFactory` read a system property, for example
-  `-Dzeebe.db.writeBehind.enabled=true`. About 20 test classes outside zb-db use this factory, so
-  the `zeebe/engine` tests can run against the cached DB locally.
+- Make the engine's test copy of `DefaultZeebeDbFactory` (used by 10 engine test classes) wrap
+  its factory when a system property is set, for example `-Dzeebe.db.writeBehind.enabled=true`.
+  The engine gets a test dependency on `zeebe-db-cache`, so the `zeebe/engine` tests can run
+  against the cached DB locally.
 - Add broker ITs:
   - run process instances, take a snapshot, restart, and check the state is intact
   - have a follower install a snapshot that a cached leader took
@@ -600,7 +667,10 @@ same amount, and watch GC.
 
 ### Phase 6: benchmark, tune, decide
 
-- Rerun the Phase 0 scenarios with write-behind on and RocksDB memory reduced by the cache budget.
+- Run `EngineLargeStatePerformanceTest` (engine), `LargeStateControllerPerformanceTest` (broker) and
+  a realistic load test twice: with write-behind off as the baseline, and on. With it on, lower
+  RocksDB memory by the cache budget. Turn on `accessMetrics: FINE` and `enableStatistics` to get
+  per-column-family latency and RocksDB stall counters.
 - Sweep `maxWriteDelay` (10, 100 and 1000 ms) against `batchSize`, and record the snapshot pause.
 - Run a large-value scenario (variables of about 1 MiB) on a broker with several partitions, and
   check that heap use stays within the byte budgets.
@@ -638,8 +708,9 @@ same amount, and watch GC.
 
 ## 8. Risks and open questions
 
-1. **Is zb-db on the critical path at all?** Phase 0 answers this. With the WAL off, RocksDB writes
-   already stay in memory.
+1. **Is zb-db on the critical path at all?** With the WAL off, RocksDB writes already stay in
+   memory. There's no up-front baseline any more, so only Phase 6 answers this, after the cache is
+   built.
 2. **Snapshot pause.** The stream processor and exporter director can't commit for about
    `maxWriteDelay` plus the backlog write, once per snapshot, and never longer than `drainTimeout`.
    During the checkpoint only the writer is paused. A checkpoint that runs long fills the queue and
