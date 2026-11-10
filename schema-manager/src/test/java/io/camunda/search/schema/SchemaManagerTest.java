@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -705,6 +706,55 @@ class SchemaManagerTest {
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
       verify(client).createIndex(eq(index), captor.capture());
       assertThat(captor.getValue().getNumberOfShards()).isEqualTo(7);
+    }
+  }
+
+  @Nested
+  class TruncateIndicesTest {
+
+    @Test
+    void shouldRecreateIndicesInsteadOfDeletingDocuments() {
+      // given
+      schemaManager = createSchemaManager();
+
+      // when
+      final var truncated = schemaManager.truncateIndices();
+
+      // then
+      assertThat(truncated)
+          .containsOnly(
+              metadataIndex.getFullQualifiedName(), testIndexDescriptor.getFullQualifiedName());
+      truncated.forEach(
+          index -> verify(searchEngineClient, atLeastOnce()).deleteIndexIfExists(index));
+      verify(searchEngineClient).createIndex(eq(metadataIndex), any());
+      verify(searchEngineClient).createIndex(eq(testIndexDescriptor), any());
+      verify(searchEngineClient, never()).truncateIndex(anyString());
+    }
+
+    @Test
+    void shouldDeleteDocumentsIfSchemaIsManagedExternally() {
+      // given
+      config.schemaManager().setCreateSchema(false);
+      schemaManager = createSchemaManager();
+
+      // when
+      final var truncated = schemaManager.truncateIndices();
+
+      // then
+      truncated.forEach(index -> verify(searchEngineClient, atLeastOnce()).truncateIndex(index));
+      verify(searchEngineClient, never()).deleteIndexIfExists(anyString());
+      verify(searchEngineClient, never()).createIndex(any(), any());
+    }
+
+    private SchemaManager createSchemaManager() {
+      return new SchemaManager(
+          searchEngineClient,
+          indexDescriptors,
+          templateDescriptors,
+          config,
+          mock(IndexSchemaValidator.class),
+          "8.8.0",
+          null);
     }
   }
 
