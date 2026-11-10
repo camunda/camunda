@@ -641,9 +641,7 @@ Where the code settled differently from the steps below:
 - **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management, excluding
   `jaxb-runtime`.
 - Create `zeebe/zb-db/cache` (artifact `zeebe-db-cache`) as a third child of `zeebe-db`.
-  - Its only compile dependencies are `zeebe-db-api` and EhCache. Add a dependency check (for
-    example `maven-dependency-plugin:analyze` or a banned-dependency rule) so that a
-    `zeebe-db-rocksdb` dependency fails the build.
+  - Its only compile dependencies are `zeebe-db-api` and EhCache.
   - Register it in `zeebe/zb-db/pom.xml` and `settings.gradle.kts` the way `api` and `rocksdb` are,
     and keep Maven and Gradle in parity.
   - Add it as a dependency of `zeebe-db-tests`, with one subclass per contract test that returns
