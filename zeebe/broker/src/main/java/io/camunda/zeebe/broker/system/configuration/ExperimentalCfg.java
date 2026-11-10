@@ -44,6 +44,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+  private WriteBehindCfg writeBehind = new WriteBehindCfg();
 
   public boolean isContinuousBackups() {
     return continuousBackups;
@@ -163,6 +164,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
+  public WriteBehindCfg getWriteBehind() {
+    return writeBehind;
+  }
+
+  public void setWriteBehind(final WriteBehindCfg writeBehind) {
+    this.writeBehind = writeBehind;
+  }
+
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -192,6 +201,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + engine
         + ", features="
         + features
+        + ", writeBehind="
+        + writeBehind
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
         + '}';

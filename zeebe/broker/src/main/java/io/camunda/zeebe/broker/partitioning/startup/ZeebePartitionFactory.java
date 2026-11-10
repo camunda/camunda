@@ -60,6 +60,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -181,8 +182,14 @@ public final class ZeebePartitionFactory {
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
+    final var writeBehindCfg = brokerCfg.getExperimental().getWriteBehind();
+    final ZeebeDbFactory<ZbColumnFamilies> stateDbFactory =
+        writeBehindCfg.isEnabled()
+            ? new WriteBehindZeebeDbFactory<>(
+                zeebeFactory, writeBehindCfg.createConfiguration(), consistencyChecks.getSettings())
+            : zeebeFactory;
     final StateController stateController =
-        createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
+        createStateController(raftPartition, stateDbFactory, snapshotStore, snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
