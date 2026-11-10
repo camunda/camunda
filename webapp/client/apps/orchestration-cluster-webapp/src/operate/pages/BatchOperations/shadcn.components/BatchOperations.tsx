@@ -30,13 +30,14 @@ type Props = {
 };
 
 const PAGE_SIZES = [20, 50, 100];
+const DEFAULT_PAGE_SIZE = 20;
 
 const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 ].join(' ');
 
-const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
+const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link className="underline" {...props} />;
 const BatchOperationLink = createLink(TableLink);
 
 const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
@@ -125,14 +126,30 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 	}
 
 	const rows = query.data?.items ?? [];
+	const isLoading = query.isFetching || query.isPending;
 	const totalItems = query.data?.page.totalItems ?? 0;
-	const pageCount = Math.ceil(totalItems / pageSize);
-	const rangeStart = (page - 1) * pageSize + 1;
-	const rangeEnd = Math.min(page * pageSize, totalItems);
+	const displayPageSize = PAGE_SIZES.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+	const pageCount = Math.ceil(totalItems / displayPageSize);
+	const rangeStart = Math.min((page - 1) * displayPageSize + 1, totalItems);
+	const rangeEnd = Math.min(page * displayPageSize, totalItems);
 	const pageOfLabel = [
 		t('operate.batchOperations.itemRange', {min: rangeStart, max: rangeEnd, count: totalItems}),
-		t('operate.batchOperations.pageOf', {page, count: pageCount}),
-	].join(' · ');
+		page <= pageCount ? t('operate.batchOperations.pageOf', {page, count: pageCount}) : null,
+	]
+		.filter(Boolean)
+		.join(' · ');
+
+	let emptyState: React.ReactNode;
+	if (!isLoading) {
+		emptyState = query.isError ? (
+			<></>
+		) : (
+			<EmptyMessage
+				message={t('operate.batchOperations.emptyMessage')}
+				additionalInfo={t('operate.batchOperations.emptyAdditionalInfo')}
+			/>
+		);
+	}
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
@@ -161,16 +178,9 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						ariaLabel={t('operate.batchOperations.title')}
 						loadingPreviousPageLabel={t('operate.batchOperations.previousPage')}
 						loadingNextPageLabel={t('operate.batchOperations.nextPage')}
-						isFetching={query.isFetching}
-						emptyState={
-							query.isError || query.isFetching ? undefined : (
-								<EmptyMessage
-									message={t('operate.batchOperations.emptyMessage')}
-									additionalInfo={t('operate.batchOperations.emptyAdditionalInfo')}
-								/>
-							)
-						}
-						hideHeaderWhenEmpty={!query.isFetching}
+						isFetching={isLoading}
+						emptyState={emptyState}
+						hideHeaderWhenEmpty={!isLoading && !query.isError}
 						className={TABLE_CONTAINER_CLASSES}
 						data-testid="batch-operations-table"
 					/>
@@ -180,13 +190,13 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						page={page}
 						pageCount={pageCount}
 						pageOfLabel={pageOfLabel}
-						pageSize={pageSize}
+						pageSize={displayPageSize}
 						pageSizes={PAGE_SIZES}
 						rowsPerPageLabel={t('operate.batchOperations.itemsPerPage')}
 						previousPageLabel={t('operate.batchOperations.previousPage')}
 						nextPageLabel={t('operate.batchOperations.nextPage')}
 						onPageChange={(newPage) => {
-							void navigate({to: '.', search: (prev) => ({...prev, page: newPage})});
+							void navigate({to: '.', search: (prev) => ({...prev, page: newPage, pageSize: displayPageSize})});
 						}}
 						onPageSizeChange={(newPageSize) => {
 							void navigate({to: '.', search: (prev) => ({...prev, page: 1, pageSize: newPageSize})});
