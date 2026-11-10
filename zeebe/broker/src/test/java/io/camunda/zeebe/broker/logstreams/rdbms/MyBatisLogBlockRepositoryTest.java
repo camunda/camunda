@@ -10,36 +10,23 @@ package io.camunda.zeebe.broker.logstreams.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.util.List;
-import java.util.UUID;
-import org.h2.jdbcx.JdbcDataSource;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-final class JdbcLogBlockRepositoryTest {
+final class MyBatisLogBlockRepositoryTest {
 
   private static final String PREFIX = "TEST_";
   private static final int PARTITION_ID = 1;
 
-  private JdbcDataSource dataSource;
-  private JdbcLogBlockRepository repository;
+  private SqlSessionFactory sessionFactory;
+  private MyBatisLogBlockRepository repository;
 
   @BeforeEach
   void setUp() throws Exception {
-    dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:log-block-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
-    dataSource.setUser("sa");
-    dataSource.setPassword("");
-    new LiquibaseSchemaManager(
-            new PerTenantSchemaConfig(
-                dataSource, VendorDatabasePropertiesLoader.load("h2"), PREFIX, true, null),
-            "8.11.0")
-        .initialize();
-
-    repository = new JdbcLogBlockRepository(dataSource, PREFIX, PARTITION_ID);
+    sessionFactory = H2LogDatabase.create(PREFIX);
+    repository = new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID, () -> true);
   }
 
   @Test
@@ -200,7 +187,8 @@ final class JdbcLogBlockRepositoryTest {
   @Test
   void shouldKeepPartitionsApart() {
     // given
-    final var otherPartition = new JdbcLogBlockRepository(dataSource, PREFIX, PARTITION_ID + 1);
+    final var otherPartition =
+        new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID + 1, () -> true);
     repository.claimTerm(1);
     otherPartition.claimTerm(5);
 

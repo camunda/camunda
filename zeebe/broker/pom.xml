@@ -127,6 +127,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>

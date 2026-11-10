@@ -10,9 +10,6 @@ package io.camunda.zeebe.broker.logstreams.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage.Config;
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBatchReaderImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -31,17 +28,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Runs {@link RdbmsLogStorage} against the real schema and {@link JdbcLogBlockRepository}, on its
- * own and underneath a real {@link LogStream}.
+ * Runs {@link RdbmsLogStorage} against the real schema and {@link MyBatisLogBlockRepository}, on
+ * its own and underneath a real {@link LogStream}.
  */
 final class RdbmsLogStorageH2Test {
 
@@ -49,21 +44,12 @@ final class RdbmsLogStorageH2Test {
   private static final int PARTITION_ID = 1;
 
   private final List<AutoCloseable> resources = new ArrayList<>();
-  private JdbcLogBlockRepository repository;
+  private MyBatisLogBlockRepository repository;
 
   @BeforeEach
   void setUp() throws Exception {
-    final var dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:log-storage-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
-    dataSource.setUser("sa");
-    dataSource.setPassword("");
-    new LiquibaseSchemaManager(
-            new PerTenantSchemaConfig(
-                dataSource, VendorDatabasePropertiesLoader.load("h2"), PREFIX, true, null),
-            "8.11.0")
-        .initialize();
-
-    repository = new JdbcLogBlockRepository(dataSource, PREFIX, PARTITION_ID);
+    repository =
+        new MyBatisLogBlockRepository(H2LogDatabase.create(PREFIX), PARTITION_ID, () -> true);
   }
 
   @AfterEach
