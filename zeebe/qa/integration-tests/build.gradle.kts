@@ -34,6 +34,8 @@ dependencies {
   testImplementation(project(":zeebe-bpmn-model"))
   testImplementation(project(":zeebe-protocol-impl"))
   testImplementation(project(":zeebe-broker-client"))
+  testImplementation(project(":zeebe-mailbox"))
+  testImplementation(project(":zeebe-mailbox-api"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(project(":zeebe-protocol-jackson"))
   testImplementation(libs.io.camunda.security.library.api)

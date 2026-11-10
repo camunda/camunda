@@ -170,6 +170,18 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-mailbox</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-mailbox-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
     </dependency>
