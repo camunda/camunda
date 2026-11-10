@@ -362,17 +362,23 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   // Listeners run synchronously on the actor before the first command is read, so a slow one
   // delays processing without any other trace. Log the ones that exceed the threshold.
   private void notifyRecovered(final StreamProcessorLifecycleAware listener) {
-    final long startNanos = System.nanoTime();
-    listener.onRecovered(streamProcessorContext);
-    final var duration = Duration.ofNanos(System.nanoTime() - startNanos);
-    if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
-      LOG.warn(
-          "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
-              + " until all listeners return",
-          listener.getClass().getName(),
-          partitionId,
-          duration,
-          SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
+    final var clock = streamProcessorContext.getMeterRegistry().config().clock();
+    final long startNanos = clock.monotonicTime();
+    try {
+      listener.onRecovered(streamProcessorContext);
+    } finally {
+      // Recorded in finally so a listener that throws still shows up as slow, if it was.
+      final var duration = Duration.ofNanos(clock.monotonicTime() - startNanos);
+      metrics.observeOnRecoveredListenerDuration(listener.getClass().getName(), duration);
+      if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
+        LOG.warn(
+            "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
+                + " until all listeners return",
+            listener.getClass().getName(),
+            partitionId,
+            duration,
+            SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
+      }
     }
   }
 
