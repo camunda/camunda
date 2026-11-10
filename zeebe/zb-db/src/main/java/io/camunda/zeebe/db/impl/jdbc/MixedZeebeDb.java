@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.sql.Connection;
 import java.util.Optional;
 
 /**
@@ -25,25 +24,17 @@ import java.util.Optional;
  * <p>Everything else delegates to the RocksDB database. Column families always get the RocksDB
  * context, since they cast its transaction to the RocksDB one.
  *
- * <p>Owns the JDBC connection source, whose connection all contexts share: only the stream
- * processor actor may use the JDBC side of a context. Closing this only closes the current
- * connection (returning it to its pool, if borrowed); the RocksDB database is owned and closed by
- * the partition.
+ * <p>Owns no resources: relational stores borrow their connections per transaction, and the RocksDB
+ * database is owned and closed by the partition. Only the stream processor actor may use the JDBC
+ * side of a context.
  */
 public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
 
   private final ZeebeDb<ColumnFamilyType> rocksDb;
-  private final JdbcConnectionSource connections;
 
-  public MixedZeebeDb(final ZeebeDb<ColumnFamilyType> rocksDb, final Connection connection) {
-    this(rocksDb, JdbcConnectionSource.of(connection));
-  }
-
-  public MixedZeebeDb(
-      final ZeebeDb<ColumnFamilyType> rocksDb, final JdbcConnectionSource connections) {
+  public MixedZeebeDb(final ZeebeDb<ColumnFamilyType> rocksDb) {
     this.rocksDb = rocksDb;
-    this.connections = connections;
   }
 
   @Override
@@ -68,8 +59,7 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
 
   @Override
   public TransactionContext createContext() {
-    return new MixedTransactionContext(
-        rocksDb.createContext(), new JdbcTransactionContext(connections));
+    return new MixedTransactionContext(rocksDb.createContext(), new JdbcTransactionContext());
   }
 
   @Override
@@ -88,9 +78,7 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
   }
 
   @Override
-  public void close() throws Exception {
-    connections.close();
-  }
+  public void close() {}
 
   private static TransactionContext unwrap(final TransactionContext context) {
     return context instanceof final MixedTransactionContext mixed ? mixed.rocksDb() : context;

@@ -42,19 +42,21 @@ final class MixedTransactionContextTest {
   private ColumnFamily<DbLong, DbLong> committedRocksDbRows;
   private final DbLong key = new DbLong();
   private final DbLong value = new DbLong();
-  private final StagingParticipant participant = new StagingParticipant();
+  private StagingParticipant participant;
 
   @BeforeEach
   void setUp() throws SQLException {
     rocksDb = DefaultZeebeDbFactory.<DefaultColumnFamily>getDefaultFactory().createDb(rocksDbDir);
     final var url = "jdbc:h2:mem:" + UUID.randomUUID();
     connection = DriverManager.getConnection(url);
+    connection.setAutoCommit(false);
     observer = DriverManager.getConnection(url);
     try (final var statement = observer.createStatement()) {
       statement.execute("CREATE TABLE test_rows (id BIGINT PRIMARY KEY, val BIGINT)");
     }
 
-    mixedDb = new MixedZeebeDb<>(rocksDb, connection);
+    participant = new StagingParticipant(connection);
+    mixedDb = new MixedZeebeDb<>(rocksDb);
     context = (MixedTransactionContext) mixedDb.createContext();
     context.jdbc().register(participant);
     rocksDbRows = mixedDb.createColumnFamily(DefaultColumnFamily.DEFAULT, context, key, value);
@@ -66,6 +68,7 @@ final class MixedTransactionContextTest {
   @AfterEach
   void tearDown() throws Exception {
     mixedDb.close();
+    connection.close();
     observer.close();
     rocksDb.close();
   }
@@ -178,11 +181,16 @@ final class MixedTransactionContextTest {
 
   private static final class StagingParticipant implements JdbcTransactionParticipant {
 
+    private final Connection connection;
     private final Map<Long, Long> staged = new LinkedHashMap<>();
     private FlushHook onFlush = () -> {};
 
+    private StagingParticipant(final Connection connection) {
+      this.connection = connection;
+    }
+
     @Override
-    public void flush(final Connection connection) throws SQLException {
+    public void commit() throws SQLException {
       onFlush.run();
       try (final var statement =
           connection.prepareStatement("INSERT INTO test_rows (id, val) VALUES (?, ?)")) {
@@ -192,6 +200,25 @@ final class MixedTransactionContextTest {
           statement.addBatch();
         }
         statement.executeBatch();
+      }
+      connection.commit();
+    }
+
+    @Override
+    public void rollback() {
+      rollbackQuietly();
+    }
+
+    @Override
+    public void commitFailed() {
+      rollbackQuietly();
+    }
+
+    private void rollbackQuietly() {
+      try {
+        connection.rollback();
+      } catch (final SQLException ignored) {
+        // nothing to roll back on a broken connection
       }
     }
 

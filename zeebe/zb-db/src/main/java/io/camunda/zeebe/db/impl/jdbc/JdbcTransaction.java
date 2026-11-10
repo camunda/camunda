@@ -11,11 +11,8 @@ import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLRecoverableException;
-import java.sql.SQLTransientConnectionException;
 import java.sql.SQLTransientException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -33,14 +30,9 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   /** SQL standard class 08: connection failures. */
   private static final String SQL_STATE_CLASS_CONNECTION_EXCEPTION = "08";
 
-  private final JdbcConnectionSource connections;
   private final List<JdbcTransactionParticipant> participants = new ArrayList<>();
   private final List<TransactionListener> listeners = new ArrayList<>();
   private boolean inCurrentTransaction;
-
-  JdbcTransaction(final JdbcConnectionSource connections) {
-    this.connections = connections;
-  }
 
   void register(final JdbcTransactionParticipant participant) {
     participants.add(participant);
@@ -64,28 +56,18 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   }
 
   /**
-   * Flushes all participants and commits. On failure the connection is rolled back but the staged
-   * writes are kept, so the stream processor can retry the commit with the same changes. A broken
-   * connection is replaced, so the retry flushes them on a new one.
+   * Commits all participants. On failure they roll back but keep their staged writes, so the stream
+   * processor can retry the commit with the same changes, on a new connection.
    */
   @Override
   public void commit() throws Exception {
-    Connection connection = null;
     try {
-      connection = connections.get();
       for (final var participant : participants) {
-        participant.flush(connection);
+        participant.commit();
       }
-      connection.commit();
     } catch (final SQLException e) {
-      if (connection != null) {
-        rollbackConnectionQuietly(connection, e);
-      }
       for (final var participant : participants) {
         participant.commitFailed();
-      }
-      if (connections.discardIfBroken(e)) {
-        throw new ZeebeDbException("JDBC connection broke during commit, retry on a new one", e);
       }
       throw translate(e);
     }
@@ -96,20 +78,11 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     }
   }
 
-  /**
-   * If the connection broke, it is discarded instead of failing the rollback: its open transaction
-   * is gone with it.
-   */
   @Override
   public void rollback() throws Exception {
-    final var connection = connections.current();
     try {
-      if (connection != null) {
-        connection.rollback();
-      }
-    } catch (final SQLException e) {
-      if (!connections.discardIfBroken(e)) {
-        throw translate(e);
+      for (final var participant : participants) {
+        participant.rollback();
       }
     } finally {
       resetParticipants();
@@ -125,18 +98,6 @@ final class JdbcTransaction implements ZeebeDbTransaction {
       return new ZeebeDbException("Recoverable error during JDBC transaction", e);
     }
     return new RuntimeException("Unexpected error during JDBC transaction", e);
-  }
-
-  static boolean isConnectionError(final Throwable error) {
-    return anyInChain(
-        error,
-        e ->
-            e instanceof SQLRecoverableException
-                || e instanceof SQLNonTransientConnectionException
-                || e instanceof SQLTransientConnectionException
-                || (e instanceof final SQLException sqlException
-                    && hasSqlStateClass(
-                        sqlException.getSQLState(), SQL_STATE_CLASS_CONNECTION_EXCEPTION)));
   }
 
   private static boolean isRecoverable(final Throwable error) {
@@ -184,15 +145,6 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   private static boolean hasSqlStateClass(final @Nullable String sqlState, final String clazz) {
     return sqlState != null && sqlState.startsWith(clazz);
-  }
-
-  private static void rollbackConnectionQuietly(
-      final Connection connection, final SQLException cause) {
-    try {
-      connection.rollback();
-    } catch (final SQLException rollbackError) {
-      cause.addSuppressed(rollbackError);
-    }
   }
 
   private void resetParticipants() {

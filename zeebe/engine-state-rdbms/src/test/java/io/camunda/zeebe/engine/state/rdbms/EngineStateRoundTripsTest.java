@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -63,8 +62,10 @@ final class EngineStateRoundTripsTest {
 
   @BeforeEach
   void setUp() throws SQLException {
-    counting = new CountingConnection(database.dataSource().getConnection());
-    transactionContext = new JdbcTransactionContext(counting.proxy());
+    counting = new CountingConnection();
+    database.observed().reset();
+    database.observed().decorate(counting::wrap);
+    transactionContext = new JdbcTransactionContext();
     sessions = new CountingSessionFactory(database.sessionFactory());
     final var session =
         EngineStateDatabase.entitySession(
@@ -76,9 +77,9 @@ final class EngineStateRoundTripsTest {
   }
 
   @AfterEach
-  void closeConnection() throws SQLException {
-    counting.delegate.rollback();
-    counting.delegate.close();
+  void endTransaction() throws Exception {
+    transactionContext.getCurrentTransaction().rollback();
+    database.observed().reset();
   }
 
   @Test
@@ -258,24 +259,21 @@ final class EngineStateRoundTripsTest {
   private record Batch(String table, String operation, int rows) {}
 
   /** Counts the batches a commit executes, and anything else that talks to the database. */
-  private static final class CountingConnection implements InvocationHandler {
+  private static final class CountingConnection {
 
     private static final Set<String> EXECUTE_METHODS =
         Set.of("execute", "executeUpdate", "executeQuery", "executeLargeUpdate");
 
-    private final Connection delegate;
     private final List<Batch> batches = new ArrayList<>();
     private int otherStatements;
     private int commits;
 
-    private CountingConnection(final Connection delegate) {
-      this.delegate = delegate;
-    }
-
-    private Connection proxy() {
+    private Connection wrap(final Connection delegate) {
       return (Connection)
           Proxy.newProxyInstance(
-              Connection.class.getClassLoader(), new Class<?>[] {Connection.class}, this);
+              Connection.class.getClassLoader(),
+              new Class<?>[] {Connection.class},
+              (proxy, method, args) -> invoke(delegate, method, args));
     }
 
     private void reset() {
@@ -289,8 +287,7 @@ final class EngineStateRoundTripsTest {
       return "executeBatch=%d %s, commits=%d".formatted(batches.size(), batches, commits);
     }
 
-    @Override
-    public Object invoke(final Object proxy, final Method method, final Object[] args)
+    private Object invoke(final Connection delegate, final Method method, final Object[] args)
         throws Throwable {
       switch (method.getName()) {
         case "commit" -> commits++;
