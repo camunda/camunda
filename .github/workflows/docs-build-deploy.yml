@@ -91,12 +91,46 @@ jobs:
         working-directory: ${{ env.DOCS_DIR }}
         run: npm run build
 
+      # The deploy below replaces the whole gh-pages branch, so files from earlier builds
+      # (moved pages, timestamped search indexes, old bundles) don't pile up and slow every
+      # Pages build (INC-9073). PR previews share the branch, so the live ones are carried
+      # into the build output first. The gh-pages-write lock held by this job guarantees no
+      # preview is written between this checkout and the deploy push.
+      - name: Checkout live PR previews from gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages-previews
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: /pr-preview/
+          sparse-checkout-cone-mode: false
+
+      - name: Carry PR previews into the deploy
+        run: |
+          set -euo pipefail
+          # The committed tree is the source of truth; a sparse-checkout mismatch must fail
+          # here rather than silently drop previews in the deploy.
+          expected=$(git -C gh-pages-previews ls-tree -d --name-only HEAD pr-preview/ | sed 's#^pr-preview/##' | sort)
+          if [[ -z "${expected}" ]]; then
+            echo "No PR previews on gh-pages"
+            exit 0
+          fi
+          cp -a gh-pages-previews/pr-preview "${DOCS_DIR}/build/"
+          carried=$(find "${DOCS_DIR}/build/pr-preview" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+          if [[ "${carried}" != "${expected}" ]]; then
+            echo "::error::PR previews carried into the deploy don't match gh-pages; refusing to deploy."
+            diff <(echo "${expected}") <(echo "${carried}") || true
+            exit 1
+          fi
+          echo "Carried $(wc -l <<< "${carried}") PR previews into the deploy"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./monorepo-docs-site/build
-          keep_files: true
+          keep_files: false
           enable_jekyll: false
 
       # The deploy step above only confirms the push to gh-pages — the server-side Pages

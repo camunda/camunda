@@ -606,6 +606,12 @@ same guarantee.)
    and waits up to 600s per attempt, so a failure means two consecutive errored builds or a build
    that did not finish in time. Note: the API only exposes the generic `"Page build failed."`
    message; the underlying reason is not surfaced through the API.
+   If the log shows `status=building` until the deadline, the Pages build is most likely stuck on
+   GitHub's side; it can stay `building` for hours, and a new push to `gh-pages` replaces it.
+   Re-run the failed job: the re-run pushes a new `gh-pages` commit, which replaces the stuck
+   build.
 2. Inspect recent Pages build history
-3. Verify the `gh-pages` branch only contains build artifacts.
+3. Verify the `gh-pages` branch only contains build artifacts. Each docs deploy replaces
+   everything outside `pr-preview/`, so files from earlier builds (moved pages, old search
+   indexes, old bundles) don't accumulate.
 
