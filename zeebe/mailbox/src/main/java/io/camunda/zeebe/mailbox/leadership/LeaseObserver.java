@@ -1,0 +1,68 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.mailbox.leadership;
+
+import io.camunda.zeebe.mailbox.api.leadership.PartitionLease;
+import java.time.Duration;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+/**
+ * Detects failed leaders from the lease rows, without trusting any clock but its own.
+ *
+ * <p>For each partition it remembers the term and counter it last saw, and since when, on its own
+ * monotonic clock. A lease whose term and counter have not changed for the lease duration has run
+ * out. A released lease has run out at once. After a failed read, every observation starts again,
+ * so errors of the database, for example during its failover, never count as a failed leader.
+ *
+ * <p>Not thread-safe. The elector calls it from its own thread.
+ */
+final class LeaseObserver {
+
+  private final long leaseNanos;
+  private final Map<Integer, Observation> observations = new HashMap<>();
+
+  LeaseObserver(final Duration leaseDuration) {
+    leaseNanos = leaseDuration.toNanos();
+  }
+
+  /** Takes in a read of all lease rows, made at {@code nowNanos}. */
+  void observe(final Collection<PartitionLease> leases, final long nowNanos) {
+    final var seen = new HashSet<Integer>();
+    for (final var lease : leases) {
+      seen.add(lease.partitionId());
+      final var previous = observations.get(lease.partitionId());
+      if (previous == null
+          || previous.term() != lease.term()
+          || previous.counter() != lease.renewalCounter()) {
+        observations.put(
+            lease.partitionId(),
+            new Observation(lease.term(), lease.renewalCounter(), lease.released(), nowNanos));
+      }
+    }
+    observations.keySet().retainAll(seen);
+  }
+
+  /** Forgets all observations, because a read failed. */
+  void reset() {
+    observations.clear();
+  }
+
+  /** Tells whether the lease of the partition has run out, as far as this node has seen. */
+  boolean hasRunOut(final int partitionId, final long nowNanos) {
+    final var observation = observations.get(partitionId);
+    if (observation == null) {
+      return false;
+    }
+    return observation.released() || nowNanos - observation.sinceNanos() >= leaseNanos;
+  }
+
+  private record Observation(long term, long counter, boolean released, long sinceNanos) {}
+}
