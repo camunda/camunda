@@ -46,14 +46,16 @@ import org.junit.jupiter.api.Test;
  * listing the names or values it holds in an error.
  *
  * <p>The broker runs inside this JVM, which cannot set its own environment variables, so the build
- * sets {@code ENV_SECRET_PROCESS_IT_STORED} on the forked test JVM; see the failsafe configuration
- * in this module's {@code pom.xml} and the {@code it} task in its {@code build.gradle.kts}.
+ * sets {@code ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME} on the forked test JVM; see the failsafe
+ * configuration in this module's {@code pom.xml} and the {@code it} task in its {@code
+ * build.gradle.kts}.
  */
 @ZeebeIntegration
 final class EnvSecretStoreProcessIT {
 
   // must match the variable the build sets on the test JVM
   private static final String PREFIX = "ENV_SECRET_PROCESS_IT_";
+  private static final String STORED_NAME = "UNREFERENCED_NAME";
   private static final String STORED_VALUE = "stored-value-that-must-not-leak";
 
   @TestZeebe
@@ -77,14 +79,14 @@ final class EnvSecretStoreProcessIT {
 
   @BeforeAll
   static void requireTheVariableTheBuildSets() {
-    // run outside the build, e.g. from an IDE, the store would be empty and the leak assertions
+    // if run outside the build, e.g. from an IDE, the store would be empty and the leak assertions
     // would pass without a value that could leak
     // asserts on the one variable, never the whole environment, which a failure would print
-    assertThat(System.getenv(PREFIX + "STORED"))
+    assertThat(System.getenv(PREFIX + STORED_NAME))
         .as(
-            "%sSTORED, set by the failsafe <environmentVariables> in pom.xml and the 'it' task in"
+            "%s%s, set by the failsafe <environmentVariables> in pom.xml and the 'it' task in"
                 + " build.gradle.kts",
-            PREFIX)
+            PREFIX, STORED_NAME)
         .isEqualTo(STORED_VALUE);
   }
 
@@ -117,9 +119,11 @@ final class EnvSecretStoreProcessIT {
       assertThat(incident.getErrorMessage()).contains(missingName);
       assertThat(resolutionFailureStates(missingName)).containsOnly(ResolutionState.NOT_FOUND);
 
-      // and - the value the store holds leaks into neither the records nor the logs
-      assertThat(incident.getErrorMessage()).doesNotContain(STORED_VALUE);
+      // and - neither the name nor the value the store holds leaks into the records or the logs
+      assertThat(incident.getErrorMessage()).doesNotContain(STORED_NAME, STORED_VALUE);
+      assertNoRecordCarriesValue(STORED_NAME);
       assertNoRecordCarriesValue(STORED_VALUE);
+      assertThat(logs.contains(STORED_NAME)).as("logs contain a stored secret name").isFalse();
       assertThat(logs.contains(STORED_VALUE)).as("logs contain a secret value").isFalse();
     }
   }

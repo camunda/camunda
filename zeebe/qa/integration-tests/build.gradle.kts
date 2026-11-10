@@ -145,5 +145,5 @@ tasks.named<Test>("it") {
   environment("PT_ENV_SECRET_IT_TENANTA_API_KEY", "value-of-tenant-a")
   environment("PT_ENV_SECRET_IT_TENANTB_API_KEY", "value-of-tenant-b")
   environment("PT_ENV_SECRET_IT_TENANTB_ONLY_B", "only-tenant-b")
-  environment("ENV_SECRET_PROCESS_IT_STORED", "stored-value-that-must-not-leak")
+  environment("ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME", "stored-value-that-must-not-leak")
 }
