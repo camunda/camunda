@@ -37,7 +37,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.env.<id>.prefix}
  *   <li>{@code camunda.secrets.stores.azure.<id>.vault-url}
  *   <li>{@code camunda.secrets.stores.azure.<id>.path-prefix}
- *   <li>{@code camunda.secrets.stores.azure.<id>.container-secret}
+ *   <li>{@code camunda.secrets.stores.azure.<id>.container-secret-id}
  *   <li>{@code camunda.secrets.stores.azure.<id>.managed-identity-client-id}
  *   <li>{@code camunda.secrets.stores.azure.<id>.authority-host}
  *   <li>{@code camunda.secrets.stores.azure.<id>.max-retries}
@@ -786,8 +786,8 @@ public class Secrets {
      * Optional prefix prepended, with no separator inserted, to every reference name to form the
      * Key Vault secret name (e.g. {@code camunda-} plus reference {@code db-password} reads secret
      * {@code camunda-db-password}). When omitted, references map to bare secret names. Applies to
-     * {@link #containerSecret} as well. Key Vault secret names allow only {@code [0-9A-Za-z-]}, so
-     * use e.g. {@code camunda-} rather than {@code camunda/}.
+     * {@link #containerSecretId} as well. Key Vault secret names allow only {@code [0-9A-Za-z-]},
+     * so use e.g. {@code camunda-} rather than {@code camunda/}.
      */
     private @Nullable String pathPrefix;
 
@@ -797,7 +797,7 @@ public class Secrets {
      * JSON object mapping each reference name to a string value (e.g. {@code {"db-password":
      * "s3cr3t"}}).
      */
-    private @Nullable String containerSecret;
+    private @Nullable String containerSecretId;
 
     /**
      * Client id of the user-assigned managed identity to sign in with, so each physical tenant can
@@ -848,12 +848,12 @@ public class Secrets {
       this.pathPrefix = pathPrefix;
     }
 
-    public @Nullable String getContainerSecret() {
-      return containerSecret;
+    public @Nullable String getContainerSecretId() {
+      return containerSecretId;
     }
 
-    public void setContainerSecret(final @Nullable String containerSecret) {
-      this.containerSecret = containerSecret;
+    public void setContainerSecretId(final @Nullable String containerSecretId) {
+      this.containerSecretId = containerSecretId;
     }
 
     public @Nullable String getManagedIdentityClientId() {

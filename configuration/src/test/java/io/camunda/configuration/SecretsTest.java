@@ -702,7 +702,7 @@ class SecretsTest {
       properties = {
         "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net",
         "camunda.secrets.stores.azure.default.path-prefix=camunda-",
-        "camunda.secrets.stores.azure.default.container-secret=all-secrets",
+        "camunda.secrets.stores.azure.default.container-secret-id=all-secrets",
         "camunda.secrets.stores.azure.default.managed-identity-client-id=client-id",
         "camunda.secrets.stores.azure.default.authority-host=https://login.microsoftonline.us",
         "camunda.secrets.stores.azure.default.max-retries=5",
@@ -728,7 +728,7 @@ class SecretsTest {
       final var store = secrets.getStores().getAzure().get("default");
       assertThat(store.getVaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
       assertThat(store.getPathPrefix()).isEqualTo("camunda-");
-      assertThat(store.getContainerSecret()).isEqualTo("all-secrets");
+      assertThat(store.getContainerSecretId()).isEqualTo("all-secrets");
       assertThat(store.getManagedIdentityClientId()).isEqualTo("client-id");
       assertThat(store.getAuthorityHost()).isEqualTo("https://login.microsoftonline.us");
       assertThat(store.getMaxRetries()).isEqualTo(5);
@@ -758,7 +758,7 @@ class SecretsTest {
 
       // then every other property has its documented default
       assertThat(store.getPathPrefix()).isNull();
-      assertThat(store.getContainerSecret()).isNull();
+      assertThat(store.getContainerSecretId()).isNull();
       assertThat(store.getManagedIdentityClientId()).isNull();
       assertThat(store.getAuthorityHost()).isNull();
       assertThat(store.getMaxRetries()).isEqualTo(3);

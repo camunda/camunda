@@ -683,7 +683,7 @@ class SecretStoreConfigurationTest {
     final var store = "camunda.secrets.stores.azure.default.";
     properties.put(store + "vault-url", "https://default.vault.azure.net");
     properties.put(store + "path-prefix", "camunda-");
-    properties.put(store + "container-secret", "bundle");
+    properties.put(store + "container-secret-id", "bundle");
     properties.put(store + "managed-identity-client-id", "default-client-id");
     properties.put(store + "authority-host", "https://login.microsoftonline.us");
     properties.put(store + "max-retries", "1");

@@ -348,7 +348,7 @@ public class SecretStoreConfiguration {
         new AzureKeyVaultStoreConfig(
             vaultUrl,
             config.getPathPrefix(),
-            config.getContainerSecret(),
+            config.getContainerSecretId(),
             config.getManagedIdentityClientId(),
             config.getAuthorityHost(),
             config.getMaxRetries(),
