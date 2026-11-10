@@ -16,6 +16,7 @@ dependencies {
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.com.h2database.h2)
 }
 
 description = "Zeebe DB"
