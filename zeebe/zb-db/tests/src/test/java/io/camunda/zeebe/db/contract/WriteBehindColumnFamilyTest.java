@@ -9,11 +9,8 @@ package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import org.junit.Rule;
 
 public final class WriteBehindColumnFamilyTest extends ColumnFamilyContractTest {
-
-  @Rule public final SkipScansUntilSupported skipScans = new SkipScansUntilSupported();
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> createFactory() {

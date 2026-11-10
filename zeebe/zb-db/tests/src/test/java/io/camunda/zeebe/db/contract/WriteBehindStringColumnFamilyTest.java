@@ -10,12 +10,9 @@ package io.camunda.zeebe.db.contract;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
 public final class WriteBehindStringColumnFamilyTest extends DbStringColumnFamilyContractTest {
-
-  @Rule public final SkipScansUntilSupported skipScans = new SkipScansUntilSupported();
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> createFactory() {
@@ -24,6 +21,8 @@ public final class WriteBehindStringColumnFamilyTest extends DbStringColumnFamil
 
   @Override
   @Test
-  @Ignore("Expects RocksDB's limit of two nested prefix scans")
+  @Ignore(
+      "Expects RocksDB's limit of two nested prefix scans, which the cache only reaches while the"
+          + " backend's own scans are still open")
   public void shouldThrowExceptionOnMultipleNestedWhileEqualPrefix() {}
 }

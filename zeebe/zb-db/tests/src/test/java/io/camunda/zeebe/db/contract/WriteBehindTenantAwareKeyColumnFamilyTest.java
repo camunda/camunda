@@ -9,9 +9,7 @@ package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(SkipScansUntilSupported.class)
 public final class WriteBehindTenantAwareKeyColumnFamilyTest
     extends DbTenantAwareKeyColumnFamilyContractTest {
 

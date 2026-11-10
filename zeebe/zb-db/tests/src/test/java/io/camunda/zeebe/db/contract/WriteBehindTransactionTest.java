@@ -8,11 +8,8 @@
 package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import org.junit.Rule;
 
 public final class WriteBehindTransactionTest extends DbTransactionContractTest {
-
-  @Rule public final SkipScansUntilSupported skipScans = new SkipScansUntilSupported();
 
   @Override
   protected ZeebeDbFactory<ColumnFamilies> createFactory() {
