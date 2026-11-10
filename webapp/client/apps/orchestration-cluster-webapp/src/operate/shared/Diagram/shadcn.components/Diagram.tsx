@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef, useEffect, useLayoutEffect, useState, useCallback} from 'react';
+import React, {useRef, useEffect, useLayoutEffect, useState, useCallback, useId} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from '../BpmnJS';
 import type {OverlayData, OverlayEntry} from '../overlayTypes';
@@ -39,6 +40,7 @@ type Props = {
 	customElementClasses?: [elementId: string, className: string][];
 	download?: {xml: string; filename: string};
 	onRenderError?: (error: unknown) => void;
+	ariaLabel?: string;
 };
 
 const useMinimap = (
@@ -69,6 +71,43 @@ const useMinimap = (
 	return {isMinimapOpen, handleMinimapToggle, resetMinimap};
 };
 
+const ARROW_DIRECTIONS: Partial<Record<string, [number, number]>> = {
+	ArrowRight: [1, 0],
+	ArrowLeft: [-1, 0],
+	ArrowDown: [0, 1],
+	ArrowUp: [0, -1],
+};
+
+function findNearestInDirection(from: SVGElement, candidates: SVGElement[], [dx, dy]: [number, number]) {
+	const center = (element: Element) => {
+		const {left, top, width, height} = element.getBoundingClientRect();
+		return {x: left + width / 2, y: top + height / 2};
+	};
+	const origin = center(from);
+
+	return candidates.reduce<{element?: SVGElement; score: number}>(
+		(best, candidate) => {
+			if (candidate === from) {
+				return best;
+			}
+			const {x, y} = center(candidate);
+			const along = (x - origin.x) * dx + (y - origin.y) * dy;
+			const across = Math.abs((x - origin.x) * dy) + Math.abs((y - origin.y) * dx);
+			if (along <= 0 || across > along * 2) {
+				return best;
+			}
+			const score = Math.hypot(along, across);
+			return score < best.score ? {element: candidate, score} : best;
+		},
+		{score: Infinity},
+	).element;
+}
+
+function getElementTypeKey(type: string | undefined) {
+	const name = type?.replace(/^bpmn:/, '');
+	return name === undefined ? undefined : name.charAt(0).toLowerCase() + name.slice(1);
+}
+
 function Diagram({
 	xml,
 	selectableElements,
@@ -86,11 +125,14 @@ function Diagram({
 	customElementClasses,
 	download,
 	onRenderError,
+	ariaLabel,
 }: Props) {
 	const {t} = useTranslation();
+	const keyboardHintId = useId();
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const diagramRef = useRef<HTMLDivElement | null>(null);
 	const [isDiagramRendered, setIsDiagramRendered] = useState(false);
+	const [renderCount, setRenderCount] = useState(0);
 	const viewerRef = useRef<BpmnJS | null>(null);
 	const renderRunRef = useRef(0);
 	const onRenderErrorRef = useRef(onRenderError);
@@ -98,15 +140,213 @@ function Diagram({
 	const renderedXmlRef = useRef<string | null>(null);
 	const renderQueueRef = useRef<Promise<void>>(Promise.resolve());
 	const [isViewboxChanging, setIsViewboxChanging] = useState(false);
+	const [isKeyboardFocused, setIsKeyboardFocused] = useState(false);
+	const [tooltipAnchor, setTooltipAnchor] = useState<{x: number; y: number} | null>(null);
 	const [activeOverlays, setActiveOverlays] = useState<OverlayEntry[]>([]);
 	const [selectedElement, setSelectedElement] = useState<SVGGraphicsElement | undefined>(undefined);
 
 	const {isFullscreen, handleFullscreen} = useFullscreen(diagramRef, viewerRef);
 	const {isMinimapOpen, handleMinimapToggle, resetMinimap} = useMinimap(diagramCanvasRef, viewerRef, isDiagramRendered);
 
-	const handleZoomIn = useCallback(() => viewerRef.current?.zoomIn(), []);
-	const handleZoomOut = useCallback(() => viewerRef.current?.zoomOut(), []);
-	const handleZoomReset = useCallback(() => viewerRef.current?.zoomReset(), []);
+	const hasUserAdjustedViewRef = useRef(false);
+	const hasObservedInitialSizeRef = useRef(false);
+	const resizeFrameRef = useRef(0);
+
+	const handleZoomIn = useCallback(() => {
+		hasUserAdjustedViewRef.current = true;
+		viewerRef.current?.zoomIn();
+	}, []);
+	const handleZoomOut = useCallback(() => {
+		hasUserAdjustedViewRef.current = true;
+		viewerRef.current?.zoomOut();
+	}, []);
+	const handleZoomReset = useCallback(() => {
+		hasUserAdjustedViewRef.current = false;
+		viewerRef.current?.zoomReset();
+	}, []);
+
+	useEffect(() => {
+		const container = diagramCanvasRef.current;
+		if (container === null || typeof ResizeObserver === 'undefined') {
+			return;
+		}
+
+		hasObservedInitialSizeRef.current = false;
+		const observer = new ResizeObserver(() => {
+			if (!hasObservedInitialSizeRef.current) {
+				hasObservedInitialSizeRef.current = true;
+				return;
+			}
+			cancelAnimationFrame(resizeFrameRef.current);
+			resizeFrameRef.current = requestAnimationFrame(() => {
+				if (hasUserAdjustedViewRef.current) {
+					viewerRef.current?.notifyResize();
+				} else {
+					viewerRef.current?.zoomReset();
+				}
+			});
+		});
+		observer.observe(container);
+
+		const markAdjusted = () => {
+			hasUserAdjustedViewRef.current = true;
+		};
+		const markDragged = (event: PointerEvent) => {
+			if (event.buttons > 0) {
+				markAdjusted();
+			}
+		};
+		container.addEventListener('wheel', markAdjusted, {passive: true});
+		container.addEventListener('pointermove', markDragged);
+
+		return () => {
+			container.removeEventListener('wheel', markAdjusted);
+			container.removeEventListener('pointermove', markDragged);
+			cancelAnimationFrame(resizeFrameRef.current);
+			observer.disconnect();
+		};
+	}, []);
+
+	const getElementLabel = useCallback(
+		(element: Element) => {
+			const elementId = element.getAttribute('data-element-id') ?? '';
+			const name = viewerRef.current?.getElementName(elementId)?.trim();
+			const typeKey = getElementTypeKey(viewerRef.current?.getElementType(elementId));
+			const type =
+				typeKey === undefined
+					? undefined
+					: t(`operate.shared.diagram.elementTypes.${typeKey}`, {
+							defaultValue: typeKey.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
+						});
+			if (name && type) {
+				return t('operate.shared.diagram.elementLabel', {name, type});
+			}
+			return name || type || '';
+		},
+		[t],
+	);
+
+	useEffect(() => {
+		if (!isDiagramRendered || diagramCanvasRef.current === null) {
+			return;
+		}
+
+		const canvas = diagramCanvasRef.current;
+		canvas.querySelector('svg')?.setAttribute('tabindex', '-1');
+		canvas
+			.querySelectorAll('[role="img"][data-element-id]:not(.op-non-selectable)')
+			.forEach((element) => ['role', 'aria-label'].forEach((attribute) => element.removeAttribute(attribute)));
+
+		canvas.querySelectorAll('.op-non-selectable').forEach((element) => {
+			const label = getElementLabel(element);
+			element.setAttribute('role', 'img');
+			element.setAttribute(
+				'aria-label',
+				nonSelectableNodeTooltipText === undefined ? label : `${label}, ${nonSelectableNodeTooltipText}`,
+			);
+		});
+	}, [
+		isDiagramRendered,
+		renderCount,
+		selectableElements,
+		customElementClasses,
+		nonSelectableNodeTooltipText,
+		getElementLabel,
+	]);
+
+	useEffect(() => {
+		if (!isDiagramRendered || diagramCanvasRef.current === null) {
+			return;
+		}
+
+		const canvas = diagramCanvasRef.current;
+		canvas.querySelectorAll('[role="button"]:not(.op-selectable)').forEach((element) => {
+			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby'].forEach((attribute) =>
+				element.removeAttribute(attribute),
+			);
+		});
+
+		const selectable = [...canvas.querySelectorAll<SVGElement>('.op-selectable')];
+		const tabStop =
+			selectable.find((element) => element === document.activeElement) ??
+			selectable.find((element) => element.classList.contains('op-selected')) ??
+			selectable[0];
+		selectable.forEach((element) => {
+			element.setAttribute('tabindex', element === tabStop ? '0' : '-1');
+			element.setAttribute('role', 'button');
+			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
+			element.setAttribute('aria-label', getElementLabel(element));
+			element.setAttribute('aria-describedby', keyboardHintId);
+		});
+	}, [
+		isDiagramRendered,
+		renderCount,
+		selectableElements,
+		selectedElementIds,
+		customElementClasses,
+		keyboardHintId,
+		getElementLabel,
+	]);
+
+	const handleCanvasKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+		const target = event.target instanceof Element ? event.target.closest<SVGElement>('.op-selectable') : null;
+		if (target === null) {
+			return;
+		}
+
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+			return;
+		}
+
+		const direction = ARROW_DIRECTIONS[event.key];
+		if (direction === undefined) {
+			return;
+		}
+		const next = findNearestInDirection(
+			target,
+			[...event.currentTarget.querySelectorAll<SVGElement>('.op-selectable')],
+			direction,
+		);
+		if (next !== undefined) {
+			event.preventDefault();
+			const nextId = next.getAttribute('data-element-id');
+			if (nextId !== null) {
+				viewerRef.current?.revealElement(nextId);
+			}
+			next.focus();
+		}
+	}, []);
+
+	const handleCanvasFocus = useCallback((event: React.FocusEvent<HTMLDivElement>) => {
+		setIsKeyboardFocused(event.target instanceof Element && event.target.matches(':focus-visible'));
+		const target = event.target instanceof Element ? event.target.closest('.op-selectable') : null;
+		if (target === null) {
+			return;
+		}
+		event.currentTarget.querySelectorAll('.op-selectable').forEach((element) => {
+			element.setAttribute('tabindex', element === target ? '0' : '-1');
+		});
+		const elementId = target.getAttribute('data-element-id');
+		if (elementId !== null) {
+			viewerRef.current?.ensureOutline(elementId);
+		}
+	}, []);
+
+	const handleCanvasPointerOver = useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const isNonSelectable = event.target instanceof Element && event.target.closest('.op-non-selectable') !== null;
+			const container = diagramRef.current;
+			if (!isNonSelectable || container === null || nonSelectableNodeTooltipText === undefined) {
+				setTooltipAnchor(null);
+				return;
+			}
+			const rect = container.getBoundingClientRect();
+			setTooltipAnchor({x: event.clientX - rect.left, y: event.clientY - rect.top});
+		},
+		[nonSelectableNodeTooltipText],
+	);
 
 	const bindHandlers = useCallback((viewer: BpmnJS) => {
 		const {onElementSelection, onRootChange, onElementDoubleClick} = handlersRef.current;
@@ -136,7 +376,7 @@ function Diagram({
 
 	const acquireViewer = useCallback(() => {
 		if (viewerRef.current === null) {
-			const viewer = new BpmnJS();
+			const viewer = new BpmnJS({shouldResetStaleSequenceFlows: true});
 			viewer.onOverlayChange = setActiveOverlays;
 			bindHandlers(viewer);
 			viewerRef.current = viewer;
@@ -196,6 +436,7 @@ function Diagram({
 			if (run === renderRunRef.current) {
 				setSelectedElement(viewer.selectedElement);
 				setIsDiagramRendered(true);
+				setRenderCount((count) => count + 1);
 				resetMinimap();
 			}
 		});
@@ -237,9 +478,44 @@ function Diagram({
 				<div
 					ref={diagramCanvasRef}
 					role="region"
-					aria-label={t('operate.shared.diagram.label')}
+					aria-label={ariaLabel ?? t('operate.shared.diagram.label')}
+					aria-describedby={keyboardHintId}
+					onKeyDown={handleCanvasKeyDown}
+					onFocus={handleCanvasFocus}
+					onBlur={() => setIsKeyboardFocused(false)}
+					onPointerOver={handleCanvasPointerOver}
+					onPointerLeave={() => setTooltipAnchor(null)}
 					className="absolute top-0 left-0 h-full min-h-[200px] w-full"
 				/>
+				<span
+					id={keyboardHintId}
+					className={cn(
+						isKeyboardFocused
+							? 'bg-neutral-background-default text-neutral-foreground-subtle border-neutral-border-subtle pointer-events-none absolute bottom-4 left-4 z-10 rounded-sm border px-2 py-1 text-xs'
+							: 'sr-only',
+					)}
+				>
+					{t('operate.shared.diagram.keyboardHint')}
+				</span>
+				{nonSelectableNodeTooltipText !== undefined && (
+					<Tooltip
+						open={tooltipAnchor !== null}
+						onOpenChange={(open) => {
+							if (!open) {
+								setTooltipAnchor(null);
+							}
+						}}
+					>
+						<TooltipTrigger asChild>
+							<span
+								aria-hidden
+								className="pointer-events-none absolute size-0"
+								style={{left: tooltipAnchor?.x ?? 0, top: tooltipAnchor?.y ?? 0}}
+							/>
+						</TooltipTrigger>
+						<TooltipContent side="top">{nonSelectableNodeTooltipText}</TooltipContent>
+					</Tooltip>
+				)}
 				{isDiagramRendered && (
 					<>
 						<DiagramControls

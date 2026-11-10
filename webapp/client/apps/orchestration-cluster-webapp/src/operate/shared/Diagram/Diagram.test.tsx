@@ -51,6 +51,38 @@ function SelectedElementOverlay({selectedElementRef}: {selectedElementRef?: SVGE
 	return <span>{`Overlay for ${selectedElementRef?.getAttribute('data-element-id')}`}</span>;
 }
 
+const FLOW_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_3" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="Process_3" isExecutable="false">
+    <bpmn:startEvent id="startEvent_1" />
+    <bpmn:task id="task_1" />
+    <bpmn:endEvent id="endEvent_1" />
+    <bpmn:sequenceFlow id="flow_1" sourceRef="startEvent_1" targetRef="task_1" />
+    <bpmn:sequenceFlow id="flow_2" sourceRef="task_1" targetRef="endEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_3">
+    <bpmndi:BPMNPlane id="BPMNPlane_3" bpmnElement="Process_3">
+      <bpmndi:BPMNShape id="startEvent_1_di" bpmnElement="startEvent_1">
+        <dc:Bounds x="152" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="task_1_di" bpmnElement="task_1">
+        <dc:Bounds x="250" y="60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="endEvent_1_di" bpmnElement="endEvent_1">
+        <dc:Bounds x="412" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow_1_di" bpmnElement="flow_1">
+        <di:waypoint x="188" y="100" />
+        <di:waypoint x="250" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow_2_di" bpmnElement="flow_2">
+        <di:waypoint x="350" y="100" />
+        <di:waypoint x="412" y="100" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+
 describe('<Diagram />', () => {
 	it('should render diagram controls after XML import', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} />);
@@ -210,5 +242,23 @@ describe('<Diagram />', () => {
 		await userEvent.dblClick(element!);
 
 		expect(onElementDoubleClick).toHaveBeenCalledWith('startEvent_1');
+	});
+
+	it('should keep the color of sequence flows that are no longer highlighted', async () => {
+		const flowStroke = (id: string) =>
+			getComputedStyle(document.querySelector(`[data-element-id="${id}"] path`)!).stroke;
+		const highlight = 'rgb(255, 0, 0)';
+		const renderDiagram = (highlightedSequenceFlows: string[]) => (
+			<div style={{'--cds-background-brand': highlight} as React.CSSProperties}>
+				<Diagram xml={FLOW_XML} highlightedSequenceFlows={highlightedSequenceFlows} />
+			</div>
+		);
+		const screen = await render(renderDiagram(['flow_1']));
+		await expect.poll(() => flowStroke('flow_1')).toBe(highlight);
+
+		await screen.rerender(renderDiagram(['flow_2']));
+
+		await expect.poll(() => flowStroke('flow_2')).toBe(highlight);
+		expect(flowStroke('flow_1')).toBe(highlight);
 	});
 });

@@ -266,10 +266,6 @@
 		--viewer-layer: var(--neutral-background-medium);
 	}
 
-	.bjs-powered-by {
-		display: none;
-	}
-
 	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
 		stroke: var(--info-action-default) !important;
 	}
@@ -302,6 +298,16 @@
 		cursor: not-allowed;
 	}
 
+	/* The sunken fill carries the state beyond a stroke shade that is too close to a selectable one. Highlight wins. */
+	.op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
+		stroke: color-mix(in srgb, var(--neutral-foreground-subtle) 75%, transparent) !important;
+		fill: var(--neutral-background-medium) !important;
+	}
+
+	.dark & .op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
+		fill: var(--neutral-background-subtle) !important;
+	}
+
 	.op-drilldown {
 		user-select: none;
 	}
@@ -329,9 +335,21 @@
 		border-color: var(--neutral-border-subtle);
 	}
 
+	.djs-minimap.open {
+		width: auto;
+		height: auto;
+	}
+
 	.djs-minimap .map {
-		width: 240px;
-		height: 135px;
+		width: min(240px, 45vw);
+		height: auto;
+		aspect-ratio: 16 / 9;
+	}
+
+	@media (max-width: 640px) {
+		.djs-minimap {
+			display: none;
+		}
 	}
 
 	.djs-minimap .toggle:before {
