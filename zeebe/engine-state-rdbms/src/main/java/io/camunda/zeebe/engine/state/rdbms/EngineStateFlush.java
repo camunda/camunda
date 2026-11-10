@@ -20,8 +20,8 @@ import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 
 /**
- * Writes the staged rows of all caches of a transaction context on commit, one table after the
- * other, each through a MyBatis batch session and a single {@code flushStatements()}.
+ * Writes the staged rows of all caches of a transaction context on commit, through one MyBatis
+ * batch session and a single {@code flushStatements()}.
  *
  * <p>MyBatis' batch executor reuses a JDBC statement while consecutive calls use the same SQL and
  * starts a new JDBC batch when it changes. So the caches are written one after the other, and each
@@ -50,19 +50,16 @@ final class EngineStateFlush implements JdbcTransactionParticipant {
 
   @Override
   public void flush(final Connection connection) throws SQLException {
-    for (final var table : tables) {
-      if (table.cache.hasStagedWrites()) {
-        flush(connection, table);
-      }
+    if (tables.stream().noneMatch(table -> table.cache.hasStagedWrites())) {
+      return;
     }
-  }
 
-  private static void flush(final Connection connection, final Table<?, ?> table)
-      throws SQLException {
     try (final var session = EngineStateMyBatis.openSession(connection, ExecutorType.BATCH)) {
       final var mapper = session.getMapper(EngineStateMapper.class);
       final Map<Object, Table<?, ?>> updatedRows = new IdentityHashMap<>();
-      table.write(mapper, updatedRows);
+      for (final var table : tables) {
+        table.write(mapper, updatedRows);
+      }
 
       for (final var result : session.flushStatements()) {
         final var parameters = result.getParameterObjects();
@@ -71,9 +68,9 @@ final class EngineStateFlush implements JdbcTransactionParticipant {
           if (parameters.get(i) instanceof final Map<?, ?> parameter
               && parameter.containsKey(ROW_PARAMETER)) {
             final var row = parameter.get(ROW_PARAMETER);
-            final var updated = updatedRows.get(row);
-            if (updated != null) {
-              updated.verifyUpdated(row, counts[i]);
+            final var table = updatedRows.get(row);
+            if (table != null) {
+              table.verifyUpdated(row, counts[i]);
             }
           }
         }
