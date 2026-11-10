@@ -15,12 +15,10 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.ValueType;
-import java.net.ServerSocket;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 
 class DatabaseImportJobExecutorTest {
@@ -32,40 +30,33 @@ class DatabaseImportJobExecutorTest {
     when(configurationService.getJobExecutorThreadCount()).thenReturn(1);
     when(configurationService.getJobExecutorQueueSize()).thenReturn(1);
     final var executor = new DatabaseImportJobExecutor("test", configurationService);
+    final var job = new FailingImportJob();
+    executor.executeImportJob(job);
+    assertThat(job.firstAttemptFailed.await(10, TimeUnit.SECONDS)).isTrue();
 
-    try (final var unresponsiveDatabase = new ServerSocket(0);
-        final var client =
-            RestClient.builder(new HttpHost("localhost", unresponsiveDatabase.getLocalPort()))
-                .build()) {
-      final var job = new SearchOnceImportJob(client);
-      executor.executeImportJob(job);
+    // when
+    executor.stopExecutingImportJobs();
 
-      try (final var pendingRequest = unresponsiveDatabase.accept()) {
-        // when
-        executor.stopExecutingImportJobs();
-      }
-
-      // then
-      assertThat(job.attempts).hasValue(1);
-    }
+    // then
+    assertThat(job.attempts).hasValue(1);
   }
 
-  /** Sends a search on the first attempt; any retry succeeds immediately. */
-  private static final class SearchOnceImportJob extends DatabaseImportJob<OptimizeDto> {
+  /** Fails on the first attempt; any retry succeeds immediately. */
+  private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
-    private final RestClient client;
+    private final CountDownLatch firstAttemptFailed = new CountDownLatch(1);
     private final AtomicInteger attempts = new AtomicInteger();
 
-    private SearchOnceImportJob(final RestClient client) {
+    private FailingImportJob() {
       super(() -> {}, mock(DatabaseClient.class), ValueType.VARIABLE.name(), 1);
-      this.client = client;
       setEntitiesToImport(List.of(mock(OptimizeDto.class)));
     }
 
     @Override
-    protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) throws Exception {
+    protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (attempts.incrementAndGet() == 1) {
-        client.performRequest(new Request("GET", "/_search"));
+        firstAttemptFailed.countDown();
+        throw new IllegalStateException("database unavailable");
       }
     }
   }
