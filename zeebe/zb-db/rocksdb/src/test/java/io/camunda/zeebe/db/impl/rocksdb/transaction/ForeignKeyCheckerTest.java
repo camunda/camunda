@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,7 +42,7 @@ final class ForeignKeyCheckerTest {
     key.wrapLong(1);
 
     // when
-    when(tx.get(anyLong(), anyLong(), any(), anyInt())).thenReturn(null);
+    when(tx.get(any(), anyInt())).thenReturn(null);
 
     // then
     assertThatThrownBy(
@@ -63,7 +62,7 @@ final class ForeignKeyCheckerTest {
     key.wrapLong(1);
 
     // when -- tx says every key exists
-    when(tx.get(anyLong(), anyLong(), any(), anyInt())).thenReturn(new byte[] {});
+    when(tx.get(any(), anyInt())).thenReturn(new byte[] {});
 
     // then -- check doesn't trow
     check.assertExists(tx, new DbForeignKey<>(key, TestColumnFamilies.TEST_COLUMN_FAMILY));
@@ -78,7 +77,7 @@ final class ForeignKeyCheckerTest {
     final var key = new DbLong();
 
     // when -- tx says no key exists
-    when(tx.get(anyLong(), anyLong(), any(), anyInt())).thenReturn(null);
+    when(tx.get(any(), anyInt())).thenReturn(null);
 
     // then
     assertThatCode(
@@ -107,7 +106,7 @@ final class ForeignKeyCheckerTest {
     final var key = new DbLong();
 
     // when -- tx says no key exists
-    when(tx.get(anyLong(), anyLong(), any(), anyInt())).thenReturn(null);
+    when(tx.get(any(), anyInt())).thenReturn(null);
 
     // then
     assertThatThrownBy(
