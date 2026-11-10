@@ -15,15 +15,13 @@ import org.jspecify.annotations.Nullable;
  * MyBatis mapper of the process definition tables, see {@code
  * db/mybatis/engine-state/ProcessDefinitionMapper.xml}. Every statement is scoped to one partition.
  *
- * <p>The rows are immutable snapshots, as the {@link io.camunda.zeebe.db.impl.jdbc.EntityCache}
- * requires: payloads are serialized msgpack and must not be modified.
+ * <p>The rows are immutable snapshots, as the {@link EntitySession} requires: payloads are
+ * serialized msgpack and must not be modified. The session runs the statements of their {@link
+ * EntityType}s by id; the mapper only declares the queries.
  */
 interface ProcessDefinitionMapper {
 
   // CAM_RU_PROCESS_DEFINITION
-
-  @Nullable ProcessDefinitionRow selectProcessDefinition(
-      @Param("partitionId") int partitionId, @Param("key") long processDefinitionKey);
 
   /** The processes with the given id and version, ordered by key. */
   List<ProcessDefinitionRow> selectProcessDefinitionsByVersion(
@@ -55,49 +53,17 @@ interface ProcessDefinitionMapper {
       @Param("afterKey") long afterKey,
       @Param("limit") int limit);
 
-  void insertProcessDefinition(
-      @Param("partitionId") int partitionId, @Param("row") ProcessDefinitionRow row);
-
-  void updateProcessDefinition(
-      @Param("partitionId") int partitionId, @Param("row") ProcessDefinitionRow row);
-
-  void deleteProcessDefinition(
-      @Param("partitionId") int partitionId, @Param("key") long processDefinitionKey);
-
   // CAM_RU_PROCESS_VERSION
-
-  @Nullable ProcessVersionRow selectProcessVersion(
-      @Param("partitionId") int partitionId, @Param("key") ProcessIdKey key);
 
   /** All version infos of the partition, ordered by tenant and process id. */
   List<ProcessVersionRow> selectProcessVersions(@Param("partitionId") int partitionId);
 
-  void insertProcessVersion(
-      @Param("partitionId") int partitionId, @Param("row") ProcessVersionRow row);
-
-  void updateProcessVersion(
-      @Param("partitionId") int partitionId, @Param("row") ProcessVersionRow row);
-
-  void deleteProcessVersion(@Param("partitionId") int partitionId, @Param("key") ProcessIdKey key);
-
   // CAM_RU_PENDING_PROCESS_DELETION
-
-  @Nullable PendingProcessDeletionRow selectPendingProcessDeletion(
-      @Param("partitionId") int partitionId, @Param("key") PendingProcessDeletionRow key);
 
   /** The pending deletions of the process definition, ordered by pending partition. */
   List<PendingProcessDeletionRow> selectPendingProcessDeletions(
       @Param("partitionId") int partitionId,
       @Param("processDefinitionKey") long processDefinitionKey);
-
-  void insertPendingProcessDeletion(
-      @Param("partitionId") int partitionId, @Param("row") PendingProcessDeletionRow row);
-
-  void updatePendingProcessDeletion(
-      @Param("partitionId") int partitionId, @Param("row") PendingProcessDeletionRow row);
-
-  void deletePendingProcessDeletion(
-      @Param("partitionId") int partitionId, @Param("key") PendingProcessDeletionRow key);
 
   /**
    * A deployed process: the serialized {@code PersistedProcess} plus the columns derived from it

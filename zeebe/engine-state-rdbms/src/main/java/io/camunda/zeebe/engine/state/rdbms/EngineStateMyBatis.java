@@ -59,31 +59,25 @@ final class EngineStateMyBatis {
 
   private EngineStateMyBatis() {}
 
-  /** Runs the given reads in a session on the given connection. */
-  static <M, T> T read(
-      final Connection connection, final Class<M> mapperType, final MapperCall<M, T> call)
+  /**
+   * Runs the given call in a session on the given connection. Closing the session neither commits,
+   * rolls back nor closes the connection; a batch session discards statements that weren't flushed.
+   */
+  static <T> T call(
+      final Connection connection, final ExecutorType executorType, final SessionCall<T> call)
       throws SQLException {
-    try (final var session = openSession(connection, ExecutorType.SIMPLE)) {
-      return call.apply(session.getMapper(mapperType));
+    try (final var session = factory(connection).openSession(executorType, connection)) {
+      return call.apply(session);
     } catch (final PersistenceException e) {
       throw unwrap(e);
     }
   }
 
   /**
-   * Opens a session on the given connection. Closing it neither commits, rolls back nor closes the
-   * connection; a batch session discards statements that weren't flushed.
-   */
-  static SqlSession openSession(final Connection connection, final ExecutorType executorType)
-      throws SQLException {
-    return factory(connection).openSession(executorType, connection);
-  }
-
-  /**
    * MyBatis wraps every {@link SQLException} in a runtime exception. The JDBC transaction tells
    * retryable errors apart only by the SQL exception, so it must get that one.
    */
-  static SQLException unwrap(final PersistenceException exception) {
+  private static SQLException unwrap(final PersistenceException exception) {
     for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {
       if (cause instanceof final SQLException sqlException) {
         return sqlException;
@@ -140,7 +134,7 @@ final class EngineStateMyBatis {
   }
 
   @FunctionalInterface
-  interface MapperCall<M, T> {
-    T apply(M mapper);
+  interface SessionCall<T> {
+    T apply(SqlSession session) throws SQLException;
   }
 }

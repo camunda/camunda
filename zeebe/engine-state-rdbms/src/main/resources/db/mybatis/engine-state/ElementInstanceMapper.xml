@@ -12,6 +12,9 @@
   Statements of the element instance tables of the relational engine state, see ElementInstanceMapper.
   The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
 
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertElementInstance); the other statements are queries of the mapper.
+
   Statements without a databaseId are portable; a statement or fragment with the databaseId of
   the connected database (see EngineStateMyBatis) replaces the portable one.
 -->

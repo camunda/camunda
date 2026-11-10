@@ -12,6 +12,9 @@
   Statements of the process definition tables of the relational engine state, see ProcessDefinitionMapper.
   The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
 
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertElementInstance); the other statements are queries of the mapper.
+
   Statements without a databaseId are portable; a statement or fragment with the databaseId of
   the connected database (see EngineStateMyBatis) replaces the portable one.
 -->
@@ -196,7 +199,7 @@
   </insert>
 
   <!--
-    The row has no other columns, so an update only confirms that it exists. The entity cache
+    The row has no other columns, so an update only confirms that it exists. The entity session
     turns a delete followed by an insert of the same row into an update.
   -->
   <update id="updatePendingProcessDeletion">
