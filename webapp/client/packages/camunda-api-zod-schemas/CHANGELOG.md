@@ -5,6 +5,7 @@
 ### 🚀 Enhancements
 
 - Add `authenticatedCurrentUserSchema` and `AuthenticatedCurrentUser` to the 8.11 schemas, for a current user with `isAnonymous` set to `false` and a set `username` ([#66964](https://github.com/camunda/camunda/pull/66964))
+- Add `$or` to the 8.11 process definition search filter, to match a process definition by ID or by name in one request [#40123](https://github.com/camunda/camunda/issues/40123)
 
 ### 🩹 Fixes
 
@@ -14,6 +15,7 @@
 
 - Tim Cline ([@timcline](https://github.com/timcline))
 - Vinícius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+- Karl Heinsen ([@karl-heinsen](https://github.com/karl-heinsen))
 
 ## v0.0.96
 
