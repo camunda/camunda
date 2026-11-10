@@ -22,8 +22,8 @@ public interface TransactionContext {
    * error the transaction is rolled back.
    *
    * @param operations the operations
-   * @throws ZeebeDbException is thrown on an unexpected error in the database layer
-   * @throws RuntimeException is thrown on an unexpected error in executing the operations
+   * @throws RuntimeException is thrown on an unexpected error in the database layer or in executing
+   *     the operations
    */
   void runInTransaction(TransactionOperation operations);
 

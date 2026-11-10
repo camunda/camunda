@@ -14,7 +14,7 @@ dependencies {
   implementation(project(":zeebe-backup"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-atomix-cluster"))
-  implementation(project(":zeebe-db"))
+  implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-journal"))
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-scheduler"))

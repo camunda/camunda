@@ -12,7 +12,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-backup"))
   implementation(project(":zeebe-atomix-cluster"))
-  implementation(project(":zeebe-db"))
+  implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-journal"))

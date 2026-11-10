@@ -2,6 +2,7 @@ plugins { id("buildlogic.server-conventions") }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
+  api(project(":zeebe-db-api"))
   api(project(":zeebe-protocol"))
   api(project(":zeebe-util"))
   api(project(":zeebe-micrometer"))
@@ -18,4 +19,4 @@ dependencies {
   testImplementation(libs.net.jqwik.jqwik)
 }
 
-description = "Zeebe DB"
+description = "Zeebe DB RocksDB"

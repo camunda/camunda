@@ -545,7 +545,7 @@ same amount, and watch GC.
 ### Phase 2: write-behind core for point ops (`feat:`)
 
 - **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management and to
-  `zeebe/zb-db/pom.xml`, excluding `jaxb-runtime`. Keep the Gradle build in parity.
+  `zeebe/zb-db/rocksdb/pom.xml`, excluding `jaxb-runtime`. Keep the Gradle build in parity.
 - Create a new package `io.camunda.zeebe.db.impl.rocksdb.writebehind` with:
   - `CacheKey`, `CachedValue`
   - `DirtyIndex`
