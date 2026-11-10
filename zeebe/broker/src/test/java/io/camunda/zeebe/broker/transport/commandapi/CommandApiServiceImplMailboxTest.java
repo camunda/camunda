@@ -56,6 +56,15 @@ final class CommandApiServiceImplMailboxTest {
           Duration.ofHours(1),
           Duration.ofHours(1));
 
+  private static final MailboxConfig EXPIRING =
+      new MailboxConfig(
+          Duration.ofMillis(5),
+          Duration.ofMillis(20),
+          Duration.ofMinutes(1),
+          10,
+          Duration.ofMillis(100),
+          Duration.ofMillis(100));
+
   @RegisterExtension final ActorSchedulerExtension scheduler = new ActorSchedulerExtension();
 
   private final InMemoryMailboxStore store = new InMemoryMailboxStore();
@@ -187,6 +196,73 @@ final class CommandApiServiceImplMailboxTest {
         .during(Duration.ofMillis(300))
         .atMost(Duration.ofSeconds(5))
         .until(() -> store.findLeader(PARTITION.number()).isEmpty());
+  }
+
+  @Test
+  void shouldCleanUpTheMailboxWhileLeadingTheDeploymentPartition() {
+    // given
+    final var cleaning = serviceOf(PARTITION);
+    final var old = commandFor(PARTITION.number());
+    store.insert(old);
+
+    // when
+    cleaning.registerHandlers(PARTITION.number(), logStream, mock(QueryService.class)).join();
+
+    // then - the message is gone once its key can be inserted again
+    await().atMost(Duration.ofSeconds(10)).until(() -> store.insert(old));
+  }
+
+  @Test
+  void shouldNotCleanUpTheMailboxOnOtherPartitions() {
+    // given
+    final var other = new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 2);
+    final var notCleaning = serviceOf(other);
+    final var old = commandFor(other.number());
+    store.insert(old);
+
+    // when
+    notCleaning.registerHandlers(other.number(), logStream, mock(QueryService.class)).join();
+
+    // then - the message stays, so its key cannot be inserted again
+    await()
+        .during(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !store.insert(old));
+  }
+
+  @Test
+  void shouldStopCleaningUpWhenTheHandlersAreDeactivated() {
+    // given
+    final var cleaning = serviceOf(PARTITION);
+    cleaning.registerHandlers(PARTITION.number(), logStream, mock(QueryService.class)).join();
+    cleaning.deactivateHandlers(PARTITION.number()).join();
+    final var old = commandFor(PARTITION.number());
+    store.insert(old);
+
+    // then
+    await()
+        .during(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> !store.insert(old));
+  }
+
+  private CommandApiServiceImpl serviceOf(final PartitionId partition) {
+    final var created =
+        new CommandApiServiceImpl(
+            partition,
+            mock(ServerTransport.class),
+            scheduler.get(),
+            new QueryApiCfg(),
+            MailboxSetup.of(store, EXPIRING, null),
+            "0");
+    scheduler.submitActor(created).join();
+    return created;
+  }
+
+  /** A message that no consumer of this service takes, which expires soon. */
+  private static NewInboxMessage commandFor(final int partition) {
+    return new NewInboxMessage(
+        partition, MessageKind.INTER_PARTITION_COMMAND, "partition-9", 1, new byte[] {1});
   }
 
   private CommandApiServiceImpl zonedService() {

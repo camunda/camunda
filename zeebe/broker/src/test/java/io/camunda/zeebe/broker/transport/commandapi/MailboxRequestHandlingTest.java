@@ -112,9 +112,23 @@ final class MailboxRequestHandlingTest {
   }
 
   @Test
-  void shouldAnswerThroughTheMailboxWhenTheRequestIsRejected() {
-    // given - this node does not lead the partition
+  void shouldKeepTheRequestInTheInboxWhenThisNodeDoesNotLeadThePartition() {
+    // given - this node stopped leading the partition
     handler.removePartition(PARTITION);
+
+    // when
+    final var written = writer.writeAll(List.of(request()));
+
+    // then - nobody answers, and the request is not taken out of the inbox
+    assertThat(written).isZero();
+    assertThat(store.takeResponses(GATEWAY, Set.of(GATEWAY_REQUEST_ID))).isEmpty();
+    assertThat(router.pendingCount()).isZero();
+  }
+
+  @Test
+  void shouldAnswerThroughTheMailboxWhenTheRequestIsRejectedForOtherReasons() {
+    // given - the log has no room for the command
+    when(logStreamWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(false);
 
     // when
     final var written = writer.writeAll(List.of(request()));
@@ -131,7 +145,7 @@ final class MailboxRequestHandlingTest {
               final var error = new ErrorResponse();
               assertThat(error.tryWrap(buffer)).isTrue();
               error.wrap(buffer, 0, buffer.capacity());
-              assertThat(error.getErrorCode()).isEqualTo(ErrorCode.PARTITION_LEADER_MISMATCH);
+              assertThat(error.getErrorCode()).isEqualTo(ErrorCode.MALFORMED_REQUEST);
             });
   }
 

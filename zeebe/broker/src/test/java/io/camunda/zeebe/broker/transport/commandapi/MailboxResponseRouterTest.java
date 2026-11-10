@@ -15,15 +15,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.mailbox.InMemoryMailboxStore;
 import io.camunda.zeebe.mailbox.api.GatewayId;
 import io.camunda.zeebe.mailbox.api.MailboxStore;
 import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.OutboxResponse;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerResponse;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -137,6 +141,74 @@ final class MailboxResponseRouterTest {
   }
 
   @Test
+  void shouldForgetRequestsThatWaitedLongerThanTheTimeToLive() {
+    // given
+    final var now = new AtomicLong();
+    final var expiring =
+        new MailboxResponseRouter(transport, store, Runnable::run, Duration.ofMinutes(1), now::get);
+    final var old = expiring.register(GATEWAY, 1);
+
+    // when - the engine never answers, and later another request arrives
+    now.addAndGet(Duration.ofMinutes(2).toNanos());
+    expiring.register(GATEWAY, 2);
+
+    // then
+    assertThat(expiring.pendingCount()).isEqualTo(1);
+    final var late = new FakeResponse(old, new byte[] {1});
+    expiring.sendResponse(late);
+    verify(transport).sendResponse(late);
+  }
+
+  @Test
+  void shouldKeepRequestsThatAreWithinTheTimeToLive() {
+    // given
+    final var now = new AtomicLong();
+    final var expiring =
+        new MailboxResponseRouter(transport, store, Runnable::run, Duration.ofMinutes(1), now::get);
+    expiring.register(GATEWAY, 1);
+
+    // when
+    now.addAndGet(Duration.ofSeconds(30).toNanos());
+    expiring.register(GATEWAY, 2);
+
+    // then
+    assertThat(expiring.pendingCount()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotAnswerARequestThatWasTurnedAwayBecauseThisNodeDoesNotLead() {
+    // given
+    final var requestId = router.register(GATEWAY, 7);
+    final var writer = new ErrorResponseWriter();
+    writer.partitionLeaderMismatch(1);
+    final var response = new ErrorBytes(requestId, writer);
+
+    // when
+    router.sendResponse(response);
+
+    // then
+    assertThat(store.takeResponses(GATEWAY, Set.of(7L))).isEmpty();
+    assertThat(router.takeNotLeading(requestId)).isTrue();
+    assertThat(router.takeNotLeading(requestId)).isFalse();
+    verify(transport, never()).sendResponse(any());
+  }
+
+  @Test
+  void shouldAnswerARequestThatFailedForAnotherReason() {
+    // given
+    final var requestId = router.register(GATEWAY, 7);
+    final var writer = new ErrorResponseWriter();
+    writer.errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage("full");
+
+    // when
+    router.sendResponse(new ErrorBytes(requestId, writer));
+
+    // then
+    assertThat(store.takeResponses(GATEWAY, Set.of(7L))).hasSize(1);
+    assertThat(router.takeNotLeading(requestId)).isFalse();
+  }
+
+  @Test
   void shouldForgetAllRequestsWhenCleared() {
     // given
     router.register(GATEWAY, 1);
@@ -147,6 +219,30 @@ final class MailboxResponseRouterTest {
 
     // then
     assertThat(router.pendingCount()).isZero();
+  }
+
+  /** The bytes of an error response, as the request handler sends them. */
+  private record ErrorBytes(long requestIdValue, ErrorResponseWriter writer)
+      implements ServerResponse {
+    @Override
+    public long getRequestId() {
+      return requestIdValue;
+    }
+
+    @Override
+    public int getPartitionId() {
+      return 1;
+    }
+
+    @Override
+    public int getLength() {
+      return writer.getLength();
+    }
+
+    @Override
+    public int write(final MutableDirectBuffer buffer, final int offset) {
+      return writer.write(buffer, offset);
+    }
   }
 
   private static final class FakeResponse implements ServerResponse {

@@ -24,9 +24,11 @@ import org.slf4j.Logger;
  *
  * <p>A message counts as written when the request is handled, that is, when its command is in the
  * log, or when an error response was written. In both cases the gateway has an answer or will get
- * one, so the message leaves the inbox. It handles one message at a time and waits for the result
- * before the next one, so the order of the inbox is kept. The wait blocks the calling thread, so it
- * must not run on an actor thread.
+ * one, so the message leaves the inbox. The exception is a request that is turned away because this
+ * node does not lead the partition any more. It is not answered and stays in the inbox, because the
+ * node that leads has not seen it. It handles one message at a time and waits for the result before
+ * the next one, so the order of the inbox is kept. The wait blocks the calling thread, so it must
+ * not run on an actor thread.
  */
 final class ClientRequestMailboxWriter implements InboxMessageWriter {
 
@@ -81,6 +83,15 @@ final class ClientRequestMailboxWriter implements InboxMessageWriter {
               0,
               message.payload().length)
           .join(timeout.toMillis(), TimeUnit.MILLISECONDS);
+      if (router.takeNotLeading(requestId)) {
+        // the handler turned the request away, because this node stopped leading. The message
+        // stays claimed until the claims are released, and the next leader handles it.
+        LOG.debug(
+            "Request {} of partition {} stays in the inbox, this node does not lead it",
+            message.sequence(),
+            message.partitionId());
+        return false;
+      }
       return true;
     } catch (final Exception e) {
       // join throws the failure of the future, also a checked one, without declaring it

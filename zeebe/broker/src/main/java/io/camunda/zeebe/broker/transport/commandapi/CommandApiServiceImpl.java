@@ -11,6 +11,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.mailbox.LeaderPublisher;
+import io.camunda.zeebe.broker.mailbox.MailboxCleanupLoop;
 import io.camunda.zeebe.broker.mailbox.MailboxDrainLoop;
 import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.mailbox.api.MessageKind;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -44,6 +46,7 @@ public final class CommandApiServiceImpl extends Actor
   private final @Nullable MailboxResponseRouter responseRouter;
   private final @Nullable LeaderPublisher leaderPublisher;
   private @Nullable MailboxDrainLoop requestDrain;
+  private @Nullable MailboxCleanupLoop cleanup;
   private long leaderTerm;
 
   public CommandApiServiceImpl(
@@ -78,7 +81,11 @@ public final class CommandApiServiceImpl extends Actor
         mailboxSetup == null
             ? null
             : new MailboxResponseRouter(
-                serverTransport, mailboxSetup.store(), mailboxSetup.senderExecutor());
+                serverTransport,
+                mailboxSetup.store(),
+                mailboxSetup.senderExecutor(),
+                mailboxSetup.config().outboxTtl(),
+                System::nanoTime);
     leaderPublisher = newLeaderPublisher(partitionId, mailboxSetup, claimerId);
   }
 
@@ -216,6 +223,22 @@ public final class CommandApiServiceImpl extends Actor
             new ClientRequestMailboxWriter(
                 commandHandler, responseRouter, partitionId.number(), MAILBOX_WRITE_TIMEOUT));
     requestDrain.start();
+    startCleanup();
+  }
+
+  /**
+   * The cleanup is global, so the leader of one partition, the deployment partition, runs it for
+   * the cluster.
+   */
+  private void startCleanup() {
+    if (mailboxSetup == null
+        || cleanup != null
+        || partitionId.number() != Protocol.DEPLOYMENT_PARTITION) {
+      return;
+    }
+    cleanup =
+        new MailboxCleanupLoop("mailbox-cleanup", mailboxSetup.store(), mailboxSetup.config());
+    cleanup.start();
   }
 
   /** Stops handling the requests in the inbox. The responses that are still due are lost. */
@@ -224,6 +247,10 @@ public final class CommandApiServiceImpl extends Actor
     if (requestDrain != null) {
       requestDrain.close();
       requestDrain = null;
+    }
+    if (cleanup != null) {
+      cleanup.close();
+      cleanup = null;
     }
     if (responseRouter != null) {
       responseRouter.clear();
