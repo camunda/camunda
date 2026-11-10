@@ -16,8 +16,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * A {@link LogBlockRepository} with the same semantics as {@link JdbcLogBlockRepository}, kept in
- * memory, which can be told to fail appends and to hold them until released.
+ * A {@link LogBlockRepository} with the same semantics as {@link MyBatisLogBlockRepository}, kept
+ * in memory, which can be told to fail appends and to hold them until released.
  */
 final class InMemoryLogBlockRepository implements LogBlockRepository {
 
