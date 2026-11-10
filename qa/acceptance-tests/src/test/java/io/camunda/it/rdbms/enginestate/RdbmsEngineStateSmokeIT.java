@@ -17,6 +17,8 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -28,10 +30,10 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
- * Smoke test for the experimental mixed engine state: element instances, variables and process
- * definitions live in PostgreSQL, the rest of the engine state in RocksDB. It checks that a
+ * Smoke test for the experimental mixed engine state: element instances, variables, jobs and
+ * process definitions live in PostgreSQL, the rest of the engine state in RocksDB. It checks that a
  * deployed process is stored in the database, and that a process instance runs end to end and its
- * element instances and variables appear in and disappear from the database.
+ * element instances, variables and job appear in and disappear from the database.
  */
 @Tag("rdbms")
 @TestInstance(Lifecycle.PER_CLASS)
@@ -64,7 +66,8 @@ final class RdbmsEngineStateSmokeIT {
   }
 
   @Test
-  void shouldStoreProcessDefinitionsElementInstancesAndVariablesInPostgres() throws SQLException {
+  void shouldStoreProcessDefinitionsElementInstancesVariablesAndJobsInPostgres()
+      throws SQLException {
     // given
     final var processId = "mixed-engine-state";
     final var jobType = "mixed-engine-state-task";
@@ -94,6 +97,11 @@ final class RdbmsEngineStateSmokeIT {
             .send()
             .join()
             .getProcessInstanceKey();
+    Awaitility.await("job is created")
+        .untilAsserted(
+            () ->
+                assertThat(jobRows(processInstanceKey))
+                    .containsExactly("state=0 activatable_type=" + jobType + " deadline=false"));
     final var job =
         Awaitility.await("job is activated")
             .until(
@@ -113,6 +121,8 @@ final class RdbmsEngineStateSmokeIT {
     assertThat(countRows("element_instance_key", processInstanceKey)).isOne();
     assertThat(countVariableRows(processInstanceKey)).isOne();
     assertThat(job.getVariablesAsMap()).containsEntry("orderId", "order-1");
+    assertThat(jobRows(processInstanceKey))
+        .containsExactly("state=1 activatable_type=null deadline=true");
 
     // when
     client.newCompleteCommand(job).send().join();
@@ -122,6 +132,29 @@ final class RdbmsEngineStateSmokeIT {
         .untilAsserted(
             () -> assertThat(countRows("process_instance_key", processInstanceKey)).isZero());
     assertThat(countVariableRows(processInstanceKey)).isZero();
+    assertThat(jobRows(processInstanceKey)).isEmpty();
+  }
+
+  /** The job rows of the process instance, with their state and lookup columns. */
+  private List<String> jobRows(final long processInstanceKey) throws SQLException {
+    try (final var connection =
+            DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        final var statement =
+            connection.prepareStatement(
+                "SELECT state, activatable_type, deadline FROM CAM_RU_JOB"
+                    + " WHERE process_instance_key = ?")) {
+      statement.setLong(1, processInstanceKey);
+      try (final var result = statement.executeQuery()) {
+        final List<String> rows = new ArrayList<>();
+        while (result.next()) {
+          rows.add(
+              "state=%d activatable_type=%s deadline=%s"
+                  .formatted(result.getInt(1), result.getString(2), result.getObject(3) != null));
+        }
+        return rows;
+      }
+    }
   }
 
   private long countVariableRows(final long processInstanceKey) throws SQLException {

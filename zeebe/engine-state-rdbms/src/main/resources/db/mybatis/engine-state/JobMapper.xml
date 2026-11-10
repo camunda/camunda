@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the job table of the relational engine state, see JobMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (insertJob); the other statements are the page queries of the lookups.
+
+  Statements without a databaseId are portable; a statement or fragment with the databaseId of
+  the connected database (see EngineStateMyBatis) replaces the portable one.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.JobMapper">
+
+  <resultMap id="jobRow" type="io.camunda.zeebe.engine.state.rdbms.JobMapper$JobRow">
+    <constructor>
+      <idArg column="job_key" javaType="_long"/>
+      <arg column="state" javaType="_short"/>
+      <arg column="type" javaType="String"/>
+      <arg column="tenant_id" javaType="String"/>
+      <arg column="activatable_type" javaType="String"/>
+      <arg column="inverted_priority" javaType="Long"/>
+      <arg column="deadline" javaType="Long"/>
+      <arg column="backoff" javaType="Long"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="element_instance_key" javaType="_long"/>
+      <arg column="bpmn_process_id" javaType="String"/>
+      <arg column="element_id" javaType="String"/>
+      <arg column="job_kind" javaType="_short"/>
+      <arg column="retries" javaType="_int"/>
+      <arg column="worker" javaType="String"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="jobColumns">
+    job_key, state, type, tenant_id, activatable_type, inverted_priority, deadline, backoff,
+    process_instance_key, root_process_instance_key, element_instance_key, bpmn_process_id,
+    element_id, job_kind, retries, worker, payload
+  </sql>
+
+  <!--
+    The rows after the cursor of a page query, in the order of (${column}, job_key). Row-value
+    comparisons aren't portable, so the predicate is expanded.
+  -->
+  <sql id="afterCursor">
+    <if test="cursor != null">
+      AND (${column} &gt; #{cursor.value}
+        OR (${column} = #{cursor.value}
+          AND job_key <choose><when test="inclusive">&gt;=</when><otherwise>&gt;</otherwise></choose>
+            #{cursor.key}))
+    </if>
+  </sql>
+
+  <!--
+    The SQL:2008 limit is the portable default (e.g. Oracle 12c+). MySQL and MariaDB need LIMIT,
+    SQL Server OFFSET 0 ROWS FETCH NEXT: they need their own fragment once EngineStateMyBatis
+    resolves their databaseId.
+  -->
+  <sql id="limit">
+    FETCH FIRST #{limit} ROWS ONLY
+  </sql>
+  <sql id="limit" databaseId="postgresql">
+    LIMIT #{limit}
+  </sql>
+  <sql id="limit" databaseId="h2">
+    LIMIT #{limit}
+  </sql>
+
+  <select id="selectJob" resultMap="jobRow">
+    SELECT <include refid="jobColumns"/>
+    FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND job_key = #{key}
+  </select>
+
+  <select id="selectActivatableJobs" resultMap="jobRow">
+    SELECT <include refid="jobColumns"/>
+    FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND activatable_type = #{type}
+      AND tenant_id IN
+      <foreach collection="tenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+      <include refid="afterCursor"><property name="column" value="inverted_priority"/></include>
+    ORDER BY inverted_priority, job_key
+    <include refid="limit"/>
+  </select>
+
+  <select id="selectJobsByDeadline" resultMap="jobRow">
+    SELECT <include refid="jobColumns"/>
+    FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND deadline IS NOT NULL
+      <if test="before != null">AND deadline &lt; #{before}</if>
+      <include refid="afterCursor"><property name="column" value="deadline"/></include>
+    ORDER BY deadline, job_key
+    <include refid="limit"/>
+  </select>
+
+  <select id="selectJobsByBackoff" resultMap="jobRow">
+    SELECT <include refid="jobColumns"/>
+    FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND backoff IS NOT NULL
+      <include refid="afterCursor"><property name="column" value="backoff"/></include>
+    ORDER BY backoff, job_key
+    <include refid="limit"/>
+  </select>
+
+  <select id="selectJobsOfProcessInstance" resultMap="jobRow">
+    SELECT <include refid="jobColumns"/>
+    FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{processInstanceKey}
+      <include refid="afterCursor"><property name="column" value="process_instance_key"/></include>
+    ORDER BY job_key
+    <include refid="limit"/>
+  </select>
+
+  <insert id="insertJob">
+    INSERT INTO CAM_RU_JOB (partition_id, <include refid="jobColumns"/>)
+    VALUES (#{partitionId}, #{row.key}, #{row.state}, #{row.type}, #{row.tenantId},
+      #{row.activatableType,jdbcType=VARCHAR}, #{row.invertedPriority,jdbcType=BIGINT},
+      #{row.deadline,jdbcType=BIGINT}, #{row.backoff,jdbcType=BIGINT}, #{row.processInstanceKey},
+      #{row.rootProcessInstanceKey}, #{row.elementInstanceKey}, #{row.bpmnProcessId},
+      #{row.elementId}, #{row.jobKind}, #{row.retries}, #{row.worker,jdbcType=VARCHAR},
+      #{row.payload})
+  </insert>
+
+  <update id="updateJob">
+    UPDATE CAM_RU_JOB
+    SET state = #{row.state}, type = #{row.type},
+      activatable_type = #{row.activatableType,jdbcType=VARCHAR},
+      inverted_priority = #{row.invertedPriority,jdbcType=BIGINT},
+      deadline = #{row.deadline,jdbcType=BIGINT}, backoff = #{row.backoff,jdbcType=BIGINT},
+      element_instance_key = #{row.elementInstanceKey}, bpmn_process_id = #{row.bpmnProcessId},
+      element_id = #{row.elementId}, job_kind = #{row.jobKind}, retries = #{row.retries},
+      worker = #{row.worker,jdbcType=VARCHAR}, payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND job_key = #{row.key}
+  </update>
+
+  <delete id="deleteJob">
+    DELETE FROM CAM_RU_JOB
+    WHERE partition_id = #{partitionId} AND job_key = #{key}
+  </delete>
+
+</mapper>

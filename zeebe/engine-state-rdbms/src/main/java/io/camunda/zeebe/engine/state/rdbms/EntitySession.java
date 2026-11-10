@@ -235,6 +235,16 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   /**
+   * Runs several operations in one transaction: the current one, or else a new one that commits
+   * when the operation is done. Outside of a transaction, e.g. on the context of the scheduled
+   * tasks, the operations then share the loaded rows and one connection, instead of each running in
+   * its own transaction.
+   */
+  <T> @Nullable T inTransaction(final JdbcTransactionContext.JdbcOperation<T> operation) {
+    return transactionContext.call(operation);
+  }
+
+  /**
    * Like {@link #get} for several keys: the rows of the keys that the session doesn't know yet are
    * read with one query, and remembered like {@link #get} does, including the missing ones.
    *

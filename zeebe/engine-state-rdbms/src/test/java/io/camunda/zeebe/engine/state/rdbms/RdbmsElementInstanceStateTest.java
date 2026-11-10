@@ -20,11 +20,14 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateTest;
+import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -107,6 +110,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   private JdbcTransactionContext transactionContext;
   private int partitionId;
   private MutableVariableState variableState;
+  private MutableJobState jobState;
 
   @BeforeAll
   static void startDatabase() throws Exception {
@@ -133,6 +137,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     partitionId = database.nextPartitionId();
     final var session = database.entitySession(transactionContext, partitionId);
     variableState = new VariableStateImpl(new RdbmsVariableStore(session));
+    jobState = new JobStateImpl(new RdbmsJobStore(session));
     return new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
   }
 
@@ -451,6 +456,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
                 .setAfterElementId("task")));
     variableState.setVariableLocal(1, 100, 1, wrapString("a"), MsgPackUtil.asMsgPack("1"));
     variableState.storeVariableDocumentState(2, new VariableDocumentRecord().setScopeKey(100));
+    jobState.insertJobRecordActivatable(
+        3, new JobRecord().setType("task").setTenantId(TENANT_ID).setProcessInstanceKey(100));
     connectionSpy.failNextCommit = true;
 
     // when - the first commit fails after all statements were sent, and is rolled back
@@ -810,6 +817,15 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
           rootKey + 101, rootKey + 101, 1, wrapString("inChild"), MsgPackUtil.asMsgPack("2"));
       variableState.storeVariableDocumentState(
           rootKey + 1, new VariableDocumentRecord().setScopeKey(rootKey + 101));
+      // a job of the called instance's sub-process
+      jobState.insertJobRecordActivatable(
+          rootKey + 2,
+          new JobRecord()
+              .setType("task")
+              .setTenantId(TREE_TENANT_ID)
+              .setProcessInstanceKey(rootKey + 100)
+              .setRootProcessInstanceKey(rootKey)
+              .setElementInstanceKey(rootKey + 101));
     }
 
     // when
@@ -826,7 +842,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             entry("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", 1L),
             entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L),
             entry("CAM_RU_VARIABLE", 2L),
-            entry("CAM_RU_VARIABLE_DOCUMENT_STATE", 1L));
+            entry("CAM_RU_VARIABLE_DOCUMENT_STATE", 1L),
+            entry("CAM_RU_JOB", 1L));
     assertThat(committedRowCounts()).containsEntry("CAM_RU_ELEMENT_INSTANCE", 8L);
   }
 
