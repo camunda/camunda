@@ -5,18 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db;
 
-import io.camunda.zeebe.db.ZeebeDbException;
 import java.io.File;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Direct access to the committed state of the RocksDB instance, bypassing transactions. It exposes
- * no RocksDB types, so that code outside this module can build on it. Keys are raw, already
+ * Direct access to the committed state of a database, bypassing transactions, so that layers such
+ * as a write-behind cache can sit between transactions and the storage. Keys are raw, already
  * prefixed with the column family.
  *
- * <p>A recoverable RocksDB error surfaces as a {@link ZeebeDbException}; any other error surfaces
+ * <p>A recoverable storage error surfaces as a {@link ZeebeDbException}; any other error surfaces
  * as a {@link RuntimeException}.
  */
 public interface RawDbAccess {

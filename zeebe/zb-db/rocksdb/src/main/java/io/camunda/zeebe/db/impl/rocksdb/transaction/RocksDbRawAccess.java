@@ -9,6 +9,8 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import io.camunda.zeebe.db.DbIterator;
+import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.io.File;
 import java.util.function.Consumer;

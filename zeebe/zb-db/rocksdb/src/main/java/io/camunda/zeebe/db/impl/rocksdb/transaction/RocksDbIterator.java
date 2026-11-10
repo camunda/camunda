@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import io.camunda.zeebe.db.DbIterator;
 import org.rocksdb.RocksIterator;
 
 /** {@link DbIterator} that delegates every call to a {@link RocksIterator}. */

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import io.camunda.zeebe.db.ZeebeTransaction;
+
 @FunctionalInterface
 interface TransactionConsumer {
 

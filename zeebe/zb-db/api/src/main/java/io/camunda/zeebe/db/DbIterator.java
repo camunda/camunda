@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db;
 
 /**
- * Ordered, seekable cursor over raw RocksDB keys and values. Mirrors the subset of {@link
- * org.rocksdb.RocksIterator} that column families use, so that implementations other than a plain
- * RocksDB iterator can back an iteration.
+ * Ordered, seekable cursor over raw keys and values, sorted bytewise (unsigned). Mirrors the subset
+ * of RocksDB's iterator that column families use, so that other implementations can back an
+ * iteration.
  *
  * <p>Callers iterate either forward ({@link #seek}, {@link #next}) or in reverse ({@link
  * #seekForPrev}, {@link #prev}), never both on the same instance.

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
+import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbCompositeKey;

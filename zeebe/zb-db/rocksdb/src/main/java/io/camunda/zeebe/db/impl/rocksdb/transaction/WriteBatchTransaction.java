@@ -9,8 +9,10 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.ZeebeTransaction;
 import org.agrona.LangUtil;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ColumnFamilyHandle;

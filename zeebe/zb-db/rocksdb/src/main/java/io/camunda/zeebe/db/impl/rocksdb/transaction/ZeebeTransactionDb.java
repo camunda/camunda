@@ -12,8 +12,9 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.RawAccessibleDb;
+import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.FineGrainedColumnFamilyMetrics;
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames> {
+    implements RawAccessibleDb<ColumnFamilyNames> {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
@@ -150,7 +151,7 @@ public class ZeebeTransactionDb<
     }
   }
 
-  /** Direct access to the committed state, for layers that sit between transactions and RocksDB. */
+  @Override
   public RawDbAccess rawAccess() {
     return rawAccess;
   }

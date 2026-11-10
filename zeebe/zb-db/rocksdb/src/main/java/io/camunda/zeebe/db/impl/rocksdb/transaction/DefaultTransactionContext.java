@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.db.ZeebeTransaction;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 

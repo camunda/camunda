@@ -9,7 +9,9 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
+import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeTransaction;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
