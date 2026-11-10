@@ -11,11 +11,13 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
 import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
@@ -113,9 +115,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -162,6 +167,21 @@ class RdbmsExporterIT {
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
     exporter.open(controller);
+  }
+
+  /**
+   * Verify, that the position stored in the DB for partition 1 matches the position the exporter
+   * acknowledged to its own controller.
+   *
+   * <p>The global FIXTURES position counter cannot be used here: tests that export to another
+   * partition also advance it.
+   */
+  @AfterEach
+  void tearDown() {
+    final var lastExporterPosition = exporterPositionMapper.findOne(1);
+    if (lastExporterPosition != null) {
+      assertThat(lastExporterPosition.lastExportedPosition()).isEqualTo(controller.getPosition());
+    }
   }
 
   @Test
@@ -248,8 +268,8 @@ class RdbmsExporterIT {
         ImmutableRecord.builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
-            .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -905,6 +925,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -930,6 +951,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     exporter.export(messageSubscriptionRecord);
@@ -941,6 +963,7 @@ class RdbmsExporterIT {
             .withIntent(ProcessMessageSubscriptionIntent.DELETED)
             .withPosition(FIXTURES.nextPosition())
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build());
 
     // then
@@ -960,6 +983,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -1396,6 +1420,7 @@ class RdbmsExporterIT {
             .withPosition(FIXTURES.nextPosition())
             .withIntent(JobIntent.CREATED)
             .withTimestamp(System.currentTimeMillis())
+            .withPosition(FIXTURES.nextPosition())
             .build();
 
     // when
@@ -1489,6 +1514,43 @@ class RdbmsExporterIT {
     assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
   }
 
+  @ParameterizedTest
+  @ValueSource(longs = {-2L, 2L})
+  public void shouldThrowWhenRdbmsPositionDiffersFromExpected(final long positionDifference) {
+    // given
+    for (int i = 0; i <= 5; i++) {
+      final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+      exporter.export(processInstanceRecord);
+    }
+
+    // when
+    final long currentPosition = FIXTURES.currentPosition();
+    final long tamperedPosition = FIXTURES.currentPosition() + positionDifference;
+
+    tamperExporterPosition(tamperedPosition);
+    final var processInstanceRecord = FIXTURES.getProcessInstanceStartedRecord();
+    assertThatThrownBy(() -> exporter.export(processInstanceRecord))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Exporter position mismatch for partition 1")
+        .hasMessageContaining("expected " + currentPosition)
+        .hasMessageContaining("but found " + tamperedPosition);
+
+    // cleanup because the H2 is shared
+    FIXTURES.resetPosition(currentPosition);
+    tamperExporterPosition(currentPosition);
+  }
+
+  private void tamperExporterPosition(final long tamperedPosition) {
+    final var position = exporterPositionMapper.findOne(1);
+    exporterPositionMapper.update(
+        new ExporterPositionModel(
+            position.partitionId(),
+            position.exporter(),
+            tamperedPosition,
+            position.created(),
+            position.lastUpdated()));
+  }
+
   private static void verifyRootProcessInstanceKey(
       final ProcessInstanceEntity processInstance,
       final ImmutableRecord<RecordValue> processInstanceRecord) {
@@ -1546,6 +1608,7 @@ class RdbmsExporterIT {
     return ImmutableRecord.<T>builder()
         .from(record)
         .withBatchOperationReference(batchOperationKey)
+        .withPosition(FIXTURES.nextPosition())
         .build();
   }
 
