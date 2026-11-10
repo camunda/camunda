@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.impl.jdbc.JdbcConnectionSource;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
 import java.lang.reflect.InvocationTargetException;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,21 +67,13 @@ final class EntitySessionTest {
     connection = database.dataSource().getConnection();
     partitionId = database.nextPartitionId();
     context = new JdbcTransactionContext(loggingProxy(connection));
-    session = EntitySession.of(context, partitionId);
+    session = database.entitySession(context, partitionId);
   }
 
   @AfterEach
   void tearDown() throws SQLException {
     connection.rollback();
     connection.close();
-  }
-
-  @Test
-  void shouldShareOneSessionPerContext() {
-    // when - then
-    assertThat(EntitySession.of(context, partitionId)).isSameAs(session);
-    assertThatThrownBy(() -> EntitySession.of(context, partitionId + 1))
-        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -270,6 +264,60 @@ final class EntitySessionTest {
     assertThat(session.stagedKeys(ROW)).isEmpty();
     assertThat(session.get(ROW, "1")).isEqualTo(row("1", "a"));
     assertThat(session.get(ROW, "2")).isNull();
+  }
+
+  @Test
+  void shouldRetryCommitAndReadOnNewConnectionWithNewSessionWhenConnectionBroke() throws Exception {
+    // given - a context on a pooled connection with a session that read on it
+    final var borrowed = new ArrayList<Connection>();
+    final DataSource pool =
+        (DataSource)
+            Proxy.newProxyInstance(
+                DataSource.class.getClassLoader(),
+                new Class<?>[] {DataSource.class},
+                (proxy, method, args) -> {
+                  final Object result = invoke(database.dataSource(), method, args);
+                  if (method.getName().equals("getConnection")) {
+                    borrowed.add((Connection) result);
+                  }
+                  return result;
+                });
+    final var sessions = new CountingSessionFactory(database.sessionFactory());
+    final var connections = JdbcConnectionSource.from(pool);
+    final var pooledContext = new JdbcTransactionContext(connections);
+    final var pooledSession =
+        EngineStateDatabase.entitySession(pooledContext, partitionId, sessions.factory());
+    final var transaction = pooledContext.getCurrentTransaction();
+    pooledSession.insert(ROW, row("1", "a"));
+    assertThat(pooledSession.get(ROW, "2")).isNull();
+    assertThat(sessions.opened()).isOne();
+    borrowed.getFirst().close();
+
+    // when - the commit fails because the connection is gone
+    assertThatThrownBy(transaction::commit).isInstanceOf(ZeebeDbException.class);
+
+    // then - the session of the dead connection is closed, the writes are still staged
+    assertThat(sessions.closed()).isOne();
+    assertThat(pooledSession.stagedKeys(ROW)).containsExactly("1");
+
+    // when - the retry
+    transaction.commit();
+
+    // then - it flushed through a new session on a new connection
+    assertThat(borrowed).hasSize(2);
+    assertThat(sessions.opened()).isEqualTo(2);
+    assertThat(sessions.closed()).isEqualTo(2);
+    assertThat(committedRows()).containsExactly(row("1", "a"));
+
+    // when - later reads
+    final var next = pooledContext.getCurrentTransaction();
+    final var read = pooledSession.get(ROW, "1");
+    next.commit();
+
+    // then
+    assertThat(read).isEqualTo(row("1", "a"));
+    assertThat(borrowed).hasSize(2);
+    connections.close();
   }
 
   private static PartitionStateRow row(final String key, final String value) {

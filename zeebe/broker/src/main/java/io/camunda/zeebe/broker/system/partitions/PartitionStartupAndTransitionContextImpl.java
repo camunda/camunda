@@ -43,6 +43,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -60,7 +61,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -98,7 +98,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ZeebeDb zeebeDb;
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
-  private @Nullable DataSource engineStateDataSource;
+  private @Nullable RdbmsEngineState engineState;
   private ExporterDirector exporterDirector;
   private AtomixLogStorage logStorage;
   private QueryService queryService;
@@ -334,12 +334,12 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public @Nullable DataSource getEngineStateDataSource() {
-    return engineStateDataSource;
+  public @Nullable RdbmsEngineState getEngineState() {
+    return engineState;
   }
 
-  public void setEngineStateDataSource(final @Nullable DataSource engineStateDataSource) {
-    this.engineStateDataSource = engineStateDataSource;
+  public void setEngineState(final @Nullable RdbmsEngineState engineState) {
+    this.engineState = engineState;
   }
 
   @Override

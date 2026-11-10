@@ -116,10 +116,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   private final EntitySession session;
   private final int partitionId;
 
-  public RdbmsElementInstanceStore(
-      final JdbcTransactionContext transactionContext, final int partitionId) {
-    session = EntitySession.of(transactionContext, partitionId);
-    this.partitionId = partitionId;
+  RdbmsElementInstanceStore(final EntitySession session) {
+    this.session = session;
+    partitionId = session.partitionId();
   }
 
   @Override

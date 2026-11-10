@@ -10,38 +10,31 @@ package io.camunda.zeebe.engine.state.rdbms;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
-import org.apache.ibatis.datasource.unpooled.UnpooledDataSource;
-import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
-import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.LocalCacheScope;
-import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Runs the statements of the engine state mappers on the connection of a {@link
- * JdbcTransactionContext}, without Spring.
+ * The MyBatis configuration of the engine state mappers, for sessions that run on the connection of
+ * a {@link JdbcTransactionContext}, without Spring.
  *
  * <p>The context owns the connection and its transaction. Sessions are therefore only opened on a
  * given connection, with a {@link ManagedTransactionFactory} that doesn't close it: MyBatis'
  * managed transaction never commits or rolls back, and closing a session leaves the connection
  * open. The first-level cache is limited to a statement, so a session never serves rows that a
  * flush changed since.
- *
- * <p>One {@link SqlSessionFactory} is built per database product, on first use.
  */
-final class EngineStateMyBatis {
+public final class EngineStateMyBatis {
 
   private static final List<Class<?>> MAPPERS =
       List.of(
@@ -49,57 +42,32 @@ final class EngineStateMyBatis {
 
   /**
    * Database product name prefixes to the {@code databaseId} of vendor specific statements, like
-   * MyBatis' {@code VendorDatabaseIdProvider} resolves them. That provider takes a {@code
-   * DataSource} and closes the connection it gets, so it can't be used on the context's connection.
+   * MyBatis' {@code VendorDatabaseIdProvider} resolves them.
    */
   private static final Map<String, String> DATABASE_IDS =
       Map.of("PostgreSQL", "postgresql", "H2", "h2");
 
-  private static final Map<String, SqlSessionFactory> FACTORIES = new ConcurrentHashMap<>();
-
   private EngineStateMyBatis() {}
 
   /**
-   * Runs the given call in a session on the given connection. Closing the session neither commits,
-   * rolls back nor closes the connection; a batch session discards statements that weren't flushed.
+   * Builds the factory of all sessions on the given database. Build it once: it parses the mappers
+   * and resolves the database product, which takes a connection from the data source.
    */
-  static <T> T call(
-      final Connection connection, final ExecutorType executorType, final SessionCall<T> call)
-      throws SQLException {
-    try (final var session = factory(connection).openSession(executorType, connection)) {
-      return call.apply(session);
-    } catch (final PersistenceException e) {
-      throw unwrap(e);
+  public static SqlSessionFactory createSqlSessionFactory(final DataSource dataSource) {
+    final String productName;
+    try (final var connection = dataSource.getConnection()) {
+      productName = connection.getMetaData().getDatabaseProductName();
+    } catch (final SQLException e) {
+      throw new IllegalStateException("Failed to resolve the engine state database product", e);
     }
-  }
 
-  /**
-   * MyBatis wraps every {@link SQLException} in a runtime exception. The JDBC transaction tells
-   * retryable errors apart only by the SQL exception, so it must get that one.
-   */
-  private static SQLException unwrap(final PersistenceException exception) {
-    for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {
-      if (cause instanceof final SQLException sqlException) {
-        return sqlException;
-      }
-    }
-    throw exception;
-  }
-
-  private static SqlSessionFactory factory(final Connection connection) throws SQLException {
-    final var productName = connection.getMetaData().getDatabaseProductName();
-    return FACTORIES.computeIfAbsent(productName, EngineStateMyBatis::buildFactory);
-  }
-
-  private static SqlSessionFactory buildFactory(final String productName) {
     final var transactionFactory = new ManagedTransactionFactory();
     final var transactionProperties = new Properties();
     transactionProperties.setProperty("closeConnection", "false");
     transactionFactory.setProperties(transactionProperties);
 
-    // sessions are always opened on a given connection, so the data source is never used
-    final var environment =
-        new Environment("engine-state", transactionFactory, new UnpooledDataSource());
+    // sessions are always opened on a given connection, so the environment's data source is unused
+    final var environment = new Environment("engine-state", transactionFactory, dataSource);
     final var configuration = new Configuration(environment);
     configuration.setDatabaseId(databaseId(productName));
     configuration.setLocalCacheScope(LocalCacheScope.STATEMENT);
@@ -131,10 +99,5 @@ final class EngineStateMyBatis {
         .map(Map.Entry::getValue)
         .findFirst()
         .orElse(null);
-  }
-
-  @FunctionalInterface
-  interface SessionCall<T> {
-    T apply(SqlSession session) throws SQLException;
   }
 }

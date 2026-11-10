@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
  * Element instances and process definitions live in the relational database, everything else stays
@@ -28,36 +29,45 @@ public final class RdbmsStateStores extends RocksDbStateStores {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final MixedTransactionContext mixedContext;
-  private final int partitionId;
+  private final EntitySession entitySession;
 
+  /** Creates the partition's one {@link EntitySession}, shared by all its relational stores. */
   public RdbmsStateStores(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final MixedTransactionContext mixedContext) {
+      final MixedTransactionContext mixedContext,
+      final SqlSessionFactory sessionFactory) {
     super(zeebeDb, mixedContext.rocksDb());
     this.zeebeDb = zeebeDb;
-    this.partitionId = partitionId;
     this.mixedContext = mixedContext;
+    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory);
+    mixedContext.jdbc().register(entitySession);
   }
 
-  /** Selects these stores for a partition whose database is a {@code MixedZeebeDb}. */
-  public static ProcessingStateStoresFactory factory() {
+  /**
+   * Selects these stores for a partition whose database is a {@code MixedZeebeDb}.
+   *
+   * @param sessionFactory built once for the database, see {@link
+   *     EngineStateMyBatis#createSqlSessionFactory}
+   */
+  public static ProcessingStateStoresFactory factory(final SqlSessionFactory sessionFactory) {
     return (partitionId, zeebeDb, transactionContext) ->
-        new RdbmsStateStores(partitionId, zeebeDb, (MixedTransactionContext) transactionContext);
+        new RdbmsStateStores(
+            partitionId, zeebeDb, (MixedTransactionContext) transactionContext, sessionFactory);
   }
 
   @Override
   public MutableElementInstanceState elementInstanceState(
       final MutableVariableState variableState) {
     return new ElementInstanceStateImpl(
-        new RdbmsElementInstanceStore(mixedContext.jdbc(), partitionId), variableState);
+        new RdbmsElementInstanceStore(entitySession), variableState);
   }
 
   @Override
   public MutableProcessState processState(
       final EngineConfiguration config, final BpmnTransformer transformer) {
     return new ProcessStateImpl(
-        new RdbmsProcessStore(mixedContext.jdbc(), partitionId),
+        new RdbmsProcessStore(entitySession, mixedContext.jdbc()),
         config,
         transformer,
         mixedContext.jdbc(),

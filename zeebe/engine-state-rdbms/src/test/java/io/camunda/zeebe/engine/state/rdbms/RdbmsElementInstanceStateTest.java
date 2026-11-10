@@ -137,7 +137,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     transactionContext = new JdbcTransactionContext(connection);
     partitionId = database.nextPartitionId();
     return new ElementInstanceStateImpl(
-        new RdbmsElementInstanceStore(transactionContext, partitionId),
+        new RdbmsElementInstanceStore(database.entitySession(transactionContext, partitionId)),
         processingState.getVariableState());
   }
 
