@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.gateway.validation.VariablesMetadataValidator;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -39,8 +38,6 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
 
   public BrokerSetVariablesRequest setVariablesMetadata(
       final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    VariablesMetadataValidator.validateVariablesMetadata(
-        requestDto.getVariablesBuffer(), variablesMetadata);
     requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
