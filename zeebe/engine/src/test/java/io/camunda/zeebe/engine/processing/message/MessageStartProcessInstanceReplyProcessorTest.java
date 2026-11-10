@@ -152,6 +152,10 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     return stored;
   }
 
+  private static Consumer<FollowUpEventMetadata.Builder> anyMetadata() {
+    return any();
+  }
+
   @Nested
   class StartReplyProcessor {
 
@@ -510,9 +514,5 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       verify(mockStateWriter, never())
           .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageIntent.EXPIRED), any());
     }
-  }
-
-  private static Consumer<FollowUpEventMetadata.Builder> anyMetadata() {
-    return any();
   }
 }
