@@ -36,6 +36,7 @@ public final class EngineStateMyBatis {
       List.of(
           ElementInstanceMapper.class,
           VariableMapper.class,
+          JobMapper.class,
           ProcessDefinitionMapper.class,
           PartitionStateMapper.class);
 

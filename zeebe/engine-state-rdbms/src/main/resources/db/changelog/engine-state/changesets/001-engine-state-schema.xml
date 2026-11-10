@@ -308,6 +308,100 @@
     </createIndex>
   </changeSet>
 
+  <!--
+    Jobs, as stored by RdbmsJobStore: one row per job with its state (the stable code of
+    JobState.State), the msgpack JobRecord without variables as payload (the source of truth for
+    reads), and columns that follow the record for readability (type, element_instance_key,
+    bpmn_process_id, element_id, job_kind as stable code, retries, and worker, NULL if empty).
+
+    The lookups of the RocksDB state are nullable columns, NULL while the job has no such entry,
+    and set and cleared by the same writes as the RocksDB entries, so they can disagree with the
+    record (e.g. the record keeps its deadline after the job left ACTIVATED):
+    - activatable_type, inverted_priority: the entry for activation by workers of the type, of
+      the job's tenant_id, served by ascending inverted_priority (= -priority) and job_key
+    - deadline: the timeout, served by deadline and job_key
+    - backoff: the time the job recurs after a failure, served by backoff and job_key
+    A job has at most one entry per lookup. The jobs of a process instance are found by the
+    process_instance_key, which every job has.
+  -->
+  <changeSet id="create-job" author="camunda">
+    <createTable tableName="CAM_RU_JOB">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="job_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="state" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="type" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="activatable_type" type="${engineState.textType}"/>
+      <column name="inverted_priority" type="BIGINT"/>
+      <column name="deadline" type="BIGINT"/>
+      <column name="backoff" type="BIGINT"/>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="element_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="bpmn_process_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="element_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="job_kind" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="retries" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="worker" type="${engineState.textType}"/>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_JOB" constraintName="CAM_RU_JOB_PKEY"
+      columnNames="partition_id, job_key"/>
+    <!-- the tenant is filtered from the index -->
+    <createIndex tableName="CAM_RU_JOB" indexName="CAM_RU_JOB_ACTIVATABLE">
+      <column name="partition_id"/>
+      <column name="activatable_type"/>
+      <column name="inverted_priority"/>
+      <column name="job_key"/>
+      <column name="tenant_id"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_JOB" indexName="CAM_RU_JOB_DEADLINE">
+      <column name="partition_id"/>
+      <column name="deadline"/>
+      <column name="job_key"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_JOB" indexName="CAM_RU_JOB_BACKOFF">
+      <column name="partition_id"/>
+      <column name="backoff"/>
+      <column name="job_key"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_JOB" indexName="CAM_RU_JOB_PROCESS_INSTANCE">
+      <column name="partition_id"/>
+      <column name="process_instance_key"/>
+      <column name="job_key"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_JOB" indexName="CAM_RU_JOB_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
+  </changeSet>
+
   <!-- Process definitions and their lookups, as stored by RdbmsProcessStore. -->
 
   <!--

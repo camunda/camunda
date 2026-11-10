@@ -99,10 +99,40 @@ public interface JobState {
      */
     SUSPENDED((byte) 6);
 
+    private static final State[] BY_VALUE;
+
+    static {
+      int highestValue = 0;
+      for (final State state : values()) {
+        highestValue = Math.max(highestValue, state.value);
+      }
+      BY_VALUE = new State[highestValue + 1];
+      for (final State state : values()) {
+        BY_VALUE[state.value] = state;
+      }
+    }
+
     byte value;
 
     State(final byte value) {
       this.value = value;
+    }
+
+    /**
+     * A stable code of the state, which stores may persist; unlike the ordinal, it never changes.
+     */
+    public byte value() {
+      return value;
+    }
+
+    /**
+     * @throws IllegalArgumentException if no state has the code
+     */
+    public static State fromValue(final byte value) {
+      if (value < 0 || value >= BY_VALUE.length || BY_VALUE[value] == null) {
+        throw new IllegalArgumentException("Expected a job state code, but got " + value);
+      }
+      return BY_VALUE[value];
     }
   }
 }
