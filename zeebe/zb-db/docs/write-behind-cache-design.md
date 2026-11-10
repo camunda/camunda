@@ -90,10 +90,23 @@ which backend it wraps: RocksDB today, possibly an RDBMS later.
 
 |         Module         |       Directory       |                                                                Holds                                                                |
 |------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `zeebe-db-api`         | `zeebe/zb-db/api`     | The interfaces.                                                                                                                     |
+| `zeebe-db-api`         | `zeebe/zb-db/api`     | The interfaces and the backend-neutral types (below).                                                                               |
 | `zeebe-db-rocksdb`     | `zeebe/zb-db/rocksdb` | The RocksDB implementation (`impl.rocksdb`).                                                                                        |
 | `zeebe-db-cache` (new) | `zeebe/zb-db/cache`   | The write-behind cache (package `io.camunda.zeebe.db.cache`). Depends on `zeebe-db-api` and EhCache only.                           |
 | `zeebe-db-tests`       | `zeebe/zb-db/tests`   | Test-only. Runs the contract tests against every implementation, and binds the cache to RocksDB for that. The only place they meet. |
+
+**Backend-neutral types in `zeebe-db-api`.** None of these uses RocksDB, and the cache needs them,
+as would any other implementation:
+
+- `ZeebeDbException` and `ZeebeDbInconsistentException`, so that the cache fails the way RocksDB
+  does
+- the key and value types in `io.camunda.zeebe.db.impl` (`DbLong`, `DbString`, `DbCompositeKey`,
+  `DbForeignKey` and the rest) with `ZeebeDbConstants`, so that the engine's main code compiles
+  against the API alone
+- `ContainsForeignKeys` and `ConsistencyChecksSettings`, for the cache's consistency checks
+
+The column family metrics, `AccessMetricsConfiguration` and `DefaultColumnFamily` stay in
+`zeebe-db-rocksdb`: only RocksDB and tests use them.
 
 **How the cache reaches the backend.** Only through `ZeebeDb`, `TransactionContext` and
 `ColumnFamily`:
@@ -185,9 +198,10 @@ The cached implementation:
   transaction can't be the buffer, because its reads see the backend, which lags behind the cache.
 - **Consistency checks run in the cache.** The `insert`, `update` and `deleteExisting`
   preconditions and the foreign-key checks (`ConsistencyChecksSettings`, `ContainsForeignKeys`) read
-  the cached view, through the same path as `get` and scans. The backend lags behind, so its
-  checks would give wrong answers. They also don't fire: the pass-through column families only use
-  `upsert` and `deleteIfExists`, and `RawKey` carries no foreign keys.
+  the cached view, through the same path as `get` and scans, and a failed check throws the same
+  `ZeebeDbInconsistentException` as RocksDB. The backend lags behind, so its checks would give wrong
+  answers. They also don't fire: the pass-through column families only use `upsert` and
+  `deleteIfExists`, and `RawKey` carries no foreign keys.
 - A skip list (rather than a `TreeMap`) keeps iteration weakly consistent, so delete-while-iterating
   keeps working.
 - `put`/`delete` copy the key and value bytes into the buffer.
