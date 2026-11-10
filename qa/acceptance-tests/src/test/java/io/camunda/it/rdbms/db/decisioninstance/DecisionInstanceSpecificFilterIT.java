@@ -58,6 +58,8 @@ public class DecisionInstanceSpecificFilterIT {
   @BeforeEach
   public void beforeAll() {
     rdbmsWriters = rdbmsService.createWriter(0L);
+    // the exporter commits its writes, so they are not rolled back with the test transaction
+    rdbmsWriters.getRdbmsPurger().purgeRdbms();
 
     final var decisionDefinitionKey = nextKey();
     final var decisionDefinition =
