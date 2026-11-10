@@ -144,9 +144,15 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
 
     final var rdbmsEngineStateCfg = context.getBrokerCfg().getData().getRdbmsEngineState();
-    final ProcessingStateStoresFactory stateStoresFactory =
+    final var rdbmsEngineState =
         rdbmsEngineStateCfg.isEnabled()
-            ? RdbmsStateStores.factory()
+            ? Objects.requireNonNull(
+                context.getEngineState(),
+                "Expected the engine state database, since the RDBMS engine state is enabled")
+            : null;
+    final ProcessingStateStoresFactory stateStoresFactory =
+        rdbmsEngineState != null
+            ? RdbmsStateStores.factory(rdbmsEngineState.sessionFactory())
             : ProcessingStateStoresFactory.rocksDb();
     final var engine =
         new Engine(
@@ -179,13 +185,10 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     final var builder = StreamProcessor.builder();
-    if (rdbmsEngineStateCfg.isEnabled()) {
-      final var dataSource =
-          Objects.requireNonNull(
-              context.getEngineStateDataSource(),
-              "Expected an engine state DataSource, since the RDBMS engine state is enabled");
+    if (rdbmsEngineState != null) {
       final var mixedDb =
-          RdbmsEngineStateDb.open(context.getZeebeDb(), dataSource, context.getPartitionId());
+          RdbmsEngineStateDb.open(
+              context.getZeebeDb(), rdbmsEngineState.dataSource(), context.getPartitionId());
       builder.zeebeDb(mixedDb).addLifecycleListener(new MixedDbCloser(mixedDb));
     } else {
       builder.zeebeDb(context.getZeebeDb());

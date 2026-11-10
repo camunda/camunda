@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,14 +24,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
  * The engine state of a partition as the state classes see it during a transaction: the committed
- * rows with the transaction's staged writes applied. There is one session per {@link
- * JdbcTransactionContext}, shared by all state classes, so a commit writes all staged rows with a
- * single flush.
+ * rows with the transaction's staged writes applied. There is one session per partition, created by
+ * {@code RdbmsStateStores} and shared by all state classes of its {@link JdbcTransactionContext},
+ * so a commit writes all staged rows with a single flush.
  *
  * <p>Like a RocksDB column family, every operation ensures an open transaction: it joins the
  * current one of the context, or else runs in a new one that commits when the operation is done.
@@ -53,34 +57,46 @@ import org.jspecify.annotations.Nullable;
  * a missing one fails on flush. Committed rows are not cached; reads of unstaged keys always go to
  * the database. Not thread-safe, like the context it belongs to.
  *
- * <p>The flush sends all staged writes through one MyBatis batch session and a single {@code
- * flushStatements()}. MyBatis' batch executor reuses a JDBC statement while consecutive calls use
- * the same SQL, so the session writes one entity type after the other, each with all its deletes,
- * then all its inserts, then all its updates: one JDBC batch per statement instead of one per row.
- * Every key appears in at most one of them, so the order doesn't matter otherwise.
+ * <p>Like a Camunda 7 command, a transaction uses one MyBatis session: it is opened on the first
+ * database access, on the connection of the transaction, serves all reads and the flush, and is
+ * closed when the transaction ends, i.e. after a commit or rollback, or when a commit attempt fails
+ * (the retry then opens a new one, possibly on a new connection). It is a batch session: its
+ * executor sends pending batched statements before a query, but statements are only batched by the
+ * flush. Closing it neither commits, rolls back nor closes the connection, see {@link
+ * EngineStateMyBatis}. Reusing prepared statements across transactions is left to the JDBC driver.
+ *
+ * <p>The flush sends all staged writes through that session and a single {@code flushStatements()}.
+ * MyBatis' batch executor reuses a JDBC statement while consecutive calls use the same SQL, so the
+ * session writes one entity type after the other, each with all its deletes, then all its inserts,
+ * then all its updates: one JDBC batch per statement instead of one per row. Every key appears in
+ * at most one of them, so the order doesn't matter otherwise.
  */
 final class EntitySession implements JdbcTransactionParticipant {
 
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
+  private final SqlSessionFactory sessionFactory;
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
 
-  private EntitySession(final JdbcTransactionContext transactionContext, final int partitionId) {
+  /** The session of the current transaction, null until its first database access. */
+  private @Nullable SqlSession session;
+
+  private final Map<Class<?>, Object> mappers = new HashMap<>();
+
+  /**
+   * Doesn't register itself: the creator registers the session as participant of the context, once.
+   */
+  EntitySession(
+      final JdbcTransactionContext transactionContext,
+      final int partitionId,
+      final SqlSessionFactory sessionFactory) {
     this.transactionContext = transactionContext;
     this.partitionId = partitionId;
+    this.sessionFactory = sessionFactory;
   }
 
-  /** The session of the context, created and registered as participant on first use. */
-  static EntitySession of(final JdbcTransactionContext transactionContext, final int partitionId) {
-    final var session =
-        transactionContext.participant(
-            EntitySession.class, () -> new EntitySession(transactionContext, partitionId));
-    if (session.partitionId != partitionId) {
-      throw new IllegalArgumentException(
-          "Expected the transaction context to belong to partition %d, but it belongs to %d"
-              .formatted(partitionId, session.partitionId));
-    }
-    return session;
+  int partitionId() {
+    return partitionId;
   }
 
   /** Returns the staged row, or null if its deletion is staged, or else the committed one. */
@@ -91,10 +107,7 @@ final class EntitySession implements JdbcTransactionParticipant {
           if (write != null) {
             return type.cast(write.row);
           }
-          return EngineStateMyBatis.call(
-              transactionContext.connection(),
-              ExecutorType.SIMPLE,
-              session -> session.<E>selectOne(type.select, keyParameter(key)));
+          return unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
         });
   }
 
@@ -151,12 +164,18 @@ final class EntitySession implements JdbcTransactionParticipant {
    */
   <M, T> T read(final Class<M> mapperType, final MapperCall<M, T> call) {
     return Objects.requireNonNull(
-        transactionContext.call(
-            () ->
-                EngineStateMyBatis.call(
-                    transactionContext.connection(),
-                    ExecutorType.SIMPLE,
-                    session -> call.apply(session.getMapper(mapperType)))));
+        transactionContext.call(() -> unwrapped(() -> call.apply(mapper(mapperType)))));
+  }
+
+  /** The mapper of the current transaction's session; keep it within the transaction. */
+  private <M> M mapper(final Class<M> type) {
+    final var existing = mappers.get(type);
+    if (existing != null) {
+      return type.cast(existing);
+    }
+    final M created = session().getMapper(type);
+    mappers.put(type, created);
+    return created;
   }
 
   /**
@@ -238,34 +257,33 @@ final class EntitySession implements JdbcTransactionParticipant {
     if (staged.values().stream().allMatch(Map::isEmpty)) {
       return;
     }
-    EngineStateMyBatis.call(
-        connection,
-        ExecutorType.BATCH,
-        session -> {
+    final var batch = session != null ? session : openSession(connection);
+    unwrapped(
+        () -> {
           // the updates' parameters, to find their update counts among the batch results
           final Map<Object, Update> updates = new IdentityHashMap<>();
           for (final var entry : staged.entrySet()) {
             final var type = entry.getKey();
             for (final var write : entry.getValue().entrySet()) {
               if (write.getValue().operation == Operation.DELETE) {
-                session.delete(type.delete, keyParameter(write.getKey()));
+                batch.delete(type.delete, keyParameter(write.getKey()));
               }
             }
             for (final var write : entry.getValue().values()) {
               if (write.operation == Operation.INSERT) {
-                session.insert(type.insert, rowParameter(write.row));
+                batch.insert(type.insert, rowParameter(write.row));
               }
             }
             for (final var write : entry.getValue().values()) {
               if (write.operation == Operation.UPDATE) {
                 final var parameter = rowParameter(write.row);
                 updates.put(parameter, new Update(type, Objects.requireNonNull(write.row)));
-                session.update(type.update, parameter);
+                batch.update(type.update, parameter);
               }
             }
           }
 
-          for (final var result : session.flushStatements()) {
+          for (final var result : batch.flushStatements()) {
             final var parameters = result.getParameterObjects();
             final var counts = result.getUpdateCounts();
             for (int i = 0; i < counts.length && i < parameters.size(); i++) {
@@ -279,10 +297,57 @@ final class EntitySession implements JdbcTransactionParticipant {
         });
   }
 
-  /** Drops all staged writes. Called after a successful commit and after a rollback. */
+  /** Drops all staged writes and ends the transaction's session. */
   @Override
   public void reset() {
     staged.values().forEach(Map::clear);
+    closeSession();
+  }
+
+  /** Keeps the staged writes for the retry, which gets a new session on the current connection. */
+  @Override
+  public void commitFailed() {
+    closeSession();
+  }
+
+  private SqlSession session() {
+    return session != null ? session : openSession(transactionContext.connection());
+  }
+
+  private SqlSession openSession(final Connection connection) {
+    session = sessionFactory.openSession(ExecutorType.BATCH, connection);
+    return session;
+  }
+
+  /** The connection may be dead, so errors on closing are of no interest. */
+  private void closeSession() {
+    mappers.clear();
+    final var closing = session;
+    session = null;
+    if (closing != null) {
+      try {
+        closing.close();
+      } catch (final RuntimeException ignored) {
+        // nothing to release on a dead connection
+      }
+    }
+  }
+
+  /**
+   * MyBatis wraps every {@link SQLException} in a runtime exception. The JDBC transaction tells
+   * retryable errors apart only by the SQL exception, so it must get that one.
+   */
+  private static <T> T unwrapped(final SessionCall<T> call) throws SQLException {
+    try {
+      return call.run();
+    } catch (final PersistenceException e) {
+      for (Throwable cause = e.getCause(); cause != null; cause = cause.getCause()) {
+        if (cause instanceof final SQLException sqlException) {
+          throw sqlException;
+        }
+      }
+      throw e;
+    }
   }
 
   private Map<String, Object> keyParameter(final Object key) {
@@ -314,6 +379,11 @@ final class EntitySession implements JdbcTransactionParticipant {
           "Expected to update one %s with key %s, but updated %d"
               .formatted(type, key, updateCount));
     }
+  }
+
+  @FunctionalInterface
+  private interface SessionCall<T> {
+    T run() throws SQLException;
   }
 
   @FunctionalInterface

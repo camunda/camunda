@@ -359,7 +359,7 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
 
   private ProcessStateImpl newProcessState(final JdbcTransactionContext context) {
     return new ProcessStateImpl(
-        new RdbmsProcessStore(context, partitionId),
+        new RdbmsProcessStore(database.entitySession(context, partitionId), context),
         new EngineConfiguration(),
         newTransformer(),
         context,

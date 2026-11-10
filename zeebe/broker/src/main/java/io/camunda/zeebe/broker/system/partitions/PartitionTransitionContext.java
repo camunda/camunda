@@ -32,6 +32,7 @@ import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -42,7 +43,6 @@ import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
-import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 public interface PartitionTransitionContext extends PartitionContext {
@@ -116,7 +116,7 @@ public interface PartitionTransitionContext extends PartitionContext {
   EngineSecurityConfig getSecurityConfig();
 
   /** Experimental: the connection pool of the RDBMS engine state, or null if it is not enabled. */
-  @Nullable DataSource getEngineStateDataSource();
+  @Nullable RdbmsEngineState getEngineState();
 
   QueryService getQueryService();
 

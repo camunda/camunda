@@ -51,6 +51,7 @@ final class EngineStateRoundTripsTest {
 
   private MutableProcessingState processingState;
   private CountingConnection counting;
+  private CountingSessionFactory sessions;
   private JdbcTransactionContext transactionContext;
   private MutableElementInstanceState elementInstanceState;
 
@@ -68,9 +69,12 @@ final class EngineStateRoundTripsTest {
   void setUp() throws SQLException {
     counting = new CountingConnection(database.dataSource().getConnection());
     transactionContext = new JdbcTransactionContext(counting.proxy());
+    sessions = new CountingSessionFactory(database.sessionFactory());
     elementInstanceState =
         new ElementInstanceStateImpl(
-            new RdbmsElementInstanceStore(transactionContext, database.nextPartitionId()),
+            new RdbmsElementInstanceStore(
+                EngineStateDatabase.entitySession(
+                    transactionContext, database.nextPartitionId(), sessions.factory())),
             processingState.getVariableState());
   }
 
@@ -110,7 +114,7 @@ final class EngineStateRoundTripsTest {
             new Batch("CAM_RU_TAKEN_SEQUENCE_FLOW", "INSERT", 1),
             new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "INSERT", 1));
     assertThat(counting.otherStatements).isZero();
-    assertThat(counting.sessions).isOne();
+    assertThat(sessions.opened()).isOne();
     assertThat(counting.commits).isOne();
     System.out.println("ROUND TRIPS commit 1: " + counting);
   }
@@ -132,6 +136,7 @@ final class EngineStateRoundTripsTest {
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         100, wrapString("gateway"), wrapString("flow"));
     setup.commit();
+    sessions.reset();
 
     final var transaction = transactionContext.getCurrentTransaction();
     elementInstanceState.updateInstance(101, child -> child.setJobKey(5));
@@ -158,7 +163,7 @@ final class EngineStateRoundTripsTest {
             new Batch("CAM_RU_ELEMENT_INSTANCE", "UPDATE", 2),
             new Batch("CAM_RU_TAKEN_SEQUENCE_FLOW", "DELETE", 1));
     assertThat(counting.otherStatements).isZero();
-    assertThat(counting.sessions).isOne();
+    assertThat(sessions.opened()).isOne();
     assertThat(counting.commits).isOne();
   }
 
@@ -174,8 +179,35 @@ final class EngineStateRoundTripsTest {
 
     // then
     assertThat(counting.batches).isEmpty();
-    assertThat(counting.sessions).isZero();
+    assertThat(sessions.opened()).isOne();
     assertThat(counting.commits).isOne();
+  }
+
+  @Test
+  void shouldOpenOneSessionForAllReadsAndTheFlushOfATransaction() throws Exception {
+    // given - a transaction that reads several times before it writes
+    final var first = transactionContext.getCurrentTransaction();
+    elementInstanceState.getInstance(100);
+    elementInstanceState.getInstance(101);
+    elementInstanceState.newInstance(
+        100, record(BpmnElementType.PROCESS, "process"), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.getInstance(100);
+    assertThat(sessions.opened()).isOne();
+
+    // when
+    first.commit();
+
+    // then - the flush used the same session
+    assertThat(sessions.opened()).isOne();
+
+    // when - a second transaction
+    final var second = transactionContext.getCurrentTransaction();
+    elementInstanceState.getInstance(100);
+    elementInstanceState.getInstance(101);
+    second.commit();
+
+    // then - opens its own
+    assertThat(sessions.opened()).isEqualTo(2);
   }
 
   private static ProcessInstanceRecord record(final BpmnElementType type, final String elementId) {
@@ -192,11 +224,7 @@ final class EngineStateRoundTripsTest {
 
   private record Batch(String table, String operation, int rows) {}
 
-  /**
-   * Counts the batches a commit executes, and anything else that talks to the database. MyBatis
-   * asks the connection for its product name each time it opens a session, which counts the
-   * sessions.
-   */
+  /** Counts the batches a commit executes, and anything else that talks to the database. */
   private static final class CountingConnection implements InvocationHandler {
 
     private static final Set<String> EXECUTE_METHODS =
@@ -205,7 +233,6 @@ final class EngineStateRoundTripsTest {
     private final Connection delegate;
     private final List<Batch> batches = new ArrayList<>();
     private int otherStatements;
-    private int sessions;
     private int commits;
 
     private CountingConnection(final Connection delegate) {
@@ -221,21 +248,18 @@ final class EngineStateRoundTripsTest {
     private void reset() {
       batches.clear();
       otherStatements = 0;
-      sessions = 0;
       commits = 0;
     }
 
     @Override
     public String toString() {
-      return "executeBatch=%d %s, sessions=%d, commits=%d"
-          .formatted(batches.size(), batches, sessions, commits);
+      return "executeBatch=%d %s, commits=%d".formatted(batches.size(), batches, commits);
     }
 
     @Override
     public Object invoke(final Object proxy, final Method method, final Object[] args)
         throws Throwable {
       switch (method.getName()) {
-        case "getMetaData" -> sessions++;
         case "commit" -> commits++;
         default -> {}
       }

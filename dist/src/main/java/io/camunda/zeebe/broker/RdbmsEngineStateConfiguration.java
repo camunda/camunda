@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.RdbmsEngineStateCfg;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.micrometer.core.instrument.MeterRegistry;
 import liquibase.exception.LiquibaseException;
@@ -31,24 +32,24 @@ import org.springframework.core.io.ResourceLoader;
 public class RdbmsEngineStateConfiguration {
 
   @Bean(destroyMethod = "close")
-  public RdbmsEngineStateDataSource rdbmsEngineStateDataSource(
+  public RdbmsEngineStatePool rdbmsEngineStatePool(
       final BrokerBasedConfiguration configuration,
       final MeterRegistry meterRegistry,
       final ResourceLoader resourceLoader)
       throws LiquibaseException {
     final var cfg = configuration.config().getData().getRdbmsEngineState();
     if (!cfg.isEnabled()) {
-      return new RdbmsEngineStateDataSource(null);
+      return new RdbmsEngineStatePool(null, null);
     }
 
     final var dataSource = createDataSource(cfg, meterRegistry);
     try {
       migrateSchema(dataSource, resourceLoader);
+      return new RdbmsEngineStatePool(dataSource, RdbmsEngineState.of(dataSource));
     } catch (final LiquibaseException | RuntimeException e) {
       dataSource.close();
       throw e;
     }
-    return new RdbmsEngineStateDataSource(dataSource);
   }
 
   private static HikariDataSource createDataSource(
@@ -80,8 +81,12 @@ public class RdbmsEngineStateConfiguration {
     liquibase.afterPropertiesSet();
   }
 
-  /** Holds the pool, or null if the RDBMS engine state is disabled. */
-  public record RdbmsEngineStateDataSource(@Nullable HikariDataSource dataSource)
+  /**
+   * Holds the pool and what is built on it once, the MyBatis session factory; both are null if the
+   * RDBMS engine state is disabled.
+   */
+  public record RdbmsEngineStatePool(
+      @Nullable HikariDataSource dataSource, @Nullable RdbmsEngineState engineState)
       implements AutoCloseable {
 
     @Override

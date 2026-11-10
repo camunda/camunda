@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +21,7 @@ import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.jspecify.annotations.Nullable;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -43,11 +45,13 @@ final class EngineStateDatabase implements AutoCloseable {
   private final PGSimpleDataSource dataSource;
   private final @Nullable PostgreSQLContainer postgres;
   private final AtomicInteger partitionIds = new AtomicInteger();
+  private final SqlSessionFactory sessionFactory;
 
   private EngineStateDatabase(
       final PGSimpleDataSource dataSource, final @Nullable PostgreSQLContainer postgres) {
     this.dataSource = dataSource;
     this.postgres = postgres;
+    sessionFactory = EngineStateMyBatis.createSqlSessionFactory(dataSource);
   }
 
   /** Starts the database, or connects to the external one, and applies the schema. */
@@ -74,6 +78,25 @@ final class EngineStateDatabase implements AutoCloseable {
 
   PGSimpleDataSource dataSource() {
     return dataSource;
+  }
+
+  /** The session factory of the database, built once like in the broker. */
+  SqlSessionFactory sessionFactory() {
+    return sessionFactory;
+  }
+
+  /** The session of a partition on the context, registered like {@code RdbmsStateStores} does. */
+  EntitySession entitySession(final JdbcTransactionContext context, final int partitionId) {
+    return entitySession(context, partitionId, sessionFactory);
+  }
+
+  static EntitySession entitySession(
+      final JdbcTransactionContext context,
+      final int partitionId,
+      final SqlSessionFactory sessionFactory) {
+    final var session = new EntitySession(context, partitionId, sessionFactory);
+    context.register(session);
+    return session;
   }
 
   /** A partition no test has written to yet. */

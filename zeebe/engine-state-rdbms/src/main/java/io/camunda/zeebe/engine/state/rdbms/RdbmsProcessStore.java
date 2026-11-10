@@ -120,9 +120,9 @@ public final class RdbmsProcessStore implements ProcessStore {
 
   private final VersionInfoCache versionInfos = new VersionInfoCache();
 
-  public RdbmsProcessStore(final JdbcTransactionContext transactionContext, final int partitionId) {
-    session = EntitySession.of(transactionContext, partitionId);
-    this.partitionId = partitionId;
+  RdbmsProcessStore(final EntitySession session, final JdbcTransactionContext transactionContext) {
+    this.session = session;
+    partitionId = session.partitionId();
     transactionContext.addTransactionListener(versionInfos);
   }
 

@@ -41,6 +41,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -58,7 +59,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
-import javax.sql.DataSource;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -319,7 +319,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public DataSource getEngineStateDataSource() {
+  public RdbmsEngineState getEngineState() {
     return null;
   }
 

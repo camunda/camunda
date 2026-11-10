@@ -64,6 +64,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -85,7 +86,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +118,7 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
-  private final @Nullable DataSource engineStateDataSource;
+  private final @Nullable RdbmsEngineState engineState;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -140,7 +140,7 @@ public final class ZeebePartitionFactory {
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
-      final @Nullable DataSource engineStateDataSource) {
+      final @Nullable RdbmsEngineState engineState) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -160,7 +160,7 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
-    this.engineStateDataSource = engineStateDataSource;
+    this.engineState = engineState;
   }
 
   public ZeebePartition constructPartition(
@@ -219,7 +219,7 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
-    context.setEngineStateDataSource(engineStateDataSource);
+    context.setEngineState(engineState);
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());
