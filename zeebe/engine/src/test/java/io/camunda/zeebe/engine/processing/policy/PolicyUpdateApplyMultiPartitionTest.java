@@ -68,11 +68,11 @@ public final class PolicyUpdateApplyMultiPartitionTest {
     // when
     engine.writeRecordsOnPartition(
         2,
-        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
             .onlyCommandRejections()
             .withPartitionId(2)
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))

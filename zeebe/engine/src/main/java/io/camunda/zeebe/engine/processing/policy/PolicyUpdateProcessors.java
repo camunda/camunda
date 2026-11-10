@@ -25,10 +25,17 @@ public final class PolicyUpdateProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers) {
+    final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
-    typedRecordProcessors.onCommand(
-        ValueType.POLICY_UPDATE,
-        PolicyUpdateIntent.APPLY_CHUNK,
-        new PolicyUpdateApplyChunkProcessor(commandMapper, keyGenerator, writers));
+    typedRecordProcessors
+        .onCommand(
+            ValueType.POLICY_UPDATE,
+            PolicyUpdateIntent.APPEND_CHUNK,
+            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+        .onCommand(
+            ValueType.POLICY_UPDATE,
+            PolicyUpdateIntent.APPLY_CHUNK,
+            new PolicyUpdateApplyChunkProcessor(
+                policyUpdateState, commandMapper, keyGenerator, writers));
   }
 }
