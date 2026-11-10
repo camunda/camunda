@@ -259,6 +259,27 @@ public abstract class DbTransactionContractTest {
   }
 
   @Test
+  public void shouldRollBackFailedTransactionAfterCount() {
+    // given
+    oneColumnFamily.count();
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    // when
+    assertThatThrownBy(
+            () ->
+                transactionContext.runInTransaction(
+                    () -> {
+                      oneColumnFamily.insert(oneKey, oneValue);
+                      throw new IllegalStateException("expected");
+                    }))
+        .isInstanceOf(IllegalStateException.class);
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+  }
+
+  @Test
   public void shouldFindValueInTransaction() {
     // given
     final Map<Long, Long> actualValues = new HashMap<>();
