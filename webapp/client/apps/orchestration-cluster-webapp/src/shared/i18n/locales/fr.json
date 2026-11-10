@@ -2261,7 +2261,8 @@
 						"loadingPreviousPage": "Chargement des éléments précédents",
 						"loadingNextPage": "Chargement d'autres éléments",
 						"expandFailure": "Afficher les détails de l'échec",
-						"collapseFailure": "Masquer les détails de l'échec"
+						"collapseFailure": "Masquer les détails de l'échec",
+						"itemStatusPrefix": "Statut de l'élément"
 					}
 				},
 				"actions": {

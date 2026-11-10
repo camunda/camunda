@@ -67,7 +67,7 @@ const BatchOperationSkeleton: React.FC = () => {
 				<div className="flex items-center justify-between">
 					<Skeleton data-testid="text-skeleton" className="h-6 w-48" />
 				</div>
-				<div className="flex gap-4 self-start">
+				<div className="flex gap-3 self-start">
 					{TILE_LABEL_KEYS.map((labelKey) => (
 						<Tile key={labelKey} label={t(labelKey)}>
 							<Skeleton data-testid="text-skeleton" className="h-4 w-24" />
@@ -151,7 +151,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					)}
 				</div>
 				{error && !isNotFound && <Alert variant="destructive" title={t('operate.batchOperation.loadErrorTitle')} />}
-				<div className="flex gap-4 self-start">
+				<div className="flex gap-3 self-start">
 					<Tile label={t('operate.batchOperation.tiles.state')}>
 						{data ? <BatchStateIndicator state={data.state} /> : null}
 					</Tile>

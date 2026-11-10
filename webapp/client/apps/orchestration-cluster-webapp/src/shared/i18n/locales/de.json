@@ -2258,7 +2258,8 @@
 						"loadingPreviousPage": "Vorherige Elemente werden geladen",
 						"loadingNextPage": "Weitere Elemente werden geladen",
 						"expandFailure": "Fehlerdetails anzeigen",
-						"collapseFailure": "Fehlerdetails ausblenden"
+						"collapseFailure": "Fehlerdetails ausblenden",
+						"itemStatusPrefix": "Status des Elements"
 					}
 				},
 				"actions": {

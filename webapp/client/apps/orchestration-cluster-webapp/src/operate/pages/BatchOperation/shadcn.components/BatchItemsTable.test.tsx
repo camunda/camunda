@@ -7,7 +7,7 @@
  */
 
 import {describe, expect} from 'vitest';
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -34,6 +34,17 @@ function renderBatchItemsTable(batchOperationType: React.ComponentProps<typeof B
 			path: '/operate-preview/batch-operations/$batchOperationKey',
 			initialEntry: `/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
 		},
+	);
+}
+
+function itemsPage(from: number) {
+	return HttpResponse.json(
+		createQueryBatchOperationItemsResponse({
+			items: Array.from({length: 50}, (_, index) =>
+				createBatchOperationItem({itemKey: `item-${from + index}`, processInstanceKey: `${from + index}`}),
+			),
+			page: {totalItems: 150, hasMoreTotalItems: false},
+		}),
 	);
 }
 
@@ -265,5 +276,53 @@ describe('<BatchItemsTable />', () => {
 
 		await expect.element(screen.getByText('Failure reason: Something went wrong')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Hide failure details'})).toBeVisible();
+	});
+
+	it('should stop requesting the previous page after it fails and load it when retrying', async ({worker}) => {
+		const requestedOffsets: number[] = [];
+		let isPreviousPageFailing = false;
+		worker.use(
+			http.post('*/batch-operation-items/search', async ({request}) => {
+				const {page} = (await request.json()) as {page: {from: number}};
+				requestedOffsets.push(page.from);
+				return isPreviousPageFailing && page.from === 0 ? ITEMS_LOAD_ERROR : itemsPage(page.from);
+			}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+					<BatchItemsTable batchOperationKey={BATCH_OPERATION_KEY} batchOperationType="CANCEL_PROCESS_INSTANCE" />
+				</div>
+			),
+			{
+				path: '/operate-preview/batch-operations/$batchOperationKey',
+				initialEntry: `/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
+			},
+		);
+		const scrollContainer = () => screen.getByTestId('batch-items-table').element();
+		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).toBeVisible();
+		for (const offset of [50, 100]) {
+			scrollContainer().scrollTop = 0;
+			for (let top = 0; top <= scrollContainer().scrollHeight; top += 300) {
+				scrollContainer().scrollTop = top;
+				await new Promise((resolve) => setTimeout(resolve, 100));
+			}
+			await expect.poll(() => requestedOffsets.includes(offset)).toBe(true);
+			await expect.element(screen.getByRole('link', {name: `View process instance ${offset}`})).toBeVisible();
+		}
+
+		const requestsBeforeFailure = requestedOffsets.length;
+		isPreviousPageFailing = true;
+		scrollContainer().scrollTop = 0;
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		expect(requestedOffsets.slice(requestsBeforeFailure)).toEqual([0]);
+
+		isPreviousPageFailing = false;
+		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+
+		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).toBeVisible();
+		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 });
