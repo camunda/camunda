@@ -46,6 +46,18 @@ public class ProcessDefinitionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
+    final var queries = new ArrayList<SearchQuery>(toSearchQueryFields(filter));
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var orQueries = new ArrayList<SearchQuery>();
+      filter.orFilters().stream().map(f -> and(toSearchQueryFields(f))).forEach(orQueries::add);
+      queries.add(or(orQueries));
+    }
+
+    return and(queries);
+  }
+
+  private List<SearchQuery> toSearchQueryFields(final ProcessDefinitionFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
     ofNullable(getNamesQuery(filter.nameOperations())).ifPresent(queries::addAll);
@@ -57,7 +69,7 @@ public class ProcessDefinitionFilterTransformer
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getHasStartFormQuery(filter.hasStartForm())).ifPresent(queries::add);
     ofNullable(getStateQuery(filter.state())).ifPresent(queries::add);
-    return and(queries);
+    return queries;
   }
 
   private List<SearchQuery> getNamesQuery(final List<Operation<String>> names) {
