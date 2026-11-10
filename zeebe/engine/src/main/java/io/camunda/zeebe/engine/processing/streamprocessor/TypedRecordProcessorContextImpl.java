@@ -44,6 +44,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineSecurityConfig securityConfig;
   private final MeterRegistry meterRegistry;
   private final SuspensionMetrics suspensionMetrics;
+  private final ProcessingStateStoresFactory stateStoresFactory;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -52,6 +53,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final EngineSecurityConfig securityConfig,
       final ProcessingStateStoresFactory stateStoresFactory) {
     partitionId = context.getPartitionId();
+    this.stateStoresFactory = stateStoresFactory;
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
@@ -105,15 +107,18 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () ->
-        new ScheduledTaskDbState(
-            zeebeDb,
-            zeebeDb.createContext(),
-            partitionId,
-            transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState,
-            transientAskState,
-            clock);
+    return () -> {
+      final var transactionContext = zeebeDb.createContext();
+      return new ScheduledTaskDbState(
+          zeebeDb,
+          transactionContext,
+          stateStoresFactory.create(partitionId, zeebeDb, transactionContext).jobState(),
+          partitionId,
+          transientMessageSubscriptionState,
+          transientProcessMessageSubscriptionState,
+          transientAskState,
+          clock);
+    };
   }
 
   @Override
