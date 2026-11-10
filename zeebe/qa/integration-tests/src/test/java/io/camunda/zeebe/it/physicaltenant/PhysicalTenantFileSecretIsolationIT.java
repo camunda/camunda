@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
  * running application can show that the engine of one tenant's partitions reads the right one.
  */
 @ZeebeIntegration
-final class PhysicalTenantSecretIsolationIT {
+final class PhysicalTenantFileSecretIsolationIT {
 
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
@@ -84,7 +84,7 @@ final class PhysicalTenantSecretIsolationIT {
 
   @AfterAll
   static void deleteStores() {
-    STORE_BY_TENANT.values().forEach(PhysicalTenantSecretIsolationIT::deleteQuietly);
+    STORE_BY_TENANT.values().forEach(PhysicalTenantFileSecretIsolationIT::deleteQuietly);
   }
 
   @Test
