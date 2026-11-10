@@ -10,10 +10,9 @@ package io.camunda.zeebe.broker.logstreams;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
+import io.camunda.zeebe.logstreams.storage.AbstractLogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Implementation of {@link LogStorage} for the Atomix {@link io.atomix.raft.storage.log.RaftLog}.
@@ -22,15 +21,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * should be changed when the log storage implementation is taken out of this module, at which point
  * it can be made final.
  */
-public class AtomixLogStorage implements LogStorage, RaftCommitListener {
+public class AtomixLogStorage extends AbstractLogStorage implements RaftCommitListener {
 
   private final AtomixReaderFactory readerFactory;
   private final AtomixReaderFactory uncommittedReaderFactory;
   private final ZeebeLogAppender logAppender;
-  private final Set<CommitListener> commitListeners = new CopyOnWriteArraySet<>();
-  private final Set<CommittedPositionListener> committedPositionListeners =
-      new CopyOnWriteArraySet<>();
-  private final Set<AppendedListener> appendedListeners = new CopyOnWriteArraySet<>();
 
   /**
    * Raft notifies committed indexes and committed application entry positions through two separate
@@ -78,7 +73,7 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
               @Override
               public void onWrite(final long index, final long highestPosition) {
                 listener.onWrite(index, highestPosition);
-                appendedListeners.forEach(l -> l.onAppend(highestPosition));
+                notifyAppended(highestPosition);
               }
 
               @Override
@@ -89,43 +84,13 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
     logAppender.appendEntry(lowestPosition, highestPosition, bufferWriter, adapter);
   }
 
-  @Override
-  public void addCommitListener(final CommitListener listener) {
-    commitListeners.add(listener);
-  }
-
-  @Override
-  public void removeCommitListener(final CommitListener listener) {
-    commitListeners.remove(listener);
-  }
-
-  @Override
-  public void addCommittedPositionListener(final CommittedPositionListener listener) {
-    committedPositionListeners.add(listener);
-  }
-
-  @Override
-  public void removeCommittedPositionListener(final CommittedPositionListener listener) {
-    committedPositionListeners.remove(listener);
-  }
-
-  @Override
-  public void addAppendedListener(final AppendedListener listener) {
-    appendedListeners.add(listener);
-  }
-
-  @Override
-  public void removeAppendedListener(final AppendedListener listener) {
-    appendedListeners.remove(listener);
-  }
-
   /**
    * Notified by Raft on every role, whenever the commit index advances. This is the only commit
    * signal a follower receives, because it never appends entries itself.
    */
   @Override
   public void onCommit(final long index) {
-    commitListeners.forEach(CommitListener::onCommit);
+    notifyCommit();
   }
 
   /**
@@ -137,6 +102,6 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
   }
 
   private void onCommittedPosition(final long highestPosition) {
-    committedPositionListeners.forEach(listener -> listener.onCommittedPosition(highestPosition));
+    notifyCommittedPosition(highestPosition);
   }
 }
