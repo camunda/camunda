@@ -123,8 +123,12 @@ final class EnvSecretStoreProcessIT {
       assertThat(incident.getErrorMessage()).doesNotContain(STORED_NAME, STORED_VALUE);
       assertNoRecordCarriesValue(STORED_NAME);
       assertNoRecordCarriesValue(STORED_VALUE);
-      assertThat(logs.contains(STORED_NAME)).as("logs contain a stored secret name").isFalse();
-      assertThat(logs.contains(STORED_VALUE)).as("logs contain a secret value").isFalse();
+      assertThat(logs.containsInMessagesOrThrowables(STORED_NAME))
+          .as("logs contain a stored secret name")
+          .isFalse();
+      assertThat(logs.containsInMessagesOrThrowables(STORED_VALUE))
+          .as("logs contain a secret value")
+          .isFalse();
     }
   }
 }

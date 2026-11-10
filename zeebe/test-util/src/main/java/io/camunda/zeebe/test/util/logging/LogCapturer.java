@@ -83,13 +83,18 @@ public final class LogCapturer implements AutoCloseable {
         .toList();
   }
 
+  /** Whether any captured message contains {@code substring}. */
+  public boolean contains(final String substring) {
+    return messages().stream().anyMatch(message -> message.contains(substring));
+  }
+
   /**
    * Whether any captured message, or the stack trace of any throwable logged with one, contains
    * {@code substring}. The stack trace includes the throwable's causes and suppressed throwables,
-   * as a log layout would print them, so that a test asserting something was not logged also sees
-   * what an exception carried.
+   * as a log layout would print them. Use it to assert that something was not logged at all, such
+   * as a secret, where {@link #contains(String)} would miss what an exception carried.
    */
-  public boolean contains(final String substring) {
+  public boolean containsInMessagesOrThrowables(final String substring) {
     return appender.getAppendedEvents().stream()
         .anyMatch(
             event ->
