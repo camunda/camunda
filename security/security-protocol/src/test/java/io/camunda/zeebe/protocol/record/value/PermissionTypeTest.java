@@ -34,4 +34,17 @@ final class PermissionTypeTest {
     assertThat(AuthorizationResourceType.BATCH.getSupportedPermissionTypes())
         .contains(PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE);
   }
+
+  @Test
+  void shouldNotClassifySuspendProcessDefinitionPermissionAsReadPermission() {
+    // given / when / then
+    assertThat(PermissionType.SUSPEND_PROCESS_DEFINITION.isReadPermission()).isFalse();
+  }
+
+  @Test
+  void shouldSupportSuspendProcessDefinitionOnProcessDefinitionResourceType() {
+    // given / when / then
+    assertThat(AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes())
+        .contains(PermissionType.SUSPEND_PROCESS_DEFINITION);
+  }
 }
