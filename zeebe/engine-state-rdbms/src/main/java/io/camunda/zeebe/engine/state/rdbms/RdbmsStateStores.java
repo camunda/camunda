@@ -18,12 +18,13 @@ import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
- * Element instances and process definitions live in the relational database, everything else stays
- * in RocksDB. Requires the {@link MixedTransactionContext} of a {@code MixedZeebeDb}.
+ * Element instances, variables and process definitions live in the relational database, everything
+ * else stays in RocksDB. Requires the {@link MixedTransactionContext} of a {@code MixedZeebeDb}.
  */
 public final class RdbmsStateStores extends RocksDbStateStores {
 
@@ -59,6 +60,15 @@ public final class RdbmsStateStores extends RocksDbStateStores {
             resources.sessionFactory());
   }
 
+  @Override
+  public MutableVariableState variableState() {
+    return new VariableStateImpl(new RdbmsVariableStore(entitySession));
+  }
+
+  /**
+   * The variable state is this factory's relational one, so the scopes of the element instances are
+   * written in the same JDBC transaction as the element instances.
+   */
   @Override
   public MutableElementInstanceState elementInstanceState(
       final MutableVariableState variableState) {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.variable;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.VariableDocumentState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
@@ -44,9 +45,19 @@ public interface VariableStore {
   @Nullable VariableInstance findVariable(
       long scopeKey, DirectBuffer name, int nameOffset, int nameLength);
 
-  /** Inserts the variable with the name in the scope, or overwrites the existing one. */
+  /**
+   * Inserts the variable with the name in the scope, or overwrites the existing one.
+   *
+   * @param record the record of the event that sets the variable, if there is one; a store may take
+   *     the process instance the variable belongs to from it
+   */
   void putVariable(
-      long scopeKey, DirectBuffer name, int nameOffset, int nameLength, VariableInstance variable);
+      long scopeKey,
+      DirectBuffer name,
+      int nameOffset,
+      int nameLength,
+      VariableInstance variable,
+      @Nullable VariableRecord record);
 
   /** Deletes all variables of the scope. */
   void deleteVariables(long scopeKey);

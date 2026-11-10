@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.instance.ParentScopeKey;
 import io.camunda.zeebe.engine.state.instance.VariableDocumentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
@@ -110,13 +111,15 @@ public final class DbVariableStore implements VariableStore {
     return null;
   }
 
+  /** Doesn't store the process instance of a variable, so it ignores the record. */
   @Override
   public void putVariable(
       final long scopeKey,
       final DirectBuffer name,
       final int nameOffset,
       final int nameLength,
-      final VariableInstance variable) {
+      final VariableInstance variable,
+      final @Nullable VariableRecord record) {
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
     variableName.wrapBuffer(variableNameView);

@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +54,9 @@ import org.jspecify.annotations.Nullable;
  *       IllegalStateException}
  * </ul>
  *
+ * <p>An {@link #upsert} becomes an insert or update if the session knows whether the row exists,
+ * and keeps a staged insert or update; otherwise the flush deletes and inserts the row.
+ *
  * <p>The session doesn't check the database on writes: an insert of an existing row or an update of
  * a missing one fails on flush. Reads of unstaged keys go to the database once per transaction, see
  * {@link #get}. Not thread-safe, like the context it belongs to.
@@ -81,12 +85,21 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
 
   /**
-   * The committed rows loaded in this transaction by {@link #get} and full-row {@link #query}, per
-   * type and key; {@link #ABSENT} stands for a row that doesn't exist. Rows are immutable and the
-   * partition has a single writer, so a loaded row stays valid for the transaction; staged writes
-   * take precedence over it.
+   * The committed rows loaded in this transaction by {@link #get}, {@link #getAll}, {@link
+   * #queryGroups} and full-row {@link #query}, per type and key; {@link #ABSENT} stands for a row
+   * that doesn't exist. Rows are immutable and the partition has a single writer, so a loaded row
+   * stays valid for the transaction; staged writes take precedence over it.
    */
   private final Map<EntityType<?, ?>, Map<Object, Object>> loaded = new HashMap<>();
+
+  /**
+   * The groups whose committed rows {@link #queryGroups} loaded in this transaction, per type, with
+   * the keys of these rows: a key of such a group without a loaded row has no committed row.
+   */
+  private final Map<EntityType<?, ?>, Map<Object, List<Object>>> loadedGroups = new HashMap<>();
+
+  /** The caches of values derived from loaded rows, see {@link #newTransactionCache()}. */
+  private final List<Map<?, ?>> transactionCaches = new ArrayList<>();
 
   /** The session of the current transaction, null until its first database access. */
   private @Nullable SqlSession session;
@@ -125,6 +138,9 @@ final class EntitySession implements JdbcTransactionParticipant {
           if (known != null) {
             return known == ABSENT ? null : type.cast(known);
           }
+          if (isInLoadedGroup(type, key)) {
+            return null;
+          }
           final E row = unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
           cached.put(key, row == null ? ABSENT : row);
           return row;
@@ -143,6 +159,36 @@ final class EntitySession implements JdbcTransactionParticipant {
           }
           // a staged delete means the row exists in the database: re-inserting it overwrites it
           writes.put(key, new Staged(write == null ? Operation.INSERT : Operation.UPDATE, row));
+          return null;
+        });
+  }
+
+  /**
+   * Stages the row, inserting it or overwriting the existing one, without reading the database. See
+   * the class documentation for how it is written.
+   */
+  <K, E> void upsert(final EntityType<K, E> type, final E row) {
+    transactionContext.call(
+        () -> {
+          final K key = type.keyOf(row);
+          final var writes = staged(type);
+          final var write = writes.get(key);
+          final Operation operation;
+          if (write != null && write.operation != Operation.DELETE) {
+            operation = write.operation;
+          } else {
+            // a staged delete doesn't tell whether the row exists in the database
+            Object committed = loaded(type).get(key);
+            if (committed == null && isInLoadedGroup(type, key)) {
+              committed = ABSENT;
+            }
+            if (committed == null) {
+              operation = Operation.UPSERT;
+            } else {
+              operation = committed == ABSENT ? Operation.INSERT : Operation.UPDATE;
+            }
+          }
+          writes.put(key, new Staged(operation, row));
           return null;
         });
   }
@@ -185,6 +231,148 @@ final class EntitySession implements JdbcTransactionParticipant {
   <M, T> T read(final Class<M> mapperType, final MapperCall<M, T> call) {
     return Objects.requireNonNull(
         transactionContext.call(() -> unwrapped(() -> call.apply(mapper(mapperType)))));
+  }
+
+  /**
+   * Like {@link #get} for several keys: the rows of the keys that the session doesn't know yet are
+   * read with one query, and remembered like {@link #get} does, including the missing ones.
+   *
+   * @param query selects the committed rows of the given keys; it may return rows of other keys
+   * @return the current rows of the keys, in their order; null for a key without row
+   */
+  <K, E, M> List<@Nullable E> getAll(
+      final EntityType<K, E> type,
+      final List<K> keys,
+      final Class<M> mapperType,
+      final BatchQuery<M, K, E> query) {
+    return Objects.requireNonNull(
+        transactionContext.call(
+            () -> {
+              final List<K> unknown = new ArrayList<>();
+              for (final K key : keys) {
+                if (!isKnown(type, key)) {
+                  unknown.add(key);
+                }
+              }
+              if (!unknown.isEmpty()) {
+                final var rows = unwrapped(() -> query.select(mapper(mapperType), unknown));
+                final var cached = loaded(type);
+                for (final E row : rows) {
+                  cached.putIfAbsent(type.keyOf(row), row);
+                }
+                for (final K key : unknown) {
+                  cached.putIfAbsent(key, ABSENT);
+                }
+              }
+              final List<@Nullable E> result = new ArrayList<>(keys.size());
+              for (final K key : keys) {
+                result.add(knownRow(type, key));
+              }
+              return result;
+            }));
+  }
+
+  /**
+   * The current rows of the given groups of a type that {@link EntityType groups its rows}: the
+   * committed rows merged with the staged writes. The committed rows of the groups that weren't
+   * loaded in this transaction yet are read with one query; the groups are then remembered as
+   * loaded, so later reads of their keys need no query, also for keys without row.
+   *
+   * @param query selects all committed rows of the given groups
+   * @return the rows, in no particular order
+   */
+  <K, E, G, M> List<E> queryGroups(
+      final EntityType<K, E> type,
+      final Collection<G> groups,
+      final Class<M> mapperType,
+      final BatchQuery<M, G, E> query) {
+    return Objects.requireNonNull(
+        transactionContext.call(
+            () -> {
+              final var keysByGroup = loadedGroups(type);
+              final var cached = loaded(type);
+              final Set<Object> requested = new LinkedHashSet<>(groups);
+              final List<G> unknown = new ArrayList<>();
+              for (final G group : groups) {
+                if (!keysByGroup.containsKey(group) && !unknown.contains(group)) {
+                  unknown.add(group);
+                }
+              }
+              if (!unknown.isEmpty()) {
+                final var rows = unwrapped(() -> query.select(mapper(mapperType), unknown));
+                unknown.forEach(group -> keysByGroup.put(group, new ArrayList<>()));
+                for (final E row : rows) {
+                  final K key = type.keyOf(row);
+                  final Object group = type.groupOf(key);
+                  final var keysOfGroup = unknown.contains(group) ? keysByGroup.get(group) : null;
+                  if (keysOfGroup != null && cached.putIfAbsent(key, row) != ABSENT) {
+                    keysOfGroup.add(key);
+                  }
+                }
+              }
+
+              final var writes = staged(type);
+              final List<E> result = new ArrayList<>();
+              for (final Object group : requested) {
+                for (final Object key : keysByGroup.get(group)) {
+                  if (!writes.containsKey(key)) {
+                    result.add(type.cast(cached.get(key)));
+                  }
+                }
+              }
+              for (final var write : writes.entrySet()) {
+                final var row = write.getValue().row;
+                if (row != null && requested.contains(type.groupOf(type.castKey(write.getKey())))) {
+                  result.add(type.cast(row));
+                }
+              }
+              return result;
+            }));
+  }
+
+  /**
+   * The keys of the current rows of a group, like {@link #queryGroups} but without loading the
+   * rows: the committed keys are those of the loaded group, or else the ones the query selects.
+   */
+  <K, E, G, M> List<K> queryGroupKeys(
+      final EntityType<K, E> type,
+      final G group,
+      final Class<M> mapperType,
+      final MapperCall<M, Collection<K>> query) {
+    return Objects.requireNonNull(
+        transactionContext.call(
+            () -> {
+              final var loadedKeys = loadedGroups(type).get(group);
+              final Collection<?> committed =
+                  loadedKeys != null
+                      ? loadedKeys
+                      : unwrapped(() -> query.apply(mapper(mapperType)));
+              final var writes = staged(type);
+              final List<K> result = new ArrayList<>();
+              for (final Object key : committed) {
+                if (!writes.containsKey(key)) {
+                  result.add(type.castKey(key));
+                }
+              }
+              for (final var write : writes.entrySet()) {
+                final K key = type.castKey(write.getKey());
+                if (write.getValue().row != null && group.equals(type.groupOf(key))) {
+                  result.add(key);
+                }
+              }
+              return result;
+            }));
+  }
+
+  /**
+   * A new cache for values derived from rows, e.g. a parsed payload. Like the loaded rows, its
+   * entries are dropped when the transaction ends or a commit fails; callers drop entries whose
+   * rows they change.
+   */
+  <K, V> Map<K, V> newTransactionCache() {
+    final Map<K, V> cache = new HashMap<>();
+    transactionCaches.add(cache);
+    return cache;
   }
 
   /** The mapper of the current transaction's session; keep it within the transaction. */
@@ -288,12 +476,13 @@ final class EntitySession implements JdbcTransactionParticipant {
           for (final var entry : staged.entrySet()) {
             final var type = entry.getKey();
             for (final var write : entry.getValue().entrySet()) {
-              if (write.getValue().operation == Operation.DELETE) {
+              final var operation = write.getValue().operation;
+              if (operation == Operation.DELETE || operation == Operation.UPSERT) {
                 batch.delete(type.delete, keyParameter(write.getKey()));
               }
             }
             for (final var write : entry.getValue().values()) {
-              if (write.operation == Operation.INSERT) {
+              if (write.operation == Operation.INSERT || write.operation == Operation.UPSERT) {
                 batch.insert(type.insert, rowParameter(write.row));
               }
             }
@@ -324,7 +513,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   @Override
   public void reset() {
     staged.values().forEach(Map::clear);
-    loaded.clear();
+    clearLoaded();
     closeSession();
   }
 
@@ -334,8 +523,36 @@ final class EntitySession implements JdbcTransactionParticipant {
    */
   @Override
   public void commitFailed() {
-    loaded.clear();
+    clearLoaded();
     closeSession();
+  }
+
+  private void clearLoaded() {
+    loaded.clear();
+    loadedGroups.clear();
+    transactionCaches.forEach(Map::clear);
+  }
+
+  /** Whether the session knows the current row of the key, or that there is none. */
+  private <K, E> boolean isKnown(final EntityType<K, E> type, final K key) {
+    return staged(type).containsKey(key)
+        || loaded(type).containsKey(key)
+        || isInLoadedGroup(type, key);
+  }
+
+  /** The current row of a {@link #isKnown known} key, or null if there is none. */
+  private <K, E> @Nullable E knownRow(final EntityType<K, E> type, final K key) {
+    final var write = staged(type).get(key);
+    if (write != null) {
+      return write.row == null ? null : type.cast(write.row);
+    }
+    final Object committed = loaded(type).get(key);
+    return committed == null || committed == ABSENT ? null : type.cast(committed);
+  }
+
+  private <K, E> boolean isInLoadedGroup(final EntityType<K, E> type, final K key) {
+    final Object group = type.groupOf(key);
+    return group != null && loadedGroups(type).containsKey(group);
   }
 
   private SqlSession session() {
@@ -390,6 +607,10 @@ final class EntitySession implements JdbcTransactionParticipant {
     return loaded.computeIfAbsent(type, ignored -> new HashMap<>());
   }
 
+  private Map<Object, List<Object>> loadedGroups(final EntityType<?, ?> type) {
+    return loadedGroups.computeIfAbsent(type, ignored -> new HashMap<>());
+  }
+
   private Map<Object, Staged> staged(final EntityType<?, ?> type) {
     return staged.computeIfAbsent(type, ignored -> new LinkedHashMap<>());
   }
@@ -423,10 +644,18 @@ final class EntitySession implements JdbcTransactionParticipant {
     T apply(M mapper);
   }
 
+  /** A query for the rows of several keys or groups. */
+  @FunctionalInterface
+  interface BatchQuery<M, P, E> {
+    Collection<E> select(M mapper, List<P> parameters);
+  }
+
   private enum Operation {
     INSERT,
     UPDATE,
-    DELETE
+    DELETE,
+    /** Insert or overwrite: delete and insert, as it isn't known whether the row exists. */
+    UPSERT
   }
 
   /** A staged write of a row; the row is null for a delete. */

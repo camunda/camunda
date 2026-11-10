@@ -321,8 +321,8 @@ public abstract class AbstractVariableStateContractTest {
     setVariableLocal(child, wrapString("childVar1"), asMsgPack("2"));
     setVariableLocal(child, wrapString("childVar2"), asMsgPack("3"));
 
-    // when
-    variableState.removeScope(child);
+    // when - like the engine, which removes a scope with its element instance
+    elementInstanceState.removeInstance(child);
 
     // then
     final DirectBuffer document = variableState.getVariablesAsDocument(child);
@@ -426,8 +426,8 @@ public abstract class AbstractVariableStateContractTest {
     declareScope(scopeKey);
     setVariableLocal(scopeKey, wrapString("x"), wrapString("foo"));
 
-    // when
-    variableState.removeScope(scopeKey);
+    // when - like the engine, which removes a scope with its element instance
+    elementInstanceState.removeInstance(scopeKey);
     final VariableInstance variable =
         variableState.getVariableInstanceLocal(scopeKey, wrapString("x"));
 
