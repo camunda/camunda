@@ -6,7 +6,6 @@
 
 <!--- Please delete options that are not relevant. Boxes should be checked by reviewer. -->
 - [ ] Enable backports when necessary (fex. [for bug fixes](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#backporting-changes) or [for CI changes](https://github.com/camunda/camunda/wiki/CI-&-Automation#when-to-backport-ci-changes)).
-- [ ] If this PR modifies the [C8 Orchestration Cluster E2E Test Suite](qa/c8-orchestration-cluster-e2e-test-suite), its required automatic PR check (**C8 E2E Test Suite / Tests**) is green. It blocks only on the specs this PR adds or modifies; the non-blocking **C8 E2E Test Suite / Full Result** check reds on any other suite failure, so I have also reviewed those and confirmed they are pre-existing, not caused by this PR. For a **fork PR**, where the automatic check does not run, the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) has been run instead and its results documented.
 
 ## Related issues
 
