@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.jdbc;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 
@@ -47,6 +48,15 @@ public final class MixedTransactionContext implements TransactionContext {
   @Override
   public ZeebeDbTransaction getCurrentTransaction() {
     return new MixedTransaction(rocksDb.getCurrentTransaction(), jdbc.getCurrentTransaction());
+  }
+
+  /**
+   * Listens to the RocksDB transaction: it commits after the JDBC one and is always rolled back, so
+   * its outcome is the outcome of the mixed transaction.
+   */
+  @Override
+  public void addTransactionListener(final TransactionListener listener) {
+    rocksDb.addTransactionListener(listener);
   }
 
   private record MixedTransaction(

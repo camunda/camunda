@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.jdbc;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
@@ -79,6 +80,11 @@ public final class JdbcTransactionContext implements TransactionContext {
       transaction.begin();
     }
     return transaction;
+  }
+
+  @Override
+  public void addTransactionListener(final TransactionListener listener) {
+    transaction.addListener(listener);
   }
 
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {

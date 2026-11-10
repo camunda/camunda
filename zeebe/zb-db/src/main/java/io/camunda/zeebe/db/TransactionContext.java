@@ -34,4 +34,13 @@ public interface TransactionContext {
    * @return the transaction object
    */
   ZeebeDbTransaction getCurrentTransaction();
+
+  /**
+   * Registers a listener that is notified whenever a transaction of this context is committed or
+   * rolled back, both for transactions run via {@link #runInTransaction(TransactionOperation)} and
+   * for those ended via {@link #getCurrentTransaction()}.
+   *
+   * @param listener the listener to notify
+   */
+  void addTransactionListener(TransactionListener listener);
 }

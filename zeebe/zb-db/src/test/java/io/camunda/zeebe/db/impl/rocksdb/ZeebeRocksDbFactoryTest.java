@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -434,5 +435,8 @@ final class ZeebeRocksDbFactoryTest {
     public ZeebeDbTransaction getCurrentTransaction() {
       return null;
     }
+
+    @Override
+    public void addTransactionListener(final TransactionListener listener) {}
   }
 }
