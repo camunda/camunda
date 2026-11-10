@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import static io.camunda.zeebe.engine.state.rdbms.Payloads.serialize;
+import static io.camunda.zeebe.engine.state.rdbms.Payloads.wrapCopy;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.jdbc.EntityCache;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
-import io.camunda.zeebe.util.buffer.BufferReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,7 +43,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -714,19 +713,6 @@ public final class RdbmsElementInstanceState implements MutableElementInstanceSt
 
   private static ElementInstance toInstance(final ElementInstanceRow row) {
     return wrapCopy(new ElementInstance(), row.payload());
-  }
-
-  private static byte[] serialize(final DbValue value) {
-    final var payload = new byte[value.getLength()];
-    value.write(new UnsafeBuffer(payload), 0);
-    return payload;
-  }
-
-  /** Reads the payload into the target, which may keep viewing it: never let it see a row's. */
-  private static <T extends BufferReader> T wrapCopy(final T target, final byte[] payload) {
-    final var copy = payload.clone();
-    target.wrap(new UnsafeBuffer(copy), 0, copy.length);
-    return target;
   }
 
   @FunctionalInterface
