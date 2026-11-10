@@ -22,7 +22,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
 function compareGroupsBySort(a: Group, b: Group, queryKey: QueryKey): number {
 	const body = queryKey[1] as QueryGroupsRequestBody | undefined;
@@ -59,6 +59,8 @@ function useGroupMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 
+	const searchGroup = (groupId: string) => queries.queryGroups({filter: {groupId}, page: {limit: 1}});
+
 	const invalidateGroups = () => queryClient.invalidateQueries({queryKey: ['queryGroups']});
 
 	const reconcileGroups = (confirmed: boolean) => {
@@ -89,9 +91,9 @@ function useGroupMutations() {
 			});
 			toast.success(t('admin.groups.groupCreated', {name: group.name}));
 
-			void waitUntilReady(queryClient, queries.getGroup(group.groupId)).then((ready) =>
-				reconcileGroups(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchGroup(group.groupId), {
+				isReady: ({items}) => items.some((item) => item.groupId === group.groupId),
+			}).then((ready) => reconcileGroups(ready !== undefined));
 		},
 		onError: async (error) => {
 			if (isDuplicateGroupIdError(error)) {
@@ -120,8 +122,12 @@ function useGroupMutations() {
 			queryClient.setQueryData(queries.getGroup(group.groupId).queryKey, group);
 			toast.success(t('admin.groups.groupUpdated', {name: group.name}));
 
-			void waitUntilReady(queryClient, queries.getGroup(group.groupId), {
-				isReady: (data) => data.name === group.name && data.description === group.description,
+			void waitUntilReady(queryClient, searchGroup(group.groupId), {
+				isReady: ({items}) =>
+					items.some(
+						(item) =>
+							item.groupId === group.groupId && item.name === group.name && item.description === group.description,
+					),
 			}).then((ready) => reconcileGroups(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -142,16 +148,9 @@ function useGroupMutations() {
 			queryClient.removeQueries({queryKey: queries.getGroup(groupId).queryKey});
 			toast.success(t('admin.groups.groupDeleted', {groupId}));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['groupGone', groupId],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getGroup({groupId}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileGroups);
+			void waitUntilReady(queryClient, searchGroup(groupId), {
+				isReady: ({items}) => items.every((item) => item.groupId !== groupId),
+			}).then((ready) => reconcileGroups(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.groups.deleteGroupFailed'), {description: await getErrorMessage(error)});

@@ -16,7 +16,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockDeleteGroupEndpoint,
-	mockGetGroupEndpoint,
+	mockQueryGroupsEndpoint,
 	mockQueryClientsByGroupEndpoint,
 	mockQueryMappingRulesByGroupEndpoint,
 	mockQueryRolesByGroupEndpoint,
@@ -693,7 +693,7 @@ describe('<AdminGroupDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
 			mockDeleteGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen, onDeleted} = await renderPage();
 

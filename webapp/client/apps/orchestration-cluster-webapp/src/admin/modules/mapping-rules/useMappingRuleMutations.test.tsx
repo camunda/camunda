@@ -17,7 +17,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {
 	mockCreateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
-	mockGetMappingRuleEndpoint,
+	mockQueryMappingRulesEndpoint,
 	mockUpdateMappingRuleEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createMappingRule, createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
@@ -59,7 +59,7 @@ async function createIntoList(worker: SetupWorker, queryKey: QueryKey) {
 	setUpListCache(queryClient, createQueryMappingRulesResponse({items: [existing]}), queryKey);
 	worker.use(
 		mockCreateMappingRuleEndpoint({successResponse: HttpResponse.json(created)}),
-		mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(created)}),
+		mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [created], page: {totalItems: 1}})}),
 	);
 	const {result} = await renderHook(() => useMappingRuleMutations(), {
 		wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
@@ -88,7 +88,7 @@ describe('useMappingRuleMutations', () => {
 		setUpListCache(queryClient, createQueryMappingRulesResponse({items: [existing]}));
 		worker.use(
 			mockCreateMappingRuleEndpoint({successResponse: HttpResponse.json(created)}),
-			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(created)}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [created], page: {totalItems: 1}})}),
 		);
 		const {result} = await renderHook(() => useMappingRuleMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
@@ -111,7 +111,7 @@ describe('useMappingRuleMutations', () => {
 		setUpListCache(queryClient, createQueryMappingRulesResponse({items: [existing]}));
 		worker.use(
 			mockUpdateMappingRuleEndpoint({successResponse: HttpResponse.json(updated)}),
-			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {result} = await renderHook(() => useMappingRuleMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
@@ -139,7 +139,7 @@ describe('useMappingRuleMutations', () => {
 		setUpListCache(queryClient, createQueryMappingRulesResponse({items: [doomed, survivor]}));
 		worker.use(
 			mockDeleteMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {result} = await renderHook(() => useMappingRuleMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
@@ -195,7 +195,7 @@ describe('useMappingRuleMutations', () => {
 		setUpListCache(queryClient, createQueryMappingRulesResponse({items: []}));
 		worker.use(
 			mockCreateMappingRuleEndpoint({successResponse: HttpResponse.json(created)}),
-			mockGetMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {result} = await renderHook(() => useMappingRuleMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,

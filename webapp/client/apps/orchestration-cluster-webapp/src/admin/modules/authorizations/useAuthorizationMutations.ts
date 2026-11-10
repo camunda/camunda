@@ -19,7 +19,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 import {DEFAULT_SORT_FIELD} from './searchSchema';
 
 const LIST_QUERY_KEY_PREFIX = ['queryAuthorizations'];
@@ -50,6 +50,19 @@ function canInsertAuthorization(authorization: Authorization, queryKey: QueryKey
 		(ownerId === undefined || ownerId === authorization.ownerId) &&
 		isFirstPageWithRoom(body?.page, currentItemCount)
 	);
+}
+
+function searchAuthorizationsOf({ownerId, ownerType, resourceType, resourceId, resourcePropertyName}: Authorization) {
+	return queries.queryAuthorizations({
+		filter: {
+			ownerId,
+			ownerType,
+			resourceType,
+			...(resourceId !== null && {resourceIds: [resourceId]}),
+			...(resourcePropertyName !== null && {resourcePropertyNames: [resourcePropertyName]}),
+		},
+		page: {limit: 100},
+	});
 }
 
 function useAuthorizationMutations() {
@@ -93,22 +106,23 @@ function useAuthorizationMutations() {
 			});
 			toast.success(t('admin.authorizations.createAuthorizationSuccess'));
 
-			void waitUntilReady(queryClient, queries.getAuthorization(authorization)).then((ready) =>
-				reconcileAuthorizations(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchAuthorizationsOf(authorization), {
+				isReady: ({items}) => items.some((item) => item.authorizationKey === authorization.authorizationKey),
+			}).then((ready) => reconcileAuthorizations(ready !== undefined));
 		},
 		onError: () => toast.error(t('admin.authorizations.createAuthorizationError')),
 	});
 
 	const remove = useMutation({
-		mutationFn: async (authorization: Pick<Authorization, 'authorizationKey'>) => {
+		mutationFn: async (authorization: Authorization) => {
 			const {error} = await request(endpoints.deleteAuthorization(authorization));
 			if (error !== null) {
 				throw mapQueryError(error);
 			}
 			return authorization;
 		},
-		onSuccess: ({authorizationKey}) => {
+		onSuccess: (authorization) => {
+			const {authorizationKey} = authorization;
 			removeFromListCaches(queryClient, {
 				queryKeyPrefix: LIST_QUERY_KEY_PREFIX,
 				id: authorizationKey,
@@ -117,16 +131,9 @@ function useAuthorizationMutations() {
 			queryClient.removeQueries({queryKey: queries.getAuthorization({authorizationKey}).queryKey});
 			toast.success(t('admin.authorizations.deleteAuthorizationSuccess'));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['authorizationGone', authorizationKey],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getAuthorization({authorizationKey}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileAuthorizations);
+			void waitUntilReady(queryClient, searchAuthorizationsOf(authorization), {
+				isReady: ({items}) => items.every((item) => item.authorizationKey !== authorizationKey),
+			}).then((ready) => reconcileAuthorizations(ready !== undefined));
 		},
 		onError: () => toast.error(t('admin.authorizations.deleteAuthorizationError')),
 	});

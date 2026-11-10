@@ -21,7 +21,7 @@ import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
 const LIST_QUERY_KEY_PREFIX = ['searchGlobalTaskListeners'];
 
@@ -97,6 +97,8 @@ function useGlobalTaskListenerMutations() {
 
 	const invalidateGlobalTaskListeners = () => queryClient.invalidateQueries({queryKey: LIST_QUERY_KEY_PREFIX});
 
+	const searchGlobalTaskListener = (id: string) => queries.searchGlobalTaskListeners({filter: {id}, page: {limit: 1}});
+
 	const reconcileGlobalTaskListeners = (confirmed: boolean) => {
 		if (confirmed) {
 			void invalidateGlobalTaskListeners();
@@ -128,9 +130,9 @@ function useGlobalTaskListenerMutations() {
 			patchCaches(globalTaskListener);
 			toast.success(t('admin.globalTaskListeners.createGlobalTaskListenerSuccess'));
 
-			void waitUntilReady(queryClient, queries.getGlobalTaskListener(globalTaskListener.id)).then((ready) =>
-				reconcileGlobalTaskListeners(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchGlobalTaskListener(globalTaskListener.id), {
+				isReady: ({items}) => items.some((item) => item.id === globalTaskListener.id),
+			}).then((ready) => reconcileGlobalTaskListeners(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.globalTaskListeners.createGlobalTaskListenerError'), {
@@ -152,8 +154,9 @@ function useGlobalTaskListenerMutations() {
 			queryClient.setQueryData(queries.getGlobalTaskListener(globalTaskListener.id).queryKey, globalTaskListener);
 			toast.success(t('admin.globalTaskListeners.updateGlobalTaskListenerSuccess'));
 
-			void waitUntilReady(queryClient, queries.getGlobalTaskListener(globalTaskListener.id), {
-				isReady: (data) => isSameConfiguration(data, globalTaskListener),
+			void waitUntilReady(queryClient, searchGlobalTaskListener(globalTaskListener.id), {
+				isReady: ({items}) =>
+					items.some((item) => item.id === globalTaskListener.id && isSameConfiguration(item, globalTaskListener)),
 			}).then((ready) => reconcileGlobalTaskListeners(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -180,16 +183,9 @@ function useGlobalTaskListenerMutations() {
 			queryClient.removeQueries({queryKey: queries.getGlobalTaskListener(id).queryKey});
 			toast.success(t('admin.globalTaskListeners.deleteGlobalTaskListenerSuccess'));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['globalTaskListenerGone', id],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getGlobalTaskListener({id}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileGlobalTaskListeners);
+			void waitUntilReady(queryClient, searchGlobalTaskListener(id), {
+				isReady: ({items}) => items.every((item) => item.id !== id),
+			}).then((ready) => reconcileGlobalTaskListeners(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.globalTaskListeners.deleteGlobalTaskListenerError'), {

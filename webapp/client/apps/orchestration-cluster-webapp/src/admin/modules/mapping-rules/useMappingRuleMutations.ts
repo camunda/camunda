@@ -20,7 +20,7 @@ import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 import {isDuplicateMappingRuleIdError} from './isDuplicateMappingRuleIdError';
 
 const LIST_QUERY_KEY_PREFIX = ['queryMappingRules'];
@@ -56,6 +56,9 @@ function useMappingRuleMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 
+	const searchMappingRule = (mappingRuleId: string) =>
+		queries.queryMappingRules({filter: {mappingRuleId}, page: {limit: 1}});
+
 	const invalidateMappingRules = () =>
 		Promise.all([
 			queryClient.invalidateQueries({queryKey: LIST_QUERY_KEY_PREFIX}),
@@ -90,9 +93,9 @@ function useMappingRuleMutations() {
 			});
 			toast.success(t('admin.mappingRules.createMappingRuleSuccess'));
 
-			void waitUntilReady(queryClient, queries.getMappingRule(mappingRule.mappingRuleId)).then((ready) =>
-				reconcileMappingRules(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchMappingRule(mappingRule.mappingRuleId), {
+				isReady: ({items}) => items.some((item) => item.mappingRuleId === mappingRule.mappingRuleId),
+			}).then((ready) => reconcileMappingRules(ready !== undefined));
 		},
 		onError: async (error) => {
 			// A duplicate ID is corrected inline on the mapping rule ID field instead of a toast.
@@ -121,11 +124,14 @@ function useMappingRuleMutations() {
 			queryClient.setQueryData(queries.getMappingRule(mappingRule.mappingRuleId).queryKey, mappingRule);
 			toast.success(t('admin.mappingRules.updateMappingRuleSuccess'));
 
-			void waitUntilReady(queryClient, queries.getMappingRule(mappingRule.mappingRuleId), {
-				isReady: (data) =>
-					data.name === mappingRule.name &&
-					data.claimName === mappingRule.claimName &&
-					data.claimValue === mappingRule.claimValue,
+			void waitUntilReady(queryClient, searchMappingRule(mappingRule.mappingRuleId), {
+				isReady: ({items}) =>
+					items.some(
+						(item) =>
+							item.name === mappingRule.name &&
+							item.claimName === mappingRule.claimName &&
+							item.claimValue === mappingRule.claimValue,
+					),
 			}).then((ready) => reconcileMappingRules(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -150,16 +156,9 @@ function useMappingRuleMutations() {
 			queryClient.removeQueries({queryKey: queries.getMappingRule(mappingRuleId).queryKey});
 			toast.success(t('admin.mappingRules.deleteMappingRuleSuccess'));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['mappingRuleGone', mappingRuleId],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getMappingRule({mappingRuleId}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileMappingRules);
+			void waitUntilReady(queryClient, searchMappingRule(mappingRuleId), {
+				isReady: ({items}) => items.every((item) => item.mappingRuleId !== mappingRuleId),
+			}).then((ready) => reconcileMappingRules(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.mappingRules.deleteMappingRuleError'), {description: await getErrorMessage(error)});

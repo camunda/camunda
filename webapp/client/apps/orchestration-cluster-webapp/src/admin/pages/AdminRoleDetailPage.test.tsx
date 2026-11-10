@@ -21,7 +21,7 @@ import {
 	mockAssignMappingToRoleEndpoint,
 	mockAssignUserToRoleEndpoint,
 	mockDeleteRoleEndpoint,
-	mockGetRoleEndpoint,
+	mockQueryRolesEndpoint,
 	mockQueryClientsByRoleEndpoint,
 	mockQueryGroupsByRoleEndpoint,
 	mockQueryGroupsEndpoint,
@@ -777,7 +777,7 @@ describe('<AdminRoleDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
 			mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen, onDeleted} = await renderPage();
 
