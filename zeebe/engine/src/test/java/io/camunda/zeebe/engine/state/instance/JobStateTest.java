@@ -7,49 +7,45 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-public final class JobStateTest {
+/**
+ * Runs the job state contract against the RocksDB state, plus the tests of the transitions that
+ * only the event appliers released before 8.10 use. These enter jobs in the legacy {@code
+ * JOB_ACTIVATABLE} column family, which only the RocksDB state has.
+ */
+@ExtendWith(ProcessingStateExtension.class)
+public final class JobStateTest extends AbstractJobStateContractTest {
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
-  private MutableJobState jobState;
   private MutableProcessingState processingState;
 
-  @Before
-  public void setUp() {
-    processingState = stateRule.getProcessingState();
-    jobState = processingState.getJobState();
+  @Override
+  protected MutableJobState createJobState() {
+    return processingState.getJobState();
   }
 
   @Test
-  public void shouldCreateJobEntry() {
+  void shouldCreateJobEntryViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -67,74 +63,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldActivateJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.activate(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isTrue();
-    assertJobState(key, State.ACTIVATED);
-    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    assertListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldGetJobForDefaultTenant() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    jobState.create(key, jobRecord);
-
-    // when
-    final JobRecord jobRecord1 = jobState.getJob(key);
-
-    // then
-    assertThat(jobRecord1).isEqualTo(jobRecord);
-  }
-
-  @Test
-  public void shouldGetJobForCustomTenant() {
-    // given
-    final long key = 1L;
-    final String testTenant = "test-tenant";
-    final JobRecord jobRecord = newJobRecord(testTenant);
-    jobState.create(key, jobRecord);
-
-    // when
-    final JobRecord jobRecord1 = jobState.getJob(key);
-
-    // then
-    assertThat(jobRecord1).isEqualTo(jobRecord);
-  }
-
-  @Test
-  public void shoulDisableJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    jobState.create(key, jobRecord);
-
-    // when
-    jobState.disable(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isTrue();
-    assertJobState(key, State.FAILED);
-    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldTimeoutJob() {
+  void shouldTimeoutJobViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -154,26 +83,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldDeleteJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.delete(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldNeverPersistJobVariables() {
+  void shouldNeverPersistJobVariablesViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -196,124 +106,21 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldCompleteActivatableJob() {
+  void shouldCompleteJobCreatedViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
+    jobState.create(key, jobRecord);
 
     // when
-    jobState.create(key, jobRecord);
     jobState.complete(key, jobRecord);
 
     // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+    assertJobRemoved(key, jobRecord);
   }
 
   @Test
-  public void shouldCancelActivatableJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.cancel(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldThrowErrorActivatableJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.throwError(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isTrue();
-    assertJobState(key, State.ERROR_THROWN);
-    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldCompleteActivatedJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.activate(key, jobRecord);
-    jobState.complete(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldCancelActivatedJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.activate(key, jobRecord);
-    jobState.cancel(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldThrowErrorActivatedJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.activate(key, jobRecord);
-    jobState.throwError(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isTrue();
-    assertJobState(key, State.ERROR_THROWN);
-    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
-  }
-
-  @Test
-  public void shouldCompleteFailedJob() {
+  void shouldCompleteFailedJobViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -325,16 +132,11 @@ public final class JobStateTest {
     jobState.complete(key, jobRecord);
 
     // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+    assertJobRemoved(key, jobRecord);
   }
 
   @Test
-  public void shouldCancelFailedJob() {
+  void shouldCancelFailedJobViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -346,152 +148,27 @@ public final class JobStateTest {
     jobState.cancel(key, jobRecord);
 
     // then
-    assertThat(jobState.exists(key)).isFalse();
-    assertThat(jobState.isInState(key, State.NOT_FOUND)).isTrue();
-    assertThat(jobState.getJob(key)).isNull();
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-    refuteListedAsBackOff(key, jobRecord.getRecurringTime() + 1 + 1);
+    assertJobRemoved(key, jobRecord);
   }
 
   @Test
-  public void shouldUpdateJobPriority() {
-    // given
+  void shouldUpdatePriorityOfJobCreatedViaDeprecatedPath() {
+    // given - a pre-8.10 job lives in the legacy column family only
     final long jobKey = 1L;
-    final int newPriority = 99;
     final JobRecord jobRecord = newJobRecord();
     jobState.create(jobKey, jobRecord);
-
-    // when
-    jobState.updateJobPriority(jobKey, newPriority);
-
-    // then
-    assertThat(jobState.exists(jobKey)).isTrue();
-    assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(newPriority);
-    assertListedAsActivatable(jobKey, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
-  }
-
-  @Test
-  public void shouldIgnoreUpdateJobPriorityIfJobNotFound() {
-    // given
-    final long jobKey = 999L;
-
-    // when / then - no exception, no state change
-    jobState.updateJobPriority(jobKey, 42);
-    assertThat(jobState.exists(jobKey)).isFalse();
-  }
-
-  @Test
-  public void shouldNotParkJobForSecretResolutionWhenItIsNotUpForActivation() {
-    // given
-    final long jobKey = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    createAndActivateJobRecord(jobKey, jobRecord);
-
-    // when
-    jobState.parkForSecretResolution(jobKey, jobRecord);
-
-    // then
-    assertJobState(jobKey, State.ACTIVATED);
-  }
-
-  @Test
-  public void shouldMakeWaitingJobActivatableAfterSecretResolution() {
-    // given
-    final long jobKey = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    parkJobForSecretResolution(jobKey, jobRecord);
-
-    // when
-    jobState.makeActivatableAfterSecretResolution(jobKey);
-
-    // then
-    assertJobState(jobKey, State.ACTIVATABLE);
-    assertListedAsActivatable(jobKey, jobRecord.getTypeBuffer(), jobRecord.getTenantId());
-  }
-
-  @Test
-  public void shouldNotMakeJobActivatableAfterSecretResolutionWhenItNoLongerWaits() {
-    // given
-    final long jobKey = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    parkJobForSecretResolution(jobKey, jobRecord);
-    jobState.makeActivatableAfterSecretResolution(jobKey);
-    jobState.activate(jobKey, jobRecord);
-
-    // when
-    jobState.makeActivatableAfterSecretResolution(jobKey);
-
-    // then
-    assertJobState(jobKey, State.ACTIVATED);
-    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
-  }
-
-  @Test
-  public void shouldNotMakeSuspendedJobActivatableAfterSecretResolution() {
-    // given
-    final long jobKey = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    parkJobForSecretResolution(jobKey, jobRecord);
-    jobState.updateJobState(jobKey, State.SUSPENDED);
-    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
-
-    // when
-    jobState.makeActivatableAfterSecretResolution(jobKey);
-
-    // then
-    assertJobState(jobKey, State.SUSPENDED);
-    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
-  }
-
-  @Test
-  public void shouldIgnoreMakeActivatableAfterSecretResolutionIfJobNotFound() {
-    // given
-    final long jobKey = 999L;
-
-    // when / then
-    jobState.makeActivatableAfterSecretResolution(jobKey);
-    assertThat(jobState.exists(jobKey)).isFalse();
-  }
-
-  @Test
-  public void shouldKeepJobParkedWhenUpdatingPriorityOfJobWaitingForSecretResolution() {
-    // given
-    final long jobKey = 1L;
-    final JobRecord jobRecord = newJobRecord();
-    parkJobForSecretResolution(jobKey, jobRecord);
 
     // when
     jobState.updateJobPriority(jobKey, 99);
 
-    // then
+    // then - it is moved to the priority column family, listed once
     assertThat(jobState.getJob(jobKey).getPriority()).isEqualTo(99);
-    assertJobState(jobKey, State.WAITING_FOR_SECRET_RESOLUTION);
-    refuteListedAsActivatable(jobKey, jobRecord.getTypeBuffer());
+    assertThat(getActivatableKeys(jobRecord.getTypeBuffer(), jobRecord.getTenantId()))
+        .containsExactly(jobKey);
   }
 
   @Test
-  public void shouldUpdateDeadline() {
-    // given
-    final long jobKey = 1L;
-    final long deadline = 300000;
-    final long newDeadline = 600000;
-    final JobRecord jobRecord = newJobRecord().setDeadline(deadline);
-    jobState.create(jobKey, jobRecord);
-    jobState.activate(jobKey, jobRecord);
-
-    // when
-    jobState.updateJobDeadline(jobKey, newDeadline);
-
-    // then
-    assertThat(jobState.exists(jobKey)).isTrue();
-    assertThat(jobState.getJob(jobKey).getDeadline()).isEqualTo(newDeadline);
-    assertThat(jobState.jobDeadlineExists(jobKey, deadline)).isFalse();
-    assertThat(jobState.jobDeadlineExists(jobKey, newDeadline)).isTrue();
-  }
-
-  @Test
-  public void shouldFailJobWithRetriesLeft() {
+  void shouldFailJobWithRetriesLeftViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord().setRetries(1);
@@ -511,7 +188,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldFailJobWithRetriesAndBackOff() {
+  void shouldFailJobWithRetriesAndBackOffViaDeprecatedPath() {
     // given
     final long key = 1L;
     final long now = 0;
@@ -537,7 +214,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldRetryProperJobWithRetryBackoff() {
+  void shouldRetryProperJobWithRetryBackoffViaDeprecatedPath() {
     // given
     final long firstKey = 1L;
     final long secondKey = 2L;
@@ -560,7 +237,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldImmediatelyRetryJobAfterFailedIfRetryBackoffIsZeroAndHasRetries() {
+  void shouldImmediatelyRetryJobAfterFailedIfRetryBackoffIsZeroAndHasRetriesViaDeprecatedPath() {
     // given
     final long jobKey = 1L;
     final JobRecord jobRecord = newJobRecord().setRetries(1).setRetryBackoff(0);
@@ -577,7 +254,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldRetryJobAfterRecurredAndHasRetries() {
+  void shouldRetryJobAfterRecurredAndHasRetriesViaDeprecatedPath() {
     // given
     final long jobKey = 1L;
     final long now = 0;
@@ -603,7 +280,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldFailJobWithNoRetriesLeft() {
+  void shouldFailJobWithNoRetriesLeftViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord().setRetries(0);
@@ -622,7 +299,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldResolveJob() {
+  void shouldResolveJobViaDeprecatedPath() {
     // given
     final long key = 1L;
     final JobRecord jobRecord = newJobRecord();
@@ -643,174 +320,31 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldListTimedOutEntriesInOrder() {
-    // given
-    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
-    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
-    jobState.create(5, newJobRecord().setDeadline(512L));
-    createAndActivateJobRecord(3, newJobRecord().setDeadline(65536L));
-    createAndActivateJobRecord(4, newJobRecord().setDeadline(4294967296L));
-
-    // when
-    final List<Long> jobKeys = getTimedOutKeys(32768L);
-
-    // then
-    assertThat(jobKeys).hasSize(2);
-    assertThat(jobKeys).containsExactly(1L, 2L);
-  }
-
-  @Test
-  public void shouldOnlyIterateOverTimedoutWhileTrue() {
-    // given
-    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
-    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
-    createAndActivateJobRecord(3, newJobRecord().setDeadline(512L));
-    createAndActivateJobRecord(4, newJobRecord().setDeadline(65536L));
-    createAndActivateJobRecord(5, newJobRecord().setDeadline(4294967296L));
-
-    // when
-    final List<Long> timedOutKeys = new ArrayList<>();
-    final long since = 65536L;
-    final DeadlineIndex nextIndex =
-        jobState.forEachTimedOutEntry(
-            since,
-            null,
-            (k, e) -> {
-              timedOutKeys.add(k);
-              return k.longValue() < 3;
-            });
-
-    // then
-    assertThat(timedOutKeys).hasSize(3);
-    assertThat(timedOutKeys).containsExactly(1L, 2L, 3L);
-    assertThat(nextIndex).isNotNull();
-    assertThat(nextIndex.key()).isEqualTo(3);
-  }
-
-  @Test
-  public void shouldCleanUpOnForEachTimedOutAndVisitNext() {
-    // given
-    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
-    jobState.cancel(1, newJobRecord());
-    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
-
-    // when
-    final List<Long> timedOutKeys = new ArrayList<>();
-    final long since = 65536L;
-    final DeadlineIndex nextIndex =
-        jobState.forEachTimedOutEntry(
-            since,
-            null,
-            (k, e) -> {
-              timedOutKeys.add(k);
-              return true;
-            });
-
-    // then
-    assertThat(timedOutKeys).hasSize(1);
-    assertThat(timedOutKeys).containsExactly(2L);
-    assertThat(nextIndex).isNull();
-  }
-
-  @Test
-  public void shouldDoNothingIfNotTimedOutJobs() {
-    // given
-    jobState.create(5, newJobRecord().setDeadline(512L));
-    createAndActivateJobRecord(4, newJobRecord().setDeadline(4294967296L));
-
-    // when
-    final List<Long> jobKeys = getTimedOutKeys(32768L);
-
-    // then
-    assertThat(jobKeys).isEmpty();
-  }
-
-  @Test
-  public void shouldCheckExistenceCorrectly() {
+  void shouldMakeJobNotActivatableWhenFailedWithoutRetriesViaDeprecatedPath() {
     // given
     final long key = 1L;
-    final JobRecord jobRecord = newJobRecord();
+    final JobRecord jobRecord = newJobRecord().setRetries(0);
 
     // when
     jobState.create(key, jobRecord);
+    jobState.fail(key, jobRecord);
 
     // then
     assertThat(jobState.exists(key)).isTrue();
-    assertThat(jobState.exists(key + 1)).isFalse();
+    assertJobState(key, State.FAILED);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
   }
 
   @Test
-  public void shouldListActivatableJobsForTypeInOrder() {
-    // given
-    final DirectBuffer type = wrapString("test");
-    jobState.create(1, newJobRecord().setType("tes"));
-    jobState.create(256L, newJobRecord().setType(type));
-    createAndActivateJobRecord(512, newJobRecord().setType(type));
-    jobState.create(65536L, newJobRecord().setType(type));
-    jobState.create(4294967296L, newJobRecord().setType("test-other"));
-
-    // when
-    final List<Long> jobKeys = getActivatableKeys(type, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-    // then
-    assertThat(jobKeys).hasSize(2);
-    assertThat(jobKeys).containsExactly(256L, 65536L);
-  }
-
-  @Test
-  public void shouldNotDoAnythingIfNoActivatableJobs() {
-    // given
-    final DirectBuffer type = wrapString("test");
-    final String tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
-    createAndActivateJobRecord(1, newJobRecord().setType(type));
-    jobState.create(256L, newJobRecord().setType("other"));
-
-    // when
-    final List<Long> jobKeys = getActivatableKeys(type, tenantId);
-
-    // then
-    assertThat(jobKeys).isEmpty();
-  }
-
-  @Test
-  public void shouldReturnNullIfJobDoesNotExist() {
-    // given
-    final long key = 1L;
-
-    // then
-    assertThat(jobState.getJob(key)).isNull();
-  }
-
-  @Test
-  public void shouldReturnCorrectJob() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord().setType("test");
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.create(key + 1, newJobRecord().setType("other"));
-
-    // then
-    final JobRecord savedJob = jobState.getJob(key);
-    assertJobRecordIsEqualTo(savedJob, jobRecord);
-    assertThat(BufferUtil.bufferAsString(savedJob.getTypeBuffer())).isEqualTo("test");
-  }
-
-  @Test
-  public void testInvariants() {
+  void shouldEnforceInvariantsOfDeprecatedTransitions() {
     final JobRecord jobWithoutType = newJobRecord().setType(new UnsafeBuffer(0, 0));
     final JobRecord jobWithoutDeadline = newJobRecord().setDeadline(0L);
 
     // create
     assertThatThrownBy(() -> jobState.create(1L, jobWithoutType))
         .hasStackTraceContaining("type must not be empty");
-
-    // activate
-    assertThatThrownBy(() -> jobState.activate(1L, jobWithoutType))
-        .hasMessage("type must not be empty");
-    assertThatThrownBy(() -> jobState.activate(1L, jobWithoutDeadline))
-        .hasMessage("deadline must be greater than 0");
 
     // fail
     assertThatThrownBy(() -> jobState.fail(1L, jobWithoutType))
@@ -851,57 +385,36 @@ public final class JobStateTest {
     jobState.throwError(1L, jobWithoutDeadline);
   }
 
+  /**
+   * Deleting a job with another deadline than it was activated with leaves its deadline entry
+   * behind in the column family; the scan skips it.
+   */
   @Test
-  public void shouldNotOverwritePreviousRecord() {
+  void shouldSkipDeadlineEntryOfDeletedJob() {
     // given
-    final long key = 1L;
-    final JobRecord writtenRecord = newJobRecord();
+    createAndActivateJobRecord(1, newJobRecord().setDeadline(1L));
+    jobState.cancel(1, newJobRecord());
+    createAndActivateJobRecord(2, newJobRecord().setDeadline(256L));
 
     // when
-    jobState.create(key, writtenRecord);
-    writtenRecord.setType("foo");
+    final List<Long> timedOutKeys = new ArrayList<>();
+    final long since = 65536L;
+    final DeadlineIndex nextIndex =
+        jobState.forEachTimedOutEntry(
+            since,
+            null,
+            (k, e) -> {
+              timedOutKeys.add(k);
+              return true;
+            });
 
     // then
-    final JobRecord readRecord = jobState.getJob(key);
-    assertThat(readRecord.getTypeBuffer()).isNotEqualTo(writtenRecord.getTypeBuffer());
-    assertThat(readRecord.getTypeBuffer()).isEqualTo(BufferUtil.wrapString("test"));
-    assertThat(writtenRecord.getTypeBuffer()).isEqualTo(BufferUtil.wrapString("foo"));
+    assertThat(timedOutKeys).containsExactly(2L);
+    assertThat(nextIndex).isNull();
   }
 
   @Test
-  public void shouldMakeJobNotActivatableWhenFailedWithoutRetries() {
-    // given
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord().setRetries(0);
-
-    // when
-    jobState.create(key, jobRecord);
-    jobState.fail(key, jobRecord);
-
-    // then
-    assertThat(jobState.exists(key)).isTrue();
-    assertJobState(key, State.FAILED);
-    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
-    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
-    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
-  }
-
-  @Test
-  public void shouldIndexJobByProcessInstanceOnCreation() {
-    // given
-    final long processInstanceKey = 10L;
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord().setProcessInstanceKey(processInstanceKey);
-
-    // when - the 8.10+ creation path
-    jobState.insertJobRecordActivatable(key, jobRecord);
-
-    // then
-    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
-  }
-
-  @Test
-  public void shouldNotIndexJobCreatedViaDeprecatedPath() {
+  void shouldNotIndexJobCreatedViaDeprecatedPath() {
     // given / when - the deprecated create() path does not populate the index
     final long processInstanceKey = 10L;
     jobState.create(1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
@@ -911,7 +424,7 @@ public final class JobStateTest {
   }
 
   @Test
-  public void shouldBackfillIndexWhenDeprecatedJobIsSuspended() {
+  void shouldBackfillIndexWhenDeprecatedJobIsSuspended() {
     // given - a job created via the deprecated path, so it is not yet indexed
     final long processInstanceKey = 10L;
     final long key = 1L;
@@ -923,231 +436,5 @@ public final class JobStateTest {
 
     // then - the index is backfilled
     assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
-  }
-
-  @Test
-  public void shouldNotDuplicateIndexWhenAlreadyIndexedJobIsSuspended() {
-    // given - a job already indexed at creation
-    final long processInstanceKey = 10L;
-    final long key = 1L;
-    jobState.insertJobRecordActivatable(
-        key, newJobRecord().setProcessInstanceKey(processInstanceKey));
-
-    // when - suspension re-indexes it
-    jobState.updateJobState(key, State.SUSPENDED);
-
-    // then - the upsert leaves a single entry
-    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).containsExactly(key);
-  }
-
-  @Test
-  public void shouldRemoveJobFromProcessInstanceIndexOnDeletion() {
-    // given
-    final long processInstanceKey = 10L;
-    final long key = 1L;
-    final JobRecord jobRecord = newJobRecord().setProcessInstanceKey(processInstanceKey);
-    jobState.insertJobRecordActivatable(key, jobRecord);
-
-    // when
-    jobState.delete(key, jobRecord);
-
-    // then
-    assertThat(visitAllJobsOfProcessInstance(processInstanceKey)).isEmpty();
-  }
-
-  @Test
-  public void shouldOnlyIndexJobsOfTheGivenProcessInstance() {
-    // given
-    final JobRecord jobOfInstanceOne = newJobRecord().setProcessInstanceKey(10L);
-    final JobRecord jobOfInstanceTwo = newJobRecord().setProcessInstanceKey(20L);
-    jobState.insertJobRecordActivatable(1L, jobOfInstanceOne);
-    jobState.insertJobRecordActivatable(2L, jobOfInstanceTwo);
-
-    // when
-    final var visited = visitAllJobsOfProcessInstance(10L);
-
-    // then
-    assertThat(visited).containsExactly(1L);
-  }
-
-  @Test
-  public void shouldStartAtFirstEntryWhenStartAtIsNegative() {
-    // given
-    final long processInstanceKey = 10L;
-    jobState.insertJobRecordActivatable(
-        1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
-    jobState.insertJobRecordActivatable(
-        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
-
-    // when - a non-sentinel negative key, to prove any negative (not only -1) starts from the first
-    final var visited = new ArrayList<Long>();
-    jobState.forEachJobsByProcessInstance(
-        processInstanceKey,
-        -2L,
-        jobKey -> {
-          visited.add(jobKey);
-          return true;
-        });
-
-    // then
-    assertThat(visited).containsExactly(1L, 2L);
-  }
-
-  @Test
-  public void shouldIncludeStartAtJobKeyInSearch() {
-    // given
-    final long processInstanceKey = 10L;
-    jobState.insertJobRecordActivatable(
-        1L, newJobRecord().setProcessInstanceKey(processInstanceKey));
-    jobState.insertJobRecordActivatable(
-        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
-
-    // when
-    final var visited = new ArrayList<Long>();
-    jobState.forEachJobsByProcessInstance(
-        processInstanceKey,
-        2L,
-        jobKey -> {
-          visited.add(jobKey);
-          return true;
-        });
-
-    // then - the given key itself is included, not skipped
-    assertThat(visited).containsExactly(2L);
-  }
-
-  @Test
-  public void shouldContinuePastACursorKeyThatNoLongerExists() {
-    // given - two indexed jobs, then the one the cursor points at is deleted (e.g. cancelled
-    // between resume cycles) so the cursor now names a key with no index entry
-    final long processInstanceKey = 10L;
-    final JobRecord deleted = newJobRecord().setProcessInstanceKey(processInstanceKey);
-    jobState.insertJobRecordActivatable(1L, deleted);
-    jobState.insertJobRecordActivatable(
-        2L, newJobRecord().setProcessInstanceKey(processInstanceKey));
-    jobState.delete(1L, deleted);
-
-    // when - seeking from the deleted key
-    final var visited = new ArrayList<Long>();
-    jobState.forEachJobsByProcessInstance(
-        processInstanceKey,
-        1L,
-        jobKey -> {
-          visited.add(jobKey);
-          return true;
-        });
-
-    // then - the seek lands on the next key >= the cursor, so iteration continues from there
-    assertThat(visited).containsExactly(2L);
-  }
-
-  private List<Long> visitAllJobsOfProcessInstance(final long processInstanceKey) {
-    final List<Long> visited = new ArrayList<>();
-    jobState.forEachJobsByProcessInstance(
-        processInstanceKey,
-        -1L,
-        jobKey -> {
-          visited.add(jobKey);
-          return true;
-        });
-    return visited;
-  }
-
-  private void createAndActivateJobRecord(final long key, final JobRecord record) {
-    jobState.create(key, record);
-    jobState.activate(key, record);
-  }
-
-  /** Creates an activatable job and parks it the way the secret resolution flow does. */
-  private void parkJobForSecretResolution(final long key, final JobRecord record) {
-    jobState.insertJobRecordActivatable(key, record);
-    jobState.makeJobActivatableByPriority(
-        record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
-    jobState.parkForSecretResolution(key, record);
-  }
-
-  private JobRecord newJobRecord() {
-    return newJobRecord(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  private JobRecord newJobRecord(final String tenantId) {
-    final JobRecord jobRecord = new JobRecord();
-
-    jobRecord.setRetries(2).setDeadline(256L).setType("test").setTenantId(tenantId);
-
-    return jobRecord;
-  }
-
-  private void assertJobState(final long key, final JobState.State state) {
-    final List<State> others =
-        Arrays.stream(State.values()).filter(s -> s != state).collect(Collectors.toList());
-
-    assertThat(jobState.isInState(key, state)).isTrue();
-    assertThat(others).noneMatch(other -> jobState.isInState(key, other));
-  }
-
-  private void assertJobRecordIsEqualTo(final JobRecord jobRecord, final JobRecord expected) {
-    assertThat(jobRecord.getDeadline()).isEqualTo(expected.getDeadline());
-    assertThat(jobRecord.getWorkerBuffer()).isEqualTo(expected.getWorkerBuffer());
-    assertThat(jobRecord.getRetries()).isEqualTo(expected.getRetries());
-    assertThat(jobRecord.getTypeBuffer()).isEqualTo(expected.getTypeBuffer());
-    assertThat(jobRecord.getCustomHeadersBuffer()).isEqualTo(expected.getCustomHeadersBuffer());
-    assertThat(jobRecord.getVariablesBuffer()).isEqualTo(expected.getVariablesBuffer());
-  }
-
-  private void assertListedAsActivatable(
-      final long key, final DirectBuffer type, final String tenantId) {
-    final List<Long> activatableKeys = getActivatableKeys(type, tenantId);
-    assertThat(activatableKeys).contains(key);
-  }
-
-  private void refuteListedAsActivatable(final long key, final DirectBuffer type) {
-    refuteListedAsActivatable(key, type, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  private void refuteListedAsActivatable(
-      final long key, final DirectBuffer type, final String tenantId) {
-    final List<Long> activatableKeys = getActivatableKeys(type, tenantId);
-    assertThat(activatableKeys).doesNotContain(key);
-  }
-
-  private void assertListedAsTimedOut(final long key, final long since) {
-    final List<Long> timedOutKeys = getTimedOutKeys(since);
-    assertThat(timedOutKeys).contains(key);
-  }
-
-  private void refuteListedAsTimedOut(final long key, final long since) {
-    final List<Long> timedOutKeys = getTimedOutKeys(since);
-    assertThat(timedOutKeys).doesNotContain(key);
-  }
-
-  private void assertListedAsBackOff(final long key, final long since) {
-    final List<Long> backedOffKeys = getBackedOffKeys(since);
-    assertThat(backedOffKeys).contains(key);
-  }
-
-  private void refuteListedAsBackOff(final long key, final long since) {
-    final List<Long> backedOffKeys = getBackedOffKeys(since);
-    assertThat(backedOffKeys).doesNotContain(key);
-  }
-
-  private List<Long> getActivatableKeys(final DirectBuffer type, final String... tenantIds) {
-    final List<Long> activatableKeys = new ArrayList<>();
-
-    jobState.forEachActivatableJobs(type, List.of(tenantIds), (k, e) -> activatableKeys.add(k));
-    return activatableKeys;
-  }
-
-  private List<Long> getTimedOutKeys(final long since) {
-    final List<Long> timedOutKeys = new ArrayList<>();
-
-    jobState.forEachTimedOutEntry(since, null, (k, e) -> timedOutKeys.add(k));
-    return timedOutKeys;
-  }
-
-  private List<Long> getBackedOffKeys(final long since) {
-    final List<Long> backedOffKeys = new ArrayList<>();
-    jobState.findBackedOffJobs(since, (k, record) -> backedOffKeys.add(k));
-    return backedOffKeys;
   }
 }

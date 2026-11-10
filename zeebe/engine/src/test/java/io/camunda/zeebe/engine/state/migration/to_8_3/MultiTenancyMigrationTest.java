@@ -30,7 +30,8 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
-import io.camunda.zeebe.engine.state.instance.DbJobState;
+import io.camunda.zeebe.engine.state.instance.DbJobStore;
+import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -879,12 +880,12 @@ public class MultiTenancyMigrationTest {
     private TransactionContext transactionContext;
 
     private LegacyJobState legacyState;
-    private DbJobState jobState;
+    private JobStateImpl jobState;
 
     @BeforeEach
     void setup() {
       legacyState = new LegacyJobState(zeebeDb, transactionContext);
-      jobState = new DbJobState(zeebeDb, transactionContext);
+      jobState = new JobStateImpl(new DbJobStore(zeebeDb, transactionContext));
     }
 
     @Test

@@ -109,6 +109,7 @@ final class JobBatchCollector {
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
+        maxActivatedCount,
         (key, jobRecord) -> {
           if (!isAuthorizedForJob.test(jobRecord)) {
             // Skip jobs the requester is not authorized for
