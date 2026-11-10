@@ -210,6 +210,41 @@ final class EngineStateRoundTripsTest {
     assertThat(sessions.opened()).isEqualTo(2);
   }
 
+  @Test
+  void shouldReadEachUnchangedRowOncePerCommand() throws Exception {
+    // given - committed parent and child
+    final var setup = transactionContext.getCurrentTransaction();
+    final var parent =
+        elementInstanceState.newInstance(
+            100,
+            record(BpmnElementType.PROCESS, "process"),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        parent,
+        101,
+        record(BpmnElementType.EXCLUSIVE_GATEWAY, "gateway"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    setup.commit();
+
+    // when - a command that reads the scopes repeatedly, then removes the child
+    final var transaction = transactionContext.getCurrentTransaction();
+    counting.reset();
+    elementInstanceState.getInstance(100);
+    elementInstanceState.getInstance(101);
+    elementInstanceState.getInstance(100);
+    elementInstanceState.getInstance(101);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.removeInstance(101);
+
+    // then - one SELECT per distinct row or table read: 9 without the loaded-row cache
+    final int selects = counting.otherStatements;
+    transaction.rollback();
+    assertThat(selects).isEqualTo(4);
+  }
+
   private static ProcessInstanceRecord record(final BpmnElementType type, final String elementId) {
     return new ProcessInstanceRecord()
         .setElementId(elementId)
