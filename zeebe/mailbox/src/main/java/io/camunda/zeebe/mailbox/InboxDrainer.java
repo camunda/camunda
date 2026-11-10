@@ -11,7 +11,10 @@ import io.camunda.zeebe.mailbox.api.InboxMessage;
 import io.camunda.zeebe.mailbox.api.MailboxConfig;
 import io.camunda.zeebe.mailbox.api.MailboxStore;
 import io.camunda.zeebe.mailbox.api.MailboxStoreException;
+import io.camunda.zeebe.mailbox.api.MessageKind;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +38,11 @@ public final class InboxDrainer {
   private final MailboxConfig config;
   private final InboxMessageWriter writer;
 
+  private final Set<MessageKind> kinds;
+
   /**
+   * Drains messages of every kind.
+   *
    * @param claimerId identifies this node as the claimer, for example its broker id
    */
   public InboxDrainer(
@@ -44,9 +51,25 @@ public final class InboxDrainer {
       final String claimerId,
       final MailboxConfig config,
       final InboxMessageWriter writer) {
+    this(store, partitionId, claimerId, EnumSet.allOf(MessageKind.class), config, writer);
+  }
+
+  /**
+   * @param claimerId identifies this drainer as the claimer. Drainers that run side by side on one
+   *     inbox need different ids, because releasing the claims works for an id.
+   * @param kinds the kinds of messages this drainer takes. Other drainers take the rest.
+   */
+  public InboxDrainer(
+      final MailboxStore store,
+      final int partitionId,
+      final String claimerId,
+      final Set<MessageKind> kinds,
+      final MailboxConfig config,
+      final InboxMessageWriter writer) {
     this.store = store;
     this.partitionId = partitionId;
     this.claimerId = claimerId;
+    this.kinds = kinds;
     this.config = config;
     this.writer = writer;
   }
@@ -55,7 +78,8 @@ public final class InboxDrainer {
   public DrainResult drainOnce() {
     final List<InboxMessage> claimed;
     try {
-      claimed = store.claim(partitionId, claimerId, config.batchSize(), config.claimTimeout());
+      claimed =
+          store.claim(partitionId, claimerId, kinds, config.batchSize(), config.claimTimeout());
     } catch (final MailboxStoreException e) {
       LOG.warn("Could not claim messages of partition {}", partitionId, e);
       return new DrainResult(0, 0, true);

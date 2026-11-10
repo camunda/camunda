@@ -11,8 +11,10 @@ import io.camunda.zeebe.mailbox.api.CleanupResult;
 import io.camunda.zeebe.mailbox.api.GatewayId;
 import io.camunda.zeebe.mailbox.api.InboxMessage;
 import io.camunda.zeebe.mailbox.api.MailboxStore;
+import io.camunda.zeebe.mailbox.api.MessageKind;
 import io.camunda.zeebe.mailbox.api.NewInboxMessage;
 import io.camunda.zeebe.mailbox.api.OutboxResponse;
+import io.camunda.zeebe.mailbox.api.PartitionLeader;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -41,6 +43,7 @@ public final class InMemoryMailboxStore implements MailboxStore {
   private final Map<GatewayId, Map<Long, OutboxEntry>> outboxes = new HashMap<>();
   private final Map<GatewayId, Integer> streamIdByGateway = new HashMap<>();
   private final Map<Integer, GatewayId> gatewayByStreamId = new HashMap<>();
+  private final Map<Integer, PartitionLeader> leaders = new HashMap<>();
   private long nextSequence = 1;
   private int nextStreamId = 1;
 
@@ -73,10 +76,14 @@ public final class InMemoryMailboxStore implements MailboxStore {
   public synchronized List<InboxMessage> claim(
       final int partitionId,
       final String claimerId,
+      final Set<MessageKind> kinds,
       final int maxMessages,
       final Duration claimTimeout) {
     if (claimerId.isBlank()) {
       throw new IllegalArgumentException("claimerId must not be blank");
+    }
+    if (kinds.isEmpty()) {
+      throw new IllegalArgumentException("kinds must not be empty");
     }
     if (maxMessages < 1) {
       throw new IllegalArgumentException("maxMessages must be at least 1");
@@ -88,7 +95,7 @@ public final class InMemoryMailboxStore implements MailboxStore {
       if (claimed.size() == maxMessages) {
         break;
       }
-      if (entry.isAvailable(now)) {
+      if (kinds.contains(entry.message.kind()) && entry.isAvailable(now)) {
         entry.claimerId = claimerId;
         entry.claimExpiresAt = now.plus(claimTimeout);
         entry.deliveryCount++;
@@ -171,6 +178,32 @@ public final class InMemoryMailboxStore implements MailboxStore {
   @Override
   public synchronized Optional<GatewayId> findGateway(final int streamId) {
     return Optional.ofNullable(gatewayByStreamId.get(streamId));
+  }
+
+  @Override
+  public synchronized boolean putLeader(final PartitionLeader leader) {
+    final var current = leaders.get(leader.partitionId());
+    if (current != null && current.term() > leader.term()) {
+      return false;
+    }
+    leaders.put(leader.partitionId(), leader);
+    return true;
+  }
+
+  @Override
+  public synchronized boolean removeLeader(
+      final int partitionId, final String nodeId, final long term) {
+    final var current = leaders.get(partitionId);
+    if (current == null || current.term() != term || !current.nodeId().equals(nodeId)) {
+      return false;
+    }
+    leaders.remove(partitionId);
+    return true;
+  }
+
+  @Override
+  public synchronized Optional<PartitionLeader> findLeader(final int partitionId) {
+    return Optional.ofNullable(leaders.get(partitionId));
   }
 
   @Override

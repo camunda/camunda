@@ -169,6 +169,33 @@ final class InboxDrainerTest {
     assertThat(store.claim(PARTITION, OTHER, 10, CONFIG.claimTimeout())).hasSize(1);
   }
 
+  @Test
+  void shouldTakeOnlyTheKindsItWasCreatedFor() {
+    // given
+    store.insert(
+        new NewInboxMessage(PARTITION, MessageKind.CLIENT_REQUEST, "gateway-1", 1, new byte[] {1}));
+    store.insert(
+        new NewInboxMessage(
+            PARTITION, MessageKind.INTER_PARTITION_COMMAND, "partition-2", 2, new byte[] {2}));
+    final var drainer =
+        new InboxDrainer(
+            store,
+            PARTITION,
+            LEADER,
+            Set.of(MessageKind.CLIENT_REQUEST),
+            CONFIG,
+            messages -> writeAll(messages, messages.size()));
+
+    // when
+    final var result = drainer.drainOnce();
+
+    // then
+    assertThat(result).isEqualTo(new DrainResult(1, 1, false));
+    assertThat(written).containsExactly(1L);
+    final var other = store.claim(PARTITION, OTHER, 10, CONFIG.claimTimeout());
+    assertThat(other).extracting(InboxMessage::requestId).containsExactly(2L);
+  }
+
   private InboxDrainer drainer(final MailboxStore drainerStore, final InboxMessageWriter writer) {
     return new InboxDrainer(drainerStore, PARTITION, LEADER, CONFIG, writer);
   }

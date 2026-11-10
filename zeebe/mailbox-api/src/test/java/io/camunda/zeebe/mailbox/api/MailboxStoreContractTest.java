@@ -83,6 +83,88 @@ public abstract class MailboxStoreContractTest {
   }
 
   @Test
+  void shouldRejectClaimWithoutKinds() {
+    // when / then
+    assertThatThrownBy(() -> store.claim(partition, "leader-a", Set.of(), 10, CLAIM_TIMEOUT))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldOnlyHandOutMessagesOfTheRequestedKinds() {
+    // given
+    store.insert(
+        new NewInboxMessage(partition, MessageKind.CLIENT_REQUEST, sender, 1, new byte[] {1}));
+    store.insert(
+        new NewInboxMessage(
+            partition, MessageKind.INTER_PARTITION_COMMAND, sender, 2, new byte[] {2}));
+
+    // when
+    final var requests =
+        store.claim(
+            partition, "request-consumer", Set.of(MessageKind.CLIENT_REQUEST), 10, CLAIM_TIMEOUT);
+    final var commands =
+        store.claim(
+            partition,
+            "command-consumer",
+            Set.of(MessageKind.INTER_PARTITION_COMMAND),
+            10,
+            CLAIM_TIMEOUT);
+
+    // then
+    assertThat(requests).extracting(InboxMessage::requestId).containsExactly(1L);
+    assertThat(commands).extracting(InboxMessage::requestId).containsExactly(2L);
+  }
+
+  @Test
+  void shouldLeaveMessagesOfOtherKindsUnclaimed() {
+    // given
+    store.insert(
+        new NewInboxMessage(
+            partition, MessageKind.INTER_PARTITION_COMMAND, sender, 1, new byte[] {1}));
+    store.claim(
+        partition, "request-consumer", Set.of(MessageKind.CLIENT_REQUEST), 10, CLAIM_TIMEOUT);
+
+    // when
+    final var commands =
+        store.claim(
+            partition,
+            "command-consumer",
+            Set.of(MessageKind.INTER_PARTITION_COMMAND),
+            10,
+            CLAIM_TIMEOUT);
+
+    // then
+    assertThat(commands).hasSize(1);
+  }
+
+  @Test
+  void shouldReleaseOnlyTheClaimsOfTheGivenClaimer() {
+    // given
+    store.insert(
+        new NewInboxMessage(partition, MessageKind.CLIENT_REQUEST, sender, 1, new byte[] {1}));
+    store.insert(
+        new NewInboxMessage(
+            partition, MessageKind.INTER_PARTITION_COMMAND, sender, 2, new byte[] {2}));
+    store.claim(
+        partition, "request-consumer", Set.of(MessageKind.CLIENT_REQUEST), 10, CLAIM_TIMEOUT);
+    store.claim(
+        partition,
+        "command-consumer",
+        Set.of(MessageKind.INTER_PARTITION_COMMAND),
+        10,
+        CLAIM_TIMEOUT);
+
+    // when
+    final var released = store.releaseClaims(partition, "request-consumer");
+
+    // then
+    assertThat(released).isEqualTo(1);
+    assertThat(store.claim(partition, "next", 10, CLAIM_TIMEOUT))
+        .extracting(InboxMessage::requestId)
+        .containsExactly(1L);
+  }
+
+  @Test
   void shouldReturnTheStoredMessage() {
     // given
     final var payload = "hello".getBytes(StandardCharsets.UTF_8);
@@ -398,6 +480,78 @@ public abstract class MailboxStoreContractTest {
 
     // then
     assertThat(found.orElse(null)).isNotEqualTo(gateway);
+  }
+
+  // ---- Partition leaders ----
+
+  @Test
+  void shouldFindNoLeaderForAPartitionWithoutOne() {
+    assertThat(store.findLeader(partition)).isEmpty();
+  }
+
+  @Test
+  void shouldFindTheLeaderThatWasPut() {
+    // when
+    final var stored = store.putLeader(new PartitionLeader(partition, "node-1", "eu", 3));
+
+    // then
+    assertThat(stored).isTrue();
+    assertThat(store.findLeader(partition))
+        .contains(new PartitionLeader(partition, "node-1", "eu", 3));
+  }
+
+  @Test
+  void shouldReplaceTheLeaderWithAHigherTerm() {
+    // given
+    store.putLeader(new PartitionLeader(partition, "node-1", "eu", 3));
+
+    // when
+    final var stored = store.putLeader(new PartitionLeader(partition, "node-2", "us", 4));
+
+    // then
+    assertThat(stored).isTrue();
+    assertThat(store.findLeader(partition).orElseThrow().nodeId()).isEqualTo("node-2");
+  }
+
+  @Test
+  void shouldKeepTheLeaderWithAHigherTerm() {
+    // given
+    store.putLeader(new PartitionLeader(partition, "node-2", "us", 4));
+
+    // when
+    final var stored = store.putLeader(new PartitionLeader(partition, "node-1", "eu", 3));
+
+    // then
+    assertThat(stored).isFalse();
+    assertThat(store.findLeader(partition).orElseThrow().nodeId()).isEqualTo("node-2");
+  }
+
+  @Test
+  void shouldRemoveTheLeaderOfTheSameNodeAndTerm() {
+    // given
+    store.putLeader(new PartitionLeader(partition, "node-1", "eu", 3));
+
+    // when
+    final var removed = store.removeLeader(partition, "node-1", 3);
+
+    // then
+    assertThat(removed).isTrue();
+    assertThat(store.findLeader(partition)).isEmpty();
+  }
+
+  @Test
+  void shouldKeepTheLeaderWhenAnotherNodeOrTermRemoves() {
+    // given
+    store.putLeader(new PartitionLeader(partition, "node-2", "us", 4));
+
+    // when
+    final var otherNode = store.removeLeader(partition, "node-1", 4);
+    final var otherTerm = store.removeLeader(partition, "node-2", 3);
+
+    // then
+    assertThat(otherNode).isFalse();
+    assertThat(otherTerm).isFalse();
+    assertThat(store.findLeader(partition)).isPresent();
   }
 
   // ---- Cleanup ----

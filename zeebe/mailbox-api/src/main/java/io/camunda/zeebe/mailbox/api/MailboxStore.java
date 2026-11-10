@@ -9,6 +9,7 @@ package io.camunda.zeebe.mailbox.api;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -56,17 +57,37 @@ public interface MailboxStore {
    * its claim was released. Messages are returned in the order of their sequence. A message that is
    * handed out again has a higher {@link InboxMessage#deliveryCount()}.
    *
+   * <p>Only messages of the given kinds are handed out. This lets one inbox serve several
+   * consumers, for example one that writes commands from other partitions to the log and one that
+   * handles requests from gateways, each with a claimer id of its own.
+   *
    * @param partitionId the partition whose inbox is read
    * @param claimerId identifies the caller, for example the node that leads the partition. Not
-   *     blank.
+   *     blank. Claims are released for a claimer id, so consumers that run side by side need
+   *     different ids.
+   * @param kinds the kinds of messages to hand out, at least one
    * @param maxMessages the most messages to return, at least 1
    * @param claimTimeout how long the claim stays valid
    * @return the claimed messages, empty if none is available
-   * @throws IllegalArgumentException if {@code claimerId} is blank or {@code maxMessages} is below
-   *     1
+   * @throws IllegalArgumentException if {@code claimerId} is blank, {@code kinds} is empty, or
+   *     {@code maxMessages} is below 1
    */
   List<InboxMessage> claim(
-      int partitionId, String claimerId, int maxMessages, Duration claimTimeout);
+      int partitionId,
+      String claimerId,
+      Set<MessageKind> kinds,
+      int maxMessages,
+      Duration claimTimeout);
+
+  /** Hands out messages of every kind. See {@link #claim(int, String, Set, int, Duration)}. */
+  default List<InboxMessage> claim(
+      final int partitionId,
+      final String claimerId,
+      final int maxMessages,
+      final Duration claimTimeout) {
+    return claim(
+        partitionId, claimerId, EnumSet.allOf(MessageKind.class), maxMessages, claimTimeout);
+  }
 
   /**
    * Removes messages that the claimer finished processing.
@@ -130,6 +151,38 @@ public interface MailboxStore {
    * @return the gateway, or empty if the id is unknown
    */
   Optional<GatewayId> findGateway(int streamId);
+
+  // ---- Partition leaders ----
+
+  /**
+   * Records the leader of a partition. The leader calls it when it starts to lead.
+   *
+   * @param leader the leader
+   * @return true if the record was stored, false if the store holds a record with a higher term for
+   *     the partition. A record with the same or a lower term is replaced.
+   */
+  boolean putLeader(PartitionLeader leader);
+
+  /**
+   * Removes the record of a leader, for example because it stopped leading. The record stays if it
+   * belongs to another node or has another term, so a late call of a former leader is harmless.
+   *
+   * @param partitionId the partition
+   * @param nodeId the node that led it
+   * @param term the term in which it led
+   * @return true if the record was removed
+   */
+  boolean removeLeader(int partitionId, String nodeId, long term);
+
+  /**
+   * Returns the recorded leader of a partition. The record is the last that a leader stored. A
+   * leader that failed does not remove it, so the record shows where a leader was, not that it
+   * still is there.
+   *
+   * @param partitionId the partition
+   * @return the leader, or empty if none is recorded
+   */
+  Optional<PartitionLeader> findLeader(int partitionId);
 
   // ---- Cleanup ----
 
