@@ -6,6 +6,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-util"))
   implementation(libs.org.agrona.agrona)
+  implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.ehcache.ehcache) {
     exclude(group = "org.glassfish.jaxb", module = "jaxb-runtime")
   }
