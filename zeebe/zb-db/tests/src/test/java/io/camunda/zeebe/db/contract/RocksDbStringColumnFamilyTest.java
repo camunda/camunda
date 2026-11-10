@@ -5,14 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 
-public final class ColumnFamilyTest extends ColumnFamilyContractTest {
+public final class RocksDbStringColumnFamilyTest extends DbStringColumnFamilyContractTest {
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> createFactory() {
-    return DefaultZeebeDbFactory.getDefaultFactory();
+    return RocksDbTestFactory.create();
   }
 }
