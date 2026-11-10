@@ -10,7 +10,6 @@ package io.camunda.zeebe.db.contract;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -24,7 +23,7 @@ final class RocksDbTestFactory {
   private RocksDbTestFactory() {}
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<ColumnFamilyType> create() {
+      ZeebeRocksDbFactory<ColumnFamilyType> create() {
     final var rocksDbConfiguration = new RocksDbConfiguration();
     rocksDbConfiguration.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
     rocksDbConfiguration.setMemoryLimit(512 * 1024 * 1024);

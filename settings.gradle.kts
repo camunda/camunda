@@ -401,6 +401,8 @@ registerProject(":zeebe-db-api", "zeebe/zb-db/api")
 
 registerProject(":zeebe-db-rocksdb", "zeebe/zb-db/rocksdb")
 
+registerProject(":zeebe-db-writebehind", "zeebe/zb-db/writebehind")
+
 registerProject(":zeebe-db-tests", "zeebe/zb-db/tests")
 
 registerProject(":operate-data-generator", "operate/data-generator")
