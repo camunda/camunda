@@ -412,7 +412,41 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 "camunda.secrets.MY_SECRET",
                 "",
                 AuthorizationResourceType.SECRET,
-                permissions)));
+                permissions)),
+        Arguments.of(
+            // PROBE resourceId (ANY) request
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("*")
+                .resourceType(ResourceTypeEnum.PROBE)
+                .permissionTypes(List.of(PermissionTypeEnum.ANSWER))
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ANY,
+                "*",
+                "",
+                AuthorizationResourceType.PROBE,
+                Set.of(PermissionType.ANSWER))),
+        Arguments.of(
+            // PROBE resourceId as a probe ID, with characters the generic ID pattern rejects
+            AuthorizationIdBasedRequest.Builder.create()
+                .ownerId("ownerId")
+                .ownerType(OwnerTypeEnum.USER)
+                .resourceId("validate-configuration/io.camunda:aws-credential:1")
+                .resourceType(ResourceTypeEnum.PROBE)
+                .permissionTypes(List.of(PermissionTypeEnum.CREATE))
+                .build(),
+            new CreateAuthorizationRequest(
+                "ownerId",
+                AuthorizationOwnerType.USER,
+                AuthorizationResourceMatcher.ID,
+                "validate-configuration/io.camunda:aws-credential:1",
+                "",
+                AuthorizationResourceType.PROBE,
+                Set.of(PermissionType.CREATE))));
   }
 
   private static Stream<Arguments> provideValidUpdateAuthorizationRequests() {
@@ -586,6 +620,28 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 + "It must be '*' or the full reference in the form 'camunda.secrets.<name>', "
                 + "where <name> matches the pattern '%s'."
                     .formatted(AuthorizationRequestValidator.SECRET_NAME_PATTERN)),
+        Arguments.of(
+            // PROBE resourceId with whitespace can never be a probe ID
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "validate configuration",
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId 'validate configuration' is not a valid probe ID. It must be "
+                + "'*' or 1 to 256 characters without whitespace."),
+        Arguments.of(
+            // PROBE resourceId longer than a probe ID can be
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "p".repeat(257),
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId '"
+                + "p".repeat(257)
+                + "' is not a valid probe ID. It must be '*' or 1 to 256 characters without "
+                + "whitespace."),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
             // missing ownerId

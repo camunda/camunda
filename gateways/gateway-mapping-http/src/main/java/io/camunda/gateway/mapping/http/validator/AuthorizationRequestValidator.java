@@ -7,12 +7,14 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.AuthorizationIdBasedRequest;
 import io.camunda.gateway.protocol.model.AuthorizationPropertyBasedRequest;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
+import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.validation.AuthorizationValidator;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +42,12 @@ public final class AuthorizationRequestValidator {
   public static final Pattern SECRET_RESOURCE_ID_PATTERN =
       Pattern.compile("\\*|camunda\\.secrets\\." + SECRET_NAME_PATTERN);
 
+  /**
+   * Matches a PROBE resource id: the wildcard, or a probe ID of 1 to 256 characters without
+   * whitespace. A probe ID can never be {@code *}, so the wildcard always means every probe.
+   */
+  public static final Pattern PROBE_RESOURCE_ID_PATTERN = Pattern.compile("\\S{1,256}");
+
   private final AuthorizationValidator authorizationValidator;
 
   public AuthorizationRequestValidator(final AuthorizationValidator authorizationValidator) {
@@ -55,14 +63,41 @@ public final class AuthorizationRequestValidator {
                       request.getOwnerId(),
                       request.getOwnerType(),
                       request.getResourceType(),
-                      request.getResourceId(),
+                      resourceIdForGenericCheck(request.getResourceType(), request.getResourceId()),
                       null,
                       request.getPermissionTypes() == null
                           ? Set.of()
                           : Set.copyOf(request.getPermissionTypes())));
           validateSecretResourceId(request.getResourceType(), request.getResourceId(), violations);
+          validateProbeResourceId(request.getResourceType(), request.getResourceId(), violations);
           return violations;
         });
+  }
+
+  /**
+   * A probe ID is an opaque string, for example {@code
+   * validate-configuration/io.camunda:aws-credential:1}, so the generic ID pattern would reject it
+   * for characters such as {@code /} and {@code :}. The generic check gets the wildcard instead,
+   * and {@link #validateProbeResourceId} checks the probe ID.
+   */
+  private static @Nullable String resourceIdForGenericCheck(
+      final @Nullable ResourceTypeEnum resourceType, final @Nullable String resourceId) {
+    if (resourceType == ResourceTypeEnum.PROBE && resourceId != null && !resourceId.isBlank()) {
+      return AuthorizationScope.WILDCARD_CHAR;
+    }
+    return resourceId;
+  }
+
+  private static void validateProbeResourceId(
+      final @Nullable ResourceTypeEnum resourceType,
+      final @Nullable String resourceId,
+      final List<String> violations) {
+    if (resourceType == ResourceTypeEnum.PROBE
+        && resourceId != null
+        && !resourceId.isBlank()
+        && !PROBE_RESOURCE_ID_PATTERN.matcher(resourceId).matches()) {
+      violations.add(ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID.formatted(resourceId));
+    }
   }
 
   /**
