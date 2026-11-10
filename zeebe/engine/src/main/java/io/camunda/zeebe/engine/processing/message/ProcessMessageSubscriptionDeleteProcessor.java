@@ -98,6 +98,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     }
 
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
+    final int storageOrdinal = subscription.getRecord().getStorageOrdinal();
     final boolean bufferedReopen;
     if (subscription.getRecord().isClosedForSuspend()) {
       // Restore the PI-side row to OPENED as the durable resume manifest and buffer a REOPEN so the
@@ -109,7 +110,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
           ProcessMessageSubscriptionIntent.CREATED,
           subscription.getRecord());
       bufferReopenCommand(subscription.getKey(), reopenScratch);
-      retriggerDrainIfResuming(processInstanceKey, reopenScratch);
+      retriggerDrainIfResuming(processInstanceKey, storageOrdinal, reopenScratch);
       bufferedReopen = true;
     } else {
       stateWriter.appendFollowUpEvent(
@@ -120,7 +121,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
       // the last CLOSING row while the instance is RESUMING and the drain is parked waiting on it.
       // Re-wake the drain here too, otherwise the instance stays RESUMING forever. Self-gates on
       // RESUMING, so it is a no-op for the common unsuspended close.
-      retriggerDrainIfResuming(processInstanceKey, subscription.getRecord());
+      retriggerDrainIfResuming(processInstanceKey, storageOrdinal, subscription.getRecord());
       bufferedReopen = false;
     }
 
@@ -151,6 +152,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
             .setProcessInstanceKey(manifest.getProcessInstanceKey())
             .setProcessDefinitionKey(manifest.getProcessDefinitionKey())
             .setTenantId(manifest.getTenantId())
+            .setStorageOrdinal(manifest.getStorageOrdinal())
             .setCommandKey(subscriptionKey)
             .setValueType(ValueType.PROCESS_MESSAGE_SUBSCRIPTION)
             .setIntent(ProcessMessageSubscriptionIntent.REOPEN)
@@ -165,7 +167,9 @@ public final class ProcessMessageSubscriptionDeleteProcessor
    * re-checks state, so triggering once per draining row is safe.
    */
   private void retriggerDrainIfResuming(
-      final long processInstanceKey, final ProcessMessageSubscriptionRecord manifest) {
+      final long processInstanceKey,
+      final int storageOrdinal,
+      final ProcessMessageSubscriptionRecord manifest) {
     if (suspensionState.getSuspensionState(processInstanceKey) != SuspensionState.State.RESUMING) {
       return;
     }
@@ -175,7 +179,8 @@ public final class ProcessMessageSubscriptionDeleteProcessor
         new BufferedCommandRecord()
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(manifest.getProcessDefinitionKey())
-            .setTenantId(manifest.getTenantId()));
+            .setTenantId(manifest.getTenantId())
+            .setStorageOrdinal(storageOrdinal));
   }
 
   private void rejectCommand(final TypedRecord<ProcessMessageSubscriptionRecord> command) {

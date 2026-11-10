@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferen
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -53,9 +54,11 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
@@ -1899,6 +1902,216 @@ public final class StorageOrdinalAssignmentTest {
   }
 
   @Test
+  public void shouldAssignConfiguredOrdinalToBufferedCommandRecordWhenBufferedCommandCarriesNone() {
+    // given: a suspended instance waiting on a timer whose ordinal is persisted in state
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("timer-buffered-restore-process")
+                .startEvent()
+                .intermediateCatchEvent("timer-catch", c -> c.timerWithDuration("PT1H"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("timer-buffered-restore-process").create();
+    final var timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var created = timerCreated.getValue();
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when: a TRIGGER command without an ordinal arrives while suspended, so it is buffered
+    final var trigger =
+        new TimerRecord()
+            .setElementInstanceKey(created.getElementInstanceKey())
+            .setProcessInstanceKey(created.getProcessInstanceKey())
+            .setProcessDefinitionKey(created.getProcessDefinitionKey())
+            .setTargetElementId(BufferUtil.wrapString(created.getTargetElementId()))
+            .setDueDate(created.getDueDate())
+            .setRepetitions(created.getRepetitions())
+            .setTenantId(created.getTenantId())
+            .setRootProcessInstanceKey(created.getRootProcessInstanceKey())
+            .setBpmnProcessId(created.getBpmnProcessId())
+            .setElementType(created.getElementType());
+    engine.writeRecords(
+        RecordToWrite.command().timer(TimerIntent.TRIGGER, trigger).key(timerCreated.getKey()));
+
+    // then: the BUFFERED record carries the ordinal restored from state, not the command's 0
+    assertThat(trigger.getStorageOrdinal()).isZero();
+    final var buffered =
+        RecordingExporter.records()
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
+            .filter(
+                r ->
+                    bufferedCommand(r).getProcessInstanceKey() == processInstanceKey
+                        && bufferedCommand(r).getValueType() == ValueType.TIMER)
+            .getFirst();
+    assertThat(bufferedCommand(buffered).getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToReopenBufferedForSuspendedMessageSubscription() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("reopen-buffered-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(m -> m.name("ordinal-reopen-message").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("reopen-buffered-process")
+            .withVariable("key", "correlation-key-reopen")
+            .create();
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when: the instance is suspended, which closes the subscription and buffers a REOPEN
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // then: the BUFFERED record and its REOPEN command value carry the ordinal
+    final var reopenBuffered =
+        RecordingExporter.records()
+            .withValueType(ValueType.BUFFERED_COMMAND)
+            .withIntent(BufferedCommandIntent.BUFFERED)
+            .filter(
+                r ->
+                    bufferedCommand(r).getProcessInstanceKey() == processInstanceKey
+                        && bufferedCommand(r).getIntent()
+                            == ProcessMessageSubscriptionIntent.REOPEN)
+            .getFirst();
+    final var reopenBufferedValue = bufferedCommand(reopenBuffered);
+    assertThat(reopenBufferedValue.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+    assertThat(((StorageOrdinalRelated) reopenBufferedValue.getCommandValue()).getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+
+    // when: the instance is resumed, which drains the buffer and reopens the subscription
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final var reopened =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .filter(r -> r.getPosition() > reopenBuffered.getPosition())
+            .getFirst();
+    final var resumed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // then: the drain records carry the ordinal
+    final var drainRecords =
+        recordsUpTo(resumed).stream()
+            .filter(r -> r.getValueType() == ValueType.BUFFERED_COMMAND)
+            .filter(r -> bufferedCommand(r).getProcessInstanceKey() == processInstanceKey)
+            .toList();
+    assertThat(drainRecords)
+        .extracting(Record::getIntent)
+        .contains(BufferedCommandIntent.DRAIN, BufferedCommandIntent.DRAINED);
+    assertThat(drainRecords)
+        .extracting(r -> bufferedCommand(r).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // and: the subscription reopened by the drain carries the ordinal
+    final var reopenRecords =
+        RecordingExporter.processMessageSubscriptionRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntents(
+                ProcessMessageSubscriptionIntent.CREATING, ProcessMessageSubscriptionIntent.CREATED)
+            .filter(r -> r.getPosition() > reopenBuffered.getPosition())
+            .limit(r -> r.getPosition() >= reopened.getPosition())
+            .asList();
+    assertThat(reopenRecords)
+        .extracting(Record::getIntent)
+        .contains(
+            ProcessMessageSubscriptionIntent.CREATING, ProcessMessageSubscriptionIntent.CREATED);
+    assertThat(reopenRecords)
+        .extracting(r -> r.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToUserTaskSuspendAndResumeRecords() {
+    // given: an instance waiting at a user task
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("user-task-suspend-resume-process")
+                .startEvent()
+                .userTask("user-task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("user-task-suspend-resume-process").create();
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    engine.processInstance().withInstanceKey(processInstanceKey).resume();
+    final var resumed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var recordsUpToResumed = recordsUpTo(resumed);
+
+    // then: the user task SUSPENDED and RESUMED events carry the ordinal
+    final var userTaskRecords =
+        recordsUpToResumed.stream()
+            .filter(r -> r.getValueType() == ValueType.USER_TASK)
+            .filter(
+                r ->
+                    ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .filter(
+                r ->
+                    r.getIntent() == UserTaskIntent.SUSPENDED
+                        || r.getIntent() == UserTaskIntent.RESUMED)
+            .toList();
+    assertThat(userTaskRecords)
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.SUSPENDED, UserTaskIntent.RESUMED);
+    assertThat(userTaskRecords)
+        .extracting(r -> ((UserTaskRecordValue) r.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // and: the element instance walk records carry the ordinal
+    final var walkRecords =
+        recordsUpToResumed.stream()
+            .filter(r -> r.getValueType() == ValueType.ELEMENT_INSTANCE_WALK)
+            .filter(
+                r ->
+                    ((ElementInstanceWalkRecordValue) r.getValue()).getProcessInstanceKey()
+                        == processInstanceKey)
+            .toList();
+    assertThat(walkRecords).isNotEmpty();
+    assertThat(walkRecords)
+        .extracting(r -> ((ElementInstanceWalkRecordValue) r.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    // and: the resume hand-off command for user tasks carries the ordinal
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUME_USER_TASKS)
+                .onlyCommands()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
   public void shouldRestoreConfiguredOrdinalFromStateWhenCancelCommandCarriesNone() {
     // given: a timer whose ordinal is persisted in state
     engine
@@ -2947,10 +3160,7 @@ public final class StorageOrdinalAssignmentTest {
     RecordingExporter.records()
         .withValueType(ValueType.BUFFERED_COMMAND)
         .withIntent(BufferedCommandIntent.BUFFERED)
-        .filter(
-            r ->
-                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
-                    == processInstanceKey)
+        .filter(r -> bufferedCommand(r).getProcessInstanceKey() == processInstanceKey)
         .getFirst();
 
     // when
@@ -3000,10 +3210,7 @@ public final class StorageOrdinalAssignmentTest {
         RecordingExporter.records()
             .limit(r -> r.getPosition() >= resumed.getPosition())
             .withValueType(ValueType.BUFFERED_COMMAND)
-            .filter(
-                r ->
-                    ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
-                        == processInstanceKey)
+            .filter(r -> bufferedCommand(r).getProcessInstanceKey() == processInstanceKey)
             .filter(
                 r ->
                     r.getIntent() == BufferedCommandIntent.DRAIN
@@ -3013,8 +3220,16 @@ public final class StorageOrdinalAssignmentTest {
         .extracting(r -> r.getIntent())
         .contains(BufferedCommandIntent.DRAIN, BufferedCommandIntent.DRAINED);
     assertThat(bufferedCommandRecords)
-        .extracting(r -> ((BufferedCommandRecordValue) r.getValue()).getStorageOrdinal())
+        .extracting(r -> bufferedCommand(r).getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+  }
+
+  private static BufferedCommandRecordValue bufferedCommand(final Record<?> record) {
+    return (BufferedCommandRecordValue) record.getValue();
+  }
+
+  private List<Record<RecordValue>> recordsUpTo(final Record<?> last) {
+    return RecordingExporter.records().limit(r -> r.getPosition() >= last.getPosition()).asList();
   }
 
   private long adHocSubProcessInstanceKeyOf(final long processInstanceKey) {
