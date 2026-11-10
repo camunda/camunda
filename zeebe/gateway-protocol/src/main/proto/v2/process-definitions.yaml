@@ -435,6 +435,20 @@ components:
             - $ref: '#/components/schemas/ProcessDefinitionFilter'
           description: The process definition search filters.
 
+    ProcessDefinitionOrFilterFields:
+      description: |
+        Fields that can be used inside a `$or` group of the process definition search filter.
+      type: object
+      properties:
+        name:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Name of this process definition.
+        processDefinitionId:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+          description: Process definition ID of this process definition.
+
     ProcessDefinitionFilter:
       description: Process definition search filter.
       type: object
@@ -489,9 +503,36 @@ components:
             - ACTIVE
             - DRAINING
             - DELETED
+        $or:
+          description: |
+            Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
+            Each group must contain at least one field.
+
+            Top-level fields and the `$or` clause are combined using AND logic, meaning (top-level filters) AND (any of the `$or` filters) must match.
+
+            When used together with `isLatestVersion`, the filters are applied first and the latest version is then picked among the matching process definitions.
+            <br>
+            <em>Example:</em>
+
+            ```json
+            {
+              "isLatestVersion": true,
+              "$or": [
+                { "processDefinitionId": { "$like": "*invoice*" } },
+                { "name": { "$like": "*invoice*" } }
+              ]
+            }
+            ```
+            This matches process definitions whose <code>processDefinitionId</code> or <code>name</code> contains <em>invoice</em>.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionOrFilterFields'
       x-properties-added-in-version:
         - propertyName: "state"
           addedInVersion: "8.10"
+        - propertyName: "$or"
+          addedInVersion: "8.11"
 
     ProcessDefinitionSearchQueryResult:
       type: object
