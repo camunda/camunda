@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the relational engine state, see EngineStateMapper. The schema is created by the
+  Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  Statements without a databaseId are portable; a statement or fragment with the databaseId of
+  the connected database (see EngineStateMyBatis) replaces the portable one.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.instance.EngineStateMapper">
+
+  <!-- element_instance -->
+
+  <resultMap id="elementInstanceRow"
+    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$ElementInstanceRow">
+    <constructor>
+      <idArg column="element_instance_key" javaType="_long"/>
+      <arg column="parent_key" javaType="_long"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="process_definition_key" javaType="_long"/>
+      <arg column="bpmn_element_type" javaType="_short"/>
+      <arg column="state" javaType="_short"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="elementInstanceColumns">
+    element_instance_key, parent_key, process_instance_key, process_definition_key,
+    bpmn_element_type, state, payload
+  </sql>
+
+  <!--
+    Excludes the keys of staged element instances from a query over committed rows. PostgreSQL
+    binds them as one array parameter, so a large transaction can't exceed the parameter limit.
+  -->
+  <sql id="excludeKeys">
+    <if test="excludedKeys.length > 0">
+      AND element_instance_key NOT IN
+      <foreach collection="excludedKeys" item="excludedKey" open="(" separator="," close=")">
+        #{excludedKey}
+      </foreach>
+    </if>
+  </sql>
+  <sql id="excludeKeys" databaseId="postgresql">
+    AND element_instance_key &lt;&gt; ALL
+    (#{excludedKeys,typeHandler=org.apache.ibatis.type.ArrayTypeHandler})
+  </sql>
+
+  <select id="selectElementInstance" resultMap="elementInstanceRow">
+    SELECT <include refid="elementInstanceColumns"/>
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND element_instance_key = #{key}
+  </select>
+
+  <select id="selectChildren" resultMap="elementInstanceRow">
+    SELECT <include refid="elementInstanceColumns"/>
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND parent_key = #{parentKey}
+    ORDER BY element_instance_key
+  </select>
+
+  <select id="selectChildKeys" resultType="_long">
+    SELECT element_instance_key
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND parent_key = #{parentKey}
+    ORDER BY element_instance_key
+  </select>
+
+  <!--
+    Process instances are the rows with bpmn_element_type 1, the ordinal of
+    BpmnElementType.PROCESS. It is inlined instead of bound, so the planner can use the partial
+    index on process instances.
+  -->
+  <select id="selectProcessInstanceKeysByDefinition" resultType="_long">
+    SELECT element_instance_key
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
+      AND process_definition_key = #{processDefinitionKey}
+    ORDER BY element_instance_key
+  </select>
+
+  <select id="selectAnyProcessInstanceByDefinition" resultType="_long">
+    SELECT element_instance_key
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
+      AND process_definition_key = #{processDefinitionKey}
+      <include refid="excludeKeys"/>
+    LIMIT 1
+  </select>
+
+  <select id="countProcessInstances" resultType="_long">
+    SELECT COUNT(*)
+    FROM element_instance
+    WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
+      <include refid="excludeKeys"/>
+  </select>
+
+  <insert id="insertElementInstance">
+    INSERT INTO element_instance (partition_id, element_instance_key, parent_key,
+      process_instance_key, process_definition_key, bpmn_element_type, state, payload)
+    VALUES (#{partitionId}, #{row.key}, #{row.parentKey}, #{row.processInstanceKey},
+      #{row.processDefinitionKey}, #{row.bpmnElementType}, #{row.state}, #{row.payload})
+  </insert>
+
+  <update id="updateElementInstance">
+    UPDATE element_instance
+    SET parent_key = #{row.parentKey}, process_instance_key = #{row.processInstanceKey},
+      process_definition_key = #{row.processDefinitionKey},
+      bpmn_element_type = #{row.bpmnElementType}, state = #{row.state}, payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND element_instance_key = #{row.key}
+  </update>
+
+  <delete id="deleteElementInstance">
+    DELETE FROM element_instance
+    WHERE partition_id = #{partitionId} AND element_instance_key = #{key}
+  </delete>
+
+  <!-- taken_sequence_flow -->
+
+  <resultMap id="takenSequenceFlowRow"
+    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$TakenSequenceFlowRow">
+    <constructor>
+      <idArg column="flow_scope_key" javaType="_long"/>
+      <idArg column="gateway_element_id" javaType="String"/>
+      <idArg column="sequence_flow_element_id" javaType="String"/>
+      <arg column="times_taken" javaType="_int"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectTakenSequenceFlow" resultMap="takenSequenceFlowRow">
+    SELECT flow_scope_key, gateway_element_id, sequence_flow_element_id, times_taken
+    FROM taken_sequence_flow
+    WHERE partition_id = #{partitionId} AND flow_scope_key = #{key.flowScopeKey}
+      AND gateway_element_id = #{key.gatewayElementId}
+      AND sequence_flow_element_id = #{key.sequenceFlowElementId}
+  </select>
+
+  <select id="selectTakenSequenceFlows" resultMap="takenSequenceFlowRow">
+    SELECT flow_scope_key, gateway_element_id, sequence_flow_element_id, times_taken
+    FROM taken_sequence_flow
+    WHERE partition_id = #{partitionId} AND flow_scope_key = #{flowScopeKey}
+    <if test="gatewayElementId != null">
+      AND gateway_element_id = #{gatewayElementId}
+    </if>
+    ORDER BY gateway_element_id, sequence_flow_element_id
+  </select>
+
+  <insert id="insertTakenSequenceFlow">
+    INSERT INTO taken_sequence_flow (partition_id, flow_scope_key, gateway_element_id,
+      sequence_flow_element_id, times_taken)
+    VALUES (#{partitionId}, #{row.flowScopeKey}, #{row.gatewayElementId},
+      #{row.sequenceFlowElementId}, #{row.timesTaken})
+  </insert>
+
+  <update id="updateTakenSequenceFlow">
+    UPDATE taken_sequence_flow
+    SET times_taken = #{row.timesTaken}
+    WHERE partition_id = #{partitionId} AND flow_scope_key = #{row.flowScopeKey}
+      AND gateway_element_id = #{row.gatewayElementId}
+      AND sequence_flow_element_id = #{row.sequenceFlowElementId}
+  </update>
+
+  <delete id="deleteTakenSequenceFlow">
+    DELETE FROM taken_sequence_flow
+    WHERE partition_id = #{partitionId} AND flow_scope_key = #{key.flowScopeKey}
+      AND gateway_element_id = #{key.gatewayElementId}
+      AND sequence_flow_element_id = #{key.sequenceFlowElementId}
+  </delete>
+
+  <!-- await_process_instance_result and runtime_instructions -->
+
+  <resultMap id="payloadRow"
+    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$PayloadRow">
+    <constructor>
+      <idArg column="process_instance_key" javaType="_long"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectAwaitResult" resultMap="payloadRow">
+    SELECT process_instance_key, payload
+    FROM await_process_instance_result
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
+  </select>
+
+  <insert id="insertAwaitResult">
+    INSERT INTO await_process_instance_result (partition_id, process_instance_key, payload)
+    VALUES (#{partitionId}, #{row.key}, #{row.payload})
+  </insert>
+
+  <update id="updateAwaitResult">
+    UPDATE await_process_instance_result
+    SET payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{row.key}
+  </update>
+
+  <delete id="deleteAwaitResult">
+    DELETE FROM await_process_instance_result
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
+  </delete>
+
+  <select id="selectRuntimeInstructions" resultMap="payloadRow">
+    SELECT process_instance_key, payload
+    FROM runtime_instructions
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
+  </select>
+
+  <insert id="insertRuntimeInstructions">
+    INSERT INTO runtime_instructions (partition_id, process_instance_key, payload)
+    VALUES (#{partitionId}, #{row.key}, #{row.payload})
+  </insert>
+
+  <update id="updateRuntimeInstructions">
+    UPDATE runtime_instructions
+    SET payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{row.key}
+  </update>
+
+  <delete id="deleteRuntimeInstructions">
+    DELETE FROM runtime_instructions
+    WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
+  </delete>
+
+  <!-- process_instance_by_business_id -->
+
+  <resultMap id="businessIdRow"
+    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$BusinessIdRow">
+    <constructor>
+      <idArg column="business_id" javaType="String"/>
+      <idArg column="process_definition_id" javaType="String"/>
+      <idArg column="tenant_id" javaType="String"/>
+      <idArg column="process_instance_key" javaType="_long"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="businessIdRowCondition">
+    partition_id = #{partitionId} AND business_id = #{row.businessId}
+    AND process_definition_id = #{row.processDefinitionId} AND tenant_id = #{row.tenantId}
+    AND process_instance_key = #{row.processInstanceKey}
+  </sql>
+
+  <select id="selectBusinessId" resultMap="businessIdRow">
+    SELECT business_id, process_definition_id, tenant_id, process_instance_key
+    FROM process_instance_by_business_id
+    WHERE <include refid="businessIdRowCondition"/>
+  </select>
+
+  <select id="selectBusinessIds" resultMap="businessIdRow">
+    SELECT business_id, process_definition_id, tenant_id, process_instance_key
+    FROM process_instance_by_business_id
+    WHERE partition_id = #{partitionId} AND business_id = #{businessId}
+      AND process_definition_id = #{processDefinitionId} AND tenant_id = #{tenantId}
+    ORDER BY process_instance_key
+  </select>
+
+  <insert id="insertBusinessId">
+    INSERT INTO process_instance_by_business_id (partition_id, business_id,
+      process_definition_id, tenant_id, process_instance_key)
+    VALUES (#{partitionId}, #{row.businessId}, #{row.processDefinitionId}, #{row.tenantId},
+      #{row.processInstanceKey})
+  </insert>
+
+  <!-- the whole row is the key: an update only checks that the row exists -->
+  <update id="updateBusinessId">
+    UPDATE process_instance_by_business_id
+    SET process_instance_key = #{row.processInstanceKey}
+    WHERE <include refid="businessIdRowCondition"/>
+  </update>
+
+  <delete id="deleteBusinessId">
+    DELETE FROM process_instance_by_business_id
+    WHERE <include refid="businessIdRowCondition"/>
+  </delete>
+
+</mapper>

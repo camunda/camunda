@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    Liquibase would map BLOB to oid (a large object reference) on PostgreSQL, and TEXT can't be
+    part of a primary key in every database.
+  -->
+  <property name="engineState.binaryType" value="BYTEA" dbms="postgresql"/>
+  <property name="engineState.binaryType" value="BLOB"/>
+  <property name="engineState.textType" value="TEXT" dbms="postgresql"/>
+  <property name="engineState.textType" value="VARCHAR(4000)"/>
+
+  <!--
+    Element instances, as stored by RdbmsElementInstanceState.
+
+    Hybrid row: the full ElementInstance is kept as its msgpack payload (the source of truth for
+    reads). The remaining columns are derived from it on every write so they can be queried and
+    indexed. parent_key is -1 for process instances, same as in the RocksDB state.
+  -->
+  <changeSet id="create-element-instance" author="camunda">
+    <createTable tableName="element_instance">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="element_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="parent_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_definition_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="bpmn_element_type" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="state" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="element_instance" constraintName="element_instance_pkey"
+      columnNames="partition_id, element_instance_key"/>
+    <createIndex tableName="element_instance" indexName="element_instance_children">
+      <column name="partition_id"/>
+      <column name="parent_key"/>
+      <column name="element_instance_key"/>
+    </createIndex>
+  </changeSet>
+
+  <!--
+    Process instances by definition key, and the active process instance count. Only the rows of
+    process instances: 1 is the ordinal of BpmnElementType.PROCESS, which the queries inline.
+  -->
+  <changeSet id="create-element-instance-process-by-definition" author="camunda"
+    dbms="postgresql">
+    <sql>
+      CREATE INDEX element_instance_process_by_definition
+        ON element_instance (partition_id, process_definition_key, element_instance_key)
+        WHERE bpmn_element_type = 1
+    </sql>
+  </changeSet>
+  <changeSet id="create-element-instance-process-by-definition-full" author="camunda"
+    dbms="!postgresql">
+    <createIndex tableName="element_instance" indexName="element_instance_process_by_definition">
+      <column name="partition_id"/>
+      <column name="process_definition_key"/>
+      <column name="element_instance_key"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- How often each sequence flow to a joining gateway was taken in a flow scope. -->
+  <changeSet id="create-taken-sequence-flow" author="camunda">
+    <createTable tableName="taken_sequence_flow">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="flow_scope_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="gateway_element_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="sequence_flow_element_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="times_taken" type="INT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="taken_sequence_flow" constraintName="taken_sequence_flow_pkey"
+      columnNames="partition_id, flow_scope_key, gateway_element_id, sequence_flow_element_id"/>
+  </changeSet>
+
+  <!--
+    The request awaiting the result of a process instance, with the msgpack
+    AwaitProcessInstanceResultMetadata.
+  -->
+  <changeSet id="create-await-process-instance-result" author="camunda">
+    <createTable tableName="await_process_instance_result">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="await_process_instance_result"
+      constraintName="await_process_instance_result_pkey"
+      columnNames="partition_id, process_instance_key"/>
+  </changeSet>
+
+  <!-- Runtime instructions of a process instance, with the msgpack RuntimeInstructions. -->
+  <changeSet id="create-runtime-instructions" author="camunda">
+    <createTable tableName="runtime_instructions">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="runtime_instructions" constraintName="runtime_instructions_pkey"
+      columnNames="partition_id, process_instance_key"/>
+  </changeSet>
+
+  <!-- Active process instances by business id. -->
+  <changeSet id="create-process-instance-by-business-id" author="camunda">
+    <createTable tableName="process_instance_by_business_id">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="business_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_definition_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="process_instance_by_business_id"
+      constraintName="process_instance_by_business_id_pkey"
+      columnNames="partition_id, business_id, process_definition_id, tenant_id, process_instance_key"/>
+  </changeSet>
+
+</databaseChangeLog>
