@@ -89,7 +89,8 @@ class RdbmsExporterPositionRecoveryIT {
     testInstance =
         new TestCamundaApplication()
             .withSecondaryStorageType(SecondaryStorageType.rdbms)
-            .withProperty("camunda.monitoring.metrics.enable-exporter-execution-metrics", true)
+            .withUnifiedConfig(
+                c -> c.getMonitoring().getMetrics().setEnableExporterExecutionMetrics(true))
             .withProperty("camunda.data.secondary-storage.rdbms.url", postgres.getJdbcUrl())
             .withProperty("camunda.data.secondary-storage.rdbms.username", postgres.getUsername())
             .withProperty("camunda.data.secondary-storage.rdbms.password", postgres.getPassword())
