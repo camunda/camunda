@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
@@ -548,6 +549,31 @@ class DefaultExecutionQueueTest {
     verify(session).update(eq("statement4"), any());
     verify(session).update(eq("statement1"), any());
     verify(session).update(eq("statement3"), any());
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ContextType.class,
+      names = {"GROUP", "MAPPING_RULE", "ROLE", "TENANT", "USER"})
+  public void shouldPreserveInsertionOrderForRecreatedIdentityEntities(
+      final ContextType contextType) {
+    // given - an identity entity is created, deleted and re-created with the same ID in one flush
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.INSERT, "id", "identity.insert", "first"));
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.DELETE, "id", "identity.delete", "id"));
+    executionQueue.executeInQueue(
+        new QueueItem(contextType, WriteStatementType.INSERT, "id", "identity.insert", "second"));
+
+    // when
+    executionQueue.flush();
+
+    // then - the DELETE runs between the INSERTs. Under the default INSERT-before-DELETE sort both
+    // INSERTs would run first and the second one would violate the primary key.
+    final var inOrder = Mockito.inOrder(session);
+    inOrder.verify(session).update("identity.insert", "first");
+    inOrder.verify(session).update("identity.delete", "id");
+    inOrder.verify(session).update("identity.insert", "second");
   }
 
   @ParameterizedTest

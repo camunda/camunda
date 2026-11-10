@@ -88,6 +88,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecord
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableStatusMetricsValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
@@ -117,6 +118,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -1516,6 +1518,38 @@ class RdbmsExporterIT {
     assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
   }
 
+  @Test
+  public void shouldExportGroupRecreatedWithinOneFlush() {
+    // given - an exporter that batches records into interval flushes instead of flushing each one.
+    // Identity records only export on partition 1, so it replaces the per-record exporter there.
+    exporter.close();
+    final var batchingExporter =
+        new RdbmsExporterWrapper(rdbmsService, liquibaseSchemaManager, vendorDatabaseProperties);
+    batchingExporter.configure(
+        new ExporterContext(
+            null,
+            new ExporterConfiguration("recreate-in-flush-test", Map.of("queueSize", 100)),
+            1,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            null));
+    batchingExporter.open(controller);
+    final var groupId = "recreated-group-" + UUID.randomUUID();
+
+    // when - the group is created, deleted and created again before the next flush
+    batchingExporter.export(groupRecord(groupId, "first", GroupIntent.CREATED));
+    batchingExporter.export(groupRecord(groupId, "first", GroupIntent.DELETED));
+    batchingExporter.export(groupRecord(groupId, "second", GroupIntent.CREATED));
+    controller.runScheduledTasks(Duration.ofSeconds(1));
+
+    // then - the flush succeeded and the group exists with the values of the second creation
+    assertThat(controller.getPosition()).isEqualTo(FIXTURES.currentPosition());
+    final var group = rdbmsService.getGroupReader().findOne(groupId);
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().name()).isEqualTo("second");
+
+    batchingExporter.close();
+  }
+
   @ParameterizedTest
   @ValueSource(longs = {-2L, 2L})
   public void shouldThrowWhenRdbmsPositionDiffersFromExpected(final long positionDifference) {
@@ -1625,5 +1659,18 @@ class RdbmsExporterIT {
     return rdbmsService
         .getBatchOperationItemReader()
         .search(BatchOperationItemQuery.of(b -> b.filter(f -> f.itemKeys(itemKey))));
+  }
+
+  private static ImmutableRecord<RecordValue> groupRecord(
+      final String groupId, final String name, final GroupIntent intent) {
+    final var record = FIXTURES.getGroupRecord(groupId, intent);
+    return ImmutableRecord.builder()
+        .from(record)
+        .withValue(
+            ImmutableGroupRecordValue.builder()
+                .from((GroupRecordValue) record.getValue())
+                .withName(name)
+                .build())
+        .build();
   }
 }
