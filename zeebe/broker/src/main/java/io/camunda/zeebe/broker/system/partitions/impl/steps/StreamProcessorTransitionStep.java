@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
 import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
@@ -25,8 +26,12 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
 import java.util.function.BiFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
+
+  private static final Logger LOG = LoggerFactory.getLogger(StreamProcessorTransitionStep.class);
 
   private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
       streamProcessorCreator;
@@ -162,12 +167,22 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var processingFilter =
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
-    return StreamProcessor.builder()
+    final var builder = StreamProcessor.builder();
+    final var rdbmsEngineStateCfg = experimentalCfg.getRdbmsEngineState();
+    if (rdbmsEngineStateCfg.isEnabled()) {
+      final var mixedDb =
+          RdbmsEngineStateDb.open(
+              context.getZeebeDb(), rdbmsEngineStateCfg, context.getPartitionId());
+      builder.zeebeDb(mixedDb).addLifecycleListener(new MixedDbCloser(mixedDb));
+    } else {
+      builder.zeebeDb(context.getZeebeDb());
+    }
+
+    return builder
         .meterRegistry(context.getPartitionTransitionMeterRegistry())
         .logStream(context.getLogStream())
         .partitionId(context.partitionId())
         .actorSchedulingService(context.getActorSchedulingService())
-        .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
         .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
@@ -201,5 +216,27 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .scheduledCommandCache(scheduledCommandCache)
         .clock(context.getStreamClock())
         .build();
+  }
+
+  /** Closes the JDBC connection of the mixed engine state; the RocksDB db stays open. */
+  private record MixedDbCloser(MixedZeebeDb<?> mixedDb) implements StreamProcessorLifecycleAware {
+
+    @Override
+    public void onClose() {
+      close();
+    }
+
+    @Override
+    public void onFailed() {
+      close();
+    }
+
+    private void close() {
+      try {
+        mixedDb.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close the engine state database connection", e);
+      }
+    }
   }
 }

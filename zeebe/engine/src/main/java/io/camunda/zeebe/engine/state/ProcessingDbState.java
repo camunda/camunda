@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.state.instance.RdbmsElementInstanceState;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
@@ -178,7 +180,7 @@ public class ProcessingDbState implements MutableProcessingState {
   public ProcessingDbState(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
+      final TransactionContext givenTransactionContext,
       final KeyGenerator keyGenerator,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -191,6 +193,12 @@ public class ProcessingDbState implements MutableProcessingState {
     pendingSubscriptionRecoveryBatchLimit =
         config.getMessagesPendingSubscriptionRecoveryBatchLimit();
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
+    final var mixedTransactionContext =
+        givenTransactionContext instanceof final MixedTransactionContext mixed ? mixed : null;
+    final TransactionContext transactionContext =
+        mixedTransactionContext != null
+            ? mixedTransactionContext.rocksDb()
+            : givenTransactionContext;
 
     variableState = new DbVariableState(zeebeDb, transactionContext);
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
@@ -205,7 +213,11 @@ public class ProcessingDbState implements MutableProcessingState {
             InstantSource.fixed(Instant.EPOCH), expressionLanguageMetrics, Integer.MAX_VALUE);
     processState = new DbProcessState(zeebeDb, transactionContext, config, stateTransformer);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
-    elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
+    elementInstanceState =
+        mixedTransactionContext != null
+            ? new RdbmsElementInstanceState(
+                mixedTransactionContext.jdbc(), partitionId, variableState)
+            : new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
