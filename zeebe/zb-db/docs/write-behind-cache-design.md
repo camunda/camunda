@@ -52,12 +52,13 @@ format, or using the cache as durable storage.
    single-threaded, but the store must be thread-safe across contexts.
 5. **Tests already encode the contracts.**
    - Read-your-writes, including iteration over your own uncommitted writes.
-   - Delete-while-iterating (`ColumnFamilyTest#shouldDeleteOnForeachPair`, `#shouldDeleteWhileTrue`).
+   - Delete-while-iterating (`ColumnFamilyContractTest#shouldDeleteOnForeachPair`,
+     `#shouldDeleteWhileTrue`).
    - Explicitly *no* snapshot isolation between transactions
-     (`ZeebeTransactionIsolationTest.NoSnapshotIsolationTest`): a transaction may read commits made
-     after it started. That doesn't allow seeing *part* of another transaction. Today a commit is
-     one atomic `WriteBatch`, so readers see all of it or none of it, and a RocksDB iterator reads a
-     single point in time. The design keeps both properties.
+     (`ZeebeTransactionIsolationContractTest.NoSnapshotIsolationTest`): a transaction may read
+     commits made after it started. That doesn't allow seeing *part* of another transaction. Today
+     a commit is one atomic `WriteBatch`, so readers see all of it or none of it, and a RocksDB
+     iterator reads a single point in time. The design keeps both properties.
 
 ## 3. What EhCache 3 write-behind gives, and what it doesn't
 
@@ -89,25 +90,10 @@ which backend it wraps: RocksDB today, possibly an RDBMS later.
 
 |         Module         |       Directory       |                                                                Holds                                                                |
 |------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| `zeebe-db-api`         | `zeebe/zb-db/api`     | The interfaces, plus the backend-neutral types that Phase 1b moves in from `zeebe-db-rocksdb` (below).                              |
+| `zeebe-db-api`         | `zeebe/zb-db/api`     | The interfaces.                                                                                                                     |
 | `zeebe-db-rocksdb`     | `zeebe/zb-db/rocksdb` | The RocksDB implementation (`impl.rocksdb`).                                                                                        |
 | `zeebe-db-cache` (new) | `zeebe/zb-db/cache`   | The write-behind cache (package `io.camunda.zeebe.db.cache`). Depends on `zeebe-db-api` and EhCache only.                           |
 | `zeebe-db-tests`       | `zeebe/zb-db/tests`   | Test-only. Runs the contract tests against every implementation, and binds the cache to RocksDB for that. The only place they meet. |
-
-**Backend-neutral types move into the API (Phase 1b).** The cache has to throw the same exceptions
-and enforce the same consistency checks as RocksDB, and an RDBMS backend would need the same key
-types. These live in `zeebe-db-rocksdb` today and move to `zeebe-db-api`, with package names
-unchanged:
-
-- `ZeebeDbException` and `ZeebeDbInconsistentException`
-- `ConsistencyChecksSettings`, `ContainsForeignKeys`, and `AccessMetricsConfiguration` with the
-  column family metrics (`ColumnFamilyMetricsDoc`, `FineGrainedColumnFamilyMetrics`,
-  `NoopColumnFamilyMetrics`)
-- the key and value types in `io.camunda.zeebe.db.impl`: `DbLong`, `DbString`, `DbCompositeKey`,
-  `DbForeignKey`, `DbTenantAwareKey` and the rest, with `ZeebeDbConstants` and `DefaultColumnFamily`
-
-None of them uses RocksDB. `zeebe-db-api` stops being interfaces-only and gains `agrona` and
-`zeebe-micrometer` as dependencies.
 
 **How the cache reaches the backend.** Only through `ZeebeDb`, `TransactionContext` and
 `ColumnFamily`:
@@ -130,8 +116,7 @@ None of them uses RocksDB. `zeebe-db-api` stops being interfaces-only and gains 
 
 - **Iteration order.** A column family iterates in the unsigned byte order of the serialized key.
   The cache merges its overlay with the backend's iteration, so the two orders must match. RocksDB
-  does this; an RDBMS would need a binary key column with byte-wise ordering. `ColumnFamily`'s
-  javadoc says so explicitly from Phase 1b on.
+  does this; an RDBMS would need a binary key column with byte-wise ordering.
 - **Atomic, consistent backend.** A backend transaction commits all of its writes or none, and
   `createSnapshot` captures one consistent point, even while other transactions commit.
 
@@ -582,7 +567,7 @@ same amount, and watch GC.
 
 ## 5. Alternatives considered
 
-- **Build the cache on RocksDB's internals** (the plan before Phase 1b): reuse
+- **Build the cache on RocksDB's internals**: reuse
   `TransactionalColumnFamily` over a `ZeebeTransaction`, a `DbIterator` and `RawDbAccess`. Rejected:
   the cache would depend on `zeebe-db-rocksdb` and couldn't sit in front of another backend.
 - **A byte-level backend SPI in `zeebe-db-api`.** Move `ZeebeTransaction`, `DbIterator` and
@@ -620,8 +605,7 @@ The cache module adds a third child to `zeebe-db` (Phase 2).
 
 This has landed. Since the cache now wraps any `ZeebeDb` through the API (§4.1), it no longer
 builds on `ZeebeTransaction`, `DbIterator` or `RawDbAccess`. The first two remain useful structure
-inside `zeebe-db-rocksdb`. `RawDbAccess` was added for the cache and has no other user: Phase 1b
-removes it.
+inside `zeebe-db-rocksdb`. `RawDbAccess` was added for the cache and has no other user.
 
 Where the code settled differently from the steps below:
 
@@ -652,22 +636,6 @@ Where the code settled differently from the steps below:
   green, and
   `EngineLargeStatePerformanceTest` stays within its tolerance.
 
-### Phase 1b: move the backend-neutral types into the API (`refactor:`)
-
-- **Ask first** (public API change): move the types listed in §4.1 from `zeebe-db-rocksdb` to
-  `zeebe-db-api`, with package names unchanged, so no import changes. `zeebe-db-api` gains
-  `agrona` and `zeebe-micrometer`. Keep Maven and Gradle in parity.
-- Restore `ZeebeDbException` in the API javadoc, which the split had replaced with
-  `RuntimeException`.
-- State the iteration-order contract (§4.1) in `ColumnFamily`'s javadoc.
-- Remove `RawDbAccess` and `ZeebeTransactionDb#rawAccess()`.
-- Check the contract tests for RocksDB quirks that a second implementation shouldn't have to copy.
-  For example, `DbStringColumnFamilyContractTest` expects "nested prefix iterations are not
-  supported", which comes from `ColumnFamilyContext`'s two prefix buffers. Move such cases to the
-  RocksDB-only tests.
-- **Exit:** `./mvnw install -Dquickly -T1C` is green, `zeebe-db-api` has no dependency on
-  `zeebe-db-rocksdb` or RocksDB, and the contract suite is green.
-
 ### Phase 2: write-behind core for point ops (`feat:`)
 
 - **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management, excluding
@@ -679,8 +647,9 @@ Where the code settled differently from the steps below:
   - Register it in `zeebe/zb-db/pom.xml` and `settings.gradle.kts` the way `api` and `rocksdb` are,
     and keep Maven and Gradle in parity.
   - Add it as a dependency of `zeebe-db-tests`, with one subclass per contract test that returns
-    the cached factory around `ZeebeRocksDbFactory`. Make the cache the candidate of the
-    differential test.
+    the cached factory around `RocksDbTestFactory.create()`, with the cache's own consistency checks
+    on as well. Add a differential test with the cache as the candidate and plain RocksDB as the
+    reference, next to `RocksDbVsRocksDbDifferentialTest`.
 - In package `io.camunda.zeebe.db.cache`, add:
   - `CacheKey`, `CachedValue`, and the pass-through `RawKey`/`RawValue`
   - `DirtyIndex`
@@ -702,9 +671,9 @@ Where the code settled differently from the steps below:
 
 - Merge the overlay into the backend's scans in `CachedColumnFamily` (§4.5), holding
   `publishLock`'s read side from the copy until the backend's first callback.
-- **Exit:** the whole contract suite is green against both factories, including
-  `ColumnFamilyRandomizedPropertyContractTest` with more tries and the differential test, and the
-  iteration stress test passes.
+- **Exit:** the whole contract suite is green against both factories. So are the randomized
+  `ColumnFamilyRandomizedPropertyContractTest`, with more tries, and the differential test, which
+  only run with `-Pinclude-random-tests`. The iteration stress test passes.
 
 ### Phase 4: snapshot barrier, lifecycle and failures (`feat:`)
 
@@ -817,6 +786,6 @@ against the cache wrapped around RocksDB.
 11. **The backend contracts the cache relies on** (§4.1): byte-ordered iteration, atomic
     transactions, a consistent `createSnapshot`, and fixing a scan's view before its first callback.
     An RDBMS backend has to meet all four. The contract tests check the first three.
-12. **Approvals needed:** the API change in Phase 1b, the new dependency and the experimental config
-    keys (all "ask first" in `AGENTS.md`).
+12. **Approvals needed:** the new dependency and the experimental config keys (all "ask first" in
+    `AGENTS.md`).
 
