@@ -15,7 +15,6 @@ import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useHasMultipleInstances} from 'modules/hooks/elementMetadata';
-import {redactValues} from 'modules/utils/redactedVariable';
 import {queryKeys} from '../queryKeys';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
@@ -75,7 +74,7 @@ function useVariables(options?: {
       });
 
       if (response !== null) {
-        return redactValues(response as QueryVariablesResponseBody);
+        return response as QueryVariablesResponseBody;
       }
 
       throw error;

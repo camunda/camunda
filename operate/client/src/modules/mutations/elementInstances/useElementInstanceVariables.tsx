@@ -11,7 +11,6 @@ import {updateElementInstanceVariables} from 'modules/api/v2/elementInstances/up
 import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
-import {redactValue} from 'modules/utils/redactedVariable';
 import {queryKeys} from 'modules/queries/queryKeys';
 import isEqual from 'lodash/isEqual';
 
@@ -64,7 +63,7 @@ function useElementInstanceVariables(
               throw new Error('Variable not updated yet');
             }
 
-            return redactValue(response);
+            return response;
           },
           retry: true,
           retryDelay: 1000,
