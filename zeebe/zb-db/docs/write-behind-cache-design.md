@@ -97,13 +97,13 @@ flowchart LR
   TX -- "1. publish" --> LOCKS --> DIRTY
   LOCKS -- "2. enqueue" --> CACHE --> WB --> LW -- WriteBatch --> ROCKS
   LW -- "remove flushed versions" --> DIRTY
-  CACHE -. "miss: load" .-> LW -. "RocksDB get" .-> ROCKS
+  CACHE -. "miss: load" .-> LW -. "DirtyIndex, then RocksDB get" .-> ROCKS
 ```
 
 Read paths:
 
-- **Point read:** tx buffer → DirtyIndex → EhCache → on a miss, RocksDB. The lookup is validated
-  against concurrent publications.
+- **Point read:** tx buffer → DirtyIndex → EhCache → on a miss, the loader (DirtyIndex again, then
+  RocksDB). The lookup is validated against concurrent publications.
 - **Iteration:** merge the live tx buffer with a copy of the DirtyIndex range and a RocksDB iterator,
   both taken at the same instant. On equal keys, the first one in that order wins.
 
@@ -144,16 +144,21 @@ Read paths:
 - `commit`:
 
   ```text
-  commitLock.lock()                             // one committer at a time, start to finish
+  commitLock.lock()                               // one committer at a time, start to finish
+  try
     failIfStoreFailed()
+    if txBuffer.size() > writeThroughMaxKeys: commitWriteThrough(); return   // see below
     seq = nextSeq()
     values = [(key, new CachedValue(op.bytes, seq)) for (key, op) in txBuffer]
-    stamp = publishLock.writeLock()             // short; nothing inside it blocks
+    stamp = publishLock.writeLock()               // short; nothing inside it blocks
       for (key, v) in values: dirtyIndex.put(key, v)
     publishLock.unlockWrite(stamp)
-    for (key, v) in values: cache.put(key, v)   // enqueue; may block on back-pressure
-  commitLock.unlock()
-  txBuffer.clear()
+    try
+      for (key, v) in values: cache.put(key, v)   // enqueue; may block on back-pressure
+    catch e: failStore(e); throw e                // published versions can't drain any more
+  finally
+    commitLock.unlock()
+    txBuffer.clear()
   ```
 - `publishLock` is a `StampedLock`. Its write side covers the DirtyIndex update for the whole
   transaction, and readers validate against it (§4.4, §4.5). So a reader sees all of a transaction
@@ -167,13 +172,34 @@ Read paths:
   `ConcurrentSkipListMap#compute`, whose function may run more than once.
 - Back-pressure blocks outside `publishLock`, so a full queue doesn't stall readers' validation.
   Cache reads of keys in the same map bin can still wait (§3).
+- **Enqueue failure.** `cache.put` can throw, for example a `RejectedExecutionException` once the
+  write-behind executor has shut down. The versions already published can then never drain, so
+  the store fails through the same path as a writer failure (§4.6): it reports to partition health,
+  and later commits, reads and snapshots fail fast. `finally` releases `commitLock`.
+- **Oversized transactions commit write-through**, so that one transaction can't swell the
+  DirtyIndex and the queue past their budget (§4.11). A transaction with more than
+  `writeThroughMaxKeys` keys, still under `commitLock`:
+  1. waits until the DirtyIndex is empty, as the snapshot barrier does (§4.7)
+  2. under `publishLock`'s write side, writes its buffer to RocksDB as one `WriteBatch`, then
+     empties the cache with `Cache#clear`, which doesn't call the loader-writer, so that no older
+     version stays cached
+
+  This is the only place that calls the cache under `publishLock`. That's safe because holding
+  `commitLock` keeps out every committer, and committers are the only threads that can block inside
+  the cache. The main case is the migration step: `MigrationTransitionStep` runs every migration in
+  one transaction, and a migration can rewrite whole column families.
 
 ### 4.4 Point reads
 
 ```text
 stamp = publishLock.tryOptimisticRead()
-v = txBuffer.get(key) ?: dirtyIndex.get(key) ?: cache.get(key)   // cache miss: load from RocksDB
-if !publishLock.validate(stamp): retry (after a few tries, under the read lock)
+v = txBuffer.get(key) ?: dirtyIndex.get(key) ?: cache.get(key)   // cache miss: the loader runs
+if publishLock.validate(stamp): return copy of v.bytes
+
+// after a few failed tries: read under the lock, without the cache
+stamp = publishLock.readLock()
+  v = txBuffer.get(key) ?: dirtyIndex.get(key) ?: rocksDB.get(key)
+publishLock.unlockRead(stamp)
 return copy of v.bytes                                           // null for a tombstone or a miss
 ```
 
@@ -184,8 +210,24 @@ return copy of v.bytes                                           // null for a t
 
   The DirtyIndex holds every unflushed version, so checking it first covers both.
 
-- On a cache miss, the loader reads RocksDB directly. Anything that isn't in the DirtyIndex has
-  already been flushed, because a version only leaves the DirtyIndex after its RocksDB write.
+- **The loader checks the DirtyIndex again, then reads RocksDB.** Checking RocksDB alone isn't
+  enough. Take this sequence:
+
+  1. A reader misses the DirtyIndex just before a commit publishes.
+  2. The entry is evicted, and EhCache has dropped its pending op.
+  3. The reader misses the cache, and the loader reads the old value from RocksDB.
+
+  Validation retries the read, but the old value would stay cached. It would then be served once
+  the new version flushes and leaves the DirtyIndex. The load runs inside EhCache's per-key
+  `compute`, so a DirtyIndex check there installs either the newest committed version or a value
+  that the pending enqueue overwrites.
+
+- **No reader calls the cache while holding `publishLock`.** A committer blocked on a full queue
+  holds the cache's map bin (§3), and the writer needs `publishLock`'s write side for cleanup
+  before it can take the next batch. A reader that held the read lock while waiting for that bin
+  would close the cycle. So the read-lock fallback goes to RocksDB directly. That's correct
+  because, while publication and cleanup are excluded, anything not in the DirtyIndex has been
+  flushed.
 
 - Validation makes the lookup atomic with respect to publications. Two reads can still straddle a
   commit and see an older K1 with a newer K2, as they can today. They can never see a newer K1 with
@@ -239,7 +281,7 @@ The copy costs O(dirty entries in the scanned prefix):
 
 - A prefix scan touches a handful of entries.
 - A scan over a whole column family that stops early (due timers, job deadlines) copies every dirty
-  entry of that column family. That's bounded by the queue size.
+  entry of that column family. That's bounded by the DirtyIndex budget (§4.11).
 
 Measure this in Phase 3.
 
@@ -249,8 +291,10 @@ Measure this in Phase 3.
   `put`) and calls `db.write(writeOptions, batch)`. `deleteAll` is never called, because we never
   call `cache.remove`.
 - **Cleanup** runs right after a successful write, under `publishLock`'s write side:
-  - For each written entry, remove the DirtyIndex entry if its `seq` equals the written one. A newer
-    version stays.
+  - It visits every entry of the `writeAll`, whether written or skipped by the `keyMayExist`
+    optimization below. For each, it removes the DirtyIndex entry if its `seq` equals the one in
+    the batch. A newer version stays.
+  - When every entry is skipped, there's nothing to write, but cleanup still runs.
   - Matching on `seq` rather than object identity means it doesn't matter whether EhCache hands us
     the same object we passed to `put`.
   - Then signal a waiting snapshot (§4.7).
@@ -285,6 +329,8 @@ Measure this in Phase 3.
     bring the key back.
   - So the writer first reduces each `writeAll` to the last op per key, and only then applies the
     check. `keyMayExist` has no false negatives, so `false` then means the key was never written.
+  - Skipped tombstones still go through cleanup (above). Otherwise they would never leave the
+    DirtyIndex, and every snapshot drain would time out.
 
 ### 4.7 Snapshot barrier
 
@@ -311,11 +357,15 @@ finally
   and there's no separate counter to keep in sync.
 - After the drain, RocksDB holds the state after the last committed transaction. That state is
   transaction-consistent and at or past `lowerBoundSnapshotPosition`.
-- **Pause:** writers wait for about `maxWriteDelay` + the backlog write + the checkpoint, and never
-  longer than `snapshotDrainTimeout`. With the WAL disabled, the checkpoint flushes the memtables.
-  This happens once per snapshot, every 5 minutes by default.
-- **Phase 6 refinement:** hold `commitLock` only during the drain. During the checkpoint, pause the
-  *writer* instead, so that commits keep filling the queue.
+- **Pause:** commits wait for about `maxWriteDelay` + the backlog write + the checkpoint.
+  - `snapshotDrainTimeout` bounds only the first part: taking the lock and draining.
+  - The checkpoint runs with `commitLock` held and has no timeout. RocksDB can't abort a checkpoint,
+    and releasing the lock early would let the writer change RocksDB while the checkpoint is taken.
+  - With the WAL disabled, the checkpoint also flushes the memtables.
+  - This happens once per snapshot, every 5 minutes by default.
+- **Phase 6 refinement:** hold `commitLock` only for the drain, and pause the *writer* during the
+  checkpoint instead. Commits then wait only for the drain, which the timeout does bound. During
+  the checkpoint they keep filling the queue until back-pressure kicks in.
 - `compactAll()` drains first as well.
 
 ### 4.8 Lifecycle and bypass
@@ -337,16 +387,17 @@ finally
 Add a `WriteBehindConfiguration` record to `RocksDbConfiguration`, wired from `RocksdbCfg`, which
 already sits under `zeebe.broker.experimental.rocksdb`.
 
-|        Property        | Default |                                                       Notes                                                       |
-|------------------------|---------|-------------------------------------------------------------------------------------------------------------------|
-| `writeBehind.enabled`  | `false` |                                                                                                                   |
-| `cacheMaxEntries`      | 100 000 | Per partition. The heap tier is sized by entry count; sizing by bytes needs per-entry size estimates.             |
-| `batchSize`            | 1 000   |                                                                                                                   |
-| `maxWriteDelay`        | 100 ms  | Longer gives more coalescing; shorter gives a shorter snapshot pause.                                             |
-| `queueSize`            | 10 000  | Pending ops per stripe before back-pressure kicks in.                                                             |
-| `concurrencyLevel`     | 1       | One RocksDB writer thread.                                                                                        |
-| `coalescing`           | `true`  |                                                                                                                   |
-| `snapshotDrainTimeout` | 30 s    | Covers taking the commit lock and draining. If exceeded, the snapshot fails and the snapshot director retries it. |
+|        Property        | Default |                                                                    Notes                                                                     |
+|------------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `writeBehind.enabled`  | `false` |                                                                                                                                              |
+| `cacheMaxEntries`      | 100 000 | Per partition. The heap tier is sized by entry count; sizing by bytes needs per-entry size estimates.                                        |
+| `batchSize`            | 1 000   |                                                                                                                                              |
+| `maxWriteDelay`        | 100 ms  | Longer gives more coalescing; shorter gives a shorter snapshot pause.                                                                        |
+| `queueSize`            | 10 000  | Pending ops per stripe before back-pressure kicks in.                                                                                        |
+| `concurrencyLevel`     | 1       | One RocksDB writer thread.                                                                                                                   |
+| `coalescing`           | `true`  |                                                                                                                                              |
+| `writeThroughMaxKeys`  | 10 000  | Transactions with more keys commit write-through (§4.3). Bounds how far one transaction can push the DirtyIndex past the queue.              |
+| `snapshotDrainTimeout` | 30 s    | Covers taking the commit lock and draining, not the checkpoint (§4.7). If exceeded, the snapshot fails and the snapshot director retries it. |
 
 ### 4.10 Metrics
 
@@ -359,7 +410,8 @@ Registered on the DB meter registry, so they go away when the DB closes:
 - batch size and write latency
 - time blocked on back-pressure (shows up as commit latency) and commit-lock wait time
 - optimistic read retries
-- snapshot drain duration
+- write-through commits
+- snapshot drain duration and checkpoint duration (commits wait for both)
 - writer retries and failures
 
 ### 4.11 Memory
@@ -367,10 +419,13 @@ Registered on the DB meter registry, so they go away when the DB closes:
 The design moves hot state from RocksDB's off-heap budget to the JVM heap. The heap now holds:
 
 - the cache entries
-- the DirtyIndex: only unflushed versions, since cleanup follows every write. That's roughly
-  `concurrencyLevel × (queueSize + batchSize)` entries.
+- the DirtyIndex: only unflushed versions, since cleanup follows every write. Two parts add up:
+  - what's queued: roughly `concurrencyLevel × (queueSize + batchSize)` entries
+  - the transaction that is publishing and enqueuing. Commits are serialized, so there's only one,
+    and transactions above `writeThroughMaxKeys` bypass the DirtyIndex (§4.3).
 - per-iterator copies of DirtyIndex ranges: short-lived and bounded by the DirtyIndex
-- the tx buffers
+- the tx buffers. The WBWI kept these in native memory. A write-through transaction is still
+  buffered in full until it commits.
 
 For a fair benchmark, lower RocksDB's `memoryLimit` by the same amount, and watch GC.
 
@@ -424,11 +479,13 @@ For a fair benchmark, lower RocksDB's `memoryLimit` by the same amount, and watc
   - `CachedTransaction`
 - In `ZeebeTransactionDb`: hold an optional store, have `createContext()` choose the transaction
   type, and fix the order of `closables`.
-- Commit protocol with `commitLock` and `publishLock`, validated point reads, and copy-on-read.
+- Commit protocol with `commitLock` and `publishLock` (including enqueue-failure handling),
+  validated point reads with a cache-free fallback, a loader that checks the DirtyIndex, and
+  copy-on-read.
 - In `ZeebeRocksDbFactory`: enable write-behind only on the runtime `createDb` path.
 - Until Phase 3, iterating on a cached DB throws `UnsupportedOperationException`.
-- **Exit:** the point-op tests are green against the cached factory, plus new tests for
-  eviction-while-pending, copy-on-read, a paused publication and concurrent same-key committers.
+- **Exit:** the point-op tests are green against the cached factory, plus the new point-read and
+  commit tests from §7.
 
 ### Phase 3: merged iteration (`feat:`)
 
@@ -442,9 +499,10 @@ For a fair benchmark, lower RocksDB's `memoryLimit` by the same amount, and watc
 - Add the snapshot barrier: `commitLock.tryLock` and the drain share one deadline, and "drained"
   means `dirtyIndex.isEmpty()`.
 - Drain in `compactAll` too, and fix the close order.
+- Commit transactions above `writeThroughMaxKeys` write-through.
 - Add writer retry, the failure latch and fail-fast, and make the DB a `HealthMonitorable`.
-- **Exit:** the snapshot-consistency, stalled-writer snapshot, failure-injection and
-  close-with-pending tests are green.
+- **Exit:** the snapshot-consistency, stalled-writer snapshot, oversized-transaction,
+  failure-injection and close-with-pending tests are green.
 
 ### Phase 5: wiring and engine-level validation (`feat:` and `test:`)
 
@@ -473,34 +531,40 @@ For a fair benchmark, lower RocksDB's `memoryLimit` by the same amount, and watc
 
 ## 7. Test plan (new tests, against the cached factory)
 
-|                                                 Test                                                 |                                    Proves                                     |
-|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| Read after eviction with a pending write (cache size 1, `maxWriteDelay` 10 s)                        | Point reads never return a stale RocksDB value                                |
-| Overwrite while the previous batch is in flight, plus eviction                                       | The DirtyIndex covers EhCache's `latest.remove` race                          |
-| Mutate an array returned by `get` or by an iterator, then read again and drain                       | Callers can't change committed or persisted state                             |
-| Pause a commit mid-publication (test hook); another thread reads two of its keys and scans its range | Readers see all of a transaction or none of it                                |
-| Two contexts commit the same key concurrently in a loop                                              | Point reads, scans and RocksDB agree after the drain, and the drain completes |
-| Iteration sees pending puts and hides pending deletes (forward, reverse, startAt, prefix)            | Merge-iterator semantics                                                      |
-| Writer flushes concurrently while long scans run on another thread (stress)                          | Scans see one point in time; the DirtyIndex stays bounded by the queue        |
-| Snapshot after N commits, opened with the plain factory                                              | The barrier drains everything                                                 |
-| Snapshot loop against a concurrent committer, where each tx writes K keys plus a marker              | Snapshots are transaction-consistent                                          |
-| Snapshot while a committer is blocked on a full queue (writer stalled)                               | The snapshot fails within `snapshotDrainTimeout` instead of hanging           |
-| RocksDB write fails (test seam in the writer) while no reads or commits happen                       | The failure is reported at once; commits and reads fail fast after it         |
-| Put, then delete, of a new key in one `writeAll`, with `coalescing` on and off                       | The `keyMayExist` skip never brings a key back                                |
-| Close with pending writes; `createDb(path, false)`                                                   | No crash on close; bulk copy is unaffected                                    |
+|                                                                                    Test                                                                                    |                                    Proves                                     |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Read after eviction with a pending write (cache size 1, `maxWriteDelay` 10 s)                                                                                              | Point reads never return a stale RocksDB value                                |
+| Overwrite while the previous batch is in flight, plus eviction                                                                                                             | The DirtyIndex covers EhCache's `latest.remove` race                          |
+| A reader misses the DirtyIndex, a commit publishes, the entry is evicted and EhCache drops its pending op, the reader loads; then drain and read again                     | No stale value stays cached                                                   |
+| Force the read-lock fallback, stall the writer until the queue is full, block a committer in `cache.put`, then read a clean key in the same map bin; let the writer resume | Reads don't deadlock with back-pressure                                       |
+| `cache.put` throws during a commit (test seam)                                                                                                                             | The store fails, `commitLock` is released, and snapshots fail fast            |
+| Mutate an array returned by `get` or by an iterator, then read again and drain                                                                                             | Callers can't change committed or persisted state                             |
+| Pause a commit mid-publication (test hook); another thread reads two of its keys and scans its range                                                                       | Readers see all of a transaction or none of it                                |
+| Two contexts commit the same key concurrently in a loop                                                                                                                    | Point reads, scans and RocksDB agree after the drain, and the drain completes |
+| A transaction with more keys than the queue holds, and one above `writeThroughMaxKeys`                                                                                     | Both commit and drain; the write-through leaves no older version cached       |
+| Iteration sees pending puts and hides pending deletes (forward, reverse, startAt, prefix)                                                                                  | Merge-iterator semantics                                                      |
+| Writer flushes concurrently while long scans run on another thread (stress)                                                                                                | Scans see one point in time; the DirtyIndex stays within its budget (§4.11)   |
+| Snapshot after N commits, opened with the plain factory                                                                                                                    | The barrier drains everything                                                 |
+| Snapshot loop against a concurrent committer, where each tx writes K keys plus a marker                                                                                    | Snapshots are transaction-consistent                                          |
+| Snapshot while a committer is blocked on a full queue (writer stalled)                                                                                                     | The snapshot fails within `snapshotDrainTimeout` instead of hanging           |
+| RocksDB write fails (test seam in the writer) while no reads or commits happen                                                                                             | The failure is reported at once; commits and reads fail fast after it         |
+| Put, then delete, of a new key in one `writeAll`, with `coalescing` on and off; also a batch where every tombstone is skipped                                              | The `keyMayExist` skip never brings a key back, and the drain still completes |
+| Close with pending writes; `createDb(path, false)`                                                                                                                         | No crash on close; bulk copy is unaffected                                    |
 
 ## 8. Risks and open questions
 
 1. **Is zb-db on the critical path at all?** Phase 0 answers this. With the WAL off, RocksDB writes
    already stay in memory.
 2. **Snapshot pause.** The stream processor and exporter director can't commit for about
-   `maxWriteDelay` + the checkpoint duration, once per snapshot, and never longer than
-   `snapshotDrainTimeout`.
+   `maxWriteDelay` + the checkpoint duration, once per snapshot. `snapshotDrainTimeout` bounds only
+   the wait for the lock and the drain, not the checkpoint (§4.7).
 3. **Blocked threads under back-pressure.** A full queue blocks the committer, and also cache reads
    of keys that share its map bin (§3). That's the same class of problem as RocksDB write stalls
    today, but now configurable and measured.
 4. **Heap and GC pressure** from moving state on-heap, from copying on every read (as today), and
-   from the DirtyIndex copies made per iterator.
+   from the DirtyIndex copies made per iterator. Large transactions are buffered in full on the heap
+   until they commit; the WBWI used native memory for this. The migration step, which runs every
+   migration in one transaction, is the largest.
 5. **Serialized commits.** This is fine while the stream processor does almost all commits. Watch the
    commit-lock wait time for the exporter director.
 6. **Writer failure stops the partition**, on followers too. In-process recovery would need a new
