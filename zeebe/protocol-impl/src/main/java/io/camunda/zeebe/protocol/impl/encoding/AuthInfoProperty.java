@@ -73,6 +73,11 @@ public final class AuthInfoProperty extends BaseProperty<AuthInfoProperty.AuthIn
     }
 
     @Override
+    public void copyFrom(final BaseValue source) {
+      authInfo = ((AuthInfoValue) source).authInfo;
+    }
+
+    @Override
     public boolean equals(final Object other) {
       return other instanceof final AuthInfoValue that && authInfo.equals(that.authInfo);
     }
