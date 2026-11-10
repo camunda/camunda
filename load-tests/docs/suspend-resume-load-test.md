@@ -266,7 +266,12 @@ gh workflow run camunda-load-test.yml --ref 64707-suspend-resume-saas-load-test 
 
 Two runs, identical except for the suspension itself, started together so they share conditions.
 Both create, fan out and cancel the same heavy target each cycle (500 jobs, 500 message
-subscriptions, 500 user tasks and 2000 timers per instance); only A suspends and resumes it.
+subscriptions, 500 user tasks and 200 timers per instance); only A suspends and resumes it. The
+reliability team recommends the `realistic` scenario for long runs, so the victim load is
+`realistic`. Optimize and the read benchmarks are switched off: they add load on the secondary
+storage that is unrelated to suspend/resume. Cycles are spaced out (5 min between phases) because
+creating the fan-out alone loads the cluster enough to cause backpressure, and that must not fall
+into the suspend/resume window.
 
 - **A (suspend on):** `suspend-enabled=true`
 - **B (suspend off):** `suspend-enabled=false` — isolates the fan-out and timer effect without
@@ -277,14 +282,17 @@ for arm in a-suspend:true b-no-suspend:false; do
   gh workflow run camunda-load-test.yml --ref 64707-suspend-resume-saas-load-test \
     -f name="susp-${arm%%:*}" \
     -f ref=64707-suspend-resume-saas-load-test \
-    -f scenario=typical \
+    -f scenario=realistic \
     -f ttl=1 \
-    -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.suspend-enabled=${arm##*:} --set global.extraConfig.load-tester.suspender.batch-interval=60s"
+    -f enable-optimize=false \
+    -f perform-read-benchmarks=false \
+    -f load-test-load="--set global.extraConfig.load-tester.suspender.enabled=true --set global.extraConfig.load-tester.suspender.target-enabled=true --set global.extraConfig.load-tester.suspender.suspend-enabled=${arm##*:} --set global.extraConfig.load-tester.suspender.timer-count=200 --set global.extraConfig.load-tester.suspender.timer-duration=8m --set global.extraConfig.load-tester.suspender.warmup=5m --set global.extraConfig.load-tester.suspender.hold-duration=5m --set global.extraConfig.load-tester.suspender.settle=5m --set global.extraConfig.load-tester.suspender.batch-interval=5m"
 done
 ```
 
-Per cycle: ~20 s warmup (create + fan-out) → suspend → 30 s hold → resume (drain) → 15 s settle →
-cancel → 60 s quiet. Drop `generate-resume-correlations` to isolate the buffered-command drain.
+Per cycle: 5 min warmup (create + fan-out) → suspend → 5 min hold (the timers come due at 8 min,
+inside the hold) → resume (drain) → 5 min settle → cancel → 5 min quiet. Add
+`generate-resume-correlations=true` to also create a correlation burst on resume.
 
 The run does **not stop on its own** — it loops until the namespace is deleted or the `ttl` (days)
 expires. Collect ~30–60 min of cycles, then tear down:
