@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.rdbms;
 
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.jspecify.annotations.Nullable;

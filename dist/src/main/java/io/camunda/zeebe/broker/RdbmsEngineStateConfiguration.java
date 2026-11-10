@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker;
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.RdbmsEngineStateCfg;
-import io.camunda.zeebe.engine.state.instance.RdbmsEngineStateSchema;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.micrometer.core.instrument.MeterRegistry;
 import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;

@@ -5,28 +5,38 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state;
+package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
-import io.camunda.zeebe.engine.state.instance.RdbmsElementInstanceState;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
+import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
-/** Temporary: element instances live in the relational database, everything else in RocksDB. */
-public final class MixedStateStores extends RocksDbStateStores {
+/**
+ * Element instances live in the relational database, everything else stays in RocksDB. Requires the
+ * {@link MixedTransactionContext} of a {@code MixedZeebeDb}.
+ */
+public final class RdbmsStateStores extends RocksDbStateStores {
 
   private final MixedTransactionContext mixedContext;
   private final int partitionId;
 
-  public MixedStateStores(
+  public RdbmsStateStores(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final MixedTransactionContext mixedContext) {
     super(zeebeDb, mixedContext.rocksDb());
     this.partitionId = partitionId;
     this.mixedContext = mixedContext;
+  }
+
+  /** Selects these stores for a partition whose database is a {@code MixedZeebeDb}. */
+  public static ProcessingStateStoresFactory factory() {
+    return (partitionId, zeebeDb, transactionContext) ->
+        new RdbmsStateStores(partitionId, zeebeDb, (MixedTransactionContext) transactionContext);
   }
 
   @Override

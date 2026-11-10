@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.JdbcConnectionSource;
 import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
-import io.camunda.zeebe.engine.state.instance.RdbmsEngineStateSchema;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.sql.SQLException;
 import javax.sql.DataSource;
