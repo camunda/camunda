@@ -5,13 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;

@@ -90,6 +90,7 @@ ordered reads of unflushed state, snapshot consistency and error handling.
 | `zeebe-db-api`         | `zeebe/zb-db/api`     | Interfaces only: `ZeebeDb`, `ZeebeDbFactory`, `ColumnFamily`, `TransactionContext`, `ZeebeDbTransaction`, `DbKey`/`DbValue`, the visitors, `SnapshotCopy`, `ColumnFamilyMetrics`.                                         |
 | `zeebe-db-rocksdb`     | `zeebe/zb-db/rocksdb` | Everything else: the RocksDB implementation (`impl.rocksdb`), the `Db*` key and value types, `ConsistencyChecksSettings`, `ZeebeDbException`. Phase 1 adds the `ZeebeTransaction` interface (§4.3) and `DbIterator` here. |
 | `zeebe-db-cache` (new) | `zeebe/zb-db/cache`   | The write-behind cache (package `io.camunda.zeebe.db.cache`). Depends on both modules above and on EhCache.                                                                                                               |
+| `zeebe-db-tests` (new) | `zeebe/zb-db/tests` | Test-only. The contract tests, run against every implementation, so that the two can be compared in one place. Depends on the modules above. |
 
 The cache module wraps the RocksDB implementation rather than changing it:
 
@@ -592,8 +593,11 @@ This has landed. Where the code settled differently from the steps below:
   takes the scanned prefix (the WBWI implementation ignores it).
 - The raw-access interface is `RawDbAccess`, reached through `ZeebeTransactionDb#rawAccess()`. Its
   batch is a `RawBatch`, and recoverable errors surface as `ZeebeDbException`.
-- The contract tests are abstract `*ContractTest` classes with an abstract `createFactory()`. The
-  RocksDB suite subclasses them under the old names, and the test-jar carries the abstract ones.
+- The contract tests are abstract `*ContractTest` classes with an abstract `createFactory()`. They
+  live in their own module, `zeebe-db-tests` (`zeebe/zb-db/tests`), which runs the one suite against
+  every implementation through `RocksDb*Test` subclasses. Phase 2 adds `zeebe-db-cache` as a
+  dependency and one subclass per contract class for the cache. Tests that need RocksDB internals
+  stay in `zeebe-db-rocksdb`.
 
 1. Add `DbIterator`, including the buffer-filling `key(byte[])`/`value(byte[])` overloads, and a
    `RocksIterator` adapter. Switch `TransactionalColumnFamily`, `RawTransactionalColumnFamily`
@@ -604,10 +608,12 @@ This has landed. Where the code settled differently from the steps below:
    families use the interface, and `DefaultTransactionContext` gets a public constructor so the
    cache module can build one. `ZeebeDbTransaction` in `zeebe-db-api` doesn't change.
 3. Add the raw-access interface on `ZeebeTransactionDb` that the cache module will use (§4.1).
-4. Turn the column family and transaction tests into contract tests over a `ZeebeDbFactory`, and
-   publish them in a test-jar, so that the cache module runs the same suite.
+4. Turn the column family and transaction tests into contract tests over a `ZeebeDbFactory`, in a
+   separate `zeebe-db-tests` module that depends on every implementation, so that one module runs
+   the same suite against each.
 
-- **Exit:** `./mvnw verify -pl zeebe/zb-db/rocksdb -DskipTests=false -Dquickly` is green, and
+- **Exit:** `./mvnw verify -pl zeebe/zb-db/rocksdb,zeebe/zb-db/tests -DskipTests=false -Dquickly` is
+  green, and
   `EngineLargeStatePerformanceTest` stays within its tolerance.
 
 ### Phase 2: write-behind core for point ops (`feat:`)
@@ -618,6 +624,8 @@ This has landed. Where the code settled differently from the steps below:
   - It depends on `zeebe-db-api`, `zeebe-db-rocksdb` and EhCache.
   - Register it in `zeebe/zb-db/pom.xml` and `settings.gradle.kts` the way `api` and `rocksdb` are,
     and keep Maven and Gradle in parity.
+  - Add it as a dependency of `zeebe-db-tests`, with one subclass per contract test that returns
+    the cached factory.
 - In package `io.camunda.zeebe.db.cache`, add:
   - `CacheKey`, `CachedValue`
   - `DirtyIndex`
