@@ -17,6 +17,11 @@ export const generateUniqueId = () => {
   return Math.random().toString(36).substring(2, 10);
 };
 
+// A valid BPMN process id must start with a letter.
+export const generateUniqueProcessDefinitionId = () => {
+  return 'x' + Math.random().toString(36).substring(2, 10);
+};
+
 export function generateRandomStringAsync(length: number): Promise<string> {
   return new Promise<string>((resolve) => {
     setTimeout(() => {
