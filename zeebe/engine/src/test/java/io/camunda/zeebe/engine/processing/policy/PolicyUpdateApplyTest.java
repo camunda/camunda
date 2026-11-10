@@ -211,7 +211,7 @@ public final class PolicyUpdateApplyTest {
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
             .onlyCommandRejections()
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
             .getFirst();
@@ -220,21 +220,22 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldRejectAnUpdateOfMoreThanOneChunk() {
+  public void shouldRejectApplyingAnUpdateThatIsNotBuffered() {
     // given
-    final var chunk = chunk().setChunkIndex(0).setChunkCount(2);
+    final var update = chunk();
 
     // when
-    apply(chunk);
+    ENGINE.writeRecords(
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, update));
 
     // then
     final var rejection =
         RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
             .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+            .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))
             .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("single chunk");
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason()).contains("buffered");
   }
 
   @Test
@@ -245,11 +246,11 @@ public final class PolicyUpdateApplyTest {
     // when
     ENGINE.writeRecords(
         RecordToWrite.commandFromRequest("user-" + uid())
-            .policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+            .policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
             .onlyCommandRejections()
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
             .getFirst();
@@ -272,9 +273,10 @@ public final class PolicyUpdateApplyTest {
         .setChunkCount(1);
   }
 
+  /** Appends the chunk, as the broker will; the last chunk of an update starts applying it. */
   static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
     engine.writeRecords(
-        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
   }
 
   private static void apply(final PolicyUpdateRecord chunk) {

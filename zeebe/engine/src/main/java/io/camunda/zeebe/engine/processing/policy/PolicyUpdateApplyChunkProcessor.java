@@ -10,23 +10,31 @@ package io.camunda.zeebe.engine.processing.policy;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.NO_KEY;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Applies a policy update that consists of a single chunk. The chunk is turned into identity
- * commands, which the identity processors apply and distribute to the other partitions. Each
- * identity processor validates its own command, so an entry that cannot be applied, for example a
- * delete of a missing role, is rejected on its own while the other entries of the chunk apply.
+ * Applies one buffered chunk of a policy update, once all its chunks are buffered. The chunk is
+ * turned into identity commands, which the identity processors apply and distribute to the other
+ * partitions. Each identity processor validates its own command, so an entry that cannot be
+ * applied, for example a delete of a missing role, is rejected on its own while the other entries
+ * of the chunk apply.
+ *
+ * <p>The processor then writes the command for the next chunk. Its identity commands are written
+ * after those of this chunk, so the chunks are applied in order. After the last chunk, the update
+ * and its chunks are removed from the buffer.
  *
  * <p>The processor checks no user authorization; see {@link PolicyUpdateOrigin}.
  */
@@ -35,6 +43,7 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateApplyChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
+  private final PolicyUpdateState policyUpdateState;
   private final PolicyUpdateCommandMapper commandMapper;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -42,9 +51,11 @@ public final class PolicyUpdateApplyChunkProcessor
   private final TypedRejectionWriter rejectionWriter;
 
   public PolicyUpdateApplyChunkProcessor(
+      final PolicyUpdateState policyUpdateState,
       final PolicyUpdateCommandMapper commandMapper,
       final KeyGenerator keyGenerator,
       final Writers writers) {
+    this.policyUpdateState = policyUpdateState;
     this.commandMapper = commandMapper;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -54,32 +65,37 @@ public final class PolicyUpdateApplyChunkProcessor
 
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
-    final var chunk = command.getValue();
-    final var rejection = PolicyUpdateOrigin.checkInternal(command);
+    final var rejection =
+        PolicyUpdateOrigin.checkInternal(command)
+            .or(() -> rejectUnlessComplete(command.getValue()));
     if (rejection.isPresent()) {
       rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
       return;
     }
-    if (chunk.getChunkIndex() != 0 || chunk.getChunkCount() != 1) {
+
+    final var update = command.getValue();
+    final var chunk = policyUpdateState.getChunk(update.getUpdateId(), update.getChunkIndex());
+    if (chunk.isEmpty()) {
       rejectionWriter.appendRejection(
           command,
-          RejectionType.INVALID_ARGUMENT,
-          "Expected policy update '%s' to consist of a single chunk, but got chunk %d of %d"
-              .formatted(chunk.getUpdateId(), chunk.getChunkIndex(), chunk.getChunkCount()));
+          RejectionType.NOT_FOUND,
+          "Expected chunk %d of policy update '%s' to be buffered, but it is not"
+              .formatted(update.getChunkIndex(), update.getUpdateId()));
       return;
     }
 
-    final var commands = commandMapper.toCommands(chunk);
+    final var commands = commandMapper.toCommands(chunk.get());
     if (commands.isLeft()) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.INVALID_ARGUMENT,
           "Expected every entry of policy update '%s' of policy '%s' to name its entity type, but: %s"
               .formatted(
-                  chunk.getUpdateId(), chunk.getPolicyId(), String.join("; ", commands.getLeft())));
+                  update.getUpdateId(),
+                  update.getPolicyId(),
+                  String.join("; ", commands.getLeft())));
       return;
     }
-
     commands
         .get()
         .forEach(
@@ -87,18 +103,32 @@ public final class PolicyUpdateApplyChunkProcessor
                 commandWriter.appendFollowUpCommand(
                     NO_KEY, identityCommand.intent(), identityCommand.value()));
 
-    // the entities are already in the follow-up commands; repeating them would write the chunk
-    // into the same batch twice
-    final var applied =
-        new PolicyUpdateRecord()
-            .setPolicyId(chunk.getPolicyId())
-            .setPolicyVersion(chunk.getPolicyVersion())
-            .setBasePolicyVersion(chunk.getBasePolicyVersion())
-            .setSeqNo(chunk.getSeqNo())
-            .setUpdateId(chunk.getUpdateId())
-            .setChunkIndex(chunk.getChunkIndex())
-            .setChunkCount(chunk.getChunkCount());
     stateWriter.appendFollowUpEvent(
-        keyGenerator.nextKey(), PolicyUpdateIntent.CHUNK_APPLIED, applied);
+        keyGenerator.nextKey(),
+        PolicyUpdateIntent.CHUNK_APPLIED,
+        PolicyUpdateRecords.withoutPolicyData(update, update.getChunkIndex()));
+
+    final int nextChunkIndex = update.getChunkIndex() + 1;
+    if (nextChunkIndex < update.getChunkCount()) {
+      commandWriter.appendFollowUpCommand(
+          command.getKey(),
+          PolicyUpdateIntent.APPLY_CHUNK,
+          PolicyUpdateRecords.withoutPolicyData(update, nextChunkIndex));
+    }
+  }
+
+  private Optional<Rejection> rejectUnlessComplete(final PolicyUpdateRecord update) {
+    final var openUpdate =
+        policyUpdateState
+            .getOpenUpdate()
+            .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
+    if (openUpdate.isEmpty() || !openUpdate.get().isComplete()) {
+      return Optional.of(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              "Expected all chunks of policy update '%s' to be buffered before it is applied, but they are not"
+                  .formatted(update.getUpdateId())));
+    }
+    return Optional.empty();
   }
 }
