@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
@@ -44,7 +43,6 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
 
   private static EngineStateDatabase database;
 
-  private Connection connection;
   private JdbcTransactionContext transactionContext;
   private int partitionId;
 
@@ -60,12 +58,7 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
 
   @Override
   protected MutableProcessState createProcessState() {
-    try {
-      connection = database.dataSource().getConnection();
-    } catch (final SQLException e) {
-      throw new IllegalStateException(e);
-    }
-    transactionContext = new JdbcTransactionContext(connection);
+    transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
     return newProcessState(transactionContext);
   }
@@ -76,10 +69,9 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
   }
 
   @AfterEach
-  void closeConnection() throws SQLException {
-    if (connection != null) {
-      connection.rollback();
-      connection.close();
+  void endTransaction() throws Exception {
+    if (transactionContext != null) {
+      transactionContext.getCurrentTransaction().rollback();
     }
   }
 
@@ -173,7 +165,7 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
     processState.markProcessDefinitionRestoreAsRun();
 
     // when - a new state on the same partition, e.g. after a restart, starts with empty caches
-    final var restartedState = newProcessState(new JdbcTransactionContext(connection));
+    final var restartedState = newProcessState(new JdbcTransactionContext());
 
     // then
     final var processId = wrapString("processId");

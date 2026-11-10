@@ -32,9 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.test.util.MsgPackUtil;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -105,8 +103,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   private static PGSimpleDataSource dataSource;
 
   private MutableProcessingState processingState;
-  private Connection connection;
-  private ConnectionSpy connectionSpy;
+  private final ConnectionSpy connectionSpy = new ConnectionSpy();
   private JdbcTransactionContext transactionContext;
   private int partitionId;
   private MutableVariableState variableState;
@@ -130,13 +127,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Override
   protected MutableElementInstanceState createElementInstanceState() {
-    try {
-      connectionSpy = new ConnectionSpy(dataSource.getConnection());
-    } catch (final SQLException e) {
-      throw new IllegalStateException(e);
-    }
-    connection = connectionSpy.proxy();
-    transactionContext = new JdbcTransactionContext(connection);
+    database.observed().reset();
+    database.observed().decorate(connectionSpy::proxy);
+    transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
     final var session = database.entitySession(transactionContext, partitionId);
     variableState = new VariableStateImpl(new RdbmsVariableStore(session));
@@ -157,11 +150,11 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @AfterEach
-  void closeConnection() throws SQLException {
-    if (connection != null) {
-      connection.rollback();
-      connection.close();
+  void endTransaction() throws Exception {
+    if (transactionContext != null) {
+      transactionContext.getCurrentTransaction().rollback();
     }
+    database.observed().reset();
     ElementInstanceTableDump.logRows(dataSource, partitionId);
   }
 
@@ -474,10 +467,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Test
-  void shouldLeaveEndingTheTransactionToTheTransactionContext() throws Exception {
+  void shouldCommitThroughTheSessionAndReturnTheConnectionToThePool() throws Exception {
     // given
     final var transaction = transactionContext.getCurrentTransaction();
-    connectionSpy.transactionCalls.clear();
 
     // when - every kind of read and write
     final var processInstance =
@@ -502,12 +494,15 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
     elementInstanceState.hasActiveProcessInstanceWithBusinessId(
         "order-1", "process", "", key -> false);
-    assertThat(connectionSpy.transactionCalls).isEmpty();
+    assertThat(connectionSpy.transactionCalls).doesNotContain("commit", "rollback", "close");
     transaction.commit();
 
     // then
-    assertThat(connectionSpy.transactionCalls).containsExactly("commit");
-    assertThat(connection.isClosed()).isFalse();
+    assertThat(connectionSpy.transactionCalls)
+        .containsOnlyOnce("commit", "close")
+        .doesNotContain("rollback");
+    assertThat(database.observed().borrowed()).isOne();
+    assertThat(database.observed().returned()).isOne();
     assertThat(committedRows()).extracting(Row::key).containsExactly(100L, 101L);
   }
 
@@ -994,40 +989,33 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
    * Records how the connection's transaction is ended, and can fail the next commit like a
    * serialization failure would.
    */
-  private static final class ConnectionSpy implements InvocationHandler {
+  private static final class ConnectionSpy {
 
     private static final Set<String> TRANSACTION_METHODS =
         Set.of("commit", "rollback", "close", "setAutoCommit");
 
-    private final Connection delegate;
     private final List<String> transactionCalls = new ArrayList<>();
     private boolean failNextCommit;
 
-    private ConnectionSpy(final Connection delegate) {
-      this.delegate = delegate;
-    }
-
-    private Connection proxy() {
+    private Connection proxy(final Connection delegate) {
       return (Connection)
           Proxy.newProxyInstance(
-              Connection.class.getClassLoader(), new Class<?>[] {Connection.class}, this);
-    }
-
-    @Override
-    public Object invoke(final Object proxy, final Method method, final Object[] args)
-        throws Throwable {
-      if (TRANSACTION_METHODS.contains(method.getName())) {
-        transactionCalls.add(method.getName());
-      }
-      if (failNextCommit && method.getName().equals("commit")) {
-        failNextCommit = false;
-        throw new SQLTransientException("injected serialization failure", "40001");
-      }
-      try {
-        return method.invoke(delegate, args);
-      } catch (final InvocationTargetException e) {
-        throw e.getCause();
-      }
+              Connection.class.getClassLoader(),
+              new Class<?>[] {Connection.class},
+              (proxy, method, args) -> {
+                if (TRANSACTION_METHODS.contains(method.getName())) {
+                  transactionCalls.add(method.getName());
+                }
+                if (failNextCommit && method.getName().equals("commit")) {
+                  failNextCommit = false;
+                  throw new SQLTransientException("injected serialization failure", "40001");
+                }
+                try {
+                  return method.invoke(delegate, args);
+                } catch (final InvocationTargetException e) {
+                  throw e.getCause();
+                }
+              });
     }
   }
 

@@ -9,8 +9,6 @@ package io.camunda.zeebe.db.impl.jdbc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.ZeebeDbException;
@@ -25,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,12 +44,13 @@ final class JdbcTransactionContextTest {
   void setUp() throws SQLException {
     url = "jdbc:h2:mem:" + UUID.randomUUID();
     connection = DriverManager.getConnection(url);
+    connection.setAutoCommit(false);
     observer = DriverManager.getConnection(url);
     try (final var statement = observer.createStatement()) {
       statement.execute("CREATE TABLE test_rows (id BIGINT PRIMARY KEY, val VARCHAR(255))");
     }
-    context = new JdbcTransactionContext(connection);
-    participant = new StagingParticipant();
+    context = new JdbcTransactionContext();
+    participant = new StagingParticipant(connection);
     context.register(participant);
   }
 
@@ -361,28 +359,6 @@ final class JdbcTransactionContextTest {
     assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
   }
 
-  @Test
-  void shouldReadOwnFlushedWritesThroughConnectionBeforeCommit() throws Exception {
-    // given
-    final var transaction = context.getCurrentTransaction();
-    try (final var statement =
-        context.connection().prepareStatement("INSERT INTO test_rows (id, val) VALUES (?, ?)")) {
-      statement.setLong(1, 1);
-      statement.setString(2, "direct");
-      statement.executeUpdate();
-    }
-
-    // when
-    final var ownView = rows(context.connection());
-    final var observerView = visibleRows();
-    transaction.commit();
-
-    // then
-    assertThat(ownView).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "direct"));
-    assertThat(observerView).isEmpty();
-    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "direct"));
-  }
-
   @ParameterizedTest
   @MethodSource("recoverableDriverErrors")
   void shouldTreatDriverErrorsWithRetryableSqlStateAsRecoverable(final SQLException error)
@@ -420,106 +396,89 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
-  void shouldFlushStagedWritesOnNewConnectionWhenCommitIsRetriedAfterConnectionBroke()
-      throws Exception {
+  void shouldRollbackParticipantsOnRollback() throws Exception {
     // given
-    final var borrowed = new ArrayList<Connection>();
-    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
-    final var pooledContext = new JdbcTransactionContext(connections);
-    pooledContext.register(participant);
-    final var transaction = pooledContext.getCurrentTransaction();
+    final var transaction = context.getCurrentTransaction();
     participant.stage(1, "a");
-    final var broken = pooledContext.connection();
-    broken.close();
-
-    // when
-    assertThatThrownBy(transaction::commit)
-        // then
-        .isInstanceOf(ZeebeDbException.class);
-    assertThat(participant.staged).hasSize(1);
-
-    // when
-    transaction.commit();
-
-    // then
-    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
-    assertThat(borrowed).hasSize(2);
-    final var replacement = pooledContext.connection();
-    assertThat(replacement).isSameAs(borrowed.getLast()).isNotSameAs(broken);
-    assertThat(replacement.getAutoCommit()).isFalse();
-
-    // when
-    connections.close();
-
-    // then
-    assertThat(replacement.isClosed()).isTrue();
-  }
-
-  @Test
-  void shouldReplaceConnectionWhenCommitFailsWithConnectionError() throws Exception {
-    // given
-    final var borrowed = new ArrayList<Connection>();
-    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
-    final var pooledContext = new JdbcTransactionContext(connections);
-    pooledContext.register(participant);
-    final var transaction = pooledContext.getCurrentTransaction();
-    participant.stage(1, "a");
-    participant.failNextFlushWith = new SQLException("connection lost", "08006");
-    final var first = pooledContext.connection();
-
-    // when
-    assertThatThrownBy(transaction::commit)
-        // then
-        .isInstanceOf(ZeebeDbException.class);
-    assertThat(first.isClosed()).isTrue();
-
-    // when
-    transaction.commit();
-
-    // then
-    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(1L, "a"));
-    assertThat(pooledContext.connection()).isNotSameAs(first);
-  }
-
-  @Test
-  void shouldKeepConnectionWhenCommitFailsWithOtherError() throws Exception {
-    // given
-    final var borrowed = new ArrayList<Connection>();
-    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
-    final var pooledContext = new JdbcTransactionContext(connections);
-    pooledContext.register(participant);
-    insertFromObserver(1, "conflict");
-    final var transaction = pooledContext.getCurrentTransaction();
-    participant.stage(1, "a");
-
-    // when
-    assertThatThrownBy(transaction::commit)
-        // then
-        .isExactlyInstanceOf(RuntimeException.class);
-    assertThat(borrowed).hasSize(1);
-    assertThat(pooledContext.connection()).isSameAs(borrowed.getFirst());
-    assertThat(borrowed.getFirst().isClosed()).isFalse();
-  }
-
-  @Test
-  void shouldDiscardBrokenConnectionOnRollback() throws Exception {
-    // given
-    final var borrowed = new ArrayList<Connection>();
-    final var connections = JdbcConnectionSource.from(dataSourceRecording(borrowed));
-    final var pooledContext = new JdbcTransactionContext(connections);
-    pooledContext.register(participant);
-    final var transaction = pooledContext.getCurrentTransaction();
-    participant.stage(1, "a");
-    final var broken = pooledContext.connection();
-    broken.close();
 
     // when
     transaction.rollback();
-    pooledContext.runInTransaction(() -> participant.stage(2, "b"));
 
     // then
-    assertThat(visibleRows()).containsExactlyInAnyOrderEntriesOf(Map.of(2L, "b"));
-    assertThat(pooledContext.connection()).isNotSameAs(broken);
+    assertThat(participant.rollbacks).isOne();
+    assertThat(participant.commits).isZero();
+  }
+
+  @Test
+  void shouldCommitParticipantsInRegistrationOrder() throws Exception {
+    // given
+    final var order = new ArrayList<String>();
+    final var first = new RecordingParticipant("first", order);
+    final var second = new RecordingParticipant("second", order);
+    final var ordered = new JdbcTransactionContext();
+    ordered.register(first);
+    ordered.register(second);
+
+    // when
+    ordered.getCurrentTransaction().commit();
+
+    // then
+    assertThat(order)
+        .containsExactly("first commit", "second commit", "first reset", "second reset");
+  }
+
+  @Test
+  void shouldTellParticipantsThatCommitFailedAndKeepTheirChanges() throws Exception {
+    // given
+    final var order = new ArrayList<String>();
+    final var failing = new RecordingParticipant("failing", order);
+    failing.failCommitWith = new SQLException("connection lost", "08006");
+    final var other = new RecordingParticipant("other", order);
+    final var failingContext = new JdbcTransactionContext();
+    failingContext.register(failing);
+    failingContext.register(other);
+
+    // when
+    assertThatThrownBy(() -> failingContext.getCurrentTransaction().commit())
+        // then
+        .isInstanceOf(ZeebeDbException.class);
+    assertThat(order).containsExactly("failing commit", "failing failed", "other failed");
+  }
+
+  /** A participant that only records the calls it gets. */
+  private static final class RecordingParticipant implements JdbcTransactionParticipant {
+
+    private final String name;
+    private final List<String> calls;
+    private @Nullable SQLException failCommitWith;
+
+    private RecordingParticipant(final String name, final List<String> calls) {
+      this.name = name;
+      this.calls = calls;
+    }
+
+    @Override
+    public void commit() throws SQLException {
+      calls.add(name + " commit");
+      if (failCommitWith != null) {
+        throw failCommitWith;
+      }
+    }
+
+    @Override
+    public void rollback() {
+      calls.add(name + " rollback");
+    }
+
+    @Override
+    public void commitFailed() {
+      calls.add(name + " failed");
+    }
+
+    @Override
+    public void reset() {
+      calls.add(name + " reset");
+    }
   }
 
   /**
@@ -539,19 +498,6 @@ final class JdbcTransactionContextTest {
             Named.of("connection failure", new SQLException("connection refused", "08006"))),
         Arguments.of(Named.of("batch with retryable SQLState", batchFailure)),
         Arguments.of(Named.of("batch wrapping retryable error", wrappedBatchFailure)));
-  }
-
-  /** A data source handing out a new connection to the test database on every call. */
-  private DataSource dataSourceRecording(final List<Connection> borrowed) throws SQLException {
-    final var dataSource = mock(DataSource.class);
-    when(dataSource.getConnection())
-        .thenAnswer(
-            ignored -> {
-              final var newConnection = DriverManager.getConnection(url);
-              borrowed.add(newConnection);
-              return newConnection;
-            });
-    return dataSource;
   }
 
   private Map<Long, String> visibleRows() throws SQLException {
@@ -602,23 +548,26 @@ final class JdbcTransactionContextTest {
 
   private static final class StagingParticipant implements JdbcTransactionParticipant {
 
+    private final Connection connection;
     private final Map<Long, String> staged = new LinkedHashMap<>();
     private int flushes;
+    private int commits;
+    private int rollbacks;
     private int resets;
     private int failedCommits;
     private @Nullable SQLException failNextFlushWith;
 
-    @Override
-    public void commitFailed() {
-      failedCommits++;
+    private StagingParticipant(final Connection connection) {
+      this.connection = connection;
     }
 
     void stage(final long id, final String value) {
       staged.put(id, value);
     }
 
+    /** Inserts the staged rows with one JDBC batch, then commits, like the entity session does. */
     @Override
-    public void flush(final Connection connection) throws SQLException {
+    public void commit() throws SQLException {
       flushes++;
       try (final var statement =
           connection.prepareStatement("INSERT INTO test_rows (id, val) VALUES (?, ?)")) {
@@ -634,12 +583,34 @@ final class JdbcTransactionContextTest {
         failNextFlushWith = null;
         throw failure;
       }
+      connection.commit();
+      commits++;
+    }
+
+    @Override
+    public void rollback() {
+      rollbacks++;
+      rollbackQuietly();
+    }
+
+    @Override
+    public void commitFailed() {
+      failedCommits++;
+      rollbackQuietly();
     }
 
     @Override
     public void reset() {
       resets++;
       staged.clear();
+    }
+
+    private void rollbackQuietly() {
+      try {
+        connection.rollback();
+      } catch (final SQLException ignored) {
+        // nothing to roll back on a broken connection
+      }
     }
   }
 }

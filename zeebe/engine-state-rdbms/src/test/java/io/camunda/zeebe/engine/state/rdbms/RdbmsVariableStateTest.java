@@ -55,7 +55,6 @@ final class RdbmsVariableStateTest extends AbstractVariableStateContractTest {
 
   private static EngineStateDatabase database;
 
-  private Connection connection;
   private JdbcTransactionContext transactionContext;
   private int partitionId;
   private int queries;
@@ -73,12 +72,9 @@ final class RdbmsVariableStateTest extends AbstractVariableStateContractTest {
 
   @Override
   protected MutableElementInstanceState createElementInstanceState() {
-    try {
-      connection = database.dataSource().getConnection();
-    } catch (final SQLException e) {
-      throw new IllegalStateException(e);
-    }
-    transactionContext = new JdbcTransactionContext(countingQueries(connection));
+    database.observed().reset();
+    database.observed().decorate(this::countingQueries);
+    transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
     final var session = database.entitySession(transactionContext, partitionId);
     createdVariableState = new VariableStateImpl(new RdbmsVariableStore(session));
@@ -92,9 +88,9 @@ final class RdbmsVariableStateTest extends AbstractVariableStateContractTest {
   }
 
   @AfterEach
-  void closeConnection() throws SQLException {
-    connection.rollback();
-    connection.close();
+  void endTransaction() throws Exception {
+    transactionContext.getCurrentTransaction().rollback();
+    database.observed().reset();
   }
 
   @Test

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionParticipant;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -61,13 +61,14 @@ import org.jspecify.annotations.Nullable;
  * a missing one fails on flush. Reads of unstaged keys go to the database once per transaction, see
  * {@link #get}. Not thread-safe, like the context it belongs to.
  *
- * <p>Like a Camunda 7 command, a transaction uses one MyBatis session: it is opened on the first
- * database access, on the connection of the transaction, serves all reads and the flush, and is
- * closed when the transaction ends, i.e. after a commit or rollback, or when a commit attempt fails
- * (the retry then opens a new one, possibly on a new connection). It is a batch session: its
- * executor sends pending batched statements before a query, but statements are only batched by the
- * flush. Closing it neither commits, rolls back nor closes the connection, see {@link
- * EngineStateMyBatis}. Reusing prepared statements across transactions is left to the JDBC driver.
+ * <p>Like the RDBMS exporter's flush, a transaction uses one MyBatis batch session, which owns the
+ * database transaction: it is opened on the first database access, borrows a connection from the
+ * pool, serves all reads and the flush, and is committed or rolled back and closed when the
+ * transaction ends, returning the connection to the pool. A transaction that never accesses the
+ * database borrows no connection. When a commit attempt fails, the session is rolled back and
+ * closed, and the retry opens a new one on a connection of the pool, which evicts broken ones. The
+ * session's executor sends pending batched statements before a query, but statements are only
+ * batched by the flush. Reusing prepared statements across transactions is left to the JDBC driver.
  *
  * <p>The flush sends all staged writes through that session and a single {@code flushStatements()}.
  * MyBatis' batch executor reuses a JDBC statement while consecutive calls use the same SQL, so the
@@ -460,53 +461,77 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   /**
-   * Writes all staged rows. Doesn't clear them, so a failed commit can write them again; {@link
+   * Writes all staged rows and commits the session's transaction; a read-only transaction just
+   * commits. Doesn't clear the staged rows, so a failed commit can write them again; {@link
    * #reset()} does.
    */
   @Override
-  public void flush(final Connection connection) throws SQLException {
-    if (staged.values().stream().allMatch(Map::isEmpty)) {
+  public void commit() throws SQLException {
+    final boolean hasWrites = staged.values().stream().anyMatch(writes -> !writes.isEmpty());
+    if (session == null && !hasWrites) {
       return;
     }
-    final var batch = session != null ? session : openSession(connection);
     unwrapped(
         () -> {
-          // the updates' parameters, to find their update counts among the batch results
-          final Map<Object, Update> updates = new IdentityHashMap<>();
-          for (final var entry : staged.entrySet()) {
-            final var type = entry.getKey();
-            for (final var write : entry.getValue().entrySet()) {
-              final var operation = write.getValue().operation;
-              if (operation == Operation.DELETE || operation == Operation.UPSERT) {
-                batch.delete(type.delete, keyParameter(write.getKey()));
-              }
-            }
-            for (final var write : entry.getValue().values()) {
-              if (write.operation == Operation.INSERT || write.operation == Operation.UPSERT) {
-                batch.insert(type.insert, rowParameter(write.row));
-              }
-            }
-            for (final var write : entry.getValue().values()) {
-              if (write.operation == Operation.UPDATE) {
-                final var parameter = rowParameter(write.row);
-                updates.put(parameter, new Update(type, Objects.requireNonNull(write.row)));
-                batch.update(type.update, parameter);
-              }
-            }
+          final var current = session();
+          if (hasWrites) {
+            flush(current);
           }
-
-          for (final var result : batch.flushStatements()) {
-            final var parameters = result.getParameterObjects();
-            final var counts = result.getUpdateCounts();
-            for (int i = 0; i < counts.length && i < parameters.size(); i++) {
-              final var update = updates.get(parameters.get(i));
-              if (update != null) {
-                verifyUpdated(update.type, update.row, counts[i]);
-              }
-            }
-          }
+          current.commit(true);
           return null;
         });
+    closeSession();
+  }
+
+  private void flush(final SqlSession batch) throws SQLException {
+    // the updates' parameters, to find their update counts among the batch results
+    final Map<Object, Update> updates = new IdentityHashMap<>();
+    for (final var entry : staged.entrySet()) {
+      final var type = entry.getKey();
+      for (final var write : entry.getValue().entrySet()) {
+        final var operation = write.getValue().operation;
+        if (operation == Operation.DELETE || operation == Operation.UPSERT) {
+          batch.delete(type.delete, keyParameter(write.getKey()));
+        }
+      }
+      for (final var write : entry.getValue().values()) {
+        if (write.operation == Operation.INSERT || write.operation == Operation.UPSERT) {
+          batch.insert(type.insert, rowParameter(write.row));
+        }
+      }
+      for (final var write : entry.getValue().values()) {
+        if (write.operation == Operation.UPDATE) {
+          final var parameter = rowParameter(write.row);
+          updates.put(parameter, new Update(type, Objects.requireNonNull(write.row)));
+          batch.update(type.update, parameter);
+        }
+      }
+    }
+
+    for (final var result : batch.flushStatements()) {
+      final var parameters = result.getParameterObjects();
+      final var counts = result.getUpdateCounts();
+      for (int i = 0; i < counts.length && i < parameters.size(); i++) {
+        final var update = updates.get(parameters.get(i));
+        if (update != null) {
+          verifyUpdated(update.type, update.row, counts[i]);
+        }
+      }
+    }
+  }
+
+  /** Rolls back the transaction's session, if there is one, and returns its connection. */
+  @Override
+  public void rollback() {
+    final var current = session;
+    if (current != null) {
+      try {
+        current.rollback(true);
+      } catch (final RuntimeException ignored) {
+        // a broken connection lost its transaction anyway
+      }
+    }
+    closeSession();
   }
 
   /** Drops all staged writes and loaded rows and ends the transaction's session. */
@@ -518,13 +543,13 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   /**
-   * Keeps the staged writes for the retry, which gets a new session on the current connection. The
-   * loaded rows are dropped, the retry reads them again.
+   * Keeps the staged writes for the retry, which gets a new session on a new connection. The loaded
+   * rows are dropped, the retry reads them again.
    */
   @Override
   public void commitFailed() {
+    rollback();
     clearLoaded();
-    closeSession();
   }
 
   private void clearLoaded() {
@@ -556,11 +581,10 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   private SqlSession session() {
-    return session != null ? session : openSession(transactionContext.connection());
-  }
-
-  private SqlSession openSession(final Connection connection) {
-    session = sessionFactory.openSession(ExecutorType.BATCH, connection);
+    if (session == null) {
+      session =
+          sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+    }
     return session;
   }
 

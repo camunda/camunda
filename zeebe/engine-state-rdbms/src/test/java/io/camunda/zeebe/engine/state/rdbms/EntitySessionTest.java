@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbException;
-import io.camunda.zeebe.db.impl.jdbc.JdbcConnectionSource;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
 import java.lang.reflect.InvocationTargetException;
@@ -24,8 +23,8 @@ import java.sql.SQLTransientException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,9 +45,9 @@ final class EntitySessionTest {
   private static EngineStateDatabase database;
 
   private final List<String> batches = new ArrayList<>();
+  private final List<String> connectionCalls = new ArrayList<>();
   private int selects;
   private boolean failNextBatch;
-  private Connection connection;
   private int partitionId;
   private JdbcTransactionContext context;
   private EntitySession session;
@@ -64,17 +63,18 @@ final class EntitySessionTest {
   }
 
   @BeforeEach
-  void setUp() throws SQLException {
-    connection = database.dataSource().getConnection();
+  void setUp() {
+    database.observed().reset();
+    database.observed().decorate(this::loggingProxy);
     partitionId = database.nextPartitionId();
-    context = new JdbcTransactionContext(loggingProxy(connection));
+    context = new JdbcTransactionContext();
     session = database.entitySession(context, partitionId);
   }
 
   @AfterEach
-  void tearDown() throws SQLException {
-    connection.rollback();
-    connection.close();
+  void tearDown() throws Exception {
+    context.getCurrentTransaction().rollback();
+    database.observed().reset();
   }
 
   @Test
@@ -448,57 +448,157 @@ final class EntitySessionTest {
   }
 
   @Test
-  void shouldRetryCommitAndReadOnNewConnectionWithNewSessionWhenConnectionBroke() throws Exception {
-    // given - a context on a pooled connection with a session that read on it
-    final var borrowed = new ArrayList<Connection>();
-    final DataSource pool =
-        (DataSource)
-            Proxy.newProxyInstance(
-                DataSource.class.getClassLoader(),
-                new Class<?>[] {DataSource.class},
-                (proxy, method, args) -> {
-                  final Object result = invoke(database.dataSource(), method, args);
-                  if (method.getName().equals("getConnection")) {
-                    borrowed.add((Connection) result);
-                  }
-                  return result;
-                });
+  void shouldRetryCommitOnNewConnectionWhenConnectionBroke() throws Exception {
+    // given - a transaction that read through a session on its connection
+    final var connections = new ArrayList<Connection>();
+    database
+        .observed()
+        .decorate(
+            connection -> {
+              connections.add(connection);
+              return loggingProxy(connection);
+            });
     final var sessions = new CountingSessionFactory(database.sessionFactory());
-    final var connections = JdbcConnectionSource.from(pool);
-    final var pooledContext = new JdbcTransactionContext(connections);
-    final var pooledSession =
-        EngineStateDatabase.entitySession(pooledContext, partitionId, sessions.factory());
-    final var transaction = pooledContext.getCurrentTransaction();
-    pooledSession.insert(ROW, row("1", "a"));
-    assertThat(pooledSession.get(ROW, "2")).isNull();
+    final var brokenContext = new JdbcTransactionContext();
+    final var brokenSession =
+        EngineStateDatabase.entitySession(brokenContext, partitionId, sessions.factory());
+    final var transaction = brokenContext.getCurrentTransaction();
+    brokenSession.insert(ROW, row("1", "a"));
+    assertThat(brokenSession.get(ROW, "2")).isNull();
     assertThat(sessions.opened()).isOne();
-    borrowed.getFirst().close();
+    connections.getFirst().close();
 
     // when - the commit fails because the connection is gone
     assertThatThrownBy(transaction::commit).isInstanceOf(ZeebeDbException.class);
 
-    // then - the session of the dead connection is closed, the writes are still staged
+    // then - its session is closed and the connection returned, the writes are still staged
     assertThat(sessions.closed()).isOne();
-    assertThat(pooledSession.stagedKeys(ROW)).containsExactly("1");
+    assertThat(database.observed().returned()).isOne();
+    assertThat(brokenSession.stagedKeys(ROW)).containsExactly("1");
 
     // when - the retry
     transaction.commit();
 
     // then - it flushed through a new session on a new connection
-    assertThat(borrowed).hasSize(2);
+    assertThat(connections).hasSize(2);
     assertThat(sessions.opened()).isEqualTo(2);
     assertThat(sessions.closed()).isEqualTo(2);
     assertThat(committedRows()).containsExactly(row("1", "a"));
 
     // when - later reads
-    final var next = pooledContext.getCurrentTransaction();
-    final var read = pooledSession.get(ROW, "1");
+    final var next = brokenContext.getCurrentTransaction();
+    final var read = brokenSession.get(ROW, "1");
     next.commit();
 
     // then
     assertThat(read).isEqualTo(row("1", "a"));
-    assertThat(borrowed).hasSize(2);
-    connections.close();
+    assertThat(connections).hasSize(3);
+    assertThat(database.observed().borrowed()).isEqualTo(3);
+    assertThat(database.observed().returned()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldBorrowAndReturnOneConnectionPerTransaction() throws Exception {
+    // when - a transaction that reads and writes
+    var transaction = context.getCurrentTransaction();
+    session.insert(ROW, row("1", "a"));
+    session.get(ROW, "2");
+    session.get(ROW, "3");
+    assertThat(database.observed().borrowed()).isOne();
+    assertThat(database.observed().returned()).isZero();
+    transaction.commit();
+
+    // then
+    assertThat(database.observed().borrowed()).isOne();
+    assertThat(database.observed().returned()).isOne();
+
+    // when - a read-only transaction
+    transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    transaction.commit();
+
+    // then
+    assertThat(database.observed().borrowed()).isEqualTo(2);
+    assertThat(database.observed().returned()).isEqualTo(2);
+
+    // when - a transaction that only stages writes
+    transaction = context.getCurrentTransaction();
+    session.update(ROW, row("1", "b"));
+    assertThat(database.observed().borrowed()).isEqualTo(2);
+    transaction.commit();
+
+    // then
+    assertThat(database.observed().borrowed()).isEqualTo(3);
+    assertThat(database.observed().returned()).isEqualTo(3);
+
+    // when - a rolled back transaction
+    transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    transaction.rollback();
+
+    // then
+    assertThat(database.observed().borrowed()).isEqualTo(4);
+    assertThat(database.observed().returned()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldNotBorrowConnectionInTransactionThatDoesNotTouchTheDatabase() throws Exception {
+    // when
+    context.getCurrentTransaction().commit();
+    context.getCurrentTransaction().rollback();
+    context.runInTransaction(() -> {});
+
+    // then
+    assertThat(database.observed().borrowed()).isZero();
+    assertThat(database.observed().returned()).isZero();
+  }
+
+  @Test
+  void shouldCommitThroughTheSessionAndReturnTheConnection() throws Exception {
+    // given
+    final var transaction = context.getCurrentTransaction();
+    session.insert(ROW, row("1", "a"));
+    session.get(ROW, "2");
+    assertThat(connectionCalls).doesNotContain("commit", "rollback", "close");
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(connectionCalls).containsOnlyOnce("commit", "close").doesNotContain("rollback");
+    assertThat(committedRows()).containsExactly(row("1", "a"));
+  }
+
+  @Test
+  void shouldCommitReadOnlyTransactionWithoutWriting() throws Exception {
+    // given
+    commit(row("1", "a"));
+    connectionCalls.clear();
+    final var transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(batches).isEmpty();
+    assertThat(connectionCalls).containsOnlyOnce("commit", "close").doesNotContain("rollback");
+  }
+
+  @Test
+  void shouldRollbackThroughTheSessionAndReturnTheConnection() throws Exception {
+    // given
+    final var transaction = context.getCurrentTransaction();
+    session.insert(ROW, row("1", "a"));
+    session.get(ROW, "2");
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(connectionCalls).containsOnlyOnce("rollback", "close").doesNotContain("commit");
+    assertThat(batches).isEmpty();
+    assertThat(committedRows()).isEmpty();
   }
 
   private static PartitionStateRow row(final String key, final String value) {
@@ -546,6 +646,9 @@ final class EntitySessionTest {
             Connection.class.getClassLoader(),
             new Class<?>[] {Connection.class},
             (proxy, method, args) -> {
+              if (Set.of("commit", "rollback", "close").contains(method.getName())) {
+                connectionCalls.add(method.getName());
+              }
               final Object result = invoke(target, method, args);
               if (method.getName().equals("prepareStatement")
                   && result instanceof final PreparedStatement statement) {

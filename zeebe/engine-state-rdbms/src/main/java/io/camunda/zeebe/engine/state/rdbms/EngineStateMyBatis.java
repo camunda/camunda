@@ -7,13 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
-import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -21,18 +19,16 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.LocalCacheScope;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
+import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The MyBatis configuration of the engine state mappers, for sessions that run on the connection of
- * a {@link JdbcTransactionContext}, without Spring.
+ * The MyBatis configuration of the engine state mappers, without Spring.
  *
- * <p>The context owns the connection and its transaction. Sessions are therefore only opened on a
- * given connection, with a {@link ManagedTransactionFactory} that doesn't close it: MyBatis'
- * managed transaction never commits or rolls back, and closing a session leaves the connection
- * open. The first-level cache is limited to a statement, so a session never serves rows that a
- * flush changed since.
+ * <p>Like the RDBMS exporter's, the sessions borrow a connection from the data source, run with
+ * auto-commit disabled and commit, roll back and return the connection to the pool themselves. The
+ * first-level cache is limited to a statement, so a session never serves rows that a flush changed
+ * since.
  */
 public final class EngineStateMyBatis {
 
@@ -53,8 +49,9 @@ public final class EngineStateMyBatis {
   private EngineStateMyBatis() {}
 
   /**
-   * Builds the factory of all sessions on the given database. Build it once: it parses the mappers
-   * and resolves the database product, which takes a connection from the data source.
+   * Builds the factory of all sessions on the given database, which should be a connection pool.
+   * Build it once: it parses the mappers and resolves the database product, which takes a
+   * connection from the data source.
    */
   public static SqlSessionFactory createSqlSessionFactory(final DataSource dataSource) {
     final String productName;
@@ -64,13 +61,8 @@ public final class EngineStateMyBatis {
       throw new IllegalStateException("Failed to resolve the engine state database product", e);
     }
 
-    final var transactionFactory = new ManagedTransactionFactory();
-    final var transactionProperties = new Properties();
-    transactionProperties.setProperty("closeConnection", "false");
-    transactionFactory.setProperties(transactionProperties);
-
-    // sessions are always opened on a given connection, so the environment's data source is unused
-    final var environment = new Environment("engine-state", transactionFactory, dataSource);
+    final var environment =
+        new Environment("engine-state", new JdbcTransactionFactory(), dataSource);
     final var configuration = new Configuration(environment);
     configuration.setDatabaseId(databaseId(productName));
     configuration.setLocalCacheScope(LocalCacheScope.STATEMENT);

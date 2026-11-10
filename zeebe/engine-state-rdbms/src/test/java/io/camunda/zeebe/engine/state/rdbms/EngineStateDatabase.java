@@ -45,13 +45,15 @@ final class EngineStateDatabase implements AutoCloseable {
   private final PGSimpleDataSource dataSource;
   private final @Nullable PostgreSQLContainer postgres;
   private final AtomicInteger partitionIds = new AtomicInteger();
+  private final ObservedDataSource observed;
   private final SqlSessionFactory sessionFactory;
 
   private EngineStateDatabase(
       final PGSimpleDataSource dataSource, final @Nullable PostgreSQLContainer postgres) {
     this.dataSource = dataSource;
     this.postgres = postgres;
-    sessionFactory = EngineStateMyBatis.createSqlSessionFactory(dataSource);
+    observed = new ObservedDataSource(dataSource);
+    sessionFactory = EngineStateMyBatis.createSqlSessionFactory(observed.dataSource());
   }
 
   /** Starts the database, or connects to the external one, and applies the schema. */
@@ -78,6 +80,11 @@ final class EngineStateDatabase implements AutoCloseable {
 
   PGSimpleDataSource dataSource() {
     return dataSource;
+  }
+
+  /** The pool the {@link #sessionFactory()} borrows its connections from. */
+  ObservedDataSource observed() {
+    return observed;
   }
 
   /** The session factory of the database, built once like in the broker. */

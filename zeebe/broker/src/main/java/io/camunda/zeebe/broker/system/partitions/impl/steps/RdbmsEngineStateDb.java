@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.jdbc.JdbcConnectionSource;
 import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -18,9 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Experimental PoC: builds the mixed RocksDB/RDBMS engine state of a partition on the engine state
- * connection pool, and wipes the partition's rows, since restarts are not supported. The schema is
- * created before the broker starts.
+ * Experimental PoC: builds the mixed RocksDB/RDBMS engine state of a partition, and wipes the
+ * partition's rows, since restarts are not supported. The schema is created before the broker
+ * starts.
  */
 final class RdbmsEngineStateDb {
 
@@ -28,10 +27,7 @@ final class RdbmsEngineStateDb {
 
   private RdbmsEngineStateDb() {}
 
-  /**
-   * The returned database borrows one connection from the pool on first use and returns it when
-   * closed.
-   */
+  /** The returned database owns no connection: relational stores borrow one per transaction. */
   static MixedZeebeDb<ZbColumnFamilies> open(
       final ZeebeDb<ZbColumnFamilies> rocksDb, final DataSource dataSource, final int partitionId) {
     LOG.warn(
@@ -46,7 +42,7 @@ final class RdbmsEngineStateDb {
       throw new IllegalStateException(
           "Failed to prepare the engine state database for partition " + partitionId, e);
     }
-    return new MixedZeebeDb<>(rocksDb, JdbcConnectionSource.from(dataSource));
+    return new MixedZeebeDb<>(rocksDb);
   }
 
   /**
