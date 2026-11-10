@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizationDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.PolicyAuthorizationDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
@@ -83,8 +85,8 @@ final class PolicyUpdateCommandMapperTest {
                 List.<PolicyMembershipEntryValue>of(
                     membership(PolicyUpdateEntityType.GROUP, groupId, EntityType.CLIENT, "client")))
             .setAuthorizationDeletes(
-                List.<AuthorizationRecordValue>of(
-                    authorization(oldRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
+                List.<PolicyAuthorizationDeleteEntryValue>of(
+                    authorizationDelete(oldRoleId, processId)))
             .setAuthorizations(
                 List.<AuthorizationRecordValue>of(
                     authorization(newRoleId, processId, PermissionType.READ_PROCESS_DEFINITION)))
@@ -162,6 +164,16 @@ final class PolicyUpdateCommandMapperTest {
         .setResourceMatcher(AuthorizationResourceMatcher.ID)
         .setResourceId(processId)
         .setPermissionTypes(Set.of(permission));
+  }
+
+  private static PolicyAuthorizationDeleteEntry authorizationDelete(
+      final String roleId, final String processId) {
+    return new PolicyAuthorizationDeleteEntry()
+        .setOwnerType(AuthorizationOwnerType.ROLE)
+        .setOwnerId(roleId)
+        .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .setResourceMatcher(AuthorizationResourceMatcher.ID)
+        .setResourceId(processId);
   }
 
   private static PolicyDeleteEntry delete(final PolicyUpdateEntityType type, final String id) {
@@ -411,8 +423,8 @@ final class PolicyUpdateCommandMapperTest {
       final var chunk =
           chunk()
               .setAuthorizationDeletes(
-                  List.<AuthorizationRecordValue>of(
-                      authorization(roleId, processId, PermissionType.READ_PROCESS_DEFINITION)));
+                  List.<PolicyAuthorizationDeleteEntryValue>of(
+                      authorizationDelete(roleId, processId)));
 
       // when
       final var commands = mapper.toCommands(chunk).get();
@@ -432,11 +444,8 @@ final class PolicyUpdateCommandMapperTest {
       final var chunk =
           chunk()
               .setAuthorizationDeletes(
-                  List.<AuthorizationRecordValue>of(
-                      authorization(
-                          "role-" + uid(),
-                          "process-" + uid(),
-                          PermissionType.READ_PROCESS_DEFINITION)));
+                  List.<PolicyAuthorizationDeleteEntryValue>of(
+                      authorizationDelete("role-" + uid(), "process-" + uid())));
 
       // when
       final var commands = mapper.toCommands(chunk).get();

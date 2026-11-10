@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyAuthorizationDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyDeleteEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
@@ -87,9 +88,7 @@ public final class PolicyUpdateCommandMapper {
     chunk
         .getAuthorizations()
         .forEach(authorization -> commands.add(authorizationUpsert(authorization)));
-    chunk
-        .getAuthorizationDeletes()
-        .forEach(authorization -> commands.add(authorizationDelete(authorization)));
+    chunk.getAuthorizationDeletes().forEach(delete -> commands.add(authorizationDelete(delete)));
     chunk
         .getMembershipDeletes()
         .forEach(
@@ -262,10 +261,16 @@ public final class PolicyUpdateCommandMapper {
    * Deletes the authorization with the same owner and resource. If there is none, the command
    * carries no authorization key and the authorization processor rejects it.
    */
-  private IdentityCommand authorizationDelete(final AuthorizationRecordValue authorization) {
+  private IdentityCommand authorizationDelete(final PolicyAuthorizationDeleteEntryValue delete) {
     final var record =
-        authorizationRecord(authorization)
-            .setAuthorizationKey(findAuthorizationKey(authorization).orElse(NO_KEY));
+        new AuthorizationRecord()
+            .setOwnerType(delete.getOwnerType())
+            .setOwnerId(delete.getOwnerId())
+            .setResourceType(delete.getResourceType())
+            .setResourceMatcher(delete.getResourceMatcher())
+            .setResourceId(delete.getResourceId())
+            .setResourcePropertyName(delete.getResourcePropertyName());
+    record.setAuthorizationKey(findAuthorizationKey(record).orElse(NO_KEY));
     return new IdentityCommand(NO_KEY, AuthorizationIntent.DELETE, record);
   }
 
