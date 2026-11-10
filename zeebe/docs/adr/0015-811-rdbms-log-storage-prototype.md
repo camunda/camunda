@@ -34,9 +34,10 @@ raising its term in `LOG_PARTITION`. Each append transaction first locks that ro
 term, so a deposed leader's appends fail, and the `LOG_BLOCK` primary key rejects duplicate
 positions.
 
-**D5. Committed and uncommitted reads are the same.** Data is visible once the transaction commits.
-Followers are not kept warm initially: a new leader restores its snapshot and replays from the
-database.
+**D5. Appended blocks are readable before they commit, as with Raft.** The leader keeps appended
+blocks in memory until their transaction commits and serves them to uncommitted readers, so the
+stream processor does not wait for each commit. Followers are not kept warm initially: a new leader
+restores its snapshot and replays from the database.
 
 **D6. Database failures make the leader step down.** Unlike with Atomix, Raft stays healthy when the
 database fails, so the storage reports failures itself and the partition steps down: at once on a

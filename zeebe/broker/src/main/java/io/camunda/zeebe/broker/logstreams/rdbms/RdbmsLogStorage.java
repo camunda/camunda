@@ -15,8 +15,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -34,6 +36,12 @@ import org.slf4j.LoggerFactory;
  * serialized {@code onWrite}/{@code onCommit} calls it expects from Raft's thread. A block counts
  * as written and committed at once, when its transaction commits.
  *
+ * <p>As with Raft, an appended block is readable through {@link #newUncommittedReader()} before it
+ * commits: it is kept in memory from {@link #append} until its transaction commits, and the
+ * appended listeners are notified straight away. This lets the stream processor, which reads
+ * uncommitted records, carry on without waiting for each commit. Should the blocks never commit,
+ * the storage fails and the partition steps down, as it would lose uncommitted Raft entries.
+ *
  * <p>Unlike with Raft, a database that stops accepting writes does not make this node lose
  * leadership by itself. The storage therefore reports it through the failure callback, which is
  * expected to make the partition step down: at once if another leader has claimed the partition,
@@ -50,6 +58,10 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
   private final Consumer<Throwable> failureListener;
   private final @Nullable RdbmsLogStorageMetrics metrics;
   private final BlockingQueue<PendingAppend> queue = new LinkedBlockingQueue<>();
+
+  /** Appended blocks whose transaction has not committed yet, by low position. */
+  private final NavigableMap<Long, LogBlock> uncommitted = new ConcurrentSkipListMap<>();
+
   private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
   private final @Nullable Thread writer;
 
@@ -109,8 +121,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
 
   @Override
   public LogStorageReader newUncommittedReader() {
-    // a block is visible only once committed, so there is nothing uncommitted to read
-    return newReader();
+    return new RdbmsLogStorageReader(repository, config.readerPageSize(), uncommitted);
   }
 
   @Override
@@ -136,7 +147,10 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
     // the writer refers to the caller's entries, which may change once this returns
     final var data = new byte[bufferWriter.getLength()];
     bufferWriter.write(new UnsafeBuffer(data), 0);
+    // into memory before the queue, so a block is never committed while not yet readable there
+    uncommitted.put(lowestPosition, new LogBlock(lowestPosition, highestPosition, term, data));
     queue.add(new PendingAppend(lowestPosition, highestPosition, data, listener));
+    notifyAppended(highestPosition);
   }
 
   /**
@@ -150,6 +164,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
       writer.interrupt();
     }
     queue.clear();
+    uncommitted.clear();
   }
 
   private void runWriter() {
@@ -235,10 +250,12 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
   }
 
   private void notifyCommitted(final List<PendingAppend> batch) {
+    // only now that the blocks are in the database, so a reader that misses them in memory finds
+    // them there
+    batch.forEach(append -> uncommitted.remove(append.low()));
     for (final var append : batch) {
       // Raft passes its log index here; positions are the closest equivalent
       append.listener().onWrite(append.high(), append.high());
-      notifyAppended(append.high());
       append.listener().onCommit(append.high(), append.high());
     }
     final var highestPosition = batch.getLast().high();
@@ -250,6 +267,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
     if (state.compareAndSet(State.OPEN, State.FAILED)) {
       LOG.error("Failed to append to the RDBMS log in term {}, no longer appending", term, error);
       queue.clear();
+      uncommitted.clear();
       failureListener.accept(error);
     }
   }
