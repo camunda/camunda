@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
-import io.camunda.secretstore.azure.AzureKeyVaultStoreConfig.Mode;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,7 @@ class AzureKeyVaultSecretStoreTest {
   private static final String VAULT_URL = "https://my-vault.vault.azure.net";
 
   @Test
-  void shouldFanOutOneNamePerCallInOneByOneMode() {
+  void shouldFanOutOneNamePerCallByDefault() {
     // when
     final var store = AzureKeyVaultSecretStore.fromConfig(AzureKeyVaultStoreConfig.of(VAULT_URL));
 
@@ -29,13 +28,12 @@ class AzureKeyVaultSecretStoreTest {
   }
 
   @Test
-  void shouldCoverEveryNameInOneCallInContainerMode() {
+  void shouldCoverEveryNameInOneCallWithAContainerSecret() {
     // given
     final var config =
         new AzureKeyVaultStoreConfig(
             VAULT_URL,
             null,
-            Mode.CONTAINER,
             "camunda-secrets",
             null,
             null,

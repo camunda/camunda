@@ -21,9 +21,9 @@ import org.jspecify.annotations.Nullable;
  *     https://my-vault.vault.azure.net}
  * @param pathPrefix prepended to every reference name to form the Key Vault secret name, for
  *     example {@code camunda-}; {@code null} or blank means references map to bare secret names
- * @param mode how reference names map to Key Vault secrets; {@link Mode#ONE_BY_ONE} by default
- * @param containerSecret the name of the JSON secret holding every reference as a key, read in
- *     {@link Mode#CONTAINER} mode only; the path prefix is prepended to it
+ * @param containerSecretId opt-in: when set, every reference is a key of this one JSON Key Vault
+ *     secret, named {@code pathPrefix + containerSecretId}, instead of its own secret; {@code null}
+ *     keeps the default one-secret-per-reference behavior
  * @param managedIdentityClientId the client id of the user-assigned managed identity to sign in
  *     with; {@code null} uses the system-assigned identity or whichever identity the environment
  *     provides
@@ -39,8 +39,7 @@ import org.jspecify.annotations.Nullable;
 public record AzureKeyVaultStoreConfig(
     String vaultUrl,
     @Nullable String pathPrefix,
-    Mode mode,
-    @Nullable String containerSecret,
+    @Nullable String containerSecretId,
     @Nullable String managedIdentityClientId,
     @Nullable String authorityHost,
     int maxRetries,
@@ -70,22 +69,11 @@ public record AzureKeyVaultStoreConfig(
     return new AzureKeyVaultStoreConfig(
         vaultUrl,
         null,
-        Mode.ONE_BY_ONE,
         null,
         null,
         null,
         DEFAULT_MAX_RETRIES,
         DEFAULT_CALL_TIMEOUT,
         DEFAULT_ATTEMPT_TIMEOUT);
-  }
-
-  /** How reference names map to Key Vault secrets. */
-  public enum Mode {
-    /** Every reference is its own Key Vault secret, named {@code pathPrefix + name}. */
-    ONE_BY_ONE,
-    /**
-     * Every reference is a key of the JSON Key Vault secret {@code pathPrefix + containerSecret}.
-     */
-    CONTAINER
   }
 }

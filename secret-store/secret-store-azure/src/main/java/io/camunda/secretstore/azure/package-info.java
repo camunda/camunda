@@ -8,14 +8,10 @@
 /**
  * A {@link io.camunda.secretstore.SecretStore} backed by Azure Key Vault.
  *
- * <p>A reference name is looked up in the vault at {@code vaultUrl}. Two modes are supported:
- *
- * <ul>
- *   <li>{@code ONE_BY_ONE} (the default): every reference is its own Key Vault secret, named {@code
- *       pathPrefix + name}.
- *   <li>{@code CONTAINER}: every reference is a key of one JSON Key Vault secret, named {@code
- *       pathPrefix + containerSecret}.
- * </ul>
+ * <p>A reference name is looked up in the vault at {@code vaultUrl}. By default every reference is
+ * its own Key Vault secret, named {@code pathPrefix + name}. When {@code containerSecretId} is set,
+ * every reference is instead a key of one JSON Key Vault secret, named {@code pathPrefix +
+ * containerSecretId}.
  *
  * <p>The store signs in with managed identity (system-assigned, or the user-assigned identity named
  * by {@code managedIdentityClientId}), workload identity, or a service principal supplied through

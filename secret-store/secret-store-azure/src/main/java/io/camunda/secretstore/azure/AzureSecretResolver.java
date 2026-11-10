@@ -20,7 +20,7 @@ import java.util.function.Function;
 /**
  * One Azure Key Vault resolution algorithm: how reference names are mapped to Key Vault secrets and
  * read. {@link AzureKeyVaultSecretStore} picks exactly one implementation at construction time,
- * based on {@link AzureKeyVaultStoreConfig#mode()}, and delegates every call to it.
+ * based on {@link AzureKeyVaultStoreConfig#containerSecretId()}, and delegates every call to it.
  */
 interface AzureSecretResolver {
 

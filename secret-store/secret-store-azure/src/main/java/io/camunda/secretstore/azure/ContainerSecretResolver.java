@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * Resolves every reference as a key of one JSON Key Vault secret, named {@code pathPrefix +
- * containerSecret}.
+ * containerSecretId}.
  *
  * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then every name is
  * reported as not found and no names are listed.

@@ -9,7 +9,6 @@ package io.camunda.secretstore.azure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.secretstore.azure.AzureKeyVaultStoreConfig.Mode;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -22,9 +21,8 @@ class AzureKeyVaultStoreConfigTest {
 
     // then
     assertThat(config.vaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
-    assertThat(config.mode()).isEqualTo(Mode.ONE_BY_ONE);
     assertThat(config.pathPrefix()).isNull();
-    assertThat(config.containerSecret()).isNull();
+    assertThat(config.containerSecretId()).isNull();
     assertThat(config.managedIdentityClientId()).isNull();
     assertThat(config.authorityHost()).isNull();
     assertThat(config.maxRetries()).isEqualTo(3);
