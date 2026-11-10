@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.policy;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,7 +27,8 @@ public final class PolicyUpdateProcessors {
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineSecurityConfig securityConfig) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
     typedRecordProcessors
@@ -38,7 +40,11 @@ public final class PolicyUpdateProcessors {
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
             new PolicyUpdateApplyChunkProcessor(
-                policyUpdateState, commandMapper, keyGenerator, writers))
+                policyUpdateState,
+                commandMapper,
+                new PolicyUpdateValidator(processingState, securityConfig),
+                keyGenerator,
+                writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,
