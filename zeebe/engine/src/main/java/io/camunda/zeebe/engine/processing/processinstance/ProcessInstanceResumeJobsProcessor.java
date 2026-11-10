@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -34,10 +36,14 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Resumes one job of the process instance per {@code RESUME_JOBS} cycle: finds the next job still
  * {@link JobIntent#SUSPENDED}, writes {@link JobIntent#RESUMED} for it, publishes it via {@link
- * BpmnJobActivationBehavior#publishWork} — a job stream is push-only, so a stream worker learns
- * about the job only from that call — then appends the next {@code RESUME_JOBS}. Once none are
- * left, it appends {@code COMPLETE_RESUMING} to hand the resume finalization off to {@link
- * ProcessInstanceCompleteResumingProcessor}.
+ * BpmnJobActivationBehavior#publishWork} if that made it activatable (a job stream is push-only, so
+ * a stream worker learns about the job only from that call), then appends the next {@code
+ * RESUME_JOBS}. Once none are left, it appends {@code COMPLETE_RESUMING} to hand the resume
+ * finalization off to {@link ProcessInstanceCompleteResumingProcessor}.
+ *
+ * <p>A job with an open secret resolution incident is resumed but not published: {@link
+ * JobIntent#RESUMED} puts it back to waiting for the incident (see {@code JobResumedV2Applier}),
+ * and resolving the incident hands it out.
  *
  * <p>One job per cycle instead of all of them in this command's own batch: resuming a job that a
  * stream is waiting for also appends a {@code JobBatch.ACTIVATED} with its fetched variables.
@@ -47,7 +53,7 @@ import org.jspecify.annotations.NullMarked;
  * into one job per command batch bounds each cycle to a single job's own activation, the same limit
  * that already applies to any other job activation — see {@link
  * #shouldProcessResultsInSeparateBatches} for what actually keeps cycles from accumulating into one
- * another. Publishing is called unconditionally either way: {@link
+ * another. Publishing does not check the batch size first: {@link
  * BpmnJobActivationBehavior#publishWork} self-manages a hand-out that does not fit the batch by
  * leaving the job activatable for polling instead of failing the command (see {@code
  * JobSuspensionSecretResumeTest} for the resume-specific regression coverage of the same safety net
@@ -85,6 +91,7 @@ public final class ProcessInstanceResumeJobsProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
+  private final JobState jobState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SuspensionMetrics suspensionMetrics;
@@ -99,9 +106,9 @@ public final class ProcessInstanceResumeJobsProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     suspensionState = processingState.getSuspensionState();
+    jobState = processingState.getJobState();
     suspensionJobBehavior =
-        new ProcessInstanceSuspensionJobBehavior(
-            elementInstanceState, processingState.getJobState(), stateWriter);
+        new ProcessInstanceSuspensionJobBehavior(elementInstanceState, jobState, stateWriter);
     this.jobActivationBehavior = jobActivationBehavior;
     this.suspensionMetrics = suspensionMetrics;
   }
@@ -156,9 +163,9 @@ public final class ProcessInstanceResumeJobsProcessor
   }
 
   /**
-   * Resumes and hands out the first still-suspended job found from {@code startAfterJobKey};
-   * returns its key, or {@code -1} if none was found. Stops the walk after that one job: one per
-   * cycle, see class javadoc.
+   * Resumes the first still-suspended job found from {@code startAfterJobKey} and hands it out if
+   * that made it activatable; returns its key, or {@code -1} if none was found. Stops the walk
+   * after that one job: one per cycle, see class javadoc.
    */
   private long resumeNextJob(final ElementInstance processInstance, final long startAfterJobKey) {
     final AtomicLong resumedJobKey = new AtomicLong(-1L);
@@ -167,7 +174,9 @@ public final class ProcessInstanceResumeJobsProcessor
         startAfterJobKey,
         (jobKey, job) -> {
           stateWriter.appendFollowUpEvent(jobKey, JobIntent.RESUMED, job);
-          jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
+          if (jobState.isInState(jobKey, State.ACTIVATABLE)) {
+            jobActivationBehavior.publishWork(jobKey, job, new HashSet<>());
+          }
           resumedJobKey.set(jobKey);
           return false;
         });

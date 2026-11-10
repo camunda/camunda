@@ -301,7 +301,9 @@ public final class IncidentResolveProcessor
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
-    if (isJobRelatedIncident(jobKey)) {
+    // a job the resolution left in another state must not be handed out: a FAILED job waiting for
+    // its backoff would be activated without recurring, which leaves its backoff entry behind
+    if (isJobRelatedIncident(jobKey) && jobState.isInState(jobKey, JobState.State.ACTIVATABLE)) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
       jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
