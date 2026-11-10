@@ -45,13 +45,13 @@ spec:
       annotations:
 
         checksum/config-identity-env: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
-        checksum/config-shared-identity-env: 6baec2b4e9e39dd74cf9855ff94edac27755d4f254fcef8cdca7c6b3f764d6cb
+        checksum/config-shared-identity-env: af2e3da8b079797c0b106a0528541414eaaa4cb30b0cebbe399636600d88fb8d
     spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.10.7
+          image: camunda/optimize:8.10.9
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -104,7 +104,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:8.10.7
+          image: camunda/optimize:8.10.9
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
