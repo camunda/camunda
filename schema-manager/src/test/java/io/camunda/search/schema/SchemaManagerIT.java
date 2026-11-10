@@ -2036,6 +2036,9 @@ public class SchemaManagerIT {
 
     // when
     schemaManager.truncateIndices();
+    searchClientAdapter.index(
+        "2", indexTemplate.getFullQualifiedName(), Map.of("hello", "foo", "world", "bar"));
+    searchClientAdapter.refresh();
     schemaManager.truncateIndices();
 
     // then
