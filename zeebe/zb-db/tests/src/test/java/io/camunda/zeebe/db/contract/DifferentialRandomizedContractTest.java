@@ -41,15 +41,14 @@ import net.jqwik.api.lifecycle.BeforeTry;
 public abstract class DifferentialRandomizedContractTest {
 
   private static final int KEY_RANGE = 8;
+  private Instance reference;
+  private Instance candidate;
 
   /** The implementation that defines the expected behavior. */
   protected abstract ZeebeDbFactory<DefaultColumnFamily> createReferenceFactory();
 
   /** The implementation that must behave like the reference. */
   protected abstract ZeebeDbFactory<DefaultColumnFamily> createCandidateFactory();
-
-  private Instance reference;
-  private Instance candidate;
 
   @BeforeTry
   void setup() throws IOException {
@@ -99,52 +98,13 @@ public abstract class DifferentialRandomizedContractTest {
     final Arbitrary<Operation> batch =
         single
             .list()
-            .ofMaxSize(5)
+            .ofMaxSize(100)
             .flatMap(ops -> Arbitraries.of(true, false).map(abort -> new Batch(ops, abort)));
 
     return Arbitraries.frequencyOf(
             net.jqwik.api.Tuple.of(8, single), net.jqwik.api.Tuple.of(2, batch))
         .list()
-        .ofMaxSize(60);
-  }
-
-  private static final class Instance implements AutoCloseable {
-    private final File directory;
-    private final ZeebeDb<DefaultColumnFamily> db;
-    private final TransactionContext context;
-    private final ColumnFamily<DbLong, DbLong> columnFamily;
-
-    private Instance(final ZeebeDbFactory<DefaultColumnFamily> factory) throws IOException {
-      directory = Files.createTempDirectory("zb-db-differential").toFile();
-      db = factory.createDb(directory);
-      context = db.createContext();
-      columnFamily =
-          db.createColumnFamily(DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbLong());
-    }
-
-    @Override
-    public void close() throws Exception {
-      db.close();
-      org.assertj.core.util.Files.delete(directory);
-    }
-  }
-
-  /** Thrown at the end of an aborted batch to force the transaction to roll back. */
-  private static final class AbortBatch extends RuntimeException {}
-
-  sealed interface Operation {
-    /** Returns a comparable description of what the operation returned, or the exception type. */
-    default Object applyTo(final Instance instance) {
-      try {
-        return execute(instance);
-      } catch (final AbortBatch e) {
-        throw e;
-      } catch (final RuntimeException e) {
-        return e.getClass().getName();
-      }
-    }
-
-    Object execute(Instance instance);
+        .ofMaxSize(200);
   }
 
   private static DbLong dbLong(final long value) {
@@ -283,5 +243,44 @@ public abstract class DifferentialRandomizedContractTest {
     public Object execute(final Instance i) {
       return applyTo(i);
     }
+  }
+
+  private static final class Instance implements AutoCloseable {
+    private final File directory;
+    private final ZeebeDb<DefaultColumnFamily> db;
+    private final TransactionContext context;
+    private final ColumnFamily<DbLong, DbLong> columnFamily;
+
+    private Instance(final ZeebeDbFactory<DefaultColumnFamily> factory) throws IOException {
+      directory = Files.createTempDirectory("zb-db-differential").toFile();
+      db = factory.createDb(directory);
+      context = db.createContext();
+      columnFamily =
+          db.createColumnFamily(DefaultColumnFamily.DEFAULT, context, new DbLong(), new DbLong());
+    }
+
+    @Override
+    public void close() throws Exception {
+      db.close();
+      org.assertj.core.util.Files.delete(directory);
+    }
+  }
+
+  /** Thrown at the end of an aborted batch to force the transaction to roll back. */
+  private static final class AbortBatch extends RuntimeException {}
+
+  sealed interface Operation {
+    /** Returns a comparable description of what the operation returned, or the exception type. */
+    default Object applyTo(final Instance instance) {
+      try {
+        return execute(instance);
+      } catch (final AbortBatch e) {
+        throw e;
+      } catch (final RuntimeException e) {
+        return e.getClass().getName();
+      }
+    }
+
+    Object execute(Instance instance);
   }
 }
