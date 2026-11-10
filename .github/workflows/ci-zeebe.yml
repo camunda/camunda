@@ -383,6 +383,10 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+          # Must stay above the slowest observed build (~6.7min on main), and two attempts
+          # plus the Docker steps must fit the job's timeout-minutes.
+          retry-max-attempts: 2
+          retry-timeout-minutes: 8
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
