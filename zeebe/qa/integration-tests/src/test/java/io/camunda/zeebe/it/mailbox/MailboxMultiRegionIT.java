@@ -110,6 +110,54 @@ final class MailboxMultiRegionIT {
     assertThat(gateway.calls("insert")).isEqualTo(requestsBefore);
   }
 
+  @Test
+  void shouldPollAndCompleteJobsFromTheOtherRegion() {
+    // given
+    awaitGatewayKnowsTheLeader();
+    final var gateway = MAILBOX.gatewayView(WEST_ID.id());
+    final var jobType = "mailbox-job-" + UUID.randomUUID();
+    final var requestsBefore = gateway.calls("insert");
+
+    try (final var client = clientOf(WEST_ID)) {
+      final var processId = "mailbox-jobs-" + UUID.randomUUID();
+      final var definitionKey =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(
+                  Bpmn.createExecutableProcess(processId)
+                      .startEvent()
+                      .serviceTask("task", task -> task.zeebeJobType(jobType))
+                      .endEvent()
+                      .done(),
+                  processId + ".bpmn")
+              .send()
+              .join()
+              .getProcesses()
+              .get(0)
+              .getProcessDefinitionKey();
+      createInstance(client, definitionKey);
+
+      // when - a worker of the west region polls for the job
+      final var jobs =
+          client
+              .newActivateJobsCommand()
+              .jobType(jobType)
+              .maxJobsToActivate(1)
+              .requestTimeout(Duration.ofSeconds(30))
+              .send()
+              .join()
+              .getJobs();
+
+      // then
+      assertThat(jobs).hasSize(1);
+      client.newCompleteCommand(jobs.get(0).getKey()).send().join();
+    }
+
+    assertThat(gateway.calls("insert") - requestsBefore)
+        .as("deploy, create, activate and complete went through the inbox")
+        .isGreaterThanOrEqualTo(4);
+  }
+
   /**
    * The gateway of the west region first sends over the network, until its copy of the recorded
    * leaders has the leader. A test that wants the mailbox must wait for that copy.

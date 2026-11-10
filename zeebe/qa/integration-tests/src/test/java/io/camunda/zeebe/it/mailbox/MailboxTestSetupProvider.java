@@ -22,6 +22,8 @@ public final class MailboxTestSetupProvider implements MailboxSetupProvider {
         .map(
             shared ->
                 MailboxSetup.of(
-                    shared.brokerView(member.id()).store(), SharedMailbox.CONFIG, member.zone()));
+                    shared.brokerView(member.id()).store(),
+                    SharedMailbox.CONFIG,
+                    shared.brokerZone(member.id(), member.zone())));
   }
 }

@@ -40,6 +40,7 @@ final class SharedMailbox {
   private static final Map<String, SharedMailbox> BY_MEMBER = new ConcurrentHashMap<>();
 
   private final InMemoryMailboxStore store = new InMemoryMailboxStore();
+  private final Map<String, String> brokerZones = new ConcurrentHashMap<>();
   private final Map<String, CountingView> brokerViews = new ConcurrentHashMap<>();
   private final Map<String, CountingView> gatewayViews = new ConcurrentHashMap<>();
 
@@ -61,6 +62,20 @@ final class SharedMailbox {
   /** The store itself, to look at what is in it. */
   InMemoryMailboxStore store() {
     return store;
+  }
+
+  /**
+   * Makes a broker act as if it were in the given zone, instead of its own. The broker then counts
+   * the leaders of its real zone as out of reach, so it uses the mailbox for them, also for the
+   * partitions that it leads itself.
+   */
+  void simulateBrokerZone(final String memberId, final String zone) {
+    brokerZones.put(memberId, zone);
+  }
+
+  /** The zone that the broker acts in, which is {@code ownZone} unless a test chose another. */
+  String brokerZone(final String memberId, final String ownZone) {
+    return brokerZones.getOrDefault(memberId, ownZone);
   }
 
   CountingView brokerView(final String memberId) {
