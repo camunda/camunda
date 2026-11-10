@@ -29,4 +29,14 @@ public final class SuspensionMarkerValue extends UnpackedObject implements DbVal
   public void setState(final SuspensionState.State state) {
     stateProp.setValue(state);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((SuspensionMarkerValue) target);
+  }
+
+  @Override
+  public SuspensionMarkerValue newInstance() {
+    return new SuspensionMarkerValue();
+  }
 }

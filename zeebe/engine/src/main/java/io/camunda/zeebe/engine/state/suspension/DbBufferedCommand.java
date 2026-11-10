@@ -29,4 +29,14 @@ public final class DbBufferedCommand extends UnpackedObject implements DbValue {
   public void setRecord(final BufferedCommandRecord record) {
     recordProp.getValue().copyFrom(record);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((DbBufferedCommand) target);
+  }
+
+  @Override
+  public DbBufferedCommand newInstance() {
+    return new DbBufferedCommand();
+  }
 }

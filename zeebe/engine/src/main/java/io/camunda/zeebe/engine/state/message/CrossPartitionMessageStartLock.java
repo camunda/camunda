@@ -84,4 +84,14 @@ public final class CrossPartitionMessageStartLock extends UnpackedObject impleme
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((CrossPartitionMessageStartLock) target);
+  }
+
+  @Override
+  public CrossPartitionMessageStartLock newInstance() {
+    return new CrossPartitionMessageStartLock();
+  }
 }

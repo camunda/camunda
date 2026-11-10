@@ -82,6 +82,20 @@ public final class MetricsValue implements DbValue {
     return getLength();
   }
 
+  @Override
+  public void copyTo(final DbValue target) {
+    final MetricsValue copy = (MetricsValue) target;
+    for (int i = 0; i < metrics.length; i++) {
+      copy.metrics[i].setCount(metrics[i].getCount());
+      copy.metrics[i].setLastUpdatedAt(metrics[i].getLastUpdatedAt());
+    }
+  }
+
+  @Override
+  public MetricsValue newInstance() {
+    return new MetricsValue();
+  }
+
   /**
    * Creates a deep copy of the StatusMetrics array.
    *

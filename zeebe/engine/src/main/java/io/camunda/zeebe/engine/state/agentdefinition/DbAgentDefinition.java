@@ -29,4 +29,14 @@ public final class DbAgentDefinition extends UnpackedObject implements DbValue {
   public void setRecord(final AgentDefinitionRecord record) {
     recordProp.getValue().copyFrom(record);
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((DbAgentDefinition) target);
+  }
+
+  @Override
+  public DbAgentDefinition newInstance() {
+    return new DbAgentDefinition();
+  }
 }

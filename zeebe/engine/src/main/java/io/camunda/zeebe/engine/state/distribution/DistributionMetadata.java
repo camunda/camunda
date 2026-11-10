@@ -31,4 +31,14 @@ public class DistributionMetadata extends UnpackedObject implements DbValue {
     startTimeProp.setValue(startTime);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((DistributionMetadata) target);
+  }
+
+  @Override
+  public DistributionMetadata newInstance() {
+    return new DistributionMetadata();
+  }
 }

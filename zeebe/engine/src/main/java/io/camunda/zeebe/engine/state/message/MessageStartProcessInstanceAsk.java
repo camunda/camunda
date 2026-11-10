@@ -287,4 +287,14 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
     copy.wrap(buffer, 0, length);
     return copy;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((MessageStartProcessInstanceAsk) target);
+  }
+
+  @Override
+  public MessageStartProcessInstanceAsk newInstance() {
+    return new MessageStartProcessInstanceAsk();
+  }
 }

@@ -59,4 +59,14 @@ public final class MessageStartProcessInstanceDedupEntry extends UnpackedObject 
     deletionDeadlineProp.setValue(deletionDeadline);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((MessageStartProcessInstanceDedupEntry) target);
+  }
+
+  @Override
+  public MessageStartProcessInstanceDedupEntry newInstance() {
+    return new MessageStartProcessInstanceDedupEntry();
+  }
 }

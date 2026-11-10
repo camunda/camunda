@@ -116,4 +116,14 @@ public final class CrossPartitionMessageStartHolderOrigin extends UnpackedObject
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
+
+  @Override
+  public void copyTo(final DbValue target) {
+    super.copyTo((CrossPartitionMessageStartHolderOrigin) target);
+  }
+
+  @Override
+  public CrossPartitionMessageStartHolderOrigin newInstance() {
+    return new CrossPartitionMessageStartHolderOrigin();
+  }
 }
