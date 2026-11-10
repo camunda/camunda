@@ -71,7 +71,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -329,7 +328,6 @@ public final class ProcessInstanceServices
             .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
-            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
             .setStartInstructionsFromRecord(request.startInstructions())
             .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
@@ -361,7 +359,6 @@ public final class ProcessInstanceServices
             .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
-            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
             .setInstructions(request.startInstructions())
             .setFetchVariables(request.fetchVariables())
             .setTags(request.tags());
@@ -711,8 +708,7 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
       Set<String> tags,
-      String businessId,
-      Map<String, VariableMetadataValue> variablesMetadata) {
+      String businessId) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {
       if (processDefinitionKey > 0L) {

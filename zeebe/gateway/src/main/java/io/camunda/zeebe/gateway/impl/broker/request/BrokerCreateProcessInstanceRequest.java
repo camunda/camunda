@@ -18,9 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -64,12 +62,6 @@ public class BrokerCreateProcessInstanceRequest
 
   public BrokerCreateProcessInstanceRequest setTenantId(final String tenantId) {
     requestDto.setTenantId(tenantId);
-    return this;
-  }
-
-  public BrokerCreateProcessInstanceRequest setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
 

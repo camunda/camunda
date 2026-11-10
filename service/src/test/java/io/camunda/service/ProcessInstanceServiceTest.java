@@ -856,8 +856,7 @@ public final class ProcessInstanceServiceTest {
         List.of(), // runtimeInstructions
         List.of(), // fetchVariables
         null, // tags
-        null, // businessId
-        null // variablesMetadata
+        null // businessId
         );
   }
 
@@ -879,8 +878,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null, // businessId
-            null // variablesMetadata
+            null // businessId
             );
 
     final var mockResponse =
@@ -919,8 +917,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null, // businessId
-            null // variablesMetadata
+            null // businessId
             );
 
     final var mockResponse =
@@ -960,8 +957,7 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null, // businessId
-            null // variablesMetadata
+            null // businessId
             );
 
     final var mockResponse =
@@ -1219,8 +1215,7 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId, // businessId
-          null // variablesMetadata
+          businessId // businessId
           );
     }
 
@@ -1240,8 +1235,7 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId, // businessId
-          null // variablesMetadata
+          businessId // businessId
           );
     }
   }

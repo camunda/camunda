@@ -139,7 +139,6 @@ public class CustomMcpModelPropertiesTest {
                 "tags",
                 "tenantId",
                 "variables",
-                "variablesMetadata",
                 "businessId")));
   }
 
