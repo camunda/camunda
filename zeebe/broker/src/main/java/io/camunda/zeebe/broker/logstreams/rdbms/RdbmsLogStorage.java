@@ -283,7 +283,9 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
 
     public static final Config DEFAULT =
         new Config(
-            Duration.ofSeconds(10),
+            // long enough to ride out a database restart, e.g. its pod being rescheduled, without
+            // the leader stepping down, which would not help while the database is down
+            Duration.ofSeconds(60),
             Duration.ofMillis(50),
             Duration.ofSeconds(1),
             16 * 1024 * 1024,

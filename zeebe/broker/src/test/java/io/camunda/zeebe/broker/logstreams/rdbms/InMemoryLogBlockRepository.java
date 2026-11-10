@@ -26,6 +26,7 @@ final class InMemoryLogBlockRepository implements LogBlockRepository {
   private final Deque<Failure> plannedFailures = new ArrayDeque<>();
   private long term = -1;
   private boolean failAlways;
+  private boolean failReads;
   private CountDownLatch gate = new CountDownLatch(0);
   private volatile boolean waitingAtGate;
 
@@ -67,11 +68,13 @@ final class InMemoryLogBlockRepository implements LogBlockRepository {
 
   @Override
   public synchronized Optional<LogBlock> findBlockAtOrBefore(final long position) {
+    failReadIfRequested();
     return Optional.ofNullable(blocks.floorEntry(position)).map(entry -> entry.getValue());
   }
 
   @Override
   public synchronized List<LogBlock> readBlocksAfter(final long lowPosition, final int maxBlocks) {
+    failReadIfRequested();
     return blocks.tailMap(lowPosition, false).values().stream().limit(maxBlocks).toList();
   }
 
@@ -93,6 +96,17 @@ final class InMemoryLogBlockRepository implements LogBlockRepository {
   /** The next append writes its blocks, then fails as if the commit's acknowledgement was lost. */
   synchronized void failNextAppendAfterCommit() {
     plannedFailures.add(Failure.AFTER_COMMIT);
+  }
+
+  /** Reads fail, as when the database is unreachable, until called again with false. */
+  synchronized void failReads(final boolean failReads) {
+    this.failReads = failReads;
+  }
+
+  private void failReadIfRequested() {
+    if (failReads) {
+      throw new LogBlockRepositoryException("injected read failure");
+    }
   }
 
   synchronized void failAllAppends() {
