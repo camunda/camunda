@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
-import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +47,7 @@ public class RawTransactionalColumnFamily {
           columnFamilyContext.withPrefixKey(
               new DbNullKey(),
               (prefixKey, prefixLength) -> {
-                try (final RocksIterator iterator =
+                try (final DbIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
                   forEach(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
@@ -69,7 +68,7 @@ public class RawTransactionalColumnFamily {
           columnFamilyContext.withPrefixKey(
               new DbNullKey(),
               (prefixKey, prefixLength) -> {
-                try (final RocksIterator iterator =
+                try (final DbIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
                   forEachKey(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
@@ -128,7 +127,7 @@ public class RawTransactionalColumnFamily {
    * @param visitor the visitor to apply to each key-value pair
    */
   public static void forEach(
-      final RocksIterator iterator,
+      final DbIterator iterator,
       final ZbColumnFamilies columnFamily,
       final byte[] prefixKey,
       final int prefixOffset,
@@ -158,13 +157,13 @@ public class RawTransactionalColumnFamily {
   }
 
   /**
-   * Similar to {@link foreach(RocksIterator, ZbColumnFamilies, byte[], int, int, Visitor)} but
-   * avoids allocating a new byte[] for each key & value. This reduces the allocations almost
-   * entirely. Use this method if you don't need to use the byte[] after the visitor returns. If
-   * that's not the case, use the other method, as you would avoid a copy.
+   * Similar to {@link foreach(DbIterator, ZbColumnFamilies, byte[], int, int, Visitor)} but avoids
+   * allocating a new byte[] for each key & value. This reduces the allocations almost entirely. Use
+   * this method if you don't need to use the byte[] after the visitor returns. If that's not the
+   * case, use the other method, as you would avoid a copy.
    */
   public static void forEachPreallocated(
-      final RocksIterator iterator,
+      final DbIterator iterator,
       final ZbColumnFamilies columnFamily,
       final byte[] prefixKey,
       final int prefixOffset,
@@ -219,7 +218,7 @@ public class RawTransactionalColumnFamily {
    * @param visitor the visitor to apply to each key
    */
   public static void forEachKey(
-      final RocksIterator iterator,
+      final DbIterator iterator,
       final ZbColumnFamilies columnFamily,
       final byte[] prefixKey,
       final int prefixOffset,
@@ -246,7 +245,7 @@ public class RawTransactionalColumnFamily {
     }
   }
 
-  RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
+  DbIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
   }

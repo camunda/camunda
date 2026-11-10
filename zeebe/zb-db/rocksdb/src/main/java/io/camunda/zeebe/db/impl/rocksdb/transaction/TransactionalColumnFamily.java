@@ -34,7 +34,6 @@ import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ReadOptions;
-import org.rocksdb.RocksIterator;
 
 /**
  * Some code conventions that we should follow here:
@@ -436,7 +435,7 @@ class TransactionalColumnFamily<
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
-  RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
+  DbIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
   }
@@ -483,7 +482,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
+            try (final DbIterator iterator =
                 newIterator(context, transactionDb.getPrefixReadOptions())) {
 
               boolean shouldVisitNext = true;
@@ -524,7 +523,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
+            try (final DbIterator iterator =
                 newIterator(context, transactionDb.getPrefixReadOptions())) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
@@ -573,7 +572,7 @@ class TransactionalColumnFamily<
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
-          try (final RocksIterator iterator =
+          try (final DbIterator iterator =
               newIterator(context, transactionDb.getPrefixReadOptions())) {
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
@@ -624,7 +623,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
+            try (final DbIterator iterator =
                 newIterator(context, transactionDb.getPrefixReadOptions())) {
 
               boolean shouldVisitNext = true;
@@ -663,7 +662,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final RocksIterator iterator =
+            try (final DbIterator iterator =
                 newIterator(context, transactionDb.getPrefixReadOptions())) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
@@ -699,7 +698,7 @@ class TransactionalColumnFamily<
       final KeyType keyInstance,
       final ValueType valueInstance,
       final KeyValuePairVisitor<KeyType, ValueType> iteratorConsumer,
-      final RocksIterator iterator) {
+      final DbIterator iterator) {
     final var keyBytes = iterator.key();
 
     columnFamilyContext.wrapKeyView(keyBytes);

@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 import org.rocksdb.ReadOptions;
-import org.rocksdb.RocksIterator;
 
 public final class ZeebeRocksDbIterationTest {
 
@@ -57,11 +56,11 @@ public final class ZeebeRocksDbIterationTest {
   @Test
   public void shouldStopIteratingAfterPrefixExceeded() {
     // given
-    final AtomicReference<RocksIterator> spyIterator = new AtomicReference<>();
+    final AtomicReference<DbIterator> spyIterator = new AtomicReference<>();
     Mockito.doAnswer(
             invocation -> {
               final Object spy = Mockito.spy(invocation.callRealMethod());
-              spyIterator.set((RocksIterator) spy);
+              spyIterator.set((DbIterator) spy);
               return spy;
             })
         .when(columnFamily)
