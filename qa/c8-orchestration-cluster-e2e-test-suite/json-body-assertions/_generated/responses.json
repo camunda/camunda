@@ -12176,19 +12176,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "metadata",
-                  "type": "additionalProperties",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12420,19 +12407,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "metadata",
-                  "type": "additionalProperties",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12512,19 +12486,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "metadata",
-                  "type": "additionalProperties",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12594,19 +12555,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "metadata",
-            "type": "additionalProperties",
-            "children": {
-              "required": [
-                {
-                  "name": "protectionModes",
-                  "type": "array<string>"
-                }
-              ],
-              "optional": []
-            }
-          },
           {
             "name": "name",
             "type": "string"
