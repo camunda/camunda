@@ -421,7 +421,19 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   PROBES_ACTIVATABLE(168, PARTITION_LOCAL),
 
   /** [deadline | probeKey] -> ∅: the probes in deadline order, for the time-out scheduler. */
-  PROBE_DEADLINES(169, PARTITION_LOCAL);
+  PROBE_DEADLINES(169, PARTITION_LOCAL),
+
+  /**
+   * The open policy update of the partition, keyed [updateId]: its identifiers and how many of its
+   * chunks are buffered. Only partition 1 holds one. Removed after the last chunk is applied.
+   */
+  POLICY_UPDATE(170, PARTITION_LOCAL),
+
+  /**
+   * The buffered chunks of the open policy update, keyed [updateId | chunkIndex]. Removed with the
+   * update after its last chunk is applied.
+   */
+  POLICY_UPDATE_CHUNK(171, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
