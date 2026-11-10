@@ -47,8 +47,8 @@ final class EntityCacheTest {
     }
     context = new JdbcTransactionContext(connection);
     persister = new RowPersister();
-    cache = new EntityCache<>("test row", persister);
-    context.register(cache);
+    cache = new EntityCache<>("test row", context, persister);
+    context.register(new CacheParticipant());
   }
 
   @AfterEach
@@ -247,6 +247,43 @@ final class EntityCacheTest {
 
   private record Row(long id, int grp, String val) {}
 
+  /** Drains the cache on commit, like the participant of a store does. */
+  private final class CacheParticipant implements JdbcTransactionParticipant {
+
+    @Override
+    public void flush(final Connection connection) throws SQLException {
+      final List<Row> inserts = new ArrayList<>();
+      final List<Row> updates = new ArrayList<>();
+      final List<Long> deletes = new ArrayList<>();
+      cache.writeStaged(
+          new EntityCache.StagedWriter<>() {
+            @Override
+            public void delete(final Long key) {
+              deletes.add(key);
+            }
+
+            @Override
+            public void insert(final Row entity) {
+              inserts.add(entity);
+            }
+
+            @Override
+            public void update(final Row entity) {
+              updates.add(entity);
+            }
+          });
+      final int[] updateCounts = persister.flush(connection, inserts, updates, deletes);
+      for (int i = 0; i < updates.size(); i++) {
+        cache.verifyUpdated(updates.get(i), updateCounts[i]);
+      }
+    }
+
+    @Override
+    public void reset() {
+      cache.reset();
+    }
+  }
+
   private final class RowPersister implements EntityPersister<Long, Row> {
 
     private final List<String> statements = new ArrayList<>();
@@ -270,8 +307,7 @@ final class EntityCacheTest {
       }
     }
 
-    @Override
-    public int[] flush(
+    private int[] flush(
         final Connection connection,
         final List<Row> inserts,
         final List<Row> updates,

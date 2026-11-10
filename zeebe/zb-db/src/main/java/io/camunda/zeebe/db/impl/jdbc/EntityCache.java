@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.impl.jdbc;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -22,9 +21,13 @@ import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Stages the writes to one entity type during a transaction and flushes them as batches when the
- * transaction commits. Reads see the staged writes first, so a transaction sees its own uncommitted
- * changes.
+ * Stages the writes to one entity type during a transaction until a {@link
+ * JdbcTransactionParticipant} drains them with {@link #writeStaged} when the transaction commits.
+ * Reads see the staged writes first, so a transaction sees its own uncommitted changes.
+ *
+ * <p>Like a RocksDB column family, every operation ensures an open transaction: it joins the
+ * current one of the {@link JdbcTransactionContext}, or else runs in a new one that commits when
+ * the operation is done. {@link SQLException}s are translated like the ones of a commit.
  *
  * <p>Each key has at most one staged write; repeated writes collapse:
  *
@@ -40,35 +43,68 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The cache doesn't check the database on writes: an insert of an existing row or an update of a
  * missing one fails on flush. Committed rows are not cached; reads of unstaged keys always go to
- * the database. Not thread-safe, like the {@link JdbcTransactionContext} it takes part in.
+ * the database. Not thread-safe, like the {@link JdbcTransactionContext} it belongs to.
  *
  * @param <K> the entity's primary key
  * @param <E> the entity, an immutable snapshot (see {@link EntityPersister})
  */
-public final class EntityCache<K, E> implements JdbcTransactionParticipant {
+public final class EntityCache<K, E> {
 
   private final String entityName;
+  private final JdbcTransactionContext context;
   private final EntityPersister<K, E> persister;
   private final Map<K, Staged<E>> staged = new LinkedHashMap<>();
 
   /**
    * @param entityName how error messages name the entity, e.g. {@code "element instance"}
    */
-  public EntityCache(final String entityName, final EntityPersister<K, E> persister) {
+  public EntityCache(
+      final String entityName,
+      final JdbcTransactionContext context,
+      final EntityPersister<K, E> persister) {
     this.entityName = entityName;
+    this.context = context;
     this.persister = persister;
   }
 
   /** Returns the staged entity, or null if its deletion is staged, or else the committed one. */
-  public @Nullable E get(final K key) throws SQLException {
-    final var write = staged.get(key);
-    if (write != null) {
-      return write.entity;
-    }
-    return persister.load(key);
+  public @Nullable E get(final K key) {
+    return context.call(
+        () -> {
+          final var write = staged.get(key);
+          if (write != null) {
+            return write.entity;
+          }
+          return persister.load(key);
+        });
   }
 
   public void insert(final E entity) {
+    context.call(
+        () -> {
+          stageInsert(entity);
+          return null;
+        });
+  }
+
+  public void update(final E entity) {
+    context.call(
+        () -> {
+          stageUpdate(entity);
+          return null;
+        });
+  }
+
+  /** Stages the deletion of the row with the given key; deleting a missing row is no error. */
+  public void delete(final K key) {
+    context.call(
+        () -> {
+          stageDelete(key);
+          return null;
+        });
+  }
+
+  private void stageInsert(final E entity) {
     final K key = persister.keyOf(entity);
     final var write = staged.get(key);
     if (write != null && write.operation != Operation.DELETE) {
@@ -81,7 +117,7 @@ public final class EntityCache<K, E> implements JdbcTransactionParticipant {
     staged.put(key, new Staged<>(operation, entity));
   }
 
-  public void update(final E entity) {
+  private void stageUpdate(final E entity) {
     final K key = persister.keyOf(entity);
     final var write = staged.get(key);
     if (write != null && write.operation == Operation.DELETE) {
@@ -92,8 +128,7 @@ public final class EntityCache<K, E> implements JdbcTransactionParticipant {
     staged.put(key, new Staged<>(operation, entity));
   }
 
-  /** Stages the deletion of the row with the given key; deleting a missing row is no error. */
-  public void delete(final K key) {
+  private void stageDelete(final K key) {
     final var write = staged.get(key);
     if (write != null && write.operation == Operation.INSERT) {
       staged.remove(key);
@@ -167,49 +202,67 @@ public final class EntityCache<K, E> implements JdbcTransactionParticipant {
     return Collections.unmodifiableSet(staged.keySet());
   }
 
-  @Override
-  public void flush(final Connection connection) throws SQLException {
-    if (staged.isEmpty()) {
-      return;
-    }
-
-    final List<E> inserts = new ArrayList<>();
-    final List<E> updates = new ArrayList<>();
-    final List<K> deletes = new ArrayList<>();
-    for (final var entry : staged.entrySet()) {
-      final var write = entry.getValue();
-      switch (write.operation) {
-        case INSERT -> inserts.add(write.entity);
-        case UPDATE -> updates.add(write.entity);
-        case DELETE -> deletes.add(entry.getKey());
-      }
-    }
-
-    final int[] updateCounts = persister.flush(connection, inserts, updates, deletes);
-    verifyUpdated(updates, updateCounts);
+  /** Whether any write is staged, i.e. whether the next commit has to write anything. */
+  public boolean hasStagedWrites() {
+    return !staged.isEmpty();
   }
 
-  @Override
+  /**
+   * Hands all staged writes to the given writer: first all deletes, then all inserts, then all
+   * updates, so a writer that batches consecutive identical statements sends one batch of each.
+   * Every key appears in at most one of them, so the order doesn't matter otherwise. Doesn't clear
+   * the staged writes, so a failed commit can write them again; {@link #reset()} does.
+   */
+  public void writeStaged(final StagedWriter<K, E> writer) {
+    for (final var entry : staged.entrySet()) {
+      if (entry.getValue().operation == Operation.DELETE) {
+        writer.delete(entry.getKey());
+      }
+    }
+    for (final var write : staged.values()) {
+      if (write.operation == Operation.INSERT && write.entity != null) {
+        writer.insert(write.entity);
+      }
+    }
+    for (final var write : staged.values()) {
+      if (write.operation == Operation.UPDATE && write.entity != null) {
+        writer.update(write.entity);
+      }
+    }
+  }
+
+  /** Drops all staged writes. Called after a successful commit and after a rollback. */
   public void reset() {
     staged.clear();
   }
 
-  private void verifyUpdated(final List<E> updates, final int[] updateCounts) throws SQLException {
-    for (int i = 0; i < updateCounts.length && i < updates.size(); i++) {
-      final int count = updateCounts[i];
-      if (count == 0) {
-        throw new SQLException(
-            String.format(
-                "Expected to update %s with key %s, but it does not exist",
-                entityName, persister.keyOf(updates.get(i))));
-      }
-      if (count != Statement.SUCCESS_NO_INFO && count != 1) {
-        throw new SQLException(
-            String.format(
-                "Expected to update one %s with key %s, but updated %d",
-                entityName, persister.keyOf(updates.get(i)), count));
-      }
+  /**
+   * Checks the number of rows an update of the given entity affected, as reported by the driver.
+   *
+   * @throws SQLException if the row doesn't exist or more than one row was updated
+   */
+  public void verifyUpdated(final E entity, final int updateCount) throws SQLException {
+    if (updateCount == 0) {
+      throw new SQLException(
+          String.format(
+              "Expected to update %s with key %s, but it does not exist",
+              entityName, persister.keyOf(entity)));
     }
+    if (updateCount != Statement.SUCCESS_NO_INFO && updateCount != 1) {
+      throw new SQLException(
+          String.format(
+              "Expected to update one %s with key %s, but updated %d",
+              entityName, persister.keyOf(entity), updateCount));
+    }
+  }
+
+  /** Receives the staged writes of a cache on commit. */
+  public interface StagedWriter<K, E> {
+    void delete(K key);
+
+    void insert(E entity);
+
+    void update(E entity);
   }
 
   private enum Operation {

@@ -38,15 +38,11 @@ import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessDefinitionRo
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessDigestRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessIdKey;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessVersionRow;
-import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Loader;
-import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Writer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -100,7 +96,7 @@ public final class RdbmsProcessState implements MutableProcessState {
   private static final Comparator<ProcessDefinitionRow> BY_KEY =
       Comparator.comparingLong(ProcessDefinitionRow::processDefinitionKey);
 
-  private final JdbcTransactionContext transactionContext;
+  private final EngineStateRdbms rdbms;
   private final int partitionId;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
 
@@ -121,11 +117,11 @@ public final class RdbmsProcessState implements MutableProcessState {
       final EngineConfiguration config,
       final BpmnTransformer transformer,
       final MeterRegistry meterRegistry) {
-    this.transactionContext = transactionContext;
+    rdbms = new EngineStateRdbms(transactionContext, partitionId);
     this.partitionId = partitionId;
 
     processes =
-        cache(
+        rdbms.cache(
             "process",
             ProcessDefinitionRow::processDefinitionKey,
             EngineStateMapper::selectProcessDefinition,
@@ -133,7 +129,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updateProcessDefinition,
             EngineStateMapper::deleteProcessDefinition);
     versions =
-        cache(
+        rdbms.cache(
             "process version info",
             ProcessVersionRow::key,
             EngineStateMapper::selectProcessVersion,
@@ -141,7 +137,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updateProcessVersion,
             EngineStateMapper::deleteProcessVersion);
     digests =
-        cache(
+        rdbms.cache(
             "process digest",
             ProcessDigestRow::key,
             EngineStateMapper::selectProcessDigest,
@@ -149,7 +145,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updateProcessDigest,
             EngineStateMapper::deleteProcessDigest);
     processesByDeployment =
-        cache(
+        rdbms.cache(
             "process by deployment",
             ProcessByDeploymentRow::key,
             EngineStateMapper::selectProcessByDeployment,
@@ -157,7 +153,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updateProcessByDeployment,
             EngineStateMapper::deleteProcessByDeployment);
     processesByVersionTag =
-        cache(
+        rdbms.cache(
             "process by version tag",
             ProcessByVersionTagRow::key,
             EngineStateMapper::selectProcessByVersionTag,
@@ -165,7 +161,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updateProcessByVersionTag,
             EngineStateMapper::deleteProcessByVersionTag);
     pendingDeletions =
-        cache(
+        rdbms.cache(
             "pending process deletion",
             Function.identity(),
             EngineStateMapper::selectPendingProcessDeletion,
@@ -173,7 +169,7 @@ public final class RdbmsProcessState implements MutableProcessState {
             EngineStateMapper::updatePendingProcessDeletion,
             EngineStateMapper::deletePendingProcessDeletion);
     flags =
-        cache(
+        rdbms.cache(
             "partition flag",
             Function.identity(),
             EngineStateMapper::selectPartitionFlag,
@@ -202,45 +198,33 @@ public final class RdbmsProcessState implements MutableProcessState {
 
   @Override
   public void putLatestVersionDigest(final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          final var digest =
-              new ProcessDigestRow(
-                  processRecord.getTenantId(),
-                  processRecord.getBpmnProcessId(),
-                  bufferAsArray(processRecord.getChecksumBuffer()));
-          upsert(digests, digest.key(), digest);
-          return null;
-        });
+    final var digest =
+        new ProcessDigestRow(
+            processRecord.getTenantId(),
+            processRecord.getBpmnProcessId(),
+            bufferAsArray(processRecord.getChecksumBuffer()));
+    upsert(digests, digest.key(), digest);
   }
 
   @Override
   public void putProcess(final long key, final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          final var process = new PersistedProcess();
-          process.wrap(processRecord, key);
-          upsert(processes, key, toRow(process));
-          versionInfos.addVersion(processIdKey(processRecord), processRecord.getVersion());
-          putLatestVersionDigest(processRecord);
-          return null;
-        });
+    final var process = new PersistedProcess();
+    process.wrap(processRecord, key);
+    upsert(processes, key, toRow(process));
+    versionInfos.addVersion(processIdKey(processRecord), processRecord.getVersion());
+    putLatestVersionDigest(processRecord);
   }
 
   @Override
   public void storeProcessDefinitionKeyByProcessIdAndDeploymentKey(
       final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          final var row =
-              new ProcessByDeploymentRow(
-                  processRecord.getTenantId(),
-                  processRecord.getBpmnProcessId(),
-                  processRecord.getDeploymentKey(),
-                  processRecord.getProcessDefinitionKey());
-          upsert(processesByDeployment, row.key(), row);
-          return null;
-        });
+    final var row =
+        new ProcessByDeploymentRow(
+            processRecord.getTenantId(),
+            processRecord.getBpmnProcessId(),
+            processRecord.getDeploymentKey(),
+            processRecord.getProcessDefinitionKey());
+    upsert(processesByDeployment, row.key(), row);
   }
 
   @Override
@@ -249,204 +233,156 @@ public final class RdbmsProcessState implements MutableProcessState {
     if (versionTag.isBlank()) {
       return;
     }
-    inTransaction(
-        () -> {
-          final var row =
-              new ProcessByVersionTagRow(
-                  processRecord.getTenantId(),
-                  processRecord.getBpmnProcessId(),
-                  versionTag,
-                  processRecord.getProcessDefinitionKey());
-          upsert(processesByVersionTag, row.key(), row);
-          return null;
-        });
+    final var row =
+        new ProcessByVersionTagRow(
+            processRecord.getTenantId(),
+            processRecord.getBpmnProcessId(),
+            versionTag,
+            processRecord.getProcessDefinitionKey());
+    upsert(processesByVersionTag, row.key(), row);
   }
 
   @Override
   public void updateProcessState(
       final ProcessRecord processRecord, final PersistedProcessState state) {
-    inTransaction(
-        () -> {
-          final var process =
-              requireProcess(processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
-          process.setState(state);
-          processes.update(toRow(process));
-          processCache.cache(process);
-          return null;
-        });
+    final var process =
+        requireProcess(processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
+    process.setState(state);
+    processes.update(toRow(process));
+    processCache.cache(process);
   }
 
   @Override
   public void markDraining(final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          final var process =
-              requireProcess(processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
-          process.setState(PersistedProcessState.DRAINING);
-          process.setDeleteHistory(processRecord.isDeleteHistory());
-          processes.update(toRow(process));
-          processCache.cache(process);
-          return null;
-        });
+    final var process =
+        requireProcess(processRecord.getTenantId(), processRecord.getProcessDefinitionKey());
+    process.setState(PersistedProcessState.DRAINING);
+    process.setDeleteHistory(processRecord.isDeleteHistory());
+    processes.update(toRow(process));
+    processCache.cache(process);
   }
 
   @Override
   public void setMissingDeploymentKey(
       final String tenantId, final long processDefinitionKey, final long deploymentKey) {
-    inTransaction(
-        () -> {
-          final var process = requireProcess(tenantId, processDefinitionKey);
-          if (process.getDeploymentKey() == deploymentKey) {
-            return null;
-          }
-          if (process.hasDeploymentKey()) {
-            throw new IllegalStateException(
-                String.format(
-                    "Expected to set deployment key '%d' for process with key '%d' but process already has deployment key '%d'.",
-                    deploymentKey, processDefinitionKey, process.getDeploymentKey()));
-          }
+    final var process = requireProcess(tenantId, processDefinitionKey);
+    if (process.getDeploymentKey() == deploymentKey) {
+      return;
+    }
+    if (process.hasDeploymentKey()) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to set deployment key '%d' for process with key '%d' but process already has deployment key '%d'.",
+              deploymentKey, processDefinitionKey, process.getDeploymentKey()));
+    }
 
-          process.setDeploymentKey(deploymentKey);
-          processes.update(toRow(process));
-          final var byDeployment =
-              new ProcessByDeploymentRow(
-                  tenantId,
-                  bufferAsString(process.getBpmnProcessId()),
-                  deploymentKey,
-                  processDefinitionKey);
-          upsert(processesByDeployment, byDeployment.key(), byDeployment);
-          processCache.invalidate(
-              tenantId,
-              process.getBpmnProcessId(),
-              processDefinitionKey,
-              deploymentKey,
-              process.getVersion());
-          return null;
-        });
+    process.setDeploymentKey(deploymentKey);
+    processes.update(toRow(process));
+    final var byDeployment =
+        new ProcessByDeploymentRow(
+            tenantId,
+            bufferAsString(process.getBpmnProcessId()),
+            deploymentKey,
+            processDefinitionKey);
+    upsert(processesByDeployment, byDeployment.key(), byDeployment);
+    processCache.invalidate(
+        tenantId,
+        process.getBpmnProcessId(),
+        processDefinitionKey,
+        deploymentKey,
+        process.getVersion());
   }
 
   @Override
   public void deleteProcess(final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          deleteProcessExceptVersionTag(processRecord);
-          final var versionTag = processRecord.getVersionTag();
-          if (!versionTag.isBlank()) {
-            processesByVersionTag.delete(
-                new ProcessByVersionTagKey(
-                    processRecord.getTenantId(), processRecord.getBpmnProcessId(), versionTag));
-          }
-          return null;
-        });
+    deleteProcessExceptVersionTag(processRecord);
+    final var versionTag = processRecord.getVersionTag();
+    if (!versionTag.isBlank()) {
+      processesByVersionTag.delete(
+          new ProcessByVersionTagKey(
+              processRecord.getTenantId(), processRecord.getBpmnProcessId(), versionTag));
+    }
   }
 
   @Override
   public void deleteProcessAndRepointVersionTag(final ProcessRecord processRecord) {
-    inTransaction(
-        () -> {
-          deleteProcessExceptVersionTag(processRecord);
-          updateVersionTagOnDelete(processRecord);
-          return null;
-        });
+    deleteProcessExceptVersionTag(processRecord);
+    updateVersionTagOnDelete(processRecord);
   }
 
   @Override
   public void addPendingDeletion(final long processDefinitionKey, final int partitionId) {
-    inTransaction(
-        () -> {
-          final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
-          if (pendingDeletions.get(row) != null) {
-            throw new ZeebeDbInconsistentException(
-                "Expected to add a pending deletion of process %d for partition %d, but it already exists"
-                    .formatted(processDefinitionKey, partitionId));
-          }
-          pendingDeletions.insert(row);
-          return null;
-        });
+    final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
+    if (pendingDeletions.get(row) != null) {
+      throw new ZeebeDbInconsistentException(
+          "Expected to add a pending deletion of process %d for partition %d, but it already exists"
+              .formatted(processDefinitionKey, partitionId));
+    }
+    pendingDeletions.insert(row);
   }
 
   @Override
   public void removePendingDeletion(final long processDefinitionKey, final int partitionId) {
-    inTransaction(
-        () -> {
-          final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
-          if (pendingDeletions.get(row) == null) {
-            throw new ZeebeDbInconsistentException(
-                "Expected to remove the pending deletion of process %d for partition %d, but it does not exist"
-                    .formatted(processDefinitionKey, partitionId));
-          }
-          pendingDeletions.delete(row);
-          return null;
-        });
+    final var row = new PendingProcessDeletionRow(processDefinitionKey, partitionId);
+    if (pendingDeletions.get(row) == null) {
+      throw new ZeebeDbInconsistentException(
+          "Expected to remove the pending deletion of process %d for partition %d, but it does not exist"
+              .formatted(processDefinitionKey, partitionId));
+    }
+    pendingDeletions.delete(row);
   }
 
   @Override
   public void restoreFromPendingDeletion(final String tenantId, final long processDefinitionKey) {
-    inTransaction(
-        () -> {
-          final var process = findProcess(tenantId, processDefinitionKey);
-          if (process == null || process.getState() != PersistedProcessState.PENDING_DELETION) {
-            // already restored, deleted, or never stray: keeps the restore idempotent
-            return null;
-          }
-          process.setState(PersistedProcessState.ACTIVE);
-          processes.update(toRow(process));
-          processCache.cache(process);
-          return null;
-        });
+    final var process = findProcess(tenantId, processDefinitionKey);
+    if (process == null || process.getState() != PersistedProcessState.PENDING_DELETION) {
+      // already restored, deleted, or never stray: keeps the restore idempotent
+      return;
+    }
+    process.setState(PersistedProcessState.ACTIVE);
+    processes.update(toRow(process));
+    processCache.cache(process);
   }
 
   @Override
   public void markProcessDefinitionRestoreAsRun() {
-    inTransaction(
-        () -> {
-          upsert(flags, PROCESS_DEFINITION_RESTORE_FLAG, PROCESS_DEFINITION_RESTORE_FLAG);
-          return null;
-        });
+    upsert(flags, PROCESS_DEFINITION_RESTORE_FLAG, PROCESS_DEFINITION_RESTORE_FLAG);
   }
 
   @Override
   public DeployedProcess getLatestProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
-    return inTransaction(
-        () -> {
-          final long latestVersion =
-              versionInfos
-                  .get(new ProcessIdKey(tenantId, bufferAsString(processIdBuffer)))
-                  .getLatestVersion();
-          return processCache.getProcessByProcessIdAndVersion(
-              tenantId, processIdBuffer, latestVersion);
-        });
+    final long latestVersion =
+        versionInfos
+            .get(new ProcessIdKey(tenantId, bufferAsString(processIdBuffer)))
+            .getLatestVersion();
+    return processCache.getProcessByProcessIdAndVersion(tenantId, processIdBuffer, latestVersion);
   }
 
   @Override
   public DeployedProcess getLatestActiveProcessVersionByProcessId(
       final DirectBuffer processIdBuffer, final String tenantId) {
-    return inTransaction(
-        () -> {
-          DeployedProcess process = getLatestProcessVersionByProcessId(processIdBuffer, tenantId);
-          if (process == null) {
-            return null;
-          }
-          if (process.isActive()) {
-            return process;
-          }
+    DeployedProcess process = getLatestProcessVersionByProcessId(processIdBuffer, tenantId);
+    if (process == null) {
+      return null;
+    }
+    if (process.isActive()) {
+      return process;
+    }
 
-          final int latestVersion = process.getVersion();
-          final var knownVersions =
-              getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
-          for (int i = knownVersions.size() - 1; i >= 0; i--) {
-            final int version = knownVersions.get(i).intValue();
-            if (version >= latestVersion) {
-              continue;
-            }
-            process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
-            if (process != null && process.isActive()) {
-              return process;
-            }
-          }
-          return null;
-        });
+    final int latestVersion = process.getVersion();
+    final var knownVersions = getKnownProcessVersions(bufferAsString(processIdBuffer), tenantId);
+    for (int i = knownVersions.size() - 1; i >= 0; i--) {
+      final int version = knownVersions.get(i).intValue();
+      if (version >= latestVersion) {
+        continue;
+      }
+      process = getProcessByProcessIdAndVersion(processIdBuffer, version, tenantId);
+      if (process != null && process.isActive()) {
+        return process;
+      }
+    }
+    return null;
   }
 
   @Override
@@ -458,15 +394,10 @@ public final class RdbmsProcessState implements MutableProcessState {
   @Override
   public DeployedProcess getProcessByProcessIdAndVersionTag(
       final DirectBuffer processId, final String versionTag, final String tenantId) {
-    return inTransaction(
-        () -> {
-          final var row =
-              processesByVersionTag.get(
-                  new ProcessByVersionTagKey(tenantId, bufferAsString(processId), versionTag));
-          return row == null
-              ? null
-              : getProcessByKeyAndTenant(row.processDefinitionKey(), tenantId);
-        });
+    final var row =
+        processesByVersionTag.get(
+            new ProcessByVersionTagKey(tenantId, bufferAsString(processId), versionTag));
+    return row == null ? null : getProcessByKeyAndTenant(row.processDefinitionKey(), tenantId);
   }
 
   @Override
@@ -484,41 +415,33 @@ public final class RdbmsProcessState implements MutableProcessState {
   @Override
   public DirectBuffer getLatestVersionDigest(
       final DirectBuffer processIdBuffer, final String tenantId) {
-    return inTransaction(
-        () -> {
-          final var row = digests.get(new ProcessIdKey(tenantId, bufferAsString(processIdBuffer)));
-          return row == null ? null : new UnsafeBuffer(row.digest().clone());
-        });
+    final var row = digests.get(new ProcessIdKey(tenantId, bufferAsString(processIdBuffer)));
+    return row == null ? null : new UnsafeBuffer(row.digest().clone());
   }
 
   @Override
   public int getLatestProcessVersion(final String bpmnProcessId, final String tenantId) {
-    return inTransaction(
-            () -> versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).getLatestVersion())
+    return versionInfos
+        .get(new ProcessIdKey(tenantId, bpmnProcessId))
+        .getLatestVersion()
         .intValue();
   }
 
   @Override
   public int getNextProcessVersion(final String bpmnProcessId, final String tenantId) {
-    return inTransaction(
-                () ->
-                    versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).getHighestVersion())
-            .intValue()
+    return (int) versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).getHighestVersion()
         + 1;
   }
 
   @Override
   public Optional<Integer> findProcessVersionBefore(
       final String bpmnProcessId, final long version, final String tenantId) {
-    return inTransaction(
-        () ->
-            versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).findVersionBefore(version));
+    return versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).findVersionBefore(version);
   }
 
   @Override
   public List<Long> getKnownProcessVersions(final String bpmnProcessId, final String tenantId) {
-    return inTransaction(
-        () -> versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).getKnownVersions());
+    return versionInfos.get(new ProcessIdKey(tenantId, bpmnProcessId)).getKnownVersions();
   }
 
   @Override
@@ -571,101 +494,85 @@ public final class RdbmsProcessState implements MutableProcessState {
   @Override
   public void forEachProcess(
       final ProcessIdentifier previousProcess, final PersistedProcessVisitor visitor) {
-    inTransaction(
-        () -> {
-          long afterKey =
-              previousProcess == null ? Long.MIN_VALUE : previousProcess.processDefinitionKey();
-          while (true) {
-            final long pageStart = afterKey;
-            final var committed =
-                read(
-                    mapper ->
-                        mapper.selectProcessDefinitionsAfter(
-                            partitionId, pageStart, PROCESS_PAGE_SIZE));
-            final boolean lastPage = committed.size() < PROCESS_PAGE_SIZE;
-            // staged processes beyond the page's last committed key belong to a later page
-            final long pageEnd =
-                lastPage ? Long.MAX_VALUE : committed.getLast().processDefinitionKey();
-            final var page =
-                processes.query(
-                    committed,
-                    row ->
-                        row.processDefinitionKey() > pageStart
-                            && row.processDefinitionKey() <= pageEnd,
-                    BY_KEY);
-            for (final var row : page) {
-              if (!visitor.visit(toProcess(row))) {
-                return null;
-              }
-            }
-            if (lastPage) {
-              return null;
-            }
-            afterKey = pageEnd;
-          }
-        });
+    long afterKey =
+        previousProcess == null ? Long.MIN_VALUE : previousProcess.processDefinitionKey();
+    while (true) {
+      final long pageStart = afterKey;
+      final var committed =
+          rdbms.read(
+              mapper ->
+                  mapper.selectProcessDefinitionsAfter(partitionId, pageStart, PROCESS_PAGE_SIZE));
+      final boolean lastPage = committed.size() < PROCESS_PAGE_SIZE;
+      // staged processes beyond the page's last committed key belong to a later page
+      final long pageEnd = lastPage ? Long.MAX_VALUE : committed.getLast().processDefinitionKey();
+      final var page =
+          processes.query(
+              committed,
+              row ->
+                  row.processDefinitionKey() > pageStart && row.processDefinitionKey() <= pageEnd,
+              BY_KEY);
+      for (final var row : page) {
+        if (!visitor.visit(toProcess(row))) {
+          return;
+        }
+      }
+      if (lastPage) {
+        return;
+      }
+      afterKey = pageEnd;
+    }
   }
 
   @Override
   public void forEachProcessWithLatestVersion(final PersistedProcessVisitor visitor) {
-    inTransaction(
-        () -> {
-          final var committed = read(mapper -> mapper.selectProcessVersions(partitionId));
-          final var rows =
-              versions.query(
-                  committed,
-                  row -> true,
-                  Comparator.comparing(ProcessVersionRow::tenantId)
-                      .thenComparing(ProcessVersionRow::bpmnProcessId));
-          for (final var row : rows) {
-            final var versionInfo = wrapCopy(new VersionInfo(), row.payload());
-            if (versionInfo.getLatestVersion() > 0) {
-              final var process =
-                  getProcessByProcessIdAndVersion(
-                      wrapString(row.bpmnProcessId()),
-                      versionInfo.getLatestVersion().intValue(),
-                      row.tenantId());
-              if (!visitor.visit(process.getPersistedProcess())) {
-                return null;
-              }
-            }
-          }
-          return null;
-        });
+    final var committed = rdbms.read(mapper -> mapper.selectProcessVersions(partitionId));
+    final var rows =
+        versions.query(
+            committed,
+            row -> true,
+            Comparator.comparing(ProcessVersionRow::tenantId)
+                .thenComparing(ProcessVersionRow::bpmnProcessId));
+    for (final var row : rows) {
+      final var versionInfo = wrapCopy(new VersionInfo(), row.payload());
+      if (versionInfo.getLatestVersion() > 0) {
+        final var process =
+            getProcessByProcessIdAndVersion(
+                wrapString(row.bpmnProcessId()),
+                versionInfo.getLatestVersion().intValue(),
+                row.tenantId());
+        if (!visitor.visit(process.getPersistedProcess())) {
+          return;
+        }
+      }
+    }
   }
 
   @Override
   public boolean hasPendingDeletion(final long processDefinitionKey, final int partitionId) {
-    return inTransaction(
-        () ->
-            pendingDeletions.get(new PendingProcessDeletionRow(processDefinitionKey, partitionId))
-                != null);
+    return pendingDeletions.get(new PendingProcessDeletionRow(processDefinitionKey, partitionId))
+        != null;
   }
 
   @Override
   public boolean hasPendingDeletion(final long processDefinitionKey) {
-    return inTransaction(() -> !readPendingDeletions(processDefinitionKey).isEmpty());
+    return !readPendingDeletions(processDefinitionKey).isEmpty();
   }
 
   @Override
   public Set<Integer> getPendingDeletionPartitions(final long processDefinitionKey) {
-    return inTransaction(
-        () -> {
-          final Set<Integer> partitions = new LinkedHashSet<>();
-          for (final var row : readPendingDeletions(processDefinitionKey)) {
-            partitions.add(row.pendingPartitionId());
-          }
-          return partitions;
-        });
+    final Set<Integer> partitions = new LinkedHashSet<>();
+    for (final var row : readPendingDeletions(processDefinitionKey)) {
+      partitions.add(row.pendingPartitionId());
+    }
+    return partitions;
   }
 
   @Override
   public boolean hasRunProcessDefinitionRestore() {
-    return inTransaction(() -> flags.get(PROCESS_DEFINITION_RESTORE_FLAG) != null);
+    return flags.get(PROCESS_DEFINITION_RESTORE_FLAG) != null;
   }
 
-  private void deleteProcessExceptVersionTag(final ProcessRecord processRecord)
-      throws SQLException {
+  private void deleteProcessExceptVersionTag(final ProcessRecord processRecord) {
     final var tenantId = processRecord.getTenantId();
     final long processDefinitionKey = processRecord.getProcessDefinitionKey();
     if (findRow(tenantId, processDefinitionKey) == null) {
@@ -698,7 +605,7 @@ public final class RdbmsProcessState implements MutableProcessState {
    * Points the version tag lookup at the latest remaining version with the deleted process' tag, if
    * it pointed at the deleted process, or removes it if no other version has that tag.
    */
-  private void updateVersionTagOnDelete(final ProcessRecord processRecord) throws SQLException {
+  private void updateVersionTagOnDelete(final ProcessRecord processRecord) {
     final var deletedVersionTag = processRecord.getVersionTag();
     if (deletedVersionTag.isBlank()) {
       return;
@@ -734,25 +641,8 @@ public final class RdbmsProcessState implements MutableProcessState {
     processesByVersionTag.delete(tagKey);
   }
 
-  private <K, E> EntityCache<K, E> cache(
-      final String entityName,
-      final Function<E, K> keyOf,
-      final Loader<K, E> loader,
-      final Writer<E> inserter,
-      final Writer<E> updater,
-      final Writer<K> deleter) {
-    final var cache =
-        new EntityCache<>(
-            entityName,
-            new MyBatisEntityPersister<>(
-                transactionContext, partitionId, keyOf, loader, inserter, updater, deleter));
-    transactionContext.register(cache);
-    return cache;
-  }
-
   /** Inserts the entity, or updates it if a row with its key exists. */
-  private static <K, E> void upsert(final EntityCache<K, E> cache, final K key, final E entity)
-      throws SQLException {
+  private static <K, E> void upsert(final EntityCache<K, E> cache, final K key, final E entity) {
     if (cache.get(key) == null) {
       cache.insert(entity);
     } else {
@@ -762,19 +652,18 @@ public final class RdbmsProcessState implements MutableProcessState {
 
   /** The row of the process, if it exists and belongs to the tenant. */
   private @Nullable ProcessDefinitionRow findRow(
-      final String tenantId, final long processDefinitionKey) throws SQLException {
+      final String tenantId, final long processDefinitionKey) {
     final var row = processes.get(processDefinitionKey);
     return row != null && row.tenantId().equals(tenantId) ? row : null;
   }
 
   private @Nullable PersistedProcess findProcess(
-      final String tenantId, final long processDefinitionKey) throws SQLException {
+      final String tenantId, final long processDefinitionKey) {
     final var row = findRow(tenantId, processDefinitionKey);
     return row == null ? null : toProcess(row);
   }
 
-  private PersistedProcess requireProcess(final String tenantId, final long processDefinitionKey)
-      throws SQLException {
+  private PersistedProcess requireProcess(final String tenantId, final long processDefinitionKey) {
     final var process = findProcess(tenantId, processDefinitionKey);
     if (process == null) {
       throw new IllegalStateException(
@@ -789,9 +678,9 @@ public final class RdbmsProcessState implements MutableProcessState {
    * one stored last, i.e. with the highest key, like the RocksDB state's by-version copy.
    */
   private @Nullable ProcessDefinitionRow findRowByVersion(
-      final String tenantId, final String bpmnProcessId, final int version) throws SQLException {
+      final String tenantId, final String bpmnProcessId, final int version) {
     final var committed =
-        read(
+        rdbms.read(
             mapper ->
                 mapper.selectProcessDefinitionsByVersion(
                     partitionId, tenantId, bpmnProcessId, version));
@@ -807,24 +696,14 @@ public final class RdbmsProcessState implements MutableProcessState {
   }
 
   /** The pending deletions of the process definition, ordered by partition. */
-  private List<PendingProcessDeletionRow> readPendingDeletions(final long processDefinitionKey)
-      throws SQLException {
+  private List<PendingProcessDeletionRow> readPendingDeletions(final long processDefinitionKey) {
     final var committed =
-        read(mapper -> mapper.selectPendingProcessDeletions(partitionId, processDefinitionKey));
+        rdbms.read(
+            mapper -> mapper.selectPendingProcessDeletions(partitionId, processDefinitionKey));
     return pendingDeletions.query(
         committed,
         row -> row.processDefinitionKey() == processDefinitionKey,
         Comparator.comparingInt(PendingProcessDeletionRow::pendingPartitionId));
-  }
-
-  private <T> T read(final EngineStateMyBatis.MapperCall<T> call) throws SQLException {
-    return EngineStateMyBatis.read(transactionContext.connection(), call);
-  }
-
-  private <T> T inTransaction(final SqlOperation<T> operation) {
-    final List<T> result = new ArrayList<>(1);
-    transactionContext.runInTransaction(() -> result.add(operation.run()));
-    return result.getFirst();
   }
 
   private static ProcessIdKey processIdKey(final ProcessRecord processRecord) {
@@ -849,11 +728,6 @@ public final class RdbmsProcessState implements MutableProcessState {
     return wrapCopy(new PersistedProcess(), row.payload());
   }
 
-  @FunctionalInterface
-  private interface SqlOperation<T> {
-    T run() throws SQLException;
-  }
-
   /**
    * The version infos of the process ids, kept in memory once read. Changing a version info stages
    * its row and changes the cached one; a rollback evicts the version infos changed in the
@@ -864,7 +738,7 @@ public final class RdbmsProcessState implements MutableProcessState {
     private final Map<ProcessIdKey, VersionInfo> cached = new HashMap<>();
     private final Set<ProcessIdKey> changedInTransaction = new HashSet<>();
 
-    VersionInfo get(final ProcessIdKey key) throws SQLException {
+    VersionInfo get(final ProcessIdKey key) {
       var versionInfo = cached.get(key);
       if (versionInfo == null) {
         final var row = versions.get(key);
@@ -877,14 +751,14 @@ public final class RdbmsProcessState implements MutableProcessState {
       return versionInfo;
     }
 
-    void addVersion(final ProcessIdKey key, final long version) throws SQLException {
+    void addVersion(final ProcessIdKey key, final long version) {
       final var versionInfo = get(key);
       changedInTransaction.add(key);
       versionInfo.addKnownVersion(version);
       upsert(versions, key, toRow(key, versionInfo));
     }
 
-    void removeVersion(final ProcessIdKey key, final long version) throws SQLException {
+    void removeVersion(final ProcessIdKey key, final long version) {
       if (versions.get(key) == null) {
         throw new ZeebeDbInconsistentException(
             "Expected to remove version %d of process '%s' of tenant '%s', but no version is stored"
@@ -927,31 +801,23 @@ public final class RdbmsProcessState implements MutableProcessState {
     @Override
     public @Nullable PersistedProcess findProcessByKey(
         final String tenantId, final long processDefinitionKey) {
-      return inTransaction(() -> findProcess(tenantId, processDefinitionKey));
+      return findProcess(tenantId, processDefinitionKey);
     }
 
     @Override
     public @Nullable PersistedProcess findProcessByProcessIdAndVersion(
         final String tenantId, final DirectBuffer bpmnProcessId, final long version) {
-      return inTransaction(
-          () -> {
-            final var row =
-                findRowByVersion(tenantId, bufferAsString(bpmnProcessId), (int) version);
-            return row == null ? null : toProcess(row);
-          });
+      final var row = findRowByVersion(tenantId, bufferAsString(bpmnProcessId), (int) version);
+      return row == null ? null : toProcess(row);
     }
 
     @Override
     public @Nullable Long findProcessDefinitionKeyByDeploymentKey(
         final String tenantId, final DirectBuffer bpmnProcessId, final long deploymentKey) {
-      return inTransaction(
-          () -> {
-            final var row =
-                processesByDeployment.get(
-                    new ProcessByDeploymentKey(
-                        tenantId, bufferAsString(bpmnProcessId), deploymentKey));
-            return row == null ? null : row.processDefinitionKey();
-          });
+      final var row =
+          processesByDeployment.get(
+              new ProcessByDeploymentKey(tenantId, bufferAsString(bpmnProcessId), deploymentKey));
+      return row == null ? null : row.processDefinitionKey();
     }
   }
 }
