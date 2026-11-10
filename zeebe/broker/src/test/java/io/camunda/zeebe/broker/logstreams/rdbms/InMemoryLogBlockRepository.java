@@ -30,6 +30,11 @@ final class InMemoryLogBlockRepository implements LogBlockRepository {
   private volatile boolean waitingAtGate;
 
   @Override
+  public boolean isReady() {
+    return true;
+  }
+
+  @Override
   public synchronized boolean claimTerm(final long term) {
     if (term < this.term) {
       return false;

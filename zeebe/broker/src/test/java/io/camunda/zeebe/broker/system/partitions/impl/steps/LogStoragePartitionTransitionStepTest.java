@@ -18,6 +18,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,16 +28,19 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepositoryException;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage;
 import io.camunda.zeebe.broker.logstreams.rdbms.TermMismatchException;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.NotLeaderException;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep.TransitionSupersededException;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Optional;
@@ -169,6 +173,7 @@ class LogStoragePartitionTransitionStepTest {
     @BeforeEach
     void setup() {
       transitionContext.setLogBlockRepository(repository);
+      when(repository.isReady()).thenReturn(true);
       when(repository.claimTerm(anyLong())).thenReturn(true);
       when(raftPartition.term()).thenReturn(1L);
     }
@@ -281,6 +286,79 @@ class LogStoragePartitionTransitionStepTest {
                   mockingDetails(repository).getInvocations().stream()
                       .anyMatch(invocation -> invocation.getMethod().getName().equals("append")));
       verify(raftPartition, after(200).never()).stepDown();
+    }
+
+    @Test
+    void shouldWaitForSchemaBeforeInstalling() {
+      // given
+      final var concurrencyControl = new TestConcurrencyControl(true);
+      transitionContext.setConcurrencyControl(concurrencyControl);
+      when(repository.isReady()).thenReturn(false);
+      initializeContext(Role.FOLLOWER);
+      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
+
+      // when
+      final var installed = step.transitionTo(transitionContext, 1, Role.LEADER);
+      concurrencyControl.runAll();
+
+      // then
+      assertThat(installed.isDone()).isFalse();
+      verify(repository, never()).claimTerm(anyLong());
+
+      // when
+      when(repository.isReady()).thenReturn(true);
+      concurrencyControl.runAll();
+
+      // then
+      assertThat(installed.isDone()).isTrue();
+      installed.join();
+      verify(repository).claimTerm(1);
+      assertThat(transitionContext.getLogStorage()).isInstanceOf(RdbmsLogStorage.class);
+    }
+
+    @Test
+    void shouldRetryClaimThatFailedOnTheDatabase() {
+      // given
+      final var concurrencyControl = new TestConcurrencyControl(true);
+      transitionContext.setConcurrencyControl(concurrencyControl);
+      when(repository.claimTerm(1))
+          .thenThrow(new LogBlockRepositoryException("database unavailable"))
+          .thenReturn(true);
+      initializeContext(Role.FOLLOWER);
+      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
+
+      // when
+      final var installed = step.transitionTo(transitionContext, 1, Role.LEADER);
+
+      // then
+      assertThat(installed.isDone()).isFalse();
+
+      // when
+      concurrencyControl.runAll();
+
+      // then
+      installed.join();
+      verify(repository, times(2)).claimTerm(1);
+      assertThat(transitionContext.getLogStorage()).isInstanceOf(RdbmsLogStorage.class);
+    }
+
+    @Test
+    void shouldStopWaitingWhenNewerTransitionIsAnnounced() {
+      // given
+      final var concurrencyControl = new TestConcurrencyControl(true);
+      transitionContext.setConcurrencyControl(concurrencyControl);
+      when(repository.isReady()).thenReturn(false);
+      initializeContext(Role.FOLLOWER);
+      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
+      final var installed = step.transitionTo(transitionContext, 1, Role.LEADER);
+
+      // when
+      step.onNewRaftRole(transitionContext, Role.FOLLOWER);
+      concurrencyControl.runAll();
+
+      // then
+      assertThatThrownBy(installed::join).hasCauseInstanceOf(TransitionSupersededException.class);
+      assertThat(transitionContext.getLogStorage()).isNull();
     }
 
     private void append(final LogStorage storage) {

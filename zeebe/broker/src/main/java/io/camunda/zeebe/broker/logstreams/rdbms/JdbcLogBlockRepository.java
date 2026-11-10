@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import javax.sql.DataSource;
 
 /**
@@ -35,6 +36,7 @@ public final class JdbcLogBlockRepository implements LogBlockRepository {
 
   private final DataSource dataSource;
   private final int partitionId;
+  private final BooleanSupplier schemaReady;
 
   private final String raiseTermSql;
   private final String selectTermSql;
@@ -44,10 +46,23 @@ public final class JdbcLogBlockRepository implements LogBlockRepository {
   private final String selectBlockAtOrBeforeSql;
   private final String selectBlocksAfterSql;
 
+  /** For a schema that is known to exist. */
   public JdbcLogBlockRepository(
       final DataSource dataSource, final String tablePrefix, final int partitionId) {
+    this(dataSource, tablePrefix, partitionId, () -> true);
+  }
+
+  /**
+   * @param schemaReady whether the schema, including this repository's tables, has been created
+   */
+  public JdbcLogBlockRepository(
+      final DataSource dataSource,
+      final String tablePrefix,
+      final int partitionId,
+      final BooleanSupplier schemaReady) {
     this.dataSource = dataSource;
     this.partitionId = partitionId;
+    this.schemaReady = schemaReady;
 
     final var partitionTable = tablePrefix + "LOG_PARTITION";
     final var blockTable = tablePrefix + "LOG_BLOCK";
@@ -76,6 +91,11 @@ public final class JdbcLogBlockRepository implements LogBlockRepository {
             + " FROM "
             + blockTable
             + " WHERE PARTITION_ID = ? AND LOW_POSITION > ? ORDER BY LOW_POSITION";
+  }
+
+  @Override
+  public boolean isReady() {
+    return schemaReady.getAsBoolean();
   }
 
   @Override
