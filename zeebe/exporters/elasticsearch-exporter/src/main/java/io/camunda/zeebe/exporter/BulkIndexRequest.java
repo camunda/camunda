@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -56,7 +55,6 @@ final class BulkIndexRequest {
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
           .addMixIn(StorageOrdinalRelated.class, StorageOrdinalMixin.class)
-          .addMixIn(VariableRecordValue.class, VariableMixin.class)
           .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
@@ -228,15 +226,6 @@ final class BulkIndexRequest {
    */
   @JsonIgnoreProperties({STORAGE_ORDINAL_PROPERTY})
   private static final class StorageOrdinalMixin {}
-
-  /**
-   * Strips {@code metadata} for previous versions, whose strict variable index mapping does not
-   * know it. This mix-in is the most specific one for a variable value, so it shadows {@link
-   * StorageOrdinalMixin} and must also repeat the {@code storageOrdinal} ignoral it would otherwise
-   * inherit.
-   */
-  @JsonIgnoreProperties({METADATA_PROPERTY, STORAGE_ORDINAL_PROPERTY})
-  private static final class VariableMixin {}
 
   /**
    * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS

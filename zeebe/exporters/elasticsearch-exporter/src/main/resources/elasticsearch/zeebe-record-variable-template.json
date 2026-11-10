@@ -49,9 +49,6 @@
             },
             "source": {
               "enabled": false
-            },
-            "metadata": {
-              "enabled": false
             }
           }
         }

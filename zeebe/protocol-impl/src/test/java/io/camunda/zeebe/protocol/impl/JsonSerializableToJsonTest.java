@@ -114,7 +114,6 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.ChannelType;
@@ -145,7 +144,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
-import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -1771,9 +1769,6 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
-                  },
-                  "metadata": {
-                    "protectionModes":[]
                   }
                 }
                 """
@@ -1802,9 +1797,6 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
-                  .setMetadata(
-                      new VariableMetadataRecord()
-                          .setProtectionModes(List.of(ProtectionMode.REDACT)))
                   .setTenantId("tenant-test")
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal);
@@ -1823,9 +1815,6 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
-                  },
-                  "metadata": {
-                    "protectionModes":["REDACT"]
                   }
                 }
                 """
