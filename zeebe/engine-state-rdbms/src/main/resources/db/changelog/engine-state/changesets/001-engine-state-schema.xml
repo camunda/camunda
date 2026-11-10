@@ -224,6 +224,90 @@
     </createIndex>
   </changeSet>
 
+  <!--
+    Variables by scope and name, as stored by RdbmsVariableStore. A scope is an element instance,
+    whose parent scope is its parent_key, so there is no table of the scope hierarchy. value is the
+    variable's msgpack value, metadata its msgpack VariableMetadataRecord (e.g. protection modes).
+    A scope can get variables before its element instance is created (e.g. the input element of a
+    multi-instance inner instance), so the process instance columns come from the variable record
+    in that case.
+  -->
+  <changeSet id="create-variable" author="camunda">
+    <createTable tableName="CAM_RU_VARIABLE">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="scope_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="name" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="variable_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="value" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="metadata" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_VARIABLE" constraintName="CAM_RU_VARIABLE_PKEY"
+      columnNames="partition_id, scope_key, name"/>
+    <createIndex tableName="CAM_RU_VARIABLE" indexName="CAM_RU_VARIABLE_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_VARIABLE" indexName="CAM_RU_VARIABLE_PROCESS_INSTANCE">
+      <column name="partition_id"/>
+      <column name="process_instance_key"/>
+    </createIndex>
+  </changeSet>
+
+  <!--
+    The variable document of an update that waits for a user task's update transition, at most
+    one per scope, with the msgpack VariableDocumentState.
+  -->
+  <changeSet id="create-variable-document-state" author="camunda">
+    <createTable tableName="CAM_RU_VARIABLE_DOCUMENT_STATE">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="scope_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_VARIABLE_DOCUMENT_STATE"
+      constraintName="CAM_RU_VARIABLE_DOCUMENT_STATE_PKEY"
+      columnNames="partition_id, scope_key"/>
+    <createIndex tableName="CAM_RU_VARIABLE_DOCUMENT_STATE" indexName="CAM_RU_VARIABLE_DOCUMENT_STATE_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
+  </changeSet>
+
   <!-- Process definitions and their lookups, as stored by RdbmsProcessStore. -->
 
   <!--

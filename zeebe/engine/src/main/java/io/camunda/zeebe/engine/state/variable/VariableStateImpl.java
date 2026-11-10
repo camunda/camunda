@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -81,6 +82,7 @@ public final class VariableStateImpl implements MutableVariableState {
         value,
         valueOffset,
         valueLength,
+        null,
         null);
   }
 
@@ -102,7 +104,26 @@ public final class VariableStateImpl implements MutableVariableState {
         value,
         0,
         value.capacity(),
-        metadata);
+        metadata,
+        null);
+  }
+
+  @Override
+  public void setVariableLocal(final long key, final VariableRecord variable) {
+    final DirectBuffer name = variable.getNameBuffer();
+    final DirectBuffer value = variable.getValueBuffer();
+    setVariableLocal(
+        key,
+        variable.getScopeKey(),
+        variable.getProcessDefinitionKey(),
+        name,
+        0,
+        name.capacity(),
+        value,
+        0,
+        value.capacity(),
+        variable.getMetadata(),
+        variable);
   }
 
   private void setVariableLocal(
@@ -115,13 +136,14 @@ public final class VariableStateImpl implements MutableVariableState {
       final DirectBuffer value,
       final int valueOffset,
       final int valueLength,
-      final @Nullable VariableMetadataRecord metadata) {
+      final @Nullable VariableMetadataRecord metadata,
+      final @Nullable VariableRecord record) {
     newVariable.reset();
     newVariable.setValue(value, valueOffset, valueLength);
     newVariable.setKey(key);
     setVariableMetadata(scopeKey, name, nameOffset, nameLength, metadata);
 
-    store.putVariable(scopeKey, name, nameOffset, nameLength, newVariable);
+    store.putVariable(scopeKey, name, nameOffset, nameLength, newVariable, record);
   }
 
   @Override

@@ -14,8 +14,7 @@ import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -34,7 +33,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Counts what a commit sends to PostgreSQL. Each statement the batches execute is a round trip, so
@@ -42,14 +40,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * statement: all rows of a table written by the same statement share a batch, and the tables are
  * written through a single MyBatis session.
  */
-@ExtendWith(ProcessingStateExtension.class)
 final class EngineStateRoundTripsTest {
 
   private static final String TENANT_ID = "round-trip-tenant";
 
   private static EngineStateDatabase database;
 
-  private MutableProcessingState processingState;
   private CountingConnection counting;
   private CountingSessionFactory sessions;
   private JdbcTransactionContext transactionContext;
@@ -70,12 +66,13 @@ final class EngineStateRoundTripsTest {
     counting = new CountingConnection(database.dataSource().getConnection());
     transactionContext = new JdbcTransactionContext(counting.proxy());
     sessions = new CountingSessionFactory(database.sessionFactory());
+    final var session =
+        EngineStateDatabase.entitySession(
+            transactionContext, database.nextPartitionId(), sessions.factory());
     elementInstanceState =
         new ElementInstanceStateImpl(
-            new RdbmsElementInstanceStore(
-                EngineStateDatabase.entitySession(
-                    transactionContext, database.nextPartitionId(), sessions.factory())),
-            processingState.getVariableState());
+            new RdbmsElementInstanceStore(session),
+            new VariableStateImpl(new RdbmsVariableStore(session)));
   }
 
   @AfterEach
@@ -239,10 +236,11 @@ final class EngineStateRoundTripsTest {
         100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.removeInstance(101);
 
-    // then - one SELECT per distinct row or table read: 9 without the loaded-row cache
+    // then - one SELECT per distinct row or table read: 10 without the loaded-row cache. The
+    // removal reads the child's variables to delete them.
     final int selects = counting.otherStatements;
     transaction.rollback();
-    assertThat(selects).isEqualTo(4);
+    assertThat(selects).isEqualTo(5);
   }
 
   private static ProcessInstanceRecord record(final BpmnElementType type, final String elementId) {

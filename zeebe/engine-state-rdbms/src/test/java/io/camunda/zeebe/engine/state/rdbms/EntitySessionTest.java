@@ -175,6 +175,62 @@ final class EntitySessionTest {
   }
 
   @Test
+  void shouldUpsertUnknownRowsByDeleteAndInsert() throws Exception {
+    // given - one committed row, one missing; the session read neither
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    selects = 0;
+
+    // when
+    session.upsert(ROW, row("1", "b"));
+    session.upsert(ROW, row("2", "c"));
+    assertThat(session.get(ROW, "1")).isEqualTo(row("1", "b"));
+    transaction.commit();
+
+    // then - no read, both overwritten through one delete and one insert batch
+    assertThat(selects).isZero();
+    assertThat(batches).containsExactly("DELETE 2", "INSERT 2");
+    assertThat(committedRows()).containsExactly(row("1", "b"), row("2", "c"));
+  }
+
+  @Test
+  void shouldUpsertKnownRowsAsUpdateOrInsert() throws Exception {
+    // given - the session knows that 1 exists and 2 doesn't
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    session.get(ROW, "2");
+
+    // when
+    session.upsert(ROW, row("1", "b"));
+    session.upsert(ROW, row("2", "c"));
+    session.insert(ROW, row("3", "d"));
+    session.upsert(ROW, row("3", "e"));
+    transaction.commit();
+
+    // then
+    assertThat(batches).containsExactly("INSERT 2", "UPDATE 1");
+    assertThat(committedRows()).containsExactly(row("1", "b"), row("2", "c"), row("3", "e"));
+  }
+
+  @Test
+  void shouldDeleteUpsertedRow() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    session.upsert(ROW, row("1", "b"));
+
+    // when
+    session.delete(ROW, "1");
+    transaction.commit();
+
+    // then
+    assertThat(session.get(ROW, "1")).isNull();
+    assertThat(batches).containsExactly("DELETE 1");
+    assertThat(committedRows()).isEmpty();
+  }
+
+  @Test
   void shouldRejectInvalidTransitions() {
     // given
     context.getCurrentTransaction();

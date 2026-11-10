@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.mutable;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
@@ -81,6 +82,21 @@ public interface MutableVariableState extends VariableState {
       DirectBuffer name,
       DirectBuffer value,
       VariableMetadataRecord metadata);
+
+  /**
+   * Creates or updates the variable of the record within its scope, setting its value and metadata.
+   * Same as {@link #setVariableLocal(long, long, long, DirectBuffer, DirectBuffer,
+   * VariableMetadataRecord)} with the values of the record; a state may also take the process
+   * instance the variable belongs to from the record, e.g. for a scope whose element instance
+   * doesn't exist yet.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the variable key
+   * @param variable the record of the variable
+   */
+  void setVariableLocal(long key, VariableRecord variable);
 
   void createScope(long childKey, long parentKey);
 

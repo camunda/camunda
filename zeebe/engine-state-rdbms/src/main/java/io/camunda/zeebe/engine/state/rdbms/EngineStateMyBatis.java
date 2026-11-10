@@ -38,7 +38,10 @@ public final class EngineStateMyBatis {
 
   private static final List<Class<?>> MAPPERS =
       List.of(
-          ElementInstanceMapper.class, ProcessDefinitionMapper.class, PartitionStateMapper.class);
+          ElementInstanceMapper.class,
+          VariableMapper.class,
+          ProcessDefinitionMapper.class,
+          PartitionStateMapper.class);
 
   /**
    * Database product name prefixes to the {@code databaseId} of vendor specific statements, like

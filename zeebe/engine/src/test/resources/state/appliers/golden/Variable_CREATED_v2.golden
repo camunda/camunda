@@ -23,12 +23,6 @@ final class VariableV2Applier implements TypedEventApplier<VariableIntent, Varia
 
   @Override
   public void applyState(final long key, final VariableRecord value) {
-    variableState.setVariableLocal(
-        key,
-        value.getScopeKey(),
-        value.getProcessDefinitionKey(),
-        value.getNameBuffer(),
-        value.getValueBuffer(),
-        value.getMetadata());
+    variableState.setVariableLocal(key, value);
   }
 }

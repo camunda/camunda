@@ -23,12 +23,15 @@ import io.camunda.zeebe.engine.state.instance.ElementInstanceStateTest;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -55,10 +58,8 @@ import org.postgresql.ds.PGSimpleDataSource;
  * Runs the element instance state contract against PostgreSQL, plus the tests for what is specific
  * to staging writes until commit.
  *
- * <p>The variable state is the RocksDB one of {@link ProcessingStateExtension}: the element
- * instance state only creates and removes scopes in it, and a real implementation lets the contract
- * verify those calls through {@link MutableVariableState#getParentScopeKey(long)}. It doesn't take
- * part in the JDBC transaction, so a rollback here doesn't undo its scopes; no test relies on that.
+ * <p>The variable state is the relational one on the same session, like in the broker, so the
+ * scopes and variables of the element instances take part in the same JDBC transaction.
  *
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition to stay
  * isolated. Add {@code -Dzeebe.engine.rdbms.dumpLevel=debug} to log each test's rows with the
@@ -108,6 +109,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   private ConnectionSpy connectionSpy;
   private JdbcTransactionContext transactionContext;
   private int partitionId;
+  private MutableVariableState variableState;
 
   @BeforeAll
   static void startDatabase() throws Exception {
@@ -136,14 +138,14 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     connection = connectionSpy.proxy();
     transactionContext = new JdbcTransactionContext(connection);
     partitionId = database.nextPartitionId();
-    return new ElementInstanceStateImpl(
-        new RdbmsElementInstanceStore(database.entitySession(transactionContext, partitionId)),
-        processingState.getVariableState());
+    final var session = database.entitySession(transactionContext, partitionId);
+    variableState = new VariableStateImpl(new RdbmsVariableStore(session));
+    return new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
   }
 
   @Override
   protected MutableVariableState variableState() {
-    return processingState.getVariableState();
+    return variableState;
   }
 
   @Override
@@ -151,7 +153,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     for (final String table : RdbmsEngineStateSchema.TABLES) {
       assertThat(countRows(table)).describedAs("Expected table %s to be empty", table).isZero();
     }
-    // the variable scopes live in RocksDB
     ElementInstanceStateTest.assertNoColumnFamilyLeft(processingState);
   }
 
@@ -455,6 +456,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             new ProcessInstanceCreationRuntimeInstruction()
                 .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                 .setAfterElementId("task")));
+    variableState.setVariableLocal(1, 100, 1, wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    variableState.storeVariableDocumentState(2, new VariableDocumentRecord().setScopeKey(100));
     connectionSpy.failNextCommit = true;
 
     // when - the first commit fails after all statements were sent, and is rolled back
@@ -806,6 +809,12 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       // the sub-process of the called instance
       elementInstanceState.incrementNumberOfTakenSequenceFlows(
           rootKey + 101, wrapString("gateway"), wrapString("flow"));
+      variableState.setVariableLocal(
+          rootKey, rootKey, 1, wrapString("inRoot"), MsgPackUtil.asMsgPack("1"));
+      variableState.setVariableLocal(
+          rootKey + 101, rootKey + 101, 1, wrapString("inChild"), MsgPackUtil.asMsgPack("2"));
+      variableState.storeVariableDocumentState(
+          rootKey + 1, new VariableDocumentRecord().setScopeKey(rootKey + 101));
     }
 
     // when
@@ -820,7 +829,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             entry("CAM_RU_ELEMENT_INSTANCE", 4L),
             entry("CAM_RU_TAKEN_SEQUENCE_FLOW", 2L),
             entry("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", 1L),
-            entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L));
+            entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L),
+            entry("CAM_RU_VARIABLE", 2L),
+            entry("CAM_RU_VARIABLE_DOCUMENT_STATE", 1L));
     assertThat(committedRowCounts()).containsEntry("CAM_RU_ELEMENT_INSTANCE", 8L);
   }
 

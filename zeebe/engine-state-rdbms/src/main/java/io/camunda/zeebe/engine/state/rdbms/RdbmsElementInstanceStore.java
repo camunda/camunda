@@ -88,7 +88,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       Comparator.comparing(TakenSequenceFlowRow::gatewayElementId)
           .thenComparing(TakenSequenceFlowRow::sequenceFlowElementId);
 
-  private static final EntityType<Long, ElementInstanceRow> ELEMENT_INSTANCE =
+  static final EntityType<Long, ElementInstanceRow> ELEMENT_INSTANCE =
       new EntityType<>(
           ElementInstanceMapper.class,
           "ElementInstance",
@@ -552,7 +552,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
     return rootProcessInstanceKey > 0 ? rootProcessInstanceKey : value.getProcessInstanceKey();
   }
 
-  private static ElementInstance toInstance(final ElementInstanceRow row) {
+  static ElementInstance toInstance(final ElementInstanceRow row) {
     return wrapCopy(new ElementInstance(), row.payload());
   }
 }
