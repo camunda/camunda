@@ -15,6 +15,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage.Config;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,6 +25,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 final class RdbmsLogStorageTest {
+
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private static final long TERM = 3;
   private static final Config CONFIG =
@@ -37,7 +40,9 @@ final class RdbmsLogStorageTest {
   @BeforeEach
   void setUp() {
     repository.claimTerm(TERM);
-    storage = RdbmsLogStorage.writable("test-writer", repository, TERM, CONFIG, failures::add);
+    storage =
+        RdbmsLogStorage.writable(
+            "test-writer", repository, TERM, CONFIG, meterRegistry, failures::add);
     storage.addAppendedListener(position -> events.add("appended " + position));
     storage.addCommittedPositionListener(position -> events.add("committed position " + position));
     storage.addCommitListener(() -> events.add("commit"));
@@ -96,6 +101,34 @@ final class RdbmsLogStorageTest {
     assertThat(repository.appendCalls())
         .extracting(call -> call.stream().map(LogBlock::lowPosition).toList())
         .containsExactly(List.of(1L), List.of(2L, 3L, 4L));
+  }
+
+  @Test
+  void shouldRecordEachCommittedTransaction() {
+    // given
+    repository.holdAppends();
+    append(1, 1);
+    await().until(repository::isAppendWaiting);
+    append(2, 2);
+    append(3, 3);
+    append(4, 4);
+
+    // when
+    repository.releaseAppends();
+
+    // then
+    await().until(() -> repository.blocks().size() == 4);
+    await()
+        .untilAsserted(
+            () -> {
+              final var blocksPerAppend =
+                  meterRegistry.get("zeebe.rdbms.log.append.blocks").summary();
+              assertThat(blocksPerAppend.count()).isEqualTo(2);
+              assertThat(blocksPerAppend.totalAmount()).isEqualTo(4);
+              assertThat(blocksPerAppend.max()).isEqualTo(3);
+              assertThat(meterRegistry.get("zeebe.rdbms.log.append.latency").timer().count())
+                  .isEqualTo(2);
+            });
   }
 
   @Test

@@ -40,6 +40,8 @@ import org.junit.jupiter.api.Test;
  */
 final class RdbmsLogStorageH2Test {
 
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   private static final String PREFIX = "TEST_";
   private static final int PARTITION_ID = 1;
 
@@ -162,7 +164,8 @@ final class RdbmsLogStorageH2Test {
   private RdbmsLogStorage newStorage(final long term) {
     assertThat(repository.claimTerm(term)).isTrue();
     final var storage =
-        RdbmsLogStorage.writable("test-writer", repository, term, Config.DEFAULT, e -> {});
+        RdbmsLogStorage.writable(
+            "test-writer", repository, term, Config.DEFAULT, meterRegistry, e -> {});
     resources.add(storage);
     return storage;
   }

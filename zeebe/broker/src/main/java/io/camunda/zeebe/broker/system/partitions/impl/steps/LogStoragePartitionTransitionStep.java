@@ -210,6 +210,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
             repository,
             targetTerm,
             RdbmsLogStorage.Config.DEFAULT,
+            context.getPartitionTransitionMeterRegistry(),
             error -> {
               // Raft keeps this node leader while the database fails, so step down explicitly;
               // unless a newer term has begun, which this failure says nothing about

@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.storage.AbstractLogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +48,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
   private final long term;
   private final Config config;
   private final Consumer<Throwable> failureListener;
+  private final @Nullable RdbmsLogStorageMetrics metrics;
   private final BlockingQueue<PendingAppend> queue = new LinkedBlockingQueue<>();
   private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
   private final @Nullable Thread writer;
@@ -56,11 +58,13 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
       final long term,
       final Config config,
       final Consumer<Throwable> failureListener,
-      final @Nullable String writerName) {
+      final @Nullable String writerName,
+      final @Nullable RdbmsLogStorageMetrics metrics) {
     this.repository = repository;
     this.term = term;
     this.config = config;
     this.failureListener = failureListener;
+    this.metrics = metrics;
     writer =
         writerName == null
             ? null
@@ -79,15 +83,23 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
       final LogBlockRepository repository,
       final long term,
       final Config config,
+      final MeterRegistry meterRegistry,
       final Consumer<Throwable> failureListener) {
-    final var storage = new RdbmsLogStorage(repository, term, config, failureListener, writerName);
+    final var storage =
+        new RdbmsLogStorage(
+            repository,
+            term,
+            config,
+            failureListener,
+            writerName,
+            new RdbmsLogStorageMetrics(meterRegistry));
     Objects.requireNonNull(storage.writer).start();
     return storage;
   }
 
   /** A storage for followers, which must never append. */
   public static RdbmsLogStorage readOnly(final LogBlockRepository repository, final Config config) {
-    return new RdbmsLogStorage(repository, -1, config, error -> {}, null);
+    return new RdbmsLogStorage(repository, -1, config, error -> {}, null, null);
   }
 
   @Override
@@ -181,7 +193,11 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
 
     while (true) {
       try {
+        final long startNanos = System.nanoTime();
         repository.append(term, blocks);
+        if (metrics != null) {
+          metrics.observeAppend(blocks.size(), System.nanoTime() - startNanos);
+        }
         return;
       } catch (final TermMismatchException e) {
         throw e;
