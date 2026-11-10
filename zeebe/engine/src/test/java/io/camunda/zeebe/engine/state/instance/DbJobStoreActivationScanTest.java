@@ -35,22 +35,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Covers the collapsed single-scan path in {@link DbJobState#forEachActivatableJobs} that is taken
+ * Covers the collapsed single-scan path in {@link DbJobStore#visitActivatableJobs} that is taken
  * once {@code isLegacyCfDrained} is set, using RocksDB ticker metrics to assert on the number of
  * seeks and skipped internal keys per poll.
  *
  * <p>Ticker metrics are whole-DB counters, so each test polls only within its own {@code
- * DbJobState}/{@code ZeebeDb} instance and takes before/after deltas; no concurrent DB activity
+ * JobStateImpl}/{@code ZeebeDb} instance and takes before/after deltas; no concurrent DB activity
  * runs during a measured poll.
  */
-final class DbJobStateActivationScanTest {
+final class DbJobStoreActivationScanTest {
 
   private static final String TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
   @TempDir File dir;
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
   private ZeebeDb<ZbColumnFamilies> db;
-  private DbJobState jobState;
+  private JobStateImpl jobState;
 
   @BeforeEach
   void setUp() {
@@ -67,7 +67,7 @@ final class DbJobStateActivationScanTest {
             RocksDbResources.of(config, new RuntimeInfo(1)));
     db = factory.createDb(dir);
     final TransactionContext ctx = db.createContext();
-    jobState = new DbJobState(db, ctx);
+    jobState = new JobStateImpl(new DbJobStore(db, ctx));
   }
 
   @AfterEach

@@ -43,6 +43,19 @@ public interface JobState {
       final List<String> tenantIds,
       BiFunction<Long, JobRecord, Boolean> callback);
 
+  /**
+   * Like {@link #forEachActivatableJobs(DirectBuffer, List, BiFunction)}, telling the state how
+   * many jobs the callback accepts at most, which the state may use to read ahead. The callback is
+   * still called until it returns false or no job is left, as it may reject jobs.
+   *
+   * @param limitHint the maximum number of jobs the callback accepts
+   */
+  void forEachActivatableJobs(
+      DirectBuffer type,
+      List<String> tenantIds,
+      int limitHint,
+      BiFunction<Long, JobRecord, Boolean> callback);
+
   JobRecord getJob(long key);
 
   JobRecord getJob(final long key, final TenantAccess authorizedTenantIds);

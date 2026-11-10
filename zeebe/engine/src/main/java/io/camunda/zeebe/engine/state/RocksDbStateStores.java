@@ -37,10 +37,11 @@ import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceStore;
 import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
-import io.camunda.zeebe.engine.state.instance.DbJobState;
+import io.camunda.zeebe.engine.state.instance.DbJobStore;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
+import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
@@ -178,7 +179,7 @@ public class RocksDbStateStores implements ProcessingStateStores {
 
   @Override
   public MutableJobState jobState() {
-    return new DbJobState(zeebeDb, transactionContext);
+    return new JobStateImpl(new DbJobStore(zeebeDb, transactionContext));
   }
 
   @Override

@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-final class DbJobStateLegacyDrainTest {
+final class DbJobStoreLegacyDrainTest {
 
   private static final String TENANT = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
@@ -239,8 +239,8 @@ final class DbJobStateLegacyDrainTest {
     seedLegacyJob(1L, type, TENANT);
     assertThat(activatableKeys(type)).isEmpty(); // Phase 2 skipped: flag was set
 
-    // when: a fresh DbJobState instance is constructed over the same database (restart)
-    final var restarted = new DbJobState(zeebeDb, transactionContext);
+    // when: a fresh job state instance is constructed over the same database (restart)
+    final var restarted = new JobStateImpl(new DbJobStore(zeebeDb, transactionContext));
 
     // then: the new instance starts undrained and finds the leftover legacy job
     assertThat(activatableKeys(restarted, type)).containsExactly(1L);
