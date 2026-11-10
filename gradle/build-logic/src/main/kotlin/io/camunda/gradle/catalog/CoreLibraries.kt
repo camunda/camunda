@@ -219,6 +219,7 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
   library("org-codehaus-janino-janino", "org.codehaus.janino", "janino").withoutVersion()
   // version managed by buildlogic.optimize-conventions
   library("org-eclipse-angus-jakarta-mail", "org.eclipse.angus", "jakarta.mail").withoutVersion()
+  library("org-ehcache-ehcache", "org.ehcache", "ehcache").versionRef("ehcache")
   library("org-eclipse-parsson-parsson", "org.eclipse.parsson", "parsson").versionRef("parsson")
   library("org-freemarker-freemarker", "org.freemarker", "freemarker").withoutVersion()
   library("org-glassfish-jakarta-json", "org.glassfish", "jakarta.json")

@@ -1,0 +1,78 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.cache;
+
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.protocol.EnumValue;
+import java.util.HashMap;
+import java.util.Map;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * The backend column families of one backend {@link TransactionContext}, created on first use. They
+ * use {@link RawKey} and {@link RawValue}, so the backend stores the cache's bytes unchanged.
+ *
+ * <p>Like the context, an instance must only be used by one thread at a time.
+ */
+final class PassThroughColumnFamilies<
+    ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> {
+
+  private final ZeebeDb<ColumnFamilyNames> backend;
+  private final TransactionContext context;
+  private final Map<EnumValue, PassThrough> columnFamilies = new HashMap<>();
+
+  PassThroughColumnFamilies(
+      final ZeebeDb<ColumnFamilyNames> backend, final TransactionContext context) {
+    this.backend = backend;
+    this.context = context;
+  }
+
+  TransactionContext context() {
+    return context;
+  }
+
+  /** Returns the backend's value of {@code key}, or {@code null} if the backend doesn't have it. */
+  byte @Nullable [] get(final CacheKey key) {
+    final var passThrough = columnFamily(key);
+    passThrough.key.set(key.key());
+    final var value = passThrough.columnFamily.get(passThrough.key);
+    return value == null ? null : value.bytes();
+  }
+
+  void upsert(final CacheKey key, final byte[] value) {
+    final var passThrough = columnFamily(key);
+    passThrough.key.set(key.key());
+    passThrough.value.set(value);
+    passThrough.columnFamily.upsert(passThrough.key, passThrough.value);
+  }
+
+  void deleteIfExists(final CacheKey key) {
+    final var passThrough = columnFamily(key);
+    passThrough.key.set(key.key());
+    passThrough.columnFamily.deleteIfExists(passThrough.key);
+  }
+
+  private PassThrough columnFamily(final CacheKey key) {
+    return columnFamilies.computeIfAbsent(key.columnFamily(), this::createColumnFamily);
+  }
+
+  @SuppressWarnings("unchecked") // every CacheKey of this DB holds one of its column families
+  private PassThrough createColumnFamily(final EnumValue columnFamily) {
+    final var key = new RawKey();
+    final var value = new RawValue();
+    return new PassThrough(
+        backend.createColumnFamily((ColumnFamilyNames) columnFamily, context, key, value),
+        key,
+        value);
+  }
+
+  private record PassThrough(
+      ColumnFamily<RawKey, RawValue> columnFamily, RawKey key, RawValue value) {}
+}

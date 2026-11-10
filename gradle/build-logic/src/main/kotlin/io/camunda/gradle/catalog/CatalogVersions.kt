@@ -79,6 +79,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("commons-validator", pomVersion("version.commons-validator"))
   version("dmn-scala", pomVersion("version.dmn-scala"))
   version("docker-java-api", pomVersion("version.docker-java-api"))
+  version("ehcache", pomVersion("version.ehcache"))
   version("elasticsearch", pomVersion("version.elasticsearch.client"))
   version(
     "optimize-elasticsearch-client",
