@@ -91,7 +91,6 @@ public class ProcessInstanceCreator implements AutoCloseable {
     resultMetrics = new StarterResultMetrics(registry);
 
     executor = new ScheduledThreadPoolExecutor(starterCfg.getThreads());
-    executor.setRemoveOnCancelPolicy(true);
   }
 
   private Counter registerSubmissionCounter(final String outcome) {
