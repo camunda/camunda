@@ -132,6 +132,23 @@ interface EngineStateMapper {
       @Param("bpmnProcessId") String bpmnProcessId,
       @Param("version") int version);
 
+  /**
+   * The processes of the id that the deployment lookup points at, ordered by key; at most one, as
+   * the lookup is moved and not copied.
+   */
+  List<ProcessDefinitionRow> selectProcessDefinitionsByDeploymentLookup(
+      @Param("partitionId") int partitionId,
+      @Param("tenantId") String tenantId,
+      @Param("bpmnProcessId") String bpmnProcessId,
+      @Param("deploymentKey") long deploymentKey);
+
+  /** Like {@link #selectProcessDefinitionsByDeploymentLookup}, for the version tag lookup. */
+  List<ProcessDefinitionRow> selectProcessDefinitionsByVersionTagLookup(
+      @Param("partitionId") int partitionId,
+      @Param("tenantId") String tenantId,
+      @Param("bpmnProcessId") String bpmnProcessId,
+      @Param("versionTag") String versionTag);
+
   /** At most {@code limit} processes with a key greater than the given one, ordered by key. */
   List<ProcessDefinitionRow> selectProcessDefinitionsAfter(
       @Param("partitionId") int partitionId,
@@ -163,47 +180,6 @@ interface EngineStateMapper {
 
   void deleteProcessVersion(@Param("partitionId") int partitionId, @Param("key") ProcessIdKey key);
 
-  // CAM_RU_PROCESS_DIGEST
-
-  @Nullable ProcessDigestRow selectProcessDigest(
-      @Param("partitionId") int partitionId, @Param("key") ProcessIdKey key);
-
-  void insertProcessDigest(
-      @Param("partitionId") int partitionId, @Param("row") ProcessDigestRow row);
-
-  void updateProcessDigest(
-      @Param("partitionId") int partitionId, @Param("row") ProcessDigestRow row);
-
-  void deleteProcessDigest(@Param("partitionId") int partitionId, @Param("key") ProcessIdKey key);
-
-  // CAM_RU_PROCESS_BY_DEPLOYMENT
-
-  @Nullable ProcessByDeploymentRow selectProcessByDeployment(
-      @Param("partitionId") int partitionId, @Param("key") ProcessByDeploymentKey key);
-
-  void insertProcessByDeployment(
-      @Param("partitionId") int partitionId, @Param("row") ProcessByDeploymentRow row);
-
-  void updateProcessByDeployment(
-      @Param("partitionId") int partitionId, @Param("row") ProcessByDeploymentRow row);
-
-  void deleteProcessByDeployment(
-      @Param("partitionId") int partitionId, @Param("key") ProcessByDeploymentKey key);
-
-  // CAM_RU_PROCESS_BY_VERSION_TAG
-
-  @Nullable ProcessByVersionTagRow selectProcessByVersionTag(
-      @Param("partitionId") int partitionId, @Param("key") ProcessByVersionTagKey key);
-
-  void insertProcessByVersionTag(
-      @Param("partitionId") int partitionId, @Param("row") ProcessByVersionTagRow row);
-
-  void updateProcessByVersionTag(
-      @Param("partitionId") int partitionId, @Param("row") ProcessByVersionTagRow row);
-
-  void deleteProcessByVersionTag(
-      @Param("partitionId") int partitionId, @Param("key") ProcessByVersionTagKey key);
-
   // CAM_RU_PENDING_PROCESS_DELETION
 
   @Nullable PendingProcessDeletionRow selectPendingProcessDeletion(
@@ -223,16 +199,18 @@ interface EngineStateMapper {
   void deletePendingProcessDeletion(
       @Param("partitionId") int partitionId, @Param("key") PendingProcessDeletionRow key);
 
-  // CAM_RU_PARTITION_FLAG
+  // CAM_RU_PARTITION_STATE
 
-  @Nullable String selectPartitionFlag(
-      @Param("partitionId") int partitionId, @Param("key") String flagName);
+  @Nullable PartitionStateRow selectPartitionState(
+      @Param("partitionId") int partitionId, @Param("key") String key);
 
-  void insertPartitionFlag(@Param("partitionId") int partitionId, @Param("row") String flagName);
+  void insertPartitionState(
+      @Param("partitionId") int partitionId, @Param("row") PartitionStateRow row);
 
-  void updatePartitionFlag(@Param("partitionId") int partitionId, @Param("row") String flagName);
+  void updatePartitionState(
+      @Param("partitionId") int partitionId, @Param("row") PartitionStateRow row);
 
-  void deletePartitionFlag(@Param("partitionId") int partitionId, @Param("key") String flagName);
+  void deletePartitionState(@Param("partitionId") int partitionId, @Param("key") String key);
 
   /**
    * An element instance: the serialized {@link ElementInstance} plus the columns derived from it
@@ -304,6 +282,12 @@ interface EngineStateMapper {
   /**
    * A deployed process: the serialized {@code PersistedProcess} plus the columns derived from it
    * for queries. The version tag is null if the process has none.
+   *
+   * <p>The lookup columns are not derived from the payload. They stand for the entries of the
+   * RocksDB state's lookups by deployment key and by version tag, are set and cleared where it
+   * writes and deletes those entries, and are indexed. They can differ from the deployment key and
+   * the version tag: processes deployed before 8.6 have no deployment lookup, and a version tag
+   * lookup is removed even if other versions have the tag.
    */
   record ProcessDefinitionRow(
       long processDefinitionKey,
@@ -314,54 +298,56 @@ interface EngineStateMapper {
       long deploymentKey,
       String resourceName,
       short state,
-      byte[] payload) {}
+      @Nullable Long deploymentKeyLookup,
+      @Nullable String versionTagLookup,
+      byte[] payload) {
+
+    ProcessDefinitionRow withLookups(
+        final @Nullable Long newDeploymentKeyLookup, final @Nullable String newVersionTagLookup) {
+      return new ProcessDefinitionRow(
+          processDefinitionKey,
+          tenantId,
+          bpmnProcessId,
+          version,
+          versionTag,
+          deploymentKey,
+          resourceName,
+          state,
+          newDeploymentKeyLookup,
+          newVersionTagLookup,
+          payload);
+    }
+  }
 
   /** The key of the rows that exist once per process id of a tenant. */
   record ProcessIdKey(String tenantId, String bpmnProcessId) {}
 
-  /** The serialized {@code VersionInfo} of a process id, plus columns derived from it. */
+  /**
+   * The serialized {@code VersionInfo} of a process id, plus columns derived from it, and the
+   * checksum of the latest version. The digest is null if there is none, which is not the same as
+   * not having a version info.
+   */
   record ProcessVersionRow(
       String tenantId,
       String bpmnProcessId,
       long highestVersion,
       long latestVersion,
+      byte @Nullable [] digest,
       byte[] payload) {
 
     ProcessIdKey key() {
       return new ProcessIdKey(tenantId, bpmnProcessId);
     }
-  }
 
-  /** The checksum of the latest version of a process id. */
-  record ProcessDigestRow(String tenantId, String bpmnProcessId, byte[] digest) {
-
-    ProcessIdKey key() {
-      return new ProcessIdKey(tenantId, bpmnProcessId);
-    }
-  }
-
-  record ProcessByDeploymentKey(String tenantId, String bpmnProcessId, long deploymentKey) {}
-
-  /** The process of a process id deployed by a deployment. */
-  record ProcessByDeploymentRow(
-      String tenantId, String bpmnProcessId, long deploymentKey, long processDefinitionKey) {
-
-    ProcessByDeploymentKey key() {
-      return new ProcessByDeploymentKey(tenantId, bpmnProcessId, deploymentKey);
-    }
-  }
-
-  record ProcessByVersionTagKey(String tenantId, String bpmnProcessId, String versionTag) {}
-
-  /** The highest version of a process id with a version tag. */
-  record ProcessByVersionTagRow(
-      String tenantId, String bpmnProcessId, String versionTag, long processDefinitionKey) {
-
-    ProcessByVersionTagKey key() {
-      return new ProcessByVersionTagKey(tenantId, bpmnProcessId, versionTag);
+    ProcessVersionRow withDigest(final byte @Nullable [] newDigest) {
+      return new ProcessVersionRow(
+          tenantId, bpmnProcessId, highestVersion, latestVersion, newDigest, payload);
     }
   }
 
   /** A partition that still owes a drain report for a process definition; its own key. */
   record PendingProcessDeletionRow(long processDefinitionKey, int pendingPartitionId) {}
+
+  /** A value of the partition's state, found by its key. */
+  record PartitionStateRow(String key, @Nullable String value) {}
 }

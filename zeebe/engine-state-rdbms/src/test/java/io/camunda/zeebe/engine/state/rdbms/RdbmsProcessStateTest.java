@@ -237,6 +237,126 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
         .isOne();
   }
 
+  @Test
+  void shouldNotHaveDeploymentLookupForProcessPutWithoutIt() throws Exception {
+    // given - like a process created by an applier that doesn't register the deployment mapping
+    final var processRecord = creatingProcessRecord("processId", 1, null);
+    processState.putProcess(processRecord.getKey(), processRecord);
+
+    // when
+    transactionContext.getCurrentTransaction().commit();
+
+    // then
+    assertThat(
+            database.countRows(
+                "CAM_RU_PROCESS_DEFINITION",
+                partitionId,
+                "deployment_key_lookup IS NULL AND deployment_key = "
+                    + processRecord.getDeploymentKey()))
+        .isOne();
+    assertThat(
+            processState.getProcessByProcessIdAndDeploymentKey(
+                wrapString("processId"), processRecord.getDeploymentKey(), TENANT_ID))
+        .isNull();
+  }
+
+  @Test
+  void shouldFindNoProcessByVersionTagAfterDeletingOlderVersionWithSameTagWithoutRepointing()
+      throws Exception {
+    // given - the tag lookup points at v2, v1 carries the same tag
+    final var v1 = creatingProcessRecord("processId", 1, "shared");
+    final var v2 = creatingProcessRecord("processId", 2, "shared");
+    for (final var processRecord : List.of(v1, v2)) {
+      processState.putProcess(processRecord.getKey(), processRecord);
+      processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
+    }
+    transactionContext.getCurrentTransaction().commit();
+
+    // when - the delete of the Process:DELETED v1 applier drops the tag's lookup
+    processState.deleteProcess(v1);
+    transactionContext.getCurrentTransaction().commit();
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString("processId"), "shared", TENANT_ID))
+        .isNull();
+    assertThat(processState.getProcessByKeyAndTenant(v2.getKey(), TENANT_ID)).isNotNull();
+    assertThat(
+            database.countRows(
+                "CAM_RU_PROCESS_DEFINITION", partitionId, "version_tag_lookup IS NOT NULL"))
+        .isZero();
+  }
+
+  @Test
+  void shouldMoveVersionTagLookupToPreviousVersionWhenLatestIsDeletedInLaterTransaction()
+      throws Exception {
+    // given
+    final var v1 = creatingProcessRecord("processId", 1, "shared");
+    final var v2 = creatingProcessRecord("processId", 2, "shared");
+    for (final var processRecord : List.of(v1, v2)) {
+      processState.putProcess(processRecord.getKey(), processRecord);
+      processState.storeProcessDefinitionKeyByProcessIdAndVersionTag(processRecord);
+    }
+    transactionContext.getCurrentTransaction().commit();
+
+    // when
+    processState.deleteProcessAndRepointVersionTag(v2);
+    transactionContext.getCurrentTransaction().commit();
+
+    // then
+    assertThat(
+            database.countRows(
+                "CAM_RU_PROCESS_DEFINITION",
+                partitionId,
+                "version_tag_lookup = 'shared' AND process_definition_key = " + v1.getKey()))
+        .isOne();
+    assertThat(
+            processState.getProcessByProcessIdAndVersionTag(
+                wrapString("processId"), "shared", TENANT_ID))
+        .extracting(deployed -> deployed.getKey())
+        .isEqualTo(v1.getKey());
+  }
+
+  @Test
+  void shouldKeepVersionInfoWithoutDigestAfterDeletingTheLatestVersionTwice() throws Exception {
+    // given
+    final var processRecord = creatingProcessRecord("processId", 1, null);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    transactionContext.getCurrentTransaction().commit();
+    assertThat(processState.getLatestVersionDigest(wrapString("processId"), TENANT_ID)).isNotNull();
+
+    // when
+    processState.deleteProcess(processRecord);
+    transactionContext.getCurrentTransaction().commit();
+
+    // then - the version info remains, so versions aren't reused, but it has no digest
+    assertThat(processState.getLatestVersionDigest(wrapString("processId"), TENANT_ID)).isNull();
+    assertThat(processState.getNextProcessVersion("processId", TENANT_ID)).isEqualTo(2);
+    assertThat(
+            database.countRows(
+                "CAM_RU_PROCESS_VERSION",
+                partitionId,
+                "bpmn_process_id = 'processId' AND digest IS NULL"))
+        .isOne();
+  }
+
+  @Test
+  void shouldStoreProcessDefinitionRestoreAsRowOfPartitionState() throws Exception {
+    // when
+    processState.markProcessDefinitionRestoreAsRun();
+    transactionContext.getCurrentTransaction().commit();
+
+    // then
+    assertThat(
+            database.countRows(
+                "CAM_RU_PARTITION_STATE",
+                partitionId,
+                "state_key = '" + RdbmsProcessStore.PROCESS_DEFINITION_RESTORE_KEY + "'"))
+        .isOne();
+    assertThat(processState.hasRunProcessDefinitionRestore()).isTrue();
+  }
+
   private ProcessStateImpl newProcessState(final JdbcTransactionContext context) {
     return new ProcessStateImpl(
         new RdbmsProcessStore(context, partitionId),
