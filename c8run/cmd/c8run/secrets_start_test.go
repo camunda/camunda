@@ -95,6 +95,7 @@ func TestEnvSecretsModeRefusesTenantsDeclaredOutsideC8Run(t *testing.T) {
 	// then
 	assert.ErrorContains(t, err, "C8RUN_SECRETS_MODE=env")
 	assert.ErrorContains(t, err, "CAMUNDA_PHYSICALTENANTS_* variables and --config app.yaml")
+	assert.Contains(t, withCLIName(err.Error(), "c8ctl cluster"), "`c8ctl cluster physical-tenants`")
 	assert.Empty(t, os.Getenv("CAMUNDA_SECRETS_STORES_ENV_DEFAULT_PREFIX"))
 }
 

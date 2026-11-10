@@ -441,7 +441,7 @@ func main() {
 	state := initialize(baseCommand, baseDir)
 	if baseCommand == "start" {
 		if err := configureSecretStores(baseDir, &state.Settings); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, withCLIName(err.Error(), cliName()))
 			os.Exit(1)
 		}
 	}
