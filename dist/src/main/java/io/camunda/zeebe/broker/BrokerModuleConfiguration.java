@@ -171,8 +171,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
-    if (rdbmsEngineStatePool.engineState() != null) {
-      springBrokerBridge.registerEngineState(rdbmsEngineStatePool.engineState());
+    if (rdbmsEngineStatePool.resources() != null) {
+      springBrokerBridge.registerEngineState(rdbmsEngineStatePool.resources());
     }
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 

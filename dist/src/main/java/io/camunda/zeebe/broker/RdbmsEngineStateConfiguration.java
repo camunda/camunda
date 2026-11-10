@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker;
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.RdbmsEngineStateCfg;
-import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.micrometer.core.instrument.MeterRegistry;
 import liquibase.exception.LiquibaseException;
@@ -39,13 +39,13 @@ public class RdbmsEngineStateConfiguration {
       throws LiquibaseException {
     final var cfg = configuration.config().getData().getRdbmsEngineState();
     if (!cfg.isEnabled()) {
-      return new RdbmsEngineStatePool(null, null);
+      return new RdbmsEngineStatePool(null);
     }
 
     final var dataSource = createDataSource(cfg, meterRegistry);
     try {
       migrateSchema(dataSource, resourceLoader);
-      return new RdbmsEngineStatePool(dataSource, RdbmsEngineState.of(dataSource));
+      return new RdbmsEngineStatePool(RdbmsEngineStateResources.create(dataSource));
     } catch (final LiquibaseException | RuntimeException e) {
       dataSource.close();
       throw e;
@@ -81,18 +81,14 @@ public class RdbmsEngineStateConfiguration {
     liquibase.afterPropertiesSet();
   }
 
-  /**
-   * Holds the pool and what is built on it once, the MyBatis session factory; both are null if the
-   * RDBMS engine state is disabled.
-   */
-  public record RdbmsEngineStatePool(
-      @Nullable HikariDataSource dataSource, @Nullable RdbmsEngineState engineState)
+  /** Holds what is built once per broker, or null if the RDBMS engine state is disabled. */
+  public record RdbmsEngineStatePool(@Nullable RdbmsEngineStateResources resources)
       implements AutoCloseable {
 
     @Override
-    public void close() {
-      if (dataSource != null) {
-        dataSource.close();
+    public void close() throws Exception {
+      if (resources != null) {
+        resources.close();
       }
     }
   }

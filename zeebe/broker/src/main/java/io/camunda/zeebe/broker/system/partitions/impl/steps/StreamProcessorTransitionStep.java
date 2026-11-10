@@ -152,7 +152,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
             : null;
     final ProcessingStateStoresFactory stateStoresFactory =
         rdbmsEngineState != null
-            ? RdbmsStateStores.factory(rdbmsEngineState.sessionFactory())
+            ? RdbmsStateStores.factory(rdbmsEngineState)
             : ProcessingStateStoresFactory.rocksDb();
     final var engine =
         new Engine(

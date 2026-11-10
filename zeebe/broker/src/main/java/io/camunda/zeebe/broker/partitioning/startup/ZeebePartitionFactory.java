@@ -64,7 +64,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -118,7 +118,7 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
-  private final @Nullable RdbmsEngineState engineState;
+  private final @Nullable RdbmsEngineStateResources engineState;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -140,7 +140,7 @@ public final class ZeebePartitionFactory {
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
-      final @Nullable RdbmsEngineState engineState) {
+      final @Nullable RdbmsEngineStateResources engineState) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;

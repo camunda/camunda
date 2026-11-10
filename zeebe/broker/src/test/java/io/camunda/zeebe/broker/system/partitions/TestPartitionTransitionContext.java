@@ -41,7 +41,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -319,7 +319,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public RdbmsEngineState getEngineState() {
+  public RdbmsEngineStateResources getEngineState() {
     return null;
   }
 
