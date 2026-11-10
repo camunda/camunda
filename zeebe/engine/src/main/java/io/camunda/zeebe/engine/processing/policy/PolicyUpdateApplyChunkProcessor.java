@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
@@ -29,9 +28,7 @@ import org.jspecify.annotations.NullMarked;
  * identity processor validates its own command, so an entry that cannot be applied, for example a
  * delete of a missing role, is rejected on its own while the other entries of the chunk apply.
  *
- * <p>Only the broker itself writes policy updates, on the deployment partition, so the processor
- * checks no user authorization. It rejects a command that came from a client request or that was
- * written to another partition.
+ * <p>The processor checks no user authorization; see {@link PolicyUpdateOrigin}.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -58,21 +55,9 @@ public final class PolicyUpdateApplyChunkProcessor
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
     final var chunk = command.getValue();
-    if (command.hasRequestMetadata()) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.FORBIDDEN,
-          "Expected policy update '%s' to be written by the broker, but it was sent as a client request"
-              .formatted(chunk.getUpdateId()));
-      return;
-    }
-    if (command.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.INVALID_STATE,
-          "Expected policy update '%s' to be applied on partition %d, but it was written to partition %d"
-              .formatted(
-                  chunk.getUpdateId(), Protocol.DEPLOYMENT_PARTITION, command.getPartitionId()));
+    final var rejection = PolicyUpdateOrigin.checkInternal(command);
+    if (rejection.isPresent()) {
+      rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
       return;
     }
     if (chunk.getChunkIndex() != 0 || chunk.getChunkCount() != 1) {
