@@ -905,8 +905,8 @@ public abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldFindActiveProcessInstanceByBusinessId() {
     // given
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 101L);
+    createRootProcessInstanceWithBusinessId(100L, "order-1", "process", "tenant");
+    createRootProcessInstanceWithBusinessId(101L, "order-1", "process", "tenant");
 
     // when / then
     assertThat(
@@ -926,7 +926,7 @@ public abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldNotFindProcessInstanceOfOtherBusinessIdProcessOrTenant() {
     // given
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
+    createRootProcessInstanceWithBusinessId(100L, "order-1", "process", "tenant");
 
     // when / then
     assertThat(
@@ -946,9 +946,10 @@ public abstract class AbstractElementInstanceStateContractTest {
   @Test
   void shouldNotFindProcessInstanceByBusinessIdAfterDeletion() {
     // given
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
+    createRootProcessInstanceWithBusinessId(100L, "order-1", "process", "tenant");
 
-    // when
+    // when - same calls as the ProcessInstanceElementCompleted/Terminated appliers
+    elementInstanceState.removeInstance(100L);
     elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
         "order-1", "process", "tenant", 100L);
 
@@ -957,6 +958,25 @@ public abstract class AbstractElementInstanceStateContractTest {
             elementInstanceState.hasActiveProcessInstanceWithBusinessId(
                 "order-1", "process", "tenant", key -> false))
         .isFalse();
+  }
+
+  /** Same calls as the ProcessInstanceElementActivating applier for a root process instance. */
+  private void createRootProcessInstanceWithBusinessId(
+      final long processInstanceKey,
+      final String businessId,
+      final String bpmnProcessId,
+      final String tenantId) {
+    final var record =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessInstanceKey(processInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setTenantId(tenantId)
+            .setBusinessId(businessId);
+    elementInstanceState.newInstance(
+        processInstanceKey, record, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    elementInstanceState.insertProcessInstanceKeyByBusinessId(
+        businessId, bpmnProcessId, tenantId, processInstanceKey);
   }
 
   @Test

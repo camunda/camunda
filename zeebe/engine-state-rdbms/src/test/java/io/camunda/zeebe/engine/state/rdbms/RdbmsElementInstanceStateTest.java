@@ -423,7 +423,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     final var transaction = transactionContext.getCurrentTransaction();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         100, wrapString("gateway"), wrapString("flow"));
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
     assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(100)).isOne();
 
     // when
@@ -431,10 +430,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
     // then
     assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(100)).isZero();
-    assertThat(
-            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-                "order-1", "process", "", key -> false))
-        .isFalse();
   }
 
   @Test
@@ -460,7 +455,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             new ProcessInstanceCreationRuntimeInstruction()
                 .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                 .setAfterElementId("task")));
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
     connectionSpy.failNextCommit = true;
 
     // when - the first commit fails after all statements were sent, and is rolled back
@@ -638,22 +632,140 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Test
-  void shouldStoreMetadataOfProcessInstanceOnBusinessId() {
-    // given
-    createProcessTree(100, 200, 1);
+  void shouldStoreBusinessIdOfRootProcessInstancesOnly() {
+    // given - a root instance with a business id, whose called child and elements carry it too
+    final var root =
+        elementInstanceState.newInstance(
+            100,
+            treeRecord(100, 100, "parent", "parent", BpmnElementType.PROCESS, 1)
+                .setBusinessId("order-1"),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        root,
+        101,
+        treeRecord(100, 100, "parent", "call", BpmnElementType.CALL_ACTIVITY, 1)
+            .setBusinessId("order-1"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        200,
+        treeRecord(200, 100, "child", "child", BpmnElementType.PROCESS, 1)
+            .setParentProcessInstanceKey(100)
+            .setParentElementInstanceKey(101)
+            .setBusinessId("order-1"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    // when - of an existing process instance, and of one without element instance
-    elementInstanceState.insertProcessInstanceKeyByBusinessId(
-        "order-1", "parent", TREE_TENANT_ID, 100L);
-    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-2", "other", TENANT_ID, 300L);
+    // when - and a root instance without business id
+    elementInstanceState.newInstance(
+        300,
+        treeRecord(300, 300, "parent", "parent", BpmnElementType.PROCESS, 1),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then - only the rows the RocksDB business id index has entries for
+    assertThat(
+            metadataRows("SELECT element_instance_key, business_id FROM CAM_RU_ELEMENT_INSTANCE"))
+        .containsExactly(
+            tuple(100L, "order-1"), tuple(101L, null), tuple(200L, null), tuple(300L, null));
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "child", TREE_TENANT_ID, key -> false))
+        .isFalse();
+  }
+
+  @Test
+  void shouldFindProcessInstanceByBusinessIdUntilItIsRemoved() throws Exception {
+    // given - a root instance with a business id, committed
+    transactionContext.getCurrentTransaction();
+    elementInstanceState.newInstance(
+        100,
+        treeRecord(100, 100, "process", "process", BpmnElementType.PROCESS, 1)
+            .setBusinessId("order-1"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isTrue();
+    commitAndBeginTransaction();
+
+    // when - it is completing: RocksDB keeps the index entry until the instance is removed
+    elementInstanceState.updateInstance(
+        100, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_COMPLETING));
 
     // then
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isTrue();
+
+    // when - same calls as the ProcessInstanceElementCompleted applier
+    elementInstanceState.removeInstance(100);
+    elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+        "order-1", "process", TREE_TENANT_ID, 100);
+
+    // then - the staged removal hides the committed row
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isFalse();
+    commitAndBeginTransaction();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isFalse();
+  }
+
+  @Test
+  void shouldFindProcessInstanceByLateAssignedBusinessId() throws Exception {
+    // given - a root instance without business id, committed
+    transactionContext.getCurrentTransaction();
+    elementInstanceState.newInstance(
+        100,
+        treeRecord(100, 100, "process", "process", BpmnElementType.PROCESS, 1),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    commitAndBeginTransaction();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isFalse();
+
+    // when - same calls as the ProcessInstanceBusinessIdAssigned applier
+    elementInstanceState.updateInstance(
+        100, instance -> instance.getValue().setBusinessId("order-1"));
+    elementInstanceState.insertProcessInstanceKeyByBusinessId(
+        "order-1", "process", TREE_TENANT_ID, 100);
+
+    // then - staged and committed
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isTrue();
+    commitAndBeginTransaction();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "process")).isTrue();
     assertThat(
-            metadataRows(
-                "SELECT business_id, process_instance_key, root_process_instance_key, tenant_id"
-                    + " FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID"))
-        .containsExactly(
-            tuple("order-1", 100L, 100L, TREE_TENANT_ID), tuple("order-2", 300L, 300L, TENANT_ID));
+            metadataRows("SELECT element_instance_key, business_id FROM CAM_RU_ELEMENT_INSTANCE"))
+        .containsExactly(tuple(100L, "order-1"));
+  }
+
+  @Test
+  void shouldMoveBusinessIdToTargetProcessIdOnMigration() throws Exception {
+    // given - a root instance with a business id, committed
+    transactionContext.getCurrentTransaction();
+    elementInstanceState.newInstance(
+        100,
+        treeRecord(100, 100, "source", "source", BpmnElementType.PROCESS, 1)
+            .setBusinessId("order-1"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    commitAndBeginTransaction();
+
+    // when - same calls as the ProcessInstanceElementMigrated applier
+    elementInstanceState.updateInstance(
+        100,
+        instance ->
+            instance.getValue().setBpmnProcessId("target").setElementId("target").setVersion(2));
+    elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+        "order-1", "source", TREE_TENANT_ID, 100);
+    elementInstanceState.insertProcessInstanceKeyByBusinessId(
+        "order-1", "target", TREE_TENANT_ID, 100);
+
+    // then - the staged update hides the committed row of the source process id
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "source")).isFalse();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "target")).isTrue();
+    commitAndBeginTransaction();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "source")).isFalse();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "target")).isTrue();
+  }
+
+  /** Commits the open transaction and begins the next one, so the following writes are staged. */
+  private void commitAndBeginTransaction() throws Exception {
+    transactionContext.getCurrentTransaction().commit();
+    transactionContext.getCurrentTransaction();
+  }
+
+  private boolean hasProcessInstanceWithBusinessId(
+      final String businessId, final String bpmnProcessId) {
+    return elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        businessId, bpmnProcessId, TREE_TENANT_ID, key -> false);
   }
 
   @Test
@@ -671,8 +783,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
               new ProcessInstanceCreationRuntimeInstruction()
                   .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                   .setAfterElementId("task")));
-      elementInstanceState.insertProcessInstanceKeyByBusinessId(
-          "order-" + rootKey, "parent", TREE_TENANT_ID, rootKey);
       elementInstanceState.incrementNumberOfTakenSequenceFlows(
           rootKey, wrapString("gateway"), wrapString("flow"));
       // the sub-process of the called instance
@@ -692,8 +802,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             entry("CAM_RU_ELEMENT_INSTANCE", 4L),
             entry("CAM_RU_TAKEN_SEQUENCE_FLOW", 2L),
             entry("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", 1L),
-            entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L),
-            entry("CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID", 1L));
+            entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L));
     assertThat(committedRowCounts()).containsEntry("CAM_RU_ELEMENT_INSTANCE", 8L);
   }
 

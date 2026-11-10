@@ -29,6 +29,7 @@
       <arg column="process_definition_key" javaType="_long"/>
       <arg column="tenant_id" javaType="String"/>
       <arg column="bpmn_process_id" javaType="String"/>
+      <arg column="business_id" javaType="String"/>
       <arg column="element_id" javaType="String"/>
       <arg column="bpmn_element_type" javaType="_short"/>
       <arg column="state" javaType="_short"/>
@@ -38,8 +39,8 @@
 
   <sql id="elementInstanceColumns">
     element_instance_key, parent_key, process_instance_key, root_process_instance_key,
-    process_definition_key, tenant_id, bpmn_process_id, element_id, bpmn_element_type, state,
-    payload
+    process_definition_key, tenant_id, bpmn_process_id, business_id, element_id, bpmn_element_type,
+    state, payload
   </sql>
 
   <!--
@@ -108,12 +109,21 @@
       <include refid="excludeKeys"/>
   </select>
 
+  <!-- Only root process instances with a business id have one, see the changelog. -->
+  <select id="selectProcessInstanceKeysByBusinessId" resultType="_long">
+    SELECT element_instance_key
+    FROM CAM_RU_ELEMENT_INSTANCE
+    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
+      AND bpmn_process_id = #{bpmnProcessId} AND business_id = #{businessId}
+    ORDER BY element_instance_key
+  </select>
+
   <insert id="insertElementInstance">
     INSERT INTO CAM_RU_ELEMENT_INSTANCE (partition_id, <include refid="elementInstanceColumns"/>)
     VALUES (#{partitionId}, #{row.key}, #{row.parentKey}, #{row.processInstanceKey},
       #{row.rootProcessInstanceKey}, #{row.processDefinitionKey}, #{row.tenantId},
-      #{row.bpmnProcessId}, #{row.elementId}, #{row.bpmnElementType}, #{row.state},
-      #{row.payload})
+      #{row.bpmnProcessId}, #{row.businessId,jdbcType=VARCHAR}, #{row.elementId},
+      #{row.bpmnElementType}, #{row.state}, #{row.payload})
   </insert>
 
   <update id="updateElementInstance">
@@ -121,7 +131,8 @@
     SET parent_key = #{row.parentKey}, process_instance_key = #{row.processInstanceKey},
       root_process_instance_key = #{row.rootProcessInstanceKey},
       process_definition_key = #{row.processDefinitionKey}, tenant_id = #{row.tenantId},
-      bpmn_process_id = #{row.bpmnProcessId}, element_id = #{row.elementId},
+      bpmn_process_id = #{row.bpmnProcessId}, business_id = #{row.businessId,jdbcType=VARCHAR},
+      element_id = #{row.elementId},
       bpmn_element_type = #{row.bpmnElementType}, state = #{row.state}, payload = #{row.payload}
     WHERE partition_id = #{partitionId} AND element_instance_key = #{row.key}
   </update>
@@ -250,62 +261,6 @@
   <delete id="deleteRuntimeInstructions">
     DELETE FROM CAM_RU_RUNTIME_INSTRUCTIONS
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
-  </delete>
-
-  <!-- CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID -->
-
-  <resultMap id="businessIdRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$BusinessIdRow">
-    <constructor>
-      <idArg column="business_id" javaType="String"/>
-      <idArg column="process_definition_id" javaType="String"/>
-      <idArg column="tenant_id" javaType="String"/>
-      <idArg column="process_instance_key" javaType="_long"/>
-      <arg column="root_process_instance_key" javaType="_long"/>
-    </constructor>
-  </resultMap>
-
-  <sql id="businessIdColumns">
-    business_id, process_definition_id, tenant_id, process_instance_key, root_process_instance_key
-  </sql>
-
-  <!-- the key, or a row whose key properties are the same, is bound as ${entry} -->
-  <sql id="businessIdKeyCondition">
-    partition_id = #{partitionId} AND business_id = #{${entry}.businessId}
-    AND process_definition_id = #{${entry}.processDefinitionId}
-    AND tenant_id = #{${entry}.tenantId} AND process_instance_key = #{${entry}.processInstanceKey}
-  </sql>
-
-  <select id="selectBusinessId" resultMap="businessIdRow">
-    SELECT <include refid="businessIdColumns"/>
-    FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
-    WHERE <include refid="businessIdKeyCondition"><property name="entry" value="key"/></include>
-  </select>
-
-  <select id="selectBusinessIds" resultMap="businessIdRow">
-    SELECT <include refid="businessIdColumns"/>
-    FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
-    WHERE partition_id = #{partitionId} AND business_id = #{businessId}
-      AND process_definition_id = #{processDefinitionId} AND tenant_id = #{tenantId}
-    ORDER BY process_instance_key
-  </select>
-
-  <insert id="insertBusinessId">
-    INSERT INTO CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID (partition_id,
-      <include refid="businessIdColumns"/>)
-    VALUES (#{partitionId}, #{row.businessId}, #{row.processDefinitionId}, #{row.tenantId},
-      #{row.processInstanceKey}, #{row.rootProcessInstanceKey})
-  </insert>
-
-  <update id="updateBusinessId">
-    UPDATE CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
-    SET root_process_instance_key = #{row.rootProcessInstanceKey}
-    WHERE <include refid="businessIdKeyCondition"><property name="entry" value="row"/></include>
-  </update>
-
-  <delete id="deleteBusinessId">
-    DELETE FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
-    WHERE <include refid="businessIdKeyCondition"><property name="entry" value="key"/></include>
   </delete>
 
   <!-- CAM_RU_PROCESS_DEFINITION -->
