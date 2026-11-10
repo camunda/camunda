@@ -22,6 +22,13 @@
   <property name="engineState.textType" value="VARCHAR(4000)"/>
 
   <!--
+    Every table has the process_instance_key, root_process_instance_key and tenant_id of the
+    process instance its rows belong to, and an index on (partition_id, root_process_instance_key),
+    so all rows of a process instance tree can be found (e.g. to delete them) in every table. The
+    root key of a root process instance is its own key.
+  -->
+
+  <!--
     Element instances, as stored by RdbmsElementInstanceState.
 
     Hybrid row: the full ElementInstance is kept as its msgpack payload (the source of truth for
@@ -42,7 +49,19 @@
       <column name="process_instance_key" type="BIGINT">
         <constraints nullable="false"/>
       </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
       <column name="process_definition_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="bpmn_process_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="element_id" type="${engineState.textType}">
         <constraints nullable="false"/>
       </column>
       <column name="bpmn_element_type" type="SMALLINT">
@@ -61,6 +80,10 @@
       <column name="partition_id"/>
       <column name="parent_key"/>
       <column name="element_instance_key"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_ELEMENT_INSTANCE" indexName="CAM_RU_ELEMENT_INSTANCE_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
     </createIndex>
   </changeSet>
 
@@ -100,12 +123,25 @@
       <column name="sequence_flow_element_id" type="${engineState.textType}">
         <constraints nullable="false"/>
       </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
       <column name="times_taken" type="INT">
         <constraints nullable="false"/>
       </column>
     </createTable>
     <addPrimaryKey tableName="CAM_RU_TAKEN_SEQUENCE_FLOW" constraintName="CAM_RU_TAKEN_SEQUENCE_FLOW_PKEY"
       columnNames="partition_id, flow_scope_key, gateway_element_id, sequence_flow_element_id"/>
+    <createIndex tableName="CAM_RU_TAKEN_SEQUENCE_FLOW" indexName="CAM_RU_TAKEN_SEQUENCE_FLOW_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
   </changeSet>
 
   <!--
@@ -120,6 +156,12 @@
       <column name="process_instance_key" type="BIGINT">
         <constraints nullable="false"/>
       </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
       <column name="payload" type="${engineState.binaryType}">
         <constraints nullable="false"/>
       </column>
@@ -127,6 +169,10 @@
     <addPrimaryKey tableName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT"
       constraintName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT_PKEY"
       columnNames="partition_id, process_instance_key"/>
+    <createIndex tableName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT" indexName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
   </changeSet>
 
   <!-- Runtime instructions of a process instance, with the msgpack RuntimeInstructions. -->
@@ -138,12 +184,22 @@
       <column name="process_instance_key" type="BIGINT">
         <constraints nullable="false"/>
       </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
       <column name="payload" type="${engineState.binaryType}">
         <constraints nullable="false"/>
       </column>
     </createTable>
     <addPrimaryKey tableName="CAM_RU_RUNTIME_INSTRUCTIONS" constraintName="CAM_RU_RUNTIME_INSTRUCTIONS_PKEY"
       columnNames="partition_id, process_instance_key"/>
+    <createIndex tableName="CAM_RU_RUNTIME_INSTRUCTIONS" indexName="CAM_RU_RUNTIME_INSTRUCTIONS_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
   </changeSet>
 
   <!-- Active process instances by business id. -->
@@ -164,10 +220,17 @@
       <column name="process_instance_key" type="BIGINT">
         <constraints nullable="false"/>
       </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
     </createTable>
     <addPrimaryKey tableName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID"
       constraintName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID_PKEY"
       columnNames="partition_id, business_id, process_definition_id, tenant_id, process_instance_key"/>
+    <createIndex tableName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID" indexName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
   </changeSet>
 
 </databaseChangeLog>

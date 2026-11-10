@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.state.instance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
@@ -18,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
@@ -44,6 +47,7 @@ import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.groups.Tuple;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -105,6 +109,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
         AFTER INSERT OR UPDATE OR DELETE ON CAM_RU_ELEMENT_INSTANCE
         FOR EACH ROW EXECUTE FUNCTION log_element_instance_write();
       """;
+
+  private static final String TREE_TENANT_ID = "tree-tenant";
 
   private static final String EXTERNAL_JDBC_URL_PROPERTY = "zeebe.engine.rdbms.jdbcUrl";
 
@@ -447,17 +453,19 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   @Test
   void shouldDiscardWritesOfAllTablesOnRollback() throws Exception {
     // given
+    elementInstanceState.newInstance(
+        100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
     final var transaction = transactionContext.getCurrentTransaction();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
-        1, wrapString("gateway"), wrapString("flow"));
+        100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
-    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(1)).isOne();
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(100)).isOne();
 
     // when
     transaction.rollback();
 
     // then
-    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(1)).isZero();
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(100)).isZero();
     assertThat(
             elementInstanceState.hasActiveProcessInstanceWithBusinessId(
                 "order-1", "process", "", key -> false))
@@ -477,9 +485,12 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
         100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.setAwaitResultRequestMetadata(
-        100, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+        100,
+        TENANT_ID,
+        new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
     elementInstanceState.addRuntimeInstructions(
         100,
+        TENANT_ID,
         List.of(
             new ProcessInstanceCreationRuntimeInstruction()
                 .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
@@ -538,6 +549,263 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     assertThat(committedRows()).extracting(Row::key).containsExactly(100L, 101L);
   }
 
+  @Test
+  void shouldStoreMetadataOfElementInstances() {
+    // given - a call activity in root instance 100 that called child instance 200
+    createProcessTree(100, 200, 1);
+
+    // when
+    final var rows =
+        metadataRows(
+            "SELECT element_instance_key, process_instance_key, root_process_instance_key,"
+                + " tenant_id, bpmn_process_id, element_id FROM CAM_RU_ELEMENT_INSTANCE");
+
+    // then
+    assertThat(rows)
+        .containsExactly(
+            tuple(100L, 100L, 100L, TREE_TENANT_ID, "parent", "parent"),
+            tuple(101L, 100L, 100L, TREE_TENANT_ID, "parent", "call"),
+            tuple(200L, 200L, 100L, TREE_TENANT_ID, "child", "child"),
+            tuple(201L, 200L, 100L, TREE_TENANT_ID, "child", "subprocess"));
+  }
+
+  @Test
+  void shouldUseProcessInstanceKeyAsRootOfRecordWithoutRootKey() {
+    // given - a record without root key, like one written before the record carried it
+    final var record = createProcessInstanceRecord().setProcessInstanceKey(300);
+    assertThat(record.getRootProcessInstanceKey()).isEqualTo(-1);
+
+    // when
+    elementInstanceState.newInstance(301, record, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then
+    assertThat(
+            metadataRows(
+                "SELECT element_instance_key, process_instance_key, root_process_instance_key"
+                    + " FROM CAM_RU_ELEMENT_INSTANCE"))
+        .containsExactly(tuple(301L, 300L, 300L));
+  }
+
+  @Test
+  void shouldKeepMetadataOfElementInstanceUpToDate() {
+    // given
+    final var record = createProcessInstanceRecord().setProcessInstanceKey(300);
+    final var instance =
+        elementInstanceState.newInstance(301, record, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when - e.g. migrated to another process
+    instance.getValue().setBpmnProcessId("migrated").setElementId("migratedElement");
+    elementInstanceState.updateInstance(instance);
+
+    // then
+    assertThat(
+            metadataRows(
+                "SELECT element_instance_key, bpmn_process_id, element_id"
+                    + " FROM CAM_RU_ELEMENT_INSTANCE"))
+        .containsExactly(tuple(301L, "migrated", "migratedElement"));
+  }
+
+  @Test
+  void shouldStoreMetadataOfFlowScopeOnTakenSequenceFlows() {
+    // given
+    createProcessTree(100, 200, 1);
+
+    // when - in the root instance and in the sub-process of the called instance
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow-in-root"));
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        201, wrapString("gateway"), wrapString("flow-in-child"));
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        201, wrapString("gateway"), wrapString("flow-in-child"));
+
+    // then
+    assertThat(
+            metadataRows(
+                "SELECT sequence_flow_element_id, process_instance_key,"
+                    + " root_process_instance_key, tenant_id, times_taken"
+                    + " FROM CAM_RU_TAKEN_SEQUENCE_FLOW"))
+        .containsExactly(
+            tuple("flow-in-child", 200L, 100L, TREE_TENANT_ID, 2),
+            tuple("flow-in-root", 100L, 100L, TREE_TENANT_ID, 1));
+  }
+
+  @Test
+  void shouldRejectTakingSequenceFlowInMissingFlowScope() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                elementInstanceState.incrementNumberOfTakenSequenceFlows(
+                    100, wrapString("gateway"), wrapString("flow")))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Expected to take sequence flow 'flow' to gateway 'gateway' in flow scope 100,"
+                + " but the flow scope does not exist");
+    assertThat(countRows("CAM_RU_TAKEN_SEQUENCE_FLOW")).isZero();
+  }
+
+  @Test
+  void shouldStoreMetadataOfProcessInstanceBeingCreated() {
+    // given - the process instance is created, so it has no element instance yet
+
+    // when
+    elementInstanceState.setAwaitResultRequestMetadata(
+        300, TENANT_ID, new AwaitProcessInstanceResultMetadata().setRequestId(1));
+    elementInstanceState.addRuntimeInstructions(
+        300,
+        TENANT_ID,
+        List.of(
+            new ProcessInstanceCreationRuntimeInstruction()
+                .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                .setAfterElementId("task")));
+
+    // then
+    final var expected = tuple(300L, 300L, TENANT_ID);
+    assertThat(
+            metadataRows(
+                "SELECT process_instance_key, root_process_instance_key, tenant_id"
+                    + " FROM CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT"))
+        .containsExactly(expected);
+    assertThat(
+            metadataRows(
+                "SELECT process_instance_key, root_process_instance_key, tenant_id"
+                    + " FROM CAM_RU_RUNTIME_INSTRUCTIONS"))
+        .containsExactly(expected);
+  }
+
+  @Test
+  void shouldStoreMetadataOfProcessInstanceOnBusinessId() {
+    // given
+    createProcessTree(100, 200, 1);
+
+    // when - of an existing process instance, and of one without element instance
+    elementInstanceState.insertProcessInstanceKeyByBusinessId(
+        "order-1", "parent", TREE_TENANT_ID, 100L);
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-2", "other", TENANT_ID, 300L);
+
+    // then
+    assertThat(
+            metadataRows(
+                "SELECT business_id, process_instance_key, root_process_instance_key, tenant_id"
+                    + " FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID"))
+        .containsExactly(
+            tuple("order-1", 100L, 100L, TREE_TENANT_ID), tuple("order-2", 300L, 300L, TENANT_ID));
+  }
+
+  @Test
+  void shouldFindAllRowsOfProcessTreeByRootKey() {
+    // given - two process trees with rows in every table
+    createProcessTree(100, 200, 1);
+    createProcessTree(500, 600, 2);
+    for (final long rootKey : List.of(100L, 500L)) {
+      elementInstanceState.setAwaitResultRequestMetadata(
+          rootKey, TREE_TENANT_ID, new AwaitProcessInstanceResultMetadata().setRequestId(1));
+      elementInstanceState.addRuntimeInstructions(
+          rootKey,
+          TREE_TENANT_ID,
+          List.of(
+              new ProcessInstanceCreationRuntimeInstruction()
+                  .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                  .setAfterElementId("task")));
+      elementInstanceState.insertProcessInstanceKeyByBusinessId(
+          "order-" + rootKey, "parent", TREE_TENANT_ID, rootKey);
+      elementInstanceState.incrementNumberOfTakenSequenceFlows(
+          rootKey, wrapString("gateway"), wrapString("flow"));
+      // the sub-process of the called instance
+      elementInstanceState.incrementNumberOfTakenSequenceFlows(
+          rootKey + 101, wrapString("gateway"), wrapString("flow"));
+    }
+
+    // when
+    final Map<String, Long> rowsOfTree = new LinkedHashMap<>();
+    for (final String table : RdbmsEngineStateSchema.TABLES) {
+      rowsOfTree.put(table, countRows(table, "root_process_instance_key = 100"));
+    }
+
+    // then
+    assertThat(rowsOfTree)
+        .containsExactly(
+            entry("CAM_RU_ELEMENT_INSTANCE", 4L),
+            entry("CAM_RU_TAKEN_SEQUENCE_FLOW", 2L),
+            entry("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", 1L),
+            entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L),
+            entry("CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID", 1L));
+    assertThat(committedRowCounts()).containsEntry("CAM_RU_ELEMENT_INSTANCE", 8L);
+  }
+
+  /**
+   * Creates a process instance tree: root instance {@code rootKey} with a call activity ({@code
+   * rootKey + 1}), which called the child instance {@code childKey} with a sub-process ({@code
+   * childKey + 1}). Like in the engine, the called instance has no parent element instance.
+   */
+  private void createProcessTree(final long rootKey, final long childKey, final int version) {
+    final var root =
+        elementInstanceState.newInstance(
+            rootKey,
+            treeRecord(rootKey, -1, "parent", "parent", BpmnElementType.PROCESS, version),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        root,
+        rootKey + 1,
+        treeRecord(rootKey, rootKey, "parent", "call", BpmnElementType.CALL_ACTIVITY, version),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final var child =
+        elementInstanceState.newInstance(
+            childKey,
+            treeRecord(childKey, rootKey, "child", "child", BpmnElementType.PROCESS, version)
+                .setParentProcessInstanceKey(rootKey)
+                .setParentElementInstanceKey(rootKey + 1),
+            ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        child,
+        childKey + 1,
+        treeRecord(childKey, rootKey, "child", "subprocess", BpmnElementType.SUB_PROCESS, version),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  private static ProcessInstanceRecord treeRecord(
+      final long processInstanceKey,
+      final long rootProcessInstanceKey,
+      final String bpmnProcessId,
+      final String elementId,
+      final BpmnElementType type,
+      final int version) {
+    return new ProcessInstanceRecord()
+        .setProcessInstanceKey(processInstanceKey)
+        .setRootProcessInstanceKey(rootProcessInstanceKey)
+        .setBpmnProcessId(bpmnProcessId)
+        .setElementId(elementId)
+        .setBpmnElementType(type)
+        .setProcessDefinitionKey(version)
+        .setVersion(version)
+        .setTenantId(TREE_TENANT_ID);
+  }
+
+  /**
+   * The committed rows of this test's partition, ordered by the first column, of a query of the
+   * form {@code SELECT <columns> FROM <table>}.
+   */
+  private List<Tuple> metadataRows(final String query) {
+    final List<Tuple> rows = new ArrayList<>();
+    try (final var freshConnection = dataSource.getConnection();
+        final var statement =
+            freshConnection.prepareStatement(query + " WHERE partition_id = ? ORDER BY 1")) {
+      statement.setInt(1, partitionId);
+      try (final ResultSet resultSet = statement.executeQuery()) {
+        final int columns = resultSet.getMetaData().getColumnCount();
+        while (resultSet.next()) {
+          final Object[] values = new Object[columns];
+          for (int column = 1; column <= columns; column++) {
+            values[column - 1] = resultSet.getObject(column);
+          }
+          rows.add(tuple(values));
+        }
+      }
+    } catch (final SQLException e) {
+      throw new IllegalStateException(e);
+    }
+    return rows;
+  }
+
   private List<Row> committedRows() {
     final List<Row> rows = new ArrayList<>();
     try (final var freshConnection = dataSource.getConnection();
@@ -572,10 +840,14 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   private long countRows(final String table) {
+    return countRows(table, "TRUE");
+  }
+
+  private long countRows(final String table, final String condition) {
     try (final var freshConnection = dataSource.getConnection();
         final var statement =
             freshConnection.prepareStatement(
-                "SELECT COUNT(*) FROM " + table + " WHERE partition_id = ?")) {
+                "SELECT COUNT(*) FROM " + table + " WHERE partition_id = ? AND " + condition)) {
       statement.setInt(1, partitionId);
       try (final ResultSet resultSet = statement.executeQuery()) {
         resultSet.next();

@@ -32,8 +32,17 @@ public interface MutableElementInstanceState extends ElementInstanceState {
 
   void updateInstance(long key, Consumer<ElementInstance> modifier);
 
+  /**
+   * Stores the request awaiting the result of the process instance with the given key.
+   *
+   * <p>This is called while the process instance is created, before its element instance exists.
+   *
+   * @param processInstanceKey the key of the process instance, a root process instance
+   * @param tenantId the tenant of the process instance
+   * @param metadata the request awaiting the result
+   */
   void setAwaitResultRequestMetadata(
-      long processInstanceKey, AwaitProcessInstanceResultMetadata metadata);
+      long processInstanceKey, String tenantId, AwaitProcessInstanceResultMetadata metadata);
 
   /**
    * Increments the number that counts how often the given sequence flow has been taken.
@@ -105,11 +114,13 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * when the instance does not yet exist in the state.
    *
    * @param processInstanceKey the key of the process instance to which the runtime instructions
-   *     belong
+   *     belong, a root process instance
+   * @param tenantId the tenant of the process instance
    * @param runtimeInstructions the list of runtime instructions to add
    */
   void addRuntimeInstructions(
       long processInstanceKey,
+      String tenantId,
       List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions);
 
   /**
