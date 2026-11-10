@@ -2219,7 +2219,8 @@
 				"pageSelectLabel": "Page of {{count}} pages",
 				"pageSelectLabel_one": "Page of {{count}} page",
 				"pageSelectLabel_other": "Page of {{count}} pages",
-				"pageText": "page {{page}}"
+				"pageText": "page {{page}}",
+				"pageOf": "Page {{page}} of {{count}}"
 			},
 			"batchOperation": {
 				"title": "Batch Operations",
