@@ -238,11 +238,10 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## CI Workflows
 
-|                       Workflow                       |                       Trigger                        |                                                       Link                                                       |
-|------------------------------------------------------|------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `c8-orchestration-cluster-e2e-tests-nightly.yml`     | Nightly (all versions)                               | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
-| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml` | Automatic PR check (non-fork PRs touching the suite) | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml`   | Manual                                               | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+|                      Workflow                      |        Trigger         |                                                       Link                                                       |
+|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
 
@@ -273,7 +272,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Your changed tests must pass the automatic PR check before requesting review.** A PR that changes the suite runs the **whole** suite automatically (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), but the required gate (**C8 E2E Test Suite / Tests**) blocks the merge only on the specs you added or modified. Untouched-test failures do not block it; they surface as a separate **non-blocking** check, **C8 E2E Test Suite / Full Result**, which goes red on any suite failure — so a shared page object, fixture or config change that breaks tests you did not edit shows there. Review those failures and confirm they are pre-existing, not caused by your change. For a fork PR, where the automatic check does not run, run the on-demand workflow instead and document its results.
+- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
@@ -764,7 +763,7 @@ Agent (no single spec to reproduce against).
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
-- **Allowed tools, inside the Live Docker Verify loop only:** additionally `nvm`, `npm ci`, `npx playwright install`, `docker`/`docker compose` (via `scripts/start-verify-env.sh`/`stop-verify-env.sh` only), `./mvnw` (via the same scripts, RDBMS path only), and `npx playwright test` scoped to the dispatched spec(s) — never the full suite. `kubectl` and `helm` remain forbidden everywhere; there is no cluster to reach. The automatic orchestration-cluster suite PR check (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`) runs on the opened PR and validates the specs the fix changed, regardless of the live-verify outcome — the loop above does not replace it.
+- **Allowed tools, inside the Live Docker Verify loop only:** additionally `nvm`, `npm ci`, `npx playwright install`, `docker`/`docker compose` (via `scripts/start-verify-env.sh`/`stop-verify-env.sh` only), `./mvnw` (via the same scripts, RDBMS path only), and `npx playwright test` scoped to the dispatched spec(s) — never the full suite. `kubectl` and `helm` remain forbidden everywhere; there is no cluster to reach. The on-demand workflow triggered after the PR opens remains the full-matrix regression safety net regardless of the live-verify outcome — the loop above does not replace it.
 - **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden**. A bare `{"prs":[]}` is sanctioned ONLY for the Gate B manual-intervention case (an unpinnable green→red flip on a test that is already hardened) and must carry a `manual_intervention` note; never leave `{"prs":[]}` with no note and no issue filed for any other reason.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Never fix a responsive-layout failure by pinning or widening the viewport.** `test.use({viewport: ...})` and `page.setViewportSize(...)` are not fixes for a UI that reflows, collapses a toolbar into a menu, or hides a column at the suite's default width — they force the test to stop exercising the layout most users actually see, and a per-file `test.use` silently changes every other test in that file too. Interact with whatever the narrow-width UI actually offers (open the menu, click the item by its accessible name, scroll to reveal on-screen content) or, when the same information is genuinely rendered nowhere at that width, verify it through a different always-visible surface (a different tab, filter, or list column) instead. Confirm which case you're in by reading the component source — is the element conditionally never rendered (e.g. a JSX branch that returns `null` / omits the column) or only `display:none`-hidden by CSS? Only the former genuinely has no on-screen alternative. If a live/local environment is available to you in the session (it is not part of the automated dispatch's tool set — see Forbidden tools above), confirm by inspecting the rendered app instead of guessing from source alone. If no non-viewport fix exists at all, say so explicitly in the PR body rather than defaulting to a silent viewport pin.
@@ -825,11 +824,10 @@ gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName
 - Any fixed test with `test_type: "api"` → `"has_api": true`
 - Both can be `true` when a PR covers mixed failures.
 
-These flags record the kinds of tests the PR fixed. The opened PR is validated
-by the automatic orchestration-cluster suite PR check
-(`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), which runs
-the suite and gates the merge on the specs the fix changed — no separate
-on-demand verification run is triggered.
+These flags record the kinds of tests the PR fixed. The calling workflow
+triggers one on-demand verification run for every opened PR:
+`c8-orchestration-cluster-e2e-tests-on-demand.yml` (covers both E2E and API
+tests).
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
 
