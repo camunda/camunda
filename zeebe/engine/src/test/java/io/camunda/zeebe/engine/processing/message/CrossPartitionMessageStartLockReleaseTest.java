@@ -384,11 +384,10 @@ public final class CrossPartitionMessageStartLockReleaseTest {
   }
 
   @Test
-  public void shouldDeleteHolderOriginDuringReconciliationWhenHolderBanned() {
+  public void shouldEmitPushedDuringReconciliationWhenHolderBanned() {
     // A holder that vanishes without completing — here, banned on P_B — never runs the completion
-    // push, so the push path never drops its holder-origin entry. The reconciliation poll, which
-    // releases the lock for such a gone holder, must also clean up the leftover origin entry, so a
-    // stuck cross-partition start does not leak one entry forever.
+    // push. The reconciliation poll, which releases the lock for such a gone holder, must push it
+    // from P_B instead, so the PUSHED applier can drop the leftover holder-origin entry.
     deployAndAwaitStartSubscriptions(SERVICE_PROCESS, SERVICE_MESSAGE_NAME);
     publishStart(SERVICE_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
     final long holderKey = awaitHolderActivating(SERVICE_PROCESS_ID);
@@ -409,7 +408,7 @@ public final class CrossPartitionMessageStartLockReleaseTest {
             .filter(r -> r.getKey() == holderKey)
             .getFirst();
     assertThat(Protocol.decodePartitionId(pushed.getKey()))
-        .as("the origin cleanup is applied on P_B, the holder's partition")
+        .as("the push for the gone holder is emitted on P_B, the holder's partition")
         .isEqualTo(partitionFor(BUSINESS_ID));
   }
 

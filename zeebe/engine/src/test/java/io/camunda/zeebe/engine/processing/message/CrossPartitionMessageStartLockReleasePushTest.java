@@ -156,9 +156,8 @@ public final class CrossPartitionMessageStartLockReleasePushTest {
   }
 
   @Test
-  public void shouldEmitPushedAndDeleteHolderOriginOnHolderCompletion() {
-    // given a cross-partition start: holder created (and auto-completes) on P_B, lock on P_K and a
-    // holder-origin entry on P_B
+  public void shouldEmitPushedOnHolderCompletion() {
+    // given a cross-partition start: holder created (and auto-completes) on P_B, lock on P_K
     deployAndAwaitStartSubscriptions(AUTO_PROCESS, AUTO_MESSAGE_NAME);
     publishStart(AUTO_MESSAGE_NAME, CORRELATION_KEY, BUSINESS_ID);
     final long holderKey = awaitHolderActivating(AUTO_PROCESS_ID);
