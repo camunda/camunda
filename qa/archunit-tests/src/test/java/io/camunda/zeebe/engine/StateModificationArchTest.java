@@ -86,8 +86,8 @@ public class StateModificationArchTest {
            * instead of having state methods call each other directly. This makes the state
            * transitions more explicit and easier to understand.
            */
-          "io.camunda.zeebe.engine.state.instance.DbElementInstanceState.createInstance",
-          "io.camunda.zeebe.engine.state.instance.DbElementInstanceState.removeInstance");
+          "io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl.createInstance",
+          "io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl.removeInstance");
 
   /**
    * Identifies methods that directly modify state.

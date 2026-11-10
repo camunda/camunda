@@ -16,7 +16,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbElementInstanceStore;
+import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariableMigration;
@@ -104,7 +105,7 @@ public class TemporaryVariableMigrationTest {
     private TransactionContext transactionContext;
     private LegacyDbTemporaryVariablesState legacyTemporaryVariablesState;
     private DbVariableState variableState;
-    private DbElementInstanceState elementInstanceState;
+    private ElementInstanceStateImpl elementInstanceState;
 
     @BeforeEach
     public void setUp() {
@@ -113,7 +114,9 @@ public class TemporaryVariableMigrationTest {
           new LegacyDbTemporaryVariablesState(zeebeDb, transactionContext);
       legacyTemporaryVariablesState.put(EVENT_SCOPE_KEY, VARIABLES);
       variableState = new DbVariableState(zeebeDb, transactionContext);
-      elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
+      elementInstanceState =
+          new ElementInstanceStateImpl(
+              new DbElementInstanceStore(zeebeDb, transactionContext), variableState);
     }
 
     @Test

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -68,8 +69,9 @@ final class EngineStateRoundTripsTest {
     counting = new CountingConnection(database.dataSource().getConnection());
     transactionContext = new JdbcTransactionContext(counting.proxy());
     elementInstanceState =
-        new RdbmsElementInstanceState(
-            transactionContext, database.nextPartitionId(), processingState.getVariableState());
+        new ElementInstanceStateImpl(
+            new RdbmsElementInstanceStore(transactionContext, database.nextPartitionId()),
+            processingState.getVariableState());
   }
 
   @AfterEach
