@@ -46,6 +46,7 @@ dependencies {
   implementation(project(":camunda-search-client"))
   implementation(project(":camunda-search-domain"))
   testImplementation(project(":zeebe-scheduler"))
+  testImplementation(project(":zeebe-db-writebehind"))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-logstreams"))
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
