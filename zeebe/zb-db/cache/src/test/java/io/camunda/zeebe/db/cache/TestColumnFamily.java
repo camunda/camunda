@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.db.cache;
 
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 
 /** Declared out of value order, so tests can tell sorting by value from sorting by ordinal. */
-enum TestColumnFamily implements EnumValue {
+enum TestColumnFamily implements EnumValue, ScopedColumnFamily {
   SECOND(2),
   FIRST(1);
 
@@ -23,5 +25,10 @@ enum TestColumnFamily implements EnumValue {
   @Override
   public int getValue() {
     return value;
+  }
+
+  @Override
+  public ColumnFamilyScope partitionScope() {
+    return ColumnFamilyScope.PARTITION_LOCAL;
   }
 }

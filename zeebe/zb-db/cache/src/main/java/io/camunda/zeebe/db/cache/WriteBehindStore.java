@@ -138,6 +138,22 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    */
   byte @Nullable [] get(
       final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
+    final var value = committedValue(key, reader);
+    return value == null ? null : value.clone();
+  }
+
+  /** Like {@link #get}, without copying the value. */
+  boolean exists(final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
+    return committedValue(key, reader) != null;
+  }
+
+  @Override
+  public void close() {
+    cacheManager.close();
+  }
+
+  private byte @Nullable [] committedValue(
+      final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
     failIfFailed();
 
     for (int attempt = 0; attempt < OPTIMISTIC_READ_ATTEMPTS; attempt++) {
@@ -148,7 +164,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
       final var value = lookup(key, reader);
       if (publishLock.validate(stamp)) {
-        return copy(value.bytes());
+        return value.bytes();
       }
     }
 
@@ -157,15 +173,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     final long stamp = publishLock.readLock();
     try {
       final var unflushed = dirtyIndex.get(key);
-      return unflushed != null ? copy(unflushed.bytes()) : reader.get(key);
+      return unflushed != null ? unflushed.bytes() : reader.get(key);
     } finally {
       publishLock.unlockRead(stamp);
     }
-  }
-
-  @Override
-  public void close() {
-    cacheManager.close();
   }
 
   private CachedValue lookup(
@@ -209,9 +220,5 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       throw new UnrecoverableException(
           "Expected the write-behind store to be usable, but it failed earlier", cause);
     }
-  }
-
-  private static byte @Nullable [] copy(final byte @Nullable [] bytes) {
-    return bytes == null ? null : bytes.clone();
   }
 }
