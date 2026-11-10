@@ -9,6 +9,8 @@ package io.camunda.zeebe.db.cache;
 
 import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -57,6 +59,29 @@ final class DirtyIndex {
       versions.remove(key);
       bytes.addAndGet(-size(key, current));
     }
+  }
+
+  /**
+   * Copies the unflushed versions of {@code columnFamily} between {@code from} and {@code to}. A
+   * {@code null} bound leaves that side open.
+   */
+  NavigableMap<CacheKey, CachedValue> copy(
+      final EnumValue columnFamily,
+      final @Nullable CacheKey from,
+      final boolean fromInclusive,
+      final @Nullable CacheKey to,
+      final boolean toInclusive) {
+    NavigableMap<CacheKey, CachedValue> range = columnFamilies.get(columnFamily);
+    if (range == null) {
+      return new TreeMap<>();
+    }
+    if (from != null) {
+      range = range.tailMap(from, fromInclusive);
+    }
+    if (to != null) {
+      range = range.headMap(to, toInclusive);
+    }
+    return new TreeMap<>(range);
   }
 
   boolean isEmpty() {

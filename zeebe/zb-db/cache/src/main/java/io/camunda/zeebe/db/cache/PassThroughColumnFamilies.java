@@ -40,27 +40,62 @@ final class PassThroughColumnFamilies<
 
   /** Returns the backend's value of {@code key}, or {@code null} if the backend doesn't have it. */
   byte @Nullable [] get(final CacheKey key) {
-    final var passThrough = columnFamily(key);
+    final var passThrough = columnFamily(key.columnFamily());
     passThrough.key.set(key.key());
     final var value = passThrough.columnFamily.get(passThrough.key);
     return value == null ? null : value.bytes();
   }
 
   void upsert(final CacheKey key, final byte[] value) {
-    final var passThrough = columnFamily(key);
+    final var passThrough = columnFamily(key.columnFamily());
     passThrough.key.set(key.key());
     passThrough.value.set(value);
     passThrough.columnFamily.upsert(passThrough.key, passThrough.value);
   }
 
   void deleteIfExists(final CacheKey key) {
-    final var passThrough = columnFamily(key);
+    final var passThrough = columnFamily(key.columnFamily());
     passThrough.key.set(key.key());
     passThrough.columnFamily.deleteIfExists(passThrough.key);
   }
 
-  private PassThrough columnFamily(final CacheKey key) {
-    return columnFamilies.computeIfAbsent(key.columnFamily(), this::createColumnFamily);
+  /**
+   * Scans the backend from {@code startAt}: forward within {@code prefix}, or in reverse over the
+   * whole column family. A key-only scan doesn't read values and passes {@code null} for them.
+   * Stops when {@code visitor} returns {@code false}.
+   */
+  void scan(
+      final EnumValue columnFamily,
+      final byte[] prefix,
+      final byte[] startAt,
+      final boolean reverse,
+      final boolean keysOnly,
+      final ScanVisitor visitor) {
+    final var backendColumnFamily = columnFamily(columnFamily).columnFamily;
+    final var start = new RawKey();
+    start.set(startAt);
+    if (reverse) {
+      if (keysOnly) {
+        backendColumnFamily.whileTrueReverse(start, key -> visitor.visit(key.bytes(), null));
+      } else {
+        backendColumnFamily.whileTrueReverse(
+            start, (key, value) -> visitor.visit(key.bytes(), value.bytes()));
+      }
+    } else {
+      final var prefixKey = new RawKey();
+      prefixKey.set(prefix);
+      if (keysOnly) {
+        backendColumnFamily.whileEqualPrefix(
+            prefixKey, start, key -> visitor.visit(key.bytes(), null));
+      } else {
+        backendColumnFamily.whileEqualPrefix(
+            prefixKey, start, (key, value) -> visitor.visit(key.bytes(), value.bytes()));
+      }
+    }
+  }
+
+  private PassThrough columnFamily(final EnumValue columnFamily) {
+    return columnFamilies.computeIfAbsent(columnFamily, this::createColumnFamily);
   }
 
   @SuppressWarnings("unchecked") // every CacheKey of this DB holds one of its column families
@@ -75,4 +110,10 @@ final class PassThroughColumnFamilies<
 
   private record PassThrough(
       ColumnFamily<RawKey, RawValue> columnFamily, RawKey key, RawValue value) {}
+
+  /** Receives the entries of a scan: copies the caller may keep. */
+  @FunctionalInterface
+  interface ScanVisitor {
+    boolean visit(byte[] key, byte @Nullable [] value);
+  }
 }

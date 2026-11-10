@@ -39,6 +39,23 @@ final class CachedTransaction implements ZeebeDbTransaction {
     writes.put(key, op);
   }
 
+  /**
+   * Returns this transaction's next written key after {@code from} in the scan's direction, within
+   * the column family of {@code from}, or {@code null} if there is none. It reads the live buffer,
+   * so writes made during a scan show up in it.
+   */
+  @Nullable CacheKey nextKey(final CacheKey from, final boolean inclusive, final boolean reverse) {
+    final CacheKey next;
+    if (reverse) {
+      next = inclusive ? writes.floorKey(from) : writes.lowerKey(from);
+    } else {
+      next = inclusive ? writes.ceilingKey(from) : writes.higherKey(from);
+    }
+    return next != null && next.columnFamily().getValue() == from.columnFamily().getValue()
+        ? next
+        : null;
+  }
+
   boolean isInCurrentTransaction() {
     return inCurrentTransaction;
   }

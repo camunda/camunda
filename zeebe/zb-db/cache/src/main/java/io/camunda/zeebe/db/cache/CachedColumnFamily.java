@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.cache;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ContainsForeignKeys;
@@ -15,16 +17,19 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.cache.PassThroughColumnFamilies.ScanVisitor;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Arrays;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -32,6 +37,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * A column family of the write-behind cache. Writes go to the context's transaction; reads see that
  * transaction's own writes first, then the store.
+ *
+ * <p>Scans merge the backend's scan with the same view; see {@link #scan}.
  *
  * <p>The consistency checks run here, against that same view: the backend lags behind the cache, so
  * its own checks would give wrong answers. A failed check throws the same {@link
@@ -42,6 +49,8 @@ final class CachedColumnFamily<
         KeyType extends DbKey,
         ValueType extends DbValue>
     implements ColumnFamily<KeyType, ValueType> {
+
+  private static final byte[] NO_PREFIX = new byte[0];
 
   private final WriteBehindStore<ColumnFamilyNames> store;
   private final CachedTransactionContext<ColumnFamilyNames> context;
@@ -124,35 +133,56 @@ final class CachedColumnFamily<
 
   @Override
   public void forEach(final Consumer<ValueType> consumer) {
-    throw iterationNotSupported();
+    scanEntries(
+        NO_PREFIX,
+        null,
+        false,
+        (key, value) -> {
+          consumer.accept(value);
+          return true;
+        });
   }
 
   @Override
   public void forEach(final BiConsumer<KeyType, ValueType> consumer) {
-    throw iterationNotSupported();
+    scanEntries(
+        NO_PREFIX,
+        null,
+        false,
+        (key, value) -> {
+          consumer.accept(key, value);
+          return true;
+        });
   }
 
   @Override
   public void whileTrue(
       final @Nullable KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(NO_PREFIX, startAtKey, false, visitor);
   }
 
   @Override
   public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(NO_PREFIX, null, false, visitor);
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final BiConsumer<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(
+        serialize(keyPrefix),
+        null,
+        false,
+        (key, value) -> {
+          visitor.accept(key, value);
+          return true;
+        });
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(serialize(keyPrefix), null, false, visitor);
   }
 
   @Override
@@ -160,49 +190,63 @@ final class CachedColumnFamily<
       final DbKey keyPrefix,
       final @Nullable KeyType startAtKey,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(serialize(keyPrefix), startAtKey, false, visitor);
   }
 
   @Override
   public void whileTrueReverse(
       final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
-    throw iterationNotSupported();
+    scanEntries(NO_PREFIX, startAtKey, true, visitor);
   }
 
   @Override
   public void forEachKey(final Consumer<KeyType> consumer) {
-    throw iterationNotSupported();
+    scanKeys(
+        NO_PREFIX,
+        null,
+        false,
+        key -> {
+          consumer.accept(key);
+          return true;
+        });
   }
 
   @Override
   public void whileTrue(final KeyVisitor<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(NO_PREFIX, null, false, visitor);
   }
 
   @Override
   public void whileTrue(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(NO_PREFIX, startAtKey, false, visitor);
   }
 
   @Override
   public void whileEqualPrefix(final DbKey keyPrefix, final Consumer<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(
+        serialize(keyPrefix),
+        null,
+        false,
+        key -> {
+          visitor.accept(key);
+          return true;
+        });
   }
 
   @Override
   public void whileEqualPrefix(final DbKey keyPrefix, final KeyVisitor<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(serialize(keyPrefix), null, false, visitor);
   }
 
   @Override
   public void whileEqualPrefix(
       final DbKey keyPrefix, final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(serialize(keyPrefix), startAtKey, false, visitor);
   }
 
   @Override
   public void whileTrueReverse(final KeyType startAtKey, final KeyVisitor<KeyType> visitor) {
-    throw iterationNotSupported();
+    scanKeys(NO_PREFIX, startAtKey, true, visitor);
   }
 
   @Override
@@ -232,17 +276,28 @@ final class CachedColumnFamily<
 
   @Override
   public boolean isEmpty() {
-    throw iterationNotSupported();
+    final var empty = new MutableBoolean(true);
+    scan(
+        columnFamily,
+        NO_PREFIX,
+        null,
+        false,
+        true,
+        (key, value) -> {
+          empty.set(false);
+          return false;
+        });
+    return empty.get();
   }
 
   @Override
   public long count() {
-    throw iterationNotSupported();
+    return countKeys(NO_PREFIX);
   }
 
   @Override
   public long countEqualPrefix(final DbKey prefix) {
-    throw iterationNotSupported();
+    return countKeys(serialize(prefix));
   }
 
   @Override
@@ -317,10 +372,26 @@ final class CachedColumnFamily<
                   + foreignKey.columnFamily());
         }
       }
-      case Prefix ->
-          throw new UnsupportedOperationException(
-              "Expected to scan %s for the prefix foreign key %s, but the write-behind cache doesn't support scans yet"
-                  .formatted(foreignKey.columnFamily(), foreignKey.inner()));
+      case Prefix -> {
+        final var found = new MutableBoolean();
+        scan(
+            (EnumValue) foreignKey.columnFamily(),
+            serialize(foreignKey),
+            null,
+            false,
+            true,
+            (key, value) -> {
+              found.set(true);
+              return false;
+            });
+        if (!found.get()) {
+          throw new ZeebeDbInconsistentException(
+              "Foreign key "
+                  + foreignKey.inner()
+                  + " does not exist as prefix in "
+                  + foreignKey.columnFamily());
+        }
+      }
       default ->
           throw new IllegalStateException("Unknown foreign key match type: " + foreignKey.match());
     }
@@ -338,10 +409,128 @@ final class CachedColumnFamily<
     return bytes;
   }
 
-  private UnsupportedOperationException iterationNotSupported() {
-    return new UnsupportedOperationException(
-        "Expected to iterate over "
-            + columnFamily
-            + ", but the write-behind cache doesn't support scans yet");
+  private void scanEntries(
+      final byte[] prefix,
+      final @Nullable DbKey startAt,
+      final boolean reverse,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    scan(
+        columnFamily,
+        prefix,
+        startAt == null ? null : serialize(startAt),
+        reverse,
+        false,
+        (key, value) -> {
+          final var valueBytes = requireNonNull(value, "a scan with values passes them");
+          keyInstance.wrap(new UnsafeBuffer(key), 0, key.length);
+          valueInstance.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+          return visitor.visit(keyInstance, valueInstance);
+        });
+  }
+
+  private void scanKeys(
+      final byte[] prefix,
+      final @Nullable DbKey startAt,
+      final boolean reverse,
+      final KeyVisitor<KeyType> visitor) {
+    scan(
+        columnFamily,
+        prefix,
+        startAt == null ? null : serialize(startAt),
+        reverse,
+        true,
+        (key, value) -> {
+          keyInstance.wrap(new UnsafeBuffer(key), 0, key.length);
+          return visitor.visit(keyInstance);
+        });
+  }
+
+  private long countKeys(final byte[] prefix) {
+    final var count = new MutableLong();
+    scan(
+        columnFamily,
+        prefix,
+        null,
+        false,
+        true,
+        (key, value) -> {
+          count.increment();
+          return true;
+        });
+    return count.get();
+  }
+
+  /**
+   * Scans {@code scanned} forward within {@code prefix}, or in reverse over the whole column
+   * family, from {@code startAt} or else from the prefix. It merges the backend's scan with this
+   * transaction's writes and with the unflushed versions, copied at the instant the backend fixes
+   * its view: the copy holds off publication and cleanup until the backend's first callback.
+   */
+  private void scan(
+      final EnumValue scanned,
+      final byte[] prefix,
+      final byte @Nullable [] startAt,
+      final boolean reverse,
+      final boolean keysOnly,
+      final ScanVisitor visitor) {
+    inOpenTransaction(
+        transaction -> {
+          final var start = startAt != null ? startAt : prefix;
+          // RocksDB stops at the first key after the start that isn't in the prefix. If the start
+          // lies outside the prefix, only a scan of the whole column family shows that key.
+          final var backendPrefix = OverlayMerge.startsWith(start, prefix) ? prefix : NO_PREFIX;
+          final var overlay =
+              reverse
+                  ? store.beginScan(scanned, null, false, new CacheKey(scanned, start), true)
+                  : store.beginScan(
+                      scanned,
+                      new CacheKey(scanned, start),
+                      true,
+                      prefixEnd(scanned, backendPrefix),
+                      false);
+          try {
+            final var merge =
+                new OverlayMerge(
+                    scanned,
+                    prefix,
+                    start,
+                    reverse,
+                    keysOnly,
+                    transaction,
+                    overlay.unflushed(),
+                    visitor);
+            context
+                .reader()
+                .scan(
+                    scanned,
+                    backendPrefix,
+                    start,
+                    reverse,
+                    keysOnly,
+                    (key, value) -> {
+                      overlay.release();
+                      return merge.onBackendEntry(key, value);
+                    });
+            overlay.release();
+            merge.finish();
+          } finally {
+            overlay.release();
+          }
+        });
+  }
+
+  /**
+   * Returns the first key after all keys that start with {@code prefix}, or {@code null} if no key
+   * of the column family comes after them.
+   */
+  private static @Nullable CacheKey prefixEnd(final EnumValue columnFamily, final byte[] prefix) {
+    for (int i = prefix.length - 1; i >= 0; i--) {
+      if (prefix[i] != (byte) 0xFF) {
+        final var end = Arrays.copyOf(prefix, i + 1);
+        end[i]++;
+        return new CacheKey(columnFamily, end);
+      }
+    }
+    return null;
   }
 }

@@ -13,6 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.DbKey;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
+import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -30,8 +33,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A backend that keeps each column family in a sorted map. It supports only what the pass-through
- * column families use: {@code get}, {@code upsert} and {@code deleteIfExists}, and transactions
- * that run their operations directly. It is safe to use from several threads.
+ * column families use: {@code get}, {@code upsert}, {@code deleteIfExists}, forward prefix scans
+ * and reverse scans, and transactions that run their operations directly. It is safe to use from
+ * several threads.
  *
  * <p>Transactions can be paused, which stalls the cache's writer: it is the only caller of {@code
  * runInTransaction}, since reads go straight to the column families.
@@ -51,7 +55,11 @@ final class InMemoryBackend {
     when(db.createContext()).thenAnswer(invocation -> createContext());
     when(db.createColumnFamily(any(), any(), any(), any()))
         .thenAnswer(
-            invocation -> createColumnFamily(invocation.getArgument(0), invocation.getArgument(3)));
+            invocation ->
+                createColumnFamily(
+                    invocation.getArgument(0),
+                    invocation.getArgument(2),
+                    invocation.getArgument(3)));
   }
 
   ZeebeDb<TestColumnFamily> db() {
@@ -111,7 +119,7 @@ final class InMemoryBackend {
 
   @SuppressWarnings("unchecked")
   private ColumnFamily<RawKey, RawValue> createColumnFamily(
-      final TestColumnFamily columnFamily, final RawValue valueInstance) {
+      final TestColumnFamily columnFamily, final RawKey keyInstance, final RawValue valueInstance) {
     final ColumnFamily<RawKey, RawValue> passThrough = mock(ColumnFamily.class);
     when(passThrough.get(any()))
         .thenAnswer(
@@ -140,6 +148,89 @@ final class InMemoryBackend {
             })
         .when(passThrough)
         .deleteIfExists(any());
+    doAnswer(
+            invocation -> {
+              final KeyValuePairVisitor<RawKey, RawValue> visitor = invocation.getArgument(2);
+              final DbKey prefix = invocation.getArgument(0);
+              scan(
+                  rows(columnFamily)
+                      .tailMap(invocation.<RawKey>getArgument(1).bytes(), true)
+                      .entrySet(),
+                  ((RawKey) prefix).bytes(),
+                  keyInstance,
+                  valueInstance,
+                  visitor);
+              return null;
+            })
+        .when(passThrough)
+        .whileEqualPrefix(any(DbKey.class), any(RawKey.class), any(KeyValuePairVisitor.class));
+    doAnswer(
+            invocation -> {
+              final KeyVisitor<RawKey> visitor = invocation.getArgument(2);
+              final DbKey prefix = invocation.getArgument(0);
+              scan(
+                  rows(columnFamily)
+                      .tailMap(invocation.<RawKey>getArgument(1).bytes(), true)
+                      .entrySet(),
+                  ((RawKey) prefix).bytes(),
+                  keyInstance,
+                  valueInstance,
+                  (key, value) -> visitor.visit(key));
+              return null;
+            })
+        .when(passThrough)
+        .whileEqualPrefix(any(DbKey.class), any(RawKey.class), any(KeyVisitor.class));
+    doAnswer(
+            invocation -> {
+              final KeyValuePairVisitor<RawKey, RawValue> visitor = invocation.getArgument(1);
+              scan(
+                  rows(columnFamily)
+                      .headMap(invocation.<RawKey>getArgument(0).bytes(), true)
+                      .descendingMap()
+                      .entrySet(),
+                  new byte[0],
+                  keyInstance,
+                  valueInstance,
+                  visitor);
+              return null;
+            })
+        .when(passThrough)
+        .whileTrueReverse(any(RawKey.class), any(KeyValuePairVisitor.class));
+    doAnswer(
+            invocation -> {
+              final KeyVisitor<RawKey> visitor = invocation.getArgument(1);
+              scan(
+                  rows(columnFamily)
+                      .headMap(invocation.<RawKey>getArgument(0).bytes(), true)
+                      .descendingMap()
+                      .entrySet(),
+                  new byte[0],
+                  keyInstance,
+                  valueInstance,
+                  (key, value) -> visitor.visit(key));
+              return null;
+            })
+        .when(passThrough)
+        .whileTrueReverse(any(RawKey.class), any(KeyVisitor.class));
     return passThrough;
+  }
+
+  private static void scan(
+      final Iterable<Map.Entry<byte[], byte[]>> entries,
+      final byte[] prefix,
+      final RawKey keyInstance,
+      final RawValue valueInstance,
+      final KeyValuePairVisitor<RawKey, RawValue> visitor) {
+    for (final var entry : entries) {
+      final var key = entry.getKey();
+      if (!OverlayMerge.startsWith(key, prefix)) {
+        return;
+      }
+      keyInstance.wrap(new UnsafeBuffer(key), 0, key.length);
+      valueInstance.wrap(new UnsafeBuffer(entry.getValue()), 0, entry.getValue().length);
+      if (!visitor.visit(keyInstance, valueInstance)) {
+        return;
+      }
+    }
   }
 }

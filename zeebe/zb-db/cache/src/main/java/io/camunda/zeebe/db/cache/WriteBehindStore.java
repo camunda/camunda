@@ -13,6 +13,7 @@ import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -160,6 +161,32 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     return committedValue(key, reader) != null;
   }
 
+  /**
+   * Copies the unflushed versions of a key range for a scan, under {@code publishLock}'s read side.
+   * The returned overlay keeps holding it, so nothing is published or cleaned up until the backend
+   * has fixed its view of the same range. Release it at the backend's first callback, or when the
+   * backend scan returns without one.
+   *
+   * <p>Every unflushed version is then in the copy, and every version cleaned up before it is in
+   * the backend's view, so the two together show the committed state at one instant.
+   */
+  ScanOverlay beginScan(
+      final EnumValue columnFamily,
+      final @Nullable CacheKey from,
+      final boolean fromInclusive,
+      final @Nullable CacheKey to,
+      final boolean toInclusive) {
+    failIfFailed();
+    final long stamp = publishLock.readLock();
+    try {
+      return new ScanOverlay(
+          dirtyIndex.copy(columnFamily, from, fromInclusive, to, toInclusive), stamp);
+    } catch (final RuntimeException e) {
+      publishLock.unlockRead(stamp);
+      throw e;
+    }
+  }
+
   @Override
   public void close() {
     cacheManager.close();
@@ -232,6 +259,30 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     if (cause != null) {
       throw new UnrecoverableException(
           "Expected the write-behind store to be usable, but it failed earlier", cause);
+    }
+  }
+
+  /** The unflushed versions a scan merges in, and the read lock it holds until released. */
+  final class ScanOverlay {
+
+    private final NavigableMap<CacheKey, CachedValue> unflushed;
+    private long stamp;
+
+    private ScanOverlay(final NavigableMap<CacheKey, CachedValue> unflushed, final long stamp) {
+      this.unflushed = unflushed;
+      this.stamp = stamp;
+    }
+
+    NavigableMap<CacheKey, CachedValue> unflushed() {
+      return unflushed;
+    }
+
+    /** Lets publication and cleanup go on; does nothing if already released. */
+    void release() {
+      if (stamp != 0) {
+        publishLock.unlockRead(stamp);
+        stamp = 0;
+      }
     }
   }
 }

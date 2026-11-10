@@ -77,10 +77,7 @@ final class WriteBehindZeebeDb<
 
   @Override
   public boolean isEmpty(final ColumnFamilyNames column, final TransactionContext context) {
-    throw new UnsupportedOperationException(
-        "Expected to check whether "
-            + column
-            + " is empty, but the write-behind cache doesn't support scans yet");
+    return createColumnFamily(column, context, new RawKey(), new RawValue()).isEmpty();
   }
 
   @Override

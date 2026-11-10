@@ -188,25 +188,29 @@ final class CachedColumnFamilyTest {
   }
 
   @Test
-  void shouldRejectScansUntilTheyAreSupported() {
+  void shouldCheckPrefixForeignKeysAgainstCommitsTheBackendDoesNotHaveYet() {
     // given
-    final var columnFamily = longColumnFamily(context, FIRST, CHECKS_ON);
     final var referencing =
         new CachedColumnFamily<>(
             store,
-            context,
+            otherContext,
             SECOND,
             new DbForeignKey<>(new DbLong(), FIRST, MatchType.Prefix),
             new DbLong(),
             CHECKS_ON);
     final var prefixKey = new DbForeignKey<>(dbLong(1), FIRST, MatchType.Prefix);
 
-    // then
-    assertThatThrownBy(() -> columnFamily.forEach((key, value) -> {}))
-        .isInstanceOf(UnsupportedOperationException.class);
-    assertThatThrownBy(columnFamily::isEmpty).isInstanceOf(UnsupportedOperationException.class);
+    // when - then
     assertThatThrownBy(() -> referencing.insert(prefixKey, dbLong(10)))
-        .isInstanceOf(UnsupportedOperationException.class);
+        .isInstanceOf(ZeebeDbInconsistentException.class)
+        .hasMessageContaining("does not exist as prefix");
+
+    // when
+    longColumnFamily(context, FIRST, CHECKS_ON).insert(dbLong(1), dbLong(10));
+    referencing.insert(prefixKey, dbLong(10));
+
+    // then
+    assertThat(referencing.exists(prefixKey)).isTrue();
   }
 
   private CachedColumnFamily<TestColumnFamily, DbLong, DbLong> longColumnFamily(
