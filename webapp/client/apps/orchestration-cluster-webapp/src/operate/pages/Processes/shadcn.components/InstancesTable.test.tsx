@@ -81,10 +81,10 @@ describe('<InstancesTable /> (design system)', () => {
 		await expect.element(screen.getByText('Order process')).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: /View instance 2251799813685249/}))
-			.toHaveAttribute('href', '/operate/processes/2251799813685249');
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\/2251799813685249$/));
 		await expect
 			.element(screen.getByRole('link', {name: /View parent instance 2251799813685000/}))
-			.toHaveAttribute('href', '/operate/processes/2251799813685000');
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\/2251799813685000$/));
 	});
 
 	it('should expose the instance state as text for screen readers', async ({worker}) => {

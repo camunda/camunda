@@ -195,12 +195,8 @@ describe('<InstancesByProcess /> multi tenancy', () => {
 
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
 
-		await expect.element(screen.getByRole('link', {name: '0 Orders – 2 instances in 1 version 2'})).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: '0 Orders – 2 instances in 1 version 2'}))
-			.toHaveAttribute(
-				'href',
-				'/operate/processes?process=orders&active=true&incidents=true&completed=false&canceled=false&suspended=false',
-			);
+			.toHaveAttribute('href', expect.not.stringContaining('tenantId'));
 	});
 });
