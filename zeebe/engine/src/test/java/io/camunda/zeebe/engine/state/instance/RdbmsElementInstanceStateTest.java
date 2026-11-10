@@ -11,22 +11,38 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLTransientException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import liquibase.Scope;
+import liquibase.analytics.configuration.AnalyticsArgs;
+import liquibase.command.CommandScope;
+import liquibase.command.core.UpdateCommandStep;
+import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
@@ -52,14 +68,12 @@ import org.testcontainers.utility.DockerImageName;
  * <p>By default the database is a throwaway Testcontainers PostgreSQL. To inspect the rows after a
  * run, point the test at your own database with {@code
  * -Dzeebe.engine.rdbms.jdbcUrl=jdbc:postgresql:
- * //localhost:5432/postgres?user=postgres&password=zeebe}: the schema is created if missing and
- * committed rows are kept. Add {@code -Dzeebe.engine.rdbms.dumpLevel=debug} to log each test's rows
- * with the decoded payload (see {@link ElementInstanceTableDump}).
+ * //localhost:5432/postgres?user=postgres&password=zeebe}: the Liquibase changelog adds what is
+ * missing and committed rows are kept. Add {@code -Dzeebe.engine.rdbms.dumpLevel=debug} to log each
+ * test's rows with the decoded payload (see {@link ElementInstanceTableDump}).
  */
 @ExtendWith(ProcessingStateExtension.class)
 final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateContractTest {
-
-  private static final String SCHEMA_RESOURCE = "/db/engine-state/postgres/element_instance.sql";
 
   /**
    * Records every row-level write that reaches the table, so tests can tell how many statements a
@@ -92,14 +106,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
         FOR EACH ROW EXECUTE FUNCTION log_element_instance_write();
       """;
 
-  private static final List<String> STATE_TABLES =
-      List.of(
-          "element_instance",
-          "taken_sequence_flow",
-          "await_process_instance_result",
-          "runtime_instructions",
-          "process_instance_by_business_id");
-
   private static final String EXTERNAL_JDBC_URL_PROPERTY = "zeebe.engine.rdbms.jdbcUrl";
 
   private static final AtomicInteger PARTITION_IDS = new AtomicInteger();
@@ -108,11 +114,12 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   private MutableProcessingState processingState;
   private Connection connection;
+  private ConnectionSpy connectionSpy;
   private JdbcTransactionContext transactionContext;
   private int partitionId;
 
   @BeforeAll
-  static void startDatabase() throws SQLException, IOException {
+  static void startDatabase() throws Exception {
     dataSource = new PGSimpleDataSource();
     final var externalJdbcUrl = System.getProperty(EXTERNAL_JDBC_URL_PROPERTY);
     if (externalJdbcUrl != null && !externalJdbcUrl.isBlank()) {
@@ -125,12 +132,10 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       dataSource.setPassword(postgres.getPassword());
     }
 
-    try (final var schema =
-            RdbmsElementInstanceStateTest.class.getResourceAsStream(SCHEMA_RESOURCE);
-        final var setupConnection = dataSource.getConnection();
+    // only applies the changesets an external database that keeps its tables doesn't have yet
+    applySchema();
+    try (final var setupConnection = dataSource.getConnection();
         final var statement = setupConnection.createStatement()) {
-      // idempotent, so an external database that keeps its tables between runs gets new ones
-      statement.execute(readSchema(schema));
       if (!tableExists(setupConnection, "element_instance_write_log")) {
         statement.execute(WRITE_LOG_DDL);
       }
@@ -153,10 +158,11 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   @Override
   protected MutableElementInstanceState createElementInstanceState() {
     try {
-      connection = dataSource.getConnection();
+      connectionSpy = new ConnectionSpy(dataSource.getConnection());
     } catch (final SQLException e) {
       throw new IllegalStateException(e);
     }
+    connection = connectionSpy.proxy();
     transactionContext = new JdbcTransactionContext(connection);
     partitionId = PARTITION_IDS.incrementAndGet();
     return new RdbmsElementInstanceState(
@@ -170,7 +176,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Override
   protected void assertNoStateLeft() {
-    for (final String table : STATE_TABLES) {
+    for (final String table : RdbmsEngineStateSchema.TABLES) {
       assertThat(countRows(table)).describedAs("Expected table %s to be empty", table).isZero();
     }
     // the variable scopes live in RocksDB
@@ -438,7 +444,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Test
-  void shouldUndoDirectWritesOnRollback() throws Exception {
+  void shouldDiscardWritesOfAllTablesOnRollback() throws Exception {
     // given
     final var transaction = transactionContext.getCurrentTransaction();
     elementInstanceState.incrementNumberOfTakenSequenceFlows(
@@ -455,6 +461,80 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             elementInstanceState.hasActiveProcessInstanceWithBusinessId(
                 "order-1", "process", "", key -> false))
         .isFalse();
+  }
+
+  @Test
+  void shouldWriteAllTablesExactlyOnceWhenCommitIsRetried() throws Exception {
+    // given
+    final var transaction = transactionContext.getCurrentTransaction();
+    elementInstanceState.newInstance(
+        100,
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.setAwaitResultRequestMetadata(
+        100, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+    elementInstanceState.addRuntimeInstructions(
+        100,
+        List.of(
+            new ProcessInstanceCreationRuntimeInstruction()
+                .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                .setAfterElementId("task")));
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
+    connectionSpy.failNextCommit = true;
+
+    // when - the first commit fails after all statements were sent, and is rolled back
+    assertThatThrownBy(transaction::commit).isInstanceOf(ZeebeDbException.class);
+    assertThat(committedRowCounts())
+        .containsOnlyKeys(RdbmsEngineStateSchema.TABLES)
+        .allSatisfy((table, count) -> assertThat(count).describedAs(table).isZero());
+    transaction.commit();
+
+    // then
+    assertThat(committedRowCounts())
+        .allSatisfy((table, count) -> assertThat(count).describedAs(table).isOne());
+    assertThat(committedTimesTaken(100)).isEqualTo(2);
+  }
+
+  @Test
+  void shouldLeaveEndingTheTransactionToTheTransactionContext() throws Exception {
+    // given
+    final var transaction = transactionContext.getCurrentTransaction();
+    connectionSpy.transactionCalls.clear();
+
+    // when - every kind of read and write
+    final var processInstance =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var parent =
+        elementInstanceState.newInstance(
+            100, processInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        parent, 101, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    elementInstanceState.getChildren(100);
+    elementInstanceState.forEachChildKey(100, key -> true);
+    elementInstanceState.getActiveProcessInstanceCount();
+    elementInstanceState.hasActiveProcessInstances(
+        processInstance.getProcessDefinitionKey(), List.of());
+    elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+        processInstance.getProcessDefinitionKey());
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        100, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.getNumberOfTakenSequenceFlows(100);
+    elementInstanceState.getAwaitResultRequestMetadata(100);
+    elementInstanceState.getRuntimeInstructionsForElementId(100, "task");
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
+    elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        "order-1", "process", "", key -> false);
+    assertThat(connectionSpy.transactionCalls).isEmpty();
+    transaction.commit();
+
+    // then
+    assertThat(connectionSpy.transactionCalls).containsExactly("commit");
+    assertThat(connection.isClosed()).isFalse();
+    assertThat(committedRows()).extracting(Row::key).containsExactly(100L, 101L);
   }
 
   private List<Row> committedRows() {
@@ -532,11 +612,92 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     }
   }
 
-  private static String readSchema(final InputStream schema) throws IOException {
-    if (schema == null) {
-      throw new IllegalStateException("Missing schema resource " + SCHEMA_RESOURCE);
+  /** Applies the engine state changelog, tracked in the same tables as in the broker. */
+  private static void applySchema() throws Exception {
+    // closing the database closes the connection
+    try (final var database =
+        DatabaseFactory.getInstance()
+            .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()))) {
+      database.setDatabaseChangeLogTableName(RdbmsEngineStateSchema.DATABASE_CHANGELOG_TABLE);
+      database.setDatabaseChangeLogLockTableName(
+          RdbmsEngineStateSchema.DATABASE_CHANGELOG_LOCK_TABLE);
+      Scope.child(
+          Map.of(
+              Scope.Attr.resourceAccessor.name(),
+              new ClassLoaderResourceAccessor(),
+              AnalyticsArgs.ENABLED.getKey(),
+              false),
+          () ->
+              new CommandScope(UpdateCommandStep.COMMAND_NAME)
+                  .addArgumentValue(DbUrlConnectionArgumentsCommandStep.DATABASE_ARG, database)
+                  .addArgumentValue(
+                      UpdateCommandStep.CHANGELOG_FILE_ARG, RdbmsEngineStateSchema.CHANGELOG)
+                  .execute());
     }
-    return new String(schema.readAllBytes(), StandardCharsets.UTF_8);
+  }
+
+  private Map<String, Long> committedRowCounts() {
+    final Map<String, Long> counts = new LinkedHashMap<>();
+    for (final String table : RdbmsEngineStateSchema.TABLES) {
+      counts.put(table, countRows(table));
+    }
+    return counts;
+  }
+
+  private int committedTimesTaken(final long flowScopeKey) throws SQLException {
+    try (final var freshConnection = dataSource.getConnection();
+        final var statement =
+            freshConnection.prepareStatement(
+                "SELECT SUM(times_taken) FROM taken_sequence_flow"
+                    + " WHERE partition_id = ? AND flow_scope_key = ?")) {
+      statement.setInt(1, partitionId);
+      statement.setLong(2, flowScopeKey);
+      try (final ResultSet resultSet = statement.executeQuery()) {
+        resultSet.next();
+        return resultSet.getInt(1);
+      }
+    }
+  }
+
+  /**
+   * Records how the connection's transaction is ended, and can fail the next commit like a
+   * serialization failure would.
+   */
+  private static final class ConnectionSpy implements InvocationHandler {
+
+    private static final Set<String> TRANSACTION_METHODS =
+        Set.of("commit", "rollback", "close", "setAutoCommit");
+
+    private final Connection delegate;
+    private final List<String> transactionCalls = new ArrayList<>();
+    private boolean failNextCommit;
+
+    private ConnectionSpy(final Connection delegate) {
+      this.delegate = delegate;
+    }
+
+    private Connection proxy() {
+      return (Connection)
+          Proxy.newProxyInstance(
+              Connection.class.getClassLoader(), new Class<?>[] {Connection.class}, this);
+    }
+
+    @Override
+    public Object invoke(final Object proxy, final Method method, final Object[] args)
+        throws Throwable {
+      if (TRANSACTION_METHODS.contains(method.getName())) {
+        transactionCalls.add(method.getName());
+      }
+      if (failNextCommit && method.getName().equals("commit")) {
+        failNextCommit = false;
+        throw new SQLTransientException("injected serialization failure", "40001");
+      }
+      try {
+        return method.invoke(delegate, args);
+      } catch (final InvocationTargetException e) {
+        throw e.getCause();
+      }
+    }
   }
 
   private record Row(
