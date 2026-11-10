@@ -87,13 +87,7 @@ public class CustomMcpModelPropertiesTest {
             "VariableFilter",
             VariableFilter.class,
             Set.of(
-                "isTruncated",
-                "name",
-                "processInstanceKey",
-                "protectionMode",
-                "scopeKey",
-                "value",
-                "variableKey")),
+                "isTruncated", "name", "processInstanceKey", "scopeKey", "value", "variableKey")),
         Arguments.argumentSet(
             "SearchQueryPageRequest",
             SearchQueryPageRequest.class,
