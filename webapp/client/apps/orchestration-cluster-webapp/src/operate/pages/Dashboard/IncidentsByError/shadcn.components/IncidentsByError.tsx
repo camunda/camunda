@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {Suspense, useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {Skeleton} from '@camunda/design-system';
@@ -53,7 +54,7 @@ const IncidentsByError: React.FC = () => {
 				id: String(item.errorHashCode),
 				content: (
 					<Link
-						to="/operate/processes"
+						to={`${OPERATE_BASE}/processes` as const}
 						search={{
 							errorMessage: item.errorMessage,
 							incidentErrorHashCode: item.errorHashCode,

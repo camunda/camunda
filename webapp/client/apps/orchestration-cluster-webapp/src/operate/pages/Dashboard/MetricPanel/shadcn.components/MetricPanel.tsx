@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
 import {typographyVariants} from '@camunda/design-system';
@@ -29,7 +30,7 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 		<>
 			<Link
 				data-testid="total-instances-link"
-				to="/operate/processes"
+				to={`${OPERATE_BASE}/processes` as const}
 				search={runningOrAllInstancesFilter(count.total)}
 				className={cn(typographyVariants({variant: 'heading-lg'}), 'mb-4 inline-block text-foreground hover:underline')}
 			>
@@ -39,7 +40,7 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 			<div className="flex w-full justify-between">
 				<Link
 					data-testid="incident-instances-link"
-					to="/operate/processes"
+					to={`${OPERATE_BASE}/processes` as const}
 					search={{active: false, incidents: true, completed: false, canceled: false, suspended: false}}
 					className={cn(typographyVariants({variant: 'heading-md'}), 'font-normal text-foreground hover:underline')}
 				>
@@ -47,7 +48,7 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 				</Link>
 				<Link
 					data-testid="active-instances-link"
-					to="/operate/processes"
+					to={`${OPERATE_BASE}/processes` as const}
 					search={{active: true, incidents: false, completed: false, canceled: false, suspended: false}}
 					className={cn(typographyVariants({variant: 'heading-md'}), 'font-normal text-foreground hover:underline')}
 				>

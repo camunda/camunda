@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {Suspense, useMemo} from 'react';
 import {useInfiniteQuery, useQuery} from '@tanstack/react-query';
 import {Skeleton} from '@camunda/design-system';
@@ -79,7 +80,7 @@ const InstancesByProcess: React.FC = () => {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
 					content: (
 						<Link
-							to="/operate/processes"
+							to={`${OPERATE_BASE}/processes` as const}
 							search={{process: item.processDefinitionId, tenantId, ...runningOrAllInstancesFilter(total)}}
 							title={isDraining ? `${labelText} – ${drainingDescription}` : labelText}
 							className="block py-1 no-underline"

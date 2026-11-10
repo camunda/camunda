@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {OperationItem} from '#/operate/shared/OperationItem/shadcn.components/OperationItem';
 import {CancelConfirmationModal} from './CancelConfirmationModal';
 
-const getRootInstancePath = (rootInstanceId: string) => `/operate/processes/${rootInstanceId}`;
+const getRootInstancePath = (rootInstanceId: string) => `${OPERATE_BASE}/processes/${rootInstanceId}`;
 
 type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];

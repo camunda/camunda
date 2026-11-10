@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {Badge, linkVariants} from '@camunda/design-system';
 import {CopiableContent} from '#/operate/shared/PanelHeader/shadcn.components/CopiableContent';
 import {Link} from '@tanstack/react-router';
@@ -91,7 +92,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 			hideOverflowingContent: false,
 			content: (
 				<Link
-					to="/operate-preview/processes"
+					to={`${OPERATE_BASE}/processes` as const}
 					search={{
 						process: processDefinitionId,
 						version: processDefinitionVersion,
@@ -146,7 +147,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({operations}) => {
 			hideOverflowingContent: false,
 			content: hasCalledProcessInstances(diagram?.businessObjects) ? (
 				<Link
-					to="/operate-preview/processes"
+					to={`${OPERATE_BASE}/processes` as const}
 					search={{
 						parentProcessInstanceKey: processInstanceKey,
 						active: true,

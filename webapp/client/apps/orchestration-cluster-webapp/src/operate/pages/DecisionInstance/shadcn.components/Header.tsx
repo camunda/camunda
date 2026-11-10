@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {createLink} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
@@ -77,7 +78,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd, isDr
 				hideOverflowingContent: false,
 				content: (
 					<DecisionInstanceLink
-						to="/operate-preview/decisions"
+						to={`${OPERATE_BASE}/decisions` as const}
 						search={{
 							decisionDefinitionId: decisionInstance.decisionDefinitionId,
 							decisionDefinitionVersion: decisionInstance.decisionDefinitionVersion,
@@ -112,7 +113,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd, isDr
 				content:
 					processInstanceKey !== null ? (
 						<DecisionInstanceLink
-							to="/operate/processes/$processInstanceId"
+							to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 							params={{processInstanceId: processInstanceKey}}
 							title={processInstanceLinkTitle}
 							aria-label={processInstanceLinkTitle}

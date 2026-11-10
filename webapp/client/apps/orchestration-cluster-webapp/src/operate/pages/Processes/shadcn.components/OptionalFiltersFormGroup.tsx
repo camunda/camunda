@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo} from 'react';
 import {useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -65,7 +66,7 @@ const FilterGroup: React.FC<FilterGroupProps> = ({id, label, removeButton, child
 const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onVisibleFilterChange, onFilterClear}) => {
 	const {t} = useTranslation();
 	const hasActiveVariableFilters = useVariableConditions().length > 0;
-	const isOnVariablesRoute = Boolean(useMatchRoute()({to: '/operate-preview/processes/filters/variables'}));
+	const isOnVariablesRoute = Boolean(useMatchRoute()({to: `${OPERATE_BASE}/processes/filters/variables` as const}));
 
 	const definitions = useMemo<OptionalFilterDefinition<OptionalFilter>[]>(() => {
 		const dateRangeDefinition = (

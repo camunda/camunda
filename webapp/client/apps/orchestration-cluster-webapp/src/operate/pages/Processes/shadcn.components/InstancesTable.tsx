@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect, useMemo} from 'react';
 import {createLink, useNavigate} from '@tanstack/react-router';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
@@ -133,7 +134,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
+	const [operation, send] = useMachine(processBulkOperationMachine, {
+		input: {queryClient, navigate, batchOperationRoute: `${OPERATE_BASE}/batch-operations/$batchOperationKey`},
+	});
 	const isSubmitting = operation.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;
@@ -231,7 +234,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				label: t('operate.processes.instancesTable.processInstanceKey'),
 				render: (row: ProcessInstance) => (
 					<InstanceLink
-						to="/operate/processes/$processInstanceId"
+						to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 						params={{processInstanceId: row.processInstanceKey}}
 						title={t('operate.processes.instancesTable.viewInstance', {key: row.processInstanceKey})}
 						aria-label={t('operate.processes.instancesTable.viewInstance', {key: row.processInstanceKey})}
@@ -296,7 +299,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				render: (row: ProcessInstance) =>
 					row.parentProcessInstanceKey ? (
 						<InstanceLink
-							to="/operate/processes/$processInstanceId"
+							to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 							params={{processInstanceId: row.parentProcessInstanceKey}}
 							title={t('operate.processes.instancesTable.viewParentInstance', {key: row.parentProcessInstanceKey})}
 							aria-label={t('operate.processes.instancesTable.viewParentInstance', {
