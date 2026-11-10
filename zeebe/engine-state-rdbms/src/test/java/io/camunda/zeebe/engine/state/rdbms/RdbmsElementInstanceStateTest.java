@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.rdbms;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,6 +15,10 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
+import io.camunda.zeebe.engine.state.instance.AbstractElementInstanceStateContractTest;
+import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.ElementInstanceStateTest;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;

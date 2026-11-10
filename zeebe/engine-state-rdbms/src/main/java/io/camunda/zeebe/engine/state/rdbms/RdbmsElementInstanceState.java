@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.instance;
+package io.camunda.zeebe.engine.state.rdbms;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
@@ -13,16 +13,20 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.jdbc.EntityCache;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.BusinessIdKey;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.BusinessIdRow;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.ElementInstanceRow;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.PayloadRow;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.TakenSequenceFlowKey;
-import io.camunda.zeebe.engine.state.instance.EngineStateMapper.TakenSequenceFlowRow;
-import io.camunda.zeebe.engine.state.instance.MyBatisEntityPersister.Loader;
-import io.camunda.zeebe.engine.state.instance.MyBatisEntityPersister.Writer;
+import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructions;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.BusinessIdKey;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.BusinessIdRow;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ElementInstanceRow;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PayloadRow;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowKey;
+import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowRow;
+import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Loader;
+import io.camunda.zeebe.engine.state.rdbms.MyBatisEntityPersister.Writer;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;

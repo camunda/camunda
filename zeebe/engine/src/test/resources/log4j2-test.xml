@@ -10,8 +10,6 @@
   <Loggers>
     <Logger name="io.camunda.zeebe" level="debug"/>
     <Logger name="io.atomix" level="info"/>
-    <Logger name="io.camunda.zeebe.engine.state.instance.ElementInstanceTableDump"
-      level="${sys:zeebe.engine.rdbms.dumpLevel:-info}"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

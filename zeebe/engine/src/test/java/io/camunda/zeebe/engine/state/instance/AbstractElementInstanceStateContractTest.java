@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
  * Behaviour every {@link MutableElementInstanceState} implementation must share. Each backend runs
  * these tests by extending this class.
  */
-abstract class AbstractElementInstanceStateContractTest {
+public abstract class AbstractElementInstanceStateContractTest {
 
   protected static final String TENANT_ID = "tenant";
   private static final long PROCESS_KEY = 123;

@@ -39,7 +39,7 @@ public final class ElementInstanceStateTest extends AbstractElementInstanceState
     assertNoColumnFamilyLeft(processingState);
   }
 
-  static void assertNoColumnFamilyLeft(final MutableProcessingState processingState) {
+  public static void assertNoColumnFamilyLeft(final MutableProcessingState processingState) {
     final var nonEmptyColumns =
         Arrays.stream(ZbColumnFamilies.values())
             .filter(not(ZbColumnFamilies.KEY::equals))

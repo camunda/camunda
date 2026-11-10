@@ -417,6 +417,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-engine-state-rdbms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-core</artifactId>
         <version>${project.version}</version>
       </dependency>

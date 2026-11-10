@@ -15,12 +15,12 @@
   Statements without a databaseId are portable; a statement or fragment with the databaseId of
   the connected database (see EngineStateMyBatis) replaces the portable one.
 -->
-<mapper namespace="io.camunda.zeebe.engine.state.instance.EngineStateMapper">
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper">
 
   <!-- CAM_RU_ELEMENT_INSTANCE -->
 
   <resultMap id="elementInstanceRow"
-    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$ElementInstanceRow">
+    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ElementInstanceRow">
     <constructor>
       <idArg column="element_instance_key" javaType="_long"/>
       <arg column="parent_key" javaType="_long"/>
@@ -134,7 +134,7 @@
   <!-- CAM_RU_TAKEN_SEQUENCE_FLOW -->
 
   <resultMap id="takenSequenceFlowRow"
-    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$TakenSequenceFlowRow">
+    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$TakenSequenceFlowRow">
     <constructor>
       <idArg column="flow_scope_key" javaType="_long"/>
       <idArg column="gateway_element_id" javaType="String"/>
@@ -195,7 +195,7 @@
   <!-- CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT and CAM_RU_RUNTIME_INSTRUCTIONS -->
 
   <resultMap id="payloadRow"
-    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$PayloadRow">
+    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$PayloadRow">
     <constructor>
       <idArg column="process_instance_key" javaType="_long"/>
       <arg column="root_process_instance_key" javaType="_long"/>
@@ -255,7 +255,7 @@
   <!-- CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID -->
 
   <resultMap id="businessIdRow"
-    type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$BusinessIdRow">
+    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$BusinessIdRow">
     <constructor>
       <idArg column="business_id" javaType="String"/>
       <idArg column="process_definition_id" javaType="String"/>
