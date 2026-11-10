@@ -117,6 +117,10 @@ final class PhysicalTenantOverridePolicyValidation {
               // #56648: DiskSpaceUsageMonitorActor is a single broker-wide actor built before any
               // per-tenant BrokerCfg exists, so every disk.* knob is silently ignored per tenant
               "data.primary-storage.disk",
+              // the engine state connection pool is a single broker-wide pool built from the root
+              // config before any per-tenant config exists, so a per-tenant override is ignored
+              "data.primary-storage.type",
+              "data.primary-storage.rdbms",
               // #56648: RocksDbResources sizes one shared block-cache/write-buffer pool from the
               // root config by design ("adding physical tenants does not multiply RocksDB memory
               // usage") — a per-tenant override of these is silently ignored; sibling

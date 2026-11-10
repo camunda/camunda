@@ -251,25 +251,4 @@ final class ExperimentalCfgTest {
     // then
     assertThat(experimental.isContinuousBackups()).isTrue();
   }
-
-  @Test
-  void shouldUseSmallEngineStatePoolByDefault() {
-    // when
-    final var cfg = TestConfigReader.readConfig("empty", environment);
-
-    // then
-    assertThat(cfg.getExperimental().getRdbmsEngineState().getPoolSize()).isEqualTo(4);
-  }
-
-  @Test
-  void shouldSetEngineStatePoolSizeFromEnv() {
-    // given
-    environment.put("zeebe.broker.experimental.rdbmsEngineState.poolSize", "8");
-
-    // when
-    final var cfg = TestConfigReader.readConfig("empty", environment);
-
-    // then
-    assertThat(cfg.getExperimental().getRdbmsEngineState().getPoolSize()).isEqualTo(8);
-  }
 }

@@ -36,7 +36,7 @@ public class RdbmsEngineStateConfiguration {
       final MeterRegistry meterRegistry,
       final ResourceLoader resourceLoader)
       throws LiquibaseException {
-    final var cfg = configuration.config().getExperimental().getRdbmsEngineState();
+    final var cfg = configuration.config().getData().getRdbmsEngineState();
     if (!cfg.isEnabled()) {
       return new RdbmsEngineStateDataSource(null);
     }

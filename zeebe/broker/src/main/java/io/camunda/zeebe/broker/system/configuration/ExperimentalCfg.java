@@ -44,7 +44,6 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
-  private RdbmsEngineStateCfg rdbmsEngineState = new RdbmsEngineStateCfg();
 
   public boolean isContinuousBackups() {
     return continuousBackups;
@@ -164,14 +163,6 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
-  public RdbmsEngineStateCfg getRdbmsEngineState() {
-    return rdbmsEngineState;
-  }
-
-  public void setRdbmsEngineState(final RdbmsEngineStateCfg rdbmsEngineState) {
-    this.rdbmsEngineState = rdbmsEngineState;
-  }
-
   public boolean isReceiveOnLegacySubject() {
     return receiveOnLegacySubject;
   }
@@ -203,8 +194,6 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + features
         + ", receiveOnLegacySubject="
         + receiveOnLegacySubject
-        + ", rdbmsEngineState="
-        + rdbmsEngineState
         + '}';
   }
 }

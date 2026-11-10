@@ -595,6 +595,18 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The size of data log segment files.
         log-segment-size: "128MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE
       
+      rdbms: # Type: io.camunda.configuration.data.primarystorage.PrimaryStorageRdbms  
+        # Password for the database that holds the engine state.
+        password: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_PASSWORD
+        # Maximum number of connections in the engine state connection pool. Each partition holds one
+        # connection while its stream processor runs, so configure at least one connection per partition on
+        # this broker.
+        pool-size: 4 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_POOLSIZE
+        # JDBC URL of the database that holds the engine state, e.g. jdbc:postgresql://host/db.
+        url: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_URL
+        # Username for the database that holds the engine state.
+        username: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_USERNAME
+      
       rocks-db: # Type: io.camunda.configuration.data.primarystorage.RocksDb  
         # Configures which, if any, RocksDB column family access metrics are exposed. Valid values are none
         # (the default), and fine which exposes many metrics covering the read, write, delete and iteration
@@ -672,6 +684,11 @@ camunda: # Type: io.camunda.configuration.Camunda
       # be copied to data directory while taking snapshot. This may impact disk i/o or performance during
       # snapshotting.
       runtime-directory: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RUNTIMEDIRECTORY
+      # Determines where the engine state is stored. 'rocksdb' keeps all engine state in RocksDB. 'rdbms' is
+      # an experimental PoC that keeps element instances in the relational database configured under
+      # 'rdbms', and the rest in RocksDB; it only supports a single broker with replication factor 1, and
+      # deletes the partition's rows on every start.
+      type: "rocksdb" # Type: io.camunda.configuration.data.PrimaryStorage$PrimaryStorageType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_TYPE
       # The number of versioned data directories to retain when garbage collection runs. This only applies
       # when using the S3-based node ID provider with versioned directories enabled. Older versions beyond
       # this count will be deleted after the current version is validated.

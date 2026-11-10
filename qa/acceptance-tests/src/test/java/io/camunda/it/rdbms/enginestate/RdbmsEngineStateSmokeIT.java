@@ -10,6 +10,7 @@ package io.camunda.it.rdbms.enginestate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -48,12 +49,14 @@ final class RdbmsEngineStateSmokeIT {
         new TestStandaloneBroker()
             .withUnauthenticatedAccess()
             .withSecondaryStorageType(SecondaryStorageType.none)
-            .withProperty("zeebe.broker.experimental.rdbmsEngineState.enabled", true)
-            .withProperty("zeebe.broker.experimental.rdbmsEngineState.url", postgres.getJdbcUrl())
-            .withProperty(
-                "zeebe.broker.experimental.rdbmsEngineState.username", postgres.getUsername())
-            .withProperty(
-                "zeebe.broker.experimental.rdbmsEngineState.password", postgres.getPassword());
+            .withDataConfig(
+                data -> {
+                  final var primaryStorage = data.getPrimaryStorage();
+                  primaryStorage.setType(PrimaryStorageType.rdbms);
+                  primaryStorage.getRdbms().setUrl(postgres.getJdbcUrl());
+                  primaryStorage.getRdbms().setUsername(postgres.getUsername());
+                  primaryStorage.getRdbms().setPassword(postgres.getPassword());
+                });
     broker.start().awaitCompleteTopology();
     client = broker.newClientBuilder().preferRestOverGrpc(false).build();
   }

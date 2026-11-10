@@ -28,6 +28,7 @@ import io.camunda.configuration.cluster.partitioning.FixedPartition;
 import io.camunda.configuration.data.Export;
 import io.camunda.configuration.data.Exporter;
 import io.camunda.configuration.data.PrimaryStorage;
+import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
@@ -883,6 +884,7 @@ public class BrokerBasedPropertiesOverride {
 
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);
+    populateFromPrimaryStorageRdbms(override, primaryStorage);
 
     populateBackupScheduler(override, primaryStorage.getBackup(), camunda);
   }
@@ -916,6 +918,26 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setIoRateBytesPerSecond(unifiedRocksDb.getIoRateBytesPerSecond());
     brokerRocksDb.setDisableWal(unifiedRocksDb.isWalDisabled());
     brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
+  }
+
+  private static void populateFromPrimaryStorageRdbms(
+      final BrokerBasedProperties override, final PrimaryStorage primaryStorage) {
+    final var unifiedRdbms = primaryStorage.getRdbms();
+    final var enabled = primaryStorage.getType() == PrimaryStorageType.rdbms;
+    Preconditions.test(
+        enabled && (unifiedRdbms.getUrl() == null || unifiedRdbms.getUrl().isBlank()),
+        "camunda.data.primary-storage.rdbms.url must be set when the primary storage type is"
+            + " 'rdbms'");
+    Preconditions.test(
+        unifiedRdbms.getPoolSize() <= 0,
+        "camunda.data.primary-storage.rdbms.pool-size must be positive");
+
+    final var brokerRdbms = override.getData().getRdbmsEngineState();
+    brokerRdbms.setEnabled(enabled);
+    brokerRdbms.setUrl(unifiedRdbms.getUrl());
+    brokerRdbms.setUsername(unifiedRdbms.getUsername());
+    brokerRdbms.setPassword(unifiedRdbms.getPassword());
+    brokerRdbms.setPoolSize(unifiedRdbms.getPoolSize());
   }
 
   private static void populateFromS3(final BrokerBasedProperties override, final Camunda camunda) {

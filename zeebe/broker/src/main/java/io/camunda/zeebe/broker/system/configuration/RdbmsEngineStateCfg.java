@@ -11,6 +11,9 @@ package io.camunda.zeebe.broker.system.configuration;
  * Experimental PoC: keeps element instances in a relational database (PostgreSQL) instead of
  * RocksDB. Only supports a single broker with replication factor 1, and wipes the partition's rows
  * on every start.
+ *
+ * <p>Populated from the unified configuration ({@code camunda.data.primary-storage.type: rdbms} and
+ * {@code camunda.data.primary-storage.rdbms.*}).
  */
 public final class RdbmsEngineStateCfg {
   private static final int DEFAULT_POOL_SIZE = 4;
