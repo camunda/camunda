@@ -39,6 +39,9 @@ import org.slf4j.LoggerFactory;
  * ElementInstanceWalkSuspendProcessor} walk, which visits every element instance in its own batch
  * even when there is no job to suspend. Uses the same shallow, wide (root -&gt; N parallel
  * receive-task instances) shape as {@link SuspendJobsBenchmark}.
+ *
+ * <p>Named {@code SuspendWideNonJobTreeBenchmark} in earlier versions; compare results across that
+ * rename.
  */
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -48,12 +51,12 @@ import org.slf4j.LoggerFactory;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
-public class SuspendWideNonJobTreeBenchmark {
+public class SuspendMessageSubscriptionsBenchmark {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(SuspendWideNonJobTreeBenchmark.class.getName());
+      LoggerFactory.getLogger(SuspendMessageSubscriptionsBenchmark.class.getName());
 
-  @Param({"100", "500", "1000", "2000"})
+  @Param({"100", "500", "1000", "2000", "5000", "10000"})
   private int subscriptionCount;
 
   private TestContext testContext;

@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
  * Benchmarks the cost of the suspend tree-walk itself, isolated from per-element suspend cost. The
  * walk ({@code ElementInstanceState#getChildren}) is BFS and visits every element instance,
  * including subprocess wrappers with nothing to suspend, one RocksDB prefix-scan per level. A wide
- * tree ({@link SuspendJobsBenchmark}, {@link SuspendWideNonJobTreeBenchmark}) needs only one such
- * call to reach all N leaves; N levels of nesting need N sequential ones. The innermost subprocess
- * holds a receive task so the chain stays active long enough to suspend.
+ * tree ({@link SuspendJobsBenchmark}, {@link SuspendMessageSubscriptionsBenchmark}) needs only one
+ * such call to reach all N leaves; N levels of nesting need N sequential ones. The innermost
+ * subprocess holds a receive task so the chain stays active long enough to suspend.
  */
 @Warmup(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 20, time = 1, timeUnit = TimeUnit.SECONDS)

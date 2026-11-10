@@ -49,7 +49,7 @@ public class SuspendJobsBenchmark {
 
   private static final Logger LOG = LoggerFactory.getLogger(SuspendJobsBenchmark.class.getName());
 
-  @Param({"100", "1000", "2000", "4000"})
+  @Param({"100", "1000", "2000", "4000", "10000", "20000"})
   private int activeElementCount;
 
   private TestContext testContext;
