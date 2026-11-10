@@ -43,6 +43,7 @@ public final class PolicyUpdateApplyChunkProcessor
 
   private final PolicyUpdateState policyUpdateState;
   private final PolicyUpdateCommandMapper commandMapper;
+  private final PolicyUpdateValidator validator;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -51,10 +52,12 @@ public final class PolicyUpdateApplyChunkProcessor
   public PolicyUpdateApplyChunkProcessor(
       final PolicyUpdateState policyUpdateState,
       final PolicyUpdateCommandMapper commandMapper,
+      final PolicyUpdateValidator validator,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
     this.commandMapper = commandMapper;
+    this.validator = validator;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -92,6 +95,17 @@ public final class PolicyUpdateApplyChunkProcessor
                   String.join("; ", commands.getLeft())));
       return;
     }
+
+    final var errors = validator.validate(chunk.get(), commands.get());
+    if (!errors.isEmpty()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          "Expected policy update '%s' of policy '%s' to be applicable, but: %s"
+              .formatted(update.getUpdateId(), update.getPolicyId(), String.join("; ", errors)));
+      return;
+    }
+
     commands
         .get()
         .forEach(
