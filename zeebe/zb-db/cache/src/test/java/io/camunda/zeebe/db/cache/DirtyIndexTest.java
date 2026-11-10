@@ -42,7 +42,7 @@ final class DirtyIndexTest {
     dirtyIndex.put(key, new CachedValue(null, 2));
 
     // then
-    assertThat(dirtyIndex.get(key)).isEqualTo(new CachedValue(null, 2));
+    assertThat(dirtyIndex.get(key)).usingRecursiveComparison().isEqualTo(new CachedValue(null, 2));
     assertThat(dirtyIndex.bytes()).isEqualTo(1);
   }
 
