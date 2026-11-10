@@ -14,24 +14,27 @@ import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Loads the rows of one engine state table of one partition through an {@link EngineStateMapper}
- * statement, on the context's current connection. Writes are sent by {@link EngineStateFlush}.
+ * Loads the rows of one engine state table of one partition through a mapper statement, on the
+ * context's current connection. Writes are sent by {@link EngineStateFlush}.
  */
-final class MyBatisEntityPersister<K, E> implements EntityPersister<K, E> {
+final class MyBatisEntityPersister<M, K, E> implements EntityPersister<K, E> {
 
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
   private final Function<E, K> keyOf;
-  private final Loader<K, E> loader;
+  private final Class<M> mapperType;
+  private final Loader<M, K, E> loader;
 
   MyBatisEntityPersister(
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final Function<E, K> keyOf,
-      final Loader<K, E> loader) {
+      final Class<M> mapperType,
+      final Loader<M, K, E> loader) {
     this.transactionContext = transactionContext;
     this.partitionId = partitionId;
     this.keyOf = keyOf;
+    this.mapperType = mapperType;
     this.loader = loader;
   }
 
@@ -43,16 +46,18 @@ final class MyBatisEntityPersister<K, E> implements EntityPersister<K, E> {
   @Override
   public @Nullable E load(final K key) throws SQLException {
     return EngineStateMyBatis.read(
-        transactionContext.connection(), mapper -> loader.load(mapper, partitionId, key));
+        transactionContext.connection(),
+        mapperType,
+        mapper -> loader.load(mapper, partitionId, key));
   }
 
   @FunctionalInterface
-  interface Loader<K, E> {
-    @Nullable E load(EngineStateMapper mapper, int partitionId, K key);
+  interface Loader<M, K, E> {
+    @Nullable E load(M mapper, int partitionId, K key);
   }
 
   @FunctionalInterface
-  interface Writer<T> {
-    void write(EngineStateMapper mapper, int partitionId, T value);
+  interface Writer<M, T> {
+    void write(M mapper, int partitionId, T value);
   }
 }

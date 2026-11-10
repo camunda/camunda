@@ -35,19 +35,21 @@ final class EngineStateRdbms {
   }
 
   /** A cache of a table, whose staged rows are written on commit. */
-  <K, E> EntityCache<K, E> cache(
+  <M, K, E> EntityCache<K, E> cache(
       final String entityName,
       final Function<E, K> keyOf,
-      final Loader<K, E> loader,
-      final Writer<E> inserter,
-      final Writer<E> updater,
-      final Writer<K> deleter) {
+      final Class<M> mapperType,
+      final Loader<M, K, E> loader,
+      final Writer<M, E> inserter,
+      final Writer<M, E> updater,
+      final Writer<M, K> deleter) {
     final var cache =
         new EntityCache<>(
             entityName,
             transactionContext,
-            new MyBatisEntityPersister<>(transactionContext, partitionId, keyOf, loader));
-    flush.add(cache, partitionId, inserter, updater, deleter);
+            new MyBatisEntityPersister<>(
+                transactionContext, partitionId, keyOf, mapperType, loader));
+    flush.add(cache, partitionId, mapperType, inserter, updater, deleter);
     return cache;
   }
 
@@ -55,9 +57,9 @@ final class EngineStateRdbms {
    * Runs a query on the committed rows, for reads that bypass the caches: counts, existence checks
    * and the database part of queries that the caller merges with a cache's staged rows.
    */
-  <T> T read(final EngineStateMyBatis.MapperCall<T> call) {
+  <M, T> T read(final Class<M> mapperType, final EngineStateMyBatis.MapperCall<M, T> call) {
     return Objects.requireNonNull(
         transactionContext.call(
-            () -> EngineStateMyBatis.read(transactionContext.connection(), call)));
+            () -> EngineStateMyBatis.read(transactionContext.connection(), mapperType, call)));
   }
 }

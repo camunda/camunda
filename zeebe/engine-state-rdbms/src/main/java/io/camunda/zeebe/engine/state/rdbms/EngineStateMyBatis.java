@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,7 +30,7 @@ import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Runs the {@link EngineStateMapper} statements on the connection of a {@link
+ * Runs the statements of the engine state mappers on the connection of a {@link
  * JdbcTransactionContext}, without Spring.
  *
  * <p>The context owns the connection and its transaction. Sessions are therefore only opened on a
@@ -42,7 +43,9 @@ import org.jspecify.annotations.Nullable;
  */
 final class EngineStateMyBatis {
 
-  private static final String MAPPER_RESOURCE = "db/mybatis/engine-state/EngineStateMapper.xml";
+  private static final List<Class<?>> MAPPERS =
+      List.of(
+          ElementInstanceMapper.class, ProcessDefinitionMapper.class, PartitionStateMapper.class);
 
   /**
    * Database product name prefixes to the {@code databaseId} of vendor specific statements, like
@@ -57,9 +60,11 @@ final class EngineStateMyBatis {
   private EngineStateMyBatis() {}
 
   /** Runs the given reads in a session on the given connection. */
-  static <T> T read(final Connection connection, final MapperCall<T> call) throws SQLException {
+  static <M, T> T read(
+      final Connection connection, final Class<M> mapperType, final MapperCall<M, T> call)
+      throws SQLException {
     try (final var session = openSession(connection, ExecutorType.SIMPLE)) {
-      return call.apply(session.getMapper(EngineStateMapper.class));
+      return call.apply(session.getMapper(mapperType));
     } catch (final PersistenceException e) {
       throw unwrap(e);
     }
@@ -106,20 +111,22 @@ final class EngineStateMyBatis {
     configuration.setLocalCacheScope(LocalCacheScope.STATEMENT);
     configuration.setCacheEnabled(false);
 
-    try (final var mapperXml =
-        EngineStateMyBatis.class.getClassLoader().getResourceAsStream(MAPPER_RESOURCE)) {
-      if (mapperXml == null) {
-        throw new IllegalStateException("Missing MyBatis mapper resource " + MAPPER_RESOURCE);
+    for (final var mapper : MAPPERS) {
+      final var resource = "db/mybatis/engine-state/" + mapper.getSimpleName() + ".xml";
+      try (final var mapperXml =
+          EngineStateMyBatis.class.getClassLoader().getResourceAsStream(resource)) {
+        if (mapperXml == null) {
+          throw new IllegalStateException("Missing MyBatis mapper resource " + resource);
+        }
+        new XMLMapperBuilder(mapperXml, configuration, resource, configuration.getSqlFragments())
+            .parse();
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
       }
-      new XMLMapperBuilder(
-              mapperXml, configuration, MAPPER_RESOURCE, configuration.getSqlFragments())
-          .parse();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-    if (!configuration.hasMapper(EngineStateMapper.class)) {
-      // binding the namespace by class name fails if MyBatis' class loader can't see the engine
-      configuration.addMapper(EngineStateMapper.class);
+      if (!configuration.hasMapper(mapper)) {
+        // binding the namespace by class name fails if MyBatis' class loader can't see the engine
+        configuration.addMapper(mapper);
+      }
     }
     return new SqlSessionFactoryBuilder().build(configuration);
   }
@@ -133,7 +140,7 @@ final class EngineStateMyBatis {
   }
 
   @FunctionalInterface
-  interface MapperCall<T> {
-    T apply(EngineStateMapper mapper);
+  interface MapperCall<M, T> {
+    T apply(M mapper);
   }
 }
