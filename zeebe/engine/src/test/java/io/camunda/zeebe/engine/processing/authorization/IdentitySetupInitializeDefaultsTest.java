@@ -404,6 +404,11 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.REVEAL),
             auth ->
                 Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROBE)
+                    .hasResourceId(WILDCARD.getResourceId())
+                    .hasOnlyPermissionTypes(PermissionType.ANSWER),
+            auth ->
+                Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.RESOURCE)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
