@@ -184,6 +184,14 @@ public interface MailboxStore {
    */
   Optional<PartitionLeader> findLeader(int partitionId);
 
+  /**
+   * Returns the recorded leaders of all partitions, one record per partition, with the same meaning
+   * as {@link #findLeader(int)}. A gateway reads them all with one call to keep a copy.
+   *
+   * @return the leaders, in any order
+   */
+  List<PartitionLeader> findLeaders();
+
   // ---- Cleanup ----
 
   /**

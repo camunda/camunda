@@ -207,6 +207,11 @@ public final class InMemoryMailboxStore implements MailboxStore {
   }
 
   @Override
+  public synchronized List<PartitionLeader> findLeaders() {
+    return List.copyOf(leaders.values());
+  }
+
+  @Override
   public synchronized CleanupResult deleteExpired(
       final Duration inboxTtl, final Duration outboxTtl) {
     final var now = clock.instant();

@@ -554,6 +554,30 @@ public abstract class MailboxStoreContractTest {
     assertThat(store.findLeader(partition)).isPresent();
   }
 
+  @Test
+  void shouldFindTheLeadersOfAllPartitions() {
+    // given
+    final var other = partition == Integer.MAX_VALUE ? partition - 1 : partition + 1;
+    final var first = new PartitionLeader(partition, "node-1", "eu", 3);
+    final var second = new PartitionLeader(other, "node-2", "us", 5);
+    store.putLeader(first);
+    store.putLeader(second);
+
+    // then - a shared store may hold leaders of other tests, so the two are looked for
+    assertThat(store.findLeaders()).contains(first, second);
+  }
+
+  @Test
+  void shouldNotFindTheLeaderThatWasRemoved() {
+    // given
+    final var leader = new PartitionLeader(partition, "node-1", "eu", 3);
+    store.putLeader(leader);
+    store.removeLeader(partition, "node-1", 3);
+
+    // then
+    assertThat(store.findLeaders()).doesNotContain(leader);
+  }
+
   // ---- Cleanup ----
 
   @Test
