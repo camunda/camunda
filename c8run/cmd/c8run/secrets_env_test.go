@@ -73,6 +73,26 @@ func TestEnvModeListWarnsAboutAnUnknownPhysicalTenant(t *testing.T) {
 	assert.Contains(t, errorOutput.String(), `physical tenant "nope"`)
 }
 
+func TestEnvModeListForAPhysicalTenantNeedsNoLocalSecretsDirectory(t *testing.T) {
+	// given
+	t.Setenv(localsecrets.ModeEnv, "env")
+	t.Setenv(localsecrets.EnvPrefixEnv, "C8_")
+	t.Setenv(pt.FileEnv, filepath.Join(t.TempDir(), pt.FileName))
+	require.NoError(t, pt.NewStore(os.Getenv(pt.FileEnv)).Add([]pt.Tenant{{ID: "tenanta"}}, nil))
+	for _, unresolvable := range []string{localsecrets.DirectoryEnv, "HOME", "XDG_DATA_HOME", "LOCALAPPDATA"} {
+		t.Setenv(unresolvable, "")
+	}
+	t.Setenv("C8_TENANTA_HR_KEY", "hr")
+	command, output, _ := testSecretsCommand("", false)
+
+	// when
+	err := command.run(t.TempDir(), []string{"--physical-tenant", "tenanta", "list"})
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "HR_KEY\n", output.String())
+}
+
 func TestEnvironmentSecretNamesFollowTheEnvStoresRules(t *testing.T) {
 	env := []string{
 		"PATH=/bin",

@@ -155,6 +155,15 @@ func extractTenantArgument(args []string) ([]string, string, error) {
 
 // runForTenant runs a secrets operation against one physical tenant's own secret directory.
 func (c *secretsCommand) runForTenant(baseDir, tenant string, args []string) error {
+	quiet := *c
+	quiet.tenantScoped = tenant
+	// Env mode never touches the local directory: resolving it can fail without a home directory,
+	// and setting C8RUN_SECRETS_DIR would show up in env listings for a prefix such as C8RUN_SECRETS_.
+	if mode, err := localsecrets.Mode(); err != nil {
+		return err
+	} else if mode == localsecrets.EnvMode {
+		return quiet.run(baseDir, args)
+	}
 	directory, err := localsecrets.TenantDirectory(baseDir, tenant)
 	if err != nil {
 		return err
@@ -170,8 +179,6 @@ func (c *secretsCommand) runForTenant(baseDir, tenant string, args []string) err
 			_ = os.Unsetenv(localsecrets.DirectoryEnv)
 		}
 	}()
-	quiet := *c
-	quiet.tenantScoped = tenant
 	return quiet.run(baseDir, args)
 }
 
