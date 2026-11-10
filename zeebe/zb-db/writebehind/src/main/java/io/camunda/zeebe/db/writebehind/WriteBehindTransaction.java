@@ -7,67 +7,72 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbIterator;
+import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionOperation;
-import io.camunda.zeebe.db.ZeebeTransaction;
-import java.util.Arrays;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Transaction of one context. Buffers its writes on the heap and hands them to the store on commit.
+ * Transaction of one context. Buffers its writes as private copies of the values and hands them to
+ * the store on commit.
  *
  * <p>The buffer is a skip list rather than a tree map because iteration over it must tolerate
  * writes from the visitor (delete while iterating).
  */
-final class WriteBehindTransaction implements ZeebeTransaction {
+final class WriteBehindTransaction implements ZeebeDbTransaction {
 
-  /** Marks a delete in the buffer. Compared by identity, so an empty value is not a delete. */
-  static final byte[] DELETED = new byte[0];
+  private static final Version DELETED = new Version(null, 0);
 
   private final WriteBehindStore store;
-  private final ConcurrentSkipListMap<RawKey, byte[]> writes = new ConcurrentSkipListMap<>();
+  private final ConcurrentSkipListMap<RawKey, Version> writes = new ConcurrentSkipListMap<>();
   private boolean inCurrentTransaction;
 
   WriteBehindTransaction(final WriteBehindStore store) {
     this.store = store;
   }
 
-  @Override
-  public void put(
-      final byte[] key, final int keyLength, final byte[] value, final int valueLength) {
-    writes.put(RawKey.copyOf(key, keyLength), Arrays.copyOf(value, valueLength));
+  /** Buffers a write; the transaction takes ownership of {@code value}. */
+  void put(final RawKey key, final DbValue value) {
+    writes.put(key, new Version(value, 0));
   }
 
-  @Override
-  public byte @Nullable [] get(final byte[] key, final int keyLength) {
-    final var rawKey = RawKey.copyOf(key, keyLength);
-    final var own = writes.get(rawKey);
+  void delete(final RawKey key) {
+    writes.put(key, DELETED);
+  }
+
+  /**
+   * The value that this transaction sees, or null if there is none. Shared: callers must copy it.
+   *
+   * @param prototype decides the class that a value read from the storage is decoded into
+   */
+  @Nullable DbValue get(final RawKey key, final DbValue prototype) {
+    final var own = writes.get(key);
     if (own != null) {
-      return own == DELETED ? null : own.clone();
+      return own.value();
     }
-    final var committed = store.get(rawKey);
-    return committed == null ? null : committed.clone();
+    return store.get(key, prototype);
   }
 
-  @Override
-  public void delete(final byte[] key, final int keyLength) {
-    writes.put(RawKey.copyOf(key, keyLength), DELETED);
+  boolean exists(final RawKey key) {
+    final var own = writes.get(key);
+    if (own != null) {
+      return !own.isTombstone();
+    }
+    return store.exists(key);
   }
 
-  @Override
-  public DbIterator newIterator(final byte[] prefix, final int prefixLength) {
-    return new MergingDbIterator(writes, store.openView(prefix, prefixLength));
+  /** A cursor over every key that starts with the prefix, including this transaction's writes. */
+  MergingCursor newCursor(final byte[] prefix, final int prefixLength) {
+    return new MergingCursor(writes, store.openView(prefix, prefixLength));
   }
 
-  @Override
-  public void resetTransaction() {
+  void resetTransaction() {
     writes.clear();
     inCurrentTransaction = true;
   }
 
-  @Override
-  public boolean isInCurrentTransaction() {
+  boolean isInCurrentTransaction() {
     return inCurrentTransaction;
   }
 
@@ -86,8 +91,7 @@ final class WriteBehindTransaction implements ZeebeTransaction {
     rollbackInternal();
   }
 
-  @Override
-  public void commitInternal() {
+  void commitInternal() {
     inCurrentTransaction = false;
     if (writes.isEmpty()) {
       store.ensureUsable();
@@ -95,11 +99,11 @@ final class WriteBehindTransaction implements ZeebeTransaction {
     }
 
     final var keys = new RawKey[writes.size()];
-    final byte[] @Nullable [] values = new byte[keys.length][];
+    final @Nullable DbValue[] values = new DbValue[keys.length];
     int i = 0;
     for (final var entry : writes.entrySet()) {
       keys[i] = entry.getKey();
-      values[i] = entry.getValue() == DELETED ? null : entry.getValue();
+      values[i] = entry.getValue().value();
       i++;
     }
     store.commit(keys, values);
@@ -107,8 +111,7 @@ final class WriteBehindTransaction implements ZeebeTransaction {
     writes.clear();
   }
 
-  @Override
-  public void rollbackInternal() {
+  void rollbackInternal() {
     inCurrentTransaction = false;
     writes.clear();
   }

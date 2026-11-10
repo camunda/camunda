@@ -7,27 +7,37 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
+import io.camunda.zeebe.db.DbValue;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A committed value of one key. Equality is identity on purpose: the writer removes a version from
- * the dirty index only if it is still the exact instance that it flushed.
+ * A committed value of one key, held as an object. Equality is identity on purpose: the writer
+ * removes a version from the dirty index only if it is still the exact instance that it flushed.
+ *
+ * <p>The value is a private copy that nobody changes after the commit: readers copy out of it, and
+ * the writer serializes it. Neither changes its state, so both can read it at the same time.
  */
 final class Version {
 
   private static final int ENTRY_OVERHEAD = 64;
 
-  private final byte @Nullable [] bytes;
+  /**
+   * Fixed guess of a value's size. Measuring the real size means encoding the value, which is the
+   * work this layer exists to avoid.
+   */
+  private static final int ESTIMATED_VALUE_BYTES = 256;
+
+  private final @Nullable DbValue value;
   private final long seq;
 
-  Version(final byte @Nullable [] bytes, final long seq) {
-    this.bytes = bytes;
+  Version(final @Nullable DbValue value, final long seq) {
+    this.value = value;
     this.seq = seq;
   }
 
-  /** The value bytes, or null for a delete. Shared: callers must copy before handing them out. */
-  byte @Nullable [] bytes() {
-    return bytes;
+  /** The value, or null for a delete. Shared: callers must copy it before handing it out. */
+  @Nullable DbValue value() {
+    return value;
   }
 
   /** The commit sequence of the transaction that wrote this version. */
@@ -36,11 +46,11 @@ final class Version {
   }
 
   boolean isTombstone() {
-    return bytes == null;
+    return value == null;
   }
 
-  /** Heap estimate of a key with this version, for byte budgets. */
+  /** Rough heap estimate of a key with this version, for byte budgets. */
   int weigh(final RawKey key) {
-    return ENTRY_OVERHEAD + key.bytes().length + (bytes == null ? 0 : bytes.length);
+    return ENTRY_OVERHEAD + key.bytes().length + (value == null ? 0 : ESTIMATED_VALUE_BYTES);
   }
 }

@@ -38,6 +38,11 @@ final class WriteBehindTransactionContext implements TransactionContext {
 
   @Override
   public ZeebeDbTransaction getCurrentTransaction() {
+    return currentTransaction();
+  }
+
+  /** The transaction of this context, started if none is open. */
+  WriteBehindTransaction currentTransaction() {
     if (!transaction.isInCurrentTransaction()) {
       transaction.resetTransaction();
     }

@@ -25,6 +25,7 @@ final class WriteBehindTestFactory {
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create(final WriteBehindConfiguration config) {
-    return new WriteBehindZeebeDbFactory<>(RocksDbTestFactory.create(), config);
+    return new WriteBehindZeebeDbFactory<>(
+        RocksDbTestFactory.create(), config, RocksDbTestFactory.CONSISTENCY_CHECKS);
   }
 }

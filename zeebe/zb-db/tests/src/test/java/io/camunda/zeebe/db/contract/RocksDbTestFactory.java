@@ -20,6 +20,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 /** Plain RocksDB factory with the consistency checks on, as the engine tests run it. */
 final class RocksDbTestFactory {
 
+  static final ConsistencyChecksSettings CONSISTENCY_CHECKS =
+      new ConsistencyChecksSettings(true, true);
+
   private RocksDbTestFactory() {}
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -29,7 +32,7 @@ final class RocksDbTestFactory {
     rocksDbConfiguration.setMemoryLimit(512 * 1024 * 1024);
     return new ZeebeRocksDbFactory<>(
         rocksDbConfiguration,
-        new ConsistencyChecksSettings(true, true),
+        CONSISTENCY_CHECKS,
         new AccessMetricsConfiguration(Kind.NONE),
         SimpleMeterRegistry::new);
   }

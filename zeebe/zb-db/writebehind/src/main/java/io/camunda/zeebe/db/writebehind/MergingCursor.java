@@ -8,9 +8,11 @@
 package io.camunda.zeebe.db.writebehind;
 
 import io.camunda.zeebe.db.DbIterator;
+import io.camunda.zeebe.db.DbValue;
 import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -19,29 +21,32 @@ import org.jspecify.annotations.Nullable;
  * hides the key.
  *
  * <p>The own writes are read live, so that writes made while iterating are visible as they are with
- * RocksDB's indexed write batch. The other two sources are fixed when the iterator is created.
+ * RocksDB's indexed write batch. The other two sources are fixed when the cursor is created.
+ *
+ * <p>Values from memory are copied out of their objects; only values from the storage are decoded,
+ * and only when {@link #readValue} asks for them.
  */
-final class MergingDbIterator implements DbIterator {
+final class MergingCursor implements AutoCloseable {
 
-  private final NavigableMap<RawKey, byte[]> own;
+  private final NavigableMap<RawKey, Version> own;
   private final NavigableMap<RawKey, Version> dirty;
   private final DbIterator stored;
 
   private boolean forward = true;
-  private @Nullable Entry<RawKey, byte[]> ownEntry;
+  private @Nullable Entry<RawKey, Version> ownEntry;
   private @Nullable Entry<RawKey, Version> dirtyEntry;
   private byte @Nullable [] storedKey;
   private byte @Nullable [] currentKey;
-  private byte @Nullable [] currentValue;
+  // null while the current entry comes from the storage
+  private @Nullable DbValue currentValue;
 
-  MergingDbIterator(final NavigableMap<RawKey, byte[]> own, final WriteBehindStore.View view) {
+  MergingCursor(final NavigableMap<RawKey, Version> own, final WriteBehindStore.View view) {
     this.own = own;
     dirty = view.dirty();
     stored = view.storageIterator();
   }
 
-  @Override
-  public void seek(final byte[] key) {
+  void seek(final byte[] key) {
     forward = true;
     final var target = RawKey.copyOf(key);
     ownEntry = own.ceilingEntry(target);
@@ -51,8 +56,7 @@ final class MergingDbIterator implements DbIterator {
     settle();
   }
 
-  @Override
-  public void seekForPrev(final byte[] key) {
+  void seekForPrev(final byte[] key) {
     forward = false;
     final var target = RawKey.copyOf(key);
     ownEntry = own.floorEntry(target);
@@ -62,47 +66,31 @@ final class MergingDbIterator implements DbIterator {
     settle();
   }
 
-  @Override
-  public boolean isValid() {
+  boolean isValid() {
     return currentKey != null;
   }
 
-  @Override
-  public void next() {
-    if (!forward) {
-      throw new IllegalStateException("Expected to iterate in one direction, but changed to next");
-    }
+  /** Moves on in the direction of the last seek. */
+  void advance() {
     advancePast(current());
     settle();
   }
 
-  @Override
-  public void prev() {
-    if (forward) {
-      throw new IllegalStateException("Expected to iterate in one direction, but changed to prev");
+  /** The current raw key. Shared: callers must not change it. */
+  byte[] key() {
+    return current();
+  }
+
+  /** Copies or decodes the current value into {@code target}. */
+  void readValue(final DbValue target) {
+    current();
+    final var value = currentValue;
+    if (value != null) {
+      Values.copy(value, target);
+    } else {
+      final var bytes = stored.value();
+      target.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
     }
-    advancePast(current());
-    settle();
-  }
-
-  @Override
-  public byte[] key() {
-    return current().clone();
-  }
-
-  @Override
-  public byte[] value() {
-    return currentValue().clone();
-  }
-
-  @Override
-  public int key(final byte[] buffer) {
-    return copyInto(current(), buffer);
-  }
-
-  @Override
-  public int value(final byte[] buffer) {
-    return copyInto(currentValue(), buffer);
   }
 
   @Override
@@ -120,19 +108,18 @@ final class MergingDbIterator implements DbIterator {
         return;
       }
 
-      final byte @Nullable [] value;
+      final @Nullable Version version;
       if (ownEntry != null && Arrays.equals(ownEntry.getKey().bytes(), key)) {
-        final var ownValue = ownEntry.getValue();
-        value = ownValue == WriteBehindTransaction.DELETED ? null : ownValue;
+        version = ownEntry.getValue();
       } else if (dirtyEntry != null && Arrays.equals(dirtyEntry.getKey().bytes(), key)) {
-        value = dirtyEntry.getValue().bytes();
+        version = dirtyEntry.getValue();
       } else {
-        value = stored.value();
+        version = null;
       }
 
-      if (value != null) {
+      if (version == null || !version.isTombstone()) {
         currentKey = key;
-        currentValue = value;
+        currentValue = version == null ? null : version.value();
         return;
       }
       advancePast(key);
@@ -181,21 +168,8 @@ final class MergingDbIterator implements DbIterator {
   private byte[] current() {
     final var key = currentKey;
     if (key == null) {
-      throw new IllegalStateException("Expected the iterator to be valid, but it is not");
+      throw new IllegalStateException("Expected the cursor to be valid, but it is not");
     }
     return key;
-  }
-
-  private byte[] currentValue() {
-    final var value = currentValue;
-    if (value == null) {
-      throw new IllegalStateException("Expected the iterator to be valid, but it is not");
-    }
-    return value;
-  }
-
-  private static int copyInto(final byte[] source, final byte[] buffer) {
-    System.arraycopy(source, 0, buffer, 0, Math.min(source.length, buffer.length));
-    return source.length;
   }
 }

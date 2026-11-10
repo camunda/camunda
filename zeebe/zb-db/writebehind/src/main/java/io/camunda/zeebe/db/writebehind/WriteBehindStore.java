@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.writebehind;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.db.DbIterator;
+import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
+import org.agrona.ExpandableArrayBuffer;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +40,9 @@ import org.slf4j.LoggerFactory;
  * the storage as one atomic batch. So the storage always holds every transaction up to some
  * sequence and none after it, and a checkpoint at any moment is transaction-consistent.
  *
- * <p>The dirty index holds exactly the versions that the storage doesn't have yet. The read cache
- * holds values read from the storage; a commit invalidates the keys it writes.
+ * <p>Values are held as objects, never as bytes: the dirty index holds exactly the versions that
+ * the storage doesn't have yet, and the read cache holds values decoded from the storage. A commit
+ * invalidates the keys it writes. Only the writer thread encodes values.
  *
  * <p>{@link #publishLock} makes three things atomic: publishing a transaction, removing a flushed
  * group from the dirty index, and taking a read view (a storage iterator plus a copy of the dirty
@@ -63,6 +66,9 @@ final class WriteBehindStore implements AutoCloseable {
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
   private final Thread writer;
+
+  // only used by the writer thread
+  private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
 
   // guarded by publishLock's write side
   private long lastSeq;
@@ -93,9 +99,10 @@ final class WriteBehindStore implements AutoCloseable {
    * Publishes a transaction and queues it for the writer. Waits first while too many bytes are
    * unflushed. A transaction above the limit on its own still commits once the queue is empty.
    *
-   * @param values the new value per key, or null for a delete; the store takes ownership
+   * @param values the new value per key, or null for a delete; the store takes ownership and nobody
+   *     may change them afterwards
    */
-  void commit(final RawKey[] keys, final byte[] @Nullable [] values) {
+  void commit(final RawKey[] keys, final @Nullable DbValue[] values) {
     ensureUsable();
     awaitPendingBelowLimit();
 
@@ -123,38 +130,64 @@ final class WriteBehindStore implements AutoCloseable {
   }
 
   /**
-   * Reads the latest committed value, or null if there is none.
+   * Reads the latest committed value, or null if there is none. A value read from the storage is
+   * decoded into a new instance of {@code prototype}'s class and cached.
    *
    * <p>The result is shared with the store: callers must copy it before handing it out.
    */
-  byte @Nullable [] get(final RawKey key) {
+  @Nullable DbValue get(final RawKey key, final DbValue prototype) {
     ensureUsable();
     final var unflushed = dirty.get(key);
     if (unflushed != null) {
-      return unflushed.bytes();
+      return unflushed.value();
     }
     if (cache != null) {
       final var cached = cache.getIfPresent(key);
       if (cached != null) {
-        return cached.bytes();
+        return cached.value();
       }
     }
 
     // Under the read lock no commit can publish this key and no flush can remove it, so if it isn't
     // in the dirty index now, the storage has its latest value and nothing can make the cached copy
-    // stale
-    // before a later commit invalidates it.
+    // stale before a later commit invalidates it.
     final long stamp = publishLock.readLock();
     try {
       final var latest = dirty.get(key);
       if (latest != null) {
-        return latest.bytes();
+        return latest.value();
       }
       final var bytes = storage.get(key.bytes(), key.bytes().length);
+      final var value = bytes == null ? null : Values.decode(bytes, prototype);
       if (cache != null) {
-        cache.put(key, new Version(bytes, 0));
+        cache.put(key, new Version(value, 0));
       }
-      return bytes;
+      return value;
+    } finally {
+      publishLock.unlockRead(stamp);
+    }
+  }
+
+  /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
+  boolean exists(final RawKey key) {
+    ensureUsable();
+    final var unflushed = dirty.get(key);
+    if (unflushed != null) {
+      return !unflushed.isTombstone();
+    }
+    if (cache != null) {
+      final var cached = cache.getIfPresent(key);
+      if (cached != null) {
+        return !cached.isTombstone();
+      }
+    }
+    final long stamp = publishLock.readLock();
+    try {
+      final var latest = dirty.get(key);
+      if (latest != null) {
+        return !latest.isTombstone();
+      }
+      return storage.get(key.bytes(), key.bytes().length) != null;
     } finally {
       publishLock.unlockRead(stamp);
     }
@@ -337,9 +370,9 @@ final class WriteBehindStore implements AutoCloseable {
     try (final var batch = storage.newBatch()) {
       for (final var entry : latest.entrySet()) {
         final var key = entry.getKey().bytes();
-        final var value = entry.getValue().bytes();
+        final var value = entry.getValue().value();
         if (value != null) {
-          batch.put(key, value);
+          batch.put(key, Values.encode(value, encodeBuffer));
         } else if (storage.keyMayExist(key, key.length)) {
           // a key that the storage never had needs no delete; this keeps short-lived state out of
           // it

@@ -29,6 +29,11 @@ final class RawKey implements Comparable<RawKey> {
     return new RawKey(Arrays.copyOf(source, length));
   }
 
+  /** Takes ownership of {@code bytes}: nobody may change them afterwards. */
+  static RawKey of(final byte[] bytes) {
+    return new RawKey(bytes);
+  }
+
   static RawKey copyOf(final byte[] source) {
     return copyOf(source, source.length);
   }

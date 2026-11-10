@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.RawAccessibleDb;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
 
 /**
@@ -20,16 +22,24 @@ import java.io.File;
  * heap here.
  */
 public final class WriteBehindZeebeDbFactory<
-        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+        ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyType> {
 
   private final ZeebeDbFactory<ColumnFamilyType> delegate;
   private final WriteBehindConfiguration config;
+  private final ConsistencyChecksSettings consistencyChecks;
 
+  /**
+   * @param consistencyChecks the checks that the write-behind column families run; pass the same
+   *     settings as the wrapped factory's
+   */
   public WriteBehindZeebeDbFactory(
-      final ZeebeDbFactory<ColumnFamilyType> delegate, final WriteBehindConfiguration config) {
+      final ZeebeDbFactory<ColumnFamilyType> delegate,
+      final WriteBehindConfiguration config,
+      final ConsistencyChecksSettings consistencyChecks) {
     this.delegate = delegate;
     this.config = config;
+    this.consistencyChecks = consistencyChecks;
   }
 
   @Override
@@ -52,7 +62,7 @@ public final class WriteBehindZeebeDbFactory<
       }
       throw failure;
     }
-    return new WriteBehindZeebeDb<>(rawAccessibleDb, config);
+    return new WriteBehindZeebeDb<>(rawAccessibleDb, config, consistencyChecks);
   }
 
   @Override
