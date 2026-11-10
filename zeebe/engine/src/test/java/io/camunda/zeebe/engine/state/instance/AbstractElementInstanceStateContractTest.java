@@ -7,26 +7,41 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Behaviour every {@link MutableElementInstanceState} implementation must share for the element
- * instance itself: create, update, remove, get and children. Each backend runs these tests by
- * extending this class.
+ * Behaviour every {@link MutableElementInstanceState} implementation must share. Each backend runs
+ * these tests by extending this class.
  */
 abstract class AbstractElementInstanceStateContractTest {
+
+  private static final long PROCESS_KEY = 123;
+  private static final long FLOW_SCOPE_KEY = 1L;
+  private static final long OTHER_FLOW_SCOPE_KEY = 2L;
+  private static final DirectBuffer GATEWAY_ELEMENT_ID = wrapString("gateway-1");
+  private static final DirectBuffer OTHER_GATEWAY_ELEMENT_ID = wrapString("gateway-2");
+  private static final DirectBuffer SEQUENCE_FLOW_ELEMENT_ID = wrapString("flow-1");
+  private static final DirectBuffer OTHER_SEQUENCE_FLOW_ELEMENT_ID = wrapString("flow-2");
 
   protected MutableElementInstanceState elementInstanceState;
 
@@ -34,7 +49,13 @@ abstract class AbstractElementInstanceStateContractTest {
   protected abstract MutableElementInstanceState createElementInstanceState();
 
   /** The variable state the element instance state under test creates and removes scopes in. */
-  protected abstract VariableState variableState();
+  protected abstract MutableVariableState variableState();
+
+  /**
+   * Asserts that the backend holds no data anymore, except for data that is expected to stay (like
+   * a counter). Called after all instances were removed.
+   */
+  protected abstract void assertNoStateLeft();
 
   @BeforeEach
   void setUpElementInstanceState() {
@@ -423,6 +444,731 @@ abstract class AbstractElementInstanceStateContractTest {
     assertThat(parentScopeOfChild).isEqualTo(100L);
     assertThat(parentScopeOfParent).isEqualTo(VariableState.NO_PARENT);
     assertThat(variableState().getParentScopeKey(101L)).isEqualTo(VariableState.NO_PARENT);
+  }
+
+  @Test
+  void shouldInsertProcessInstanceKeyByProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var processInstanceKey = 100L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(
+            processInstanceRecord.getProcessDefinitionKey());
+
+    // then
+    assertThat(processInstanceKeys).containsExactly(processInstanceKey);
+  }
+
+  @Test
+  void shouldInsertMultipleProcessInstanceKeyByProcessDefinitionKey() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord1 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceRecord2 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceKey1 = 101L;
+    final var processInstanceKey2 = 102L;
+    elementInstanceState.newInstance(
+        processInstanceKey1, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        processInstanceKey2, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    assertThat(processInstanceKeys).containsExactly(processInstanceKey1, processInstanceKey2);
+  }
+
+  @Test
+  void shouldOnlyReturnProcessInstanceKeyBelongingToProcessDefinition() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord1 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceRecord2 =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(101L);
+    final var processInstanceKey1 = 102L;
+    final var processInstanceKey2 = 103L;
+    elementInstanceState.newInstance(
+        processInstanceKey1, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        processInstanceKey2, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    assertThat(processInstanceKeys).containsExactly(processInstanceKey1);
+  }
+
+  @Test
+  void shouldOnlyReturnEmptyListWhenNoProcessInstanceForProcessDefinitionKeyExist() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(101L);
+    final var processInstanceKey = 102L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey);
+
+    // then
+    assertThat(processInstanceKeys).isEmpty();
+  }
+
+  @Test
+  void shouldNotReturnNonProcessElementInstancesByProcessDefinitionKey() {
+    // given - a process instance and one of its elements, both of definition 2
+    createParentWithChildren(100, 101);
+
+    // when
+    final List<Long> processInstanceKeys =
+        elementInstanceState.getProcessInstanceKeysByDefinitionKey(2);
+
+    // then - the parent is a start event as well, so nothing is a process instance
+    assertThat(processInstanceKeys).isEmpty();
+    assertThat(elementInstanceState.getActiveProcessInstanceCount()).isZero();
+  }
+
+  @Test
+  void shouldRemoveProcessInstanceByProcessDefinitionKeyOnRemoval() {
+    // given
+    final var processDefinitionKey = 100L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(processDefinitionKey);
+    final var processInstanceKey = 101L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    elementInstanceState.removeInstance(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(processDefinitionKey))
+        .isEmpty();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstances(
+                processDefinitionKey, Collections.emptyList()))
+        .isFalse();
+  }
+
+  @Test
+  void shouldMoveProcessInstanceToTargetDefinitionOnMigration() {
+    // given
+    final var sourceDefinitionKey = 100L;
+    final var targetDefinitionKey = 200L;
+    final var processInstanceKey = 101L;
+    elementInstanceState.newInstance(
+        processInstanceKey,
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessDefinitionKey(sourceDefinitionKey),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when - same calls as the ProcessInstanceElementMigrated appliers
+    elementInstanceState.updateInstance(
+        processInstanceKey,
+        instance -> instance.getValue().setProcessDefinitionKey(targetDefinitionKey));
+    elementInstanceState.deleteProcessInstanceKeyByDefinitionKey(
+        processInstanceKey, sourceDefinitionKey);
+    elementInstanceState.insertProcessInstanceKeyByDefinitionKey(
+        processInstanceKey, targetDefinitionKey);
+
+    // then
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(sourceDefinitionKey))
+        .isEmpty();
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(targetDefinitionKey))
+        .containsExactly(processInstanceKey);
+    assertThat(elementInstanceState.getActiveProcessInstanceCount()).isOne();
+
+    // when - removed after the migration
+    elementInstanceState.removeInstance(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(targetDefinitionKey))
+        .isEmpty();
+    assertThat(elementInstanceState.getActiveProcessInstanceCount()).isZero();
+  }
+
+  @Test
+  void shouldNotLeakMemoryOnRemoval() {
+    // given
+    final int parent = 100;
+    final int child = 101;
+
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ElementInstance parentInstance =
+        elementInstanceState.newInstance(
+            parent, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    variableState()
+        .setVariableLocal(1, parent, PROCESS_KEY, wrapString("a"), MsgPackUtil.asMsgPack("1"));
+    elementInstanceState.setAwaitResultRequestMetadata(
+        parent, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+
+    processInstanceRecord.setElementId("subProcess");
+    elementInstanceState.newInstance(
+        parentInstance, child, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    variableState()
+        .setVariableLocal(2, child, PROCESS_KEY, wrapString("b"), MsgPackUtil.asMsgPack("2"));
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        child, wrapString("gateway"), wrapString("flow"));
+
+    // when
+    elementInstanceState.removeInstance(101);
+    elementInstanceState.removeInstance(100);
+
+    // then
+    assertNoStateLeft();
+  }
+
+  @Test
+  void shouldFindRunningInstancesForProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final var processInstanceKey = 100L;
+    elementInstanceState.newInstance(
+        processInstanceKey, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
+
+    // then
+    assertThat(hasRunningInstances).isTrue();
+  }
+
+  @Test
+  void shouldNotFindRunningInstancesForProcessDefinitionKey() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey(), Collections.emptyList());
+
+    // then
+    assertThat(hasRunningInstances).isFalse();
+  }
+
+  @Test
+  void shouldNotFindRunningInstanceForBannedInstance() {
+    // given
+    final var processInstanceKey = 123L;
+    final var processInstanceRecord =
+        createProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setProcessInstanceKey(processInstanceKey);
+
+    // when
+    final var hasRunningInstances =
+        elementInstanceState.hasActiveProcessInstances(
+            processInstanceRecord.getProcessDefinitionKey(),
+            Collections.singletonList(processInstanceKey));
+
+    // then
+    assertThat(hasRunningInstances).isFalse();
+  }
+
+  @Test
+  void shouldIgnoreBannedInstancesWhenFindingRunningInstances() {
+    // given
+    final var processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        100L, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        101L, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final var definitionKey = processInstanceRecord.getProcessDefinitionKey();
+
+    // when / then
+    assertThat(elementInstanceState.hasActiveProcessInstances(definitionKey, List.of(100L)))
+        .isTrue();
+    assertThat(elementInstanceState.hasActiveProcessInstances(definitionKey, List.of(100L, 101L)))
+        .isFalse();
+  }
+
+  @Test
+  void shouldUpdateAwaitResultMetadata() {
+    // given
+    final long key = 10L;
+    final int streamId = 2;
+    final long requestId = 10000L;
+
+    // when
+    elementInstanceState.setAwaitResultRequestMetadata(
+        key,
+        new AwaitProcessInstanceResultMetadata()
+            .setRequestStreamId(streamId)
+            .setRequestId(requestId));
+    final AwaitProcessInstanceResultMetadata metadata =
+        elementInstanceState.getAwaitResultRequestMetadata(key);
+
+    // then
+    assertThat(metadata.getRequestId()).isEqualTo(requestId);
+    assertThat(metadata.getRequestStreamId()).isEqualTo(streamId);
+  }
+
+  @Test
+  void shouldRemoveAwaitResultMetadataWithInstance() {
+    // given
+    final long key = 100L;
+    elementInstanceState.newInstance(
+        key, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.setAwaitResultRequestMetadata(
+        key, new AwaitProcessInstanceResultMetadata().setRequestId(1).setRequestStreamId(2));
+
+    // when
+    elementInstanceState.removeInstance(key);
+
+    // then
+    assertThat(elementInstanceState.getAwaitResultRequestMetadata(key)).isNull();
+  }
+
+  @Test
+  void shouldReturnZeroWhenNoProcessInstances() {
+    // when
+    long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(0);
+
+    // when we create a PI
+    final ProcessInstanceRecord processInstanceRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        200, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then we should return one
+    count = elementInstanceState.getActiveProcessInstanceCount();
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  void shouldCountMultipleProcessInstances() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+
+    elementInstanceState.newInstance(
+        201, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        202, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then
+    assertThat(count).isEqualTo(2);
+  }
+
+  @Test
+  void shouldDecreaseCountWhenRootProcessInstanceRemoved() {
+    // given
+    final ProcessInstanceRecord processInstanceRecord1 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final ProcessInstanceRecord processInstanceRecord2 =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        203, processInstanceRecord1, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(
+        204, processInstanceRecord2, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // when
+    elementInstanceState.removeInstance(203);
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+    // then the count should be one
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  void shouldCountChildInstancesProcessInstances() {
+    // given
+    final ProcessInstanceRecord rootRecord =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    final long rootKey1 = 300L;
+    final long rootKey2 = 301L;
+    final ElementInstance rootInstance1 =
+        elementInstanceState.newInstance(
+            rootKey1, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final ElementInstance rootInstance2 =
+        elementInstanceState.newInstance(
+            rootKey2, rootRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // add child process instances started via call activities
+    final ProcessInstanceRecord childProcessRecord =
+        createProcessInstanceRecord()
+            .setElementId("childProcess")
+            .setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(
+        rootInstance1, 500L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    elementInstanceState.newInstance(
+        rootInstance2, 501L, childProcessRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+
+    // when
+    final long count = elementInstanceState.getActiveProcessInstanceCount();
+
+    // then we should have 2 root process instances + 2 child process instances
+    assertThat(count).isEqualTo(4);
+  }
+
+  @Test
+  void shouldReturnRuntimeInstructionsForElementId() {
+    // given
+    final long processInstanceKey = 100L;
+    final var terminateAfterA =
+        new ProcessInstanceCreationRuntimeInstruction()
+            .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .setAfterElementId("taskA");
+    final var terminateAfterB =
+        new ProcessInstanceCreationRuntimeInstruction()
+            .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .setAfterElementId("taskB");
+
+    // when
+    elementInstanceState.addRuntimeInstructions(
+        processInstanceKey, List.of(terminateAfterA, terminateAfterB));
+
+    // then
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .extracting(RuntimeInstructionValue::getAfterElementId, RuntimeInstructionValue::getType)
+        .containsExactly(tuple("taskA", RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE));
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskC"))
+        .isEmpty();
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(999L, "taskA")).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveRuntimeInstructionsForProcessInstance() {
+    // given
+    final long processInstanceKey = 100L;
+    final var instruction =
+        new ProcessInstanceCreationRuntimeInstruction()
+            .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+            .setAfterElementId("taskA");
+    elementInstanceState.addRuntimeInstructions(processInstanceKey, List.of(instruction));
+
+    // verify instructions exist
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isNotEmpty();
+
+    // when
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
+
+    // then
+    assertThat(elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, "taskA"))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldNotFailWhenRemovingNonExistentRuntimeInstructions() {
+    // given - no runtime instructions exist for this key
+    final long processInstanceKey = 999L;
+
+    // when/then - should not throw
+    elementInstanceState.removeRuntimeInstructions(processInstanceKey);
+  }
+
+  @Test
+  void shouldFindActiveProcessInstanceByBusinessId() {
+    // given
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 101L);
+
+    // when / then
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "tenant", key -> false))
+        .isTrue();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "tenant", key -> key == 100L))
+        .isTrue();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "tenant", key -> key == 100L || key == 101L))
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotFindProcessInstanceOfOtherBusinessIdProcessOrTenant() {
+    // given
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
+
+    // when / then
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-2", "process", "tenant", key -> false))
+        .isFalse();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "other-process", "tenant", key -> false))
+        .isFalse();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "other-tenant", key -> false))
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotFindProcessInstanceByBusinessIdAfterDeletion() {
+    // given
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "tenant", 100L);
+
+    // when
+    elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+        "order-1", "process", "tenant", 100L);
+
+    // then
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "tenant", key -> false))
+        .isFalse();
+  }
+
+  @Test
+  void shouldReturnZeroIfNoSequenceFlowIsTaken() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    final var number =
+        elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+
+    // then
+    assertThat(number).isZero();
+  }
+
+  @Test
+  void shouldIncrementNumberOfTakenSequenceFlows() {
+    // when
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // then
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isEqualTo(2);
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(
+                OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isZero();
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(
+                FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID))
+        .isZero();
+  }
+
+  @Test
+  void shouldReturnNumberPerTakenSequenceFlows() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when / then
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isEqualTo(2);
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY)).isEqualTo(3);
+  }
+
+  @Test
+  void shouldReturnTakenSequenceFlows() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    final var takenSequenceFlows =
+        elementInstanceState.getTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+
+    // then
+    assertThat(takenSequenceFlows)
+        .containsExactlyInAnyOrder(SEQUENCE_FLOW_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+  }
+
+  @Test
+  void shouldVisitTakenSequenceFlowsOfFlowScope() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    final List<Tuple> visited = new ArrayList<>();
+    elementInstanceState.visitTakenSequenceFlows(
+        FLOW_SCOPE_KEY,
+        (flowScopeKey, gatewayId, sequenceFlowId, number) ->
+            visited.add(
+                tuple(
+                    flowScopeKey,
+                    bufferAsString(gatewayId),
+                    bufferAsString(sequenceFlowId),
+                    number)));
+
+    // then
+    assertThat(visited)
+        .containsExactlyInAnyOrder(
+            tuple(FLOW_SCOPE_KEY, "gateway-1", "flow-1", 2),
+            tuple(FLOW_SCOPE_KEY, "gateway-2", "flow-2", 1));
+  }
+
+  @Test
+  void shouldDecrementNumbers() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+
+    // then
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isZero();
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(
+                OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isEqualTo(1);
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(
+                FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldDecrementNumbersButKeepRemaining() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+
+    // then
+    assertThat(
+            elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .isEqualTo(1);
+    assertThat(elementInstanceState.getTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID))
+        .containsExactly(SEQUENCE_FLOW_ELEMENT_ID);
+  }
+
+  @Test
+  void shouldDecrementSingleSequenceFlow() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // then
+    final List<Tuple> visited = new ArrayList<>();
+    elementInstanceState.visitTakenSequenceFlows(
+        FLOW_SCOPE_KEY,
+        (flowScopeKey, gatewayId, sequenceFlowId, number) ->
+            visited.add(tuple(bufferAsString(sequenceFlowId), number)));
+    assertThat(visited).containsExactly(tuple("flow-1", 1));
+  }
+
+  @Test
+  void shouldRemoveNumbersWhenDecrementing() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    elementInstanceState.decrementNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+
+    // then - counts all entries of the flow scope, so a leftover entry would show up
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY)).isZero();
+  }
+
+  @Test
+  void shouldRemoveNumbersWhenRemovingTheScope() {
+    // given
+    elementInstanceState.newInstance(
+        FLOW_SCOPE_KEY, new ProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, OTHER_GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        OTHER_FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+
+    // when
+    elementInstanceState.removeInstance(FLOW_SCOPE_KEY);
+
+    // then
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY)).isZero();
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(OTHER_FLOW_SCOPE_KEY))
+        .isEqualTo(1);
   }
 
   protected ElementInstance createParentWithChildren(

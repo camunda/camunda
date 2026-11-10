@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.engine.state.instance;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -43,8 +44,8 @@ import org.testcontainers.utility.DockerImageName;
  *
  * <p>The variable state is the RocksDB one of {@link ProcessingStateExtension}: the element
  * instance state only creates and removes scopes in it, and a real implementation lets the contract
- * verify those calls through {@link VariableState#getParentScopeKey(long)}. It doesn't take part in
- * the JDBC transaction, so a rollback here doesn't undo its scopes; no test relies on that.
+ * verify those calls through {@link MutableVariableState#getParentScopeKey(long)}. It doesn't take
+ * part in the JDBC transaction, so a rollback here doesn't undo its scopes; no test relies on that.
  *
  * <p>All tests share one database; each test writes to its own partition to stay isolated.
  *
@@ -91,6 +92,14 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
         FOR EACH ROW EXECUTE FUNCTION log_element_instance_write();
       """;
 
+  private static final List<String> STATE_TABLES =
+      List.of(
+          "element_instance",
+          "taken_sequence_flow",
+          "await_process_instance_result",
+          "runtime_instructions",
+          "process_instance_by_business_id");
+
   private static final String EXTERNAL_JDBC_URL_PROPERTY = "zeebe.engine.rdbms.jdbcUrl";
 
   private static final AtomicInteger PARTITION_IDS = new AtomicInteger();
@@ -120,10 +129,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             RdbmsElementInstanceStateTest.class.getResourceAsStream(SCHEMA_RESOURCE);
         final var setupConnection = dataSource.getConnection();
         final var statement = setupConnection.createStatement()) {
-      // an external database keeps its tables between runs
-      if (!tableExists(setupConnection, "element_instance")) {
-        statement.execute(readSchema(schema));
-      }
+      // idempotent, so an external database that keeps its tables between runs gets new ones
+      statement.execute(readSchema(schema));
       if (!tableExists(setupConnection, "element_instance_write_log")) {
         statement.execute(WRITE_LOG_DDL);
       }
@@ -157,8 +164,17 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Override
-  protected VariableState variableState() {
+  protected MutableVariableState variableState() {
     return processingState.getVariableState();
+  }
+
+  @Override
+  protected void assertNoStateLeft() {
+    for (final String table : STATE_TABLES) {
+      assertThat(countRows(table)).describedAs("Expected table %s to be empty", table).isZero();
+    }
+    // the variable scopes live in RocksDB
+    ElementInstanceStateTest.assertNoColumnFamilyLeft(processingState);
   }
 
   @AfterEach
@@ -390,11 +406,55 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Test
-  void shouldRejectOutOfScopeOperations() {
-    // when / then
-    assertThatThrownBy(() -> elementInstanceState.getActiveProcessInstanceCount())
-        .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessage("Not supported by the RDBMS element instance state yet");
+  void shouldSeeUncommittedProcessInstances() throws Exception {
+    // given - process instance 100 committed, 101 removed and 102 created in the open transaction
+    final var processInstance =
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS);
+    elementInstanceState.newInstance(100, processInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    elementInstanceState.newInstance(101, processInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    final var transaction = transactionContext.getCurrentTransaction();
+
+    // when
+    elementInstanceState.removeInstance(101);
+    elementInstanceState.newInstance(102, processInstance, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // then
+    final long definitionKey = processInstance.getProcessDefinitionKey();
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(definitionKey))
+        .containsExactly(100L, 102L);
+    assertThat(elementInstanceState.getActiveProcessInstanceCount()).isEqualTo(2);
+    assertThat(elementInstanceState.hasActiveProcessInstances(definitionKey, List.of(100L)))
+        .isTrue();
+    assertThat(elementInstanceState.hasActiveProcessInstances(definitionKey, List.of(100L, 102L)))
+        .isFalse();
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(elementInstanceState.getProcessInstanceKeysByDefinitionKey(definitionKey))
+        .containsExactly(100L, 101L);
+    assertThat(elementInstanceState.getActiveProcessInstanceCount()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldUndoDirectWritesOnRollback() throws Exception {
+    // given
+    final var transaction = transactionContext.getCurrentTransaction();
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        1, wrapString("gateway"), wrapString("flow"));
+    elementInstanceState.insertProcessInstanceKeyByBusinessId("order-1", "process", "", 100L);
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(1)).isOne();
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(elementInstanceState.getNumberOfTakenSequenceFlows(1)).isZero();
+    assertThat(
+            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+                "order-1", "process", "", key -> false))
+        .isFalse();
   }
 
   private List<Row> committedRows() {
@@ -428,6 +488,21 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       throw new IllegalStateException(e);
     }
     return rows;
+  }
+
+  private long countRows(final String table) {
+    try (final var freshConnection = dataSource.getConnection();
+        final var statement =
+            freshConnection.prepareStatement(
+                "SELECT COUNT(*) FROM " + table + " WHERE partition_id = ?")) {
+      statement.setInt(1, partitionId);
+      try (final ResultSet resultSet = statement.executeQuery()) {
+        resultSet.next();
+        return resultSet.getLong(1);
+      }
+    } catch (final SQLException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private List<String> writeLog() throws SQLException {
