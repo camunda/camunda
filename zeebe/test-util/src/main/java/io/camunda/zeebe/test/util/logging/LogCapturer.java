@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.test.util.logging;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.Level;
@@ -84,6 +86,27 @@ public final class LogCapturer implements AutoCloseable {
   /** Whether any captured message contains {@code substring}. */
   public boolean contains(final String substring) {
     return messages().stream().anyMatch(message -> message.contains(substring));
+  }
+
+  /**
+   * Whether any captured message, or the stack trace of any throwable logged with one, contains
+   * {@code substring}. The stack trace includes the throwable's causes and suppressed throwables,
+   * as a log layout would print them. Use it to assert that something was not logged at all, such
+   * as a secret, where {@link #contains(String)} would miss what an exception carried.
+   */
+  public boolean containsInMessagesOrThrowables(final String substring) {
+    return appender.getAppendedEvents().stream()
+        .anyMatch(
+            event ->
+                event.getMessage().getFormattedMessage().contains(substring)
+                    || (event.getThrown() != null
+                        && stackTraceOf(event.getThrown()).contains(substring)));
+  }
+
+  private static String stackTraceOf(final Throwable thrown) {
+    final var writer = new StringWriter();
+    thrown.printStackTrace(new PrintWriter(writer));
+    return writer.toString();
   }
 
   @Override
