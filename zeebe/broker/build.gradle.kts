@@ -49,7 +49,6 @@ dependencies {
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-engine-state-rdbms"))
-  implementation(libs.org.mybatis.mybatis)
   implementation(project(":zeebe-backup"))
   implementation(project(":zeebe-backup-store-s3"))
   implementation(project(":zeebe-backup-store-gcs"))

@@ -44,7 +44,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
-import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineState;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -119,7 +119,7 @@ public final class PartitionManagerImpl
       final FeatureFlags featureFlags,
       final SecretStoreRegistry secretStoreRegistry,
       final TopologyManagerImpl topologyManager,
-      final @Nullable RdbmsEngineState engineState) {
+      final @Nullable RdbmsEngineStateResources engineState) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;

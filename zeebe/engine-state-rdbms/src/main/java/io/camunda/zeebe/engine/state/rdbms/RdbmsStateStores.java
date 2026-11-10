@@ -50,10 +50,13 @@ public final class RdbmsStateStores extends RocksDbStateStores {
    * @param sessionFactory built once for the database, see {@link
    *     EngineStateMyBatis#createSqlSessionFactory}
    */
-  public static ProcessingStateStoresFactory factory(final SqlSessionFactory sessionFactory) {
+  public static ProcessingStateStoresFactory factory(final RdbmsEngineStateResources resources) {
     return (partitionId, zeebeDb, transactionContext) ->
         new RdbmsStateStores(
-            partitionId, zeebeDb, (MixedTransactionContext) transactionContext, sessionFactory);
+            partitionId,
+            zeebeDb,
+            (MixedTransactionContext) transactionContext,
+            resources.sessionFactory());
   }
 
   @Override
