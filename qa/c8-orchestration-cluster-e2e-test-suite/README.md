@@ -20,7 +20,6 @@ Follow the steps below to get started and run the tests locally.
   - [C8 SM Requirements (Self-Managed)](#c8-sm-requirements-self-managed)
 - [Test Suite Structure (Page Object Model)](#test-suite-structure-page-object-model)
 - [GitHub Actions for Testing](#github-actions-for-testing)
-  - [Automatic PR Check](#automatic-pr-check)
   - [Running the On-Demand Workflow](#running-the-on-demand-workflow)
   - [Automated Nightly Test Runs](#automated-nightly-test-runs)
   - [CI Test Results](#ci-test-results)
@@ -162,35 +161,6 @@ Starting with Camunda 8.8, Tasklist V2 is the default mode. The test suite refle
 
 ## GitHub Actions for Testing
 
-### Automatic PR Check
-
-When a pull request changes files under `qa/c8-orchestration-cluster-e2e-test-suite/`,
-the suite runs automatically (no manual trigger needed). It mirrors the on-demand
-matrix (API, H2/RDBMS API and E2E) for the PR's base branch, and reports as **two
-checks**:
-
-- **C8 E2E Test Suite / Tests** — the **required** gate. The full suite runs, but this check blocks the merge only when a spec your PR **added or modified** fails. Failures in untouched tests do not block it, keeping the historically flaky parts of the suite from blocking unrelated changes.
-- **C8 E2E Test Suite / Full Result** — a **non-blocking** companion. It goes **red whenever _any_ suite test fails**, changed or not, and names the failing specs.
-
-The Full Result check is where a change to a shared page object, fixture or config
-that breaks an **untouched** test becomes visible: the required gate stays green (you
-changed no failing spec), but Full Result turns red to prompt a look. **When Full
-Result is red and the gate is green, open it, see which test failed, and decide** —
-your change caused it (fix it), or it is an unrelated pre-existing failure (safe to
-merge). Full Result never blocks the merge, and you do not need a separate on-demand
-run to surface these failures.
-
-Run the on-demand workflow below only for a pull request from a fork (which the
-automatic check skips), or when you want the whole suite to gate red/green itself.
-
-> **Product code + test in the same PR:** the ES API and E2E (browser) jobs run against the
-> published `camunda/camunda:SNAPSHOT` image, so they exercise your test changes against the
-> current product, not the product code in your PR (only the H2/RDBMS job builds from source).
-> A PR that adds backend or UI behaviour **and** a spec for it can see those jobs go red because
-> the published image lacks the change. Rely on the H2/RDBMS leg (which is source-built) and a
-> manual on-demand run against your branch to validate such a change; the ES/browser result is a
-> false negative in that case, not a regression in your code.
-
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
@@ -232,21 +202,14 @@ We welcome contributions! To contribute:
 - Reviewers must include someone from the Test Automation Team and a product team developer
 
 > [!IMPORTANT]
-> **Your changed tests must pass before review.**
-> A PR that changes the suite runs the [Automatic PR Check](#automatic-pr-check). Its required
-> gate, **C8 E2E Test Suite / Tests**, blocks the merge on the specs you added or modified. Do not
-> request a review while that gate is red for one of your own tests.
+> **Do not request a review until the on-demand workflow has been run and the results have been verified.**
+> Before assigning reviewers to your PR:
+> 1. Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch.
+> 2. Wait for the workflow to complete.
+> 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
+> 4. Only then request a review.
 >
-> The gate runs the **whole** suite but does **not** block on untouched tests. Those surface in a
-> separate **non-blocking** check, **C8 E2E Test Suite / Full Result**, which goes red on any suite
-> failure — so a shared page object, fixture or config change that breaks tests you did not edit
-> shows there. When it is red, review those failures and confirm they are pre-existing, not caused
-> by your change. You do not need a separate on-demand run just to surface them.
->
-> Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
-> only for a PR **from a fork**, which the automatic check does not run, or when you want the whole
-> suite to gate red/green instead of reading the report yourself; document any failures in the PR
-> description, confirming they are pre-existing.
+> PRs assigned for review without a completed test run will be returned to the author.
 
 ### Project Board
 
