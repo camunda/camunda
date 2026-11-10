@@ -1814,7 +1814,7 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
-  void shouldTruncateIndicesByRecreatingThemEmpty(
+  void shouldTruncateIndicesByRecreatingThemEmptyWhenRetried(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws Exception {
     // given
@@ -1833,8 +1833,11 @@ public class SchemaManagerIT {
       searchClientAdapter.index("1", liveIndex, Map.of("hello", "foo", "world", "bar"));
     }
     searchClientAdapter.refresh();
+    // a failed earlier attempt deleted this index already
+    searchClientAdapter.deleteIndex(indexTemplate.getFullQualifiedName());
 
     // when
+    schemaManager.truncateIndices();
     schemaManager.truncateIndices();
 
     // then
