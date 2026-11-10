@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import jakarta.servlet.http.Cookie;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -20,8 +21,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
@@ -38,6 +41,8 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
+import org.springframework.security.web.savedrequest.SavedCookie;
 
 class MigratingWebSessionAttributeConverterTest {
 
@@ -101,6 +106,10 @@ class MigratingWebSessionAttributeConverterTest {
     final var claims = new LinkedHashMap<String, Object>();
     claims.put("string", "value");
     claims.put("long", 42L);
+    claims.put("integer", 7);
+    claims.put("double", 1.5d);
+    claims.put("decimal", new java.math.BigDecimal("12.50"));
+    claims.put("bigInteger", new java.math.BigInteger("12345678901234567890"));
     claims.put("boolean", true);
     claims.put("list", List.of("a", "b"));
     claims.put("nested", new HashMap<>(Map.of("key", List.of("x"))));
@@ -137,6 +146,35 @@ class MigratingWebSessionAttributeConverterTest {
 
     // then
     assertThat(restored.claims()).containsAllEntriesOf(claims);
+  }
+
+  @Test
+  void shouldRoundTripRequestSavedByTheRequestCache() {
+    // given — the request Spring Security saves before redirecting to the login
+    final var saved =
+        new DefaultSavedRequest.Builder()
+            .setContextPath("")
+            .setServletPath("/operate/processes")
+            .setRequestURI("/operate/processes")
+            .setRequestURL("http://localhost:8080/operate/processes")
+            .setScheme("http")
+            .setServerName("localhost")
+            .setServerPort(8080)
+            .setMethod("GET")
+            .setCookies(List.of(new SavedCookie(new Cookie("c", "v"))))
+            .setLocales(List.of(Locale.GERMANY))
+            .setHeaders(new TreeMap<>(Map.of("Accept", List.of("text/html"))))
+            .setParameters(new HashMap<>(Map.of("p", new String[] {"1", "2"})))
+            .build();
+
+    // when
+    final var restored = (DefaultSavedRequest) converter.deserialize(converter.serialize(saved));
+
+    // then
+    assertThat(restored.getRequestURI()).isEqualTo("/operate/processes");
+    assertThat(restored.getCookies()).hasSize(1);
+    assertThat(restored.getLocales()).containsExactly(Locale.GERMANY);
+    assertThat(restored.getParameterValues("p")).containsExactly("1", "2");
   }
 
   @Test
