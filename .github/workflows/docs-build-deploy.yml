@@ -206,7 +206,11 @@ jobs:
               gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${job_id}/logs" | grep -F '##[error]' | sed 's/^[^ ]* /  /' | sort -u | head -5 || true
             done
             if (( attempt < MAX_ATTEMPTS )); then
+              # Ignore every run that exists now, so attempt 2 only accepts the run this request starts.
               seen_ids+="${seen_ids:+,}${run_id}"
+              if runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${expected_sha}&per_page=50"); then
+                seen_ids+=$(jq -r '[.workflow_runs[] | select(.path == "dynamic/pages/pages-build-deployment") | ",\(.id)"] | join("")' <<< "${runs}")
+              fi
               gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" > /dev/null
               echo "Requested a Pages rebuild of ${expected_sha:0:12}"
             fi
