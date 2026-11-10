@@ -143,6 +143,9 @@ services:
       # (the minimum) keeps rotation testable; the product default is 20m.
       - CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH=/etc/camunda/secrets
       - CAMUNDA_SECRETS_CACHE_TTL=1m
+      # The usage-metrics API test waits for the next export; the 5m product
+      # default makes that wait up to 5 minutes.
+      - CAMUNDA_MONITORING_METRICS_USAGEMETRICS_EXPORTINTERVAL=PT10S
     ports:
       - 26500:26500
       - 9600:9600
