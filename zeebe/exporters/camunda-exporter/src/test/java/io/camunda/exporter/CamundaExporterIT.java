@@ -40,7 +40,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
