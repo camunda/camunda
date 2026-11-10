@@ -101,7 +101,7 @@ final class ProcessDefinitionRecovery {
     }
   }
 
-  /** A source of persisted processes, e.g. {@code DbProcessState#forEachProcess}. */
+  /** A source of persisted processes, e.g. {@code ProcessState#forEachProcess}. */
   @FunctionalInterface
   interface ProcessSource {
     void forEach(Consumer<PersistedProcess> consumer);

@@ -19,10 +19,9 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
-import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
-import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -368,8 +367,8 @@ public class StateCheckProcessDefinitionDeletionsCommand implements Callable<Int
     // Only DRAINING definitions can be stuck, so limit the (potentially large) instance lookup to
     // them. Reuse the engine's own active-instance check so the definition of "active" stays in
     // sync with how the engine finalizes a drain.
-    final var elementInstanceState =
-        new DbElementInstanceState(db, context, new DbVariableState(db, context));
+    final var stores = new RocksDbStateStores(db, context);
+    final var elementInstanceState = stores.elementInstanceState(stores.variableState());
     for (final var entry : states.entrySet()) {
       if (entry.getValue() != PersistedProcessState.DRAINING
           || definitionsWithActiveInstances.contains(entry.getKey())) {
