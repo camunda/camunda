@@ -13,6 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.unauthorized;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,15 +27,10 @@ import co.elastic.clients.transport.rest5_client.low_level.Request;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import io.camunda.search.connect.util.SecurityUtil;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import org.apache.hc.client5.http.auth.BasicUserPrincipal;
-import org.apache.hc.client5.http.auth.Credentials;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
@@ -97,23 +93,24 @@ final class ElasticsearchClientFactoryTest {
   }
 
   @Test
-  void shouldConfigureBasicAuth() {
-    // given
-    config.getAuthentication().setUsername("user");
-    config.getAuthentication().setPassword("password");
-    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+  void shouldReportRejectedCredentialsAsUnauthorizedResponse() throws IOException {
+    // given: with the credentials sent up front, HttpClient must report a rejected request as an
+    // ordinary 401 response.
+    config.url = esServer.getRuntimeInfo().getHttpBaseUrl();
+    config.getAuthentication().setUsername("someUser");
+    config.getAuthentication().setPassword("wrongPassword");
+    esServer.stubFor(
+        get(urlEqualTo("/rejected-credentials"))
+            .willReturn(unauthorized().withHeader("WWW-Authenticate", "Basic realm=\"security\"")));
 
     // when
-    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
+    try (final var client = ElasticsearchClientFactory.of(config)) {
+      final var response =
+          extractRestClient(client).performRequest(new Request("GET", "/rejected-credentials"));
 
-    // then
-    final var providerCaptor = ArgumentCaptor.forClass(CredentialsProvider.class);
-    Mockito.verify(builder).setDefaultCredentialsProvider(providerCaptor.capture());
-    final Credentials credentials =
-        providerCaptor.getValue().getCredentials(SecurityUtil.ANY_AUTH_SCOPE, null);
-    assertThat(credentials.getUserPrincipal()).isEqualTo(new BasicUserPrincipal("user"));
-    assertThat(((UsernamePasswordCredentials) credentials).getUserPassword())
-        .isEqualTo("password".toCharArray());
+      // then
+      assertThat(response.getStatusCode()).isEqualTo(401);
+    }
   }
 
   // The server never answers 401. A server that lets anonymous users through for some requests
@@ -156,19 +153,6 @@ final class ElasticsearchClientFactoryTest {
 
     // then
     esServer.verify(getRequestedFor(urlEqualTo("/no-credentials")).withoutHeader("Authorization"));
-  }
-
-  @Test
-  void shouldNotConfigureAuthenticationByDefault() {
-    // given
-    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
-
-    // when
-    ElasticsearchClientFactory.INSTANCE.configureHttpClient(config, builder);
-
-    // then
-    Mockito.verify(builder, Mockito.never())
-        .setDefaultCredentialsProvider(Mockito.any(CredentialsProvider.class));
   }
 
   @Test

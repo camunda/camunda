@@ -13,6 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.unauthorized;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
@@ -293,6 +294,31 @@ class ElasticsearchConnectorTest {
 
     // then
     esServer.verify(getRequestedFor(urlEqualTo("/no-credentials")).withoutHeader("Authorization"));
+  }
+
+  // With the credentials sent up front, HttpClient must report a rejected request as an ordinary
+  // 401 response.
+  @Test
+  void shouldReportRejectedCredentialsAsUnauthorizedResponse() throws IOException {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setUrl(esServer.getRuntimeInfo().getHttpBaseUrl());
+    configuration.setUsername("someUser");
+    configuration.setPassword("wrongPassword");
+    final var connector =
+        new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository());
+    esServer.stubFor(
+        get(urlEqualTo("/rejected-credentials"))
+            .willReturn(unauthorized().withHeader("WWW-Authenticate", "Basic realm=\"security\"")));
+
+    // when
+    try (final var client = connector.createClient()) {
+      final var response =
+          restClient(client).performRequest(new Request("GET", "/rejected-credentials"));
+
+      // then
+      assertThat(response.getStatusCode()).isEqualTo(401);
+    }
   }
 
   private static Rest5Client restClient(final ElasticsearchClient client) {

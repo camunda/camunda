@@ -234,6 +234,36 @@ class ElasticsearchClientBuilderTest {
     }
   }
 
+  // With the credentials sent up front, HttpClient must report a rejected request as an ordinary
+  // 401 response.
+  @Test
+  void shouldReportRejectedCredentialsAsUnauthorizedResponse() throws Exception {
+    // given
+    final var server =
+        HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          exchange.getResponseHeaders().add("WWW-Authenticate", "Basic realm=\"security\"");
+          exchange.sendResponseHeaders(401, -1);
+          exchange.close();
+        });
+    server.start();
+    try (final var restClient =
+        ElasticsearchClientBuilder.restClient(
+            configForPlainHttpServer(server, "someUser", "wrongPassword"),
+            new PluginRepository())) {
+
+      // when
+      final var response = restClient.performRequest(new Request("GET", "/"));
+
+      // then
+      assertThat(response.getStatusCode()).isEqualTo(401);
+    } finally {
+      server.stop(0);
+    }
+  }
+
   private static HttpServer startServerRecordingAuthorizationHeaders(
       final List<String> receivedAuthorizationHeaders) throws IOException {
     final var server =

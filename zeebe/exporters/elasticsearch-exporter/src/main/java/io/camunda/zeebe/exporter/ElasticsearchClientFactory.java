@@ -14,15 +14,12 @@ import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
-import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
@@ -73,9 +70,10 @@ final class ElasticsearchClientFactory {
     defaultHeaders.add(
         new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
     if (config.hasAuthenticationPresent()) {
-      // The credentials provider only answers a 401 challenge. A server that lets anonymous users
-      // through for some requests never challenges them, so the request would run as anonymous.
-      // The Elasticsearch 8 client sent credentials with every request, so do the same.
+      // Credentials go out with every request instead of in answer to a 401 challenge. A server
+      // that lets anonymous users through for some requests never challenges them, so those
+      // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
+      // request, so do the same.
       defaultHeaders.add(basicAuthorizationHeader(config));
     }
     final Rest5ClientBuilder builder =
@@ -104,10 +102,6 @@ final class ElasticsearchClientFactory {
     builder.setIOReactorConfig(
         IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(true).build());
 
-    if (config.hasAuthenticationPresent()) {
-      setupBasicAuthentication(config, builder);
-    }
-
     if (config.hasProxyConfigured()) {
       setupProxy(builder, config.getProxy());
       addPreemptiveProxyAuthInterceptor(builder, config.getProxy());
@@ -127,18 +121,6 @@ final class ElasticsearchClientFactory {
         HttpHeaders.AUTHORIZATION,
         "Basic "
             + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8)));
-  }
-
-  private void setupBasicAuthentication(
-      final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        SecurityUtil.ANY_AUTH_SCOPE,
-        new UsernamePasswordCredentials(
-            config.getAuthentication().getUsername(),
-            config.getAuthentication().getPassword().toCharArray()));
-
-    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
   private void setupProxy(

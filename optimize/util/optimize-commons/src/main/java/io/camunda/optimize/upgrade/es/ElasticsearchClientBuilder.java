@@ -23,7 +23,6 @@ import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.search.connect.util.SecurityUtil;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,13 +34,9 @@ import java.security.cert.CertificateFactory;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.auth.CredentialsProvider;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
@@ -153,9 +148,6 @@ public class ElasticsearchClientBuilder {
     // explicit in case the default ever changes.
     httpClientBuilder.setIOReactorConfig(IOReactorConfig.custom().setSoKeepAlive(true).build());
 
-    buildCredentialsProviderIfConfigured(configurationService)
-        .ifPresent(httpClientBuilder::setDefaultCredentialsProvider);
-
     for (final HttpRequestInterceptor interceptor : requestInterceptors) {
       httpClientBuilder.addRequestInterceptorLast(interceptor);
     }
@@ -200,11 +192,15 @@ public class ElasticsearchClientBuilder {
               ElasticsearchCompatibilityInterceptor.INSTANCE);
         });
 
-    // The credentials provider only answers a 401 challenge. A server that lets anonymous users
-    // through for some requests never challenges them, so the request would run as anonymous. The
-    // Elasticsearch 8 client sent credentials with every request, so do the same.
+    // Credentials go out with every request instead of in answer to a 401 challenge. A server that
+    // lets anonymous users through for some requests never challenges them, so those requests
+    // would run as anonymous. The Elasticsearch 8 client sent credentials with every request, so
+    // do the same.
     final var esConfig = configurationService.getElasticSearchConfiguration();
-    if (esConfig.getSecurityUsername() != null && esConfig.getSecurityPassword() != null) {
+    if (esConfig.getSecurityUsername() == null || esConfig.getSecurityPassword() == null) {
+      LOGGER.debug(
+          "Elasticsearch username and password not provided, skipping connection credential setup.");
+    } else {
       final String credentials =
           esConfig.getSecurityUsername() + ":" + esConfig.getSecurityPassword();
       restClientBuilder.setDefaultHeaders(
@@ -225,27 +221,6 @@ public class ElasticsearchClientBuilder {
     return configurationService.getElasticSearchConfiguration().getConnectionNodes().stream()
         .map(conf -> new HttpHost(protocol, conf.getHost(), conf.getHttpPort()))
         .toArray(HttpHost[]::new);
-  }
-
-  private static Optional<CredentialsProvider> buildCredentialsProviderIfConfigured(
-      final ConfigurationService configurationService) {
-    BasicCredentialsProvider credentialsProvider = null;
-    if (configurationService.getElasticSearchConfiguration().getSecurityUsername() != null
-        && configurationService.getElasticSearchConfiguration().getSecurityPassword() != null) {
-      credentialsProvider = new BasicCredentialsProvider();
-      credentialsProvider.setCredentials(
-          SecurityUtil.ANY_AUTH_SCOPE,
-          new UsernamePasswordCredentials(
-              configurationService.getElasticSearchConfiguration().getSecurityUsername(),
-              configurationService
-                  .getElasticSearchConfiguration()
-                  .getSecurityPassword()
-                  .toCharArray()));
-    } else {
-      LOGGER.debug(
-          "Elasticsearch username and password not provided, skipping connection credential setup.");
-    }
-    return Optional.ofNullable(credentialsProvider);
   }
 
   private static KeyStore loadCustomTrustStore(final ConfigurationService configurationService) {
