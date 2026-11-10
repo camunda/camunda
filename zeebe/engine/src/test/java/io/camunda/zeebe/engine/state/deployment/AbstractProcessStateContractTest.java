@@ -17,6 +17,7 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -1781,9 +1782,12 @@ public abstract class AbstractProcessStateContractTest {
   private static ExecutableProcess transform(final ProcessRecord processRecord) {
     final var modelInstance =
         Bpmn.readModelFromStream(new DirectBufferInputStream(processRecord.getResourceBuffer()));
-    return BpmnFactory.createTransformer(InstantSource.system(), ExpressionLanguageMetrics.noop())
-        .transformDefinitions(modelInstance)
-        .getFirst();
+    return newTransformer().transformDefinitions(modelInstance).getFirst();
+  }
+
+  /** A transformer for the process state under test, like the engine creates one. */
+  protected static BpmnTransformer newTransformer() {
+    return BpmnFactory.createTransformer(InstantSource.system(), ExpressionLanguageMetrics.noop());
   }
 
   protected ProcessRecord creatingProcessRecord() {

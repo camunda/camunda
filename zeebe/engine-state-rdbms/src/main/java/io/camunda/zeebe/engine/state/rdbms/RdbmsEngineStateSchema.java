@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.rdbms;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /** Where the relational engine state schema is defined, and which tables it consists of. */
 public final class RdbmsEngineStateSchema {
@@ -23,14 +25,36 @@ public final class RdbmsEngineStateSchema {
 
   public static final String DATABASE_CHANGELOG_LOCK_TABLE = "CAM_RU_DATABASECHANGELOGLOCK";
 
-  /** All engine state tables; each has a {@code partition_id} column. */
-  public static final List<String> TABLES =
+  /**
+   * The tables whose rows belong to a process instance; each has a {@code process_instance_key},
+   * {@code root_process_instance_key} and {@code tenant_id} column.
+   */
+  public static final List<String> PROCESS_INSTANCE_TABLES =
       List.of(
           "CAM_RU_ELEMENT_INSTANCE",
           "CAM_RU_TAKEN_SEQUENCE_FLOW",
           "CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT",
           "CAM_RU_RUNTIME_INSTRUCTIONS",
           "CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID");
+
+  /** The tables of the process definitions and their lookups. */
+  public static final List<String> PROCESS_DEFINITION_TABLES =
+      List.of(
+          "CAM_RU_PROCESS_DEFINITION",
+          "CAM_RU_PROCESS_VERSION",
+          "CAM_RU_PROCESS_DIGEST",
+          "CAM_RU_PROCESS_BY_DEPLOYMENT",
+          "CAM_RU_PROCESS_BY_VERSION_TAG",
+          "CAM_RU_PENDING_PROCESS_DELETION");
+
+  /** All engine state tables; each has a {@code partition_id} column. */
+  public static final List<String> TABLES =
+      Stream.of(
+              PROCESS_INSTANCE_TABLES.stream(),
+              PROCESS_DEFINITION_TABLES.stream(),
+              Stream.of("CAM_RU_PARTITION_FLAG"))
+          .flatMap(Function.identity())
+          .toList();
 
   private RdbmsEngineStateSchema() {}
 }

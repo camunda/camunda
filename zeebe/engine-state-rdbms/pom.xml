@@ -43,8 +43,18 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.mybatis</groupId>
       <artifactId>mybatis</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
     </dependency>
 
     <dependency>
@@ -86,6 +96,12 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -135,6 +151,7 @@
           <ignoredUnusedDeclaredDependencies>
             <!-- needed at runtime by the contract test of the engine test-jar -->
             <dependency>io.camunda:zeebe-test-util</dependency>
+            <dependency>org.junit.jupiter:junit-jupiter-params</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

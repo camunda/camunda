@@ -18,5 +18,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <include file="/db/changelog/engine-state/changesets/001-initial-schema.xml"/>
+  <include file="/db/changelog/engine-state/changesets/002-process-definitions.xml"/>
 
 </databaseChangeLog>

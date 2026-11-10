@@ -464,7 +464,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     // when - the first commit fails after all statements were sent, and is rolled back
     assertThatThrownBy(transaction::commit).isInstanceOf(ZeebeDbException.class);
     assertThat(committedRowCounts())
-        .containsOnlyKeys(RdbmsEngineStateSchema.TABLES)
+        .containsOnlyKeys(RdbmsEngineStateSchema.PROCESS_INSTANCE_TABLES)
         .allSatisfy((table, count) -> assertThat(count).describedAs(table).isZero());
     transaction.commit();
 
@@ -680,7 +680,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
     // when
     final Map<String, Long> rowsOfTree = new LinkedHashMap<>();
-    for (final String table : RdbmsEngineStateSchema.TABLES) {
+    for (final String table : RdbmsEngineStateSchema.PROCESS_INSTANCE_TABLES) {
       rowsOfTree.put(table, countRows(table, "root_process_instance_key = 100"));
     }
 
@@ -829,7 +829,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   private Map<String, Long> committedRowCounts() {
     final Map<String, Long> counts = new LinkedHashMap<>();
-    for (final String table : RdbmsEngineStateSchema.TABLES) {
+    for (final String table : RdbmsEngineStateSchema.PROCESS_INSTANCE_TABLES) {
       counts.put(table, countRows(table));
     }
     return counts;

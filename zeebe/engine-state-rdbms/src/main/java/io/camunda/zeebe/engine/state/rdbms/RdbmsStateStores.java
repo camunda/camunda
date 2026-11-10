@@ -9,18 +9,22 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
- * Element instances live in the relational database, everything else stays in RocksDB. Requires the
- * {@link MixedTransactionContext} of a {@code MixedZeebeDb}.
+ * Element instances and process definitions live in the relational database, everything else stays
+ * in RocksDB. Requires the {@link MixedTransactionContext} of a {@code MixedZeebeDb}.
  */
 public final class RdbmsStateStores extends RocksDbStateStores {
 
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final MixedTransactionContext mixedContext;
   private final int partitionId;
 
@@ -29,6 +33,7 @@ public final class RdbmsStateStores extends RocksDbStateStores {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final MixedTransactionContext mixedContext) {
     super(zeebeDb, mixedContext.rocksDb());
+    this.zeebeDb = zeebeDb;
     this.partitionId = partitionId;
     this.mixedContext = mixedContext;
   }
@@ -43,5 +48,12 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   public MutableElementInstanceState elementInstanceState(
       final MutableVariableState variableState) {
     return new RdbmsElementInstanceState(mixedContext.jdbc(), partitionId, variableState);
+  }
+
+  @Override
+  public MutableProcessState processState(
+      final EngineConfiguration config, final BpmnTransformer transformer) {
+    return new RdbmsProcessState(
+        mixedContext.jdbc(), partitionId, config, transformer, zeebeDb.getMeterRegistry());
   }
 }
