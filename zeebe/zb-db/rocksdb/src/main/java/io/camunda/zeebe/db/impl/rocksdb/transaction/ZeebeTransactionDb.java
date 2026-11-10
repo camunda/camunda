@@ -64,6 +64,7 @@ public class ZeebeTransactionDb<
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
   private final RocksDBMetricExporter metricExporter;
+  private final RawDbAccess rawAccess;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -88,6 +89,15 @@ public class ZeebeTransactionDb<
     closables.add(defaultReadOptions);
     defaultWriteOptions = new WriteOptions().setDisableWAL(rocksDbConfiguration.isWalDisabled());
     closables.add(defaultWriteOptions);
+
+    rawAccess =
+        new RocksDbRawAccess(
+            rocksDB,
+            defaultHandle,
+            defaultReadOptions,
+            prefixReadOptions,
+            defaultWriteOptions,
+            this::createSnapshot);
   }
 
   public static <
@@ -138,6 +148,11 @@ public class ZeebeTransactionDb<
       throw new RuntimeException(
           "Unexpected error occurred trying to access private nativeHandle_ field", e);
     }
+  }
+
+  /** Direct access to the committed state, for layers that sit between transactions and RocksDB. */
+  public RawDbAccess rawAccess() {
+    return rawAccess;
   }
 
   @Override
