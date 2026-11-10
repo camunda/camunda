@@ -1,0 +1,7 @@
+run          total feel-parse dmn-eval dmn-parse exporter jfr gc other   (CPU cores summed over the 3 brokers; async-profiler cpu mode, 100 s, ~100 samples per CPU-second; Batch C 2026-11-10)
+dmn810-l     0.197 0.000 0.021 0.000 0.014 0.001 0.006 0.156
+dmn810-m     0.206 0.000 0.018 0.000 0.018 0.000 0.016 0.153
+dmn810-s     0.798 0.001 0.095 0.000 0.092 0.001 0.111 0.499
+dmn8924-l    4.720 0.062 2.577 0.000 0.170 0.001 1.672 0.238
+dmn8924-m    1.020 0.017 0.400 0.000 0.335 0.001 0.033 0.235
+dmn8924-s    3.944 0.003 0.390 0.000 2.644 0.001 0.140 0.766
