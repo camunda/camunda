@@ -27,6 +27,8 @@ public class LoadTesterProperties {
 
   @NestedConfigurationProperty private OptimizeProperties optimize = new OptimizeProperties();
 
+  @NestedConfigurationProperty private SuspenderProperties suspender = new SuspenderProperties();
+
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
   }
@@ -91,5 +93,13 @@ public class LoadTesterProperties {
 
   public void setOptimize(final OptimizeProperties optimize) {
     this.optimize = optimize;
+  }
+
+  public SuspenderProperties getSuspender() {
+    return suspender;
+  }
+
+  public void setSuspender(final SuspenderProperties suspender) {
+    this.suspender = suspender;
   }
 }
