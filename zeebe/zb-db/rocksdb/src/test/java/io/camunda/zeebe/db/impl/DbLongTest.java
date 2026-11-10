@@ -11,7 +11,7 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.ExpandableArrayBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public final class DbLongTest {

@@ -10,7 +10,7 @@ package io.camunda.zeebe.db.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public final class DbBytesTest {
 

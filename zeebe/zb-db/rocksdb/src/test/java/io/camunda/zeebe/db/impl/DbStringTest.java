@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public final class DbStringTest {
 
