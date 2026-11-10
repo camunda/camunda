@@ -58,12 +58,14 @@ import org.jspecify.annotations.Nullable;
  * on migration). Hence {@link #insertProcessInstanceKeyByDefinitionKey(long, long)} and {@link
  * #deleteProcessInstanceKeyByDefinitionKey(long, long)} do nothing.
  *
- * <p>Neither is the index of process instances by business id: a root process instance row has its
+ * <p>Neither is the index of process instances by business id: a process instance row has its
  * record's business id as indexed column (null if empty), which follows the record when a business
- * id is assigned later or the instance is migrated to another process id. The engine inserts and
- * deletes the RocksDB index entries exactly when it creates (or assigns the business id of) and
- * removes such a row, with the same values, so {@link #insertProcessInstanceKeyByBusinessId} and
- * {@link #deleteProcessInstanceKeyByBusinessId} do nothing as well.
+ * id is assigned later or the instance is migrated to another process id. The RocksDB index only
+ * has entries for root process instances, so the lookup only matches rows without parent process
+ * instance, the same condition the appliers check. The engine inserts and deletes the RocksDB index
+ * entries exactly when it creates (or assigns the business id of) and removes such a row, with the
+ * same values, so {@link #insertProcessInstanceKeyByBusinessId} and {@link
+ * #deleteProcessInstanceKeyByBusinessId} do nothing as well.
  *
  * <p>Stricter than the RocksDB store: taking a sequence flow in a flow scope that doesn't exist
  * fails, because its row needs the flow scope's process instance and tenant; decrementing a
@@ -79,6 +81,9 @@ import org.jspecify.annotations.Nullable;
 public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   private static final short PROCESS_TYPE = (short) BpmnElementType.PROCESS.ordinal();
+
+  /** See {@link ProcessInstanceRecord#hasParentProcessInstance()}. */
+  private static final long NO_PARENT_PROCESS_INSTANCE = -1L;
 
   private static final Comparator<TakenSequenceFlowRow> BY_GATEWAY_AND_SEQUENCE_FLOW =
       Comparator.comparing(TakenSequenceFlowRow::gatewayElementId)
@@ -432,6 +437,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
             committedKeys,
             row ->
                 businessId.equals(row.businessId())
+                    && row.parentProcessInstanceKey() == NO_PARENT_PROCESS_INSTANCE
                     && processDefinitionId.equals(row.bpmnProcessId())
                     && tenantId.equals(row.tenantId()),
             Comparator.naturalOrder());
@@ -519,6 +525,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
         instance.getParentKey(),
         value.getProcessInstanceKey(),
         rootProcessInstanceKey(value),
+        value.getParentProcessInstanceKey(),
         value.getProcessDefinitionKey(),
         value.getTenantId(),
         value.getBpmnProcessId(),
@@ -530,12 +537,11 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   }
 
   /**
-   * The business id of a root process instance, or null if it has none or the record is of another
-   * element instance: the rows the RocksDB index of process instances by business id has entries
-   * for.
+   * The business id of a process instance (root or called), or null if it has none or the record is
+   * of another element instance.
    */
   private static @Nullable String businessId(final ProcessInstanceRecord value) {
-    if (value.getBpmnElementType() != BpmnElementType.PROCESS || value.hasParentProcessInstance()) {
+    if (value.getBpmnElementType() != BpmnElementType.PROCESS) {
       return null;
     }
     final String businessId = value.getBusinessId();

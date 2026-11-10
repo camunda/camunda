@@ -632,8 +632,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   @Test
-  void shouldStoreBusinessIdOfRootProcessInstancesOnly() {
-    // given - a root instance with a business id, whose called child and elements carry it too
+  void shouldStoreBusinessIdOfProcessInstancesButFindRootInstancesOnly() throws Exception {
+    // given - a root instance with a business id, whose called children and elements carry it too
+    transactionContext.getCurrentTransaction();
     final var root =
         elementInstanceState.newInstance(
             100,
@@ -653,6 +654,15 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             .setParentElementInstanceKey(101)
             .setBusinessId("order-1"),
         ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    // a child called by an instance created before records carried the root process instance key,
+    // so its root key falls back to its own key like a root instance's
+    elementInstanceState.newInstance(
+        400,
+        treeRecord(400, -1, "child", "child", BpmnElementType.PROCESS, 1)
+            .setParentProcessInstanceKey(100)
+            .setParentElementInstanceKey(101)
+            .setBusinessId("order-1"),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when - and a root instance without business id
     elementInstanceState.newInstance(
@@ -660,15 +670,23 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
         treeRecord(300, 300, "parent", "parent", BpmnElementType.PROCESS, 1),
         ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
-    // then - only the rows the RocksDB business id index has entries for
+    // then - only the root instance is found, like by the RocksDB business id index, which has no
+    // entries for called instances
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "parent")).isTrue();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "child")).isFalse();
+    commitAndBeginTransaction();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "parent")).isTrue();
+    assertThat(hasProcessInstanceWithBusinessId("order-1", "child")).isFalse();
     assertThat(
-            metadataRows("SELECT element_instance_key, business_id FROM CAM_RU_ELEMENT_INSTANCE"))
+            metadataRows(
+                "SELECT element_instance_key, parent_process_instance_key, business_id"
+                    + " FROM CAM_RU_ELEMENT_INSTANCE"))
         .containsExactly(
-            tuple(100L, "order-1"), tuple(101L, null), tuple(200L, null), tuple(300L, null));
-    assertThat(
-            elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-                "order-1", "child", TREE_TENANT_ID, key -> false))
-        .isFalse();
+            tuple(100L, -1L, "order-1"),
+            tuple(101L, -1L, null),
+            tuple(200L, 100L, "order-1"),
+            tuple(300L, -1L, null),
+            tuple(400L, 100L, "order-1"));
   }
 
   @Test
