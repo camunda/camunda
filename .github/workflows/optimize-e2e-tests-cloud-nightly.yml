@@ -144,8 +144,8 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
           project_name: elasticsearch
         env:
-          # read-db-versions comes from the checked-out matrix.branch; stable/8.8 has no ES 9 output.
-          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-9 || steps.db-versions.outputs.elasticsearch-8 }}
+          # Only main moved to ES 9; stable branches keep testing their ES 8 client against ES 8.
+          ELASTIC_VERSION: ${{ startsWith(matrix.branch, 'stable/') && steps.db-versions.outputs.elasticsearch-8 || steps.db-versions.outputs.elasticsearch-9 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
