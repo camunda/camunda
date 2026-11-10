@@ -48,16 +48,4 @@ public final class VariableMetadataRecord extends UnifiedRecordValue
   public void wrap(final VariableMetadataRecord metadata) {
     setProtectionModes(metadata.getProtectionModes());
   }
-
-  @Override
-  public int hashCode() {
-    return getProtectionModes().hashCode();
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return this == o
-        || o instanceof final VariableMetadataRecord that
-            && getProtectionModes().equals(that.getProtectionModes());
-  }
 }

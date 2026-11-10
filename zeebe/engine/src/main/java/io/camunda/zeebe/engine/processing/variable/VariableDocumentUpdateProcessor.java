@@ -226,7 +226,6 @@ public final class VariableDocumentUpdateProcessor
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final long rootProcessInstanceKey = scope.getValue().getRootProcessInstanceKey();
-    final var metadataLookup = VariableMetadataLookup.of(value.getVariablesMetadata());
     final int storageOrdinal = scope.getValue().getStorageOrdinal();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
 
@@ -241,7 +240,7 @@ public final class VariableDocumentUpdateProcessor
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer(),
-            metadataLookup);
+            VariableMetadataLookup.NONE);
       } else {
         variableBehavior.mergeDocument(
             scope.getKey(),
@@ -252,7 +251,7 @@ public final class VariableDocumentUpdateProcessor
             bpmnProcessId,
             tenantId,
             value.getVariablesBuffer(),
-            metadataLookup);
+            VariableMetadataLookup.NONE);
       }
     } catch (final MsgpackReaderException e) {
       final String reason =
@@ -313,7 +312,6 @@ public final class VariableDocumentUpdateProcessor
       final UserTaskRecord userTaskRecord,
       final VariableBehavior variableBehavior)
       throws VariableValidationException {
-    final var metadataLookup = VariableMetadataLookup.of(value.getVariablesMetadata());
     switch (value.getUpdateSemantics()) {
       case LOCAL ->
           variableBehavior.mergeLocalDocument(
@@ -325,7 +323,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer(),
-              metadataLookup);
+              VariableMetadataLookup.NONE);
       case PROPAGATE ->
           variableBehavior.mergeDocument(
               userTaskRecord.getElementInstanceKey(),
@@ -336,7 +334,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
               value.getVariablesBuffer(),
-              metadataLookup);
+              VariableMetadataLookup.NONE);
       default ->
           throw new IllegalStateException(
               "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
