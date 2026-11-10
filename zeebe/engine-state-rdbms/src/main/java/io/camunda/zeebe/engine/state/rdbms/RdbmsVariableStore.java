@@ -233,6 +233,47 @@ public final class RdbmsVariableStore implements VariableStore {
     }
   }
 
+  /**
+   * Reads the element instances of the scopes whose chain isn't known yet with one query, and then
+   * the variables of all their chains with one more, unless the session knows them already. The
+   * following visits of these scopes are answered from the loaded rows.
+   */
+  @Override
+  public void prefetchVariables(
+      final Collection<Long> scopeKeys, final @Nullable Collection<DirectBuffer> names) {
+    final List<Long> unknownChains = new ArrayList<>();
+    for (final long scopeKey : new LinkedHashSet<>(scopeKeys)) {
+      if (!scopeChains.containsKey(scopeKey)) {
+        unknownChains.add(scopeKey);
+      }
+    }
+    if (!unknownChains.isEmpty()) {
+      session.getAll(
+          ELEMENT_INSTANCE,
+          unknownChains,
+          ElementInstanceMapper.class,
+          (mapper, keys) -> mapper.selectElementInstances(partitionId, keys));
+    }
+
+    final var scopes = new LinkedHashSet<Long>();
+    for (final long scopeKey : scopeKeys) {
+      for (final long scope : scopeChain(scopeKey)) {
+        scopes.add(scope);
+      }
+    }
+    if (names == null) {
+      readScopes(List.copyOf(scopes));
+    } else {
+      final var variableNames = new LinkedHashSet<String>();
+      names.forEach(name -> variableNames.add(bufferAsString(name)));
+      final List<VariableKey> keys = new ArrayList<>(scopes.size() * variableNames.size());
+      for (final long scope : scopes) {
+        variableNames.forEach(name -> keys.add(new VariableKey(scope, name)));
+      }
+      readVariables(keys);
+    }
+  }
+
   /** The parent scope is the parent of the element instance, which the engine created with it. */
   @Override
   public void createScope(final long childKey, final long parentKey) {

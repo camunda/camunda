@@ -90,6 +90,15 @@ public interface VariableStore {
       BiConsumer<DirectBuffer, VariableInstance> consumer,
       BooleanSupplier completionCondition);
 
+  /**
+   * Reads ahead what {@link #visitVariables} will read for each of the scopes, see {@link
+   * VariableState#prefetchVariables}. Does nothing unless the store benefits from it.
+   *
+   * @param names if not null, the only names the visits will accept
+   */
+  default void prefetchVariables(
+      final Collection<Long> scopeKeys, final @Nullable Collection<DirectBuffer> names) {}
+
   /** Records the parent of a new scope; {@link VariableState#NO_PARENT} for a root scope. */
   void createScope(long childKey, long parentKey);
 

@@ -204,6 +204,12 @@ public final class VariableStateImpl implements MutableVariableState {
   }
 
   @Override
+  public void prefetchVariables(
+      final Collection<Long> scopeKeys, final Collection<DirectBuffer> names) {
+    store.prefetchVariables(scopeKeys, names.isEmpty() ? null : names);
+  }
+
+  @Override
   public DirectBuffer getVariablesAsDocument(final long scopeKey) {
 
     collectedVariables.clear();

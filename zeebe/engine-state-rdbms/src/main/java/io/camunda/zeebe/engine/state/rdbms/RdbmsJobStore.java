@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.instance.JobStore;
 import io.camunda.zeebe.engine.state.rdbms.JobMapper.JobRow;
 import io.camunda.zeebe.engine.state.rdbms.OrderedScan.Cursor;
+import io.camunda.zeebe.engine.state.rdbms.OrderedScan.RowVisitor;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import java.util.List;
@@ -208,12 +209,16 @@ public final class RdbmsJobStore implements JobStore {
     }
   }
 
+  /**
+   * Reads the jobs in pages, the first one of twice the limit hint, and tells the visitor the keys
+   * of each page before visiting it, so it can prefetch what it needs for them.
+   */
   @Override
   public void visitActivatableJobs(
       final DirectBuffer type,
       final List<String> tenantIds,
       final int limitHint,
-      final LongPredicate visitor) {
+      final ActivatableJobKeyVisitor visitor) {
     if (tenantIds.isEmpty()) {
       return;
     }
@@ -225,7 +230,23 @@ public final class RdbmsJobStore implements JobStore {
         (mapper, cursor, inclusive, limit) ->
             mapper.selectActivatableJobs(
                 partitionId, activatableType, tenantIds, cursor, inclusive, limit),
-        row -> visitor.test(row.key()));
+        new RowVisitor<>() {
+          @Override
+          public boolean visit(final JobRow row) {
+            return visitor.test(row.key());
+          }
+
+          @Override
+          public void beforeVisiting(final List<JobRow> rows) {
+            if (!rows.isEmpty()) {
+              final long[] keys = new long[rows.size()];
+              for (int i = 0; i < keys.length; i++) {
+                keys[i] = rows.get(i).key();
+              }
+              visitor.readAhead(keys);
+            }
+          }
+        });
   }
 
   @Override

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.ActivatableJobVisitor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -26,10 +27,12 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -45,6 +48,7 @@ final class JobBatchCollector {
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   private final JobState jobState;
+  private final VariableState variableState;
   private final JobVariablesCollector jobVariablesCollector;
   private final CslAuthorizationCheck cslCheck;
   private final Predicate<Integer> canWriteEventOfLength;
@@ -68,6 +72,7 @@ final class JobBatchCollector {
       final JobProcessingMetrics jobMetrics,
       final JobSecretInjector jobSecretInjector) {
     jobState = state.getJobState();
+    variableState = state.getVariableState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
     this.cslCheck = cslCheck;
@@ -106,10 +111,7 @@ final class JobBatchCollector {
     final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
 
     jobSecretInjector.reset();
-    jobState.forEachActivatableJobs(
-        value.getTypeBuffer(),
-        tenantIds,
-        maxActivatedCount,
+    final BiFunction<Long, JobRecord, Boolean> collectJob =
         (key, jobRecord) -> {
           if (!isAuthorizedForJob.test(jobRecord)) {
             // Skip jobs the requester is not authorized for
@@ -180,6 +182,22 @@ final class JobBatchCollector {
           }
 
           return activatedCount.value < maxActivatedCount;
+        };
+    jobState.forEachActivatableJobs(
+        value.getTypeBuffer(),
+        tenantIds,
+        maxActivatedCount,
+        new ActivatableJobVisitor() {
+          @Override
+          public Boolean apply(final Long key, final JobRecord jobRecord) {
+            return collectJob.apply(key, jobRecord);
+          }
+
+          @Override
+          public void readAhead(final long[] jobKeys) {
+            prefetchVariables(
+                jobKeys, maxActivatedCount - activatedCount.value, requestedVariables);
+          }
         });
 
     if (unwritableJob.ref != null) {
@@ -187,6 +205,30 @@ final class JobBatchCollector {
     }
 
     return Either.right(jobCountPerJobKind);
+  }
+
+  /**
+   * Prefetches the variables of the jobs read ahead that the batch can still take, so that a state
+   * reading them from a database doesn't send a query per job when they are set. Jobs skipped by
+   * the checks may leave later jobs of the page without prefetched variables; those are read one by
+   * one.
+   */
+  private void prefetchVariables(
+      final long[] jobKeys,
+      final int remaining,
+      final Collection<DirectBuffer> requestedVariables) {
+    final int count = Math.min(jobKeys.length, remaining);
+    final List<Long> scopeKeys = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      final JobRecord job = jobState.getJob(jobKeys[i]);
+      // like JobVariablesCollector, a job without element instance gets no variables
+      if (job != null && job.getElementInstanceKey() >= 0) {
+        scopeKeys.add(job.getElementInstanceKey());
+      }
+    }
+    if (!scopeKeys.isEmpty()) {
+      variableState.prefetchVariables(scopeKeys, requestedVariables);
+    }
   }
 
   private Predicate<JobRecord> buildAuthzPredicate(final TypedRecord<JobBatchRecord> record) {
