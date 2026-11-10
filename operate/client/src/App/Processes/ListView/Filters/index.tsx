@@ -54,6 +54,12 @@ const initialValues: ProcessInstancesFilter = {
   incidents: true,
 };
 
+const omitVariableValues = ({
+  variableName,
+  variableValues,
+  ...rest
+}: ProcessInstancesFilter = {}) => rest;
+
 const Filters: React.FC = observer(() => {
   const clientConfig = getClientConfig();
   const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
@@ -71,6 +77,13 @@ const Filters: React.FC = observer(() => {
     delete filterValues.processDefinitionId;
     delete filterValues.processDefinitionVersion;
   }
+  const {inlineCondition} = variableFilterStore;
+  const inlineVariableValues = inlineCondition
+    ? {
+        variableName: inlineCondition.name,
+        variableValues: inlineCondition.value,
+      }
+    : {};
 
   return (
     <Form<ProcessInstancesFilter>
@@ -84,7 +97,12 @@ const Filters: React.FC = observer(() => {
           }),
         });
       }}
-      initialValues={filterValues}
+      initialValues={{...filterValues, ...inlineVariableValues}}
+      // We explicitly ignore the variable fields when comparing initialValues,
+      // because typing a variable would otherwise erase the user's other inputs.
+      initialValuesEqual={(previous, next) =>
+        isEqual(omitVariableValues(previous), omitVariableValues(next))
+      }
     >
       {({handleSubmit, form, values}) => (
         <StyledForm onSubmit={handleSubmit}>
@@ -98,7 +116,7 @@ const Filters: React.FC = observer(() => {
             }
             onResetClick={() => {
               variableFilterStore.setConditions([]);
-              form.reset();
+              form.reset(initialValues);
               navigate({
                 search: updateProcessInstancesFilterSearchString(
                   searchParams,

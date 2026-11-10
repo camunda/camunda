@@ -10,7 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Button} from '@camunda/design-system';
 import {Pencil} from '@camunda/design-system/icons';
-import {isValueRequired, type VariableCondition} from '../../VariablesFilter/variableConditions';
+import {getInlineCondition, isValueRequired, type VariableCondition} from '../../VariablesFilter/variableConditions';
 import {useVariableConditions} from '../../VariablesFilter/variableFilterStore';
 import {truncate} from '../../VariablesFilter/truncate';
 import {SingleConditionFields} from './SingleConditionFields';
@@ -19,7 +19,7 @@ const VariablesFilter: React.FC = () => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const conditions = useVariableConditions();
-	const showInlineForm = conditions.length === 0 || (conditions.length === 1 && conditions[0]?.operator === 'equals');
+	const showInlineForm = conditions.length === 0 || getInlineCondition(conditions) !== undefined;
 
 	const getConditionLabel = ({name, operator, value}: VariableCondition) => {
 		const label = `${name} ${t(`operate.processes.variableFilter.operators.${operator}`)}`;
