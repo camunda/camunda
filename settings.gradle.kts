@@ -397,7 +397,11 @@ registerProject(":camunda-archunit-tests", "qa/archunit-tests")
 
 registerProject(":zeebe-exporter-test", "zeebe/exporter-test")
 
-registerProject(":zeebe-db", "zeebe/zb-db")
+registerProject(":zeebe-db-api", "zeebe/zb-db/api")
+
+registerProject(":zeebe-db-rocksdb", "zeebe/zb-db/rocksdb")
+
+registerProject(":zeebe-db-tests", "zeebe/zb-db/tests")
 
 registerProject(":operate-data-generator", "operate/data-generator")
 
