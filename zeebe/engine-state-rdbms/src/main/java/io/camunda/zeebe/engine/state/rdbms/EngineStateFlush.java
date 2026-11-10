@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
 
 /**
  * Writes the staged rows of all caches of a transaction context on commit, through one MyBatis
@@ -37,15 +38,16 @@ final class EngineStateFlush implements JdbcTransactionParticipant {
   /** The name of the {@code @Param} that carries the row of an insert or update. */
   private static final String ROW_PARAMETER = "row";
 
-  private final List<Table<?, ?>> tables = new ArrayList<>();
+  private final List<Table<?, ?, ?>> tables = new ArrayList<>();
 
-  <K, E> void add(
+  <M, K, E> void add(
       final EntityCache<K, E> cache,
       final int partitionId,
-      final Writer<E> inserter,
-      final Writer<E> updater,
-      final Writer<K> deleter) {
-    tables.add(new Table<>(cache, partitionId, inserter, updater, deleter));
+      final Class<M> mapperType,
+      final Writer<M, E> inserter,
+      final Writer<M, E> updater,
+      final Writer<M, K> deleter) {
+    tables.add(new Table<>(cache, partitionId, mapperType, inserter, updater, deleter));
   }
 
   @Override
@@ -55,10 +57,9 @@ final class EngineStateFlush implements JdbcTransactionParticipant {
     }
 
     try (final var session = EngineStateMyBatis.openSession(connection, ExecutorType.BATCH)) {
-      final var mapper = session.getMapper(EngineStateMapper.class);
-      final Map<Object, Table<?, ?>> updatedRows = new IdentityHashMap<>();
+      final Map<Object, Table<?, ?, ?>> updatedRows = new IdentityHashMap<>();
       for (final var table : tables) {
-        table.write(mapper, updatedRows);
+        table.write(session, updatedRows);
       }
 
       for (final var result : session.flushStatements()) {
@@ -87,14 +88,16 @@ final class EngineStateFlush implements JdbcTransactionParticipant {
     }
   }
 
-  private record Table<K, E>(
+  private record Table<M, K, E>(
       EntityCache<K, E> cache,
       int partitionId,
-      Writer<E> inserter,
-      Writer<E> updater,
-      Writer<K> deleter) {
+      Class<M> mapperType,
+      Writer<M, E> inserter,
+      Writer<M, E> updater,
+      Writer<M, K> deleter) {
 
-    void write(final EngineStateMapper mapper, final Map<Object, Table<?, ?>> updatedRows) {
+    void write(final SqlSession session, final Map<Object, Table<?, ?, ?>> updatedRows) {
+      final var mapper = session.getMapper(mapperType);
       cache.writeStaged(
           new EntityCache.StagedWriter<>() {
             @Override

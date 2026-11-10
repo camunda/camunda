@@ -19,10 +19,10 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStore;
 import io.camunda.zeebe.engine.state.instance.RuntimeInstructions;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ElementInstanceRow;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PayloadRow;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowKey;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowRow;
+import io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper.ElementInstanceRow;
+import io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper.PayloadRow;
+import io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper.TakenSequenceFlowKey;
+import io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper.TakenSequenceFlowRow;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
@@ -44,9 +44,9 @@ import org.jspecify.annotations.Nullable;
  * JDBC batches when the {@link JdbcTransactionContext} commits; a failed commit keeps them staged,
  * so a retried commit writes them again. Reads look at the staged writes first, so a command sees
  * its own uncommitted changes, and fall back to the database. Queries over several rows merge the
- * committed rows with the staged writes. All SQL is in the {@link EngineStateMapper}. Like the
- * RocksDB column families, every operation joins the current transaction, or runs in its own
- * transaction (committed right away) if there is none.
+ * committed rows with the staged writes. All SQL is in the mappers. Like the RocksDB column
+ * families, every operation joins the current transaction, or runs in its own transaction
+ * (committed right away) if there is none.
  *
  * <p>Staged and returned values are copies of serialized payloads, so the store never shares an
  * object with a caller: mutating an instance without calling {@link
@@ -101,34 +101,38 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
         rdbms.cache(
             "element instance",
             ElementInstanceRow::key,
-            EngineStateMapper::selectElementInstance,
-            EngineStateMapper::insertElementInstance,
-            EngineStateMapper::updateElementInstance,
-            EngineStateMapper::deleteElementInstance);
+            ElementInstanceMapper.class,
+            ElementInstanceMapper::selectElementInstance,
+            ElementInstanceMapper::insertElementInstance,
+            ElementInstanceMapper::updateElementInstance,
+            ElementInstanceMapper::deleteElementInstance);
     takenSequenceFlows =
         rdbms.cache(
             "taken sequence flow",
             TakenSequenceFlowRow::key,
-            EngineStateMapper::selectTakenSequenceFlow,
-            EngineStateMapper::insertTakenSequenceFlow,
-            EngineStateMapper::updateTakenSequenceFlow,
-            EngineStateMapper::deleteTakenSequenceFlow);
+            ElementInstanceMapper.class,
+            ElementInstanceMapper::selectTakenSequenceFlow,
+            ElementInstanceMapper::insertTakenSequenceFlow,
+            ElementInstanceMapper::updateTakenSequenceFlow,
+            ElementInstanceMapper::deleteTakenSequenceFlow);
     awaitResults =
         rdbms.cache(
             "await process instance result",
             PayloadRow::key,
-            EngineStateMapper::selectAwaitResult,
-            EngineStateMapper::insertAwaitResult,
-            EngineStateMapper::updateAwaitResult,
-            EngineStateMapper::deleteAwaitResult);
+            ElementInstanceMapper.class,
+            ElementInstanceMapper::selectAwaitResult,
+            ElementInstanceMapper::insertAwaitResult,
+            ElementInstanceMapper::updateAwaitResult,
+            ElementInstanceMapper::deleteAwaitResult);
     runtimeInstructions =
         rdbms.cache(
             "runtime instructions",
             PayloadRow::key,
-            EngineStateMapper::selectRuntimeInstructions,
-            EngineStateMapper::insertRuntimeInstructions,
-            EngineStateMapper::updateRuntimeInstructions,
-            EngineStateMapper::deleteRuntimeInstructions);
+            ElementInstanceMapper.class,
+            ElementInstanceMapper::selectRuntimeInstructions,
+            ElementInstanceMapper::insertRuntimeInstructions,
+            ElementInstanceMapper::updateRuntimeInstructions,
+            ElementInstanceMapper::deleteRuntimeInstructions);
   }
 
   @Override
@@ -191,7 +195,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   @Override
   public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
-    final var committedKeys = rdbms.read(mapper -> mapper.selectChildKeys(partitionId, parentKey));
+    final var committedKeys =
+        rdbms.read(
+            ElementInstanceMapper.class, mapper -> mapper.selectChildKeys(partitionId, parentKey));
     final var childKeys =
         elementInstances.queryKeys(
             committedKeys, row -> row.parentKey() == parentKey, Comparator.naturalOrder());
@@ -359,6 +365,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
     final var committedKeys =
         rdbms.read(
+            ElementInstanceMapper.class,
             mapper ->
                 mapper.selectProcessInstanceKeysByDefinition(partitionId, processDefinitionKey));
     return elementInstances.queryKeys(
@@ -383,6 +390,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
     excludedKeys.addAll(elementInstances.stagedKeys());
     return !rdbms
         .read(
+            ElementInstanceMapper.class,
             mapper ->
                 mapper.selectAnyProcessInstanceByDefinition(
                     partitionId, processDefinitionKey, excludedKeys.toArray(Long[]::new)))
@@ -415,6 +423,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final Predicate<Long> ignoreWhen) {
     final var committedKeys =
         rdbms.read(
+            ElementInstanceMapper.class,
             mapper ->
                 mapper.selectProcessInstanceKeysByBusinessId(
                     partitionId, tenantId, processDefinitionId, businessId));
@@ -438,7 +447,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   public long getActiveProcessInstanceCount() {
     final var stagedKeys = elementInstances.stagedKeys().toArray(Long[]::new);
     final long committed =
-        rdbms.read(mapper -> mapper.countProcessInstances(partitionId, stagedKeys));
+        rdbms.read(
+            ElementInstanceMapper.class,
+            mapper -> mapper.countProcessInstances(partitionId, stagedKeys));
     final long staged =
         elementInstances.stagedMatching(row -> row.bpmnElementType() == PROCESS_TYPE).size();
     return committed + staged;
@@ -474,7 +485,9 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   /** The children of the given parent, ordered by key. */
   private List<ElementInstanceRow> readChildren(final long parentKey) {
-    final var committed = rdbms.read(mapper -> mapper.selectChildren(partitionId, parentKey));
+    final var committed =
+        rdbms.read(
+            ElementInstanceMapper.class, mapper -> mapper.selectChildren(partitionId, parentKey));
     return elementInstances.query(
         committed,
         row -> row.parentKey() == parentKey,
@@ -489,6 +502,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final long flowScopeKey, final @Nullable String gatewayElementId) {
     final var committed =
         rdbms.read(
+            ElementInstanceMapper.class,
             mapper -> mapper.selectTakenSequenceFlows(partitionId, flowScopeKey, gatewayElementId));
     return takenSequenceFlows.query(
         committed,

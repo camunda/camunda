@@ -26,11 +26,11 @@ import io.camunda.zeebe.engine.state.deployment.VersionManager.ResourceVisitor;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.PersistedProcessVisitor;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PartitionStateRow;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PendingProcessDeletionRow;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessDefinitionRow;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessIdKey;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ProcessVersionRow;
+import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
+import io.camunda.zeebe.engine.state.rdbms.ProcessDefinitionMapper.PendingProcessDeletionRow;
+import io.camunda.zeebe.engine.state.rdbms.ProcessDefinitionMapper.ProcessDefinitionRow;
+import io.camunda.zeebe.engine.state.rdbms.ProcessDefinitionMapper.ProcessIdKey;
+import io.camunda.zeebe.engine.state.rdbms.ProcessDefinitionMapper.ProcessVersionRow;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -52,8 +52,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Like {@link RdbmsElementInstanceStore}, each table has an {@link EntityCache} that stages the
  * writes until the {@link JdbcTransactionContext} commits, reads see the staged writes first, and
- * every operation joins the current transaction or runs in its own. All SQL is in the {@link
- * EngineStateMapper}.
+ * every operation joins the current transaction or runs in its own. All SQL is in the mappers.
  *
  * <p>Differences to {@link DbProcessStore}, none of them observable through {@link
  * MutableProcessState}:
@@ -112,34 +111,38 @@ public final class RdbmsProcessStore implements ProcessStore {
         rdbms.cache(
             "process",
             ProcessDefinitionRow::processDefinitionKey,
-            EngineStateMapper::selectProcessDefinition,
-            EngineStateMapper::insertProcessDefinition,
-            EngineStateMapper::updateProcessDefinition,
-            EngineStateMapper::deleteProcessDefinition);
+            ProcessDefinitionMapper.class,
+            ProcessDefinitionMapper::selectProcessDefinition,
+            ProcessDefinitionMapper::insertProcessDefinition,
+            ProcessDefinitionMapper::updateProcessDefinition,
+            ProcessDefinitionMapper::deleteProcessDefinition);
     versions =
         rdbms.cache(
             "process version info",
             ProcessVersionRow::key,
-            EngineStateMapper::selectProcessVersion,
-            EngineStateMapper::insertProcessVersion,
-            EngineStateMapper::updateProcessVersion,
-            EngineStateMapper::deleteProcessVersion);
+            ProcessDefinitionMapper.class,
+            ProcessDefinitionMapper::selectProcessVersion,
+            ProcessDefinitionMapper::insertProcessVersion,
+            ProcessDefinitionMapper::updateProcessVersion,
+            ProcessDefinitionMapper::deleteProcessVersion);
     pendingDeletions =
         rdbms.cache(
             "pending process deletion",
             Function.identity(),
-            EngineStateMapper::selectPendingProcessDeletion,
-            EngineStateMapper::insertPendingProcessDeletion,
-            EngineStateMapper::updatePendingProcessDeletion,
-            EngineStateMapper::deletePendingProcessDeletion);
+            ProcessDefinitionMapper.class,
+            ProcessDefinitionMapper::selectPendingProcessDeletion,
+            ProcessDefinitionMapper::insertPendingProcessDeletion,
+            ProcessDefinitionMapper::updatePendingProcessDeletion,
+            ProcessDefinitionMapper::deletePendingProcessDeletion);
     partitionState =
         rdbms.cache(
             "partition state",
             PartitionStateRow::key,
-            EngineStateMapper::selectPartitionState,
-            EngineStateMapper::insertPartitionState,
-            EngineStateMapper::updatePartitionState,
-            EngineStateMapper::deletePartitionState);
+            PartitionStateMapper.class,
+            PartitionStateMapper::selectPartitionState,
+            PartitionStateMapper::insertPartitionState,
+            PartitionStateMapper::updatePartitionState,
+            PartitionStateMapper::deletePartitionState);
 
     transactionContext.addTransactionListener(versionInfos);
   }
@@ -289,7 +292,9 @@ public final class RdbmsProcessStore implements ProcessStore {
 
   @Override
   public void forEachVersion(final ResourceVisitor visitor) {
-    final var committed = rdbms.read(mapper -> mapper.selectProcessVersions(partitionId));
+    final var committed =
+        rdbms.read(
+            ProcessDefinitionMapper.class, mapper -> mapper.selectProcessVersions(partitionId));
     final var rows =
         versions.query(
             committed,
@@ -379,6 +384,7 @@ public final class RdbmsProcessStore implements ProcessStore {
       final long pageStart = afterKey;
       final var committed =
           rdbms.read(
+              ProcessDefinitionMapper.class,
               mapper ->
                   mapper.selectProcessDefinitionsAfter(partitionId, pageStart, PROCESS_PAGE_SIZE));
       final boolean lastPage = committed.size() < PROCESS_PAGE_SIZE;
@@ -475,9 +481,10 @@ public final class RdbmsProcessStore implements ProcessStore {
 
   /** The committed processes of the query, with the staged writes applied. */
   private List<ProcessDefinitionRow> queryProcesses(
-      final EngineStateMyBatis.MapperCall<List<ProcessDefinitionRow>> query,
+      final EngineStateMyBatis.MapperCall<ProcessDefinitionMapper, List<ProcessDefinitionRow>>
+          query,
       final Predicate<ProcessDefinitionRow> stagedMatches) {
-    return processes.query(rdbms.read(query), stagedMatches, BY_KEY);
+    return processes.query(rdbms.read(ProcessDefinitionMapper.class, query), stagedMatches, BY_KEY);
   }
 
   /** Inserts the process, or updates it if it exists, in which case it keeps its lookups. */
@@ -515,6 +522,7 @@ public final class RdbmsProcessStore implements ProcessStore {
       final String tenantId, final String bpmnProcessId, final int version) {
     final var committed =
         rdbms.read(
+            ProcessDefinitionMapper.class,
             mapper ->
                 mapper.selectProcessDefinitionsByVersion(
                     partitionId, tenantId, bpmnProcessId, version));
@@ -533,6 +541,7 @@ public final class RdbmsProcessStore implements ProcessStore {
   private List<PendingProcessDeletionRow> readPendingDeletions(final long processDefinitionKey) {
     final var committed =
         rdbms.read(
+            ProcessDefinitionMapper.class,
             mapper -> mapper.selectPendingProcessDeletions(partitionId, processDefinitionKey));
     return pendingDeletions.query(
         committed,

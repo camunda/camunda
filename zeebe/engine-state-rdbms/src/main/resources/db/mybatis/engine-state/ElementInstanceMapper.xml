@@ -9,18 +9,18 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!--
-  Statements of the relational engine state, see EngineStateMapper. The schema is created by the
-  Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+  Statements of the element instance tables of the relational engine state, see ElementInstanceMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
 
   Statements without a databaseId are portable; a statement or fragment with the databaseId of
   the connected database (see EngineStateMyBatis) replaces the portable one.
 -->
-<mapper namespace="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper">
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper">
 
   <!-- CAM_RU_ELEMENT_INSTANCE -->
 
   <resultMap id="elementInstanceRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ElementInstanceRow">
+    type="io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper$ElementInstanceRow">
     <constructor>
       <idArg column="element_instance_key" javaType="_long"/>
       <arg column="parent_key" javaType="_long"/>
@@ -145,7 +145,7 @@
   <!-- CAM_RU_TAKEN_SEQUENCE_FLOW -->
 
   <resultMap id="takenSequenceFlowRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$TakenSequenceFlowRow">
+    type="io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper$TakenSequenceFlowRow">
     <constructor>
       <idArg column="flow_scope_key" javaType="_long"/>
       <idArg column="gateway_element_id" javaType="String"/>
@@ -206,7 +206,7 @@
   <!-- CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT and CAM_RU_RUNTIME_INSTRUCTIONS -->
 
   <resultMap id="payloadRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$PayloadRow">
+    type="io.camunda.zeebe.engine.state.rdbms.ElementInstanceMapper$PayloadRow">
     <constructor>
       <idArg column="process_instance_key" javaType="_long"/>
       <arg column="root_process_instance_key" javaType="_long"/>
@@ -261,235 +261,6 @@
   <delete id="deleteRuntimeInstructions">
     DELETE FROM CAM_RU_RUNTIME_INSTRUCTIONS
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
-  </delete>
-
-  <!-- CAM_RU_PROCESS_DEFINITION -->
-
-  <resultMap id="processDefinitionRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ProcessDefinitionRow">
-    <constructor>
-      <idArg column="process_definition_key" javaType="_long"/>
-      <arg column="tenant_id" javaType="String"/>
-      <arg column="bpmn_process_id" javaType="String"/>
-      <arg column="version" javaType="_int"/>
-      <arg column="version_tag" javaType="String"/>
-      <arg column="deployment_key" javaType="_long"/>
-      <arg column="resource_name" javaType="String"/>
-      <arg column="state" javaType="_short"/>
-      <arg column="deployment_key_lookup" javaType="Long"/>
-      <arg column="version_tag_lookup" javaType="String"/>
-      <arg column="payload" javaType="_byte[]"/>
-    </constructor>
-  </resultMap>
-
-  <sql id="processDefinitionColumns">
-    process_definition_key, tenant_id, bpmn_process_id, version, version_tag, deployment_key,
-    resource_name, state, deployment_key_lookup, version_tag_lookup, payload
-  </sql>
-
-  <select id="selectProcessDefinition" resultMap="processDefinitionRow">
-    SELECT <include refid="processDefinitionColumns"/>
-    FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND process_definition_key = #{key}
-  </select>
-
-  <select id="selectProcessDefinitionsByVersion" resultMap="processDefinitionRow">
-    SELECT <include refid="processDefinitionColumns"/>
-    FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
-      AND bpmn_process_id = #{bpmnProcessId} AND version = #{version}
-    ORDER BY process_definition_key
-  </select>
-
-  <!-- the lookup columns are NULL unless set, and NULL never matches -->
-  <select id="selectProcessDefinitionsByDeploymentLookup" resultMap="processDefinitionRow">
-    SELECT <include refid="processDefinitionColumns"/>
-    FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
-      AND bpmn_process_id = #{bpmnProcessId} AND deployment_key_lookup = #{deploymentKey}
-    ORDER BY process_definition_key
-  </select>
-
-  <select id="selectProcessDefinitionsByVersionTagLookup" resultMap="processDefinitionRow">
-    SELECT <include refid="processDefinitionColumns"/>
-    FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
-      AND bpmn_process_id = #{bpmnProcessId} AND version_tag_lookup = #{versionTag}
-    ORDER BY process_definition_key
-  </select>
-
-  <select id="selectProcessDefinitionsAfter" resultMap="processDefinitionRow">
-    SELECT <include refid="processDefinitionColumns"/>
-    FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND process_definition_key &gt; #{afterKey}
-    ORDER BY process_definition_key
-    LIMIT #{limit}
-  </select>
-
-  <insert id="insertProcessDefinition">
-    INSERT INTO CAM_RU_PROCESS_DEFINITION (partition_id, <include refid="processDefinitionColumns"/>)
-    VALUES (#{partitionId}, #{row.processDefinitionKey}, #{row.tenantId}, #{row.bpmnProcessId},
-      #{row.version}, #{row.versionTag,jdbcType=VARCHAR}, #{row.deploymentKey},
-      #{row.resourceName}, #{row.state}, #{row.deploymentKeyLookup,jdbcType=BIGINT},
-      #{row.versionTagLookup,jdbcType=VARCHAR}, #{row.payload})
-  </insert>
-
-  <update id="updateProcessDefinition">
-    UPDATE CAM_RU_PROCESS_DEFINITION
-    SET tenant_id = #{row.tenantId}, bpmn_process_id = #{row.bpmnProcessId},
-      version = #{row.version}, version_tag = #{row.versionTag,jdbcType=VARCHAR},
-      deployment_key = #{row.deploymentKey}, resource_name = #{row.resourceName},
-      state = #{row.state}, deployment_key_lookup = #{row.deploymentKeyLookup,jdbcType=BIGINT},
-      version_tag_lookup = #{row.versionTagLookup,jdbcType=VARCHAR}, payload = #{row.payload}
-    WHERE partition_id = #{partitionId} AND process_definition_key = #{row.processDefinitionKey}
-  </update>
-
-  <delete id="deleteProcessDefinition">
-    DELETE FROM CAM_RU_PROCESS_DEFINITION
-    WHERE partition_id = #{partitionId} AND process_definition_key = #{key}
-  </delete>
-
-  <!-- CAM_RU_PROCESS_VERSION -->
-
-  <resultMap id="processVersionRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ProcessVersionRow">
-    <constructor>
-      <idArg column="tenant_id" javaType="String"/>
-      <idArg column="bpmn_process_id" javaType="String"/>
-      <arg column="highest_version" javaType="_long"/>
-      <arg column="latest_version" javaType="_long"/>
-      <arg column="digest" javaType="_byte[]"/>
-      <arg column="payload" javaType="_byte[]"/>
-    </constructor>
-  </resultMap>
-
-  <!--
-    The tables keyed by tenant and process id; the key, or a row whose key properties are the
-    same, is bound as ${entry}
-  -->
-  <sql id="processIdKeyCondition">
-    partition_id = #{partitionId} AND tenant_id = #{${entry}.tenantId}
-    AND bpmn_process_id = #{${entry}.bpmnProcessId}
-  </sql>
-
-  <select id="selectProcessVersion" resultMap="processVersionRow">
-    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload
-    FROM CAM_RU_PROCESS_VERSION
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
-  </select>
-
-  <select id="selectProcessVersions" resultMap="processVersionRow">
-    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload
-    FROM CAM_RU_PROCESS_VERSION
-    WHERE partition_id = #{partitionId}
-    ORDER BY tenant_id, bpmn_process_id
-  </select>
-
-  <insert id="insertProcessVersion">
-    INSERT INTO CAM_RU_PROCESS_VERSION
-      (partition_id, tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload)
-    VALUES (#{partitionId}, #{row.tenantId}, #{row.bpmnProcessId}, #{row.highestVersion},
-      #{row.latestVersion}, #{row.digest,jdbcType=BINARY}, #{row.payload})
-  </insert>
-
-  <update id="updateProcessVersion">
-    UPDATE CAM_RU_PROCESS_VERSION
-    SET highest_version = #{row.highestVersion}, latest_version = #{row.latestVersion},
-      digest = #{row.digest,jdbcType=BINARY}, payload = #{row.payload}
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="row"/></include>
-  </update>
-
-  <delete id="deleteProcessVersion">
-    DELETE FROM CAM_RU_PROCESS_VERSION
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
-  </delete>
-
-  <!-- CAM_RU_PENDING_PROCESS_DELETION -->
-
-  <resultMap id="pendingProcessDeletionRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$PendingProcessDeletionRow">
-    <constructor>
-      <idArg column="process_definition_key" javaType="_long"/>
-      <idArg column="pending_partition_id" javaType="_int"/>
-    </constructor>
-  </resultMap>
-
-  <!-- the row is its own key, bound as ${entry} -->
-  <sql id="pendingProcessDeletionKeyCondition">
-    partition_id = #{partitionId} AND process_definition_key = #{${entry}.processDefinitionKey}
-    AND pending_partition_id = #{${entry}.pendingPartitionId}
-  </sql>
-
-  <select id="selectPendingProcessDeletion" resultMap="pendingProcessDeletionRow">
-    SELECT process_definition_key, pending_partition_id
-    FROM CAM_RU_PENDING_PROCESS_DELETION
-    WHERE <include refid="pendingProcessDeletionKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
-  </select>
-
-  <select id="selectPendingProcessDeletions" resultMap="pendingProcessDeletionRow">
-    SELECT process_definition_key, pending_partition_id
-    FROM CAM_RU_PENDING_PROCESS_DELETION
-    WHERE partition_id = #{partitionId} AND process_definition_key = #{processDefinitionKey}
-    ORDER BY pending_partition_id
-  </select>
-
-  <insert id="insertPendingProcessDeletion">
-    INSERT INTO CAM_RU_PENDING_PROCESS_DELETION
-      (partition_id, process_definition_key, pending_partition_id)
-    VALUES (#{partitionId}, #{row.processDefinitionKey}, #{row.pendingPartitionId})
-  </insert>
-
-  <!--
-    The row has no other columns, so an update only confirms that it exists. The entity cache
-    turns a delete followed by an insert of the same row into an update.
-  -->
-  <update id="updatePendingProcessDeletion">
-    UPDATE CAM_RU_PENDING_PROCESS_DELETION
-    SET pending_partition_id = pending_partition_id
-    WHERE <include refid="pendingProcessDeletionKeyCondition">
-      <property name="entry" value="row"/>
-    </include>
-  </update>
-
-  <delete id="deletePendingProcessDeletion">
-    DELETE FROM CAM_RU_PENDING_PROCESS_DELETION
-    WHERE <include refid="pendingProcessDeletionKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
-  </delete>
-
-  <!-- CAM_RU_PARTITION_STATE -->
-
-  <resultMap id="partitionStateRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$PartitionStateRow">
-    <constructor>
-      <idArg column="state_key" javaType="String"/>
-      <arg column="value" javaType="String"/>
-    </constructor>
-  </resultMap>
-
-  <select id="selectPartitionState" resultMap="partitionStateRow">
-    SELECT state_key, value
-    FROM CAM_RU_PARTITION_STATE
-    WHERE partition_id = #{partitionId} AND state_key = #{key}
-  </select>
-
-  <insert id="insertPartitionState">
-    INSERT INTO CAM_RU_PARTITION_STATE (partition_id, state_key, value)
-    VALUES (#{partitionId}, #{row.key}, #{row.value,jdbcType=VARCHAR})
-  </insert>
-
-  <update id="updatePartitionState">
-    UPDATE CAM_RU_PARTITION_STATE
-    SET value = #{row.value,jdbcType=VARCHAR}
-    WHERE partition_id = #{partitionId} AND state_key = #{row.key}
-  </update>
-
-  <delete id="deletePartitionState">
-    DELETE FROM CAM_RU_PARTITION_STATE
-    WHERE partition_id = #{partitionId} AND state_key = #{key}
   </delete>
 
 </mapper>
