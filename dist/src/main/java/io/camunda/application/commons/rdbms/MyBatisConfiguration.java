@@ -171,19 +171,12 @@ public class MyBatisConfiguration {
       throws Exception {
     final var factories = new LinkedHashMap<String, SqlSessionFactory>();
     for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
-      final var prefix =
-          physicalTenantResolver
-              .forPhysicalTenant(tenantId)
-              .getData()
-              .getSecondaryStorage()
-              .getRdbms()
-              .getPrefix();
       factories.put(
           tenantId,
           buildSqlSessionFactory(
               rdbmsDataSources.dataSourceFor(tenantId),
               rdbmsDataSources.vendorPropertiesFor(tenantId),
-              prefix));
+              prefix(physicalTenantResolver, tenantId)));
     }
     return Map.copyOf(factories);
   }
@@ -204,6 +197,40 @@ public class MyBatisConfiguration {
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId)));
     }
     return Map.copyOf(bundles);
+  }
+
+  /**
+   * The mapper bundles of the RDBMS exporter. They are built on each physical tenant's exporter
+   * pool, so that search requests holding all connections of the main pool cannot block exporting.
+   * Only injected where asked for by name.
+   */
+  @Bean(defaultCandidate = false)
+  public Map<String, RdbmsMapperBundle> rdbmsExporterMapperBundles(
+      final RdbmsDataSources rdbmsDataSources, final PhysicalTenantResolver physicalTenantResolver)
+      throws Exception {
+    final var bundles = new LinkedHashMap<String, RdbmsMapperBundle>();
+    for (final var tenantId : rdbmsDataSources.physicalTenantIds()) {
+      final var vendorProperties = rdbmsDataSources.vendorPropertiesFor(tenantId);
+      final var factory =
+          buildSqlSessionFactory(
+              rdbmsDataSources.exporterDataSourceFor(tenantId),
+              vendorProperties,
+              prefix(physicalTenantResolver, tenantId));
+      bundles.put(
+          tenantId,
+          RdbmsMapperBundle.from(factory, new SqlSessionTemplate(factory), vendorProperties));
+    }
+    return Map.copyOf(bundles);
+  }
+
+  private static String prefix(
+      final PhysicalTenantResolver physicalTenantResolver, final String physicalTenantId) {
+    return physicalTenantResolver
+        .forPhysicalTenant(physicalTenantId)
+        .getData()
+        .getSecondaryStorage()
+        .getRdbms()
+        .getPrefix();
   }
 
   private SqlSessionFactory buildSqlSessionFactory(

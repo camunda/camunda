@@ -329,6 +329,14 @@ data.secondary-storage.rdbms.connection-pool.validation-timeout
 data.secondary-storage.rdbms.database-vendor-id
 data.secondary-storage.rdbms.ddl-lock-wait-timeout
 data.secondary-storage.rdbms.export-batch-operation-items-on-creation
+data.secondary-storage.rdbms.exporter-connection-pool.connection-timeout
+data.secondary-storage.rdbms.exporter-connection-pool.idle-timeout
+data.secondary-storage.rdbms.exporter-connection-pool.keepalive-time
+data.secondary-storage.rdbms.exporter-connection-pool.leak-detection-threshold
+data.secondary-storage.rdbms.exporter-connection-pool.max-lifetime
+data.secondary-storage.rdbms.exporter-connection-pool.maximum-pool-size
+data.secondary-storage.rdbms.exporter-connection-pool.minimum-idle
+data.secondary-storage.rdbms.exporter-connection-pool.validation-timeout
 data.secondary-storage.rdbms.flush-interval
 data.secondary-storage.rdbms.history.batch-operation-cancel-process-instance-history-t-t-l
 data.secondary-storage.rdbms.history.batch-operation-migrate-process-instance-history-t-t-l

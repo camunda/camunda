@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.health.contributor.CompositeHealthContributor;
 import org.springframework.boot.health.contributor.HealthContributor;
@@ -96,6 +97,12 @@ public class RdbmsConfiguration {
 
   @Bean
   Map<String, RdbmsTenantReaders> rdbmsTenantReaders(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return tenantReaders(rdbmsMapperBundles, physicalTenantResolver);
+  }
+
+  private static Map<String, RdbmsTenantReaders> tenantReaders(
       final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final PhysicalTenantResolver physicalTenantResolver) {
     final var byTenant = new LinkedHashMap<String, RdbmsTenantReaders>();
@@ -157,11 +164,18 @@ public class RdbmsConfiguration {
     return defaultReaders(rdbmsTenantReaders).authorizationReader();
   }
 
+  /**
+   * The RDBMS exporter reads and writes only through its own pool, so that it keeps exporting while
+   * search requests hold all connections of the main pool.
+   */
   @Bean
   public RdbmsServiceFactory rdbmsServiceFactory(
-      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      final Map<String, RdbmsTenantReaders> rdbmsTenantReaders) {
-    return new RdbmsServiceFactory(rdbmsMapperBundles, rdbmsTenantReaders);
+      @Qualifier("rdbmsExporterMapperBundles")
+          final Map<String, RdbmsMapperBundle> rdbmsExporterMapperBundles,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return new RdbmsServiceFactory(
+        rdbmsExporterMapperBundles,
+        tenantReaders(rdbmsExporterMapperBundles, physicalTenantResolver));
   }
 
   @Bean
