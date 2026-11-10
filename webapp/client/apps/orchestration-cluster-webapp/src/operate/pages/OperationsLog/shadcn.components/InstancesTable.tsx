@@ -23,8 +23,10 @@ import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelH
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/shadcn.components/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/shadcn.components/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/shadcn.components/ErrorMessage';
-import {type DetailsModalState} from '#/operate/shared/OperationsLogDetailsModal/OperationsLogDetailsModal';
-import {OperationsLogDetailsModal} from '#/operate/shared/OperationsLogDetailsModal/shadcn.components/OperationsLogDetailsModal';
+import {
+	OperationsLogDetailsModal,
+	type DetailsModalState,
+} from '#/operate/shared/OperationsLogDetailsModal/shadcn.components/OperationsLogDetailsModal';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {CellActor} from './Cell/CellActor';

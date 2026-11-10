@@ -76,10 +76,7 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test('should render the audit logs with links to the preview and legacy routes', async ({
-	page,
-	operatePreviewOperationsLogPage,
-}) => {
+test('should render the audit logs with entity links', async ({page, operatePreviewOperationsLogPage}) => {
 	await operatePreviewOperationsLogPage.goto();
 
 	await expect(operatePreviewOperationsLogPage.heading).toBeAttached();

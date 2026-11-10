@@ -11,10 +11,11 @@ import {stringifySearchWith, useSearch} from '@tanstack/react-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
+import {Toaster, toast} from '@camunda/design-system';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {Notifications} from '#/shared/notifications/components/Notifications';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {
 	mockGetProcessDefinitionEndpoint,
 	mockQueryAuditLogsEndpoint,
@@ -42,15 +43,7 @@ const PROCESS_DEFINITIONS = HttpResponse.json(
 );
 
 const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitionsResponse());
-const OPERATIONS_LOG_PATH = '/operate/operations-log';
-const BASEPATH_CASES = [
-	{basepath: '', expectedPathPrefix: ''},
-	{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	{
-		basepath: '/camunda/physical-tenants/tenant-a',
-		expectedPathPrefix: '/camunda/physical-tenants/tenant-a',
-	},
-] as const;
+const OPERATIONS_LOG_PATH = '/operate-preview/operations-log';
 const AUDIT_LOG_ERROR = new HttpResponse(null, {status: 500});
 const DECISION_LOOKUP_ERROR = new HttpResponse(null, {status: 503});
 const DECISION_LOG = createAuditLog({
@@ -66,27 +59,21 @@ const DECISION_DEFINITIONS = HttpResponse.json(
 	}),
 );
 
-function renderPage({
-	search = {},
-	basepath = '',
-}: {
-	search?: Partial<OperationsLogSearch>;
-	basepath?: string;
-} = {}) {
+function renderPage({search = {}}: {search?: Partial<OperationsLogSearch>} = {}) {
 	return renderWithRouter(
 		() => {
 			const routeSearch = operationsLogSearchSchema.parse(useSearch({strict: false}));
 			return (
 				<>
 					<OperationsLog {...routeSearch} />
+					<Toaster />
 					<Notifications />
 				</>
 			);
 		},
 		{
 			path: OPERATIONS_LOG_PATH,
-			basepath,
-			initialEntry: `${basepath}${OPERATIONS_LOG_PATH}${stringifySearchWith(JSON.stringify)(search)}`,
+			initialEntry: `${OPERATIONS_LOG_PATH}${stringifySearchWith(JSON.stringify)(search)}`,
 		},
 	);
 }
@@ -99,6 +86,7 @@ describe('<OperationsLog />', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	describe('audit log read states', () => {
@@ -124,9 +112,7 @@ describe('<OperationsLog />', () => {
 				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
 				.toBeVisible();
 			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 51+ results'})).toBeVisible();
-			await expect
-				.element(screen.getByRole('link', {name: 'View decision instance 888'}))
-				.toHaveAttribute('href', '/operate/decisions/888');
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 888'})).toBeVisible();
 			await expect.element(screen.getByText('888', {exact: true})).toBeVisible();
 			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Retry decision names'})).toBeVisible();
@@ -187,9 +173,7 @@ describe('<OperationsLog />', () => {
 
 			const screen = await renderPage();
 
-			await expect
-				.element(screen.getByTestId('operations-log-table').getByRole('alert'))
-				.toMatchTextContent("Couldn't fetch audit logs");
+			await expect.element(screen.getByRole('alert')).toMatchTextContent("Couldn't fetch audit logs");
 			await expect
 				.element(screen.getByText("Couldn't load decision names. Audit logs are still available."))
 				.not.toBeInTheDocument();
@@ -222,7 +206,7 @@ describe('<OperationsLog />', () => {
 
 			const screen = await renderPage();
 
-			await expect.element(screen.getByTestId('operations-log-table')).toBeVisible();
+			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
 		});
@@ -259,7 +243,7 @@ describe('<OperationsLog />', () => {
 			await userEvent.fill(screen.getByRole('textbox', {name: 'Actor'}), 'unknown');
 
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
-			await expect.element(screen.getByTestId('operations-log-table')).toBeVisible();
+			await expect.element(screen.getByRole('table', {name: 'Operations log'})).toBeVisible();
 			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
 		});
 
@@ -275,7 +259,9 @@ describe('<OperationsLog />', () => {
 					mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}),
 				);
 				const screen = await renderPage();
-				const fetchFailedToast = screen.getByRole('status').filter({hasText: "Couldn't fetch audit logs"});
+				const fetchFailedToast = screen
+					.getByRole('region', {name: /notifications/i})
+					.getByText("Couldn't fetch audit logs");
 
 				await expect.element(fetchFailedToast).toBeVisible();
 				await vi.advanceTimersByTimeAsync(20_000);
@@ -301,12 +287,13 @@ describe('<OperationsLog />', () => {
 			);
 
 			const screen = await renderPage();
-			const table = screen.getByTestId('operations-log-table');
 
-			await expect.element(table.getByRole('alert')).toMatchTextContent("Couldn't fetch audit logs");
-			await expect.element(table.getByRole('button', {name: 'Try again'})).toBeVisible();
+			await expect.element(screen.getByRole('alert')).toMatchTextContent("Couldn't fetch audit logs");
+			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
-			await expect.element(screen.getByRole('status').filter({hasText: "Couldn't fetch audit logs"})).toBeVisible();
+			await expect
+				.element(screen.getByRole('region', {name: /notifications/i}).getByText("Couldn't fetch audit logs"))
+				.toBeVisible();
 
 			worker.use(
 				mockQueryAuditLogsEndpoint({
@@ -315,9 +302,9 @@ describe('<OperationsLog />', () => {
 					),
 				}),
 			);
-			await userEvent.click(table.getByRole('button', {name: 'Try again'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-			await expect.element(table.getByRole('alert')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
 		});
 
@@ -339,31 +326,32 @@ describe('<OperationsLog />', () => {
 					}),
 				);
 				const screen = await renderPage();
-				const table = screen.getByTestId('operations-log-table');
 
 				await expect.element(screen.getByText(expectedText)).toBeVisible();
 
 				worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
 
-				await expect.element(table.getByRole('alert')).toMatchTextContent("Couldn't fetch audit logs");
-				await expect.element(table.getByRole('button', {name: 'Try again'})).toBeVisible();
+				await expect.element(screen.getByRole('alert')).toMatchTextContent("Couldn't fetch audit logs");
+				await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
 				await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 				await expect.element(screen.getByRole('heading', {name: 'Operations Log', level: 1})).toBeVisible();
-				await expect.element(screen.getByRole('status').filter({hasText: "Couldn't fetch audit logs"})).toBeVisible();
+				await expect
+					.element(screen.getByRole('region', {name: /notifications/i}).getByText("Couldn't fetch audit logs"))
+					.toBeVisible();
 
 				worker.use(
 					mockQueryAuditLogsEndpoint({
 						successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
 					}),
 				);
-				await userEvent.click(table.getByRole('button', {name: 'Try again'}));
+				await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
 
-				await expect.element(table.getByRole('alert')).not.toBeInTheDocument();
+				await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
 				await expect.element(screen.getByText(expectedText)).toBeVisible();
 			},
 		);
 
-		it('should display approximate totals without changing existing row links', async ({worker}) => {
+		it('should display approximate totals', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
@@ -380,9 +368,7 @@ describe('<OperationsLog />', () => {
 			const screen = await renderPage();
 
 			await expect.element(screen.getByRole('heading', {name: 'Operations Log - 10000+ results'})).toBeVisible();
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 42'}))
-				.toHaveAttribute('href', '/operate/processes/42');
+			await expect.element(screen.getByRole('link', {name: 'View process instance 42'})).toBeVisible();
 		});
 	});
 
@@ -412,13 +398,13 @@ describe('<OperationsLog />', () => {
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^operation type$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^entity type$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^entity key$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^parent entity$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^details$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^actor$/i)).toBeVisible();
-		await expect.element(screen.getByTestId('operations-log-table').getByText(/^date$/i)).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Operation type', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Entity type', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Entity key', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Parent entity', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Details', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Actor', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('cell', {name: 'Date', exact: true})).toBeVisible();
 	});
 
 	it('should render the empty state without filters', async ({worker}) => {
@@ -478,149 +464,66 @@ describe('<OperationsLog />', () => {
 			.toBeVisible();
 	});
 
-	it.for(BASEPATH_CASES)(
-		'should render a batch operation link for BATCH entity types with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [
-								createAuditLog({
-									auditLogKey: '789',
-									entityType: 'BATCH',
-									operationType: 'CANCEL',
-									batchOperationKey: 'batch-123',
-									batchOperationType: 'CANCEL_PROCESS_INSTANCE',
-								}),
-							],
-						}),
-					),
-				}),
-			);
+	it('should render a link for each linkable entity and parent process instance', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionResponse()),
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [createDecisionDefinition({decisionDefinitionKey: '888', name: 'My Decision'})],
+					}),
+				),
+			}),
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({
+						items: [
+							createAuditLog({
+								auditLogKey: '1',
+								entityKey: '111',
+								processInstanceKey: '111',
+								entityType: 'PROCESS_INSTANCE',
+								operationType: 'CANCEL',
+							}),
+							createAuditLog({
+								auditLogKey: '2',
+								entityKey: 'variable-1',
+								processInstanceKey: '999',
+								entityType: 'VARIABLE',
+								operationType: 'UPDATE',
+								processDefinitionKey: '2251799813685279',
+							}),
+							createAuditLog({
+								auditLogKey: '3',
+								entityType: 'BATCH',
+								operationType: 'CANCEL',
+								batchOperationKey: 'batch-123',
+								batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+							}),
+							createAuditLog({
+								auditLogKey: '4',
+								entityKey: '888',
+								entityType: 'DECISION',
+								operationType: 'EVALUATE',
+								decisionDefinitionKey: '888',
+							}),
+						],
+					}),
+				),
+			}),
+		);
 
-			const screen = await renderPage({basepath});
+		const screen = await renderPage();
 
-			await expect
-				.element(screen.getByRole('link', {name: 'View batch operation batch-123'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-123`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a process instance entity link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockGetProcessDefinitionEndpoint({
-					successResponse: HttpResponse.json(createGetProcessDefinitionResponse()),
-				}),
-				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [
-								createAuditLog({
-									auditLogKey: '123',
-									entityKey: '999',
-									processInstanceKey: '999',
-									entityType: 'PROCESS_INSTANCE',
-									operationType: 'CANCEL',
-									processDefinitionKey: '2251799813685279',
-								}),
-							],
-						}),
-					),
-				}),
-			);
-
-			const screen = await renderPage({basepath});
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 999'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/999`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a parent process instance link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockGetProcessDefinitionEndpoint({
-					successResponse: HttpResponse.json(createGetProcessDefinitionResponse()),
-				}),
-				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [
-								createAuditLog({
-									auditLogKey: '123',
-									entityKey: 'variable-1',
-									processInstanceKey: '999',
-									entityType: 'VARIABLE',
-									operationType: 'UPDATE',
-									processDefinitionKey: '2251799813685279',
-								}),
-							],
-						}),
-					),
-				}),
-			);
-
-			const screen = await renderPage({basepath});
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 999'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/999`);
-		},
-	);
-
-	it.for(BASEPATH_CASES)(
-		'should render a decision instance link for DECISION entity types with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-				mockQueryDecisionDefinitionsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryDecisionDefinitionsResponse({
-							items: [createDecisionDefinition({decisionDefinitionKey: '888', name: 'My Decision'})],
-						}),
-					),
-				}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [
-								createAuditLog({
-									auditLogKey: '123',
-									entityKey: '888',
-									entityType: 'DECISION',
-									operationType: 'EVALUATE',
-									decisionDefinitionKey: '888',
-								}),
-							],
-						}),
-					),
-				}),
-			);
-
-			const screen = await renderPage({basepath});
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View decision instance 888'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/888`);
-		},
-	);
+		await expect.element(screen.getByRole('link', {name: 'View process instance 111'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'View process instance 999'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'View batch operation batch-123'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'View decision instance 888'})).toBeVisible();
+		await expect.element(screen.getByText('My Decision')).toBeVisible();
+	});
 
 	it('should open the details modal when the comment button is clicked', async ({worker}) => {
 		worker.use(

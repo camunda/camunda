@@ -21,7 +21,7 @@ describe('<CellActor />', () => {
 
 		await expect.element(screen.getByText('User', {exact: true})).not.toBeInTheDocument();
 
-		await userEvent.hover(screen.getByTestId('actor-icon'));
+		await userEvent.hover(screen.getByRole('img', {name: 'User'}));
 
 		await expect.element(screen.getByText('User', {exact: true})).toBeVisible();
 	});
@@ -38,7 +38,7 @@ describe('<CellActor />', () => {
 
 		await expect.element(screen.getByText('my-tool')).not.toBeInTheDocument();
 
-		await userEvent.hover(screen.getByTestId('mcp-icon'));
+		await userEvent.hover(screen.getByRole('img', {name: 'MCP tool call'}));
 
 		await expect.element(screen.getByText('my-tool')).toBeVisible();
 	});

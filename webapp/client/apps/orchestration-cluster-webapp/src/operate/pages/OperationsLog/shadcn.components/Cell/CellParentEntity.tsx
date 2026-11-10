@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@camunda/design-system';
@@ -30,7 +31,7 @@ const CellParentEntity: React.FC<Props> = ({item, processDefinitionName}) => {
 				<div>
 					<div>
 						<ProcessInstanceLink
-							to="/operate/processes/$processInstanceId"
+							to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 							params={{processInstanceId: item.processInstanceKey}}
 							aria-label={t('operate.operationsLog.entityLinks.viewProcessInstance', {key: item.processInstanceKey})}
 						>

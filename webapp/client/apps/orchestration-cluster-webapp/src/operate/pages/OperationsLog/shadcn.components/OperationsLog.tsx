@@ -66,13 +66,17 @@ const OperationsLog: React.FC<OperationsLogSearch> = (search) => {
 					{needsLookup && isPending ? (
 						<Spinner className="p-4" label={t('operate.operationsLog.filters.resolvingDefinition')} />
 					) : needsLookup && isError ? (
-						<Alert
-							variant="destructive"
-							role="alert"
-							title={t('operate.operationsLog.filters.definitionLookupFailed')}
-						/>
+						<div className="p-4">
+							<Alert
+								variant="destructive"
+								role="alert"
+								title={t('operate.operationsLog.filters.definitionLookupFailed')}
+							/>
+						</div>
 					) : !isResolved ? (
-						<Alert variant="warning" title={t('operate.operationsLog.filters.definitionUnavailable')} />
+						<div className="p-4">
+							<Alert variant="warning" title={t('operate.operationsLog.filters.definitionUnavailable')} />
+						</div>
 					) : (
 						<InstancesTable
 							search={search}

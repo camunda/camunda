@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@camunda/design-system';
@@ -40,7 +41,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 		if (item.entityType === 'PROCESS_INSTANCE') {
 			return (
 				<EntityLink
-					to="/operate/processes/$processInstanceId"
+					to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 					params={{processInstanceId: item.entityKey}}
 					title={linkLabel}
 					aria-label={linkLabel}
@@ -52,7 +53,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 		if (item.entityType === 'BATCH' && item.batchOperationKey) {
 			return (
 				<EntityLink
-					to="/operate/batch-operations/$batchOperationKey"
+					to={`${OPERATE_BASE}/batch-operations/$batchOperationKey` as const}
 					params={{batchOperationKey: String(item.batchOperationKey)}}
 					title={linkLabel}
 					aria-label={linkLabel}
@@ -64,7 +65,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 		if (item.entityType === 'DECISION' && item.operationType === 'EVALUATE') {
 			return (
 				<EntityLink
-					to="/operate/decisions/$decisionInstanceId"
+					to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
 					params={{decisionInstanceId: item.entityKey}}
 					title={linkLabel}
 					aria-label={linkLabel}

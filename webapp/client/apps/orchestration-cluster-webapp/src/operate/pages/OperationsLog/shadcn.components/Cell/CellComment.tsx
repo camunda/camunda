@@ -10,7 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {Button, Tooltip, TooltipContent, TooltipTrigger} from '@camunda/design-system';
 import {Info} from '@camunda/design-system/icons';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
-import type {DetailsModalState} from '#/operate/shared/OperationsLogDetailsModal/OperationsLogDetailsModal';
+import type {DetailsModalState} from '#/operate/shared/OperationsLogDetailsModal/shadcn.components/OperationsLogDetailsModal';
 
 type Props = {
 	item: AuditLog;
