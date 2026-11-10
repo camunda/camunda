@@ -313,6 +313,27 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getTenantId()).ifPresent(filterModel::tenantId);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(filterModel::processDefinitionKey);
       ofNullable(filter.getHasStartForm()).ifPresent(filterModel::hasStartForm);
+      ofNullable(filter.get$Or())
+          .filter(not(List::isEmpty))
+          .ifPresent(
+              orGroups ->
+                  filterModel.$or(
+                      orGroups.stream()
+                          .map(
+                              fields -> {
+                                final var mapped =
+                                    io.camunda.gateway.protocol.model
+                                        .ProcessDefinitionOrFilterFields.Builder.create()
+                                        .build();
+                                ofNullable(fields.getName())
+                                    .map(SimpleSearchQueryMapper::getStringFilter)
+                                    .ifPresent(mapped::name);
+                                ofNullable(fields.getProcessDefinitionId())
+                                    .map(SimpleSearchQueryMapper::getStringFilter)
+                                    .ifPresent(mapped::processDefinitionId);
+                                return mapped;
+                              })
+                          .toList()));
     }
     return filterModel;
   }
