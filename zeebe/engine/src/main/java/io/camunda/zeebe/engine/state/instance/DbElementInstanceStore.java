@@ -18,11 +18,8 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState.TakenSequenceFlowVisitor;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -32,13 +29,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 
-public final class DbElementInstanceState implements MutableElementInstanceState {
+/**
+ * Stores the element instance state in RocksDB column families. Besides the element instances, it
+ * keeps the parent-child relation, the process instances by process definition and the number of
+ * active process instances as derived indexes.
+ *
+ * <p>Reads return the column family's value instances, which the next read of the same column
+ * family overwrites, except for {@link #getInstance(long)}, {@link #getChildren(long)} and {@link
+ * #forEachChild(long, long, BiFunction, Predicate)}, which return new instances.
+ */
+public final class DbElementInstanceStore implements ElementInstanceStore {
 
   // active process instance counter
   private static final long ACTIVE_PROCESS_INSTANCE_COUNTER_KEY = 1L;
@@ -66,7 +71,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbString>, DbString>, DbInt>
       numberOfTakenSequenceFlowsColumnFamily;
 
-  private final MutableVariableState variableState;
   private final DbLong processDefinitionKey;
   private final DbCompositeKey<DbLong, DbLong> processInstanceKeyByProcessDefinitionKey;
 
@@ -90,13 +94,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbLong activeProcessInstanceCounterValue;
   private final ColumnFamily<DbLong, DbLong> activeProcessInstanceCounterColumnFamily;
 
-  public DbElementInstanceState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final MutableVariableState variableState) {
-
-    this.variableState = variableState;
-
+  public DbElementInstanceStore(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     elementInstanceKey = new DbLong();
     parentKey =
         new DbForeignKey<>(
@@ -183,74 +182,28 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public ElementInstance newInstance(
-      final long key, final ProcessInstanceRecord value, final ProcessInstanceIntent state) {
-    return newInstance(null, key, value, state);
-  }
-
-  @Override
-  public ElementInstance newInstance(
-      final ElementInstance parent,
-      final long key,
-      final ProcessInstanceRecord value,
-      final ProcessInstanceIntent state) {
-
-    final ElementInstance instance;
-    if (parent == null) {
-      instance = new ElementInstance(key, state, value);
-    } else {
-      instance = new ElementInstance(key, parent, state, value);
-      updateInstance(parent);
+  public ElementInstance getInstance(final long key) {
+    if (key < 0) {
+      // -1 marks "no instance" so we skip the lookup
+      return null;
     }
-    createInstance(instance);
-
-    return instance;
-  }
-
-  @Override
-  public void removeInstance(final long key) {
     elementInstanceKey.wrapLong(key);
-    final var instance = elementInstanceColumnFamily.get(elementInstanceKey);
-    if (instance == null) {
-      return;
-    }
-    final long parent = instance.getParentKey();
-    parentKey.inner().wrapLong(parent);
-    parentChildColumnFamily.deleteIfExists(parentChildKey);
-    elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
-    variableState.removeScope(key);
-    awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
-    removeNumberOfTakenSequenceFlows(key);
-
-    final var recordValue = instance.getValue();
-    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
-      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
-      processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
-          processInstanceKeyByProcessDefinitionKey);
-      decrementActiveProcessInstanceCount();
-    }
-
-    if (parent > 0) {
-      elementInstanceKey.wrapLong(parent);
-      final var parentInstance = elementInstanceColumnFamily.get(elementInstanceKey);
-      if (parentInstance == null) {
-        final var errorMsg =
-            "Expected to find parent instance for element instance with key %d, but none was found.";
-        throw new IllegalStateException(String.format(errorMsg, parent));
-      }
-      parentInstance.decrementChildCount();
-      updateInstance(parentInstance);
-    }
+    return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
   }
 
   @Override
-  public void createInstance(final ElementInstance instance) {
+  public ElementInstance getSharedInstance(final long key) {
+    elementInstanceKey.wrapLong(key);
+    return elementInstanceColumnFamily.get(elementInstanceKey);
+  }
+
+  @Override
+  public void insertInstance(final ElementInstance instance) {
     elementInstanceKey.wrapLong(instance.getKey());
     parentKey.inner().wrapLong(instance.getParentKey());
 
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
-    variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
 
     final var recordValue = instance.getValue();
     if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
@@ -262,31 +215,86 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void updateInstance(final ElementInstance scopeInstance) {
-    elementInstanceKey.wrapLong(scopeInstance.getKey());
-    parentKey.inner().wrapLong(scopeInstance.getParentKey());
-    elementInstanceColumnFamily.update(elementInstanceKey, scopeInstance);
+  public void updateInstance(final ElementInstance instance) {
+    elementInstanceKey.wrapLong(instance.getKey());
+    parentKey.inner().wrapLong(instance.getParentKey());
+    elementInstanceColumnFamily.update(elementInstanceKey, instance);
   }
 
   @Override
-  public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
-    elementInstanceKey.wrapLong(key);
-    final var scopeInstance = elementInstanceColumnFamily.get(elementInstanceKey);
-    modifier.accept(scopeInstance);
-    updateInstance(scopeInstance);
+  public void deleteInstance(final ElementInstance instance) {
+    elementInstanceKey.wrapLong(instance.getKey());
+    parentKey.inner().wrapLong(instance.getParentKey());
+    parentChildColumnFamily.deleteIfExists(parentChildKey);
+    elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
+
+    final var recordValue = instance.getValue();
+    if (recordValue.getBpmnElementType() == BpmnElementType.PROCESS) {
+      processDefinitionKey.wrapLong(recordValue.getProcessDefinitionKey());
+      processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
+          processInstanceKeyByProcessDefinitionKey);
+      decrementActiveProcessInstanceCount();
+    }
   }
 
   @Override
-  public void setAwaitResultRequestMetadata(
-      final long processInstanceKey,
-      final String tenantId,
-      final AwaitProcessInstanceResultMetadata metadata) {
-    elementInstanceKey.wrapLong(processInstanceKey);
-    awaitProcessInstanceResultMetadataColumnFamily.insert(elementInstanceKey, metadata);
+  public List<ElementInstance> getChildren(final long parentKey) {
+    final List<ElementInstance> children = new ArrayList<>();
+    final ElementInstance parentInstance = getInstance(parentKey);
+    if (parentInstance != null) {
+      this.parentKey.inner().wrapLong(parentKey);
+
+      parentChildColumnFamily.whileEqualPrefix(
+          this.parentKey,
+          key -> {
+            final var childKey = key.second().inner();
+            final var childInstance = getInstance(childKey.getValue());
+            children.add(childInstance);
+          });
+    }
+    return children;
   }
 
   @Override
-  public void incrementNumberOfTakenSequenceFlows(
+  public void forEachChild(
+      final long parentKey,
+      final long startAtKey,
+      final BiFunction<Long, ElementInstance, Boolean> visitor,
+      final Predicate<ElementInstance> filter) {
+    this.parentKey.inner().wrapLong(parentKey);
+    elementInstanceKey.wrapLong(startAtKey);
+
+    // If startAtKey is a negative value we should use null instead. This will make it so we start
+    // the iteration at the first child of the parent.
+    final var compositeKey = startAtKey == -1 ? null : parentChildKey;
+
+    parentChildColumnFamily.whileEqualPrefix(
+        this.parentKey,
+        compositeKey,
+        key -> {
+          final DbLong childKey = key.second().inner();
+          final ElementInstance childInstance = getInstance(childKey.getValue());
+
+          if (filter.test(childInstance)) {
+            return visitor.apply(childKey.getValue(), childInstance);
+          }
+          return true;
+        });
+  }
+
+  @Override
+  public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
+    this.parentKey.inner().wrapLong(parentKey);
+    parentChildColumnFamily.whileEqualPrefix(
+        this.parentKey,
+        key -> {
+          final var childKey = key.second().inner();
+          return visitor.apply(childKey.getValue());
+        });
+  }
+
+  @Override
+  public void incrementTakenSequenceFlowCount(
       final long flowScopeKey,
       final DirectBuffer gatewayElementId,
       final DirectBuffer sequenceFlowElementId) {
@@ -307,7 +315,28 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void decrementNumberOfTakenSequenceFlows(
+  public void decrementTakenSequenceFlowCount(
+      final long flowScopeKey,
+      final DirectBuffer gatewayElementId,
+      final DirectBuffer sequenceFlowElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
+
+    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+
+    final var newValue = number.getValue() - 1;
+    if (newValue > 0) {
+      numberOfTakenSequenceFlows.wrapInt(newValue);
+      numberOfTakenSequenceFlowsColumnFamily.update(
+          numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
+    } else {
+      numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
+    }
+  }
+
+  @Override
+  public void decrementTakenSequenceFlowCounts(
       final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
@@ -326,24 +355,107 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void decrementNumberOfTakenSequenceFlows(
-      final long flowScopeKey,
-      final DirectBuffer gatewayElementId,
-      final DirectBuffer sequenceFlowElementId) {
+  public void deleteTakenSequenceFlows(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey, numberOfTakenSequenceFlowsColumnFamily::deleteExisting);
+  }
+
+  @Override
+  public void visitTakenSequenceFlows(
+      final long flowScopeKey, final TakenSequenceFlowVisitor visitor) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        (key, number) -> {
+          visitor.visit(
+              key.first().first().getValue(),
+              key.first().second().getBuffer(),
+              key.second().getBuffer(),
+              number.getValue());
+        });
+  }
+
+  @Override
+  public int countTakenSequenceFlows(final long flowScopeKey, final DirectBuffer gatewayElementId) {
     this.flowScopeKey.wrapLong(flowScopeKey);
     this.gatewayElementId.wrapBuffer(gatewayElementId);
-    this.sequenceFlowElementId.wrapBuffer(sequenceFlowElementId);
 
-    final var number = numberOfTakenSequenceFlowsColumnFamily.get(numberOfTakenSequenceFlowsKey);
+    return (int) numberOfTakenSequenceFlowsColumnFamily.countEqualPrefix(flowScopeKeyAndElementId);
+  }
 
-    final var newValue = number.getValue() - 1;
-    if (newValue > 0) {
-      numberOfTakenSequenceFlows.wrapInt(newValue);
-      numberOfTakenSequenceFlowsColumnFamily.update(
-          numberOfTakenSequenceFlowsKey, numberOfTakenSequenceFlows);
-    } else {
-      numberOfTakenSequenceFlowsColumnFamily.deleteExisting(numberOfTakenSequenceFlowsKey);
-    }
+  @Override
+  public int countTakenSequenceFlows(final long flowScopeKey) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+
+    final var count = new MutableInteger(0);
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        this.flowScopeKey,
+        key -> {
+          count.increment();
+        });
+
+    return count.get();
+  }
+
+  @Override
+  public Set<DirectBuffer> getTakenSequenceFlows(
+      final long flowScopeKey, final DirectBuffer gatewayElementId) {
+    this.flowScopeKey.wrapLong(flowScopeKey);
+    this.gatewayElementId.wrapBuffer(gatewayElementId);
+
+    final Set<DirectBuffer> takenSequenceFlows = new LinkedHashSet<>();
+    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
+        flowScopeKeyAndElementId,
+        key -> {
+          takenSequenceFlows.add(BufferUtil.cloneBuffer(key.second().getBuffer()));
+        });
+
+    return takenSequenceFlows;
+  }
+
+  @Override
+  public void insertAwaitResult(
+      final long processInstanceKey,
+      final String tenantId,
+      final AwaitProcessInstanceResultMetadata metadata) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    awaitProcessInstanceResultMetadataColumnFamily.insert(elementInstanceKey, metadata);
+  }
+
+  @Override
+  public AwaitProcessInstanceResultMetadata getAwaitResult(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
+  }
+
+  @Override
+  public void deleteAwaitResult(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
+  }
+
+  @Override
+  public void insertRuntimeInstructions(
+      final long processInstanceKey,
+      final String tenantId,
+      final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
+    runtimeInstructions.setRuntimeInstructions(instructions);
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
+  }
+
+  @Override
+  public RuntimeInstructions getRuntimeInstructions(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    return runtimeInstructionsByProcessInstanceKey.get(elementInstanceKey);
+  }
+
+  @Override
+  public void deleteRuntimeInstructions(final long processInstanceKey) {
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.deleteIfExists(elementInstanceKey);
   }
 
   @Override
@@ -365,20 +477,37 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void addRuntimeInstructions(
-      final long processInstanceKey,
-      final String tenantId,
-      final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
+  public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
 
-    runtimeInstructions.setRuntimeInstructions(instructions);
-    elementInstanceKey.wrapLong(processInstanceKey);
-    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        key -> {
+          final DbLong processInstanceKey = key.second();
+          processInstanceKeys.add(processInstanceKey.getValue());
+        });
+    return processInstanceKeys;
   }
 
   @Override
-  public void removeRuntimeInstructions(final long processInstanceKey) {
-    elementInstanceKey.wrapLong(processInstanceKey);
-    runtimeInstructionsByProcessInstanceKey.deleteIfExists(elementInstanceKey);
+  public boolean hasProcessInstances(
+      final long processDefinitionKey, final List<Long> excludedInstances) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final AtomicBoolean hasInstances = new AtomicBoolean(false);
+
+    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        key -> {
+          if (excludedInstances.contains(key.second().getValue())) {
+            return true;
+          }
+
+          hasInstances.set(true);
+          return false;
+        });
+
+    return hasInstances.get();
   }
 
   @Override
@@ -397,7 +526,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void deleteProcessInstanceKeyMappingByBusinessId(
+  public void deleteProcessInstanceKeyByBusinessId(
       final String businessId,
       final String processDefinitionId,
       final String tenantId,
@@ -409,6 +538,36 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     processInstanceByBusinessIdIndexKeyColumnFamily.deleteExisting(
         processInstanceByBusinessIdIndexKey);
+  }
+
+  @Override
+  public boolean hasProcessInstanceWithBusinessId(
+      final String businessId,
+      final String processDefinitionId,
+      final String tenantId,
+      final Predicate<Long> ignoreWhen) {
+    this.businessId.wrapString(businessId);
+    this.processDefinitionId.wrapString(processDefinitionId);
+    this.tenantId.wrapString(tenantId);
+    final var exists = new AtomicBoolean(false);
+    processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
+        businessIdIndexKey,
+        key -> {
+          if (ignoreWhen.test(key.processInstanceKey())) {
+            return true;
+          }
+          exists.set(true);
+          // just find the first, and then stop iterating
+          return false;
+        });
+    return exists.get();
+  }
+
+  @Override
+  public long getActiveProcessInstanceCount() {
+    final var counter =
+        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
+    return counter != null ? counter.getValue() : 0L;
   }
 
   private void incrementActiveProcessInstanceCount() {
@@ -441,227 +600,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       activeProcessInstanceCounterColumnFamily.insert(
           activeProcessInstanceCounterKey, activeProcessInstanceCounterValue);
     }
-  }
-
-  @Override
-  public ElementInstance getInstance(final long key) {
-    if (key < 0) {
-      // -1 marks "no instance" so we skip the lookup
-      return null;
-    }
-    elementInstanceKey.wrapLong(key);
-    return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
-  }
-
-  @Override
-  public List<ElementInstance> getChildren(final long parentKey) {
-    final List<ElementInstance> children = new ArrayList<>();
-    final ElementInstance parentInstance = getInstance(parentKey);
-    if (parentInstance != null) {
-      this.parentKey.inner().wrapLong(parentKey);
-
-      parentChildColumnFamily.whileEqualPrefix(
-          this.parentKey,
-          key -> {
-            final var childKey = key.second().inner();
-            final var childInstance = getInstance(childKey.getValue());
-            children.add(childInstance);
-          });
-    }
-    return children;
-  }
-
-  @Override
-  public void forEachChild(
-      final long parentKey,
-      final long startAtKey,
-      final BiFunction<Long, ElementInstance, Boolean> visitor) {
-    forEachChild(parentKey, startAtKey, visitor, (elementInstance) -> true);
-  }
-
-  @Override
-  public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
-    this.parentKey.inner().wrapLong(parentKey);
-    parentChildColumnFamily.whileEqualPrefix(
-        this.parentKey,
-        key -> {
-          final var childKey = key.second().inner();
-          return visitor.apply(childKey.getValue());
-        });
-  }
-
-  @Override
-  public void forEachChild(
-      final long parentKey,
-      final long startAtKey,
-      final BiFunction<Long, ElementInstance, Boolean> visitor,
-      final Predicate<ElementInstance> filter) {
-    this.parentKey.inner().wrapLong(parentKey);
-    elementInstanceKey.wrapLong(startAtKey);
-
-    // If startAtKey is a negative value we should use null instead. This will make it so we start
-    // the iteration at the first child of the parent.
-    final var compositeKey = startAtKey == -1 ? null : parentChildKey;
-
-    parentChildColumnFamily.whileEqualPrefix(
-        this.parentKey,
-        compositeKey,
-        key -> {
-          final DbLong childKey = key.second().inner();
-          final ElementInstance childInstance = getInstance(childKey.getValue());
-
-          if (filter.test(childInstance)) {
-            return visitor.apply(childKey.getValue(), childInstance);
-          }
-          return true;
-        });
-  }
-
-  @Override
-  public AwaitProcessInstanceResultMetadata getAwaitResultRequestMetadata(
-      final long processInstanceKey) {
-    elementInstanceKey.wrapLong(processInstanceKey);
-    return awaitProcessInstanceResultMetadataColumnFamily.get(elementInstanceKey);
-  }
-
-  @Override
-  public int getNumberOfTakenSequenceFlows(
-      final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
-
-    return (int) numberOfTakenSequenceFlowsColumnFamily.countEqualPrefix(flowScopeKeyAndElementId);
-  }
-
-  @Override
-  public int getNumberOfTakenSequenceFlows(final long flowScopeKey) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-
-    final var count = new MutableInteger(0);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey,
-        key -> {
-          count.increment();
-        });
-
-    return count.get();
-  }
-
-  @Override
-  public Set<DirectBuffer> getTakenSequenceFlows(
-      final long flowScopeKey, final DirectBuffer gatewayElementId) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    this.gatewayElementId.wrapBuffer(gatewayElementId);
-
-    final Set<DirectBuffer> takenSequenceFlows = new LinkedHashSet<>();
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        flowScopeKeyAndElementId,
-        key -> {
-          takenSequenceFlows.add(BufferUtil.cloneBuffer(key.second().getBuffer()));
-        });
-
-    return takenSequenceFlows;
-  }
-
-  @Override
-  public void visitTakenSequenceFlows(
-      final long flowScopeKey, final TakenSequenceFlowVisitor visitor) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey,
-        (key, number) -> {
-          visitor.visit(
-              key.first().first().getValue(),
-              key.first().second().getBuffer(),
-              key.second().getBuffer(),
-              number.getValue());
-        });
-  }
-
-  @Override
-  public List<Long> getProcessInstanceKeysByDefinitionKey(final long processDefinitionKey) {
-    final List<Long> processInstanceKeys = new ArrayList<>();
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-
-    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
-        key -> {
-          final DbLong processInstanceKey = key.second();
-          processInstanceKeys.add(processInstanceKey.getValue());
-        });
-    return processInstanceKeys;
-  }
-
-  @Override
-  public boolean hasActiveProcessInstances(
-      final long processDefinitionKey, final List<Long> bannedInstances) {
-    this.processDefinitionKey.wrapLong(processDefinitionKey);
-    final AtomicBoolean hasActiveInstances = new AtomicBoolean(false);
-
-    processInstanceKeyByProcessDefinitionKeyColumnFamily.whileEqualPrefix(
-        this.processDefinitionKey,
-        key -> {
-          // A banned instance should not be considered as active
-          if (bannedInstances.contains(key.second().getValue())) {
-            return true;
-          }
-
-          hasActiveInstances.set(true);
-          return false;
-        });
-
-    return hasActiveInstances.get();
-  }
-
-  @Override
-  public List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
-      final long processInstanceKey, final String elementId) {
-
-    elementInstanceKey.wrapLong(processInstanceKey);
-    final var instructions = runtimeInstructionsByProcessInstanceKey.get(elementInstanceKey);
-    if (instructions == null) {
-      return List.of();
-    }
-    return instructions.getRuntimeInstructions().stream()
-        .filter(instruction -> instruction.getAfterElementId().equals(elementId))
-        .toList();
-  }
-
-  @Override
-  public boolean hasActiveProcessInstanceWithBusinessId(
-      final String businessId,
-      final String processDefinitionId,
-      final String tenantId,
-      final Predicate<Long> ignoreWhen) {
-    this.businessId.wrapString(businessId);
-    this.processDefinitionId.wrapString(processDefinitionId);
-    this.tenantId.wrapString(tenantId);
-    final var exists = new AtomicBoolean(false);
-    processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
-        businessIdIndexKey,
-        key -> {
-          if (ignoreWhen.test(key.processInstanceKey())) {
-            return true;
-          }
-          exists.set(true);
-          // just find the first, and then stop iterating
-          return false;
-        });
-    return exists.get();
-  }
-
-  @Override
-  public long getActiveProcessInstanceCount() {
-    final var counter =
-        activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
-    return counter != null ? counter.getValue() : 0L;
-  }
-
-  private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
-    this.flowScopeKey.wrapLong(flowScopeKey);
-
-    numberOfTakenSequenceFlowsColumnFamily.whileEqualPrefix(
-        this.flowScopeKey, numberOfTakenSequenceFlowsColumnFamily::deleteExisting);
   }
 
   private static class KeyWithTenantId<T extends DbKey> extends DbCompositeKey<T, DbString> {

@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.instance.AbstractElementInstanceStateContractTest;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateTest;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -135,8 +136,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     connection = connectionSpy.proxy();
     transactionContext = new JdbcTransactionContext(connection);
     partitionId = database.nextPartitionId();
-    return new RdbmsElementInstanceState(
-        transactionContext, partitionId, processingState.getVariableState());
+    return new ElementInstanceStateImpl(
+        new RdbmsElementInstanceStore(transactionContext, partitionId),
+        processingState.getVariableState());
   }
 
   @Override

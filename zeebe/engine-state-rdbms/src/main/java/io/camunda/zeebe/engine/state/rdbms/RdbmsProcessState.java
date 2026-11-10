@@ -59,7 +59,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * Process state stored in a relational database instead of RocksDB.
  *
- * <p>Like {@link RdbmsElementInstanceState}, each table has an {@link EntityCache} that stages the
+ * <p>Like {@link RdbmsElementInstanceStore}, each table has an {@link EntityCache} that stages the
  * writes until the {@link JdbcTransactionContext} commits, reads see the staged writes first, and
  * every operation joins the current transaction or runs in its own. All SQL is in the {@link
  * EngineStateMapper}.
