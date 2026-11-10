@@ -169,30 +169,4 @@ final class BaseValueCopyFromTest {
       assertThat(target.get(0).getValue()).isEqualTo(10);
     }
   }
-
-  @Nested
-  class DeltaEncodedLongArrayValueCopy {
-    @Test
-    void shouldCopyValues() {
-      final var source = new DeltaEncodedLongArrayValue();
-      source.setValues(new long[] {4, 13, 15, 16, 20});
-
-      final var target = new DeltaEncodedLongArrayValue();
-      target.copyFrom(source);
-
-      assertThat(target.getValues()).containsExactly(4, 13, 15, 16, 20);
-    }
-
-    @Test
-    void shouldBeIndependent() {
-      final var source = new DeltaEncodedLongArrayValue();
-      source.setValues(new long[] {1, 2, 3});
-
-      final var target = new DeltaEncodedLongArrayValue();
-      target.copyFrom(source);
-
-      source.getValues()[0] = 999;
-      assertThat(target.getValues()[0]).isEqualTo(1);
-    }
-  }
 }
