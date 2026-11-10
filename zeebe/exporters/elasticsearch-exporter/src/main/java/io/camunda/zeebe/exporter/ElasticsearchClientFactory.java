@@ -18,10 +18,9 @@ import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
-import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
@@ -65,14 +64,21 @@ final class ElasticsearchClientFactory {
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
-    final Header[] defaultHeaders =
-        new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
-        };
+    final var defaultHeaders = new ArrayList<Header>();
+    defaultHeaders.add(
+        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"));
+    defaultHeaders.add(
+        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
+    // Credentials go out with every request instead of in answer to a 401 challenge. A server
+    // that lets anonymous users through for some requests never challenges them, so those
+    // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
+    // request, so do the same.
+    SecurityUtil.basicAuthorizationHeader(
+            config.getAuthentication().getUsername(), config.getAuthentication().getPassword())
+        .ifPresent(defaultHeaders::add);
     final Rest5ClientBuilder builder =
         Rest5Client.builder(httpHosts)
-            .setDefaultHeaders(defaultHeaders)
+            .setDefaultHeaders(defaultHeaders.toArray(Header[]::new))
             .setConnectionConfigCallback(
                 b ->
                     b.setConnectTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs))
@@ -96,10 +102,6 @@ final class ElasticsearchClientFactory {
     builder.setIOReactorConfig(
         IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(true).build());
 
-    if (config.hasAuthenticationPresent()) {
-      setupBasicAuthentication(config, builder);
-    }
-
     if (config.hasProxyConfigured()) {
       setupProxy(builder, config.getProxy());
       addPreemptiveProxyAuthInterceptor(builder, config.getProxy());
@@ -110,18 +112,6 @@ final class ElasticsearchClientFactory {
     }
 
     return builder;
-  }
-
-  private void setupBasicAuthentication(
-      final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
-    final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        SecurityUtil.ANY_AUTH_SCOPE,
-        new UsernamePasswordCredentials(
-            config.getAuthentication().getUsername(),
-            config.getAuthentication().getPassword().toCharArray()));
-
-    builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
   private void setupProxy(

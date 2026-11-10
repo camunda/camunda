@@ -7,8 +7,12 @@
  */
 package io.camunda.optimize.upgrade.es;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.rest5_client.low_level.Request;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
@@ -17,12 +21,18 @@ import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConn
 import io.camunda.optimize.upgrade.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.impl.BasicEntityDetails;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicHttpRequest;
 import org.apache.hc.core5.http.protocol.HttpCoreContext;
 import org.assertj.core.api.Assertions;
@@ -174,5 +184,120 @@ class ElasticsearchClientBuilderTest {
     Mockito.verify(builder, Mockito.never())
         .addRequestInterceptorFirst(
             Mockito.any(org.apache.hc.core5.http.HttpRequestInterceptor.class));
+  }
+
+  // The Elasticsearch server below never answers 401. A server that lets anonymous users through
+  // for some requests behaves the same way, and the client must still send its credentials.
+  @Test
+  void shouldSendCredentialsWithRequestsTheServerNeverChallenges() throws Exception {
+    // given
+    final String username = "someUser";
+    final String password = "somePassword";
+    final var receivedAuthorizationHeaders = new CopyOnWriteArrayList<String>();
+    final var server = startServerRecordingAuthorizationHeaders(receivedAuthorizationHeaders);
+    try (final var restClient =
+        ElasticsearchClientBuilder.restClient(
+            configForPlainHttpServer(server, username, password), new PluginRepository())) {
+      final var request = new Request("POST", "/some-index/_delete_by_query");
+      request.setEntity(new StringEntity("{}", ContentType.APPLICATION_JSON));
+
+      // when
+      restClient.performRequest(request);
+
+      // then
+      final String expected =
+          "Basic "
+              + Base64.getEncoder()
+                  .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
+      assertThat(receivedAuthorizationHeaders).singleElement().isEqualTo(expected);
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  @Test
+  void shouldNotSendAuthorizationHeaderWhenNoCredentialsAreConfigured() throws Exception {
+    // given
+    final var receivedAuthorizationHeaders = new CopyOnWriteArrayList<String>();
+    final var server = startServerRecordingAuthorizationHeaders(receivedAuthorizationHeaders);
+    try (final var restClient =
+        ElasticsearchClientBuilder.restClient(
+            configForPlainHttpServer(server, null, null), new PluginRepository())) {
+
+      // when
+      restClient.performRequest(new Request("GET", "/"));
+
+      // then
+      assertThat(receivedAuthorizationHeaders).singleElement().isNull();
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  // With the credentials sent up front, HttpClient must report a rejected request as an ordinary
+  // 401 response.
+  @Test
+  void shouldReportRejectedCredentialsAsUnauthorizedResponse() throws Exception {
+    // given
+    final var server =
+        HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          exchange.getResponseHeaders().add("WWW-Authenticate", "Basic realm=\"security\"");
+          exchange.sendResponseHeaders(401, -1);
+          exchange.close();
+        });
+    server.start();
+    try (final var restClient =
+        ElasticsearchClientBuilder.restClient(
+            configForPlainHttpServer(server, "someUser", "wrongPassword"),
+            new PluginRepository())) {
+
+      // when
+      final var response = restClient.performRequest(new Request("GET", "/"));
+
+      // then
+      assertThat(response.getStatusCode()).isEqualTo(401);
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  private static HttpServer startServerRecordingAuthorizationHeaders(
+      final List<String> receivedAuthorizationHeaders) throws IOException {
+    final var server =
+        HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+    server.createContext(
+        "/",
+        exchange -> {
+          // a null entry marks a request that carried no Authorization header
+          receivedAuthorizationHeaders.add(exchange.getRequestHeaders().getFirst("Authorization"));
+          exchange.getRequestBody().readAllBytes();
+          exchange.sendResponseHeaders(200, -1);
+          exchange.close();
+        });
+    server.start();
+    return server;
+  }
+
+  private static ConfigurationService configForPlainHttpServer(
+      final HttpServer server, final String username, final String password) {
+    final ConfigurationService config = Mockito.mock(ConfigurationService.class);
+    final ElasticSearchConfiguration esConfig = Mockito.mock(ElasticSearchConfiguration.class);
+    final DatabaseConnectionNodeConfiguration host = new DatabaseConnectionNodeConfiguration();
+    host.setHost(server.getAddress().getHostString());
+    host.setHttpPort(server.getAddress().getPort());
+    final ProxyConfiguration proxyConfig = new ProxyConfiguration();
+    proxyConfig.setEnabled(false);
+    Mockito.when(config.getElasticSearchConfiguration()).thenReturn(esConfig);
+    Mockito.when(esConfig.getProxyConfig()).thenReturn(proxyConfig);
+    Mockito.when(esConfig.getInterceptorPlugins()).thenReturn(Map.of());
+    Mockito.when(esConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(esConfig.getSecuritySSLEnabled()).thenReturn(false);
+    Mockito.when(esConfig.getConnectionTimeout()).thenReturn(5000);
+    Mockito.when(esConfig.getSecurityUsername()).thenReturn(username);
+    Mockito.when(esConfig.getSecurityPassword()).thenReturn(password);
+    return config;
   }
 }

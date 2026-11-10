@@ -11,14 +11,20 @@ import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
+import java.util.Base64;
+import java.util.Optional;
 import javax.net.ssl.SSLContext;
 import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
 import org.slf4j.Logger;
@@ -31,6 +37,24 @@ public final class SecurityUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(SecurityUtil.class);
 
   private SecurityUtil() {}
+
+  /**
+   * Returns a Basic {@code Authorization} header for the given credentials, or empty if the
+   * username or password is null or empty.
+   */
+  public static Optional<Header> basicAuthorizationHeader(
+      final String username, final String password) {
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return Optional.empty();
+    }
+    final var credentials = username + ":" + password;
+    return Optional.of(
+        new BasicHeader(
+            HttpHeaders.AUTHORIZATION,
+            "Basic "
+                + Base64.getEncoder()
+                    .encodeToString(credentials.getBytes(StandardCharsets.UTF_8))));
+  }
 
   public static SSLContext getSSLContext(
       final SecurityConfiguration configuration, final String alias)
