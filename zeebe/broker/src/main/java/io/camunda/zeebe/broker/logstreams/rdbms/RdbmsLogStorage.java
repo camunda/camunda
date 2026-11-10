@@ -45,7 +45,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
 
   private final LogBlockRepository repository;
   private final long term;
-  private final WriterConfig config;
+  private final Config config;
   private final Consumer<Throwable> failureListener;
   private final BlockingQueue<PendingAppend> queue = new LinkedBlockingQueue<>();
   private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
@@ -54,7 +54,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
   private RdbmsLogStorage(
       final LogBlockRepository repository,
       final long term,
-      final WriterConfig config,
+      final Config config,
       final Consumer<Throwable> failureListener,
       final @Nullable String writerName) {
     this.repository = repository;
@@ -78,7 +78,7 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
       final String writerName,
       final LogBlockRepository repository,
       final long term,
-      final WriterConfig config,
+      final Config config,
       final Consumer<Throwable> failureListener) {
     final var storage = new RdbmsLogStorage(repository, term, config, failureListener, writerName);
     Objects.requireNonNull(storage.writer).start();
@@ -86,13 +86,13 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
   }
 
   /** A storage for followers, which must never append. */
-  public static RdbmsLogStorage readOnly(final LogBlockRepository repository) {
-    return new RdbmsLogStorage(repository, -1, WriterConfig.DEFAULT, error -> {}, null);
+  public static RdbmsLogStorage readOnly(final LogBlockRepository repository, final Config config) {
+    return new RdbmsLogStorage(repository, -1, config, error -> {}, null);
   }
 
   @Override
   public LogStorageReader newReader() {
-    throw new UnsupportedOperationException("Reading from the RDBMS log is not implemented yet");
+    return new RdbmsLogStorageReader(repository, config.readerPageSize());
   }
 
   @Override
@@ -256,15 +256,21 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
    * @param maxRetryBackoff the longest wait between two retries
    * @param maxBatchBytes the most block bytes to write in one transaction; a single larger block is
    *     still written on its own
+   * @param readerPageSize the most blocks a reader fetches with one query
    */
-  public record WriterConfig(
+  public record Config(
       Duration retryTimeout,
       Duration initialRetryBackoff,
       Duration maxRetryBackoff,
-      int maxBatchBytes) {
+      int maxBatchBytes,
+      int readerPageSize) {
 
-    public static final WriterConfig DEFAULT =
-        new WriterConfig(
-            Duration.ofSeconds(10), Duration.ofMillis(50), Duration.ofSeconds(1), 16 * 1024 * 1024);
+    public static final Config DEFAULT =
+        new Config(
+            Duration.ofSeconds(10),
+            Duration.ofMillis(50),
+            Duration.ofSeconds(1),
+            16 * 1024 * 1024,
+            32);
   }
 }

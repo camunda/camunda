@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage.WriterConfig;
+import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage.Config;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -26,8 +26,8 @@ import org.junit.jupiter.api.Test;
 final class RdbmsLogStorageTest {
 
   private static final long TERM = 3;
-  private static final WriterConfig CONFIG =
-      new WriterConfig(Duration.ofMillis(500), Duration.ofMillis(5), Duration.ofMillis(20), 1024);
+  private static final Config CONFIG =
+      new Config(Duration.ofMillis(500), Duration.ofMillis(5), Duration.ofMillis(20), 1024, 2);
 
   private final InMemoryLogBlockRepository repository = new InMemoryLogBlockRepository();
   private final List<String> events = new CopyOnWriteArrayList<>();
@@ -208,7 +208,7 @@ final class RdbmsLogStorageTest {
   @Test
   void shouldRejectAppendsOnReadOnlyStorage() {
     // given
-    final var readOnly = RdbmsLogStorage.readOnly(repository);
+    final var readOnly = RdbmsLogStorage.readOnly(repository, CONFIG);
 
     // when / then
     assertThatThrownBy(() -> readOnly.append(1, 3, bytes(1), new RecordingListener()))
