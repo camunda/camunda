@@ -11,7 +11,6 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitForUser;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -314,6 +313,18 @@ class RdbmsExporterPositionRecoveryIT {
             "setDbExporterPosition updated 0 rows — EXPORTER_POSITION row not found for PARTITION_ID=1");
       }
     }
+  }
+
+  private static void waitForUser(final CamundaClient client, final String username) {
+    Awaitility.await("user '%s' visible in secondary storage".formatted(username))
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  client.newUsersSearchRequest().filter(f -> f.username(username)).send().join();
+              assertThat(result.items()).hasSize(1);
+            });
   }
 
   private void deleteUserFromDb(final String username) throws Exception {

@@ -692,14 +692,13 @@ class RdbmsExporterTest {
     final var jobHandler = mockHandler(ValueType.JOB);
     createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, initialRdbmsPosition);
 
-    // this instance flushes further than what gets acked to the broker - e.g. under async
-    // LSN-based replication (LsnReplicationController), acking is intentionally delayed until
-    // replication is confirmed, so the broker position lags this instance's real progress
+    // this instance flushes further than what has been acked to the broker, so the broker
+    // position lags this instance's real progress
     final long instanceFlushedPosition = 1000L;
     exporter.export(mockRecord(ValueType.JOB, instanceFlushedPosition));
     executionQueue.flush(); // trigger the postFlushListener that sets lastFlushedPosition
 
-    // simulate a failover: the broker only ever got acked up to 900 (replication-confirmed floor)
+    // simulate a failover: the broker only ever got acked up to 900 (last acked floor)
     // and the new (promoted) DB position is 950 - between the broker's ack and what this instance
     // had actually flushed
     final long brokerAckedPosition = 900L;
