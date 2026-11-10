@@ -7,13 +7,8 @@
   ~ except in compliance with the Camunda License 1.0.
   -->
 <!--
-  Process definitions and their lookups, as stored by RdbmsProcessState. Uses the
+  Process definitions and their lookups, as stored by RdbmsProcessStore. Uses the
   engineState.textType and engineState.binaryType properties of 001-initial-schema.xml.
-
-  The lookups by deployment key and by version tag are separate tables rather than columns of
-  the definition, because they are written by separate event appliers and can disagree with the
-  definitions: processes deployed before 8.6 have no entry, and deleting a process with the
-  Process:DELETED v1 applier drops the version tag entry even if other versions carry the tag.
 -->
 <databaseChangeLog
   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
@@ -27,6 +22,13 @@
     from it on every write so they can be queried and indexed. version_tag is NULL for a process
     without one, since Oracle stores an empty string as NULL anyway. deployment_key is -1 for a
     process deployed before processes knew their deployment.
+
+    The lookups by deployment key and by version tag are the indexed columns deployment_key_lookup
+    and version_tag_lookup. They are not derived from the other columns, but set and cleared by the
+    same writes as the RocksDB state's lookup entries, and can disagree with the definitions:
+    processes deployed before 8.6 have no deployment lookup (NULL), and deleting a process with the
+    Process:DELETED v1 applier clears the version tag lookup even if other versions carry the tag.
+    At most one process of a process id has a given lookup value. NULL never matches a lookup.
   -->
   <changeSet id="create-process-definition" author="camunda">
     <createTable tableName="CAM_RU_PROCESS_DEFINITION">
@@ -55,6 +57,8 @@
       <column name="state" type="SMALLINT">
         <constraints nullable="false"/>
       </column>
+      <column name="deployment_key_lookup" type="BIGINT"/>
+      <column name="version_tag_lookup" type="${engineState.textType}"/>
       <column name="payload" type="${engineState.binaryType}">
         <constraints nullable="false"/>
       </column>
@@ -69,12 +73,26 @@
       <column name="bpmn_process_id"/>
       <column name="version"/>
     </createIndex>
+    <createIndex tableName="CAM_RU_PROCESS_DEFINITION" indexName="CAM_RU_PROCESS_DEFINITION_BY_DEPLOYMENT">
+      <column name="partition_id"/>
+      <column name="tenant_id"/>
+      <column name="bpmn_process_id"/>
+      <column name="deployment_key_lookup"/>
+    </createIndex>
+    <createIndex tableName="CAM_RU_PROCESS_DEFINITION" indexName="CAM_RU_PROCESS_DEFINITION_BY_VERSION_TAG">
+      <column name="partition_id"/>
+      <column name="tenant_id"/>
+      <column name="bpmn_process_id"/>
+      <column name="version_tag_lookup"/>
+    </createIndex>
   </changeSet>
 
   <!--
     The versions of a process id: the highest version ever deployed, so versions are never
     reused after a deletion, and the versions that still exist. The payload is the VersionInfo;
-    the version columns are derived from it for readability.
+    the version columns are derived from it for readability. The digest is the checksum of the
+    latest deployed version, to detect duplicates; NULL if there is none, while the row, i.e. the
+    version info, exists.
   -->
   <changeSet id="create-process-version" author="camunda">
     <createTable tableName="CAM_RU_PROCESS_VERSION">
@@ -93,6 +111,7 @@
       <column name="latest_version" type="BIGINT">
         <constraints nullable="false"/>
       </column>
+      <column name="digest" type="${engineState.binaryType}"/>
       <column name="payload" type="${engineState.binaryType}">
         <constraints nullable="false"/>
       </column>
@@ -100,75 +119,6 @@
     <addPrimaryKey tableName="CAM_RU_PROCESS_VERSION"
       constraintName="CAM_RU_PROCESS_VERSION_PKEY"
       columnNames="partition_id, tenant_id, bpmn_process_id"/>
-  </changeSet>
-
-  <!-- The checksum of the latest deployed version of a process id, to detect duplicates. -->
-  <changeSet id="create-process-digest" author="camunda">
-    <createTable tableName="CAM_RU_PROCESS_DIGEST">
-      <column name="partition_id" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="tenant_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="bpmn_process_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="digest" type="${engineState.binaryType}">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-    <addPrimaryKey tableName="CAM_RU_PROCESS_DIGEST"
-      constraintName="CAM_RU_PROCESS_DIGEST_PKEY"
-      columnNames="partition_id, tenant_id, bpmn_process_id"/>
-  </changeSet>
-
-  <!-- The process of a process id deployed by a deployment. -->
-  <changeSet id="create-process-by-deployment" author="camunda">
-    <createTable tableName="CAM_RU_PROCESS_BY_DEPLOYMENT">
-      <column name="partition_id" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="tenant_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="bpmn_process_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="deployment_key" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="process_definition_key" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-    <addPrimaryKey tableName="CAM_RU_PROCESS_BY_DEPLOYMENT"
-      constraintName="CAM_RU_PROCESS_BY_DEPLOYMENT_PKEY"
-      columnNames="partition_id, tenant_id, bpmn_process_id, deployment_key"/>
-  </changeSet>
-
-  <!-- The highest version of a process id with a version tag. -->
-  <changeSet id="create-process-by-version-tag" author="camunda">
-    <createTable tableName="CAM_RU_PROCESS_BY_VERSION_TAG">
-      <column name="partition_id" type="INT">
-        <constraints nullable="false"/>
-      </column>
-      <column name="tenant_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="bpmn_process_id" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="version_tag" type="${engineState.textType}">
-        <constraints nullable="false"/>
-      </column>
-      <column name="process_definition_key" type="BIGINT">
-        <constraints nullable="false"/>
-      </column>
-    </createTable>
-    <addPrimaryKey tableName="CAM_RU_PROCESS_BY_VERSION_TAG"
-      constraintName="CAM_RU_PROCESS_BY_VERSION_TAG_PKEY"
-      columnNames="partition_id, tenant_id, bpmn_process_id, version_tag"/>
   </changeSet>
 
   <!--
@@ -193,21 +143,22 @@
   </changeSet>
 
   <!--
-    Named flags of a partition, set once something has happened on it, e.g. the startup restore
-    of process definitions.
+    Values of a partition's state by key, e.g. the marker that the startup restore of process
+    definitions ran. A marker is a row, whose value may be NULL.
   -->
-  <changeSet id="create-partition-flag" author="camunda">
-    <createTable tableName="CAM_RU_PARTITION_FLAG">
+  <changeSet id="create-partition-state" author="camunda">
+    <createTable tableName="CAM_RU_PARTITION_STATE">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
-      <column name="flag_name" type="${engineState.textType}">
+      <column name="state_key" type="${engineState.textType}">
         <constraints nullable="false"/>
       </column>
+      <column name="value" type="${engineState.textType}"/>
     </createTable>
-    <addPrimaryKey tableName="CAM_RU_PARTITION_FLAG"
-      constraintName="CAM_RU_PARTITION_FLAG_PKEY"
-      columnNames="partition_id, flag_name"/>
+    <addPrimaryKey tableName="CAM_RU_PARTITION_STATE"
+      constraintName="CAM_RU_PARTITION_STATE_PKEY"
+      columnNames="partition_id, state_key"/>
   </changeSet>
 
 </databaseChangeLog>

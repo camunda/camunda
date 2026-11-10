@@ -83,7 +83,8 @@ public interface MutableProcessState extends ProcessState {
    * Restores a process definition that is resting in {@link PersistedProcessState#PENDING_DELETION}
    * back to {@link PersistedProcessState#ACTIVE}. Updates both the by-key ColumnFamily and the
    * in-memory cache; the by-version copy is intentionally left untouched, as it is only used to
-   * resolve the by-key definition key (see {@code DbProcessState#lookupPersistenceState}).
+   * resolve the by-key definition key (see {@code
+   * DbProcessStore#findProcessByProcessIdAndVersion}).
    *
    * <p>This is a no-op if the definition no longer exists, or is no longer {@code PENDING_DELETION}
    * (for example, because it was legitimately deleted or already restored since the restore was

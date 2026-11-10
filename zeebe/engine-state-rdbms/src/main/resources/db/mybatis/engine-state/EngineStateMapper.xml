@@ -321,13 +321,15 @@
       <arg column="deployment_key" javaType="_long"/>
       <arg column="resource_name" javaType="String"/>
       <arg column="state" javaType="_short"/>
+      <arg column="deployment_key_lookup" javaType="Long"/>
+      <arg column="version_tag_lookup" javaType="String"/>
       <arg column="payload" javaType="_byte[]"/>
     </constructor>
   </resultMap>
 
   <sql id="processDefinitionColumns">
     process_definition_key, tenant_id, bpmn_process_id, version, version_tag, deployment_key,
-    resource_name, state, payload
+    resource_name, state, deployment_key_lookup, version_tag_lookup, payload
   </sql>
 
   <select id="selectProcessDefinition" resultMap="processDefinitionRow">
@@ -344,6 +346,23 @@
     ORDER BY process_definition_key
   </select>
 
+  <!-- the lookup columns are NULL unless set, and NULL never matches -->
+  <select id="selectProcessDefinitionsByDeploymentLookup" resultMap="processDefinitionRow">
+    SELECT <include refid="processDefinitionColumns"/>
+    FROM CAM_RU_PROCESS_DEFINITION
+    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
+      AND bpmn_process_id = #{bpmnProcessId} AND deployment_key_lookup = #{deploymentKey}
+    ORDER BY process_definition_key
+  </select>
+
+  <select id="selectProcessDefinitionsByVersionTagLookup" resultMap="processDefinitionRow">
+    SELECT <include refid="processDefinitionColumns"/>
+    FROM CAM_RU_PROCESS_DEFINITION
+    WHERE partition_id = #{partitionId} AND tenant_id = #{tenantId}
+      AND bpmn_process_id = #{bpmnProcessId} AND version_tag_lookup = #{versionTag}
+    ORDER BY process_definition_key
+  </select>
+
   <select id="selectProcessDefinitionsAfter" resultMap="processDefinitionRow">
     SELECT <include refid="processDefinitionColumns"/>
     FROM CAM_RU_PROCESS_DEFINITION
@@ -356,7 +375,8 @@
     INSERT INTO CAM_RU_PROCESS_DEFINITION (partition_id, <include refid="processDefinitionColumns"/>)
     VALUES (#{partitionId}, #{row.processDefinitionKey}, #{row.tenantId}, #{row.bpmnProcessId},
       #{row.version}, #{row.versionTag,jdbcType=VARCHAR}, #{row.deploymentKey},
-      #{row.resourceName}, #{row.state}, #{row.payload})
+      #{row.resourceName}, #{row.state}, #{row.deploymentKeyLookup,jdbcType=BIGINT},
+      #{row.versionTagLookup,jdbcType=VARCHAR}, #{row.payload})
   </insert>
 
   <update id="updateProcessDefinition">
@@ -364,7 +384,8 @@
     SET tenant_id = #{row.tenantId}, bpmn_process_id = #{row.bpmnProcessId},
       version = #{row.version}, version_tag = #{row.versionTag,jdbcType=VARCHAR},
       deployment_key = #{row.deploymentKey}, resource_name = #{row.resourceName},
-      state = #{row.state}, payload = #{row.payload}
+      state = #{row.state}, deployment_key_lookup = #{row.deploymentKeyLookup,jdbcType=BIGINT},
+      version_tag_lookup = #{row.versionTagLookup,jdbcType=VARCHAR}, payload = #{row.payload}
     WHERE partition_id = #{partitionId} AND process_definition_key = #{row.processDefinitionKey}
   </update>
 
@@ -382,6 +403,7 @@
       <idArg column="bpmn_process_id" javaType="String"/>
       <arg column="highest_version" javaType="_long"/>
       <arg column="latest_version" javaType="_long"/>
+      <arg column="digest" javaType="_byte[]"/>
       <arg column="payload" javaType="_byte[]"/>
     </constructor>
   </resultMap>
@@ -396,13 +418,13 @@
   </sql>
 
   <select id="selectProcessVersion" resultMap="processVersionRow">
-    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, payload
+    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload
     FROM CAM_RU_PROCESS_VERSION
     WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
   </select>
 
   <select id="selectProcessVersions" resultMap="processVersionRow">
-    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, payload
+    SELECT tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload
     FROM CAM_RU_PROCESS_VERSION
     WHERE partition_id = #{partitionId}
     ORDER BY tenant_id, bpmn_process_id
@@ -410,146 +432,21 @@
 
   <insert id="insertProcessVersion">
     INSERT INTO CAM_RU_PROCESS_VERSION
-      (partition_id, tenant_id, bpmn_process_id, highest_version, latest_version, payload)
+      (partition_id, tenant_id, bpmn_process_id, highest_version, latest_version, digest, payload)
     VALUES (#{partitionId}, #{row.tenantId}, #{row.bpmnProcessId}, #{row.highestVersion},
-      #{row.latestVersion}, #{row.payload})
+      #{row.latestVersion}, #{row.digest,jdbcType=BINARY}, #{row.payload})
   </insert>
 
   <update id="updateProcessVersion">
     UPDATE CAM_RU_PROCESS_VERSION
     SET highest_version = #{row.highestVersion}, latest_version = #{row.latestVersion},
-      payload = #{row.payload}
+      digest = #{row.digest,jdbcType=BINARY}, payload = #{row.payload}
     WHERE <include refid="processIdKeyCondition"><property name="entry" value="row"/></include>
   </update>
 
   <delete id="deleteProcessVersion">
     DELETE FROM CAM_RU_PROCESS_VERSION
     WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
-  </delete>
-
-  <!-- CAM_RU_PROCESS_DIGEST -->
-
-  <resultMap id="processDigestRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ProcessDigestRow">
-    <constructor>
-      <idArg column="tenant_id" javaType="String"/>
-      <idArg column="bpmn_process_id" javaType="String"/>
-      <arg column="digest" javaType="_byte[]"/>
-    </constructor>
-  </resultMap>
-
-  <select id="selectProcessDigest" resultMap="processDigestRow">
-    SELECT tenant_id, bpmn_process_id, digest
-    FROM CAM_RU_PROCESS_DIGEST
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
-  </select>
-
-  <insert id="insertProcessDigest">
-    INSERT INTO CAM_RU_PROCESS_DIGEST (partition_id, tenant_id, bpmn_process_id, digest)
-    VALUES (#{partitionId}, #{row.tenantId}, #{row.bpmnProcessId}, #{row.digest})
-  </insert>
-
-  <update id="updateProcessDigest">
-    UPDATE CAM_RU_PROCESS_DIGEST
-    SET digest = #{row.digest}
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="row"/></include>
-  </update>
-
-  <delete id="deleteProcessDigest">
-    DELETE FROM CAM_RU_PROCESS_DIGEST
-    WHERE <include refid="processIdKeyCondition"><property name="entry" value="key"/></include>
-  </delete>
-
-  <!-- CAM_RU_PROCESS_BY_DEPLOYMENT -->
-
-  <resultMap id="processByDeploymentRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ProcessByDeploymentRow">
-    <constructor>
-      <idArg column="tenant_id" javaType="String"/>
-      <idArg column="bpmn_process_id" javaType="String"/>
-      <idArg column="deployment_key" javaType="_long"/>
-      <arg column="process_definition_key" javaType="_long"/>
-    </constructor>
-  </resultMap>
-
-  <sql id="processByDeploymentKeyCondition">
-    <include refid="processIdKeyCondition"/> AND deployment_key = #{${entry}.deploymentKey}
-  </sql>
-
-  <select id="selectProcessByDeployment" resultMap="processByDeploymentRow">
-    SELECT tenant_id, bpmn_process_id, deployment_key, process_definition_key
-    FROM CAM_RU_PROCESS_BY_DEPLOYMENT
-    WHERE <include refid="processByDeploymentKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
-  </select>
-
-  <insert id="insertProcessByDeployment">
-    INSERT INTO CAM_RU_PROCESS_BY_DEPLOYMENT
-      (partition_id, tenant_id, bpmn_process_id, deployment_key, process_definition_key)
-    VALUES (#{partitionId}, #{row.tenantId}, #{row.bpmnProcessId}, #{row.deploymentKey},
-      #{row.processDefinitionKey})
-  </insert>
-
-  <update id="updateProcessByDeployment">
-    UPDATE CAM_RU_PROCESS_BY_DEPLOYMENT
-    SET process_definition_key = #{row.processDefinitionKey}
-    WHERE <include refid="processByDeploymentKeyCondition">
-      <property name="entry" value="row"/>
-    </include>
-  </update>
-
-  <delete id="deleteProcessByDeployment">
-    DELETE FROM CAM_RU_PROCESS_BY_DEPLOYMENT
-    WHERE <include refid="processByDeploymentKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
-  </delete>
-
-  <!-- CAM_RU_PROCESS_BY_VERSION_TAG -->
-
-  <resultMap id="processByVersionTagRow"
-    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$ProcessByVersionTagRow">
-    <constructor>
-      <idArg column="tenant_id" javaType="String"/>
-      <idArg column="bpmn_process_id" javaType="String"/>
-      <idArg column="version_tag" javaType="String"/>
-      <arg column="process_definition_key" javaType="_long"/>
-    </constructor>
-  </resultMap>
-
-  <sql id="processByVersionTagKeyCondition">
-    <include refid="processIdKeyCondition"/> AND version_tag = #{${entry}.versionTag}
-  </sql>
-
-  <select id="selectProcessByVersionTag" resultMap="processByVersionTagRow">
-    SELECT tenant_id, bpmn_process_id, version_tag, process_definition_key
-    FROM CAM_RU_PROCESS_BY_VERSION_TAG
-    WHERE <include refid="processByVersionTagKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
-  </select>
-
-  <insert id="insertProcessByVersionTag">
-    INSERT INTO CAM_RU_PROCESS_BY_VERSION_TAG
-      (partition_id, tenant_id, bpmn_process_id, version_tag, process_definition_key)
-    VALUES (#{partitionId}, #{row.tenantId}, #{row.bpmnProcessId}, #{row.versionTag},
-      #{row.processDefinitionKey})
-  </insert>
-
-  <update id="updateProcessByVersionTag">
-    UPDATE CAM_RU_PROCESS_BY_VERSION_TAG
-    SET process_definition_key = #{row.processDefinitionKey}
-    WHERE <include refid="processByVersionTagKeyCondition">
-      <property name="entry" value="row"/>
-    </include>
-  </update>
-
-  <delete id="deleteProcessByVersionTag">
-    DELETE FROM CAM_RU_PROCESS_BY_VERSION_TAG
-    WHERE <include refid="processByVersionTagKeyCondition">
-      <property name="entry" value="key"/>
-    </include>
   </delete>
 
   <!-- CAM_RU_PENDING_PROCESS_DELETION -->
@@ -608,29 +505,36 @@
     </include>
   </delete>
 
-  <!-- CAM_RU_PARTITION_FLAG -->
+  <!-- CAM_RU_PARTITION_STATE -->
 
-  <select id="selectPartitionFlag" resultType="String">
-    SELECT flag_name
-    FROM CAM_RU_PARTITION_FLAG
-    WHERE partition_id = #{partitionId} AND flag_name = #{key}
+  <resultMap id="partitionStateRow"
+    type="io.camunda.zeebe.engine.state.rdbms.EngineStateMapper$PartitionStateRow">
+    <constructor>
+      <idArg column="state_key" javaType="String"/>
+      <arg column="value" javaType="String"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectPartitionState" resultMap="partitionStateRow">
+    SELECT state_key, value
+    FROM CAM_RU_PARTITION_STATE
+    WHERE partition_id = #{partitionId} AND state_key = #{key}
   </select>
 
-  <insert id="insertPartitionFlag">
-    INSERT INTO CAM_RU_PARTITION_FLAG (partition_id, flag_name)
-    VALUES (#{partitionId}, #{row})
+  <insert id="insertPartitionState">
+    INSERT INTO CAM_RU_PARTITION_STATE (partition_id, state_key, value)
+    VALUES (#{partitionId}, #{row.key}, #{row.value,jdbcType=VARCHAR})
   </insert>
 
-  <!-- like updatePendingProcessDeletion: only confirms that the row exists -->
-  <update id="updatePartitionFlag">
-    UPDATE CAM_RU_PARTITION_FLAG
-    SET flag_name = flag_name
-    WHERE partition_id = #{partitionId} AND flag_name = #{row}
+  <update id="updatePartitionState">
+    UPDATE CAM_RU_PARTITION_STATE
+    SET value = #{row.value,jdbcType=VARCHAR}
+    WHERE partition_id = #{partitionId} AND state_key = #{row.key}
   </update>
 
-  <delete id="deletePartitionFlag">
-    DELETE FROM CAM_RU_PARTITION_FLAG
-    WHERE partition_id = #{partitionId} AND flag_name = #{key}
+  <delete id="deletePartitionState">
+    DELETE FROM CAM_RU_PARTITION_STATE
+    WHERE partition_id = #{partitionId} AND state_key = #{key}
   </delete>
 
 </mapper>

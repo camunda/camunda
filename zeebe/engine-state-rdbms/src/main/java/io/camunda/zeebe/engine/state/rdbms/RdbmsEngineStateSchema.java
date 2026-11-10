@@ -40,19 +40,14 @@ public final class RdbmsEngineStateSchema {
   /** The tables of the process definitions and their lookups. */
   public static final List<String> PROCESS_DEFINITION_TABLES =
       List.of(
-          "CAM_RU_PROCESS_DEFINITION",
-          "CAM_RU_PROCESS_VERSION",
-          "CAM_RU_PROCESS_DIGEST",
-          "CAM_RU_PROCESS_BY_DEPLOYMENT",
-          "CAM_RU_PROCESS_BY_VERSION_TAG",
-          "CAM_RU_PENDING_PROCESS_DELETION");
+          "CAM_RU_PROCESS_DEFINITION", "CAM_RU_PROCESS_VERSION", "CAM_RU_PENDING_PROCESS_DELETION");
 
   /** All engine state tables; each has a {@code partition_id} column. */
   public static final List<String> TABLES =
       Stream.of(
               PROCESS_INSTANCE_TABLES.stream(),
               PROCESS_DEFINITION_TABLES.stream(),
-              Stream.of("CAM_RU_PARTITION_FLAG"))
+              Stream.of("CAM_RU_PARTITION_STATE"))
           .flatMap(Function.identity())
           .toList();
 
