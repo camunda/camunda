@@ -46,11 +46,22 @@ import org.slf4j.Logger;
 final class MailboxResponseRouter implements ServerOutput {
 
   /**
-   * The ids of the transport start at 0 and count up. The ids of the mailbox start far above, so
-   * the two cannot be mixed up.
+   * The ids of the transport are snowflake ids, which stay below this bit until about 2040. The ids
+   * of the mailbox have it set, so the two cannot be mixed up.
    */
   static final long FIRST_REQUEST_ID = 1L << 62;
 
+  /**
+   * A mailbox id is {@code FIRST_REQUEST_ID | term << COUNTER_BITS | counter}. The leader of a new
+   * term replays the commands that the old leader wrote but did not process, and the engine answers
+   * them with the old leader's ids. Since each term has one leader, ids of different terms never
+   * match, and such an answer cannot reach the gateway of another request. The term takes the 30
+   * bits between the counter and {@code FIRST_REQUEST_ID}; the POC ignores the wrap after 2^30
+   * terms and 2^32 requests in one term.
+   */
+  static final int COUNTER_BITS = 32;
+
+  private static final long TERM_MASK = (1L << (62 - COUNTER_BITS)) - 1;
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final long PURGE_INTERVAL_NANOS = Duration.ofSeconds(1).toNanos();
 
@@ -58,7 +69,7 @@ final class MailboxResponseRouter implements ServerOutput {
   private final MailboxStore store;
   private final Executor executor;
   private final Map<Long, Origin> pending = new ConcurrentHashMap<>();
-  private final AtomicLong nextRequestId = new AtomicLong(FIRST_REQUEST_ID);
+  private final AtomicLong nextRequestId = new AtomicLong(firstRequestIdOf(0));
   private final Set<Long> notLeading = ConcurrentHashMap.newKeySet();
   private final long ttlNanos;
   private final LongSupplier nanoClock;
@@ -92,6 +103,20 @@ final class MailboxResponseRouter implements ServerOutput {
     ttlNanos = ttl.toNanos();
     this.nanoClock = nanoClock;
     lastPurge = new AtomicLong(nanoClock.getAsLong());
+  }
+
+  /** The first id that the leader of the term hands out. */
+  static long firstRequestIdOf(final long term) {
+    return FIRST_REQUEST_ID | (term & TERM_MASK) << COUNTER_BITS;
+  }
+
+  /**
+   * Starts to hand out the ids of the term in which this node leads the partition. Called when the
+   * node becomes leader, before it takes requests from the inbox.
+   */
+  void startTerm(final long term) {
+    clear();
+    nextRequestId.set(firstRequestIdOf(term));
   }
 
   /**

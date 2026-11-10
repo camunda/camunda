@@ -127,6 +127,57 @@ final class MailboxResponseRouterTest {
   }
 
   @Test
+  void shouldHandOutIdsThatTheLeadersOfOtherTermsDoNotUse() {
+    // given - the old leader of term 1 and the new leader of term 2 are two nodes
+    final var oldLeader = new MailboxResponseRouter(transport, store, Runnable::run);
+    final var newLeader = new MailboxResponseRouter(transport, store, Runnable::run);
+    oldLeader.startTerm(1);
+    newLeader.startTerm(2);
+
+    // when
+    final var oldId = oldLeader.register(GATEWAY, 1);
+    final var newId = newLeader.register(GATEWAY, 2);
+
+    // then
+    assertThat(oldId).isGreaterThanOrEqualTo(MailboxResponseRouter.FIRST_REQUEST_ID);
+    assertThat(newId).isGreaterThanOrEqualTo(MailboxResponseRouter.FIRST_REQUEST_ID);
+    assertThat(newId).isNotEqualTo(oldId);
+  }
+
+  @Test
+  void shouldNotSendTheResponseToACommandOfTheOldLeaderToTheGatewayOfTheNewLeader() {
+    // given - the old leader wrote a command, and the new leader replays it
+    final var oldLeader = new MailboxResponseRouter(transport, store, Runnable::run);
+    oldLeader.startTerm(1);
+    final var commandOfOldLeader = oldLeader.register(new GatewayId("gateway-old"), 1);
+    final var newLeader = new MailboxResponseRouter(transport, store, Runnable::run);
+    newLeader.startTerm(2);
+    newLeader.register(GATEWAY, 7);
+
+    // when - the engine of the new leader answers the replayed command
+    final var lateResponse = new FakeResponse(commandOfOldLeader, new byte[] {1});
+    newLeader.sendResponse(lateResponse);
+
+    // then
+    assertThat(store.takeResponses(GATEWAY, Set.of(7L))).isEmpty();
+    assertThat(newLeader.pendingCount()).isEqualTo(1);
+    verify(transport).sendResponse(lateResponse);
+  }
+
+  @Test
+  void shouldForgetTheRequestsOfThePreviousTermWhenANewTermStarts() {
+    // given
+    router.startTerm(1);
+    router.register(GATEWAY, 1);
+
+    // when
+    router.startTerm(3);
+
+    // then
+    assertThat(router.pendingCount()).isZero();
+  }
+
+  @Test
   void shouldForgetARequest() {
     // given
     final var requestId = router.register(GATEWAY, 7);

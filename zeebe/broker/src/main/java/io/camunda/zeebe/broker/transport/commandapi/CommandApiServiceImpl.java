@@ -174,7 +174,7 @@ public final class CommandApiServiceImpl extends Actor
           serverTransport.subscribe(this.partitionId, RequestType.QUERY, queryHandler);
           commandHandler.addPartition(partitionId, logStreamWriter);
           serverTransport.subscribe(this.partitionId, RequestType.COMMAND, commandHandler);
-          startRequestDrain();
+          startRequestDrain(term);
           publishLeader(term);
         });
   }
@@ -208,10 +208,11 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   /** Starts to handle the requests in the inbox. Only a leader, which has handlers, does this. */
-  private void startRequestDrain() {
+  private void startRequestDrain(final long term) {
     if (mailboxSetup == null || responseRouter == null || requestDrain != null) {
       return;
     }
+    responseRouter.startTerm(term);
     requestDrain =
         new MailboxDrainLoop(
             "mailbox-requests-" + partitionId.number(),
