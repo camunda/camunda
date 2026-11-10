@@ -98,8 +98,6 @@ final class EngineStateRoundTripsTest {
         100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.setAwaitResultRequestMetadata(
         100, TENANT_ID, new AwaitProcessInstanceResultMetadata().setRequestId(1));
-    elementInstanceState.insertProcessInstanceKeyByBusinessId(
-        "business", "process", TENANT_ID, 100);
     counting.reset();
 
     // when
@@ -110,8 +108,7 @@ final class EngineStateRoundTripsTest {
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_ELEMENT_INSTANCE", "INSERT", 2),
             new Batch("CAM_RU_TAKEN_SEQUENCE_FLOW", "INSERT", 1),
-            new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "INSERT", 1),
-            new Batch("CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID", "INSERT", 1));
+            new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "INSERT", 1));
     assertThat(counting.otherStatements).isZero();
     assertThat(counting.sessions).isOne();
     assertThat(counting.commits).isOne();

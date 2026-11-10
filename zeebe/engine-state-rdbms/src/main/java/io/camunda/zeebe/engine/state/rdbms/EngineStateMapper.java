@@ -36,6 +36,12 @@ interface EngineStateMapper {
   List<Long> selectChildKeys(
       @Param("partitionId") int partitionId, @Param("parentKey") long parentKey);
 
+  List<Long> selectProcessInstanceKeysByBusinessId(
+      @Param("partitionId") int partitionId,
+      @Param("tenantId") String tenantId,
+      @Param("bpmnProcessId") String bpmnProcessId,
+      @Param("businessId") String businessId);
+
   List<Long> selectProcessInstanceKeysByDefinition(
       @Param("partitionId") int partitionId,
       @Param("processDefinitionKey") long processDefinitionKey);
@@ -102,23 +108,6 @@ interface EngineStateMapper {
 
   void deleteRuntimeInstructions(
       @Param("partitionId") int partitionId, @Param("key") long processInstanceKey);
-
-  // CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
-
-  @Nullable BusinessIdRow selectBusinessId(
-      @Param("partitionId") int partitionId, @Param("key") BusinessIdKey key);
-
-  List<BusinessIdRow> selectBusinessIds(
-      @Param("partitionId") int partitionId,
-      @Param("businessId") String businessId,
-      @Param("processDefinitionId") String processDefinitionId,
-      @Param("tenantId") String tenantId);
-
-  void insertBusinessId(@Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);
-
-  void updateBusinessId(@Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);
-
-  void deleteBusinessId(@Param("partitionId") int partitionId, @Param("key") BusinessIdKey key);
 
   // CAM_RU_PROCESS_DEFINITION
 
@@ -215,7 +204,8 @@ interface EngineStateMapper {
   /**
    * An element instance: the serialized {@link ElementInstance} plus the columns derived from it
    * for queries. The root process instance key is the process instance key for a root process
-   * instance, and for instances created before the record carried a root process instance key.
+   * instance, and for instances created before the record carried a root process instance key. The
+   * business id is null unless the row is a root process instance with a business id.
    */
   record ElementInstanceRow(
       long key,
@@ -225,6 +215,7 @@ interface EngineStateMapper {
       long processDefinitionKey,
       String tenantId,
       String bpmnProcessId,
+      @Nullable String businessId,
       String elementId,
       short bpmnElementType,
       short state,
@@ -261,23 +252,6 @@ interface EngineStateMapper {
 
   /** A serialized value keyed by process instance key. */
   record PayloadRow(long key, long rootProcessInstanceKey, String tenantId, byte[] payload) {}
-
-  /** The key of an entry of the business id index: all its columns but the root key. */
-  record BusinessIdKey(
-      String businessId, String processDefinitionId, String tenantId, long processInstanceKey) {}
-
-  /** An entry of the business id index. */
-  record BusinessIdRow(
-      String businessId,
-      String processDefinitionId,
-      String tenantId,
-      long processInstanceKey,
-      long rootProcessInstanceKey) {
-
-    BusinessIdKey key() {
-      return new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey);
-    }
-  }
 
   /**
    * A deployed process: the serialized {@code PersistedProcess} plus the columns derived from it

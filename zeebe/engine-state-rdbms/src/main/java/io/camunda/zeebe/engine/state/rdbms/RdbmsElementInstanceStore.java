@@ -19,8 +19,6 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStore;
 import io.camunda.zeebe.engine.state.instance.RuntimeInstructions;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.BusinessIdKey;
-import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.BusinessIdRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.ElementInstanceRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.PayloadRow;
 import io.camunda.zeebe.engine.state.rdbms.EngineStateMapper.TakenSequenceFlowKey;
@@ -60,6 +58,13 @@ import org.jspecify.annotations.Nullable;
  * on migration). Hence {@link #insertProcessInstanceKeyByDefinitionKey(long, long)} and {@link
  * #deleteProcessInstanceKeyByDefinitionKey(long, long)} do nothing.
  *
+ * <p>Neither is the index of process instances by business id: a root process instance row has its
+ * record's business id as indexed column (null if empty), which follows the record when a business
+ * id is assigned later or the instance is migrated to another process id. The engine inserts and
+ * deletes the RocksDB index entries exactly when it creates (or assigns the business id of) and
+ * removes such a row, with the same values, so {@link #insertProcessInstanceKeyByBusinessId} and
+ * {@link #deleteProcessInstanceKeyByBusinessId} do nothing as well.
+ *
  * <p>Stricter than the RocksDB store: taking a sequence flow in a flow scope that doesn't exist
  * fails, because its row needs the flow scope's process instance and tenant; decrementing a
  * sequence flow that was never taken fails with an {@link IllegalStateException}.
@@ -67,10 +72,9 @@ import org.jspecify.annotations.Nullable;
  * <p>Every row records the process instance, root process instance and tenant it belongs to. An
  * element instance row takes them from its record. The other rows take them on insert from the
  * element instance they belong to, read through the element instance cache, so usually without a
- * query: a taken sequence flow from its flow scope, a business id from its process instance. The
- * await result metadata and runtime instructions are stored while the process instance is created,
- * before its element instance exists; they belong to a root process instance and get its tenant
- * passed.
+ * query: a taken sequence flow from its flow scope. The await result metadata and runtime
+ * instructions are stored while the process instance is created, before its element instance
+ * exists; they belong to a root process instance and get its tenant passed.
  */
 public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
@@ -87,7 +91,6 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
   private final EntityCache<TakenSequenceFlowKey, TakenSequenceFlowRow> takenSequenceFlows;
   private final EntityCache<Long, PayloadRow> awaitResults;
   private final EntityCache<Long, PayloadRow> runtimeInstructions;
-  private final EntityCache<BusinessIdKey, BusinessIdRow> businessIds;
 
   public RdbmsElementInstanceStore(
       final JdbcTransactionContext transactionContext, final int partitionId) {
@@ -126,14 +129,6 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
             EngineStateMapper::insertRuntimeInstructions,
             EngineStateMapper::updateRuntimeInstructions,
             EngineStateMapper::deleteRuntimeInstructions);
-    businessIds =
-        rdbms.cache(
-            "process instance by business id",
-            BusinessIdRow::key,
-            EngineStateMapper::selectBusinessId,
-            EngineStateMapper::insertBusinessId,
-            EngineStateMapper::updateBusinessId,
-            EngineStateMapper::deleteBusinessId);
   }
 
   @Override
@@ -400,13 +395,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
-    // only root process instances have a business id: without its row, it is its own root
-    final var processInstance = elementInstances.get(processInstanceKey);
-    final long rootProcessInstanceKey =
-        processInstance == null ? processInstanceKey : processInstance.rootProcessInstanceKey();
-    businessIds.insert(
-        new BusinessIdRow(
-            businessId, processDefinitionId, tenantId, processInstanceKey, rootProcessInstanceKey));
+    // derived from the process instance's element instance row, see class javadoc
   }
 
   @Override
@@ -415,8 +404,7 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final String processDefinitionId,
       final String tenantId,
       final long processInstanceKey) {
-    businessIds.delete(
-        new BusinessIdKey(businessId, processDefinitionId, tenantId, processInstanceKey));
+    // derived from the process instance's element instance row, see class javadoc
   }
 
   @Override
@@ -425,20 +413,21 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       final String processDefinitionId,
       final String tenantId,
       final Predicate<Long> ignoreWhen) {
-    final var committed =
+    final var committedKeys =
         rdbms.read(
             mapper ->
-                mapper.selectBusinessIds(partitionId, businessId, processDefinitionId, tenantId));
-    final var entries =
-        businessIds.query(
-            committed,
+                mapper.selectProcessInstanceKeysByBusinessId(
+                    partitionId, tenantId, processDefinitionId, businessId));
+    final var processInstanceKeys =
+        elementInstances.queryKeys(
+            committedKeys,
             row ->
-                row.businessId().equals(businessId)
-                    && row.processDefinitionId().equals(processDefinitionId)
-                    && row.tenantId().equals(tenantId),
-            Comparator.comparingLong(BusinessIdRow::processInstanceKey));
-    for (final var entry : entries) {
-      if (!ignoreWhen.test(entry.processInstanceKey())) {
+                businessId.equals(row.businessId())
+                    && processDefinitionId.equals(row.bpmnProcessId())
+                    && tenantId.equals(row.tenantId()),
+            Comparator.naturalOrder());
+    for (final long processInstanceKey : processInstanceKeys) {
+      if (!ignoreWhen.test(processInstanceKey)) {
         return true;
       }
     }
@@ -519,10 +508,24 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
         value.getProcessDefinitionKey(),
         value.getTenantId(),
         value.getBpmnProcessId(),
+        businessId(value),
         value.getElementId(),
         (short) value.getBpmnElementType().ordinal(),
         instance.getState().value(),
         serialize(instance));
+  }
+
+  /**
+   * The business id of a root process instance, or null if it has none or the record is of another
+   * element instance: the rows the RocksDB index of process instances by business id has entries
+   * for.
+   */
+  private static @Nullable String businessId(final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType() != BpmnElementType.PROCESS || value.hasParentProcessInstance()) {
+      return null;
+    }
+    final String businessId = value.getBusinessId();
+    return businessId.isEmpty() ? null : businessId;
   }
 
   /**

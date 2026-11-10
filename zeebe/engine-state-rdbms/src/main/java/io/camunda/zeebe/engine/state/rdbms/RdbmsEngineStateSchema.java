@@ -34,8 +34,7 @@ public final class RdbmsEngineStateSchema {
           "CAM_RU_ELEMENT_INSTANCE",
           "CAM_RU_TAKEN_SEQUENCE_FLOW",
           "CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT",
-          "CAM_RU_RUNTIME_INSTRUCTIONS",
-          "CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID");
+          "CAM_RU_RUNTIME_INSTRUCTIONS");
 
   /** The tables of the process definitions and their lookups. */
   public static final List<String> PROCESS_DEFINITION_TABLES =
