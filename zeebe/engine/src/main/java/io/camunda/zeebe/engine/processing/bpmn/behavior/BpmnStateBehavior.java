@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -229,8 +228,7 @@ public final class BpmnStateBehavior {
         variableName,
         variableValue,
         valueOffset,
-        valueLength,
-        VariableMetadataLookup.NONE);
+        valueLength);
   }
 
   public void propagateVariable(final BpmnElementContext context, final DirectBuffer variableName) {
@@ -250,8 +248,7 @@ public final class BpmnStateBehavior {
           context.getStorageOrdinal(),
           context.getBpmnProcessId(),
           context.getTenantId(),
-          variablesAsDocument,
-          VariableMetadataLookup.NONE);
+          variablesAsDocument);
     } catch (final ValidationException e) {
       throw new BpmnProcessingException(
           context,
@@ -318,8 +315,7 @@ public final class BpmnStateBehavior {
           targetStorageOrdinal,
           targetProcess.getBpmnProcessId(),
           targetProcess.getTenantId(),
-          variables,
-          VariableMetadataLookup.NONE);
+          variables);
     } catch (final ValidationException e) {
       throw new IllegalArgumentException(
           String.format(

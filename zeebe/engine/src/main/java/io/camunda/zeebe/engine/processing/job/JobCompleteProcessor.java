@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -422,8 +421,7 @@ public final class JobCompleteProcessor
           targetAdHocSubProcessInstanceValue.getStorageOrdinal(),
           targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
           targetAdHocSubProcessInstanceValue.getTenantId(),
-          completingJobRecord.getVariablesBuffer(),
-          VariableMetadataLookup.NONE);
+          completingJobRecord.getVariablesBuffer());
     } catch (final ValidationException e) {
       throw new IllegalArgumentException(
           "Failed to propagate job variables to ad-hoc sub-process instance %d"
