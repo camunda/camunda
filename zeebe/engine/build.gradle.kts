@@ -64,6 +64,9 @@ dependencies {
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
   testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
   testImplementation(libs.org.instancio.instancio.core)
+  testImplementation(libs.org.postgresql.postgresql)
+  testImplementation(libs.org.testcontainers.testcontainers)
+  testImplementation(libs.org.testcontainers.testcontainers.postgresql)
   compileOnly(libs.net.jcip.jcip.annotations)
 }
 
