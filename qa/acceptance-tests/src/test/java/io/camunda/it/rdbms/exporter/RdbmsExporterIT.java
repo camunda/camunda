@@ -170,15 +170,17 @@ class RdbmsExporterIT {
   }
 
   /**
-   * Verify, that the exporter position is correct. Makes the search for false tests easier.
+   * Verify, that the position stored in the DB for partition 1 matches the position the exporter
+   * acknowledged to its own controller.
    *
-   * <p>Use always FIXTURES.nextPosition() when creating a record, otherwise other tests will fail!
+   * <p>The global FIXTURES position counter cannot be used here: tests that export to another
+   * partition also advance it.
    */
   @AfterEach
   void tearDown() {
     final var lastExporterPosition = exporterPositionMapper.findOne(1);
     if (lastExporterPosition != null) {
-      assertThat(lastExporterPosition.lastExportedPosition()).isEqualTo(FIXTURES.currentPosition());
+      assertThat(lastExporterPosition.lastExportedPosition()).isEqualTo(controller.getPosition());
     }
   }
 
