@@ -26,8 +26,6 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class DbCompositeKeyColumnFamilyContractTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbCompositeKey<DbString, DbLong>, DbString> columnFamily;
@@ -35,6 +33,8 @@ public abstract class DbCompositeKeyColumnFamilyContractTest {
   private DbLong secondKey;
   private DbCompositeKey<DbString, DbLong> compositeKey;
   private DbString value;
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
 
   @Before
   public void setup() throws Exception {

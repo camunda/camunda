@@ -30,8 +30,6 @@ import org.junit.rules.TemporaryFolder;
 
 public abstract class DbTransactionContractTest {
 
-  protected abstract ZeebeDbFactory<ColumnFamilies> createFactory();
-
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private TransactionContext transactionContext;
@@ -46,6 +44,8 @@ public abstract class DbTransactionContractTest {
   private DbLong twoKey;
   private DbLong threeKey;
   private DbLong threeValue;
+
+  protected abstract ZeebeDbFactory<ColumnFamilies> createFactory();
 
   @Before
   public void setup() throws Exception {

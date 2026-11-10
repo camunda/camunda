@@ -33,11 +33,11 @@ import org.assertj.core.util.Files;
 @Tag("randomized")
 public abstract class ColumnFamilyRandomizedPropertyContractTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
-
   private Map<Long, Long> map;
   private ColumnFamily<DbLong, DbLong> columnFamily;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
 
   @BeforeProperty
   private void setup() {

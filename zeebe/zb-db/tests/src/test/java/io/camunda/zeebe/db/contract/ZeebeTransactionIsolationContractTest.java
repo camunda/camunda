@@ -31,8 +31,6 @@ import org.junit.jupiter.api.io.TempDir;
  */
 public abstract class ZeebeTransactionIsolationContractTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
-
   @TempDir File tempDir;
 
   private ZeebeDb<DefaultColumnFamily> db;
@@ -42,6 +40,8 @@ public abstract class ZeebeTransactionIsolationContractTest {
   private ColumnFamily<DbString, DbString> readCf;
   private final DbString key = new DbString();
   private final DbString value = new DbString();
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
 
   @BeforeEach
   void setUp() {

@@ -26,8 +26,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 public abstract class DbTenantAwareKeyColumnFamilyContractTest {
 
-  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
-
   @TempDir public File temporaryFolder;
   private ZeebeDb<DefaultColumnFamily> zeebeDb;
   private ColumnFamily<DbTenantAwareKey<DbLong>, DbString> columnFamily;
@@ -42,6 +40,8 @@ public abstract class DbTenantAwareKeyColumnFamilyContractTest {
 
   private DbTenantAwareKey<DbLong> tenantAwareKey;
   private DbTenantAwareKey<DbCompositeKey<DbLong, DbLong>> compositeTenantAwareKey;
+
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
 
   @BeforeEach
   void beforeEach() throws Exception {
