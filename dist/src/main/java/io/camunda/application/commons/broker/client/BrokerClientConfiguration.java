@@ -12,10 +12,13 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
+import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailbox;
+import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailboxSetups;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,9 +55,19 @@ public final class BrokerClientConfiguration {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            metrics);
+            metrics,
+            mailbox());
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
+  }
+
+  /**
+   * The mailbox for requests to leaders that the gateway cannot see, if a provider for it is on the
+   * class path and turns it on.
+   */
+  private @Nullable GatewayMailbox mailbox() {
+    final var memberId = cluster.getMembershipService().getLocalMember().id().id();
+    return GatewayMailboxSetups.load(memberId).map(GatewayMailbox::new).orElse(null);
   }
 
   public record BrokerClientCfg(Duration requestTimeout) {}

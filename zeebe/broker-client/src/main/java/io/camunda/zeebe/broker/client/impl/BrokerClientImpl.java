@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailbox;
-import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailboxSetups;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
@@ -65,7 +64,7 @@ public final class BrokerClientImpl implements BrokerClient {
         schedulingService,
         topologyManager,
         metrics,
-        GatewayMailboxSetups.load().map(GatewayMailbox::new).orElse(null));
+        null);
   }
 
   /**

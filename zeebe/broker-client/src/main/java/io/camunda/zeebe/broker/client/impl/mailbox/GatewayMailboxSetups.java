@@ -19,18 +19,19 @@ public final class GatewayMailboxSetups {
   private GatewayMailboxSetups() {}
 
   /** Asks the providers on the class path. Returns empty if there is none, or none is on. */
-  public static Optional<GatewayMailboxSetup> load() {
-    return from(ServiceLoader.load(GatewayMailboxSetupProvider.class));
+  public static Optional<GatewayMailboxSetup> load(final String memberId) {
+    return from(ServiceLoader.load(GatewayMailboxSetupProvider.class), memberId);
   }
 
   /**
    * @throws IllegalStateException if more than one provider returns a setup, because the gateway
    *     could not tell which store to use
    */
-  static Optional<GatewayMailboxSetup> from(final Iterable<GatewayMailboxSetupProvider> providers) {
+  static Optional<GatewayMailboxSetup> from(
+      final Iterable<GatewayMailboxSetupProvider> providers, final String memberId) {
     final var setups = new ArrayList<GatewayMailboxSetup>();
     for (final var provider : providers) {
-      provider.create().ifPresent(setups::add);
+      provider.create(memberId).ifPresent(setups::add);
     }
     if (setups.size() > 1) {
       throw new IllegalStateException(

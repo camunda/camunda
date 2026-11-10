@@ -26,35 +26,46 @@ final class GatewayMailboxSetupsTest {
 
   @Test
   void shouldFindNoSetupWithoutProviders() {
-    assertThat(GatewayMailboxSetups.from(List.of())).isEmpty();
+    assertThat(GatewayMailboxSetups.from(List.of(), "0")).isEmpty();
   }
 
   @Test
   void shouldFindNoSetupWhenNoProviderIsOn() {
     // given
-    final GatewayMailboxSetupProvider off = Optional::empty;
+    final GatewayMailboxSetupProvider off = memberId -> Optional.empty();
 
     // when / then
-    assertThat(GatewayMailboxSetups.from(List.of(off))).isEmpty();
+    assertThat(GatewayMailboxSetups.from(List.of(off), "0")).isEmpty();
   }
 
   @Test
   void shouldUseTheSetupOfTheProviderThatIsOn() {
     // given
-    final GatewayMailboxSetupProvider off = Optional::empty;
-    final GatewayMailboxSetupProvider on = () -> Optional.of(SETUP);
+    final GatewayMailboxSetupProvider off = memberId -> Optional.empty();
+    final GatewayMailboxSetupProvider on = memberId -> Optional.of(SETUP);
 
     // when / then
-    assertThat(GatewayMailboxSetups.from(List.of(off, on))).contains(SETUP);
+    assertThat(GatewayMailboxSetups.from(List.of(off, on), "0")).contains(SETUP);
+  }
+
+  @Test
+  void shouldGiveTheMemberIdToTheProviders() {
+    // given
+    final GatewayMailboxSetupProvider byMember =
+        memberId -> memberId.equals("east_0") ? Optional.of(SETUP) : Optional.empty();
+
+    // when / then
+    assertThat(GatewayMailboxSetups.from(List.of(byMember), "east_0")).contains(SETUP);
+    assertThat(GatewayMailboxSetups.from(List.of(byMember), "west_0")).isEmpty();
   }
 
   @Test
   void shouldFailWhenSeveralProvidersAreOn() {
     // given
-    final GatewayMailboxSetupProvider on = () -> Optional.of(SETUP);
+    final GatewayMailboxSetupProvider on = memberId -> Optional.of(SETUP);
 
     // when / then
-    assertThatThrownBy(() -> GatewayMailboxSetups.from(List.of(on, on)))
+    assertThatThrownBy(() -> GatewayMailboxSetups.from(List.of(on, on), "0"))
         .isInstanceOf(IllegalStateException.class);
   }
 }

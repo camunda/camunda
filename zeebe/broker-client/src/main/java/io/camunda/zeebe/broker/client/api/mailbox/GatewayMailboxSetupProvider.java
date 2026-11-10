@@ -23,7 +23,9 @@ public interface GatewayMailboxSetupProvider {
   /**
    * Called once for each broker client.
    *
+   * @param memberId the id of the cluster member that hosts the gateway. For an embedded gateway it
+   *     is the id of its broker, which contains the zone.
    * @return the setup, or empty if the mailbox is off
    */
-  Optional<GatewayMailboxSetup> create();
+  Optional<GatewayMailboxSetup> create(String memberId);
 }
