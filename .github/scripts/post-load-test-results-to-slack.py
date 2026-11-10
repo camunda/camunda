@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build and post the daily load-test results table to Slack.
+"""Build and post a load-test results table (daily or stable-branch stress tests) to Slack.
 
 Renders a side-by-side metrics table (a Slack `table` block), one column per variant, from the
 end-of-soak metric snapshots and posts it to the reliability-testing Slack channel via an incoming
 webhook. Invoked by the `notify-results` job of
-`.github/workflows/camunda-daily-load-tests.yml`.
+`.github/workflows/load-test-publish-results.yml`, which `camunda-daily-load-tests.yml` and
+`camunda-stable-stress-tests.yml` call.
 
 Metric names, descriptions, and display formats are sourced from `queries.yaml`, which holds the
 display metadata of the metrics that `loadtestctl report` collects with
@@ -12,8 +13,8 @@ display metadata of the metrics that `loadtestctl report` collects with
 for a no-secondary-storage variant.
 
 The table has one column per entry in the variants manifest (VARIANTS_JSON_FILE, or VARIANTS_JSON
-as a fallback) — adding a daily variant (a new matrix entry in camunda-daily-load-tests.yml) needs
-no change here.
+as a fallback). Adding a variant (a new matrix entry in camunda-daily-load-tests.yml or
+camunda-stable-stress-tests.yml) needs no change here.
 
 Required environment variables:
   BENCHMARK           Benchmark name, e.g. medic-daily-YYYY-MM-DD-<sha>-test.
@@ -24,8 +25,9 @@ Required environment variables:
   METRICS_WINDOW_SECONDS  Length of the metrics window.
 
 Optional:
+  SLACK_TITLE         Message title, default "Daily Load Test Results".
   VARIANTS_JSON_FILE  Path to the variants manifest JSON file (see aggregate-metrics in
-                      camunda-daily-load-tests.yml). Falls back to the VARIANTS_JSON env var
+                      load-test-publish-results.yml). Falls back to the VARIANTS_JSON env var
                       (a literal JSON string) if unset, for manual/local invocation. Empty or
                       missing data exits cleanly without posting to Slack.
   QUERIES_YAML        Path to queries.yaml. Default:
@@ -65,6 +67,7 @@ warmup_s = int(os.environ['WARMUP_SECONDS'])
 window_s = int(os.environ['METRICS_WINDOW_SECONDS'])
 webhook  = os.environ['SLACK_WEBHOOK_URL']
 flamegraph_links = os.environ.get('FLAMEGRAPH_LINKS', '').strip()
+title    = os.environ.get('SLACK_TITLE', 'Daily Load Test Results')
 
 queries_yaml = os.environ.get('QUERIES_YAML', 'load-tests/docs/scripts/queries.yaml')
 
@@ -128,7 +131,7 @@ blocks = [
         'type': 'section',
         'text': {
             'type': 'mrkdwn',
-            'text': f':bar_chart: *Daily Load Test Results — {date}*\nMetrics: {window_s // 60} min after {warmup_s // 60} min warmup · <{run_url}|Workflow run>',
+            'text': f':bar_chart: *{title} — {date}*\nMetrics: {window_s // 60} min after {warmup_s // 60} min warmup · <{run_url}|Workflow run>',
         },
     },
 ]
@@ -147,14 +150,19 @@ if dash_links:
 
 blocks.append(table_block)
 
+# Slack rejects a section whose text exceeds 3000 characters, so the links are split into several
+# sections, one link per line, each safely below that limit.
+MAX_SECTION_CHARS = 2800
 if flamegraph_links:
-    blocks.append({
-        'type': 'section',
-        'text': {
-            'type': 'mrkdwn',
-            'text': f':fire: *Flamegraphs:*\n{flamegraph_links}',
-        },
-    })
+    chunks, current = [], ':fire: *Flamegraphs:*'
+    for link in flamegraph_links.splitlines():
+        if len(current) + 1 + len(link) > MAX_SECTION_CHARS:
+            chunks.append(current)
+            current = link
+        else:
+            current += '\n' + link
+    chunks.append(current)
+    blocks.extend({'type': 'section', 'text': {'type': 'mrkdwn', 'text': c}} for c in chunks)
 
 payload = {'blocks': blocks}
 

@@ -41,6 +41,7 @@ graph TD
         SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 00:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
+        STABLE_STRESS["camunda-stable-stress-tests.yml<br/><i>Monday 07:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
         CLEANUP["camunda-load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
     end
@@ -56,6 +57,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         VARIANT["stress-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        PUBLISH["load-test-publish-results.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
@@ -72,6 +74,9 @@ graph TD
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
+    DAILY -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
+    STABLE_STRESS -- "one call per stable<br/>branch and storage" --> VARIANT
+    STABLE_STRESS -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
     VARIANT -- "scenario: max" --> CORE
     VARIANT -- "profiles each variant<br/>after the soak" --> PROFILE
     VARIANT -- "45 min soak, then<br/>snapshot metrics" --> METRICS
@@ -106,6 +111,7 @@ graph TD
 | 00:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
 | 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
+| 07:00 UTC Monday  | `camunda-stable-stress-tests.yml`          | Weekly    |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 
@@ -178,8 +184,9 @@ For a full list of Prometheus metrics, SLO targets, and PromQL queries used to e
 
 ### Historical results archive (GCS)
 
-The daily stress-test workflow (`camunda-daily-load-tests.yml`) persists each run's aggregated
-metrics, variant manifest, and flamegraphs to
+The daily stress-test workflow (`camunda-daily-load-tests.yml`, through the shared
+`load-test-publish-results.yml`) persists each run's aggregated metrics, variant manifest, and
+flamegraphs to
 `gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/`, outliving both
 the 90-day GH Actions artifact retention and the Prometheus retention window.
 
@@ -394,6 +401,8 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 ### Daily load tests (stress test)
 
 Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and measure for 45 minutes (15 min warmup, then a 30 min measured window, the same as the PR load test). Profiling follows the soak, and the namespace is deleted after metrics and profiling are done.
+
+The supported stable branches get the same stress test weekly, on Mondays, via the [Stable branches stress tests GitHub workflow](../.github/workflows/camunda-stable-stress-tests.yml): gRPC with Elasticsearch and gRPC without secondary storage per branch, with a separate Slack summary and GCS archive (`gs://camunda-benchmark-load-test-results-prod/automated/weekly/stress-stable/<benchmark>/`). Each branch is built and deployed by its own `camunda-load-test.yml`, profiling, metrics and cleanup run from main.
 
 **Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 
