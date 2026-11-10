@@ -14,13 +14,11 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Iterables;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
-import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -273,8 +271,8 @@ class RdbmsExporterPositionRecoveryIT {
               .tag("partition", "1")
               .meter()
               .measure();
-      final Measurement first = Iterables.getFirst(meters, null);
-      return first == null ? 0L : (long) first.getValue();
+      final var measurements = meters.iterator();
+      return measurements.hasNext() ? (long) measurements.next().getValue() : 0L;
     } catch (final Exception e) {
       return 0L;
     }
