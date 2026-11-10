@@ -47,6 +47,7 @@ val forcedModules =
       "com.auth0:jwks-rsa" to "jwks-rsa",
       "com.nimbusds:nimbus-jose-jwt" to "com-nimbusds-nimbus-jose-jwt",
       "com.squareup.okio:okio-jvm" to "okio-jvm",
+      "io.opentelemetry.semconv:opentelemetry-semconv" to "opentelemetry-semconv",
       "org.yaml:snakeyaml" to "org-yaml-snakeyaml",
       "jakarta.xml.bind:jakarta.xml.bind-api" to "jakarta-xml-bind-jakarta-xml-bind-api",
       "net.java.dev.jna:jna" to "jna",
