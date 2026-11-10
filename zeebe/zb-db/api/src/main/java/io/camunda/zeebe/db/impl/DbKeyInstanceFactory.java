@@ -9,7 +9,6 @@ package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
-import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import java.util.function.Predicate;
 
 /** Utility to create blank instances of known {@link DbKey} types, including wrapper keys. */

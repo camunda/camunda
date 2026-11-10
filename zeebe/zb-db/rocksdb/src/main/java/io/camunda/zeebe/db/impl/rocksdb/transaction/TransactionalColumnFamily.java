@@ -22,7 +22,7 @@ import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.db.ZeebeTransaction;
-import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
+import io.camunda.zeebe.db.impl.DbNullKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
