@@ -90,12 +90,6 @@ ADR for that domain is written.
   `data`, and the `PROBE` resource type with `CREATE` and `ANSWER`; the full
   specification (decisions and acceptance tests) is in `probes/probes-specification.md`
   (camunda/camunda#68861, camunda/product-hub#3433).
-- `data-protection/001-variable-redaction.md` — how a process variable is declared
-  sensitive through `variablesMetadata` protection modes, and how its value is
-  redacted once in the `ExporterDirector` before the export fan-out, with primary
-  storage keeping the plain value; delivered in milestones by variable-record
-  category, with explicit guarantees and known limitations
-  (camunda/camunda#64644).
 - `orchestration-cluster/` — decisions spanning the broker, gateways, and
   auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
   provider selection, authorization routing, gRPC authentication, configuration
