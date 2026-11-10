@@ -759,6 +759,90 @@ public final class ProcessStateTest {
   }
 
   @Test
+  public void shouldNotReturnProcessCachedInRolledBackTransaction() throws Exception {
+    // given - a deployment whose processing reads the new process, then fails
+    final var processRecord = creatingProcessRecord(processingState);
+    final var transaction = transactionContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          processState.putProcess(processRecord.getKey(), processRecord);
+          processState.cacheProcess(processRecord.getKey(), TENANT_ID, transform(processRecord));
+          processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+        });
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID)).isNull();
+    assertThat(
+            processState.getProcessByProcessIdAndVersion(
+                processRecord.getBpmnProcessIdBuffer(), processRecord.getVersion(), TENANT_ID))
+        .isNull();
+  }
+
+  @Test
+  public void shouldNotReturnProcessDefinitionKeyCachedInRolledBackTransaction() throws Exception {
+    // given
+    final var processRecord = creatingProcessRecord(processingState).setDeploymentKey(1L);
+    final var transaction = transactionContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          processState.putProcess(processRecord.getKey(), processRecord);
+          processState.storeProcessDefinitionKeyByProcessIdAndDeploymentKey(processRecord);
+          processState.getProcessByProcessIdAndDeploymentKey(
+              processRecord.getBpmnProcessIdBuffer(), 1L, TENANT_ID);
+        });
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(
+            processState.getProcessByProcessIdAndDeploymentKey(
+                processRecord.getBpmnProcessIdBuffer(), 1L, TENANT_ID))
+        .isNull();
+  }
+
+  @Test
+  public void shouldReturnCommittedStateOfProcessUpdatedInRolledBackTransaction() throws Exception {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    final var transaction = transactionContext.getCurrentTransaction();
+    transaction.run(
+        () -> processState.updateProcessState(processRecord, PersistedProcessState.DRAINING));
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).isActive())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldKeepProcessCachedInCommittedTransaction() throws Exception {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    final var executableProcess = transform(processRecord);
+    final var transaction = transactionContext.getCurrentTransaction();
+    transaction.run(
+        () -> {
+          processState.putProcess(processRecord.getKey(), processRecord);
+          processState.cacheProcess(processRecord.getKey(), TENANT_ID, executableProcess);
+        });
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(
+            processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID).getProcess())
+        .isSameAs(executableProcess);
+  }
+
+  @Test
   public void shouldRejectCachingProcessThatIsNotPersisted() {
     // given
     final var processRecord = creatingProcessRecord(processingState);

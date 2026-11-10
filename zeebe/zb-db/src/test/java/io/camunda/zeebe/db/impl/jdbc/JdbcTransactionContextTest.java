@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -92,6 +93,36 @@ final class JdbcTransactionContextTest {
     assertThat(participant.flushes).isZero();
     assertThat(participant.resets).isOne();
     assertThat(participant.staged).isEmpty();
+  }
+
+  @Test
+  void shouldNotifyListenersOfCommit() throws Exception {
+    // given
+    final var outcomes = new ArrayList<String>();
+    context.addTransactionListener(recording(outcomes));
+    final var transaction = context.getCurrentTransaction();
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(outcomes).containsExactly("commit");
+  }
+
+  @Test
+  void shouldNotifyListenersOnlyOfRollbackWhenCommitFailed() throws Exception {
+    // given
+    final var outcomes = new ArrayList<String>();
+    context.addTransactionListener(recording(outcomes));
+    final var transaction = context.getCurrentTransaction();
+    participant.failNextFlushWith = new SQLException("duplicate key", "23505");
+    assertThatThrownBy(transaction::commit).isInstanceOf(RuntimeException.class);
+
+    // when
+    transaction.rollback();
+
+    // then
+    assertThat(outcomes).containsExactly("rollback");
   }
 
   @Test
@@ -505,6 +536,20 @@ final class JdbcTransactionContextTest {
   }
 
   /** Stages rows in memory and inserts them with one JDBC batch on flush. */
+  private static TransactionListener recording(final List<String> outcomes) {
+    return new TransactionListener() {
+      @Override
+      public void onCommit() {
+        outcomes.add("commit");
+      }
+
+      @Override
+      public void onRollback() {
+        outcomes.add("rollback");
+      }
+    };
+  }
+
   private static final class StagingParticipant implements JdbcTransactionParticipant {
 
     private final Map<Long, String> staged = new LinkedHashMap<>();

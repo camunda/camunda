@@ -202,7 +202,11 @@ public final class DbProcessState implements MutableProcessState {
 
     processCache =
         new ProcessDefinitionCache(
-            config, transformer, new ColumnFamilyProcessLoader(), zeebeDb.getMeterRegistry());
+            config,
+            transformer,
+            new ColumnFamilyProcessLoader(),
+            transactionContext,
+            zeebeDb.getMeterRegistry());
   }
 
   @Override

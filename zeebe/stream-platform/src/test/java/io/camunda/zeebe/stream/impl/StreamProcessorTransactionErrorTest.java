@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -85,6 +86,11 @@ final class StreamProcessorTransactionErrorTest {
         throw new RuntimeException(e);
       }
       return spy;
+    }
+
+    @Override
+    public void addTransactionListener(final TransactionListener listener) {
+      delegate.addTransactionListener(listener);
     }
   }
 

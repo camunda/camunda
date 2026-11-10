@@ -9,9 +9,12 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.LangUtil;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ColumnFamilyHandle;
@@ -29,8 +32,17 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   private final WriteBatchWithIndex writeBatch;
   private final RocksDB db;
   private final WriteOptions writeOptions;
+  private final List<TransactionListener> listeners = new ArrayList<>();
 
   private boolean inCurrentTransaction;
+
+  /**
+   * Whether the listeners still have to be told how the current transaction ended. Unlike {@link
+   * #inCurrentTransaction}, it stays set when a commit fails, so the rollback that follows is
+   * reported; and it is cleared by a commit, so the rollback that {@link DefaultTransactionContext}
+   * runs after every commit is not.
+   */
+  private boolean outcomePending;
 
   public ZeebeTransaction(final RocksDB db, final WriteOptions writeOptions) {
     // overwriteKey=true collapses repeated writes for the same key into a single index entry.
@@ -101,6 +113,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   void resetTransaction() {
     writeBatch.clear();
     inCurrentTransaction = true;
+    outcomePending = true;
   }
 
   boolean isInCurrentTransaction() {
@@ -150,11 +163,27 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
     inCurrentTransaction = false;
     db.write(writeOptions, writeBatch);
     writeBatch.clear();
+    if (outcomePending) {
+      outcomePending = false;
+      for (final var listener : listeners) {
+        listener.onCommit();
+      }
+    }
   }
 
   void rollbackInternal() throws RocksDBException {
     inCurrentTransaction = false;
     writeBatch.clear();
+    if (outcomePending) {
+      outcomePending = false;
+      for (final var listener : listeners) {
+        listener.onRollback();
+      }
+    }
+  }
+
+  void addListener(final TransactionListener listener) {
+    listeners.add(listener);
   }
 
   @Override

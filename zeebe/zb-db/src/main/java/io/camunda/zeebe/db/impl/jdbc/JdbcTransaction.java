@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.jdbc;
 
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
@@ -34,6 +35,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   private final JdbcConnectionSource connections;
   private final List<JdbcTransactionParticipant> participants = new ArrayList<>();
+  private final List<TransactionListener> listeners = new ArrayList<>();
   private boolean inCurrentTransaction;
 
   JdbcTransaction(final JdbcConnectionSource connections) {
@@ -42,6 +44,10 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   void register(final JdbcTransactionParticipant participant) {
     participants.add(participant);
+  }
+
+  void addListener(final TransactionListener listener) {
+    listeners.add(listener);
   }
 
   boolean isInCurrentTransaction() {
@@ -82,6 +88,9 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     }
     resetParticipants();
     inCurrentTransaction = false;
+    for (final var listener : listeners) {
+      listener.onCommit();
+    }
   }
 
   /**
@@ -102,6 +111,9 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     } finally {
       resetParticipants();
       inCurrentTransaction = false;
+      for (final var listener : listeners) {
+        listener.onRollback();
+      }
     }
   }
 
