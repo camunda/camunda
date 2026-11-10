@@ -102,7 +102,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       END;
       $$ LANGUAGE plpgsql;
       CREATE TRIGGER element_instance_write_log
-        AFTER INSERT OR UPDATE OR DELETE ON element_instance
+        AFTER INSERT OR UPDATE OR DELETE ON CAM_RU_ELEMENT_INSTANCE
         FOR EACH ROW EXECUTE FUNCTION log_element_instance_write();
       """;
 
@@ -141,7 +141,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       }
       // continue after the partitions of earlier runs so their rows don't leak into these tests
       try (final var result =
-          statement.executeQuery("SELECT COALESCE(MAX(partition_id), 0) FROM element_instance")) {
+          statement.executeQuery(
+              "SELECT COALESCE(MAX(partition_id), 0) FROM CAM_RU_ELEMENT_INSTANCE")) {
         result.next();
         PARTITION_IDS.set(result.getInt(1));
       }
@@ -544,7 +545,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             freshConnection.prepareStatement(
                 "SELECT element_instance_key, parent_key, process_instance_key,"
                     + " process_definition_key, bpmn_element_type, state, payload"
-                    + " FROM element_instance WHERE partition_id = ?"
+                    + " FROM CAM_RU_ELEMENT_INSTANCE WHERE partition_id = ?"
                     + " ORDER BY element_instance_key")) {
       statement.setInt(1, partitionId);
       try (final ResultSet resultSet = statement.executeQuery()) {
@@ -648,7 +649,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     try (final var freshConnection = dataSource.getConnection();
         final var statement =
             freshConnection.prepareStatement(
-                "SELECT SUM(times_taken) FROM taken_sequence_flow"
+                "SELECT SUM(times_taken) FROM CAM_RU_TAKEN_SEQUENCE_FLOW"
                     + " WHERE partition_id = ? AND flow_scope_key = ?")) {
       statement.setInt(1, partitionId);
       statement.setLong(2, flowScopeKey);

@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  */
 interface EngineStateMapper {
 
-  // element_instance
+  // CAM_RU_ELEMENT_INSTANCE
 
   @Nullable ElementInstanceRow selectElementInstance(
       @Param("partitionId") int partitionId, @Param("key") long key);
@@ -52,7 +52,7 @@ interface EngineStateMapper {
 
   void deleteElementInstance(@Param("partitionId") int partitionId, @Param("key") long key);
 
-  // taken_sequence_flow
+  // CAM_RU_TAKEN_SEQUENCE_FLOW
 
   @Nullable TakenSequenceFlowRow selectTakenSequenceFlow(
       @Param("partitionId") int partitionId, @Param("key") TakenSequenceFlowKey key);
@@ -72,7 +72,7 @@ interface EngineStateMapper {
   void deleteTakenSequenceFlow(
       @Param("partitionId") int partitionId, @Param("key") TakenSequenceFlowKey key);
 
-  // await_process_instance_result
+  // CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT
 
   @Nullable PayloadRow selectAwaitResult(
       @Param("partitionId") int partitionId, @Param("key") long processInstanceKey);
@@ -84,7 +84,7 @@ interface EngineStateMapper {
   void deleteAwaitResult(
       @Param("partitionId") int partitionId, @Param("key") long processInstanceKey);
 
-  // runtime_instructions
+  // CAM_RU_RUNTIME_INSTRUCTIONS
 
   @Nullable PayloadRow selectRuntimeInstructions(
       @Param("partitionId") int partitionId, @Param("key") long processInstanceKey);
@@ -98,7 +98,7 @@ interface EngineStateMapper {
   void deleteRuntimeInstructions(
       @Param("partitionId") int partitionId, @Param("key") long processInstanceKey);
 
-  // process_instance_by_business_id
+  // CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
 
   @Nullable BusinessIdRow selectBusinessId(
       @Param("partitionId") int partitionId, @Param("row") BusinessIdRow row);

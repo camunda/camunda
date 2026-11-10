@@ -17,7 +17,7 @@
 -->
 <mapper namespace="io.camunda.zeebe.engine.state.instance.EngineStateMapper">
 
-  <!-- element_instance -->
+  <!-- CAM_RU_ELEMENT_INSTANCE -->
 
   <resultMap id="elementInstanceRow"
     type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$ElementInstanceRow">
@@ -56,20 +56,20 @@
 
   <select id="selectElementInstance" resultMap="elementInstanceRow">
     SELECT <include refid="elementInstanceColumns"/>
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND element_instance_key = #{key}
   </select>
 
   <select id="selectChildren" resultMap="elementInstanceRow">
     SELECT <include refid="elementInstanceColumns"/>
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND parent_key = #{parentKey}
     ORDER BY element_instance_key
   </select>
 
   <select id="selectChildKeys" resultType="_long">
     SELECT element_instance_key
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND parent_key = #{parentKey}
     ORDER BY element_instance_key
   </select>
@@ -81,7 +81,7 @@
   -->
   <select id="selectProcessInstanceKeysByDefinition" resultType="_long">
     SELECT element_instance_key
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
       AND process_definition_key = #{processDefinitionKey}
     ORDER BY element_instance_key
@@ -89,7 +89,7 @@
 
   <select id="selectAnyProcessInstanceByDefinition" resultType="_long">
     SELECT element_instance_key
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
       AND process_definition_key = #{processDefinitionKey}
       <include refid="excludeKeys"/>
@@ -98,20 +98,20 @@
 
   <select id="countProcessInstances" resultType="_long">
     SELECT COUNT(*)
-    FROM element_instance
+    FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND bpmn_element_type = 1
       <include refid="excludeKeys"/>
   </select>
 
   <insert id="insertElementInstance">
-    INSERT INTO element_instance (partition_id, element_instance_key, parent_key,
+    INSERT INTO CAM_RU_ELEMENT_INSTANCE (partition_id, element_instance_key, parent_key,
       process_instance_key, process_definition_key, bpmn_element_type, state, payload)
     VALUES (#{partitionId}, #{row.key}, #{row.parentKey}, #{row.processInstanceKey},
       #{row.processDefinitionKey}, #{row.bpmnElementType}, #{row.state}, #{row.payload})
   </insert>
 
   <update id="updateElementInstance">
-    UPDATE element_instance
+    UPDATE CAM_RU_ELEMENT_INSTANCE
     SET parent_key = #{row.parentKey}, process_instance_key = #{row.processInstanceKey},
       process_definition_key = #{row.processDefinitionKey},
       bpmn_element_type = #{row.bpmnElementType}, state = #{row.state}, payload = #{row.payload}
@@ -119,11 +119,11 @@
   </update>
 
   <delete id="deleteElementInstance">
-    DELETE FROM element_instance
+    DELETE FROM CAM_RU_ELEMENT_INSTANCE
     WHERE partition_id = #{partitionId} AND element_instance_key = #{key}
   </delete>
 
-  <!-- taken_sequence_flow -->
+  <!-- CAM_RU_TAKEN_SEQUENCE_FLOW -->
 
   <resultMap id="takenSequenceFlowRow"
     type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$TakenSequenceFlowRow">
@@ -137,7 +137,7 @@
 
   <select id="selectTakenSequenceFlow" resultMap="takenSequenceFlowRow">
     SELECT flow_scope_key, gateway_element_id, sequence_flow_element_id, times_taken
-    FROM taken_sequence_flow
+    FROM CAM_RU_TAKEN_SEQUENCE_FLOW
     WHERE partition_id = #{partitionId} AND flow_scope_key = #{key.flowScopeKey}
       AND gateway_element_id = #{key.gatewayElementId}
       AND sequence_flow_element_id = #{key.sequenceFlowElementId}
@@ -145,7 +145,7 @@
 
   <select id="selectTakenSequenceFlows" resultMap="takenSequenceFlowRow">
     SELECT flow_scope_key, gateway_element_id, sequence_flow_element_id, times_taken
-    FROM taken_sequence_flow
+    FROM CAM_RU_TAKEN_SEQUENCE_FLOW
     WHERE partition_id = #{partitionId} AND flow_scope_key = #{flowScopeKey}
     <if test="gatewayElementId != null">
       AND gateway_element_id = #{gatewayElementId}
@@ -154,14 +154,14 @@
   </select>
 
   <insert id="insertTakenSequenceFlow">
-    INSERT INTO taken_sequence_flow (partition_id, flow_scope_key, gateway_element_id,
+    INSERT INTO CAM_RU_TAKEN_SEQUENCE_FLOW (partition_id, flow_scope_key, gateway_element_id,
       sequence_flow_element_id, times_taken)
     VALUES (#{partitionId}, #{row.flowScopeKey}, #{row.gatewayElementId},
       #{row.sequenceFlowElementId}, #{row.timesTaken})
   </insert>
 
   <update id="updateTakenSequenceFlow">
-    UPDATE taken_sequence_flow
+    UPDATE CAM_RU_TAKEN_SEQUENCE_FLOW
     SET times_taken = #{row.timesTaken}
     WHERE partition_id = #{partitionId} AND flow_scope_key = #{row.flowScopeKey}
       AND gateway_element_id = #{row.gatewayElementId}
@@ -169,13 +169,13 @@
   </update>
 
   <delete id="deleteTakenSequenceFlow">
-    DELETE FROM taken_sequence_flow
+    DELETE FROM CAM_RU_TAKEN_SEQUENCE_FLOW
     WHERE partition_id = #{partitionId} AND flow_scope_key = #{key.flowScopeKey}
       AND gateway_element_id = #{key.gatewayElementId}
       AND sequence_flow_element_id = #{key.sequenceFlowElementId}
   </delete>
 
-  <!-- await_process_instance_result and runtime_instructions -->
+  <!-- CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT and CAM_RU_RUNTIME_INSTRUCTIONS -->
 
   <resultMap id="payloadRow"
     type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$PayloadRow">
@@ -187,49 +187,49 @@
 
   <select id="selectAwaitResult" resultMap="payloadRow">
     SELECT process_instance_key, payload
-    FROM await_process_instance_result
+    FROM CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
   </select>
 
   <insert id="insertAwaitResult">
-    INSERT INTO await_process_instance_result (partition_id, process_instance_key, payload)
+    INSERT INTO CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT (partition_id, process_instance_key, payload)
     VALUES (#{partitionId}, #{row.key}, #{row.payload})
   </insert>
 
   <update id="updateAwaitResult">
-    UPDATE await_process_instance_result
+    UPDATE CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT
     SET payload = #{row.payload}
     WHERE partition_id = #{partitionId} AND process_instance_key = #{row.key}
   </update>
 
   <delete id="deleteAwaitResult">
-    DELETE FROM await_process_instance_result
+    DELETE FROM CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
   </delete>
 
   <select id="selectRuntimeInstructions" resultMap="payloadRow">
     SELECT process_instance_key, payload
-    FROM runtime_instructions
+    FROM CAM_RU_RUNTIME_INSTRUCTIONS
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
   </select>
 
   <insert id="insertRuntimeInstructions">
-    INSERT INTO runtime_instructions (partition_id, process_instance_key, payload)
+    INSERT INTO CAM_RU_RUNTIME_INSTRUCTIONS (partition_id, process_instance_key, payload)
     VALUES (#{partitionId}, #{row.key}, #{row.payload})
   </insert>
 
   <update id="updateRuntimeInstructions">
-    UPDATE runtime_instructions
+    UPDATE CAM_RU_RUNTIME_INSTRUCTIONS
     SET payload = #{row.payload}
     WHERE partition_id = #{partitionId} AND process_instance_key = #{row.key}
   </update>
 
   <delete id="deleteRuntimeInstructions">
-    DELETE FROM runtime_instructions
+    DELETE FROM CAM_RU_RUNTIME_INSTRUCTIONS
     WHERE partition_id = #{partitionId} AND process_instance_key = #{key}
   </delete>
 
-  <!-- process_instance_by_business_id -->
+  <!-- CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID -->
 
   <resultMap id="businessIdRow"
     type="io.camunda.zeebe.engine.state.instance.EngineStateMapper$BusinessIdRow">
@@ -249,20 +249,20 @@
 
   <select id="selectBusinessId" resultMap="businessIdRow">
     SELECT business_id, process_definition_id, tenant_id, process_instance_key
-    FROM process_instance_by_business_id
+    FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
     WHERE <include refid="businessIdRowCondition"/>
   </select>
 
   <select id="selectBusinessIds" resultMap="businessIdRow">
     SELECT business_id, process_definition_id, tenant_id, process_instance_key
-    FROM process_instance_by_business_id
+    FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
     WHERE partition_id = #{partitionId} AND business_id = #{businessId}
       AND process_definition_id = #{processDefinitionId} AND tenant_id = #{tenantId}
     ORDER BY process_instance_key
   </select>
 
   <insert id="insertBusinessId">
-    INSERT INTO process_instance_by_business_id (partition_id, business_id,
+    INSERT INTO CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID (partition_id, business_id,
       process_definition_id, tenant_id, process_instance_key)
     VALUES (#{partitionId}, #{row.businessId}, #{row.processDefinitionId}, #{row.tenantId},
       #{row.processInstanceKey})
@@ -270,13 +270,13 @@
 
   <!-- the whole row is the key: an update only checks that the row exists -->
   <update id="updateBusinessId">
-    UPDATE process_instance_by_business_id
+    UPDATE CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
     SET process_instance_key = #{row.processInstanceKey}
     WHERE <include refid="businessIdRowCondition"/>
   </update>
 
   <delete id="deleteBusinessId">
-    DELETE FROM process_instance_by_business_id
+    DELETE FROM CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID
     WHERE <include refid="businessIdRowCondition"/>
   </delete>
 

@@ -29,7 +29,7 @@
     indexed. parent_key is -1 for process instances, same as in the RocksDB state.
   -->
   <changeSet id="create-element-instance" author="camunda">
-    <createTable tableName="element_instance">
+    <createTable tableName="CAM_RU_ELEMENT_INSTANCE">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
@@ -55,9 +55,9 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addPrimaryKey tableName="element_instance" constraintName="element_instance_pkey"
+    <addPrimaryKey tableName="CAM_RU_ELEMENT_INSTANCE" constraintName="CAM_RU_ELEMENT_INSTANCE_PKEY"
       columnNames="partition_id, element_instance_key"/>
-    <createIndex tableName="element_instance" indexName="element_instance_children">
+    <createIndex tableName="CAM_RU_ELEMENT_INSTANCE" indexName="CAM_RU_ELEMENT_INSTANCE_CHILDREN">
       <column name="partition_id"/>
       <column name="parent_key"/>
       <column name="element_instance_key"/>
@@ -71,14 +71,14 @@
   <changeSet id="create-element-instance-process-by-definition" author="camunda"
     dbms="postgresql">
     <sql>
-      CREATE INDEX element_instance_process_by_definition
-        ON element_instance (partition_id, process_definition_key, element_instance_key)
+      CREATE INDEX CAM_RU_ELEMENT_INSTANCE_PROCESS_BY_DEFINITION
+        ON CAM_RU_ELEMENT_INSTANCE (partition_id, process_definition_key, element_instance_key)
         WHERE bpmn_element_type = 1
     </sql>
   </changeSet>
   <changeSet id="create-element-instance-process-by-definition-full" author="camunda"
     dbms="!postgresql">
-    <createIndex tableName="element_instance" indexName="element_instance_process_by_definition">
+    <createIndex tableName="CAM_RU_ELEMENT_INSTANCE" indexName="CAM_RU_ELEMENT_INSTANCE_PROCESS_BY_DEFINITION">
       <column name="partition_id"/>
       <column name="process_definition_key"/>
       <column name="element_instance_key"/>
@@ -87,7 +87,7 @@
 
   <!-- How often each sequence flow to a joining gateway was taken in a flow scope. -->
   <changeSet id="create-taken-sequence-flow" author="camunda">
-    <createTable tableName="taken_sequence_flow">
+    <createTable tableName="CAM_RU_TAKEN_SEQUENCE_FLOW">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
@@ -104,7 +104,7 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addPrimaryKey tableName="taken_sequence_flow" constraintName="taken_sequence_flow_pkey"
+    <addPrimaryKey tableName="CAM_RU_TAKEN_SEQUENCE_FLOW" constraintName="CAM_RU_TAKEN_SEQUENCE_FLOW_PKEY"
       columnNames="partition_id, flow_scope_key, gateway_element_id, sequence_flow_element_id"/>
   </changeSet>
 
@@ -113,7 +113,7 @@
     AwaitProcessInstanceResultMetadata.
   -->
   <changeSet id="create-await-process-instance-result" author="camunda">
-    <createTable tableName="await_process_instance_result">
+    <createTable tableName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
@@ -124,14 +124,14 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addPrimaryKey tableName="await_process_instance_result"
-      constraintName="await_process_instance_result_pkey"
+    <addPrimaryKey tableName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT"
+      constraintName="CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT_PKEY"
       columnNames="partition_id, process_instance_key"/>
   </changeSet>
 
   <!-- Runtime instructions of a process instance, with the msgpack RuntimeInstructions. -->
   <changeSet id="create-runtime-instructions" author="camunda">
-    <createTable tableName="runtime_instructions">
+    <createTable tableName="CAM_RU_RUNTIME_INSTRUCTIONS">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
@@ -142,13 +142,13 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addPrimaryKey tableName="runtime_instructions" constraintName="runtime_instructions_pkey"
+    <addPrimaryKey tableName="CAM_RU_RUNTIME_INSTRUCTIONS" constraintName="CAM_RU_RUNTIME_INSTRUCTIONS_PKEY"
       columnNames="partition_id, process_instance_key"/>
   </changeSet>
 
   <!-- Active process instances by business id. -->
   <changeSet id="create-process-instance-by-business-id" author="camunda">
-    <createTable tableName="process_instance_by_business_id">
+    <createTable tableName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID">
       <column name="partition_id" type="INT">
         <constraints nullable="false"/>
       </column>
@@ -165,8 +165,8 @@
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addPrimaryKey tableName="process_instance_by_business_id"
-      constraintName="process_instance_by_business_id_pkey"
+    <addPrimaryKey tableName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID"
+      constraintName="CAM_RU_PROCESS_INSTANCE_BY_BUSINESS_ID_PKEY"
       columnNames="partition_id, business_id, process_definition_id, tenant_id, process_instance_key"/>
   </changeSet>
 

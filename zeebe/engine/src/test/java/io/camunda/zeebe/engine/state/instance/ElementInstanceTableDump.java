@@ -26,7 +26,7 @@ final class ElementInstanceTableDump {
 
   private static final String SELECT_ROWS =
       "SELECT element_instance_key, parent_key, process_instance_key, process_definition_key,"
-          + " bpmn_element_type, state, payload FROM element_instance"
+          + " bpmn_element_type, state, payload FROM CAM_RU_ELEMENT_INSTANCE"
           + " WHERE partition_id = ? ORDER BY element_instance_key";
 
   private ElementInstanceTableDump() {}
