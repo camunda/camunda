@@ -14,12 +14,17 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage.Config;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +59,7 @@ final class RdbmsLogStorageTest {
   }
 
   @Test
-  void shouldNotifyListenersInPositionOrderOnceCommitted() {
+  void shouldNotifyAppendedListenersBeforeCommitAndOthersOnceCommitted() {
     // given
     repository.holdAppends();
     append(1, 3);
@@ -68,19 +73,76 @@ final class RdbmsLogStorageTest {
     await().until(() -> events.size() == 10);
     assertThat(events)
         .containsExactly(
-            "write 3",
             "appended 3",
+            "appended 6",
+            "write 3",
             "commit 3",
             "committed position 3",
             "commit",
             "write 6",
-            "appended 6",
             "commit 6",
             "committed position 6",
             "commit");
     assertThat(repository.blocks())
         .extracting(LogBlock::lowPosition, LogBlock::highPosition, LogBlock::term)
         .containsExactly(tuple(1L, 3L, TERM), tuple(4L, 6L, TERM));
+  }
+
+  @Test
+  void shouldReadAppendedBlockBeforeItCommits() {
+    // given
+    repository.holdAppends();
+
+    // when
+    storage.append(1, 3, text("first"), new RecordingListener());
+
+    // then
+    assertThat(events).containsExactly("appended 3");
+    assertThat(readAll(storage.newUncommittedReader())).containsExactly("first");
+    assertThat(readAll(storage.newReader())).isEmpty();
+  }
+
+  @Test
+  void shouldReadCommittedBlocksThenUncommittedOnes() {
+    // given
+    storage.append(1, 3, text("first"), new RecordingListener());
+    await().until(() -> events.contains("commit 3"));
+    repository.holdAppends();
+
+    // when
+    storage.append(4, 6, text("second"), new RecordingListener());
+
+    // then
+    assertThat(readAll(storage.newUncommittedReader())).containsExactly("first", "second");
+  }
+
+  @Test
+  void shouldNotReadUncommittedBlockAgainOnceCommitted() {
+    // given
+    repository.holdAppends();
+    storage.append(1, 3, text("first"), new RecordingListener());
+    final var reader = storage.newUncommittedReader();
+    assertThat(readAll(reader)).containsExactly("first");
+
+    // when
+    repository.releaseAppends();
+    await().until(() -> events.contains("commit 3"));
+
+    // then
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldForgetUncommittedBlocksOnceFailed() {
+    // given
+    repository.claimTerm(TERM + 1);
+
+    // when
+    storage.append(1, 3, text("first"), new RecordingListener());
+    await().until(() -> !failures.isEmpty());
+
+    // then
+    assertThat(readAll(storage.newUncommittedReader())).isEmpty();
   }
 
   @Test
@@ -162,7 +224,8 @@ final class RdbmsLogStorageTest {
     await().until(() -> !failures.isEmpty());
     assertThat(failures).singleElement().isInstanceOf(TermMismatchException.class);
     assertThat(repository.appendCalls()).hasSize(1);
-    assertThat(events).isEmpty();
+    // appended at once, but never written or committed
+    assertThat(events).containsExactly("appended 3");
   }
 
   @Test
@@ -191,7 +254,8 @@ final class RdbmsLogStorageTest {
     // then
     await().until(() -> !failures.isEmpty());
     assertThat(failures).singleElement().isInstanceOf(LogBlockRepositoryException.class);
-    assertThat(events).isEmpty();
+    // appended at once, but never written or committed
+    assertThat(events).containsExactly("appended 3");
   }
 
   @Test
@@ -221,7 +285,8 @@ final class RdbmsLogStorageTest {
 
     // then
     assertThat(repository.appendCalls()).hasSize(1);
-    assertThat(events).isEmpty();
+    // appended at once, but never written or committed
+    assertThat(events).containsExactly("appended 3");
   }
 
   @Test
@@ -254,6 +319,19 @@ final class RdbmsLogStorageTest {
 
   private void append(final long low, final long high, final int size) {
     storage.append(low, high, bytes(size), new RecordingListener());
+  }
+
+  private static BufferWriter text(final String value) {
+    return new DirectBufferWriter(new UnsafeBuffer(value.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  private static List<String> readAll(final LogStorageReader reader) {
+    final var blocks = new ArrayList<String>();
+    while (reader.hasNext()) {
+      final var block = reader.next();
+      blocks.add(block.getStringWithoutLengthUtf8(0, block.capacity()));
+    }
+    return blocks;
   }
 
   private static BufferWriter bytes(final int size) {

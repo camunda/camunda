@@ -9,6 +9,8 @@ package io.camunda.zeebe.broker.logstreams.rdbms;
 
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,6 +38,7 @@ final class RdbmsLogStorageReader implements LogStorageReader {
 
   private final LogBlockRepository repository;
   private final int pageSize;
+  private final NavigableMap<Long, LogBlock> uncommitted;
   private final ArrayDeque<LogBlock> page = new ArrayDeque<>();
   private final UnsafeBuffer currentBlock = new UnsafeBuffer();
 
@@ -47,8 +50,20 @@ final class RdbmsLogStorageReader implements LogStorageReader {
   private boolean failing;
 
   RdbmsLogStorageReader(final LogBlockRepository repository, final int pageSize) {
+    this(repository, pageSize, Collections.emptyNavigableMap());
+  }
+
+  /**
+   * @param uncommitted appended blocks not yet committed, by low position, read once the database
+   *     has nothing more; a block must be removed only after it is committed
+   */
+  RdbmsLogStorageReader(
+      final LogBlockRepository repository,
+      final int pageSize,
+      final NavigableMap<Long, LogBlock> uncommitted) {
     this.repository = repository;
     this.pageSize = pageSize;
+    this.uncommitted = uncommitted;
   }
 
   @Override
@@ -67,7 +82,12 @@ final class RdbmsLogStorageReader implements LogStorageReader {
     }
     if (page.isEmpty()) {
       try {
-        page.addAll(repository.readBlocksAfter(anchor, pageSize));
+        // memory before the database: a block that commits, and so leaves memory, in between is
+        // then found in the database, where the other order could skip it
+        final var notYetCommitted =
+            uncommitted.tailMap(anchor, false).values().stream().limit(pageSize).toList();
+        final var committed = repository.readBlocksAfter(anchor, pageSize);
+        page.addAll(committed.isEmpty() ? notYetCommitted : committed);
         recovered();
       } catch (final LogBlockRepositoryException e) {
         failed(e);
