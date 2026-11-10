@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
@@ -104,7 +105,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 					isDismissable: true,
 				}),
 			);
-			void navigate({to: '/operate/batch-operations', replace: true});
+			void navigate({to: `${OPERATE_BASE}/batch-operations` as const, replace: true});
 		}
 	}, [isNotFound, batchOperationKey, navigate, t]);
 
@@ -113,7 +114,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 			<main id="main-content" tabIndex={-1} className="h-full outline-none">
 				<EmptyState
 					icon={<img src={permissionDeniedIconUrl} alt="" />}
-					heading={t('operate.batchOperation.ds.forbidden.heading')}
+					heading={t('operate.batchOperation.forbidden.heading')}
 					description={t('operate.batchOperation.forbidden.description')}
 					link={{
 						label: t('operate.batchOperation.forbidden.learnMoreLink'),
@@ -135,7 +136,7 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 							icon={ArrowLeft}
 							label={t('operate.batchOperation.backButton')}
 							tooltipSide="bottom"
-							onClick={() => navigate({to: '/operate/batch-operations'})}
+							onClick={() => navigate({to: `${OPERATE_BASE}/batch-operations` as const})}
 						/>
 						<Heading as="h2" variant="heading-md">
 							{formatOperationType(data?.batchOperationType)}
@@ -167,7 +168,11 @@ const BatchOperation: React.FC<Props> = ({batchOperationKey}) => {
 						<span>{data?.actorId ?? '--'}</span>
 					</Tile>
 				</div>
-				<BatchItemsTable batchOperationKey={batchOperationKey} batchOperationType={data?.batchOperationType} />
+				<BatchItemsTable
+					key={batchOperationKey}
+					batchOperationKey={batchOperationKey}
+					batchOperationType={data?.batchOperationType}
+				/>
 			</div>
 		</PageLayout>
 	);

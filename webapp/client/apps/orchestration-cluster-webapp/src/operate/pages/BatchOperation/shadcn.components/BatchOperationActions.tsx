@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useTranslation} from 'react-i18next';
 import {
 	Button,
@@ -38,8 +39,10 @@ type Props = {
 
 const BatchOperationActions: React.FC<Props> = ({batchOperationKey, batchOperationState}) => {
 	const {t} = useTranslation();
-	const {suspend, resume, cancel, isSuspendPending, isResumePending, isCancelPending} =
-		useBatchOperationActions(batchOperationKey);
+	const {suspend, resume, cancel, isSuspendPending, isResumePending, isCancelPending} = useBatchOperationActions(
+		batchOperationKey,
+		`${OPERATE_BASE}/batch-operations`,
+	);
 
 	const allowedActions = ACTIONS_BY_STATE[batchOperationState];
 

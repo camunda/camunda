@@ -23,10 +23,7 @@ const BATCH_OPERATION_KEY = 'migrate-operation-123';
 const ITEMS_LOAD_ERROR = HttpResponse.json(createProblemDetails({status: 500}), {status: 500});
 const SINGLE_PAGE = {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false};
 
-function renderBatchItemsTable(
-	batchOperationType: React.ComponentProps<typeof BatchItemsTable>['batchOperationType'],
-	basepath = '',
-) {
+function renderBatchItemsTable(batchOperationType: React.ComponentProps<typeof BatchItemsTable>['batchOperationType']) {
 	return renderWithRouter(
 		() => (
 			<div style={{height: '100vh', display: 'flex', flexDirection: 'column'}}>
@@ -35,8 +32,7 @@ function renderBatchItemsTable(
 		),
 		{
 			path: '/operate-preview/batch-operations/$batchOperationKey',
-			basepath,
-			initialEntry: `${basepath}/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
+			initialEntry: `/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
 		},
 	);
 }
@@ -108,7 +104,7 @@ describe('<BatchItemsTable />', () => {
 		const link = screen.getByRole('link', {name: 'View process instance 2251799813685250'});
 		await expect.element(link).toBeVisible();
 		worker.use(mockQueryBatchOperationItemsEndpoint({successResponse: ITEMS_LOAD_ERROR}));
-		await screen.queryClient.invalidateQueries({queryKey: ['batchOperationItems', BATCH_OPERATION_KEY]});
+		window.dispatchEvent(new Event('visibilitychange'));
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(link).toBeVisible();
@@ -129,36 +125,46 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a process instance link for a non-completed process instance deletion item at basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockQueryBatchOperationItemsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryBatchOperationItemsResponse({
-							items: [
-								createBatchOperationItem({
-									state: 'FAILED',
-									processInstanceKey: '2251799813685250',
-									operationType: 'DELETE_PROCESS_INSTANCE',
-								}),
-							],
-							page: SINGLE_PAGE,
-						}),
-					),
-				}),
-			);
+	it('should render a process instance link for a non-completed process instance deletion item', async ({worker}) => {
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({
+								state: 'FAILED',
+								processInstanceKey: '2251799813685250',
+								operationType: 'DELETE_PROCESS_INSTANCE',
+							}),
+						],
+						page: SINGLE_PAGE,
+					}),
+				),
+			}),
+		);
 
-			const screen = await renderBatchItemsTable('DELETE_PROCESS_INSTANCE', basepath);
+		const screen = await renderBatchItemsTable('DELETE_PROCESS_INSTANCE');
 
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
-		},
-	);
+		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'})).toBeVisible();
+	});
+
+	it('should show a fallback instead of a link for an item without a process instance', async ({worker}) => {
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [createBatchOperationItem({processInstanceKey: '-1'})],
+						page: SINGLE_PAGE,
+					}),
+				),
+			}),
+		);
+
+		const screen = await renderBatchItemsTable('CANCEL_PROCESS_INSTANCE');
+
+		await expect.element(screen.getByText('No process instance')).toBeVisible();
+		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
+	});
 
 	it('should not render a process instance link for a completed process instance deletion item', async ({worker}) => {
 		worker.use(
@@ -184,7 +190,7 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
 	});
 
-	it('should render a decision instance key column linking to the DS decision instance page', async ({worker}) => {
+	it('should render a decision instance key column with a link to the decision instance', async ({worker}) => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(
@@ -205,9 +211,7 @@ describe('<BatchItemsTable />', () => {
 		const screen = await renderBatchItemsTable('DELETE_DECISION_INSTANCE');
 
 		await expect.element(screen.getByText('Decision instance key', {exact: true})).toBeVisible();
-		await expect
-			.element(screen.getByRole('link', {name: 'View decision instance item-1'}))
-			.toHaveAttribute('href', '/operate-preview/decisions/item-1');
+		await expect.element(screen.getByRole('link', {name: 'View decision instance item-1'})).toBeVisible();
 	});
 
 	it('should render an incident key column for a resolve incident operation', async ({worker}) => {

@@ -2261,9 +2261,6 @@
 					"retrying": "Retrying items"
 				},
 				"ds": {
-					"forbidden": {
-						"heading": "You do not have permission to view this information"
-					},
 					"itemsTable": {
 						"tableLabel": "Batch operation items",
 						"loadingPreviousPage": "Loading previous items",

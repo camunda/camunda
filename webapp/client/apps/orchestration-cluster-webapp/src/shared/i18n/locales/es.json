@@ -2249,9 +2249,6 @@
 					"retrying": "Reintentando cargar los elementos"
 				},
 				"ds": {
-					"forbidden": {
-						"heading": "No tiene permiso para ver esta información"
-					},
 					"itemsTable": {
 						"tableLabel": "Elementos de la operación por lotes",
 						"loadingPreviousPage": "Cargando elementos anteriores",

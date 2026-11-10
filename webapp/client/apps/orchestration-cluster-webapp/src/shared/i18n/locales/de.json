@@ -2249,9 +2249,6 @@
 					"retrying": "Elemente werden erneut geladen"
 				},
 				"ds": {
-					"forbidden": {
-						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
-					},
 					"itemsTable": {
 						"tableLabel": "Elemente der Batch-Operation",
 						"loadingPreviousPage": "Vorherige Elemente werden geladen",

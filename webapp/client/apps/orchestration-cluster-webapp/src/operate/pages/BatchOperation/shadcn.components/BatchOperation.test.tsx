@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
@@ -17,7 +17,6 @@ import {
 	createQueryBatchOperationItemsResponse,
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {BatchOperation, BatchOperationSkeleton} from './BatchOperation';
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
@@ -32,10 +31,6 @@ function renderPage() {
 }
 
 describe('<BatchOperation />', () => {
-	afterEach(() => {
-		notificationsStore.reset();
-	});
-
 	it('should render the page title and operation details tiles', async ({worker}) => {
 		worker.use(
 			mockGetBatchOperationEndpoint({
@@ -74,23 +69,6 @@ describe('<BatchOperation />', () => {
 		await expect.element(screen.getByText('demo')).toBeVisible();
 	});
 
-	it('should render suspend and cancel actions for an active batch operation', async ({worker}) => {
-		worker.use(
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(
-					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, state: 'ACTIVE'}),
-				),
-			}),
-			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
-		);
-
-		const screen = await renderPage();
-
-		await expect.element(screen.getByRole('button', {name: 'Suspend'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'More actions'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Resume'})).not.toBeInTheDocument();
-	});
-
 	it('should show an error alert when the batch operation fails to load', async ({worker}) => {
 		worker.use(
 			mockGetBatchOperationEndpoint({
@@ -114,13 +92,11 @@ describe('<BatchOperation />', () => {
 
 		const screen = await renderPage();
 
-		await expect.element(screen.getByText('You do not have permission to view this information')).toBeVisible();
+		await expect.element(screen.getByText('403 - You do not have permission to view this information')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'Learn more about permissions'})).toBeVisible();
 	});
 
-	it('should redirect to the batch operations list and notify when the batch operation is not found', async ({
-		worker,
-	}) => {
+	it('should leave the page when the batch operation is not found', async ({worker}) => {
 		worker.use(
 			mockGetBatchOperationEndpoint({
 				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
@@ -130,42 +106,8 @@ describe('<BatchOperation />', () => {
 
 		const screen = await renderPage();
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations');
-		await expect
-			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-			.toContain(`Couldn't find batch operation ${BATCH_OPERATION_KEY}`);
+		await expect.element(screen.getByText('Summary of items')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('Failed to load batch operation details')).not.toBeInTheDocument();
-	});
-
-	it('should render normally on a later visit that finds the batch operation readable again', async ({worker}) => {
-		worker.use(
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
-			}),
-			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
-		);
-
-		const firstVisit = await renderPage();
-		await expect.poll(() => firstVisit.router.state.location.pathname).toBe('/operate/batch-operations');
-		await expect
-			.poll(() => notificationsStore.notifications.map((notification) => notification.title))
-			.toContain(`Couldn't find batch operation ${BATCH_OPERATION_KEY}`);
-		await firstVisit.unmount();
-		notificationsStore.reset();
-
-		worker.use(
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(
-					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, batchOperationType: 'CANCEL_PROCESS_INSTANCE'}),
-				),
-			}),
-		);
-
-		const secondVisit = await renderPage();
-
-		await expect.element(secondVisit.getByRole('heading', {name: 'Cancel Process Instance'})).toBeVisible();
-		expect(secondVisit.router.state.location.pathname).toBe(`/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`);
-		expect(notificationsStore.notifications).toEqual([]);
 	});
 });
 

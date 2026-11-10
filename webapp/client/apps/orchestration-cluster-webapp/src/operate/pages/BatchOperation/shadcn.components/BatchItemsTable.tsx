@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
@@ -30,7 +31,7 @@ const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 ].join(' ');
 
-const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
+const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link className="underline" {...props} />;
 const ProcessInstanceLink = createLink(TableLink);
 const DecisionInstanceLink = createLink(TableLink);
 
@@ -54,7 +55,7 @@ const ProcessInstanceKeyCell: React.FC<ProcessInstanceKeyCellProps> = ({
 		<ItemKeyCell itemKey={processInstanceKey} fallbackText={fallbackText}>
 			{disableLink ? undefined : (
 				<ProcessInstanceLink
-					to="/operate/processes/$processInstanceId"
+					to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 					params={{processInstanceId: processInstanceKey}}
 					title={label}
 					aria-label={label}
