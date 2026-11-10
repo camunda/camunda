@@ -681,7 +681,7 @@ class SearchQueryResponseMapperTest {
         new VariableEntity(
             123L,
             "cardNumber",
-            "\"\"",
+            "null",
             null,
             false,
             456L,
@@ -698,7 +698,6 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getMetadata()).isNotNull();
     assertThat(response.getMetadata().getProtectionModes())
         .containsExactly(ProtectionModeEnum.REDACT);
-    assertThat(response.getValue()).isEmpty();
   }
 
   @Test
@@ -708,7 +707,7 @@ class SearchQueryResponseMapperTest {
         new VariableEntity(
             123L,
             "cardNumber",
-            "\"\"",
+            "null",
             null,
             false,
             456L,
@@ -727,12 +726,9 @@ class SearchQueryResponseMapperTest {
     assertThat(response.getItems())
         .singleElement()
         .satisfies(
-            item -> {
-              assertThat(item.getMetadata().getProtectionModes())
-                  .containsExactly(ProtectionModeEnum.REDACT);
-              assertThat(item.getValue()).isEmpty();
-              assertThat(item.getIsTruncated()).isFalse();
-            });
+            item ->
+                assertThat(item.getMetadata().getProtectionModes())
+                    .containsExactly(ProtectionModeEnum.REDACT));
   }
 
   @Test

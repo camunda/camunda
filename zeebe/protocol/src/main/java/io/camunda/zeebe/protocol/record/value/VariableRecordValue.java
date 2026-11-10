@@ -36,8 +36,7 @@ public interface VariableRecordValue
   String getName();
 
   /**
-   * @return the value of the variable as JSON string, or the JSON empty string {@code ""} if the
-   *     value was redacted because the variable is protected with {@code REDACT}.
+   * @return the value of the variable as JSON string.
    */
   String getValue();
 

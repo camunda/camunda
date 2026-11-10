@@ -40,7 +40,7 @@ the feature does and does not guarantee.
 
 **Audience**: Engineers working on the engine variable and mapping behaviors, the exporter pipeline,
 the Camunda and RDBMS exporters, the v2 REST API, Operate and Tasklist; authors of custom exporters;
-AI agents reasoning about why a value is redacted in secondary storage or still readable somewhere.
+AI agents reasoning about why a value is `null` in secondary storage or still readable somewhere.
 
 **Related**: product-hub epic [#3805](https://github.com/camunda/product-hub/issues/3805) (Redact).
 Companion artifacts: the [Variable Protection Proposal](https://claude.ai/artifact/DWp5ryaMBwnugSxTETicKT?sk=O__T2mJJW73ITcHA10JqIw)
@@ -113,7 +113,7 @@ flowchart TB
     Exporters --> Secondary[("Secondary storage<br/>redacted value")]
 
     subgraph ReadSide["Read side: redacted values only"]
-        UI["API, Operate, Tasklist<br/>empty string value + metadata"]
+        UI["API, Operate, Tasklist<br/>null value + metadata,<br/>UI shows [REDACTED]"]
     end
 
     Secondary -.->|"read"| UI
@@ -200,10 +200,6 @@ POST /process-instances
 }
 ```
 
-Each key must be the name of a variable set in the same request. A key without a matching variable, or
-an entry that is `null` or has no valid `protectionModes`, is rejected with a 400. A variable without an
-entry has no metadata on creation, and keeps the metadata it already has when it is set again.
-
 The same property is added to the other endpoints that carry variables:
 
 - set variables on an element instance (`PUT /element-instances/{elementInstanceKey}/variables`)
@@ -229,9 +225,9 @@ hold only for the endpoints and RPCs delivered by the milestones (D10).
 
 ### D4. API: variable search introduces a `metadata` field
 
-Today the variable search and get results carry only the value. A redacted value is returned as an empty
-string (D8), so the value alone does not tell a client that the variable is protected. The variable
-results therefore gain a `metadata` field that holds the protection modes of the variable:
+Today the variable search and get results carry only the value. A redacted value is the JSON-encoded
+`null` (D8), and a client cannot tell it from a variable that is genuinely `null`. The variable results
+therefore gain a `metadata` field that holds the protection modes of the variable:
 
 ```json
 POST /variables/search
@@ -239,7 +235,7 @@ POST /variables/search
   "items": [
     {
       "name": "cardNumber",
-      "value": "",
+      "value": "null",
       "metadata": { "protectionModes": ["REDACT"] }
     }
   ]
@@ -249,10 +245,9 @@ POST /variables/search
 - The field is added to the results of `POST /variables/search`, `GET /variables/{variableKey}`,
   `POST /user-tasks/{userTaskKey}/variables/search` and
   `POST /user-tasks/{userTaskKey}/effective-variables/search`, and later to the decision-instance and
-  incident searches. `metadata` is always present, and `protectionModes` is an empty list for a variable
-  that is not protected.
-- For a redacted variable the value is an empty string and the metadata contains `REDACT` (D8). Clients
-  must check `metadata.protectionModes` before they use `value`.
+  incident searches. It is empty or absent for a variable that is not protected.
+- For a redacted variable the value is `null` and the metadata contains `REDACT`. Operate and Tasklist
+  read it and show `[REDACTED]` (D8).
 - The exporters persist the modes with the redacted value, and the search layer returns them. This is
   part of M1 for the Camunda and RDBMS exporters (D6).
 - Cluster variables already return a generic `metadata` bag of string and number values. The name is
@@ -298,7 +293,7 @@ logged event. It is the single point where the event is decoded once and passed 
 turn. It does not run in the per-exporter dispatch in `ExporterContainer`, which would run the
 transform once per exporter over a shared mutable record.
 
-**How.** The `RecordExporter` replaces the protected values with the JSON empty string `""` (D8), using only the variable
+**How.** The `RecordExporter` replaces the protected values with `"null"` (D8), using only the variable
 metadata the record carries (D5). It does not look up engine state. The protection modes stay on the
 exported record so that the exporters, the read APIs and the UI can tell a redacted value from an
 absent one (D8).
@@ -311,25 +306,10 @@ another. That is intended.
 
 ### D8. What a redacted value looks like, and where the UI gets its text
 
-A redacted variable is exported with the JSON empty string `""` as its value and its protection
-metadata. That value is valid JSON of type string, so exporters, the exporter variable-type filters and
-Optimize keep working with it. The API read layer returns an empty string (no characters) together with
-the metadata for a variable whose protection modes contain `REDACT`. How a UI presents a redacted
-variable is up to that UI and not part of this decision. `value` stays required and non-nullable in the
-REST schema, so the response shape does not change for any client.
-
-**Why an empty string.** Making `value` nullable is a breaking change under the REST API
-guidelines (section 2.7 of `docs/rest-api-endpoint-guidelines.md`) and changes the generated client
-types for every consumer, for example `string | null` in the TypeScript SDK, including consumers that
-never enable redaction. Redaction is opt-in, so an
-existing consumer only meets the empty string after it starts redacting variables. The `"REDACTED"`
-sentinel was rejected because it is a magic string that can collide with a real value, duplicates the
-metadata and leaks into every consumer and component, without
-being safer for clients that parse `value`.
-
-**What customers need to know.** The `value` of a redacted variable is an empty string, not `null` and not a marker text.
-`metadata.protectionModes` is the source of truth, so a client that processes `value` must check it
-first for any variable that can be protected.
+A redacted variable is exported with the value `null` and its protection metadata. Operate and
+Tasklist show `[REDACTED]` when the value is `null` and the metadata contains `REDACT`. The API
+returns the `null` value together with the metadata so that clients can tell a redacted value from an
+absent one.
 
 ### D9. The Variable Records Matrix defines scope: four categories of variable-carrying data
 
@@ -367,10 +347,10 @@ added there before it is protected.
 
 ### D10. Delivery order follows the categories
 
-| Milestone |                                                                                                                                                                                                                                                                                                                     Scope                                                                                                                                                                                                                                                                                                                     |
-|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| M1        | Category A: named variable, plus the category B records emitted by create instance and set variables (`PROCESS_INSTANCE_CREATION`, `VARIABLE_DOCUMENT`). Foundation (ADR, Variable Records Matrix (Appendix A), `REDACT` protection mode in the protocol, `metadata` on `VariableRecord`), engine (persist and keep modes, accept metadata on create instance and set variables, input/output mapping), exporter (redact `VariableRecord` and those category B records before the fan-out, persist modes in the Camunda and RDBMS exporters), API and UI (return metadata, Operate and Tasklist presentation, Modeler checkbox), verification |
-| M2        | Category B: the remaining variable documents. Metadata on the other document-carrying records, propagation from commands to `VariableRecord`, metadata accepted on the remaining endpoints, redaction of document variables including `jobs[]` in `JOB_BATCH` and nested job results, user task variable responses                                                                                                                                                                                                                                                                                                                            |
+| Milestone |                                                                                                                                                                                                                                                                                                                         Scope                                                                                                                                                                                                                                                                                                                         |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| M1        | Category A: named variable, plus the category B records emitted by create instance and set variables (`PROCESS_INSTANCE_CREATION`, `VARIABLE_DOCUMENT`). Foundation (ADR, Variable Records Matrix (Appendix A), `REDACT` protection mode in the protocol, `metadata` on `VariableRecord`), engine (persist and keep modes, accept metadata on create instance and set variables, input/output mapping), exporter (redact `VariableRecord` and those category B records before the fan-out, persist modes in the Camunda and RDBMS exporters), API and UI (return metadata, show `[REDACTED]` in Operate and Tasklist, Modeler checkbox), verification |
+| M2        | Category B: the remaining variable documents. Metadata on the other document-carrying records, propagation from commands to `VariableRecord`, metadata accepted on the remaining endpoints, redaction of document variables including `jobs[]` in `JOB_BATCH` and nested job results, user task variable responses                                                                                                                                                                                                                                                                                                                                    |
 
 Each milestone ships end to end (protocol, engine, exporter, API and UI, tests) before the next starts.
 Categories C and D are not milestones: they are covered by a limitation (L3).
@@ -383,8 +363,8 @@ above:
 1. **Variables are still exported, with a redacted value (categories A and B only).** A redacted
    variable keeps being exported to secondary storage (Elasticsearch, OpenSearch or RDBMS), but its real
    value is not written there.
-2. **The value is not visible in the UI.** A redacted variable is still listed, but Operate and Tasklist
-   do not show its value.
+2. **The value is not visible in the UI.** A redacted variable is still listed. Operate and Tasklist show
+   `[REDACTED]` instead of its value.
 3. **The value is not visible in the API reads served from secondary storage**, that is the search and
    get endpoints (for example `POST /variables/search`, `GET /variables/{variableKey}`, user task
    variables). A redacted variable is still returned, with its value redacted. Endpoints served from
@@ -409,7 +389,7 @@ above:
   stay readable, so turning redaction on does not clean up existing data.
 - **L5. Tasklist forms with redacted initial variables cannot be displayed.**
 - **L6. Search by value finds nothing.** A redacted value cannot be matched by a variable-value filter,
-  because the stored value is the JSON empty string `""`.
+  because the stored value is `null`.
 - **L7. Correlation keys are persisted by the Camunda and RDBMS exporters** from the message
   subscription records today. They are often derived from a variable (see L3).
 - **L8. The variable history keeps each change as it was protected at the time.** A change written
@@ -550,9 +530,9 @@ data: by metadata, by name pattern, or both. A variable is redacted when either 
 The examples use the prefix `redact_`. A suffix works the same way. A variable whose name matches the
 pattern is redacted, so the Modeler needs no extra control: the user only names the variable. In the
 Modeler, a mapping such as `redact_pan = redact_cardNumber` produces a redacted local variable, and an
-output mapping to `redact_networkToken` produces a redacted process variable. Operate and Tasklist do not
-show the value of `redact_cardNumber`, while `amount` shows its value. The final Modeler design is still
-to be confirmed.
+output mapping to `redact_networkToken` produces a redacted process variable. Operate and Tasklist show
+`[REDACTED]` for `redact_cardNumber`, while `amount` shows its value. The final Modeler design is still to
+be confirmed.
 
 ## Appendix C: Alternatives considered
 
@@ -561,15 +541,6 @@ to be confirmed.
 - Variable-name prefix or suffix patterns (option B): not chosen, described in Appendix B. On its own it
   cannot express combined modes without further naming conventions, forces whatever reads the variable
   (workers, expressions) to use the prefixed name, and a typo silently disables protection.
-- Returning `null` as the redacted value: rejected for D8, it makes `value` nullable, a breaking change
-  for generated clients that hits every consumer, not only those who enable redaction.
-- Returning a `"REDACTED"` sentinel as the redacted value: rejected for D8. It is a magic string that
-  can collide with a real value, duplicates `protectionModes`, and leaks into every consumer and
-  component (APIs, exporters, search indices, clients), each of which has to know and handle it, which
-  is not necessary.
-- Omitting the redacted variable or its `value` from the response: rejected for D8, it breaks the
-  required `value` and hides that the variable exists, and pagination and `totalItems` would no longer
-  match what Operate shows.
 - Suppressing a redacted variable for Optimize instead of sending the marker: rejected for D7 because
   it needs a second redaction behavior and makes Optimize disagree with Operate about what exists. A
   marker keeps instances visible and countable in reports.

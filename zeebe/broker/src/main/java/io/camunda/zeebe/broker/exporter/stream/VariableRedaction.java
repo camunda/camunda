@@ -30,13 +30,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 final class VariableRedaction {
 
   /**
-   * The value a redacted value is replaced with: the JSON empty string {@code ""}. It is valid JSON
-   * of type string, so consumers that parse or type the value keep working. The record keeps its
-   * protection modes, so consumers tell a redacted value from a genuine empty string by reading
-   * them. The API returns an empty string for it.
+   * The value a redacted value is replaced with: JSON {@code null}. The record keeps its protection
+   * modes, so consumers tell a redacted value from a genuine {@code null} by reading them.
    */
   private static final DirectBuffer REDACTED_VALUE =
-      new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"\""));
+      new UnsafeBuffer(MsgPackConverter.convertToMsgPack("null"));
 
   private VariableRedaction() {}
 

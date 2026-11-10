@@ -436,7 +436,7 @@
           },
           "variablesMetadata": {
             "type": "object",
-            "description": "Metadata of the variables, keyed by variable name. Use it to set how a variable is treated, for example to protect its value. Each key must be the name of a variable in `variables`. A variable without an entry has no metadata. "
+            "description": "Metadata of the variables, keyed by variable name. Use it to set how a variable is treated, for example to protect its value. A variable without an entry has no metadata. "
           }
         },
         "required": []
@@ -756,7 +756,7 @@
     {
       "name": "searchUserTaskVariables",
       "title": "searchUserTaskVariables",
-      "description": "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. If `metadata.protectionModes` contains `REDACT`, the variable is redacted and the value is an empty string instead of the real value, so check it before you use the value. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "description": "Search user task variables based on given criteria. Returns deduplicated variables where the innermost scope wins. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -1081,7 +1081,7 @@
     {
       "name": "getVariable",
       "title": "getVariable",
-      "description": "Get variable by key. The variable value is returned in serialized JSON format. If `metadata.protectionModes` contains `REDACT`, the variable is redacted and the value is an empty string instead of the real value, so check it before you use the value. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "description": "Get variable by key. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -1103,7 +1103,7 @@
     {
       "name": "searchVariables",
       "title": "searchVariables",
-      "description": "Search for variables. The variable value is returned in serialized JSON format. If `metadata.protectionModes` contains `REDACT`, the variable is redacted and the value is an empty string instead of the real value, so check it before you use the value. Note: Results are eventually consistent and may not immediately reflect recent changes.",
+      "description": "Search for variables. The variable value is returned in serialized JSON format. Note: Results are eventually consistent and may not immediately reflect recent changes.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
