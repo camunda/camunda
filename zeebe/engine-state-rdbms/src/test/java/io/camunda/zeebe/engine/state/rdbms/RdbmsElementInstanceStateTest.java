@@ -41,26 +41,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import liquibase.Scope;
-import liquibase.analytics.configuration.AnalyticsArgs;
-import liquibase.command.CommandScope;
-import liquibase.command.core.UpdateCommandStep;
-import liquibase.command.core.helpers.DbUrlConnectionArgumentsCommandStep;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.groups.Tuple;
-import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.ds.PGSimpleDataSource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Runs the element instance state contract against PostgreSQL, plus the tests for what is specific
@@ -71,14 +59,9 @@ import org.testcontainers.utility.DockerImageName;
  * verify those calls through {@link MutableVariableState#getParentScopeKey(long)}. It doesn't take
  * part in the JDBC transaction, so a rollback here doesn't undo its scopes; no test relies on that.
  *
- * <p>All tests share one database; each test writes to its own partition to stay isolated.
- *
- * <p>By default the database is a throwaway Testcontainers PostgreSQL. To inspect the rows after a
- * run, point the test at your own database with {@code
- * -Dzeebe.engine.rdbms.jdbcUrl=jdbc:postgresql:
- * //localhost:5432/postgres?user=postgres&password=zeebe}: the Liquibase changelog adds what is
- * missing and committed rows are kept. Add {@code -Dzeebe.engine.rdbms.dumpLevel=debug} to log each
- * test's rows with the decoded payload (see {@link ElementInstanceTableDump}).
+ * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition to stay
+ * isolated. Add {@code -Dzeebe.engine.rdbms.dumpLevel=debug} to log each test's rows with the
+ * decoded payload (see {@link ElementInstanceTableDump}).
  */
 @ExtendWith(ProcessingStateExtension.class)
 final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateContractTest {
@@ -116,10 +99,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   private static final String TREE_TENANT_ID = "tree-tenant";
 
-  private static final String EXTERNAL_JDBC_URL_PROPERTY = "zeebe.engine.rdbms.jdbcUrl";
-
-  private static final AtomicInteger PARTITION_IDS = new AtomicInteger();
-  private static @Nullable PostgreSQLContainer postgres;
+  private static EngineStateDatabase database;
   private static PGSimpleDataSource dataSource;
 
   private MutableProcessingState processingState;
@@ -130,40 +110,19 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @BeforeAll
   static void startDatabase() throws Exception {
-    dataSource = new PGSimpleDataSource();
-    final var externalJdbcUrl = System.getProperty(EXTERNAL_JDBC_URL_PROPERTY);
-    if (externalJdbcUrl != null && !externalJdbcUrl.isBlank()) {
-      dataSource.setUrl(externalJdbcUrl);
-    } else {
-      postgres = new PostgreSQLContainer(DockerImageName.parse("postgres").withTag("15-alpine"));
-      postgres.start();
-      dataSource.setUrl(postgres.getJdbcUrl());
-      dataSource.setUser(postgres.getUsername());
-      dataSource.setPassword(postgres.getPassword());
-    }
-
-    // only applies the changesets an external database that keeps its tables doesn't have yet
-    applySchema();
+    database = EngineStateDatabase.start();
+    dataSource = database.dataSource();
     try (final var setupConnection = dataSource.getConnection();
         final var statement = setupConnection.createStatement()) {
-      if (!tableExists(setupConnection, "element_instance_write_log")) {
+      if (!EngineStateDatabase.tableExists(setupConnection, "element_instance_write_log")) {
         statement.execute(WRITE_LOG_DDL);
-      }
-      // continue after the partitions of earlier runs so their rows don't leak into these tests
-      try (final var result =
-          statement.executeQuery(
-              "SELECT COALESCE(MAX(partition_id), 0) FROM CAM_RU_ELEMENT_INSTANCE")) {
-        result.next();
-        PARTITION_IDS.set(result.getInt(1));
       }
     }
   }
 
   @AfterAll
   static void stopDatabase() {
-    if (postgres != null) {
-      postgres.stop();
-    }
+    database.close();
   }
 
   @Override
@@ -175,7 +134,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     }
     connection = connectionSpy.proxy();
     transactionContext = new JdbcTransactionContext(connection);
-    partitionId = PARTITION_IDS.incrementAndGet();
+    partitionId = database.nextPartitionId();
     return new RdbmsElementInstanceState(
         transactionContext, partitionId, processingState.getVariableState());
   }
@@ -848,18 +807,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   }
 
   private long countRows(final String table, final String condition) {
-    try (final var freshConnection = dataSource.getConnection();
-        final var statement =
-            freshConnection.prepareStatement(
-                "SELECT COUNT(*) FROM " + table + " WHERE partition_id = ? AND " + condition)) {
-      statement.setInt(1, partitionId);
-      try (final ResultSet resultSet = statement.executeQuery()) {
-        resultSet.next();
-        return resultSet.getLong(1);
-      }
-    } catch (final SQLException e) {
-      throw new IllegalStateException(e);
-    }
+    return database.countRows(table, partitionId, condition);
   }
 
   private List<String> writeLog() throws SQLException {
@@ -877,40 +825,6 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
       }
     }
     return writes;
-  }
-
-  private static boolean tableExists(final Connection connection, final String table)
-      throws SQLException {
-    try (final var statement = connection.prepareStatement("SELECT to_regclass(?) IS NOT NULL")) {
-      statement.setString(1, table);
-      try (final var result = statement.executeQuery()) {
-        return result.next() && result.getBoolean(1);
-      }
-    }
-  }
-
-  /** Applies the engine state changelog, tracked in the same tables as in the broker. */
-  private static void applySchema() throws Exception {
-    // closing the database closes the connection
-    try (final var database =
-        DatabaseFactory.getInstance()
-            .findCorrectDatabaseImplementation(new JdbcConnection(dataSource.getConnection()))) {
-      database.setDatabaseChangeLogTableName(RdbmsEngineStateSchema.DATABASE_CHANGELOG_TABLE);
-      database.setDatabaseChangeLogLockTableName(
-          RdbmsEngineStateSchema.DATABASE_CHANGELOG_LOCK_TABLE);
-      Scope.child(
-          Map.of(
-              Scope.Attr.resourceAccessor.name(),
-              new ClassLoaderResourceAccessor(),
-              AnalyticsArgs.ENABLED.getKey(),
-              false),
-          () ->
-              new CommandScope(UpdateCommandStep.COMMAND_NAME)
-                  .addArgumentValue(DbUrlConnectionArgumentsCommandStep.DATABASE_ARG, database)
-                  .addArgumentValue(
-                      UpdateCommandStep.CHANGELOG_FILE_ARG, RdbmsEngineStateSchema.CHANGELOG)
-                  .execute());
-    }
   }
 
   private Map<String, Long> committedRowCounts() {
