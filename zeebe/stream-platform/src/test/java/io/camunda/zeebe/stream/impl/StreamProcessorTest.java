@@ -56,6 +56,7 @@ import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -122,25 +123,49 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldStartProcessingAfterSlowOnRecoveredListener() throws Exception {
+  public void shouldRecordDurationOfSlowOnRecoveredListener() throws Exception {
     // given
-    // A listener slower than the WARN threshold must not prevent recovery from completing. The
-    // WARN log itself is not asserted here because the module has no log-capture test dependency.
+    // A listener slower than the WARN threshold must not prevent recovery from completing, and its
+    // duration must be observable through the timer. The WARN log is not asserted because the
+    // module has no log-capture test dependency.
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
     final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
     doAnswer(
             invocation -> {
-              LockSupport.parkNanos(slowBy.toNanos());
+              // parkNanos can return early on an unpark permit, which the actor scheduler issues,
+              // so keep parking until the deadline has passed.
+              final long deadline = System.nanoTime() + slowBy.toNanos();
+              long remaining;
+              while ((remaining = deadline - System.nanoTime()) > 0) {
+                LockSupport.parkNanos(remaining);
+              }
               return null;
             })
         .when(mockProcessorLifecycleAware)
         .onRecovered(any());
 
     // when
-    streamPlatform.startStreamProcessor();
+    final var meterRegistry = new SimpleMeterRegistry();
+    streamPlatform.buildStreamProcessor(
+        streamPlatform.getLogStream(),
+        true,
+        cfg ->
+            cfg.streamProcessorMode(StreamProcessorMode.PROCESSING).meterRegistry(meterRegistry));
 
     // then
     verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("zeebe.stream.processor.on.recovered.listener.duration")
+                            .timers()
+                            .stream()
+                            .mapToDouble(timer -> timer.totalTime(TimeUnit.MILLISECONDS))
+                            .sum())
+                    .isGreaterThanOrEqualTo(slowBy.toMillis()));
   }
 
   @Test
