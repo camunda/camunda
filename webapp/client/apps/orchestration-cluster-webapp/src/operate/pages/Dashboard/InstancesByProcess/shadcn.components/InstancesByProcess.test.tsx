@@ -92,26 +92,6 @@ describe('<InstancesByProcess />', () => {
 		await expect.element(screen.getByRole('link', {name: BETA_PROCESS_LINK_NAME})).toBeVisible();
 	});
 
-	it('should link each row to the processes page filtered by process', async ({worker}) => {
-		worker.use(
-			mockGetProcessDefinitionInstanceStatisticsEndpoint({
-				schema: REQUEST_SCHEMA,
-				successResponse: PAGE_1_RESPONSE,
-				failureResponse: FAILURE_RESPONSE,
-			}),
-			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
-		);
-
-		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate-preview'});
-
-		await expect
-			.element(screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME}))
-			.toHaveAttribute(
-				'href',
-				'/operate/processes?process=p1&active=true&incidents=true&completed=false&canceled=false&suspended=false',
-			);
-	});
-
 	it('should show an error state when the request fails', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({

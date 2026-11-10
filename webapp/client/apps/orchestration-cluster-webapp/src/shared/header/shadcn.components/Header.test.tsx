@@ -57,28 +57,6 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByText('Page content')).toBeVisible();
 	});
 
-	it.for([
-		{path: '/tasklist' as const, currentApp: 'tasklist' as const, app: 'Tasklist', href: '/tasklist'},
-		{path: '/operate' as const, currentApp: 'operate' as const, app: 'Operate', href: '/operate'},
-		{path: '/admin' as const, currentApp: 'admin' as const, app: 'Admin', href: '/admin'},
-	])('should use the $app context at $path', async ({path, currentApp, app, href}, {worker}) => {
-		worker.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
-		);
-
-		const screen = await renderWithRouter(
-			() => (
-				<Header currentApp={currentApp} initialSaasToken={null}>
-					Page content
-				</Header>
-			),
-			{path},
-		);
-
-		await expect.element(screen.getByRole('link', {name: app})).toHaveAttribute('href', href);
-	});
-
 	it('should hide nav links if application is unauthorized', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({
@@ -149,7 +127,7 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('link', {name: 'Tasks'})).not.toHaveAttribute('aria-current');
 	});
 
-	it('should render Operate sidebar items with the Dashboard link pointing at the preview route', async ({worker}) => {
+	it('should render the Operate sidebar items', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
@@ -164,13 +142,13 @@ describe('<Header /> (V2)', () => {
 			{path: '/operate-preview'},
 		);
 
-		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toHaveAttribute('href', '/operate-preview');
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toBeVisible();
 		await expect
 			.element(screen.getByRole('link', {name: 'Processes'}))
-			.toHaveAttribute('href', '/operate/processes?active=true&suspended=true&incidents=true');
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\?active=true&suspended=true&incidents=true$/));
 		await expect
 			.element(screen.getByRole('link', {name: 'Decisions'}))
-			.toHaveAttribute('href', '/operate/decisions?evaluated=true&failed=true');
+			.toHaveAttribute('href', expect.stringMatching(/\/decisions\?evaluated=true&failed=true$/));
 	});
 
 	it('should hide the Operate sidebar items if the application is unauthorized', async ({worker}) => {

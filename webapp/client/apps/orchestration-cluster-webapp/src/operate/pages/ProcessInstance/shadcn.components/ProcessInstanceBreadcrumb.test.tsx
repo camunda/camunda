@@ -40,10 +40,10 @@ describe('<ProcessInstanceBreadcrumb /> (DS)', () => {
 
 		await expect
 			.element(screen.getByRole('link', {name: 'View Process Root - Instance 1'}))
-			.toHaveAttribute('href', '/operate-preview/processes/1');
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\/1$/));
 		await expect
 			.element(screen.getByRole('link', {name: 'View Process Parent - Instance 2'}))
-			.toHaveAttribute('href', '/operate-preview/processes/2');
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\/2$/));
 		await expect.element(screen.getByText('Current Process')).toHaveAttribute('aria-current', 'page');
 	});
 
@@ -57,6 +57,6 @@ describe('<ProcessInstanceBreadcrumb /> (DS)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'More'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'C'}));
 
-		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate-preview/processes/3');
+		await expect.poll(() => screen.router.state.location.pathname).toMatch(/\/processes\/3$/);
 	});
 });

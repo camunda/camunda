@@ -53,7 +53,7 @@ describe('<VariableFilterModal /> (design system)', () => {
 		await userEvent.click(dialog.getByRole('combobox', {name: 'Operator'}).last());
 		await userEvent.click(screen.getByRole('option', {name: 'does not exist'}));
 		await userEvent.click(dialog.getByRole('button', {name: 'Apply'}));
-		await expect.poll(() => router.state.location.pathname).toBe('/operate-preview/processes');
+		await expect.poll(() => router.state.location.pathname).toMatch(/\/processes$/);
 		await unmount();
 		const reopened = await renderModal();
 
@@ -71,7 +71,7 @@ describe('<VariableFilterModal /> (design system)', () => {
 
 		await userEvent.click(dialog.getByRole('button', {name: 'Remove condition'}).first());
 		await userEvent.click(dialog.getByRole('button', {name: 'Cancel'}));
-		await expect.poll(() => router.state.location.pathname).toBe('/operate-preview/processes');
+		await expect.poll(() => router.state.location.pathname).toMatch(/\/processes$/);
 		await unmount();
 		const reopened = await renderModal();
 

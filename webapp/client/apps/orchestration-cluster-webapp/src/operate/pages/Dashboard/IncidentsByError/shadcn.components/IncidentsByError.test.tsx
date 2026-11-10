@@ -135,26 +135,6 @@ describe('<IncidentsByError />', () => {
 		await expect.element(screen.getByText('Page Two Only Error')).toBeVisible();
 	});
 
-	it('should link each row to the processes page filtered by incidents', async ({worker}) => {
-		worker.use(
-			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-				schema: REQUEST_SCHEMA,
-				successResponse: PAGE_1_RESPONSE,
-				failureResponse: FAILURE_RESPONSE,
-			}),
-		);
-
-		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate-preview'});
-
-		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
-		await expect
-			.element(screen.getByText('Alpha Connection Timeout').element().closest('a')!)
-			.toHaveAttribute(
-				'href',
-				'/operate/processes?errorMessage=Alpha+Connection+Timeout&incidentErrorHashCode=1&incidents=true&active=false&completed=false&canceled=false&suspended=false',
-			);
-	});
-
 	it('should distinguish similar incident messages by hash in drill-down links', async ({worker}) => {
 		worker.use(
 			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({

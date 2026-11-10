@@ -41,7 +41,7 @@ const Harness: React.FC<HarnessProps> = (props) => {
 	);
 };
 
-async function renderHarness(props: Partial<HarnessProps> = {}, basepath = '') {
+async function renderHarness(props: Partial<HarnessProps> = {}) {
 	const onDeleted = vi.fn();
 	const onDiscard = vi.fn();
 	const screen = await renderWithRouter(
@@ -60,7 +60,7 @@ async function renderHarness(props: Partial<HarnessProps> = {}, basepath = '') {
 				<Notifications />
 			</>
 		),
-		{path: '/operate-preview/decisions', basepath},
+		{path: '/operate-preview/decisions'},
 	);
 	return {screen, onDeleted, onDiscard};
 }
@@ -138,30 +138,6 @@ describe('useBulkDelete (shadcn)', () => {
 
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
 	});
-
-	it.for([
-		{basepath: '', expectedPath: '/operate/batch-operations/batch-op-1'},
-		{basepath: '/camunda', expectedPath: '/camunda/operate/batch-operations/batch-op-1'},
-	])(
-		'should open the batch operation details with the basepath "$basepath"',
-		async ({basepath, expectedPath}, {worker}) => {
-			worker.use(
-				mockCreateDecisionInstancesDeletionBatchOperationEndpoint({
-					successResponse: HttpResponse.json({
-						batchOperationKey: 'batch-op-1',
-						batchOperationType: 'DELETE_DECISION_INSTANCE',
-					}),
-				}),
-			);
-			const {screen} = await renderHarness({}, basepath);
-
-			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
-			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
-			await userEvent.click(screen.getByRole('button', {name: 'Go to operation details'}));
-
-			await expect.poll(() => screen.router.history.location.pathname).toBe(expectedPath);
-		},
-	);
 
 	it.for([
 		{

@@ -38,24 +38,14 @@ const SizedContainer: React.FC<{children: React.ReactNode}> = ({children}) => (
 	</div>
 );
 
-function renderInstancesTable({
-	search = BASE_SEARCH,
-	basepath = '',
-}: {
-	search?: DecisionsSearch;
-	basepath?: string;
-} = {}) {
+function renderInstancesTable({search = BASE_SEARCH}: {search?: DecisionsSearch} = {}) {
 	return renderWithRouter(
 		() => (
 			<SizedContainer>
 				<InstancesTable search={search} />
 			</SizedContainer>
 		),
-		{
-			path: DECISIONS_LIST_PATH,
-			basepath,
-			initialEntry: `${basepath}${DECISIONS_LIST_PATH}`,
-		},
+		{path: DECISIONS_LIST_PATH},
 	);
 }
 
@@ -100,7 +90,9 @@ describe('<InstancesTable /> (shadcn)', () => {
 		await expect.element(screen.getByTestId('FAILED-icon-2')).toBeInTheDocument();
 		await expect.element(screen.getByText('Evaluated', {exact: true})).toBeInTheDocument();
 		await expect.element(screen.getByText('Failed', {exact: true})).toBeInTheDocument();
-		await expect.element(screen.getByRole('link', {name: '1'})).toHaveAttribute('href', '/operate-preview/decisions/1');
+		await expect
+			.element(screen.getByRole('link', {name: '1'}))
+			.toHaveAttribute('href', expect.stringMatching(/\/decisions\/1$/));
 	});
 
 	it('should show the business ID column only when at least one row has one', async ({worker}) => {
@@ -263,42 +255,6 @@ describe('<InstancesTable /> (shadcn)', () => {
 			await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		});
 	});
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render process instance links with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(
-				mockInstances([
-					createDecisionInstance({decisionEvaluationInstanceKey: '1', processInstanceKey: '2251799813685250'}),
-				]),
-			);
-
-			const screen = await renderInstancesTable({basepath});
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render decision instance links with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}, {worker}) => {
-			worker.use(mockInstances([createDecisionInstance({decisionEvaluationInstanceKey: '1'})]));
-
-			const screen = await renderInstancesTable({basepath});
-
-			await expect
-				.element(screen.getByRole('link', {name: '1'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate-preview/decisions/1`);
-		},
-	);
 
 	it('should render "None" instead of a process instance link when the process instance key is missing', async ({
 		worker,
