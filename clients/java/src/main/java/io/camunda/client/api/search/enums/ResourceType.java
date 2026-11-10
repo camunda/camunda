@@ -31,6 +31,7 @@ public enum ResourceType {
   GROUP,
   MAPPING_RULE,
   MESSAGE,
+  PROBE,
   PROCESS_DEFINITION,
   RESOURCE,
   ROLE,
