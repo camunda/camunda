@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
@@ -6067,6 +6068,58 @@ final class JsonSerializableToJsonTest {
           "secretReference": "my-secret",
           "resolutionState": "SUCCESS",
           "jobKeys": [100, 200]
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// AsyncRequestRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "AsyncRequestRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AsyncRequestRecord()
+                    .setScopeKey(123L)
+                    .setValueType(ValueType.PROCESS_INSTANCE)
+                    .setIntent(ProcessInstanceIntent.CANCEL)
+                    .setRequestId(456L)
+                    .setRequestStreamId(7)
+                    .setOperationReference(789L)
+                    .setBatchOperationReference(1011L)
+                    .setStorageOrdinal(1234),
+        """
+        {
+          "scopeKey": 123,
+          "valueType": "PROCESS_INSTANCE",
+          "intent": "CANCEL",
+          "requestId": 456,
+          "requestStreamId": 7,
+          "operationReference": 789,
+          "batchOperationReference": 1011,
+          "storageOrdinal": 1234
+        }
+        """
+      },
+      {
+        "AsyncRequestRecord with default storage ordinal",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new AsyncRequestRecord()
+                    .setScopeKey(123L)
+                    .setValueType(ValueType.PROCESS_INSTANCE)
+                    .setIntent(ProcessInstanceIntent.CANCEL)
+                    .setRequestId(456L)
+                    .setRequestStreamId(7),
+        """
+        {
+          "scopeKey": 123,
+          "valueType": "PROCESS_INSTANCE",
+          "intent": "CANCEL",
+          "requestId": 456,
+          "requestStreamId": 7,
+          "operationReference": -1,
+          "batchOperationReference": -1,
+          "storageOrdinal": 0
         }
         """
       }

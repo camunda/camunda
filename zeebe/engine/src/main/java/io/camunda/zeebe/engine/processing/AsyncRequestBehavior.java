@@ -24,17 +24,19 @@ public class AsyncRequestBehavior {
     this.stateWriter = stateWriter;
   }
 
-  public AsyncRequest writeAsyncRequestReceived(final long scopeKey, final TypedRecord<?> command) {
+  public AsyncRequest writeAsyncRequestReceived(
+      final long scopeKey, final int storageOrdinal, final TypedRecord<?> command) {
     final var key = keyGenerator.nextKey();
-    final var record = toAsyncRequestRecord(scopeKey, command);
+    final var record = toAsyncRequestRecord(scopeKey, storageOrdinal, command);
     stateWriter.appendFollowUpEvent(key, AsyncRequestIntent.RECEIVED, record);
     return new AsyncRequest(key, record);
   }
 
   private static AsyncRequestRecord toAsyncRequestRecord(
-      final long scopeKey, final TypedRecord<?> command) {
+      final long scopeKey, final int storageOrdinal, final TypedRecord<?> command) {
     return new AsyncRequestRecord()
         .setScopeKey(scopeKey)
+        .setStorageOrdinal(storageOrdinal)
         .setIntent(command.getIntent())
         .setValueType(command.getValueType())
         .setRequestId(command.getRequestId())

@@ -195,7 +195,8 @@ public final class ProcessInstanceResumeProcessor
       stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMING, value);
       // RESUMED is written by a later command, so keep this command's references (e.g. its batch
       // reference) for it; a restart keeps the first resume's references
-      asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
+      asyncRequestBehavior.writeAsyncRequestReceived(
+          command.getKey(), value.getStorageOrdinal(), command);
     } else {
       LOG.debug(
           "Resuming process instance '{}': drain was already in progress, restarting it",

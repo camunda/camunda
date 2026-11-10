@@ -84,7 +84,8 @@ public final class ProcessInstanceCancelProcessor
       return;
     }
 
-    asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        command.getKey(), elementInstance.getValue().getStorageOrdinal(), command);
 
     final ProcessInstanceRecord value = elementInstance.getValue();
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.CANCELING, value);

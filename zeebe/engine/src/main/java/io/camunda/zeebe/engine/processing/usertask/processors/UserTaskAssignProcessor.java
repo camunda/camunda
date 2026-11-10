@@ -71,7 +71,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), userTaskRecord.getStorageOrdinal(), command);
 
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
