@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
@@ -42,7 +43,7 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 				return (
 					<li key={`${item.processDefinitionKey}:${item.tenantId}`} className="hover:bg-neutral-background-medium">
 						<Link
-							to="/operate/processes"
+							to={`${OPERATE_BASE}/processes` as const}
 							search={{
 								process: item.processDefinitionId,
 								version: item.processDefinitionVersion,

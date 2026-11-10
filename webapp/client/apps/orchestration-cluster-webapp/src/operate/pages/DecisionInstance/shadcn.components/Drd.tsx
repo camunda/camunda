@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useState} from 'react';
 import {useNavigate} from '@tanstack/react-router';
 import {Button, IconButton, Text} from '@camunda/design-system';
@@ -111,7 +112,7 @@ const Drd: React.FC<Props> = ({
 							selectedDecisionDefinitionId={decisionDefinitionId}
 							onDecisionSelection={(selectedKey) => {
 								void navigate({
-									to: '/operate-preview/decisions/$decisionInstanceId',
+									to: `${OPERATE_BASE}/decisions/$decisionInstanceId` as const,
 									params: {decisionInstanceId: selectedKey},
 									state: (state) => ({
 										...state,

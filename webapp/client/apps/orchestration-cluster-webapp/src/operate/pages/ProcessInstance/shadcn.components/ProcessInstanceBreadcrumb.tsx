@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {
 	Breadcrumb,
 	BreadcrumbEllipsis,
@@ -48,7 +49,7 @@ const ProcessInstanceBreadcrumb: React.FC<Props> = ({callHierarchy, processInsta
 			<BreadcrumbItem>
 				<BreadcrumbLink asChild>
 					<Link
-						to="/operate-preview/processes/$processInstanceId"
+						to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 						params={{processInstanceId: breadcrumb.processInstanceKey}}
 						title={getLinkTitle(breadcrumb)}
 						aria-label={getLinkTitle(breadcrumb)}
@@ -76,7 +77,7 @@ const ProcessInstanceBreadcrumb: React.FC<Props> = ({callHierarchy, processInsta
 									{overflowingBreadcrumbs.map((breadcrumb) => (
 										<DropdownMenuItem key={breadcrumb.processInstanceKey} asChild>
 											<Link
-												to="/operate-preview/processes/$processInstanceId"
+												to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 												params={{processInstanceId: breadcrumb.processInstanceKey}}
 												title={getLinkTitle(breadcrumb)}
 											>

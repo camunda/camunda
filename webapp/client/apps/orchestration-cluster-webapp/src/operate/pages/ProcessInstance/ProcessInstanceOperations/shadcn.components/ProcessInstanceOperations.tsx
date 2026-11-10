@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useMemo, useState} from 'react';
 import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
 import {
@@ -29,7 +30,7 @@ import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcess
 import {COLLAPSED_LAYOUT_QUERY} from '../../shadcn.components/collapsedLayoutQuery';
 import {processInstanceHeaderOperationMachine, type HeaderAction} from '../processInstanceHeaderOperationMachine';
 
-const getRootInstancePath = (rootInstanceId: string) => `/operate-preview/processes/${rootInstanceId}`;
+const getRootInstancePath = (rootInstanceId: string) => `${OPERATE_BASE}/processes/${rootInstanceId}`;
 
 const ICONS = {retry: RotateCcw, cancel: Ban, delete: Trash2, suspend: CirclePause, resume: CirclePlay};
 
@@ -43,7 +44,7 @@ function useHeaderOperation(action: HeaderAction, processInstanceKey: string) {
 			queryClient,
 			onDeleted: () => {
 				void navigate({
-					to: '/operate-preview/processes',
+					to: `${OPERATE_BASE}/processes` as const,
 					search: {active: true, incidents: true, suspended: true, completed: false, canceled: false},
 					replace: true,
 				});

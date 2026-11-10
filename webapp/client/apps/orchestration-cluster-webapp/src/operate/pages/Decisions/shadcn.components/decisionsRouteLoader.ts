@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {t} from 'i18next';
 import {redirect} from '@tanstack/react-router';
 import type {QueryClient} from '@tanstack/react-query';
@@ -46,7 +47,7 @@ async function decisionsRouteLoader({
 		});
 	}
 	throw redirect({
-		to: '/operate-preview/decisions',
+		to: `${OPERATE_BASE}/decisions` as const,
 		search: (prev) => ({
 			...prev,
 			evaluated: prev.evaluated ?? false,

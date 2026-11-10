@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Button} from '@camunda/design-system';
@@ -47,7 +48,7 @@ const VariablesFilter: React.FC = () => {
 				size="sm"
 				onClick={() =>
 					void navigate({
-						to: '/operate-preview/processes/filters/variables',
+						to: `${OPERATE_BASE}/processes/filters/variables` as const,
 						search: true,
 						state: {operateVariableFilterOpenedFromList: true},
 					})

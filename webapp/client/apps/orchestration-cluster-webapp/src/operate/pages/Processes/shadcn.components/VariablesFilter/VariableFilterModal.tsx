@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useLocation, useNavigate, useRouter} from '@tanstack/react-router';
@@ -129,7 +130,7 @@ const VariableFilterModal: React.FC = () => {
 		if (isOpenedFromList) {
 			router.history.back();
 		} else {
-			void navigate({to: '/operate-preview/processes', search: true, replace: true});
+			void navigate({to: `${OPERATE_BASE}/processes` as const, search: true, replace: true});
 		}
 	};
 

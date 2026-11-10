@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {
 	Dialog,
 	DialogBody,
@@ -107,7 +108,7 @@ function renderEntityKey(
 	if (auditLog.entityType === 'PROCESS_INSTANCE') {
 		return (
 			<EntityLink
-				to="/operate/processes/$processInstanceId"
+				to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 				params={{processInstanceId: auditLog.entityKey}}
 				title={entityKeyData.linkLabel}
 				aria-label={entityKeyData.linkLabel}
@@ -124,7 +125,7 @@ function renderEntityKey(
 
 		return (
 			<EntityLink
-				to="/operate/batch-operations/$batchOperationKey"
+				to={`${OPERATE_BASE}/batch-operations/$batchOperationKey` as const}
 				params={{batchOperationKey: auditLog.batchOperationKey}}
 				title={entityKeyData.linkLabel}
 				aria-label={entityKeyData.linkLabel}
@@ -137,7 +138,7 @@ function renderEntityKey(
 	if (auditLog.entityType === 'DECISION' && auditLog.operationType === 'EVALUATE') {
 		return (
 			<EntityLink
-				to="/operate/decisions/$decisionInstanceId"
+				to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
 				params={{decisionInstanceId: auditLog.entityKey}}
 				title={entityKeyData.linkLabel}
 				aria-label={entityKeyData.linkLabel}
@@ -179,7 +180,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							<Layers aria-hidden="true" className="size-4 shrink-0" />
 							<span>{t('operate.operationsLog.modal.partOfBatch')}</span>
 							<EntityLink
-								to="/operate/batch-operations/$batchOperationKey"
+								to={`${OPERATE_BASE}/batch-operations/$batchOperationKey` as const}
 								params={{batchOperationKey: auditLog.batchOperationKey}}
 							>
 								{t('operate.operationsLog.modal.viewBatchOperationDetailsLink')}
@@ -258,7 +259,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 							>
 								<span>
 									<EntityLink
-										to="/operate/processes/$processInstanceId"
+										to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 										params={{processInstanceId: auditLog.processInstanceKey}}
 										aria-label={t('operate.operationsLog.entityLinks.viewProcessInstance', {
 											key: auditLog.processInstanceKey,
@@ -299,7 +300,7 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 								>
 									{auditLog.batchOperationKey ? (
 										<EntityLink
-											to="/operate/batch-operations/$batchOperationKey"
+											to={`${OPERATE_BASE}/batch-operations/$batchOperationKey` as const}
 											params={{batchOperationKey: auditLog.batchOperationKey}}
 											aria-label={t('operate.operationsLog.entityLinks.viewBatchOperation', {
 												key: auditLog.batchOperationKey,

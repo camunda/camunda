@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
@@ -69,7 +70,10 @@ function useBulkDelete({selectedCount, includedIds, excludedIds, filter, onDelet
 			isActionable: true,
 			actionButtonLabel: t('operate.decisions.toolbar.deleteSuccessActionLabel'),
 			onActionButtonClick: () => {
-				void navigate({to: '/operate/batch-operations/$batchOperationKey', params: {batchOperationKey}});
+				void navigate({
+					to: `${OPERATE_BASE}/batch-operations/$batchOperationKey` as const,
+					params: {batchOperationKey},
+				});
 			},
 		});
 		onDeleted();

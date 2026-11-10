@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useEffect, useRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
@@ -115,7 +116,7 @@ const SingleConditionFields: React.FC = () => {
 			setVariableConditions([draft]);
 		}
 		void navigate({
-			to: '/operate-preview/processes/filters/variables',
+			to: `${OPERATE_BASE}/processes/filters/variables` as const,
 			search: true,
 			state: {
 				operateVariableFilterOpenedFromList: true,

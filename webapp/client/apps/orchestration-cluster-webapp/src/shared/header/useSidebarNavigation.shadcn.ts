@@ -31,6 +31,7 @@ import {
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
 import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
 
@@ -38,16 +39,11 @@ type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
 	tasklistIndex: '/tasklist',
 	tasklistProcesses: '/tasklist/processes',
-	// The Dashboard is the only Operate page migrated to the Design System so far, so it
-	// points at the migration-time /operate-preview leaf. Every other Operate item below
-	// still points at its live Carbon route — those pages haven't moved yet.
-	operateDashboard: '/operate-preview',
-	operateProcesses: '/operate/processes',
-	operateProcessesPreview: '/operate-preview/processes',
-	operateDecisions: '/operate/decisions',
-	operateDecisionsPreview: '/operate-preview/decisions',
-	operateOperationsLog: '/operate/operations-log',
-	operateBatchOperations: '/operate/batch-operations',
+	operateDashboard: OPERATE_BASE,
+	operateProcesses: `${OPERATE_BASE}/processes`,
+	operateDecisions: `${OPERATE_BASE}/decisions`,
+	operateOperationsLog: `${OPERATE_BASE}/operations-log`,
+	operateBatchOperations: `${OPERATE_BASE}/batch-operations`,
 	adminIndex: '/admin',
 	adminUsers: '/admin/users',
 	adminGroups: '/admin/groups',
@@ -194,12 +190,8 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
-		const isOperateProcessesRoute =
-			matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false ||
-			matchRoute({to: tabRoutes['operateProcessesPreview'], fuzzy: true}) !== false;
-		const isOperateDecisionsRoute =
-			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
-			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;
+		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
+		const isOperateDecisionsRoute = matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false;
 		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
 		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
