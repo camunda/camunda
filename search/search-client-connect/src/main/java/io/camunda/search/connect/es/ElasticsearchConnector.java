@@ -22,6 +22,7 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Optional;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -34,6 +35,7 @@ import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.HostnameVerificationPolicy;
 import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
 import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.http.message.BasicHeader;
@@ -117,14 +119,18 @@ public final class ElasticsearchConnector {
     restClientBuilder.setRequestConfigCallback(
         configCallback -> setRequestTimeouts(configCallback));
 
-    final Header[] defaultHeaders =
-        new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
-        };
+    final var defaultHeaders = new ArrayList<Header>();
+    defaultHeaders.add(
+        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"));
+    defaultHeaders.add(
+        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
+    // The credentials provider only answers a 401 challenge. A server that lets anonymous users
+    // through for some requests never challenges them, so the request would run as anonymous. The
+    // Elasticsearch 8 client sent credentials with every request, so do the same.
+    basicAuthorizationHeader(configuration).ifPresent(defaultHeaders::add);
 
     return restClientBuilder
-        .setDefaultHeaders(defaultHeaders)
+        .setDefaultHeaders(defaultHeaders.toArray(Header[]::new))
         .setConnectionManagerCallback(
             connectionManagerBuilder ->
                 configureConnectionManager(connectionManagerBuilder, configuration))
@@ -254,6 +260,22 @@ public final class ElasticsearchConnector {
           .toArray(HttpHost[]::new);
     }
     return new HttpHost[] {getHttpHost(elsConfig)};
+  }
+
+  private static Optional<Header> basicAuthorizationHeader(
+      final ConnectConfiguration configuration) {
+    final var username = configuration.getUsername();
+    final var password = configuration.getPassword();
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return Optional.empty();
+    }
+    final var credentials = username + ":" + password;
+    return Optional.of(
+        new BasicHeader(
+            HttpHeaders.AUTHORIZATION,
+            "Basic "
+                + Base64.getEncoder()
+                    .encodeToString(credentials.getBytes(StandardCharsets.UTF_8))));
   }
 
   private void setupAuthentication(
