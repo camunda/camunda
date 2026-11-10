@@ -70,13 +70,7 @@ public final class ForeignKeyChecker {
       final byte[] key,
       final int keyLength)
       throws Exception {
-    final var exists =
-        transaction.get(
-                transactionDb.getDefaultNativeHandle(),
-                transactionDb.getReadOptionsNativeHandle(),
-                key,
-                keyLength)
-            != null;
+    final var exists = transaction.get(key, keyLength) != null;
     if (!exists) {
       throw new ZeebeDbInconsistentException(
           "Foreign key " + foreignKey.inner() + " does not exist in " + foreignKey.columnFamily());
@@ -88,9 +82,7 @@ public final class ForeignKeyChecker {
       final DbForeignKey<? extends DbKey> foreignKey,
       final byte[] prefix,
       final int prefixLength) {
-    try (final var iterator =
-        transaction.newIterator(
-            transactionDb.getPrefixReadOptions(), transactionDb.getDefaultHandle())) {
+    try (final var iterator = transaction.newIterator(prefix, prefixLength)) {
 
       iterator.seek(Arrays.copyOf(prefix, prefixLength));
       boolean exists = false;

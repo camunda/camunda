@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
-import org.rocksdb.ReadOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +46,7 @@ public class RawTransactionalColumnFamily {
           columnFamilyContext.withPrefixKey(
               new DbNullKey(),
               (prefixKey, prefixLength) -> {
-                try (final DbIterator iterator =
-                    newIterator(context, transactionDb.getPrefixReadOptions())) {
+                try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
                   forEach(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
               });
@@ -68,8 +66,7 @@ public class RawTransactionalColumnFamily {
           columnFamilyContext.withPrefixKey(
               new DbNullKey(),
               (prefixKey, prefixLength) -> {
-                try (final DbIterator iterator =
-                    newIterator(context, transactionDb.getPrefixReadOptions())) {
+                try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
                   forEachKey(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
               });
@@ -99,11 +96,7 @@ public class RawTransactionalColumnFamily {
 
   public byte @Nullable [] get(
       final ZeebeTransaction transaction, final byte[] key, final int keyLen) throws Exception {
-    return transaction.get(
-        transactionDb.getDefaultNativeHandle(),
-        transactionDb.getReadOptionsNativeHandle(),
-        key,
-        keyLen);
+    return transaction.get(key, keyLen);
   }
 
   /** Raw put into the DB ignoring the prefix key and "virtual" column family. */
@@ -114,7 +107,7 @@ public class RawTransactionalColumnFamily {
       final byte[] value,
       final int valueLen)
       throws Exception {
-    transaction.put(transactionDb.getDefaultNativeHandle(), key, keyLen, value, valueLen);
+    transaction.put(key, keyLen, value, valueLen);
   }
 
   /**
@@ -245,9 +238,10 @@ public class RawTransactionalColumnFamily {
     }
   }
 
-  DbIterator newIterator(final TransactionContext context, final ReadOptions options) {
+  DbIterator newIterator(
+      final TransactionContext context, final byte[] prefix, final int prefixLength) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
-    return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
+    return currentTransaction.newIterator(prefix, prefixLength);
   }
 
   public interface Visitor {

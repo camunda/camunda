@@ -21,7 +21,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
-import org.rocksdb.ReadOptions;
 
 public final class ZeebeRocksDbIterationTest {
 
@@ -64,7 +63,8 @@ public final class ZeebeRocksDbIterationTest {
               return spy;
             })
         .when(columnFamily)
-        .newIterator(Mockito.any(TransactionContext.class), Mockito.any(ReadOptions.class));
+        .newIterator(
+            Mockito.any(TransactionContext.class), Mockito.any(byte[].class), Mockito.anyInt());
 
     final long prefixes = 3;
     final long suffixes = 5;

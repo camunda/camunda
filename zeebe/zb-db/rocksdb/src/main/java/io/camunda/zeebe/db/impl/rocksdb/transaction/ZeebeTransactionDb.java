@@ -60,7 +60,6 @@ public class ZeebeTransactionDb<
   private final ReadOptions defaultReadOptions;
   private final WriteOptions defaultWriteOptions;
   private final ColumnFamilyHandle defaultHandle;
-  private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
@@ -76,7 +75,6 @@ public class ZeebeTransactionDb<
       final MeterRegistry meterRegistry,
       final @Nullable Statistics statistics) {
     this.defaultHandle = defaultHandle;
-    defaultNativeHandle = getNativeHandle(defaultHandle);
     this.rocksDB = rocksDB;
     this.closables = closables;
     this.consistencyChecksSettings = consistencyChecksSettings;
@@ -142,22 +140,6 @@ public class ZeebeTransactionDb<
     }
   }
 
-  protected ReadOptions getPrefixReadOptions() {
-    return prefixReadOptions;
-  }
-
-  protected ColumnFamilyHandle getDefaultHandle() {
-    return defaultHandle;
-  }
-
-  protected long getReadOptionsNativeHandle() {
-    return getNativeHandle(defaultReadOptions);
-  }
-
-  protected long getDefaultNativeHandle() {
-    return defaultNativeHandle;
-  }
-
   @Override
   public <KeyType extends DbKey, ValueType extends DbValue>
       ColumnFamily<KeyType, ValueType> createColumnFamily(
@@ -220,7 +202,9 @@ public class ZeebeTransactionDb<
 
   @Override
   public TransactionContext createContext() {
-    final var zeebeTransaction = new ZeebeTransaction(rocksDB, defaultWriteOptions);
+    final var zeebeTransaction =
+        new WriteBatchTransaction(
+            rocksDB, defaultWriteOptions, defaultHandle, defaultReadOptions, prefixReadOptions);
     closables.add(zeebeTransaction);
     return new DefaultTransactionContext(zeebeTransaction);
   }

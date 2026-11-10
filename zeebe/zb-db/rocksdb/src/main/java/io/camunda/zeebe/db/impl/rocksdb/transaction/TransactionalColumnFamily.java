@@ -33,7 +33,6 @@ import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
-import org.rocksdb.ReadOptions;
 
 /**
  * Some code conventions that we should follow here:
@@ -94,7 +93,6 @@ class TransactionalColumnFamily<
             assertKeyDoesNotExist(transaction);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -113,7 +111,6 @@ class TransactionalColumnFamily<
             assertKeyExists(transaction);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -131,7 +128,6 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeValue(value);
             assertForeignKeysExist(transaction, key, value);
             transaction.put(
-                transactionDb.getDefaultNativeHandle(),
                 columnFamilyContext.getKeyBufferArray(),
                 columnFamilyContext.getKeyLength(),
                 columnFamilyContext.getValueBufferArray(),
@@ -148,10 +144,7 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeKey(key);
             final var value =
                 transaction.get(
-                    transactionDb.getDefaultNativeHandle(),
-                    transactionDb.getReadOptionsNativeHandle(),
-                    columnFamilyContext.getKeyBufferArray(),
-                    columnFamilyContext.getKeyLength());
+                    columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
             columnFamilyContext.wrapValueView(value);
           });
       final var valueBuffer = columnFamilyContext.getValueView();
@@ -172,10 +165,7 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeKey(key);
             final var valueBytes =
                 transaction.get(
-                    transactionDb.getDefaultNativeHandle(),
-                    transactionDb.getReadOptionsNativeHandle(),
-                    columnFamilyContext.getKeyBufferArray(),
-                    columnFamilyContext.getKeyLength());
+                    columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
             if (valueBytes != null) {
               final var newValue = valueSupplier.get();
               newValue.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
@@ -317,9 +307,7 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeKey(key);
             assertKeyExists(transaction);
             transaction.delete(
-                transactionDb.getDefaultNativeHandle(),
-                columnFamilyContext.getKeyBufferArray(),
-                columnFamilyContext.getKeyLength());
+                columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
           });
     }
   }
@@ -331,9 +319,7 @@ class TransactionalColumnFamily<
           transaction -> {
             columnFamilyContext.writeKey(key);
             transaction.delete(
-                transactionDb.getDefaultNativeHandle(),
-                columnFamilyContext.getKeyBufferArray(),
-                columnFamilyContext.getKeyLength());
+                columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
           });
     }
   }
@@ -346,10 +332,7 @@ class TransactionalColumnFamily<
             columnFamilyContext.writeKey(key);
             final var value =
                 transaction.get(
-                    transactionDb.getDefaultNativeHandle(),
-                    transactionDb.getReadOptionsNativeHandle(),
-                    columnFamilyContext.getKeyBufferArray(),
-                    columnFamilyContext.getKeyLength());
+                    columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
             columnFamilyContext.wrapValueView(value);
           });
       return !columnFamilyContext.isValueViewEmpty();
@@ -399,10 +382,7 @@ class TransactionalColumnFamily<
     }
     final var value =
         transaction.get(
-            transactionDb.getDefaultNativeHandle(),
-            transactionDb.getReadOptionsNativeHandle(),
-            columnFamilyContext.getKeyBufferArray(),
-            columnFamilyContext.getKeyLength());
+            columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
     if (value != null) {
       throw new ZeebeDbInconsistentException(
           "Key " + keyInstance + " in ColumnFamily " + columnFamily + " already exists");
@@ -415,10 +395,7 @@ class TransactionalColumnFamily<
     }
     final var value =
         transaction.get(
-            transactionDb.getDefaultNativeHandle(),
-            transactionDb.getReadOptionsNativeHandle(),
-            columnFamilyContext.getKeyBufferArray(),
-            columnFamilyContext.getKeyLength());
+            columnFamilyContext.getKeyBufferArray(), columnFamilyContext.getKeyLength());
     if (value == null) {
       throw new ZeebeDbInconsistentException(
           "Key " + keyInstance + " in ColumnFamily " + columnFamily + " does not exist");
@@ -435,9 +412,10 @@ class TransactionalColumnFamily<
         () -> operation.run((ZeebeTransaction) context.getCurrentTransaction()));
   }
 
-  DbIterator newIterator(final TransactionContext context, final ReadOptions options) {
+  DbIterator newIterator(
+      final TransactionContext context, final byte[] prefix, final int prefixLength) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
-    return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
+    return currentTransaction.newIterator(prefix, prefixLength);
   }
 
   /**
@@ -482,8 +460,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final DbIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+            try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
 
               boolean shouldVisitNext = true;
 
@@ -523,8 +500,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final DbIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+            try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 
@@ -572,8 +548,7 @@ class TransactionalColumnFamily<
     columnFamilyContext.withPrefixKey(
         prefix,
         (prefixKey, prefixLength) -> {
-          try (final DbIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
+          try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
 
             for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid();
@@ -623,8 +598,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final DbIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+            try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
 
               boolean shouldVisitNext = true;
 
@@ -662,8 +636,7 @@ class TransactionalColumnFamily<
       columnFamilyContext.withPrefixKey(
           prefix,
           (prefixKey, prefixLength) -> {
-            try (final DbIterator iterator =
-                newIterator(context, transactionDb.getPrefixReadOptions())) {
+            try (final DbIterator iterator = newIterator(context, prefixKey, prefixLength)) {
 
               final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
 

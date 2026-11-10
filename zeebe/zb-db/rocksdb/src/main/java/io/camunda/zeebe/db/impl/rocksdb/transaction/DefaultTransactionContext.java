@@ -20,7 +20,7 @@ public final class DefaultTransactionContext implements TransactionContext {
 
   private final ZeebeTransaction transaction;
 
-  DefaultTransactionContext(final ZeebeTransaction transaction) {
+  public DefaultTransactionContext(final ZeebeTransaction transaction) {
     this.transaction = transaction;
   }
 
