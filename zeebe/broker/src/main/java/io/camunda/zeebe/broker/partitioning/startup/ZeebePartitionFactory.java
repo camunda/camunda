@@ -85,6 +85,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import javax.sql.DataSource;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +118,8 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
+  private final @Nullable DataSource engineStateDataSource;
+
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -135,7 +139,8 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final @Nullable DataSource engineStateDataSource) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -155,6 +160,7 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
+    this.engineStateDataSource = engineStateDataSource;
   }
 
   public ZeebePartition constructPartition(
@@ -213,6 +219,7 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
+    context.setEngineStateDataSource(engineStateDataSource);
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());

@@ -12,13 +12,16 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLRecoverableException;
+import java.sql.SQLTransientConnectionException;
 import java.sql.SQLTransientException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.function.Predicate;
 import org.jspecify.annotations.Nullable;
 
 final class JdbcTransaction implements ZeebeDbTransaction {
@@ -29,12 +32,12 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   /** SQL standard class 08: connection failures. */
   private static final String SQL_STATE_CLASS_CONNECTION_EXCEPTION = "08";
 
-  private final Connection connection;
+  private final JdbcConnectionSource connections;
   private final List<JdbcTransactionParticipant> participants = new ArrayList<>();
   private boolean inCurrentTransaction;
 
-  JdbcTransaction(final Connection connection) {
-    this.connection = connection;
+  JdbcTransaction(final JdbcConnectionSource connections) {
+    this.connections = connections;
   }
 
   void register(final JdbcTransactionParticipant participant) {
@@ -56,29 +59,46 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   /**
    * Flushes all participants and commits. On failure the connection is rolled back but the staged
-   * writes are kept, so the stream processor can retry the commit with the same changes.
+   * writes are kept, so the stream processor can retry the commit with the same changes. A broken
+   * connection is replaced, so the retry flushes them on a new one.
    */
   @Override
   public void commit() throws Exception {
+    Connection connection = null;
     try {
+      connection = connections.get();
       for (final var participant : participants) {
         participant.flush(connection);
       }
       connection.commit();
     } catch (final SQLException e) {
-      rollbackConnectionQuietly(e);
+      if (connection != null) {
+        rollbackConnectionQuietly(connection, e);
+      }
+      if (connections.discardIfBroken(e)) {
+        throw new ZeebeDbException("JDBC connection broke during commit, retry on a new one", e);
+      }
       throw translate(e);
     }
     resetParticipants();
     inCurrentTransaction = false;
   }
 
+  /**
+   * If the connection broke, it is discarded instead of failing the rollback: its open transaction
+   * is gone with it.
+   */
   @Override
   public void rollback() throws Exception {
+    final var connection = connections.current();
     try {
-      connection.rollback();
+      if (connection != null) {
+        connection.rollback();
+      }
     } catch (final SQLException e) {
-      throw translate(e);
+      if (!connections.discardIfBroken(e)) {
+        throw translate(e);
+      }
     } finally {
       resetParticipants();
       inCurrentTransaction = false;
@@ -92,13 +112,34 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     return new RuntimeException("Unexpected error during JDBC transaction", e);
   }
 
-  /**
-   * Drivers differ in how they report retryable errors: some use the JDBC subclasses, others (e.g.
-   * PostgreSQL) throw a generic SQLException and only set the SQLState, and batch execution wraps
-   * the actual error in a BatchUpdateException. So we walk the cause and next-exception chains and
-   * accept either signal.
-   */
+  static boolean isConnectionError(final Throwable error) {
+    return anyInChain(
+        error,
+        e ->
+            e instanceof SQLRecoverableException
+                || e instanceof SQLNonTransientConnectionException
+                || e instanceof SQLTransientConnectionException
+                || (e instanceof final SQLException sqlException
+                    && hasSqlStateClass(
+                        sqlException.getSQLState(), SQL_STATE_CLASS_CONNECTION_EXCEPTION)));
+  }
+
   private static boolean isRecoverable(final Throwable error) {
+    return anyInChain(
+        error,
+        e ->
+            e instanceof SQLTransientException
+                || e instanceof SQLRecoverableException
+                || (e instanceof final SQLException sqlException
+                    && hasRecoverableSqlState(sqlException.getSQLState())));
+  }
+
+  /**
+   * Drivers differ in how they report errors: some use the JDBC subclasses, others (e.g.
+   * PostgreSQL) throw a generic SQLException and only set the SQLState, and batch execution wraps
+   * the actual error in a BatchUpdateException. So we walk the cause and next-exception chains.
+   */
+  private static boolean anyInChain(final Throwable error, final Predicate<Throwable> matches) {
     final var seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
     final var pending = new ArrayDeque<Throwable>();
     pending.add(error);
@@ -107,16 +148,12 @@ final class JdbcTransaction implements ZeebeDbTransaction {
       if (!seen.add(current)) {
         continue;
       }
-      if (current instanceof SQLTransientException || current instanceof SQLRecoverableException) {
+      if (matches.test(current)) {
         return true;
       }
-      if (current instanceof final SQLException sqlException) {
-        if (hasRecoverableSqlState(sqlException.getSQLState())) {
-          return true;
-        }
-        if (sqlException.getNextException() != null) {
-          pending.add(sqlException.getNextException());
-        }
+      if (current instanceof final SQLException sqlException
+          && sqlException.getNextException() != null) {
+        pending.add(sqlException.getNextException());
       }
       if (current.getCause() != null) {
         pending.add(current.getCause());
@@ -126,12 +163,16 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   }
 
   private static boolean hasRecoverableSqlState(final @Nullable String sqlState) {
-    return sqlState != null
-        && (sqlState.startsWith(SQL_STATE_CLASS_TRANSACTION_ROLLBACK)
-            || sqlState.startsWith(SQL_STATE_CLASS_CONNECTION_EXCEPTION));
+    return hasSqlStateClass(sqlState, SQL_STATE_CLASS_TRANSACTION_ROLLBACK)
+        || hasSqlStateClass(sqlState, SQL_STATE_CLASS_CONNECTION_EXCEPTION);
   }
 
-  private void rollbackConnectionQuietly(final SQLException cause) {
+  private static boolean hasSqlStateClass(final @Nullable String sqlState, final String clazz) {
+    return sqlState != null && sqlState.startsWith(clazz);
+  }
+
+  private static void rollbackConnectionQuietly(
+      final Connection connection, final SQLException cause) {
     try {
       connection.rollback();
     } catch (final SQLException rollbackError) {

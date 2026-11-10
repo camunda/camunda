@@ -25,19 +25,25 @@ import java.util.Optional;
  * <p>Everything else delegates to the RocksDB database. Column families always get the RocksDB
  * context, since they cast its transaction to the RocksDB one.
  *
- * <p>Owns the JDBC connection, which all contexts share: only the stream processor actor may use
- * the JDBC side of a context. Closing this only closes the connection; the RocksDB database is
- * owned and closed by the partition.
+ * <p>Owns the JDBC connection source, whose connection all contexts share: only the stream
+ * processor actor may use the JDBC side of a context. Closing this only closes the current
+ * connection (returning it to its pool, if borrowed); the RocksDB database is owned and closed by
+ * the partition.
  */
 public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
 
   private final ZeebeDb<ColumnFamilyType> rocksDb;
-  private final Connection connection;
+  private final JdbcConnectionSource connections;
 
   public MixedZeebeDb(final ZeebeDb<ColumnFamilyType> rocksDb, final Connection connection) {
+    this(rocksDb, JdbcConnectionSource.of(connection));
+  }
+
+  public MixedZeebeDb(
+      final ZeebeDb<ColumnFamilyType> rocksDb, final JdbcConnectionSource connections) {
     this.rocksDb = rocksDb;
-    this.connection = connection;
+    this.connections = connections;
   }
 
   @Override
@@ -63,7 +69,7 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
   @Override
   public TransactionContext createContext() {
     return new MixedTransactionContext(
-        rocksDb.createContext(), new JdbcTransactionContext(connection));
+        rocksDb.createContext(), new JdbcTransactionContext(connections));
   }
 
   @Override
@@ -83,7 +89,7 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
 
   @Override
   public void close() throws Exception {
-    connection.close();
+    connections.close();
   }
 
   private static TransactionContext unwrap(final TransactionContext context) {

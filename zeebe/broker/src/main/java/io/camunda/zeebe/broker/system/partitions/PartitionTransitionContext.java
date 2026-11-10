@@ -42,6 +42,7 @@ import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import javax.sql.DataSource;
 import org.jspecify.annotations.Nullable;
 
 public interface PartitionTransitionContext extends PartitionContext {
@@ -113,6 +114,9 @@ public interface PartitionTransitionContext extends PartitionContext {
   BrokerCfg getBrokerCfg();
 
   EngineSecurityConfig getSecurityConfig();
+
+  /** Experimental: the connection pool of the RDBMS engine state, or null if it is not enabled. */
+  @Nullable DataSource getEngineStateDataSource();
 
   QueryService getQueryService();
 

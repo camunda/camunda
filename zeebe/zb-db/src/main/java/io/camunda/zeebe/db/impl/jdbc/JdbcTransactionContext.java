@@ -14,7 +14,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * A {@link TransactionContext} backed by a single JDBC connection.
+ * A {@link TransactionContext} backed by a JDBC connection of a {@link JdbcConnectionSource}.
  *
  * <p>The context owns no data itself. Stores register as {@link JdbcTransactionParticipant}s, stage
  * their writes in memory, and read through {@link #connection()} after checking their staged
@@ -25,22 +25,33 @@ import java.sql.SQLException;
  */
 public final class JdbcTransactionContext implements TransactionContext {
 
-  private final Connection connection;
+  private final JdbcConnectionSource connections;
   private final JdbcTransaction transaction;
 
+  /** A context on a fixed connection, which is never replaced or closed by this context. */
   public JdbcTransactionContext(final Connection connection) {
-    this.connection = connection;
-    try {
-      connection.setAutoCommit(false);
-    } catch (final SQLException e) {
-      throw new IllegalStateException("Failed to disable auto-commit on JDBC connection", e);
-    }
-    transaction = new JdbcTransaction(connection);
+    this(JdbcConnectionSource.of(connection));
   }
 
-  /** The connection all reads and flushes of this context's transactions run on. */
+  /**
+   * A context on the connection of the given source, which is replaced by a new one when a commit
+   * fails because it broke.
+   */
+  public JdbcTransactionContext(final JdbcConnectionSource connections) {
+    this.connections = connections;
+    transaction = new JdbcTransaction(connections);
+  }
+
+  /**
+   * The connection all reads and flushes of this context's transactions run on. It may change after
+   * a failed commit, so it must be looked up again for every use rather than kept.
+   */
   public Connection connection() {
-    return connection;
+    try {
+      return connections.get();
+    } catch (final SQLException e) {
+      throw JdbcTransaction.translate(e);
+    }
   }
 
   public void register(final JdbcTransactionParticipant participant) {
