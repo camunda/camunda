@@ -145,30 +145,6 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
-  void shouldRegisterSharedParticipantOnce() throws Exception {
-    // given
-    final var created = new ArrayList<StagingParticipant>();
-    final var first =
-        context.participant(
-            StagingParticipant.class,
-            () -> {
-              final var newParticipant = new StagingParticipant();
-              created.add(newParticipant);
-              return newParticipant;
-            });
-
-    // when
-    final var second = context.participant(StagingParticipant.class, StagingParticipant::new);
-    final var transaction = context.getCurrentTransaction();
-    transaction.commit();
-
-    // then
-    assertThat(second).isSameAs(first);
-    assertThat(created).hasSize(1);
-    assertThat(first.flushes).isOne();
-  }
-
-  @Test
   void shouldNotifyListenersOfCommit() throws Exception {
     // given
     final var outcomes = new ArrayList<String>();
@@ -343,6 +319,7 @@ final class JdbcTransactionContextTest {
         .hasCauseInstanceOf(SQLTransientException.class);
     assertThat(visibleRows()).isEmpty();
     assertThat(participant.resets).isZero();
+    assertThat(participant.failedCommits).isOne();
 
     // when
     transaction.commit();
@@ -628,7 +605,13 @@ final class JdbcTransactionContextTest {
     private final Map<Long, String> staged = new LinkedHashMap<>();
     private int flushes;
     private int resets;
+    private int failedCommits;
     private @Nullable SQLException failNextFlushWith;
+
+    @Override
+    public void commitFailed() {
+      failedCommits++;
+    }
 
     void stage(final long id, final String value) {
       staged.put(id, value);

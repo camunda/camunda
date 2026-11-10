@@ -26,6 +26,13 @@ public interface JdbcTransactionParticipant {
    */
   void flush(Connection connection) throws SQLException;
 
+  /**
+   * Called when a commit attempt failed, after the connection was rolled back and before it may be
+   * replaced. The staged changes are kept for a retry; a participant releases whatever it holds on
+   * to the failed attempt's connection. Does nothing by default.
+   */
+  default void commitFailed() {}
+
   /** Drops all staged changes. Called after a successful commit and after a rollback. */
   void reset();
 }

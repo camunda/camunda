@@ -13,9 +13,6 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +29,6 @@ public final class JdbcTransactionContext implements TransactionContext {
 
   private final JdbcConnectionSource connections;
   private final JdbcTransaction transaction;
-  private final Map<Class<?>, JdbcTransactionParticipant> sharedParticipants = new HashMap<>();
 
   /** A context on a fixed connection, which is never replaced or closed by this context. */
   public JdbcTransactionContext(final Connection connection) {
@@ -62,22 +58,6 @@ public final class JdbcTransactionContext implements TransactionContext {
 
   public void register(final JdbcTransactionParticipant participant) {
     transaction.register(participant);
-  }
-
-  /**
-   * Returns the participant of the given type, registering a new one the first time it is asked
-   * for, so that several users of this context can share a single participant.
-   */
-  public <T extends JdbcTransactionParticipant> T participant(
-      final Class<T> type, final Supplier<T> factory) {
-    final var existing = sharedParticipants.get(type);
-    if (existing != null) {
-      return type.cast(existing);
-    }
-    final var created = factory.get();
-    sharedParticipants.put(type, created);
-    register(created);
-    return created;
   }
 
   @Override
