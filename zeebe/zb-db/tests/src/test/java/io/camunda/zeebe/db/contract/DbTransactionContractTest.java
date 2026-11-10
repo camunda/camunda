@@ -464,6 +464,48 @@ public abstract class DbTransactionContractTest {
   }
 
   @Test
+  public void shouldNotLeaveATransactionOpenAfterCount() {
+    // given
+    oneColumnFamily.count();
+    oneKey.wrapLong(1);
+    oneValue.wrapLong(-1);
+
+    // when
+    assertThatThrownBy(
+            () ->
+                transactionContext.runInTransaction(
+                    () -> {
+                      oneColumnFamily.insert(oneKey, oneValue);
+                      throw new RuntimeException("expected");
+                    }))
+        .hasMessage("expected");
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+  }
+
+  @Test
+  public void shouldNotLeaveATransactionOpenAfterCountEqualPrefix() {
+    // given
+    oneKey.wrapLong(1);
+    oneColumnFamily.countEqualPrefix(oneKey);
+    oneValue.wrapLong(-1);
+
+    // when
+    assertThatThrownBy(
+            () ->
+                transactionContext.runInTransaction(
+                    () -> {
+                      oneColumnFamily.insert(oneKey, oneValue);
+                      throw new RuntimeException("expected");
+                    }))
+        .hasMessage("expected");
+
+    // then
+    assertThat(oneColumnFamily.exists(oneKey)).isFalse();
+  }
+
+  @Test
   // See https://github.com/camunda/camunda/issues/11681, this test is to ensure that we don't
   // hide exceptions from the `ProcessingStateMachine`.
   public void shouldNotWrapRuntimeExceptions() {

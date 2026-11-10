@@ -356,12 +356,16 @@ class TransactionalColumnFamily<
 
   @Override
   public long count() {
-    return countEachInPrefix(new DbNullKey());
+    final var count = new MutableLong();
+    ensureInOpenTransaction(transaction -> count.set(countEachInPrefix(new DbNullKey())));
+    return count.get();
   }
 
   @Override
   public long countEqualPrefix(final DbKey prefix) {
-    return countEachInPrefix(prefix);
+    final var count = new MutableLong();
+    ensureInOpenTransaction(transaction -> count.set(countEachInPrefix(prefix)));
+    return count.get();
   }
 
   private void assertForeignKeysExist(final ZeebeTransaction transaction, final Object... keys)
