@@ -25,10 +25,8 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
-import io.camunda.zeebe.engine.state.instance.DbJobStore;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
-import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
@@ -58,9 +56,14 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final DbRoutingState routingState;
   private final SecretReferenceState secretReferenceState;
 
+  /**
+   * @param jobState the job state on the given transaction context, from the partition's {@link
+   *     ProcessingStateStoresFactory}, since the jobs may not be stored in RocksDB
+   */
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
+      final JobState jobState,
       final int partitionId,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
@@ -69,7 +72,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
     messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
-    jobState = new JobStateImpl(new DbJobStore(zeebeDb, transactionContext));
+    this.jobState = jobState;
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     pendingMessageSubscriptionState =
         new DbMessageSubscriptionState(
