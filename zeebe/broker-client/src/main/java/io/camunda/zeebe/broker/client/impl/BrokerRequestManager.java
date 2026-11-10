@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.impl;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -21,12 +22,14 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailbox;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
 import java.time.Duration;
@@ -36,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
@@ -54,6 +58,7 @@ final class BrokerRequestManager extends Actor {
   private final BrokerTopologyManager topologyManager;
   private final Duration requestTimeout;
   private final BrokerClientRequestMetrics metrics;
+  private final @Nullable GatewayMailbox mailbox;
 
   BrokerRequestManager(
       final ClientTransport clientTransport,
@@ -61,6 +66,21 @@ final class BrokerRequestManager extends Actor {
       final RequestDispatchStrategy dispatchStrategy,
       final Duration requestTimeout,
       final BrokerClientRequestMetrics metrics) {
+    this(clientTransport, topologyManager, dispatchStrategy, requestTimeout, metrics, null);
+  }
+
+  /**
+   * @param mailbox if set, a request for a partition whose leader the topology does not show goes
+   *     through the mailbox, as long as the store has a leader recorded for the partition
+   */
+  BrokerRequestManager(
+      final ClientTransport clientTransport,
+      final BrokerTopologyManager topologyManager,
+      final RequestDispatchStrategy dispatchStrategy,
+      final Duration requestTimeout,
+      final BrokerClientRequestMetrics metrics,
+      final @Nullable GatewayMailbox mailbox) {
+    this.mailbox = mailbox;
     this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
@@ -146,9 +166,13 @@ final class BrokerRequestManager extends Actor {
           request.getPartitionId(), request.getType(), AdditionalErrorCodes.NO_TOPOLOGY);
       return;
     } catch (final PartitionInactiveException e) {
-      returnFuture.completeExceptionally(e);
-      metrics.registerFailedRequest(
-          request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_INACTIVE);
+      // the leader may still be recorded in the mailbox, and then the request can be sent there
+      if (leaderUnknownInTopology(request, partitionGroup)) {
+        sendThroughMailboxOr(
+            request, returnFuture, requestTimeout, () -> failInactive(request, returnFuture, e));
+        return;
+      }
+      failInactive(request, returnFuture, e);
       return;
     } catch (final PartitionInRecoveryException e) {
       returnFuture.completeExceptionally(e);
@@ -157,8 +181,110 @@ final class BrokerRequestManager extends Actor {
       return;
     }
 
+    if (leaderUnknownInTopology(request, partitionGroup)) {
+      sendThroughMailboxOr(
+          request,
+          returnFuture,
+          requestTimeout,
+          () -> sendOverNetwork(request, returnFuture, sender, requestTimeout, nodeIdProvider));
+      return;
+    }
+
+    sendOverNetwork(request, returnFuture, sender, requestTimeout, nodeIdProvider);
+  }
+
+  private <T> void failInactive(
+      final BrokerRequest<T> request,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final PartitionInactiveException e) {
+    returnFuture.completeExceptionally(e);
+    metrics.registerFailedRequest(
+        request.getPartitionId(), request.getType(), AdditionalErrorCodes.PARTITION_INACTIVE);
+  }
+
+  /**
+   * Whether the request goes to the leader of a partition that the topology shows no leader for.
+   * The mailbox is for the default physical tenant only, because the inbox is addressed by the
+   * partition number.
+   */
+  private boolean leaderUnknownInTopology(
+      final BrokerRequest<?> request, final String partitionGroup) {
+    if (mailbox == null
+        || !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionGroup)
+        || request.getBrokerId().isPresent()
+        || request.shouldRouteToRecovery()
+        || !(request.addressesSpecificPartition() || request.requiresPartitionId())) {
+      return false;
+    }
+    final var topology = topologyManager.getTopology(partitionGroup);
+    return topology != null && topology.getLeaderForPartition(request.getPartitionId()) == null;
+  }
+
+  /**
+   * Sends the request through the mailbox if the store records a leader for its partition, and
+   * otherwise runs the fallback, which is what happens without a mailbox.
+   */
+  private <T> void sendThroughMailboxOr(
+      final BrokerRequest<T> request,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final Duration requestTimeout,
+      final Runnable fallback) {
+    final var partitionId = request.getPartitionId();
+    // the lookup may block, so it runs on the executor of the mailbox, and the actor goes on after
+    Objects.requireNonNull(mailbox)
+        .findLeader(partitionId)
+        .whenComplete(
+            (leader, error) ->
+                actor.run(
+                    () -> {
+                      if (error == null && leader.isPresent()) {
+                        sendThroughMailbox(request, returnFuture, requestTimeout);
+                      } else {
+                        fallback.run();
+                      }
+                    }));
+  }
+
+  private <T> void sendThroughMailbox(
+      final BrokerRequest<T> request,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final Duration requestTimeout) {
+    final var payload = new byte[request.getLength()];
+    request.write(new UnsafeBuffer(payload), 0);
+
+    final ActorFuture<DirectBuffer> responseFuture = new CompletableActorFuture<>();
+    Objects.requireNonNull(mailbox)
+        .send(request.getPartitionId(), payload, requestTimeout)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null) {
+                responseFuture.complete(new UnsafeBuffer(response));
+              } else {
+                responseFuture.completeExceptionally(
+                    error instanceof final java.util.concurrent.CompletionException completion
+                            && completion.getCause() != null
+                        ? completion.getCause()
+                        : error);
+              }
+            });
+    handleResponse(request, returnFuture, responseFuture);
+  }
+
+  private <T> void sendOverNetwork(
+      final BrokerRequest<T> request,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final TransportRequestSender sender,
+      final Duration requestTimeout,
+      final BrokerAddressProvider nodeIdProvider) {
     final ActorFuture<DirectBuffer> responseFuture =
         sender.send(clientTransport, nodeIdProvider, request, requestTimeout);
+    handleResponse(request, returnFuture, responseFuture);
+  }
+
+  private <T> void handleResponse(
+      final BrokerRequest<T> request,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final ActorFuture<DirectBuffer> responseFuture) {
     final long startTime = System.currentTimeMillis();
 
     actor.runOnCompletion(

@@ -19,6 +19,8 @@ dependencies {
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-scheduler"))
   api(project(":zeebe-transport"))
+  implementation(project(":zeebe-mailbox"))
+  api(project(":zeebe-mailbox-api"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-micrometer"))
   api(libs.io.micrometer.micrometer.commons)

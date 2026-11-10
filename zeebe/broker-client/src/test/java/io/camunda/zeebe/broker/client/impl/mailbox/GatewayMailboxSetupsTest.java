@@ -1,0 +1,60 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.broker.client.impl.mailbox;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.zeebe.broker.client.api.mailbox.GatewayMailboxSetup;
+import io.camunda.zeebe.broker.client.api.mailbox.GatewayMailboxSetupProvider;
+import io.camunda.zeebe.mailbox.InMemoryMailboxStore;
+import io.camunda.zeebe.mailbox.api.MailboxConfig;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+final class GatewayMailboxSetupsTest {
+
+  private static final GatewayMailboxSetup SETUP =
+      new GatewayMailboxSetup(
+          new InMemoryMailboxStore(), MailboxConfig.defaults(), "gateway-1", Runnable::run);
+
+  @Test
+  void shouldFindNoSetupWithoutProviders() {
+    assertThat(GatewayMailboxSetups.from(List.of())).isEmpty();
+  }
+
+  @Test
+  void shouldFindNoSetupWhenNoProviderIsOn() {
+    // given
+    final GatewayMailboxSetupProvider off = Optional::empty;
+
+    // when / then
+    assertThat(GatewayMailboxSetups.from(List.of(off))).isEmpty();
+  }
+
+  @Test
+  void shouldUseTheSetupOfTheProviderThatIsOn() {
+    // given
+    final GatewayMailboxSetupProvider off = Optional::empty;
+    final GatewayMailboxSetupProvider on = () -> Optional.of(SETUP);
+
+    // when / then
+    assertThat(GatewayMailboxSetups.from(List.of(off, on))).contains(SETUP);
+  }
+
+  @Test
+  void shouldFailWhenSeveralProvidersAreOn() {
+    // given
+    final GatewayMailboxSetupProvider on = () -> Optional.of(SETUP);
+
+    // when / then
+    assertThatThrownBy(() -> GatewayMailboxSetups.from(List.of(on, on)))
+        .isInstanceOf(IllegalStateException.class);
+  }
+}

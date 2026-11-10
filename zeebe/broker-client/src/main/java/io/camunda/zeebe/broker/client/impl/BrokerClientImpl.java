@@ -18,6 +18,8 @@ import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailbox;
+import io.camunda.zeebe.broker.client.impl.mailbox.GatewayMailboxSetups;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,7 @@ public final class BrokerClientImpl implements BrokerClient {
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
+  private final @Nullable GatewayMailbox mailbox;
 
   public BrokerClientImpl(
       final Duration requestTimeout,
@@ -53,6 +57,30 @@ public final class BrokerClientImpl implements BrokerClient {
       final ActorSchedulingService schedulingService,
       final BrokerTopologyManager topologyManager,
       final BrokerClientRequestMetrics metrics) {
+    this(
+        requestTimeout,
+        messagingService,
+        eventService,
+        schedulingService,
+        topologyManager,
+        metrics,
+        GatewayMailboxSetups.load().map(GatewayMailbox::new).orElse(null));
+  }
+
+  /**
+   * @param mailbox if set, requests for a partition whose leader is not in the topology go through
+   *     the mailbox when the store records a leader for the partition. The client starts and closes
+   *     it.
+   */
+  public BrokerClientImpl(
+      final Duration requestTimeout,
+      final MessagingService messagingService,
+      final ClusterEventService eventService,
+      final ActorSchedulingService schedulingService,
+      final BrokerTopologyManager topologyManager,
+      final BrokerClientRequestMetrics metrics,
+      final @Nullable GatewayMailbox mailbox) {
+    this.mailbox = mailbox;
     this.eventService = eventService;
     this.schedulingService = schedulingService;
 
@@ -64,11 +92,15 @@ public final class BrokerClientImpl implements BrokerClient {
             topologyManager,
             new RoundRobinDispatchStrategy(),
             requestTimeout,
-            metrics);
+            metrics,
+            mailbox);
   }
 
   @Override
   public Collection<ActorFuture<Void>> start() {
+    if (mailbox != null) {
+      mailbox.start();
+    }
     final var transportStarted = schedulingService.submitActor(atomixTransportAdapter);
     final var requestManagerStarted = schedulingService.submitActor(requestManager);
     return List.of(transportStarted, requestManagerStarted);
@@ -88,6 +120,10 @@ public final class BrokerClientImpl implements BrokerClient {
 
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
+
+    if (mailbox != null) {
+      doAndLogException(mailbox::close);
+    }
 
     jobAvailableSubscriptions.values().forEach(Subscription::close);
 
