@@ -59,6 +59,9 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private static final Duration DEFAULT_RETRY_BACKOFF = Duration.ofMillis(200);
   private static final String CHANGE_LOG = "db/changelog/rdbms-exporter/changelog-master.xml";
 
+  private static final String STORAGE_CHANGE_LOG =
+      "db/changelog/rdbms-storage/changelog-master.xml";
+
   /**
    * Applied as a run of its own before {@link #CHANGE_LOG}, and deliberately not included by it.
    * See the changelog's own comment for why the schema version has to be recorded before the schema
@@ -175,6 +178,7 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       seedSchemaVersion();
       versionStore.checkCompatibility();
       performMigrationWithRetry(runner);
+      migrateStorageSchema();
     } catch (final Exception e) {
       throw isDeterministicFailure(e)
           ? new RdbmsSchemaMigrationFailedException(
@@ -205,6 +209,15 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   @VisibleForTesting
   protected void seedSchemaVersion() throws Exception {
     performMigrationWithRetry(buildRunner(SCHEMA_VERSION_SEED_CHANGE_LOG));
+  }
+
+  /**
+   * Applies the tables for RDBMS as the engine's primary storage. A run of its own so that they
+   * stay out of the exporter's changelog and the SQL scripts generated from it.
+   */
+  @VisibleForTesting
+  protected void migrateStorageSchema() throws Exception {
+    performMigrationWithRetry(buildRunner(STORAGE_CHANGE_LOG));
   }
 
   /**

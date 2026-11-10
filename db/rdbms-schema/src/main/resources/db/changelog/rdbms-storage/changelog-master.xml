@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--
+  ~ Tables for using an RDBMS as the engine's primary storage (e.g. the partition log), as opposed
+  ~ to the exporter's secondary storage in rdbms-exporter/.
+  ~
+  ~ LiquibaseSchemaManager runs this as its own pass after the exporter's changelog. It is kept out of
+  ~ rdbms-exporter/, which LiquibaseScriptGenerator turns into shipped SQL, so these tables are only
+  ~ created with auto-ddl for now.
+  -->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+</databaseChangeLog>
