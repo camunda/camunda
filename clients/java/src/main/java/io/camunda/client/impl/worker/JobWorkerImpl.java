@@ -489,8 +489,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // can throw a checked exception without declaring it, and that must not stall polling either
       if (handlerStarted.get()) {
         LOG.warn(
-            "Job with key {} ran on the calling thread, but handing it over failed afterwards. "
-                + "Leaving the job to the handler that ran it.",
+            "Job with key {} ran on the calling thread and failed there, in its handler or right "
+                + "after it. Leaving the job to the handler that ran it.",
             job.getKey(),
             e);
         return;
