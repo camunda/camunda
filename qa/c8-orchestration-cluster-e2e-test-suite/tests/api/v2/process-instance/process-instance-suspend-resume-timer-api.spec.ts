@@ -196,7 +196,7 @@ async function holdUntilPast(instant: number, marginSeconds = 5) {
   }
 }
 
-test.describe('Process Instance Suspend and Resume Timer API', () => {
+test.describe.parallel('Process Instance Suspend and Resume Timer API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {

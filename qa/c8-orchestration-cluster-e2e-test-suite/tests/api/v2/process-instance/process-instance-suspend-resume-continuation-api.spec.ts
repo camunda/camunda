@@ -298,7 +298,8 @@ async function completeAllUserTasks(
   }
 }
 
-test.describe('Process Instance Suspend and Resume Continuation API', () => {
+test.describe
+  .parallel('Process Instance Suspend and Resume Continuation API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {

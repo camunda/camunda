@@ -111,7 +111,7 @@ async function incidentMessagesFor(
 }
 
 /* eslint-disable playwright/expect-expect */
-test.describe('Process Definition Draining Deletion API', () => {
+test.describe.parallel('Process Definition Draining Deletion API', () => {
   let instancesToCancel: string[] = [];
 
   test.beforeEach(() => {

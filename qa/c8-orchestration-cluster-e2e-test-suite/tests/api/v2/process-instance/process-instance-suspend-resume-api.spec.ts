@@ -170,7 +170,7 @@ async function startInstance(prefix: string) {
   return instance;
 }
 
-test.describe('Process Instance Suspend and Resume API', () => {
+test.describe.parallel('Process Instance Suspend and Resume API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {
