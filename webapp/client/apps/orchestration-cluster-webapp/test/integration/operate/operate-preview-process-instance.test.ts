@@ -94,39 +94,6 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await expect(operatePreviewProcessInstancePage.variableRow('amount')).toContainText('100');
 	});
 
-	test('should show [REDACTED] without actions for a redacted variable', async ({
-		network,
-		operatePreviewProcessInstancePage,
-	}) => {
-		network.use(
-			mockQueryVariablesEndpoint({
-				successResponse: HttpResponse.json(
-					createQueryVariablesByUserTaskResponse({
-						items: [
-							createVariable({name: 'amount', value: '100', variableKey: '1'}),
-							createVariable({
-								name: 'password',
-								value: 'secret',
-								variableKey: '2',
-								metadata: {protectionModes: ['REDACT']},
-							}),
-						],
-					}),
-				),
-			}),
-		);
-
-		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
-
-		const redactedRow = operatePreviewProcessInstancePage.variableRow('password');
-		await expect(redactedRow).toContainText('[REDACTED]');
-		await expect(redactedRow).not.toContainText('secret');
-		await expect(redactedRow.getByRole('button')).toHaveCount(0);
-		await expect(
-			operatePreviewProcessInstancePage.variableRow('amount').getByRole('button', {name: 'Open'}),
-		).toBeVisible();
-	});
-
 	test('should keep the selected element in the URL and clear it on a second canvas click', async ({
 		operatePreviewProcessInstancePage,
 		page,

@@ -53,12 +53,6 @@ test('should match the process instance variables tab snapshot', async ({
 					items: [
 						createVariable({name: 'amount', value: '100', variableKey: '1'}),
 						createVariable({name: 'customer', value: '{"name":"Jane","address":{"city":"Berlin"}}', variableKey: '2'}),
-						createVariable({
-							name: 'password',
-							value: 'secret',
-							variableKey: '3',
-							metadata: {protectionModes: ['REDACT']},
-						}),
 					],
 				}),
 			),
@@ -67,6 +61,6 @@ test('should match the process instance variables tab snapshot', async ({
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
-	await expect(operatePreviewProcessInstancePage.variableRow('password')).toContainText('[REDACTED]');
+	await expect(operatePreviewProcessInstancePage.variableRow('customer')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.variablesList).toHaveScreenshot();
 });

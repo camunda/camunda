@@ -20,7 +20,6 @@ type Props = {
 	value: string;
 	variableKey: string;
 	isTruncated: boolean;
-	isRedacted: boolean;
 	documentResult: DocumentParseResult | null;
 	isEditing: boolean;
 	canEdit: boolean;
@@ -31,17 +30,12 @@ const VariableValueCell: React.FC<Props> = ({
 	value,
 	variableKey,
 	isTruncated,
-	isRedacted,
 	documentResult,
 	isEditing,
 	canEdit,
 }) => {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
-
-	if (isRedacted) {
-		return <div className="font-mono text-[13px]/5 text-muted-foreground">{t('globalRedactedValueLabel')}</div>;
-	}
 
 	if (isEditing) {
 		return (
