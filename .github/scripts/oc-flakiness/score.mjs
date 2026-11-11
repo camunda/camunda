@@ -27,7 +27,7 @@ import {
   sameTitlePath,
   walkSpecs,
 } from './report.mjs';
-import {dirname} from 'node:path';
+import {basename, dirname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
 const FAILED = new Set(['failed', 'timedOut']);
@@ -62,6 +62,7 @@ export function score({dir, file, titlePath, cells, planned}) {
     ]),
   );
   const errors = new Map();
+  const failingShards = new Set();
 
   for (const metaFile of findFiles(dir, 'meta.json')) {
     const meta = readJson(metaFile, {});
@@ -84,10 +85,12 @@ export function score({dir, file, titlePath, cells, planned}) {
             FAILED.has(test.results?.[0]?.status)
           ) {
             counts.failed += 1;
+            failingShards.add(basename(dirname(metaFile)));
             const key = `${meta.cell}\u0000${errorKey(test.results[0].error?.message)}`;
             errors.set(key, (errors.get(key) ?? 0) + 1);
           } else if (skippedBySerialFailure(test)) {
             counts.failed += 1;
+            failingShards.add(basename(dirname(metaFile)));
             const key = `${meta.cell}\u0000${SERIAL_SKIP}`;
             errors.set(key, (errors.get(key) ?? 0) + 1);
           } else {
@@ -125,6 +128,7 @@ export function score({dir, file, titlePath, cells, planned}) {
       rate: rate(pooledPassed, pooledFailed),
     },
     cells: perCell,
+    failingShards: [...failingShards].sort(),
     topErrors: [...errors.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)

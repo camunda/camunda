@@ -344,10 +344,10 @@ jobs:
       verdict: ${{ steps.score.outputs.verdict }}
       rate: ${{ steps.score.outputs.rate }}
     steps:
-      - name: Checkout main for the scoring script
+      - name: Checkout the workflow's commit for the scoring script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
             .github/scripts/oc-flakiness
@@ -410,12 +410,24 @@ jobs:
           path: ${{ runner.temp }}/score/score.json
           retention-days: 14
 
-      # The agent reads every shard report of a pass; one bundle per pass
-      # keeps it to a handful of artifact downloads instead of one per shard.
-      - name: Bundle the shard reports for the agent
+      # The agent only needs the shards where the target failed, as one
+      # artifact per pass instead of one per shard.
+      - name: Keep the shards where the target failed
+        id: failing
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence"
+          jq -r '(.failingShards // [])[]' "$RUNNER_TEMP/score/score.json" | while read -r dir; do
+            cp -r "$RUNNER_TEMP/shards/${dir}" "$RUNNER_TEMP/evidence/"
+          done
+          ls "$RUNNER_TEMP/evidence"
+          echo "count=$(jq '.failingShards // [] | length' "$RUNNER_TEMP/score/score.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle the failing shards for the agent
+        if: steps.failing.outputs.count != '0'
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: flaky-evidence-${{ inputs.label }}
-          path: ${{ runner.temp }}/shards/
+          path: ${{ runner.temp }}/evidence/
           retention-days: "14"
           retry-jitter-seconds: "0"

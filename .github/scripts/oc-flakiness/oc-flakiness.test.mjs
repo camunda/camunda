@@ -155,6 +155,7 @@ test('should score passes and failures and group errors', () => {
   assert.equal(result.verdict, 'scored');
   assert.deepEqual(result.pooled, {passed: 3, failed: 1, rate: 75});
   assert.deepEqual(result.topErrors, [{cell: 'e2e-v2', count: 1, message: 'Error: boom'}]);
+  assert.deepEqual(result.failingShards, ['flaky-baseline-e2e-v2-s1']);
 });
 
 test('should not count interrupted runs or a sibling test with another title', () => {
