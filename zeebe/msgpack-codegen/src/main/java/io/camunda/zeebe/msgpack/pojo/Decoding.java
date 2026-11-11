@@ -30,12 +30,15 @@ public final class Decoding {
     return copy(reader.getBuffer(), offset, length);
   }
 
-  /** Reads a binary into a buffer the caller owns; the source buffer may be reused afterwards. */
+  /**
+   * Reads a binary as a view on the source buffer, like the BinaryProperty it replaces: nothing is
+   * copied, so the result is only valid while the source buffer is not reused.
+   */
   public static DirectBuffer readBinary(final MsgPackReader reader) {
     final int length = reader.readBinaryLength();
     final int offset = reader.getOffset();
     reader.skipBytes(length);
-    return copy(reader.getBuffer(), offset, length);
+    return new UnsafeBuffer(reader.getBuffer(), offset, length);
   }
 
   /** Reads one complete msgpack value as bytes into a buffer the caller owns. */

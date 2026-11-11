@@ -142,7 +142,7 @@ final class DigestSerdeTest {
   }
 
   @Test
-  void shouldNotReferenceTheBufferItWasReadFrom() {
+  void shouldReadBinaryAsViewOnTheBufferLikeV1() {
     // given
     final var instance = new Digest();
     instance.set(new UnsafeBuffer(DIGEST));
@@ -150,12 +150,14 @@ final class DigestSerdeTest {
     final int length = instance.write(buffer, 0);
     final var read = new Digest();
     read.wrap(buffer, 0, length);
+    final var v1 = new DigestV1();
+    v1.wrap(buffer, 0, length);
 
     // when the buffer is reused
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
-    assertThat(read.get()).isEqualTo(new UnsafeBuffer(DIGEST));
+    assertThat(read.get()).isEqualTo(v1.get());
   }
 
   private static DirectBuffer wrapString(final String s) {

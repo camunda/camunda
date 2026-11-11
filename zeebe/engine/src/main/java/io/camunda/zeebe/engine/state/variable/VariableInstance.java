@@ -17,7 +17,6 @@ import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
@@ -32,7 +31,6 @@ public final class VariableInstance extends MsgpackBufferValue<VariableInstance>
   @MsgpackProperty(binary = true)
   DirectBuffer value = Decoding.EMPTY;
 
-  // the metadata record is not migrated yet, so it is decoded by reference to the input buffer
   final VariableMetadataRecord metadata = new VariableMetadataRecord();
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
@@ -64,13 +62,5 @@ public final class VariableInstance extends MsgpackBufferValue<VariableInstance>
 
   public DirectBuffer getValue() {
     return value;
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    // the nested metadata references the buffer it is read from, so it needs its own copy
-    final byte[] bytes = new byte[length];
-    buffer.getBytes(offset, bytes, 0, length);
-    super.wrap(new UnsafeBuffer(bytes), 0, length);
   }
 }

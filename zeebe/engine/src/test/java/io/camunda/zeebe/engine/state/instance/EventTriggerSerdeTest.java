@@ -177,7 +177,7 @@ final class EventTriggerSerdeTest {
   }
 
   @Test
-  void shouldNotReferenceTheBufferItWasReadFrom() {
+  void shouldReadBinaryAsViewOnTheBufferLikeV1() {
     // given
     final var instance = new EventTrigger();
     instance.setElementId(BufferUtil.wrapString("boundary"));
@@ -186,13 +186,15 @@ final class EventTriggerSerdeTest {
     final int length = instance.write(buffer, 0);
     final var read = new EventTrigger();
     read.wrap(buffer, 0, length);
+    final var v1 = new EventTriggerV1();
+    v1.wrap(buffer, 0, length);
 
     // when the buffer is reused
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
     assertThat(BufferUtil.bufferAsString(read.getElementId())).isEqualTo("boundary");
-    assertThat(read.getVariables()).isEqualTo(new UnsafeBuffer(VARIABLES));
+    assertThat(read.getVariables()).isEqualTo(v1.getVariables());
   }
 
   private static DirectBuffer wrapString(final String s) {

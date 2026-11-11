@@ -148,7 +148,7 @@ final class VariableInstanceSerdeTest {
   }
 
   @Test
-  void shouldNotReferenceTheBufferItWasReadFrom() {
+  void shouldReadBinaryAsViewOnTheBufferLikeV1() {
     // given
     final var instance = new VariableInstance();
     instance.setKey(42L);
@@ -158,12 +158,14 @@ final class VariableInstanceSerdeTest {
     final int length = instance.write(buffer, 0);
     final var read = new VariableInstance();
     read.wrap(buffer, 0, length);
+    final var v1 = new VariableInstanceV1();
+    v1.wrap(buffer, 0, length);
 
     // when the buffer is reused
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
-    assertThat(read.getValue()).isEqualTo(new UnsafeBuffer(VALUE));
+    assertThat(read.getValue()).isEqualTo(v1.getValue());
     assertThat(read.getMetadata().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
   }
 
