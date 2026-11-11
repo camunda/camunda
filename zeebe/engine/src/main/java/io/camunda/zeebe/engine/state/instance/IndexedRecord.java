@@ -8,60 +8,62 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class IndexedRecord extends UnpackedObject implements DbValue {
-  // Static StringValue keys for property names
-  private static final StringValue KEY_KEY = new StringValue("key");
-  private static final StringValue STATE_KEY = new StringValue("state");
-  private static final StringValue PROCESS_INSTANCE_RECORD_KEY =
-      new StringValue("processInstanceRecord");
+/**
+ * Plain data; the msgpack (de)serializers are generated, see {@link MsgpackPojo}. The field names
+ * and their order are the stored format.
+ */
+@MsgpackPojo
+public final class IndexedRecord implements DbValue {
 
-  private final LongProperty keyProp = new LongProperty(KEY_KEY, 0L);
-  private final EnumProperty<ProcessInstanceIntent> stateProp =
-      new EnumProperty<>(STATE_KEY, ProcessInstanceIntent.class);
-  private final ObjectProperty<ProcessInstanceRecord> valueProp =
-      new ObjectProperty<>(PROCESS_INSTANCE_RECORD_KEY, new ProcessInstanceRecord());
+  long key;
+  ProcessInstanceIntent state;
 
-  IndexedRecord() {
-    super(3);
-    declareProperty(keyProp).declareProperty(stateProp).declareProperty(valueProp);
-  }
+  @MsgpackProperty("processInstanceRecord")
+  final ProcessInstanceRecord value = new ProcessInstanceRecord();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  @MsgpackIgnore private IndexedRecordSerializer serializer;
+  @MsgpackIgnore private IndexedRecordDeserializer deserializer;
+
+  IndexedRecord() {}
 
   public IndexedRecord(
       final long key,
       final ProcessInstanceIntent instanceState,
       final ProcessInstanceRecord record) {
     this();
-    keyProp.setValue(key);
-    stateProp.setValue(instanceState);
+    this.key = key;
+    state = instanceState;
     setValue(record);
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key;
   }
 
   public IndexedRecord setKey(final long key) {
-    keyProp.setValue(key);
+    this.key = key;
     return this;
   }
 
   public ProcessInstanceIntent getState() {
-    return stateProp.getValue();
+    return state;
   }
 
   public IndexedRecord setState(final ProcessInstanceIntent state) {
-    stateProp.setValue(state);
+    this.state = state;
     return this;
   }
 
@@ -70,7 +72,7 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
   }
 
   public ProcessInstanceRecord getValue() {
-    return valueProp.getValue();
+    return value;
   }
 
   public IndexedRecord setValue(final ProcessInstanceRecord value) {
@@ -79,16 +81,37 @@ public final class IndexedRecord extends UnpackedObject implements DbValue {
     valueBuffer.wrap(new byte[encodedLength]);
 
     value.write(valueBuffer, 0);
-    valueProp.getValue().wrap(valueBuffer, 0, encodedLength);
+    this.value.wrap(valueBuffer, 0, encodedLength);
 
     return this;
   }
 
+  // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
+  @Override
+  public int getLength() {
+    return serializer().getLength(this);
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return serializer().serialize(this, buffer, offset);
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    // the nested record references the buffer it is read from, so it needs its own copy
     final byte[] bytes = new byte[length];
-    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
     buffer.getBytes(offset, bytes, 0, length);
-    super.wrap(mutableBuffer, 0, length);
+    if (deserializer == null) {
+      deserializer = new IndexedRecordDeserializer();
+    }
+    deserializer.deserialize(new UnsafeBuffer(bytes), 0, length, this);
+  }
+
+  private IndexedRecordSerializer serializer() {
+    if (serializer == null) {
+      serializer = new IndexedRecordSerializer();
+    }
+    return serializer;
   }
 }

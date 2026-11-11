@@ -9,62 +9,98 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.MutableDirectBuffer;
 
-public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack (de)serializers are generated, see {@link MsgpackPojo}. The field names
+ * and their order are the stored format.
+ */
+@MsgpackPojo
+public final class TaskListenerIndicesRecord implements DbValue {
 
-  private final IntegerProperty creatingTaskListenerIndexProp =
-      new IntegerProperty("creatingTaskListenerIndex", 0);
-  private final IntegerProperty assigningTaskListenerIndexProp =
-      new IntegerProperty("assigningTaskListenerIndex", 0);
-  private final IntegerProperty updatingTaskListenerIndexProp =
-      new IntegerProperty("updatingTaskListenerIndex", 0);
-  private final IntegerProperty completingTaskListenerIndexProp =
-      new IntegerProperty("completingTaskListenerIndex", 0);
-  private final IntegerProperty cancelingTaskListenerIndexProp =
-      new IntegerProperty("cancelingTaskListenerIndex", 0);
+  int creatingTaskListenerIndex;
+  int assigningTaskListenerIndex;
+  int updatingTaskListenerIndex;
+  int completingTaskListenerIndex;
+  int cancelingTaskListenerIndex;
 
-  TaskListenerIndicesRecord() {
-    super(5);
-    declareProperty(creatingTaskListenerIndexProp)
-        .declareProperty(assigningTaskListenerIndexProp)
-        .declareProperty(updatingTaskListenerIndexProp)
-        .declareProperty(completingTaskListenerIndexProp)
-        .declareProperty(cancelingTaskListenerIndexProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  @MsgpackIgnore private TaskListenerIndicesRecordSerializer serializer;
+  @MsgpackIgnore private TaskListenerIndicesRecordDeserializer deserializer;
+
+  TaskListenerIndicesRecord() {}
 
   public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    return getTaskListenerIndexProp(eventType).getValue();
+    return switch (eventType) {
+      case creating -> creatingTaskListenerIndex;
+      case assigning -> assigningTaskListenerIndex;
+      case updating -> updatingTaskListenerIndex;
+      case completing -> completingTaskListenerIndex;
+      case canceling -> cancelingTaskListenerIndex;
+      default -> throw unsupported(eventType);
+    };
   }
 
   public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    getTaskListenerIndexProp(eventType).increment();
+    setTaskListenerIndex(eventType, getTaskListenerIndex(eventType) + 1);
   }
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    getTaskListenerIndexProp(eventType).reset();
+    setTaskListenerIndex(eventType, 0);
+  }
+
+  public void reset() {
+    creatingTaskListenerIndex = 0;
+    assigningTaskListenerIndex = 0;
+    updatingTaskListenerIndex = 0;
+    completingTaskListenerIndex = 0;
+    cancelingTaskListenerIndex = 0;
+  }
+
+  // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
+  @Override
+  public int getLength() {
+    return serializer().getLength(this);
+  }
+
+  @Override
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return serializer().serialize(this, buffer, offset);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    final byte[] bytes = new byte[length];
-    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
-    buffer.getBytes(offset, bytes, 0, length);
-    super.wrap(mutableBuffer, 0, length);
+    if (deserializer == null) {
+      deserializer = new TaskListenerIndicesRecordDeserializer();
+    }
+    deserializer.deserialize(buffer, offset, length, this);
   }
 
-  private IntegerProperty getTaskListenerIndexProp(final ZeebeTaskListenerEventType eventType) {
-    return switch (eventType) {
-      case creating -> creatingTaskListenerIndexProp;
-      case assigning -> assigningTaskListenerIndexProp;
-      case updating -> updatingTaskListenerIndexProp;
-      case completing -> completingTaskListenerIndexProp;
-      case canceling -> cancelingTaskListenerIndexProp;
-      default ->
-          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
-    };
+  private void setTaskListenerIndex(final ZeebeTaskListenerEventType eventType, final int value) {
+    switch (eventType) {
+      case creating -> creatingTaskListenerIndex = value;
+      case assigning -> assigningTaskListenerIndex = value;
+      case updating -> updatingTaskListenerIndex = value;
+      case completing -> completingTaskListenerIndex = value;
+      case canceling -> cancelingTaskListenerIndex = value;
+      default -> throw unsupported(eventType);
+    }
+  }
+
+  private TaskListenerIndicesRecordSerializer serializer() {
+    if (serializer == null) {
+      serializer = new TaskListenerIndicesRecordSerializer();
+    }
+    return serializer;
+  }
+
+  private static IllegalArgumentException unsupported(final ZeebeTaskListenerEventType eventType) {
+    return new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
   }
 }

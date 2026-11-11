@@ -122,6 +122,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-codegen</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
@@ -350,6 +355,27 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <!-- generates the msgpack serializers of the @MsgpackPojo state classes. The parent
+                   configures explicit processor paths, so processors on the classpath are not
+                   discovered automatically. -->
+              <annotationProcessorPaths combine.children="append">
+                <path>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-msgpack-codegen</artifactId>
+                  <version>${project.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
