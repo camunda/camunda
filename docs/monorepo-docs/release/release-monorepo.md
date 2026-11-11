@@ -226,6 +226,10 @@ Calling and integrating with GitHub Actions workflows:
   * Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA
   * Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager
 
+Scheduling releases:
+
+* When releases are in a rush (e.g. several patch releases in a row), aim to start the release builds in the **morning, CET**. GitHub experiences fewer outages during that time, which reduces the chance of failed or retried release workflows.
+
 ## Change Management & Testing
 
 Changes to the release process are done in these steps:
