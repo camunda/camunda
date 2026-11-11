@@ -51,7 +51,8 @@ public class RdbmsEngineStateConfiguration {
     final var dataSource = createDataSource(cfg, meterRegistry);
     try {
       migrateSchema(dataSource, resourceLoader);
-      return new RdbmsEngineStatePool(RdbmsEngineStateResources.create(dataSource, Boolean.getBoolean(WRITE_BEHIND_PROPERTY)));
+      return new RdbmsEngineStatePool(
+          RdbmsEngineStateResources.create(dataSource, Boolean.getBoolean(WRITE_BEHIND_PROPERTY)));
     } catch (final LiquibaseException | RuntimeException e) {
       dataSource.close();
       throw e;
