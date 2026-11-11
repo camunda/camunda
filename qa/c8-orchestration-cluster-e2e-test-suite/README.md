@@ -20,6 +20,7 @@ Follow the steps below to get started and run the tests locally.
   - [C8 SM Requirements (Self-Managed)](#c8-sm-requirements-self-managed)
 - [Test Suite Structure (Page Object Model)](#test-suite-structure-page-object-model)
 - [GitHub Actions for Testing](#github-actions-for-testing)
+  - [Automatic PR Check](#automatic-pr-check)
   - [Running the On-Demand Workflow](#running-the-on-demand-workflow)
   - [Automated Nightly Test Runs](#automated-nightly-test-runs)
   - [CI Test Results](#ci-test-results)
@@ -214,6 +215,15 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ## GitHub Actions for Testing
 
+### Automatic PR Check
+
+When a pull request to `main` or a `stable/*` branch changes non-Markdown files under
+`qa/c8-orchestration-cluster-e2e-test-suite/`,
+`c8-orchestration-cluster-e2e-tests-pr.yml` runs the same matrix as the on-demand workflow for the
+PR's base branch. It is **not** a required check: a red result does not block the merge, but any
+failure must be reviewed and documented in the PR description, the same as for an on-demand run.
+It does not run for pull requests from forks; use the on-demand workflow there.
+
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
@@ -250,9 +260,9 @@ We welcome contributions! To contribute:
 - Reviewers must include someone from the Test Automation Team and a product team developer
 
 > [!IMPORTANT]
-> **Do not request a review until the on-demand workflow has been run and the results have been verified.**
+> **Do not request a review until the suite has run and the results have been verified.**
 > Before assigning reviewers to your PR:
-> 1. Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch.
+> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch instead.
 > 2. Wait for the workflow to complete.
 > 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
 > 4. Only then request a review.

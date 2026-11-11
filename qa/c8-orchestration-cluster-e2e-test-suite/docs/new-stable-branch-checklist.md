@@ -30,16 +30,19 @@ previous stable version (e.g. `8.10`).
    ascending-version order, between `<PREV>` and `main`. Skip this and the new nightlies run
    and post to Slack individually, but stay absent from the daily report.
 
-3. **Route the new branch in the on-demand workflow**
-   (`.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml`):
+3. **Route the new branch in the on-demand workflow and its test matrix**
+   (`.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml` for base detection,
+   `.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml` for the matrix and gates
+   below; the reusable workflow is shared with the PR check, which passes the PR's base branch):
 
-   - Base-branch detection: add `stable/<X.Y>` to both the `git fetch origin ...` line and the
-     `for candidate in ...` loop that resolves a base branch from an arbitrary input branch.
+   - Base-branch detection (on-demand workflow): add `stable/<X.Y>` to both the
+     `git fetch origin ...` line and the `for candidate in ...` loop that resolves a base branch
+     from an arbitrary input branch.
    - RDBMS gate (`c8-orchestration-cluster-api-tests-rdbms` job's `if:`): this is still an
      allow-list (`contains(fromJSON('["stable/8.9","stable/8.10","main"]'), ...)`), not yet
      converted to an exclusion-list like the release workflow's equivalent (see below). Add the
      new version here, or, better, convert it to
-     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-branch.outputs.base)`
+     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), inputs.base)`
      so it stops needing this edit on every future cut.
    - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): as of the 8.10 cut
      this still only lists `stable/8.9 || main`. It does not include `stable/8.10`, so 8.10's

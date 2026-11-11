@@ -1,0 +1,50 @@
+# description: Runs the C8 Orchestration Cluster E2E test suite on pull requests that change it. Non-blocking: not part of the Unified CI and not a required status check.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster E2E Tests PR Check
+
+# The suite's own test code used to be validated only by the manual on-demand
+# run, which was often skipped, so PRs with red suite tests got merged
+# (camunda/team-test-automation#188). This runs the same matrix automatically.
+# It stays outside ci.yml: the suite needs ~45 min per job, beyond the Unified
+# CI 30-minute budget, so it is visible on the PR but never blocks a merge.
+on:
+  pull_request:
+    # The reusable matrix is sized by base branch and only knows main and
+    # stable/X.Y; release-* branches are irregularly named and validated by
+    # the release workflow instead.
+    branches:
+      - main
+      - "stable/**"
+    paths:
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+      - "!qa/c8-orchestration-cluster-e2e-test-suite/**/*.md"
+      - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml"
+      - ".github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml"
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.ref) }}
+
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: "@camunda/test-automation-team"
+  TEST_PRODUCT: Orchestration Cluster
+  TEST_TYPE: E2E
+
+jobs:
+  tests:
+    # Fork PRs get no Vault secrets, which the H2/RDBMS job's build needs; run
+    # the on-demand workflow for those instead.
+    if: github.event.pull_request.head.repo.fork != true
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+      base: ${{ github.base_ref }}
