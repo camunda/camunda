@@ -119,6 +119,18 @@ final class JobWorkerMetricsTest {
    * The worker asks the scheduler whether it is still running when the executor refuses a job.
    * {@link DeterministicScheduler} answers both questions by throwing.
    */
+  private static final class AlwaysRunningDeterministicScheduler extends DeterministicScheduler {
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+
+    @Override
+    public boolean isTerminated() {
+      return false;
+    }
+  }
+
   /** Handler executors that take no job at all, one for each way of turning a job down. */
   private enum TakesNoJob {
     REFUSES(
@@ -134,18 +146,6 @@ final class JobWorkerMetricsTest {
 
     TakesNoJob(final JobExecutor executor) {
       this.executor = executor;
-    }
-  }
-
-  private static final class AlwaysRunningDeterministicScheduler extends DeterministicScheduler {
-    @Override
-    public boolean isShutdown() {
-      return false;
-    }
-
-    @Override
-    public boolean isTerminated() {
-      return false;
     }
   }
 
