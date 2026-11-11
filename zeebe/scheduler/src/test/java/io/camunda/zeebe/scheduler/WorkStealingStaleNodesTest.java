@@ -21,7 +21,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -320,8 +323,12 @@ final class WorkStealingStaleNodesTest {
    * End-to-end: block one IO thread with a long job while an external thread keeps waking up other
    * IO-bound actors (similar to exporter wakeups coming from raft / processing threads). Compares
    * CPU used by the IO thread group with and without the blocked thread.
+   *
+   * <p>Tagged as performance: it takes ~30s and its CPU assertions are sensitive to other tests
+   * running concurrently.
    */
   @Test
+  @Tag("performance")
   void shouldNotBurnCpuOnIdleIoThreadsWhileOneIoThreadIsBlocked() throws Exception {
     assumeTrue(THREAD_MX.isThreadCpuTimeSupported(), "thread CPU time is not supported");
     if (!THREAD_MX.isThreadCpuTimeEnabled()) {
@@ -334,17 +341,14 @@ final class WorkStealingStaleNodesTest {
     }
 
     System.out.println();
-    System.out.println("ioThreads | baseline cores | blocked cores | max stale nodes in a queue");
+    System.out.println("ioThreads | baseline cores | blocked cores | max nodes in a queue");
     for (final var r : results) {
       System.out.printf(
           "%9d | %14.2f | %13.2f | %,d%n",
-          r.ioThreads, r.baselineCores, r.blockedCores, r.maxStaleNodes);
+          r.ioThreads, r.baselineCores, r.blockedCores, r.maxNodes);
     }
 
     for (final var r : results) {
-      assertThat(r.maxStaleNodes)
-          .describedAs("stale nodes, %d IO threads", r.ioThreads)
-          .isLessThan(1_000);
       // without the fix, the other ioThreads - 1 threads each spin at ~1 core
       assertThat(r.blockedCores)
           .describedAs("cores used while one of %d IO threads is blocked", r.ioThreads)
@@ -360,81 +364,109 @@ final class WorkStealingStaleNodesTest {
             .setIoBoundActorThreadCount(ioThreads);
     final var scheduler = builder.build();
     scheduler.start();
+    try {
+      final var targets = new ArrayList<PingActor>();
+      for (int i = 0; i < 4; i++) {
+        final var target = new PingActor();
+        scheduler.submitActor(target, SchedulingHints.ioBound()).join(5, TimeUnit.SECONDS);
+        targets.add(target);
+      }
+      final var blocker = new BlockingActor();
+      scheduler.submitActor(blocker, SchedulingHints.ioBound()).join(5, TimeUnit.SECONDS);
 
-    final var targets = new ArrayList<PingActor>();
-    for (int i = 0; i < 4; i++) {
-      final var target = new PingActor();
-      scheduler.submitActor(target, SchedulingHints.ioBound()).join();
-      targets.add(target);
-    }
-    final var blocker = new BlockingActor();
-    scheduler.submitActor(blocker, SchedulingHints.ioBound()).join();
+      // external producer: wakes up IO actors from a non-actor thread, so every wakeup is appended
+      // to the queue of a random IO thread
+      final var running = new AtomicBoolean(true);
+      final var feederError = new AtomicReference<Throwable>();
+      final var feeder =
+          Thread.ofPlatform()
+              .name("external-feeder")
+              .start(
+                  () -> {
+                    try {
+                      while (running.get()) {
+                        targets.forEach(PingActor::ping);
+                        LockSupport.parkNanos(50_000);
+                      }
+                    } catch (final Throwable t) {
+                      feederError.set(t);
+                    }
+                  });
 
-    // external producer: wakes up IO actors from a non-actor thread, so every wakeup is appended
-    // to the queue of a random IO thread
-    final var running = new AtomicBoolean(true);
-    final var feeder =
-        Thread.ofPlatform()
-            .name("external-feeder")
-            .start(
+      final var release = new CountDownLatch(1);
+      try {
+        // only the IO threads of this scheduler; other test classes may run schedulers in parallel
+        final var ioThreadIds = ioThreadIds(builder.getIoBoundActorThreads());
+        final var queues = ioQueues(builder.getIoBoundActorThreads());
+
+        // baseline: same external load, nothing blocked
+        Thread.sleep(500);
+        final long baselineCpu = measureCpu(ioThreadIds, window, () -> {});
+
+        // blocked: one IO thread runs a job that stays blocked until released
+        final var blockStarted = new CountDownLatch(1);
+        blocker.block(blockStarted, release);
+        assertThat(blockStarted.await(5, TimeUnit.SECONDS))
+            .describedAs("blocking job started")
+            .isTrue();
+        final long blockerTid = blocker.blockedThreadId.get();
+        final long[] pingsBefore = targets.stream().mapToLong(PingActor::pings).toArray();
+        final var maxNodes = new AtomicLong();
+        final long blockedCpu =
+            measureCpu(
+                ioThreadIds.stream().filter(id -> id != blockerTid).toList(),
+                window,
                 () -> {
-                  while (running.get()) {
-                    targets.forEach(PingActor::ping);
-                    LockSupport.parkNanos(50_000);
+                  for (final var q : queues) {
+                    maxNodes.accumulateAndGet(countNodes(q), Math::max);
                   }
                 });
 
-    final var release = new CountDownLatch(1);
-    try {
-      // only the IO threads of this scheduler; other test classes may run schedulers in parallel
-      final var ioThreadIds = ioThreadIds(builder.getIoBoundActorThreads());
-      final var queues = ioQueues(builder.getIoBoundActorThreads());
+        // the owner stayed blocked for the whole window, and stealing kept every actor running: a
+        // wakeup that lands in the blocked thread's queue only runs if it is stolen
+        assertThat(blocker.isBlocked()).describedAs("blocking job still running").isTrue();
+        for (int i = 0; i < targets.size(); i++) {
+          assertThat(targets.get(i).pings())
+              .describedAs("jobs of actor %d run while an IO thread is blocked", i)
+              .isGreaterThan(pingsBefore[i] + 100);
+        }
 
-      // baseline: same external load, nothing blocked
-      Thread.sleep(500);
-      final long baselineCpu = measureCpu(ioThreadIds, window, () -> {});
+        // once the load stops, idle thieves fail to steal and unlink the stale nodes of the
+        // blocked queue; only a short run may be left in place
+        stopFeeder(running, feeder, feederError);
+        Awaitility.await("stale nodes unlinked")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(
+                () -> {
+                  for (final var q : queues) {
+                    assertThat(countNodes(q))
+                        .isLessThanOrEqualTo(ActorTaskQueue.MIN_STALE_NODES_TO_SKIP + 2);
+                  }
+                });
+        assertThat(blocker.isBlocked()).describedAs("blocking job still running").isTrue();
 
-      // blocked: one IO thread runs a job that stays blocked until released
-      final var blockStarted = new CountDownLatch(1);
-      blocker.block(blockStarted, release);
-      assertThat(blockStarted.await(5, TimeUnit.SECONDS))
-          .describedAs("blocking job started")
-          .isTrue();
-      final long blockerTid = blocker.blockedThreadId.get();
-      final long[] pingsBefore = targets.stream().mapToLong(PingActor::pings).toArray();
-      final var maxStale = new AtomicLong();
-      final long blockedCpu =
-          measureCpu(
-              ioThreadIds.stream().filter(id -> id != blockerTid).toList(),
-              window,
-              () -> {
-                for (final var q : queues) {
-                  maxStale.accumulateAndGet(countNodes(q), Math::max);
-                }
-              });
-
-      // the owner stayed blocked for the whole window, and stealing kept every actor running: a
-      // wakeup that lands in the blocked thread's queue only runs if it is stolen
-      assertThat(blocker.isBlocked()).describedAs("blocking job still running").isTrue();
-      for (int i = 0; i < targets.size(); i++) {
-        assertThat(targets.get(i).pings())
-            .describedAs("jobs of actor %d run while an IO thread is blocked", i)
-            .isGreaterThan(pingsBefore[i] + 100);
+        return new Result(
+            ioThreads,
+            baselineCpu / (double) window.toNanos(),
+            blockedCpu / (double) window.toNanos(),
+            maxNodes.get());
+      } finally {
+        // let the blocked job finish so the scheduler can stop
+        release.countDown();
+        stopFeeder(running, feeder, feederError);
+        blocker.awaitUnblocked();
       }
-
-      return new Result(
-          ioThreads,
-          baselineCpu / (double) window.toNanos(),
-          blockedCpu / (double) window.toNanos(),
-          maxStale.get());
     } finally {
-      running.set(false);
-      feeder.join();
-      // let the blocked job finish so the scheduler can stop
-      release.countDown();
-      blocker.awaitUnblocked();
       scheduler.stop().get(30, TimeUnit.SECONDS);
     }
+  }
+
+  private static void stopFeeder(
+      final AtomicBoolean running, final Thread feeder, final AtomicReference<Throwable> error)
+      throws InterruptedException {
+    running.set(false);
+    assertThat(feeder.join(Duration.ofSeconds(5))).describedAs("feeder stopped").isTrue();
+    assertThat(error.get()).describedAs("feeder failure").isNull();
   }
 
   /** Sums the CPU time of the given threads over the window, sampling while waiting. */
@@ -481,8 +513,7 @@ final class WorkStealingStaleNodesTest {
     return count;
   }
 
-  private record Result(
-      int ioThreads, double baselineCores, double blockedCores, long maxStaleNodes) {}
+  private record Result(int ioThreads, double baselineCores, double blockedCores, long maxNodes) {}
 
   private static final class PingActor extends Actor {
     private final AtomicLong pings = new AtomicLong();

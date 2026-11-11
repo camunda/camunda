@@ -32,6 +32,7 @@ final class ActorTaskQueueConcurrencyTest {
   private static final int THIEVES = 6;
   private static final Duration ROUND = Duration.ofMillis(300);
   private static final Duration DRAIN_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration JOIN_TIMEOUT = Duration.ofSeconds(10);
   private static final int[] TASK_COUNTS = {4, 64, 1024};
 
   @Test
@@ -126,20 +127,21 @@ final class ActorTaskQueueConcurrencyTest {
                       })));
     }
 
-    Thread.sleep(ROUND.toMillis());
-    producing.set(false);
-    for (final var producer : producers) {
-      producer.join();
-    }
+    try {
+      Thread.sleep(ROUND.toMillis());
+      producing.set(false);
+      joinAll(producers);
 
-    // every appended task must come back; a hidden claimable node would leave it in the queue
-    final long deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
-    while (ready.size() < taskCount && error.get() == null && System.nanoTime() < deadline) {
-      Thread.sleep(1);
-    }
-    consuming.set(false);
-    for (final var consumer : consumers) {
-      consumer.join();
+      // every appended task must come back; a hidden claimable node would leave it in the queue
+      final long deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
+      while (ready.size() < taskCount && error.get() == null && System.nanoTime() < deadline) {
+        Thread.sleep(1);
+      }
+    } finally {
+      producing.set(false);
+      consuming.set(false);
+      joinAll(producers);
+      joinAll(consumers);
     }
 
     boolean drained = false;
@@ -152,6 +154,12 @@ final class ActorTaskQueueConcurrencyTest {
     }
 
     return new Result(error.get(), ready.size(), claims.get(), drained);
+  }
+
+  private static void joinAll(final List<Thread> threads) throws InterruptedException {
+    for (final var thread : threads) {
+      assertThat(thread.join(JOIN_TIMEOUT)).describedAs("%s stopped", thread.getName()).isTrue();
+    }
   }
 
   /** A failed queue operation only ends its own thread; record it so the round fails. */
