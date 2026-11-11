@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {Suspense, useState} from 'react';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {Pencil, Trash2} from '@camunda/design-system/icons';
@@ -28,8 +28,9 @@ import {
 import type {Role} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DeleteRoleModal} from '#/admin/modules/roles/DeleteRoleModal';
 import {EditRoleModal} from '#/admin/modules/roles/EditRoleModal';
-import {RoleMembersTab} from '#/admin/modules/roles/RoleMembersTab';
-import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/roles/members';
+import {RoleTabContent} from '#/admin/modules/roles/RoleTabContent';
+import type {RoleDetailSearch, RoleDetailSearchChange} from '#/admin/modules/roles/detailSearchSchema';
+import {getActiveMemberKind, getVisibleMemberKinds, type MemberKind} from '#/admin/modules/roles/members';
 
 type ModalState = {type: 'edit'} | {type: 'delete'} | null;
 
@@ -39,8 +40,8 @@ type AdminRoleDetailPageProps = {
 	canManageMappingRules: boolean;
 	isCamundaGroupsEnabled: boolean;
 	defaultRoleIds: string[];
-	activeTab: MemberKind;
-	onTabChange: (tab: MemberKind) => void;
+	search: RoleDetailSearch;
+	onSearchChange: RoleDetailSearchChange;
 	onDeleted: () => void;
 };
 
@@ -50,21 +51,16 @@ const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 	canManageMappingRules,
 	isCamundaGroupsEnabled,
 	defaultRoleIds,
-	activeTab,
-	onTabChange,
+	search,
+	onSearchChange,
 	onDeleted,
 }) => {
 	const {t} = useTranslation();
 	const [modalState, setModalState] = useState<ModalState>(null);
 	const isDefaultRole = defaultRoleIds.includes(role.roleId);
 	const closeModal = () => setModalState(null);
-	const visibleKinds = MEMBER_KINDS.filter((kind) => {
-		if (kind === 'mappingRules') {
-			return canManageMappingRules;
-		}
-		return kind !== 'clients' || isOidc;
-	});
-	const selectedTab = visibleKinds.includes(activeTab) ? activeTab : 'users';
+	const visibleKinds = getVisibleMemberKinds({isOidc, canManageMappingRules});
+	const selectedTab = getActiveMemberKind(visibleKinds, search.tab);
 
 	return (
 		<PageLayout id="main-content" tabIndex={-1}>
@@ -103,7 +99,10 @@ const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 				/>
 				{role.description ? <p className="text-sm leading-5 text-muted-foreground">{role.description}</p> : null}
 
-				<Tabs value={selectedTab} onValueChange={(value) => onTabChange(value as MemberKind)}>
+				<Tabs
+					value={selectedTab}
+					onValueChange={(value) => onSearchChange({tab: value as MemberKind, page: undefined, pageSize: undefined})}
+				>
 					<TabsList aria-label={t('admin.roles.members.tabsLabel')}>
 						{visibleKinds.map((kind) => (
 							<TabsTrigger key={kind} value={kind}>
@@ -112,13 +111,17 @@ const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 						))}
 					</TabsList>
 					<TabsContent value={selectedTab} className="pt-4">
-						<RoleMembersTab
-							key={selectedTab}
-							roleId={role.roleId}
-							kind={selectedTab}
-							isOidc={isOidc}
-							isCamundaGroupsEnabled={isCamundaGroupsEnabled}
-						/>
+						<Suspense fallback={null}>
+							<RoleTabContent
+								key={selectedTab}
+								roleId={role.roleId}
+								kind={selectedTab}
+								isOidc={isOidc}
+								isCamundaGroupsEnabled={isCamundaGroupsEnabled}
+								search={search}
+								onSearchChange={onSearchChange}
+							/>
+						</Suspense>
 					</TabsContent>
 				</Tabs>
 			</div>

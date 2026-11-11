@@ -261,7 +261,6 @@
 					"assignedMany": "{{count}} members assigned",
 					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
-					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
 					"users": {
 						"tab": "Users",

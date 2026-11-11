@@ -437,29 +437,6 @@ test.describe('Admin role detail', () => {
 		await expect(adminRoleDetailPage.cell('jane.doe')).toBeHidden();
 	});
 
-	test('should not allow removing a user while the next page is loading', async ({adminRoleDetailPage, network}) => {
-		network.use(
-			mockQueryUsersByRoleEndpoint({
-				successResponse: HttpResponse.json(createMembersPage([{username: 'jane.doe'}, {username: 'john.smith'}], 25)),
-			}),
-		);
-
-		await adminRoleDetailPage.goto('developers');
-		await expect(adminRoleDetailPage.button('Remove user jane.doe')).toBeEnabled();
-
-		network.use(
-			mockQueryUsersByRoleEndpoint({
-				successResponse: HttpResponse.json(createMembersPage([{username: 'page.two'}], 25)),
-				delay: 1500,
-				once: true,
-			}),
-		);
-		await adminRoleDetailPage.nextPageButton.click();
-
-		await expect(adminRoleDetailPage.button('Remove user jane.doe')).toBeDisabled();
-		await expect(adminRoleDetailPage.button('Remove user page.two')).toBeEnabled();
-	});
-
 	test('should step back a page when the only member on the last page is removed', async ({
 		adminRoleDetailPage,
 		network,

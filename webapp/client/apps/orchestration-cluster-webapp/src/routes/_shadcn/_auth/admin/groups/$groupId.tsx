@@ -9,10 +9,14 @@
 import {useCallback} from 'react';
 import {createFileRoute, notFound, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
-import {z} from 'zod';
 import {PageLayout} from '@camunda/design-system';
 import {assertAdminSectionAvailable, canManageMappingRuleMembers, getAdminSectionConfig} from '#/admin/adminSections';
-import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/groups/members';
+import {
+	getGroupMembersRequestBody,
+	groupDetailSearchSchema,
+	type GroupDetailSearch,
+} from '#/admin/modules/groups/detailSearchSchema';
+import {getActiveMemberKind, getMembersQuery, getVisibleMemberKinds} from '#/admin/modules/groups/members';
 import {AdminGroupDetailPage} from '#/admin/pages/AdminGroupDetailPage';
 import {ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
@@ -22,13 +26,25 @@ import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPag
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
-	validateSearch: z.object({tab: z.enum(MEMBER_KINDS).optional()}),
+	validateSearch: groupDetailSearchSchema,
 	beforeLoad: () => {
 		assertAdminSectionAvailable('groups');
 	},
-	loader: async ({context: {queryClient}, params: {groupId}}) => {
+	loaderDeps: ({search}) => ({search}),
+	loader: async ({context: {queryClient}, params: {groupId}, deps: {search}}) => {
 		try {
-			await Promise.all([queryClient.query(queries.getGroup(groupId)), queryClient.query(queries.adminClientConfig())]);
+			await Promise.all([
+				queryClient.query(queries.getGroup(groupId)),
+				queryClient.query(queries.adminClientConfig()).then((clientConfig) => {
+					const sectionConfig = getAdminSectionConfig();
+					const visibleKinds = getVisibleMemberKinds({
+						isOidc: sectionConfig.isOidc,
+						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
+					});
+					const kind = getActiveMemberKind(visibleKinds, search.tab);
+					return queryClient.query(getMembersQuery(kind, groupId, getGroupMembersRequestBody(search)));
+				}),
+			]);
 		} catch (error) {
 			const result = requestErrorSchema.safeParse(error);
 
@@ -58,16 +74,21 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 	component: function AdminGroupDetailRoute() {
 		const {groupId} = Route.useParams();
 		const navigate = useNavigate();
-		const {tab} = Route.useSearch();
+		const search = Route.useSearch();
 		const {data: group} = useSuspenseQuery(queries.getGroup(groupId));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 		const sectionConfig = getAdminSectionConfig();
 
-		const handleTabChange = useCallback(
-			(nextTab: MemberKind) => {
-				navigate({to: '.', search: {tab: nextTab === 'users' ? undefined : nextTab}, replace: true});
+		const handleSearchChange = useCallback(
+			(next: Partial<GroupDetailSearch>, options?: {replace?: boolean}) => {
+				navigate({
+					to: '/admin/groups/$groupId',
+					params: {groupId},
+					search: {...search, ...next},
+					replace: options?.replace ?? true,
+				});
 			},
-			[navigate],
+			[navigate, search, groupId],
 		);
 
 		const handleDeleted = useCallback(() => {
@@ -79,8 +100,8 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 				group={group}
 				isOidc={sectionConfig.isOidc}
 				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
-				activeTab={tab ?? 'users'}
-				onTabChange={handleTabChange}
+				search={search}
+				onSearchChange={handleSearchChange}
 				onDeleted={handleDeleted}
 			/>
 		);

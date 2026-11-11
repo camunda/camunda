@@ -261,7 +261,6 @@
 					"assignedMany": "{{count}} Mitglieder zugewiesen",
 					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
-					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
 					"users": {
 						"tab": "Benutzer",

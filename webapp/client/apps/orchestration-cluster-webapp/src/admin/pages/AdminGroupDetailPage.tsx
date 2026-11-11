@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {Suspense, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -29,8 +29,14 @@ import {
 import type {Group} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DeleteGroupModal} from '#/admin/modules/groups/DeleteGroupModal';
 import {EditGroupModal} from '#/admin/modules/groups/EditGroupModal';
-import {GroupMembersTab} from '#/admin/modules/groups/GroupMembersTab';
-import {getMembersQuery, MEMBER_KINDS, type MemberKind} from '#/admin/modules/groups/members';
+import {GroupTabContent} from '#/admin/modules/groups/GroupTabContent';
+import type {GroupDetailSearch, GroupDetailSearchChange} from '#/admin/modules/groups/detailSearchSchema';
+import {
+	getActiveMemberKind,
+	getMembersQuery,
+	getVisibleMemberKinds,
+	type MemberKind,
+} from '#/admin/modules/groups/members';
 import {DEFAULT_PAGE_SIZE} from '#/admin/modules/groups/searchSchema';
 
 type ModalState = {type: 'edit'} | {type: 'delete'} | null;
@@ -39,8 +45,8 @@ type AdminGroupDetailPageProps = {
 	group: Group;
 	isOidc: boolean;
 	canManageMappingRules: boolean;
-	activeTab: MemberKind;
-	onTabChange: (tab: MemberKind) => void;
+	search: GroupDetailSearch;
+	onSearchChange: GroupDetailSearchChange;
 	onDeleted: () => void;
 };
 
@@ -48,21 +54,16 @@ const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 	group,
 	isOidc,
 	canManageMappingRules,
-	activeTab,
-	onTabChange,
+	search,
+	onSearchChange,
 	onDeleted,
 }) => {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 	const [modalState, setModalState] = useState<ModalState>(null);
 	const closeModal = () => setModalState(null);
-	const visibleKinds = MEMBER_KINDS.filter((kind) => {
-		if (kind === 'mappingRules') {
-			return canManageMappingRules;
-		}
-		return kind !== 'clients' || isOidc;
-	});
-	const selectedTab = visibleKinds.includes(activeTab) ? activeTab : 'users';
+	const visibleKinds = getVisibleMemberKinds({isOidc, canManageMappingRules});
+	const selectedTab = getActiveMemberKind(visibleKinds, search.tab);
 	const prefetchTab = (kind: MemberKind) => {
 		queryClient
 			.query(getMembersQuery(kind, group.groupId, {page: {from: 0, limit: DEFAULT_PAGE_SIZE}}))
@@ -104,7 +105,10 @@ const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 				/>
 				{group.description ? <p className="text-sm leading-5 text-muted-foreground">{group.description}</p> : null}
 
-				<Tabs value={selectedTab} onValueChange={(value) => onTabChange(value as MemberKind)}>
+				<Tabs
+					value={selectedTab}
+					onValueChange={(value) => onSearchChange({tab: value as MemberKind, page: undefined, pageSize: undefined})}
+				>
 					<TabsList aria-label={t('admin.groups.members.tabsLabel')}>
 						{visibleKinds.map((kind) => (
 							<TabsTrigger
@@ -118,7 +122,16 @@ const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 						))}
 					</TabsList>
 					<TabsContent value={selectedTab} className="pt-4">
-						<GroupMembersTab key={selectedTab} groupId={group.groupId} kind={selectedTab} isOidc={isOidc} />
+						<Suspense fallback={null}>
+							<GroupTabContent
+								key={selectedTab}
+								groupId={group.groupId}
+								kind={selectedTab}
+								isOidc={isOidc}
+								search={search}
+								onSearchChange={onSearchChange}
+							/>
+						</Suspense>
 					</TabsContent>
 				</Tabs>
 			</div>
