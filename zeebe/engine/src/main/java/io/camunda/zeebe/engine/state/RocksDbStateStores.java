@@ -43,7 +43,8 @@ import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
-import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
+import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsStore;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
@@ -362,6 +363,7 @@ public class RocksDbStateStores implements ProcessingStateStores {
   @Override
   public MutableJobMetricsState jobMetricsState(
       final InstantSource clock, final EngineConfiguration config) {
-    return new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
+    return new JobMetricsStateImpl(
+        new DbJobMetricsStore(zeebeDb, transactionContext), clock, config);
   }
 }

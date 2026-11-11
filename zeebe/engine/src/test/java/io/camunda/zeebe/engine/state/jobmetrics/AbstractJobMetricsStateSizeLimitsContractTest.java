@@ -7,39 +7,26 @@
  */
 package io.camunda.zeebe.engine.state.jobmetrics;
 
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_SIZE_LIMITS_EXCEEDED;
+import static io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl.META_SIZE_LIMITS_EXCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class DbJobMetricsStateSizeLimitsTest {
+/**
+ * Behaviour every {@link MutableJobMetricsState} implementation must share when the size limits of
+ * a batch are reached. Each backend runs these tests by extending this class.
+ */
+public abstract class AbstractJobMetricsStateSizeLimitsContractTest {
 
-  private Path tempFolder;
-  private ZeebeDb<ZbColumnFamilies> zeebeDb;
-  private TransactionContext transactionContext;
-
-  @BeforeEach
-  void setUp() throws Exception {
-    final var factory = DefaultZeebeDbFactory.defaultFactory();
-    tempFolder = Files.createTempDirectory(null);
-    zeebeDb = factory.createDb(tempFolder.toFile());
-    transactionContext = zeebeDb.createContext();
-  }
+  /** Creates the state under test with the given limits. */
+  protected abstract MutableJobMetricsState createJobMetricsState(EngineConfiguration config);
 
   private List<StatusMetrics[]> collectMetrics(final MutableJobMetricsState state) {
     final List<StatusMetrics[]> result = new ArrayList<>();
@@ -55,10 +42,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxJobTypeLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(maxJobTypeLength)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -83,10 +67,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxJobTypeLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(maxJobTypeLength)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -109,10 +90,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxJobTypeLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(maxJobTypeLength)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -140,10 +118,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxTenantIdLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(maxTenantIdLength)
@@ -167,10 +142,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxTenantIdLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(maxTenantIdLength)
@@ -198,10 +170,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxWorkerNameLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -225,10 +194,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxWorkerNameLength = 10;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -256,10 +222,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxUniqueKeys = 3;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -296,10 +259,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxUniqueKeys = 2;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -329,10 +289,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxUniqueKeys = 2;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -364,10 +321,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxUniqueKeys = 5;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(100)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -405,10 +359,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxJobTypeLength = 5;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(maxJobTypeLength)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -441,10 +392,7 @@ class DbJobMetricsStateSizeLimitsTest {
       // given
       final int maxJobTypeLength = 5;
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(maxJobTypeLength)
                   .setJobMetricsMaxTenantIdLength(100)
@@ -472,10 +420,7 @@ class DbJobMetricsStateSizeLimitsTest {
     void shouldMarkIncompleteBatchOnFirstViolation() {
       // given
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(5)
                   .setJobMetricsMaxTenantIdLength(5)
@@ -500,10 +445,7 @@ class DbJobMetricsStateSizeLimitsTest {
     void shouldRejectWhenMultipleLimitsExceeded() {
       // given
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(3)
                   .setJobMetricsMaxTenantIdLength(3)
@@ -524,10 +466,7 @@ class DbJobMetricsStateSizeLimitsTest {
     void shouldCheckJobTypeLengthFirst() {
       // given
       final MutableJobMetricsState state =
-          new DbJobMetricsState(
-              zeebeDb,
-              transactionContext,
-              InstantSource.system(),
+          createJobMetricsState(
               new EngineConfiguration()
                   .setJobMetricsMaxTypeLength(3)
                   .setJobMetricsMaxTenantIdLength(3)
