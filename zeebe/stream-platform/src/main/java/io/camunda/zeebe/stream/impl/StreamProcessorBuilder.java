@@ -21,6 +21,7 @@ import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.api.state.KeyGeneratorFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -170,6 +171,12 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder maxRecoverableRetries(final int maxRecoverableRetries) {
     streamProcessorContext.maxRecoverableRetries(maxRecoverableRetries);
+    return this;
+  }
+
+  /** Replaces the key generator, which keeps its keys in RocksDB by default. */
+  public StreamProcessorBuilder keyGeneratorFactory(final KeyGeneratorFactory keyGeneratorFactory) {
+    streamProcessorContext.keyGeneratorFactory(keyGeneratorFactory);
     return this;
   }
 

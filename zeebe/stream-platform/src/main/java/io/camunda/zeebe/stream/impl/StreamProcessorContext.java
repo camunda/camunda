@@ -23,9 +23,11 @@ import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
+import io.camunda.zeebe.stream.api.state.KeyGeneratorFactory;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
@@ -66,6 +68,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private @Nullable KeyGeneratorControls keyGeneratorControls;
+  private KeyGeneratorFactory keyGeneratorFactory = DbKeyGenerator::new;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private int maxPendingSideEffects = DEFAULT_MAX_PENDING_SIDE_EFFECTS;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
@@ -157,6 +160,15 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
     return this;
+  }
+
+  public StreamProcessorContext keyGeneratorFactory(final KeyGeneratorFactory keyGeneratorFactory) {
+    this.keyGeneratorFactory = keyGeneratorFactory;
+    return this;
+  }
+
+  public KeyGeneratorFactory getKeyGeneratorFactory() {
+    return keyGeneratorFactory;
   }
 
   public StreamProcessorContext keyGeneratorControls(
