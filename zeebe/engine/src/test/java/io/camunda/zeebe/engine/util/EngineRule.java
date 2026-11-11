@@ -496,6 +496,14 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
+  /**
+   * Returns the records written to the first partition's log, read with a fresh reader. Unlike
+   * {@link RecordingExporter}, this does not depend on how far the export has progressed.
+   */
+  public RecordStream events() {
+    return environmentRule.events();
+  }
+
   public ProcessingState getProcessingState() {
     return environmentRule.getProcessingState();
   }
