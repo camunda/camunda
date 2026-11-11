@@ -31,6 +31,7 @@ import io.grpc.protobuf.StatusProto;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
@@ -44,7 +45,7 @@ import org.slf4j.helpers.NOPLogger;
 
 final class GrpcErrorMapperTest {
   private final RecordingAppender recorder = new RecordingAppender();
-  private final GrpcErrorMapper errorMapper = new GrpcErrorMapper();
+  private GrpcErrorMapper errorMapper;
 
   private Logger log;
   private Log4jLogger logger;
@@ -53,6 +54,7 @@ final class GrpcErrorMapperTest {
   void beforeEach() {
     log = (Logger) LogManager.getLogger(UUID.randomUUID().toString());
     logger = new Log4jLogger(new Log4jMarkerFactory(), log, log.getName());
+    errorMapper = new GrpcErrorMapper(logger);
 
     recorder.start();
     log.addAppender(recorder);
@@ -72,7 +74,7 @@ final class GrpcErrorMapperTest {
 
     // when
     log.setLevel(Level.TRACE);
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
@@ -88,7 +90,7 @@ final class GrpcErrorMapperTest {
 
     // when
     log.setLevel(Level.TRACE);
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
@@ -106,12 +108,13 @@ final class GrpcErrorMapperTest {
         new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Wrong partition");
     final BrokerErrorException detailException = new BrokerErrorException(brokerError);
     final Status expectedDetail =
-        StatusProto.fromThrowable(errorMapper.mapError(detailException, NOPLogger.NOP_LOGGER));
+        StatusProto.fromThrowable(
+            new GrpcErrorMapper(NOPLogger.NOP_LOGGER).mapError(detailException));
 
     // when
     exception.addSuppressed(detailException);
     log.setLevel(Level.TRACE);
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
     final Status status = StatusProto.fromThrowable(statusException);
 
     // then
@@ -127,22 +130,62 @@ final class GrpcErrorMapperTest {
   }
 
   @Test
-  void shouldLogTimeoutExceptionWithCorrectStacktrace() {
+  void shouldLogTimeoutExceptionOnDebugWithoutStacktrace() {
     // given
     final ExecutionException executionException =
         new ExecutionException(new TimeoutException("Timed out after 1s"));
 
     // when
     log.setLevel(Level.TRACE);
-    final StatusRuntimeException statusException = errorMapper.mapError(executionException, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(executionException);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.DEADLINE_EXCEEDED);
     assertThat(recorder.getAppendedEvents()).hasSize(1);
     final LogEvent event = recorder.getAppendedEvents().get(0);
     assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+    assertThat(event.getMessage().getFormattedMessage()).contains("Timed out after 1s");
+    assertThat(event.getThrown()).isNull();
+  }
 
-    assertThat(event.getThrown()).isEqualTo(executionException);
+  @Test
+  void shouldThrottleTimeoutLogsButStillMapEveryTimeout() {
+    // given
+    log.setLevel(Level.DEBUG);
+
+    // when
+    final var statuses =
+        IntStream.range(0, 100)
+            .mapToObj(
+                i ->
+                    errorMapper
+                        .mapError(new ExecutionException(new TimeoutException("t" + i)))
+                        .getStatus()
+                        .getCode())
+            .toList();
+
+    // then
+    assertThat(statuses).hasSize(100).containsOnly(Code.DEADLINE_EXCEEDED);
+    assertThat(recorder.getAppendedEvents()).hasSize(1);
+  }
+
+  @Test
+  void shouldNotLogSuppressedTimeoutsNorUseUpTheTimeoutThrottle() {
+    // given
+    final var retriesExhausted = new RequestRetriesExhaustedException();
+    retriesExhausted.addSuppressed(new TimeoutException("suppressed timeout"));
+    log.setLevel(Level.DEBUG);
+
+    // when
+    errorMapper.mapError(retriesExhausted);
+    errorMapper.mapError(new ExecutionException(new TimeoutException("top level timeout")));
+
+    // then
+    assertThat(recorder.getAppendedEvents())
+        .singleElement()
+        .satisfies(
+            event ->
+                assertThat(event.getMessage().getFormattedMessage()).contains("top level timeout"));
   }
 
   @Test
@@ -157,7 +200,7 @@ final class GrpcErrorMapperTest {
 
       // when
       log.setLevel(Level.DEBUG);
-      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
       // then
       assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
@@ -180,7 +223,7 @@ final class GrpcErrorMapperTest {
 
       // when
       log.setLevel(Level.DEBUG);
-      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
       // then
       assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
@@ -197,7 +240,7 @@ final class GrpcErrorMapperTest {
 
     // when
     log.setLevel(Level.DEBUG);
-    final StatusRuntimeException statusException = errorMapper.mapError(error, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(error);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.ABORTED);
@@ -212,7 +255,7 @@ final class GrpcErrorMapperTest {
 
     // when
     log.setLevel(Level.DEBUG);
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.UNAVAILABLE);
@@ -230,7 +273,7 @@ final class GrpcErrorMapperTest {
 
     // when
     log.setLevel(Level.DEBUG);
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
@@ -250,7 +293,7 @@ final class GrpcErrorMapperTest {
     final var exception = new BrokerRejectionException(rejection);
 
     // when
-    final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+    final StatusRuntimeException statusException = errorMapper.mapError(exception);
 
     // then
     assertThat(statusException.getStatus().getCode()).isEqualTo(Code.ALREADY_EXISTS);
