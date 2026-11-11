@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import java.util.List;
 import java.util.Set;
@@ -69,9 +70,14 @@ public final class ElementInstanceStateImpl implements MutableElementInstanceSta
     }
     // the shared instance is overwritten by the read of the parent below
     final long parent = instance.getParentKey();
+    final boolean isProcessInstance =
+        instance.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
     store.deleteInstance(instance);
     variableState.removeScope(key);
-    store.deleteAwaitResult(key);
+    if (isProcessInstance) {
+      // only process instances can have one, stored under their key
+      store.deleteAwaitResult(key);
+    }
     store.deleteTakenSequenceFlows(key);
 
     if (parent > 0) {
