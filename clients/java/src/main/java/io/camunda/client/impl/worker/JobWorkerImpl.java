@@ -64,6 +64,10 @@ import org.slf4j.Logger;
  * backoff. On the next success, the {@code pollInterval} is reset to its original value. A poll
  * whose jobs the executor refused in full is treated the same way, since a worker that takes no job
  * at all has nothing to wait for and would otherwise poll as fast as the broker can answer.
+ *
+ * <p>A job that fails to reach its handler for any other reason, for example because the executor
+ * or the metrics throw, is handed back like a refused job and counts towards that backoff. It never
+ * costs the rest of the jobs it was activated with.
  */
 public final class JobWorkerImpl implements JobWorker, Closeable {
 
@@ -71,6 +75,10 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
           + "The job is made available again right away, so that it can be picked up by another worker. "
           + "If this issue persists, make sure to either scale your workers, threads, increase maxJobsActive or reduce the load you want to work on. ";
+  static final String RETURN_JOB_ERROR_MSG =
+      "The worker had no capacity to handle this job, so it was returned to the broker.";
+  static final String FAILED_HAND_OFF_ERROR_MSG =
+      "The worker failed to hand this job to its handler, so it was returned to the broker.";
   private static final String STREAMED_ERROR_MSG =
       "Expected to handle received job with key {}, but the worker reached maximum capacity (maxJobsActive). "
           + "The job stays with this worker until its timeout expires, and only then is it offered to another worker. "
@@ -89,13 +97,22 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private static final BackoffSupplier DEFAULT_BACKOFF_SUPPLIER =
       JobWorkerBuilderImpl.DEFAULT_BACKOFF_SUPPLIER;
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
-  private static final String RETURN_JOB_ERROR_MSG =
-      "The worker had no capacity to handle this job, so it was returned to the broker.";
+  private static final String FAILED_HAND_OFF_MSG =
+      "Expected to hand received job with key {} to its handler, but that failed. "
+          + "The job is made available again right away, so that it can be picked up by another worker. "
+          + "If this issue persists, check the job handling executor and the job worker metrics the worker was built with. ";
+  private static final String STREAMED_FAILED_HAND_OFF_MSG =
+      "Expected to hand received job with key {} to its handler, but that failed. "
+          + "The job stays with this worker until its timeout expires, and only then is it offered to another worker. "
+          + "If this issue persists, check the job handling executor and the job worker metrics the worker was built with. ";
   private static final String SUPPLY_RETRY_DELAY_FAILURE_MESSAGE =
       "Expected to supply retry delay, but an exception was thrown. Falling back to default backoff supplier";
   // job queue state
   private final int maxJobsActive;
   private final AtomicInteger refusedJobsInPoll = new AtomicInteger(0);
+  // Kept apart from the refusals: both count towards backing off a poll nobody took, but only a
+  // refusal shows that pushed jobs took the poll's slots, which is what reserves the poll lane.
+  private final AtomicInteger failedJobsInPoll = new AtomicInteger(0);
   // Only one poll is out at a time, and claiming the job poller orders one response's update before
   // the next, so a plain field is enough.
   private int pollsWithoutRefusal;
@@ -250,6 +267,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // how much it takes (which reports its free capacity as Integer.MAX_VALUE).
     final int maxJobsToActivate = Math.min(maxJobsActive, freeCapacity);
     refusedJobsInPoll.set(0);
+    failedJobsInPoll.set(0);
     jobPoller.poll(
         maxJobsToActivate,
         this::handleJob,
@@ -262,6 +280,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // Read the refusals before releasing the poller: once it is free, a job that finishes can start
     // the next poll, and that poll resets the count.
     final int refusedJobs = refusedJobsInPoll.get();
+    final int failedJobs = failedJobsInPoll.get();
     updatePollLane(activatedJobs, refusedJobs);
     releaseJobPoller(jobPoller);
 
@@ -271,7 +290,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       backOffPolling(streamNoJobsBackoffSupplier);
       LOG.trace("No jobs to activate via polling, will backoff and poll in {}", pollInterval);
     } else if (activatedJobs > 0
-        && refusedJobs == activatedJobs
+        && refusedJobs + failedJobs == activatedJobs
         && executor.freeCapacity() >= maxJobsActive) {
       // The executor took none of the jobs in this response and the worker has nothing left
       // running. Polling again right away would activate another batch, hand it straight back, and
@@ -369,11 +388,15 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         // returns, whether the handler ran or the job was dropped for having expired
         () -> {},
         (refusedJob, cause) -> {
-          // Only a job the executor refused before it ran reaches this, and only those say anything
-          // about whether the executor is taking work. Counting them lets the poll that activated
-          // them tell a response nobody took from one that is being worked through.
+          // Only a job the executor refused before it ran reaches this. Counting them, and the
+          // failed ones below, lets the poll that activated them tell a response nobody took from
+          // one that is being worked through.
           refusedJobsInPoll.incrementAndGet();
           returnJobToBroker(refusedJob, ERROR_MSG, RETURN_JOB_ERROR_MSG, cause);
+        },
+        (failedJob, cause) -> {
+          failedJobsInPoll.incrementAndGet();
+          returnJobToBroker(failedJob, FAILED_HAND_OFF_MSG, FAILED_HAND_OFF_ERROR_MSG, cause);
         });
   }
 
@@ -385,7 +408,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         // nothing to give back by hand: the executor frees the slot it took when the command
         // returns, early or not
         () -> {},
-        (refusedJob, cause) -> leaveStreamedJobToBroker(refusedJob, STREAMED_ERROR_MSG, cause));
+        (refusedJob, cause) -> leaveStreamedJobToBroker(refusedJob, STREAMED_ERROR_MSG, cause),
+        (failedJob, cause) ->
+            leaveStreamedJobToBroker(failedJob, STREAMED_FAILED_HAND_OFF_MSG, cause));
   }
 
   /**
@@ -403,22 +428,25 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * @param onRefused what to do with a job the executor would not take, which differs between a job
    *     the worker asked for and one the broker pushed to it. It is also what tells the user about
    *     the refusal, since the two paths leave the job in very different places.
+   * @param onFailed the same for a job that failed to reach its handler for any other reason, for
+   *     example because the executor or the metrics threw. Such a job is reported as refused too.
    */
   private void handleActivatedJob(
       final ActivatedJob job,
       final Consumer<Runnable> dispatch,
       final Runnable finalizer,
       final Runnable onExpired,
-      final BiConsumer<ActivatedJob, RejectedExecutionException> onRefused) {
-    metrics.jobActivated(1);
-    // Starts here rather than where the handler runs, so that the wait for a free handler thread
-    // counts against the activation the same way the handler's own runtime does.
-    final ActivationDeadline deadline = ActivationDeadline.startingNow(nanoClock, jobTimeout);
+      final BiConsumer<ActivatedJob, RejectedExecutionException> onRefused,
+      final BiConsumer<ActivatedJob, Throwable> onFailed) {
     // The executor may run the job on the calling thread and still report it as refused. Once the
     // handler has started, only it knows what became of the job, so the flag below keeps the
     // worker from stepping in afterwards.
     final AtomicBoolean handlerStarted = new AtomicBoolean(false);
     try {
+      metrics.jobActivated(1);
+      // Starts here rather than where the handler runs, so that the wait for a free handler thread
+      // counts against the activation the same way the handler's own runtime does.
+      final ActivationDeadline deadline = ActivationDeadline.startingNow(nanoClock, jobTimeout);
       final Runnable jobRunnable = jobHandlerFactory.create(job, finalizer);
       dispatch.accept(
           () -> {
@@ -455,6 +483,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
       metrics.jobRefused(1);
       onRefused.accept(job, e);
+    } catch (final RuntimeException | Error e) {
+      if (handlerStarted.get()) {
+        LOG.warn(
+            "Job with key {} ran on the calling thread, but handing it over failed afterwards. "
+                + "Leaving the job to the handler that ran it.",
+            job.getKey(),
+            e);
+        return;
+      }
+
+      // handed back before it is counted, since the metrics may be what failed
+      onFailed.accept(job, e);
+      metrics.jobRefused(1);
     }
   }
 
