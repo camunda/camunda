@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_ENDING_TIME;
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_STARTING_TIME;
+import static io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl.META_BATCH_ENDING_TIME;
+import static io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl.META_BATCH_STARTING_TIME;
 
 import io.camunda.zeebe.engine.state.jobmetrics.MetricsConsumer;
 import java.util.List;

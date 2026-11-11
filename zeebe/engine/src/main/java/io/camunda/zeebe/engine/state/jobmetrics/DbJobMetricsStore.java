@@ -13,19 +13,17 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
-import java.time.InstantSource;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * RocksDB-based implementation of job metrics state management.
+ * Stores the job metrics in RocksDB. The metrics are keyed by integers, which a dictionary maps to
+ * the job type, tenant and worker strings to keep the keys small. The dictionary and the in-memory
+ * caches of the dictionary and of the metrics are details of this store; its callers only see
+ * strings.
  *
  * <p>Uses three column families:
  *
@@ -35,20 +33,11 @@ import java.util.Optional;
  *   <li>JOB_METRICS_META: stores metadata and statistics
  * </ul>
  */
-public class DbJobMetricsState implements MutableJobMetricsState {
+public final class DbJobMetricsStore implements JobMetricsStore {
 
   /** Metadata key: auto-increment counter for STRING_ENCODING_CF */
   public static final String META_COUNTER = "__counter__";
 
-  /** Metadata key: flag indicating if size limit was exceeded (1 = true, 0 = false) */
-  public static final String META_SIZE_LIMITS_EXCEEDED = "__size_limits_exceeded__";
-
-  public static final String META_BATCH_STARTING_TIME = "__batch_starting_time__";
-  public static final String META_BATCH_ENDING_TIME = "__batch_ending_time__";
-
-  public static final long ZERO = 0L;
-
-  public final InstantSource clock;
   // Column family for metrics: MetricsKey -> MetricsValue
   private final ColumnFamily<MetricsKey, MetricsValue> metricsColumnFamily;
   private final MetricsKey metricsKey;
@@ -69,22 +58,9 @@ public class DbJobMetricsState implements MutableJobMetricsState {
 
   // In-memory cache for metrics (key: composite of indices, value: metrics)
   private final Map<MetricsCacheKey, MetricsValue> metricsCache;
-  private final int maxJobTypeLength;
-  private final int maxTenantIdLength;
-  private final int maxWorkerNameLength;
-  private final int maxUniqueJobMetricsKeys;
 
-  public DbJobMetricsState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb,
-      final TransactionContext transactionContext,
-      final InstantSource clock,
-      final EngineConfiguration engineConfiguration) {
-    this.clock = clock;
-
-    maxJobTypeLength = engineConfiguration.getJobMetricsMaxTypeLength();
-    maxTenantIdLength = engineConfiguration.getJobMetricsMaxTenantIdLength();
-    maxWorkerNameLength = engineConfiguration.getJobMetricsMaxWorkerNameLength();
-    maxUniqueJobMetricsKeys = engineConfiguration.getJobMetricsMaxUniqueKeys();
+  public DbJobMetricsStore(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
 
     // Initialize metrics column family
     metricsKey = new MetricsKey();
@@ -136,23 +112,30 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   @Override
-  public void forEach(final MetricsConsumer consumer) {
-    metricsCache.forEach(
-        (metricsCacheKey, metricsValue1) ->
-            consumer.accept(
-                metricsCacheKey.jobTypeIdx(),
-                metricsCacheKey.tenantIdx(),
-                metricsCacheKey.workerIdx(),
-                metricsValue1.getMetrics()));
+  public int countKeys() {
+    return metricsCache.size();
   }
 
   @Override
-  public List<String> getEncodedStrings() {
-    // Use the in-memory cache and sort by index value
-    return stringEncodingCache.entrySet().stream()
-        .sorted(Map.Entry.comparingByValue())
-        .map(Map.Entry::getKey)
-        .toList();
+  public boolean containsKey(final String jobType, final String tenantId, final String workerName) {
+    return metricsCache.containsKey(
+        new MetricsCacheKey(
+            Optional.ofNullable(stringEncodingCache.get(jobType)).orElse(-1),
+            Optional.ofNullable(stringEncodingCache.get(tenantId)).orElse(-1),
+            Optional.ofNullable(stringEncodingCache.get(workerName)).orElse(-1)));
+  }
+
+  @Override
+  public void forEach(final MetricsVisitor visitor) {
+    final Map<Integer, String> strings = new HashMap<>();
+    stringEncodingCache.forEach((string, index) -> strings.put(index, string));
+    metricsCache.forEach(
+        (metricsCacheKey, metricsValue1) ->
+            visitor.accept(
+                strings.get(metricsCacheKey.jobTypeIdx()),
+                strings.get(metricsCacheKey.tenantIdx()),
+                strings.get(metricsCacheKey.workerIdx()),
+                metricsValue1.getMetrics()));
   }
 
   @Override
@@ -163,77 +146,19 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   }
 
   @Override
-  public boolean isIncompleteBatch() {
-    return getMetadata(META_SIZE_LIMITS_EXCEEDED) == 1L;
-  }
-
-  /**
-   * Increments the job metrics for the given combination of job type, tenant ID, worker name.
-   *
-   * <p>IMPORTANT: If this creates a NEW key in METRICS column family, increments
-   * __job_metrics_number__
-   *
-   * @param status the job status to increment
-   */
-  @Override
-  public void incrementMetric(final JobRecord jobRecord, final JobMetricsExportState status) {
-    final var jobType = jobRecord.getType();
-    final var tenantId = jobRecord.getTenantId();
-    final var workerName = jobRecord.getWorker();
-
-    if (sizeLimitsExceeded(jobType, tenantId, workerName)) {
-      // Would exceed threshold, mark as truncated and skip
-      setMetadataValue(META_SIZE_LIMITS_EXCEEDED, 1L);
-      return;
-    }
-
-    // Safe to proceed, increment the metric
-    incrementVerifiedMetric(jobType, tenantId, workerName, status);
+  public void setMetadata(final String key, final long value) {
+    metadataKey.wrapString(key);
+    metadataValue.wrapLong(value);
+    metadataColumnFamily.upsert(metadataKey, metadataValue);
   }
 
   @Override
-  public void cleanUp() {
-    // Delete all keys in metrics column family
-    metricsColumnFamily.forEachKey(metricsColumnFamily::deleteExisting);
-
-    // Delete all keys in string encoding column family
-    stringEncodingColumnFamily.forEachKey(stringEncodingColumnFamily::deleteExisting);
-
-    // Clear the caches
-    stringEncodingCache.clear();
-    metricsCache.clear();
-
-    // Reset all metadata values to 0
-    setMetadataValue(META_SIZE_LIMITS_EXCEEDED, 0L);
-    setMetadataValue(META_COUNTER, 0L);
-    setMetadataValue(META_BATCH_ENDING_TIME, -1L);
-    setMetadataValue(META_BATCH_STARTING_TIME, -1L);
-  }
-
-  private boolean sizeLimitsExceeded(
-      final String jobType, final String tenantId, final String workerName) {
-    return jobType.length() > maxJobTypeLength
-        || tenantId.length() > maxTenantIdLength
-        || workerName.length() > maxWorkerNameLength
-        || uniqueKeysLimitExceeded(jobType, tenantId, workerName);
-  }
-
-  private boolean uniqueKeysLimitExceeded(
-      final String jobType, final String tenantId, final String workerName) {
-    return metricsCache.size() + 1 > maxUniqueJobMetricsKeys
-        && !metricsCache.containsKey(
-            new MetricsCacheKey(
-                Optional.ofNullable(stringEncodingCache.get(jobType)).orElse(-1),
-                Optional.ofNullable(stringEncodingCache.get(tenantId)).orElse(-1),
-                Optional.ofNullable(stringEncodingCache.get(workerName)).orElse(-1)));
-  }
-
-  private void incrementVerifiedMetric(
+  public void increment(
       final String jobType,
       final String tenantId,
       final String workerName,
-      final JobMetricsExportState status) {
-    // Safe to proceed with the increment
+      final JobMetricsExportState status,
+      final long timestamp) {
     final int jobTypeIdx = getOrCreateStringIndex(jobType);
     final int tenantIdx = getOrCreateStringIndex(tenantId);
     final int workerIdx = getOrCreateStringIndex(workerName);
@@ -254,21 +179,28 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       copyMetricsValue(cachedValue, metricsValue);
     }
 
-    // Get current epoch millis
-    final long currentEpochMillis = clock.millis();
-
     // Increment the metric for the specified status
-    metricsValue.incrementMetric(status, currentEpochMillis);
+    metricsValue.incrementMetric(status, timestamp);
     // Write back to column family
     metricsColumnFamily.upsert(metricsKey, metricsValue);
     // Update the cache
     metricsCache.put(cacheKey, metricsValue.copy());
+  }
 
-    if (metricsCache.size() == 1) {
-      // First entry, set batch starting time
-      setMetadataValue(META_BATCH_STARTING_TIME, currentEpochMillis);
-    }
-    setMetadataValue(META_BATCH_ENDING_TIME, currentEpochMillis);
+  @Override
+  public void deleteMetrics() {
+    // Delete all keys in metrics column family
+    metricsColumnFamily.forEachKey(metricsColumnFamily::deleteExisting);
+
+    // Delete all keys in string encoding column family
+    stringEncodingColumnFamily.forEachKey(stringEncodingColumnFamily::deleteExisting);
+
+    // Clear the caches
+    stringEncodingCache.clear();
+    metricsCache.clear();
+
+    // The dictionary starts again
+    setMetadata(META_COUNTER, 0L);
   }
 
   /**
@@ -310,20 +242,8 @@ public class DbJobMetricsState implements MutableJobMetricsState {
    */
   private long getNextCounter() {
     final long currentCounter = getMetadata(META_COUNTER);
-    setMetadataValue(META_COUNTER, currentCounter + 1);
+    setMetadata(META_COUNTER, currentCounter + 1);
     return currentCounter;
-  }
-
-  /**
-   * Sets a metadata value.
-   *
-   * @param key the metadata key
-   * @param value the value to set
-   */
-  private void setMetadataValue(final String key, final long value) {
-    metadataKey.wrapString(key);
-    metadataValue.wrapLong(value);
-    metadataColumnFamily.upsert(metadataKey, metadataValue);
   }
 
   /**

@@ -7,30 +7,33 @@
  */
 package io.camunda.zeebe.engine.state.jobmetrics;
 
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_COUNTER;
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_SIZE_LIMITS_EXCEEDED;
+import static io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl.META_SIZE_LIMITS_EXCEEDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ProcessingStateExtension.class)
-class DbJobMetricsStateTest {
+/**
+ * Behaviour every {@link MutableJobMetricsState} implementation must share. Each backend runs these
+ * tests by extending this class.
+ */
+public abstract class AbstractJobMetricsStateContractTest {
 
-  private MutableProcessingState processingState;
   private MutableJobMetricsState state;
 
+  /** Creates the state under test with the default limits. Called before each test. */
+  protected abstract MutableJobMetricsState createJobMetricsState();
+
   @BeforeEach
-  public void setUp() {
-    state = processingState.getJobMetricsState();
+  void setUp() {
+    state = createJobMetricsState();
   }
 
   @Test
@@ -110,7 +113,7 @@ class DbJobMetricsStateTest {
     assertThat(metrics.get(1)[JobMetricsExportState.CREATED.getIndex()].getCount()).isEqualTo(1);
     assertThat(metrics.get(2)[JobMetricsExportState.CREATED.getIndex()].getCount()).isEqualTo(1);
     assertThat(encodedStrings)
-        .containsSequence("jobType1", "tenant1", "worker1", "jobType2", "tenant2");
+        .containsExactlyInAnyOrder("jobType1", "tenant1", "worker1", "jobType2", "tenant2");
   }
 
   @Test
@@ -141,7 +144,8 @@ class DbJobMetricsStateTest {
     final List<String> encodedStrings = state.getEncodedStrings();
 
     // then - tenant1 and worker1 should be reused, only 4 unique strings
-    assertThat(encodedStrings).containsExactly("jobType1", "tenant1", "worker1", "jobType2");
+    assertThat(encodedStrings)
+        .containsExactlyInAnyOrder("jobType1", "tenant1", "worker1", "jobType2");
   }
 
   @Test
@@ -241,34 +245,6 @@ class DbJobMetricsStateTest {
   }
 
   @Test
-  void shouldIncrementCounterForEachNewString() {
-    // given / when
-    state.incrementMetric(
-        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
-        JobMetricsExportState.CREATED);
-
-    // then - 3 new strings created, counter should be 3
-    assertThat(state.getMetadata(META_COUNTER)).isEqualTo(3L);
-  }
-
-  @Test
-  void shouldNotIncrementCounterForReusedStrings() {
-    // given
-    state.incrementMetric(
-        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
-        JobMetricsExportState.CREATED);
-    final long counterAfterFirst = state.getMetadata(META_COUNTER);
-
-    // when - reuse all strings
-    state.incrementMetric(
-        new JobRecord().setType("jobType1").setTenantId("tenant1").setWorker("worker1"),
-        JobMetricsExportState.COMPLETED);
-
-    // then
-    assertThat(state.getMetadata(META_COUNTER)).isEqualTo(counterAfterFirst);
-  }
-
-  @Test
   void shouldIterateOverAllMetrics() {
     // given
     state.incrementMetric(
@@ -363,20 +339,36 @@ class DbJobMetricsStateTest {
   }
 
   @Test
-  void shouldMaintainEncodedStringsOrderByIndex() {
+  void shouldEncodeEveryMetricWithTheIndicesOfItsStrings() {
     // given
     state.incrementMetric(
         new JobRecord().setType("first").setTenantId("second").setWorker("third"),
         JobMetricsExportState.CREATED);
     state.incrementMetric(
         new JobRecord().setType("fourth").setTenantId("second").setWorker("third"),
-        JobMetricsExportState.CREATED);
+        JobMetricsExportState.COMPLETED);
+    state.incrementMetric(
+        new JobRecord().setType("fourth").setTenantId("second").setWorker("third"),
+        JobMetricsExportState.COMPLETED);
 
     // when
     final List<String> encodedStrings = state.getEncodedStrings();
+    final Map<String, Integer> completedByKey = new HashMap<>();
+    state.forEach(
+        (jobTypeIdx, tenantIdx, workerIdx, metrics) ->
+            completedByKey.put(
+                String.join(
+                    "/",
+                    encodedStrings.get(jobTypeIdx),
+                    encodedStrings.get(tenantIdx),
+                    encodedStrings.get(workerIdx)),
+                metrics[JobMetricsExportState.COMPLETED.getIndex()].getCount()));
 
-    // then - should be ordered by creation (index)
-    assertThat(encodedStrings).containsExactly("first", "second", "third", "fourth");
+    // then
+    assertThat(encodedStrings).containsExactlyInAnyOrder("first", "second", "third", "fourth");
+    assertThat(completedByKey)
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("first/second/third", 0, "fourth/second/third", 2));
   }
 
   @Test
@@ -414,7 +406,7 @@ class DbJobMetricsStateTest {
 
     // then - strings should be re-encoded starting from 0
     final List<String> encodedStrings = state.getEncodedStrings();
-    assertThat(encodedStrings).containsSequence("newJobType", "newTenant", "newWorker");
+    assertThat(encodedStrings).containsExactly("newJobType", "newTenant", "newWorker");
   }
 
   private List<StatusMetrics[]> collectMetrics() {

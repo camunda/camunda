@@ -13,7 +13,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -40,7 +40,7 @@ class ProcessingDbStateTest {
   }
 
   @Test
-  void shouldUseDbJobMetricsStateWhenJobMetricsExportEnabled() {
+  void shouldUseJobMetricsStateWhenJobMetricsExportEnabled() {
     // given
     final var config = new EngineConfiguration().setJobMetricsExportEnabled(true);
     final var keyGenerator =
@@ -61,7 +61,7 @@ class ProcessingDbStateTest {
             ExpressionLanguageMetrics.noop());
 
     // then
-    assertThat(processingState.getJobMetricsState()).isInstanceOf(DbJobMetricsState.class);
+    assertThat(processingState.getJobMetricsState()).isInstanceOf(JobMetricsStateImpl.class);
   }
 
   @Test
