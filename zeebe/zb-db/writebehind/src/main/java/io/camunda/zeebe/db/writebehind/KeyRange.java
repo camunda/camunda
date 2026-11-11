@@ -15,4 +15,4 @@ import org.jspecify.annotations.Nullable;
  * @param from the first key of the range
  * @param to the first key after the range, or null if the range goes on to the last key
  */
-record KeyRange<K>(K from, @Nullable K to) {}
+public record KeyRange<K>(K from, @Nullable K to) {}

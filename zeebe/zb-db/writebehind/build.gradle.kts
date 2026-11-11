@@ -5,7 +5,7 @@ dependencies {
   api(project(":zeebe-db-api"))
   api(project(":zeebe-protocol"))
   api(libs.io.micrometer.micrometer.core)
-  implementation(libs.com.github.ben.manes.caffeine.caffeine)
+  api(libs.com.github.ben.manes.caffeine.caffeine)
   implementation(libs.org.slf4j.slf4j.api)
 }
 

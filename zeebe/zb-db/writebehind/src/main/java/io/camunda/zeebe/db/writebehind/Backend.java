@@ -23,7 +23,7 @@ import org.jspecify.annotations.Nullable;
  * @param <K> the key type
  * @param <V> the value type
  */
-interface Backend<K extends Comparable<K>, V> {
+public interface Backend<K extends Comparable<K>, V> {
 
   /** The group that the key belongs to. */
   long groupOf(K key);

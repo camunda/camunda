@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * group from the dirty index, and taking a read view (a storage cursor plus a copy of the dirty
  * index). Nothing that holds it blocks on anything else.
  */
-final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseable {
+public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
   private static final int MAX_DISCARDED_LOADS = 3;
@@ -63,7 +63,7 @@ final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseabl
 
   private volatile long committedSeq;
 
-  WriteBehindStore(final Backend<K, V> backend, final WriteBehindConfiguration config) {
+  public WriteBehindStore(final Backend<K, V> backend, final WriteBehindConfiguration config) {
     this.backend = backend;
     this.config = config;
     cache =
@@ -88,7 +88,7 @@ final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseabl
    * @param values the new value per key, or null for a delete; the store takes ownership and nobody
    *     may change them afterwards
    */
-  void commit(final K[] keys, final @Nullable V[] values) {
+  public void commit(final K[] keys, final @Nullable V[] values) {
     ensureUsable();
     flusher.awaitCapacity();
 
@@ -124,7 +124,7 @@ final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseabl
    *
    * <p>The result is shared with the store: callers must copy it before handing it out.
    */
-  @Nullable V get(final K key, final V prototype) {
+  public @Nullable V get(final K key, final V prototype) {
     ensureUsable();
     final var inMemory = lookupInMemory(key);
     if (inMemory != null) {
@@ -383,7 +383,7 @@ final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseabl
   }
 
   /** Registers the counters per column family as gauges in the registry. */
-  void exportMetrics(final io.micrometer.core.instrument.MeterRegistry registry) {
+  public void exportMetrics(final io.micrometer.core.instrument.MeterRegistry registry) {
     metrics.export(registry);
   }
 
@@ -435,7 +435,7 @@ final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseabl
    * Waits until the storage holds every transaction committed before this call. Fails if the writer
    * fails or the flush takes longer than the configured timeout.
    */
-  void awaitFlushed() {
+  public void awaitFlushed() {
     flusher.awaitFlushed(committedSeq);
   }
 
