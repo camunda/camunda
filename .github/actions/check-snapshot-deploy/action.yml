@@ -46,7 +46,7 @@ runs:
         fi
 
         api() {
-          curl -sf --retry 3 --retry-all-errors \
+          curl -sf --connect-timeout 10 --max-time 30 --retry 3 --retry-max-time 60 --retry-all-errors \
             -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/$1"
         }
