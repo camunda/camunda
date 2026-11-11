@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
-import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
@@ -31,9 +30,7 @@ public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskList
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  TaskListenerIndicesRecord() {
-    reset();
-  }
+  TaskListenerIndicesRecord() {}
 
   public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
@@ -52,22 +49,6 @@ public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskList
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     setTaskListenerIndex(eventType, 0);
-  }
-
-  /** The only place with the default of every property. */
-  @Override
-  public void reset() {
-    creatingTaskListenerIndex = 0;
-    assigningTaskListenerIndex = 0;
-    updatingTaskListenerIndex = 0;
-    completingTaskListenerIndex = 0;
-    cancelingTaskListenerIndex = 0;
-    unknownProperties.clear();
-  }
-
-  @Override
-  protected MsgpackCodec<TaskListenerIndicesRecord> codec() {
-    return TaskListenerIndicesRecordCodec.INSTANCE;
   }
 
   private void setTaskListenerIndex(final ZeebeTaskListenerEventType eventType, final int value) {

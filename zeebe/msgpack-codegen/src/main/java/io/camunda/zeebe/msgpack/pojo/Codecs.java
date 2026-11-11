@@ -21,6 +21,7 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
 public final class Codecs {
 
   private static final MsgpackCodec<BaseValue> BASE_VALUE_CODEC = new BaseValueCodec();
+  private static final MsgpackResetter<BaseValue> BASE_VALUE_RESETTER = BaseValue::reset;
 
   private static final ClassValue<MsgpackCodec<?>> CODECS =
       new ClassValue<>() {
@@ -29,16 +30,18 @@ public final class Codecs {
           if (BaseValue.class.isAssignableFrom(type)) {
             return BASE_VALUE_CODEC;
           }
-          try {
-            final var codecClass =
-                Class.forName(type.getName() + "Codec", true, type.getClassLoader());
-            return (MsgpackCodec<?>) codecClass.getField("INSTANCE").get(null);
-          } catch (final ReflectiveOperationException e) {
-            throw new IllegalArgumentException(
-                "No msgpack codec for %s: it is neither a @MsgpackPojo nor a BaseValue"
-                    .formatted(type.getName()),
-                e);
+          return generated(type, "Codec", MsgpackCodec.class);
+        }
+      };
+
+  private static final ClassValue<MsgpackResetter<?>> RESETTERS =
+      new ClassValue<>() {
+        @Override
+        protected MsgpackResetter<?> computeValue(final Class<?> type) {
+          if (BaseValue.class.isAssignableFrom(type)) {
+            return BASE_VALUE_RESETTER;
           }
+          return generated(type, "Resetter", MsgpackResetter.class);
         }
       };
 
@@ -47,6 +50,24 @@ public final class Codecs {
   @SuppressWarnings("unchecked")
   public static <T extends Recyclable> MsgpackCodec<T> of(final Class<T> type) {
     return (MsgpackCodec<T>) CODECS.get(type);
+  }
+
+  /** Finds the generated {@code <Name>Resetter}, which restores the field initializers. */
+  @SuppressWarnings("unchecked")
+  public static <T extends Recyclable> MsgpackResetter<T> resetterOf(final Class<T> type) {
+    return (MsgpackResetter<T>) RESETTERS.get(type);
+  }
+
+  private static <R> R generated(final Class<?> type, final String suffix, final Class<R> role) {
+    try {
+      final var generated = Class.forName(type.getName() + suffix, true, type.getClassLoader());
+      return role.cast(generated.getField("INSTANCE").get(null));
+    } catch (final ReflectiveOperationException e) {
+      throw new IllegalArgumentException(
+          "No msgpack %s for %s: it is neither a @MsgpackPojo nor a BaseValue"
+              .formatted(suffix.toLowerCase(), type.getName()),
+          e);
+    }
   }
 
   /** Codec of {@code BaseValue}s, which can already read and write themselves. */

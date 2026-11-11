@@ -11,6 +11,8 @@ below is open.
       `ZeebeDb.createColumnFamily`, `ValueType` no longer bounded by `DbValue`, every `ColumnFamily`
       implementation, `KeyValuePairVisitor`). Needs a decision on API compatibility first. Until then
       the bridge stays.
+- [ ] **Bridge cost.** `MsgpackBufferValue` does a `ClassValue` lookup per `write`/`wrap`/`reset`.
+      It disappears with the column-family codec above; measure it in the benchmark first.
 - [ ] **Unknown properties by default.** Decide whether every `@MsgpackPojo` carries
       `UnknownProperties` implicitly (rollback safety) instead of an explicit field in each class.
 - [ ] **Convert `ProcessInstanceRecord`** (and other records written to the log) into a

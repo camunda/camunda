@@ -65,7 +65,7 @@ final class NameSerdeTest {
     final int length = v1.write(bytes, 0);
     final var current = new Name();
     // TODO: dirty EVERY property of the target (all setters, add a list element, ...), so that a
-    // property missing from reset() makes this test fail
+    // default that is not restored by reset() makes this test fail
 
     // when
     current.wrap(bytes, 0, length);

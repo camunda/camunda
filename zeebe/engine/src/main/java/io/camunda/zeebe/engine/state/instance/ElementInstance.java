@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
-import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
@@ -31,19 +30,19 @@ import org.agrona.DirectBuffer;
 @MsgpackPojo
 public final class ElementInstance extends MsgpackBufferValue<ElementInstance> implements DbValue {
 
-  long parentKey;
+  long parentKey = -1L;
   int childCount;
   int childActivatedCount;
   int childCompletedCount;
   int childTerminatedCount;
   long jobKey;
   int multiInstanceLoopCounter;
-  DirectBuffer interruptingElementId;
-  long calledChildInstanceKey;
+  DirectBuffer interruptingElementId = Decoding.EMPTY;
+  long calledChildInstanceKey = -1L;
   final IndexedRecord elementRecord = new IndexedRecord();
   int activeSequenceFlows;
   final List<DirectBuffer> activeSequenceFlowIds = new ArrayList<>();
-  long userTaskKey;
+  long userTaskKey = -1L;
   int executionListenerIndex;
   final TaskListenerIndicesRecord taskListenerIndicesRecord = new TaskListenerIndicesRecord();
 
@@ -61,17 +60,15 @@ public final class ElementInstance extends MsgpackBufferValue<ElementInstance> i
    *     or after the property was added that are part of a root process instance created prior to
    *     the property existed, will not have a correct depth.
    */
-  int processDepth;
+  int processDepth = 1;
 
   boolean interruptedByRuntimeInstruction;
   boolean completionConditionFulfilled;
-  long agentInstanceKey;
+  long agentInstanceKey = -1L;
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  public ElementInstance() {
-    reset();
-  }
+  public ElementInstance() {}
 
   public ElementInstance(
       final long key,
@@ -342,35 +339,5 @@ public final class ElementInstance extends MsgpackBufferValue<ElementInstance> i
 
   public void setAgentInstanceKey(final long agentInstanceKey) {
     this.agentInstanceKey = agentInstanceKey;
-  }
-
-  /** The only place with the default of every property. */
-  @Override
-  public void reset() {
-    parentKey = -1L;
-    childCount = 0;
-    childActivatedCount = 0;
-    childCompletedCount = 0;
-    childTerminatedCount = 0;
-    jobKey = 0L;
-    multiInstanceLoopCounter = 0;
-    interruptingElementId = Decoding.EMPTY;
-    calledChildInstanceKey = -1L;
-    elementRecord.reset();
-    activeSequenceFlows = 0;
-    activeSequenceFlowIds.clear();
-    userTaskKey = -1L;
-    executionListenerIndex = 0;
-    taskListenerIndicesRecord.reset();
-    processDepth = 1;
-    interruptedByRuntimeInstruction = false;
-    completionConditionFulfilled = false;
-    agentInstanceKey = -1L;
-    unknownProperties.clear();
-  }
-
-  @Override
-  protected MsgpackCodec<ElementInstance> codec() {
-    return ElementInstanceCodec.INSTANCE;
   }
 }

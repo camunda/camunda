@@ -18,8 +18,8 @@ import org.agrona.MutableDirectBuffer;
  * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
  * MsgpackScratch}.
  *
- * <p>The concrete class implements {@link #reset()}, which must restore the default of every
- * property, drop unknown properties and reset nested objects. It is called before every read.
+ * <p>The generated codec and resetter of the concrete class are found with {@link Codecs}, so the
+ * class does not have to mention them. {@link #reset()} is called before every read.
  *
  * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
  * scratch state.
@@ -29,23 +29,31 @@ import org.agrona.MutableDirectBuffer;
 public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     implements BufferReader, BufferWriter, Recyclable {
 
-  /** The generated codec of the concrete type. */
-  protected abstract MsgpackCodec<T> codec();
-
   @Override
   public int getLength() {
-    return codec().getLength(self());
+    return Codecs.of(type()).getLength(self());
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return codec().write(MsgpackScratch.writer(buffer, offset), self());
+    return Codecs.of(type()).write(MsgpackScratch.writer(buffer, offset), self());
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
-    codec().read(MsgpackScratch.reader(buffer, offset, length), self());
+    Codecs.of(type()).read(MsgpackScratch.reader(buffer, offset, length), self());
+  }
+
+  /** Restores the field initializers. Override to also reset state that is not stored. */
+  @Override
+  public void reset() {
+    Codecs.resetterOf(type()).reset(self());
+  }
+
+  @SuppressWarnings("unchecked")
+  private Class<T> type() {
+    return (Class<T>) getClass();
   }
 
   @SuppressWarnings("unchecked")

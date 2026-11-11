@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
-import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
@@ -35,9 +34,7 @@ public final class IndexedRecord extends MsgpackBufferValue<IndexedRecord> imple
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  IndexedRecord() {
-    reset();
-  }
+  IndexedRecord() {}
 
   public IndexedRecord(
       final long key,
@@ -84,20 +81,6 @@ public final class IndexedRecord extends MsgpackBufferValue<IndexedRecord> imple
     this.value.wrap(valueBuffer, 0, encodedLength);
 
     return this;
-  }
-
-  /** The only place with the default of every property. */
-  @Override
-  public void reset() {
-    key = 0L;
-    state = null;
-    value.reset();
-    unknownProperties.clear();
-  }
-
-  @Override
-  protected MsgpackCodec<IndexedRecord> codec() {
-    return IndexedRecordCodec.INSTANCE;
   }
 
   @Override

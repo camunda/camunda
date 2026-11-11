@@ -15,7 +15,6 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -28,7 +27,6 @@ import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
@@ -57,25 +55,27 @@ final class MsgpackPojoProcessorTest {
     final var result = compile(source);
 
     // then
-    assertThat(result.errors()).anyMatch(e -> e.contains("must implement") && e.contains("Recyclable"));
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("must implement") && e.contains("Recyclable"));
   }
 
   @Test
   void shouldRejectAPrivateField() {
     // given
-    final var source = pojo(valid("private long key; public void reset() {}"));
+    final var source = pojo(valid("private long key;"));
 
     // when
     final var result = compile(source);
 
     // then
-    assertThat(result.errors()).anyMatch(e -> e.contains("key") && e.contains("must not be private"));
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("key") && e.contains("must not be private"));
   }
 
   @Test
   void shouldRejectAFinalScalarField() {
     // given
-    final var source = pojo(valid("final long key = 1L; public void reset() {}"));
+    final var source = pojo(valid("final long key = 1L;"));
 
     // when
     final var result = compile(source);
@@ -87,7 +87,7 @@ final class MsgpackPojoProcessorTest {
   @Test
   void shouldRejectAnUnsupportedFieldType() {
     // given
-    final var source = pojo(valid("java.util.Map<String, String> key; public void reset() {}"));
+    final var source = pojo(valid("java.util.Map<String, String> key;"));
 
     // when
     final var result = compile(source);
@@ -99,7 +99,7 @@ final class MsgpackPojoProcessorTest {
   @Test
   void shouldRejectANestedTypeWithoutCodec() {
     // given
-    final var source = pojo(valid("final StringBuilder key = new StringBuilder(); public void reset() {}"));
+    final var source = pojo(valid("final StringBuilder key = new StringBuilder();"));
 
     // when
     final var result = compile(source);
@@ -111,8 +111,7 @@ final class MsgpackPojoProcessorTest {
   @Test
   void shouldIgnoreFieldsMarkedAsIgnored() {
     // given a field of a type that would be rejected
-    final var source =
-        pojo(valid("long key; @MsgpackIgnore Thread ignored; public void reset() { key = 0; }"));
+    final var source = pojo(valid("long key; @MsgpackIgnore Thread ignored;"));
 
     // when
     final var result = compile(source);
@@ -131,28 +130,15 @@ final class MsgpackPojoProcessorTest {
             pojo(
                 valid(
                     """
-                    long key;
-                    int count;
+                    long key = -1L;
+                    int count = 7;
                     boolean flag;
-                    DirectBuffer name;
+                    DirectBuffer name = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
                     @MsgpackProperty("theKind") Kind kind;
                     final List<DirectBuffer> ids = new ArrayList<>();
                     final Inner inner = new Inner();
                     @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
 
-                    public Sample() { reset(); }
-
-                    @Override
-                    public void reset() {
-                      key = -1L;
-                      count = 7;
-                      flag = false;
-                      name = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
-                      kind = null;
-                      ids.clear();
-                      inner.reset();
-                      unknown.clear();
-                    }
                     """)));
     assertThat(result.errors()).isEmpty();
     final var sampleClass = result.load("sample.Sample");
@@ -186,18 +172,56 @@ final class MsgpackPojoProcessorTest {
     assertThat(get(get(read, "inner"), "value")).isEqualTo(9);
   }
 
+  @Test
+  void shouldGenerateAResetterThatRestoresTheFieldInitializers() throws Exception {
+    // given
+    final var result =
+        compile(
+            enumKind(),
+            inner(),
+            pojo(
+                valid(
+                    """
+                    long key = -1L;
+                    int count = 7;
+                    DirectBuffer name = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
+                    Kind kind;
+                    final List<DirectBuffer> ids = new ArrayList<>();
+                    final Inner inner = new Inner();
+                    @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+
+                    """)));
+    assertThat(result.errors()).isEmpty();
+    final var sample = (Recyclable) result.load("sample.Sample").getConstructor().newInstance();
+    set(sample, "key", 5L);
+    set(sample, "count", 1);
+    set(sample, "name", buffer("dirty"));
+    set(sample, "kind", result.load("sample.Kind").getEnumConstants()[0]);
+    ((List<DirectBuffer>) get(sample, "ids")).add(buffer("a"));
+    set(get(sample, "inner"), "value", 9);
+
+    // when
+    sample.reset();
+
+    // then
+    assertThat(get(sample, "key")).isEqualTo(-1L);
+    assertThat(get(sample, "count")).isEqualTo(7);
+    assertThat(get(sample, "name")).isEqualTo(buffer(""));
+    assertThat(get(sample, "kind")).isNull();
+    assertThat((List<?>) get(sample, "ids")).isEmpty();
+    assertThat(get(get(sample, "inner"), "value")).isEqualTo(3);
+  }
+
   // ---------------------------------------------------------------- helpers
 
   private static String valid(final String body) {
     return """
-        @MsgpackPojo
-        public final class Sample extends MsgpackBufferValue<Sample> {
-          %s
-          @Override
-          protected MsgpackCodec<Sample> codec() { return SampleCodec.INSTANCE; }
-        }
-        """
-        .formatted(body.contains("reset()") ? body : body + " public void reset() {}");
+    @MsgpackPojo
+    public final class Sample extends MsgpackBufferValue<Sample> {
+      %s
+    }
+    """
+        .formatted(body);
   }
 
   private static Source pojo(final String classSource) {
@@ -210,14 +234,12 @@ final class MsgpackPojoProcessorTest {
         "sample.Inner",
         IMPORTS
             + """
-              @MsgpackPojo
-              public final class Inner extends MsgpackBufferValue<Inner> {
-                int value;
-                @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
-                @Override public void reset() { value = 0; unknown.clear(); }
-                @Override protected MsgpackCodec<Inner> codec() { return InnerCodec.INSTANCE; }
-              }
-              """);
+            @MsgpackPojo
+            public final class Inner extends MsgpackBufferValue<Inner> {
+              int value = 3;
+              @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+            }
+            """);
   }
 
   private static Source enumKind() {
