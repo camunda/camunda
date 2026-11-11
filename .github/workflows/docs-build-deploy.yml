@@ -135,13 +135,9 @@ jobs:
           keep_files: false
           enable_jekyll: false
 
-      # The deploy step above only confirms the push to gh-pages. GitHub then publishes the branch
-      # with its own `pages-build-deployment` Actions run (legacy Pages mode), outside this workflow.
-      # The Pages builds API (pages/builds) mirrors that run unreliably: it kept reporting `building`
-      # for runs that had already failed and `errored` for runs that succeeded (INC-9073). So this
-      # step watches GitHub's run itself and fails the job when the site wasn't published.
-      # A failed or cancelled run is retried once with a fresh Pages build request. Nothing is
-      # publishing at that point, so the request starts a new run instead of queueing behind one.
+      # GitHub publishes gh-pages with its own `pages-build-deployment` run (legacy Pages mode).
+      # Watch that run, not the Pages builds API, which misreports it (INC-9073). Behaviour and
+      # troubleshooting: docs/monorepo-docs/ci-runbooks.md, "Monorepo Docs Site Pages Build Failure".
       - name: Verify Pages build
         env:
           GH_TOKEN: ${{ github.token }}
@@ -159,7 +155,7 @@ jobs:
           wait_for_run() {
             local deadline=$(( $(date +%s) + TIMEOUT_SECONDS )) runs run status
             run_id="" run_url="" run_conclusion=""
-            while :; do
+            while (( $(date +%s) < deadline )); do
               # A failed API call is retried on the next poll rather than failing the job.
               if ! runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${expected_sha}&per_page=50"); then
                 echo "Listing Actions runs failed; retrying..."
@@ -178,12 +174,9 @@ jobs:
                   echo "Waiting for GitHub to start a pages-build-deployment run for ${expected_sha:0:12}..."
                 fi
               fi
-              if (( $(date +%s) >= deadline )); then
-                run_conclusion=timeout
-                return 0
-              fi
               sleep 10
             done
+            run_conclusion=timeout
           }
 
           for (( attempt = 1; attempt <= MAX_ATTEMPTS; attempt++ )); do
