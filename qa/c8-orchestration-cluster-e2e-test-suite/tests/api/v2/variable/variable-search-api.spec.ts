@@ -29,7 +29,10 @@ test.describe.parallel('Search Variables API Tests', () => {
 
   test.afterAll(async () => {
     for (const key of processInstanceKeys) {
-      await cancelProcessInstance(key);
+      // Teardown-only cleanup: an instance that has already reached a terminal
+      // state is a fine end state here, so tolerate a 404 instead of letting it
+      // abort the loop (leaking the remaining instances) and fail afterAll.
+      await cancelProcessInstance(key, {ignoreNotFound: true});
     }
   });
 
