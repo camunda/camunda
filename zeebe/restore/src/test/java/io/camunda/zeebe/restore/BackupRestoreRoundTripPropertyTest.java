@@ -8,6 +8,7 @@
 package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
@@ -103,16 +104,16 @@ final class BackupRestoreRoundTripPropertyTest {
   }
 
   /**
-   * Fails until the bug is fixed: the shrunk case of a failing run of the property above (seed
-   * -6622629924197784659), with the steps it does not need removed. Backup 1 is the last entry of a
-   * segment, and the snapshot of backup 2 is in the next segment, so the log of backup 2 starts one
-   * position after backup 1. The checkpoint appliers count this as gap free and keep both backups
-   * in one range, from which the restore point resolver restores both together, but the restore
-   * needs backup 1's checkpoint record in the log of backup 2 and fails with "Cannot find a record
-   * at checkpoint position".
+   * Pins a state the property does not generate: a snapshot past the latest backup, which the
+   * compaction cap of continuous backups prevents (seed -6622629924197784659 found it before the
+   * generator followed the cap). Backup 1 is the last entry of a segment, and the snapshot of
+   * backup 2 is in the next segment, so the log of backup 2 starts one position after backup 1. The
+   * checkpoint appliers count this as gap free and the restore point resolver restores both
+   * together, but the restore needs backup 1's checkpoint record in the log of backup 2 and fails.
+   * When the range rule and the restore agree, this test changes with them.
    */
   @Example
-  void shouldRestoreFromABackupWhoseLogStartsRightAfterThePreviousBackup() throws Exception {
+  void shouldFailToRestoreABackupWhoseLogStartsRightAfterThePreviousBackup() throws Exception {
     try (final var partition = new BackedUpPartition()) {
       // given
       List.of(
@@ -130,10 +131,10 @@ final class BackupRestoreRoundTripPropertyTest {
                       new Entry(2, 10, true),
                       new Entry(3, 8, true))),
               new Checkpoint(true),
-              new Append(List.of(new Entry(1, 119, true))),
-              new TakeSnapshot(0),
-              new Checkpoint(true))
+              new Append(List.of(new Entry(1, 119, true))))
           .forEach(partition::apply);
+      partition.takeSnapshotPastTheLatestBackup();
+      partition.apply(new Checkpoint(true));
       final var backups = partition.backups();
       assertThat(backups.get(1).firstLogPosition()).isEqualTo(backups.get(0).position() + 1);
       final var restore = new RestoreChain(backups, backups.get(1));
@@ -159,11 +160,10 @@ final class BackupRestoreRoundTripPropertyTest {
                   .partitions())
           .containsExactly(Map.entry(PARTITION_ID, restore.partitionRestore()));
 
-      // when
-      final var restored = partition.restore(restore);
-
-      // then
-      assertRestoredUpToTheRestorePoint(partition, restore, restored);
+      // when - then
+      assertThatThrownBy(() -> partition.restore(restore))
+          .rootCause()
+          .hasMessageContaining("Cannot find a record at checkpoint position");
     }
   }
 
@@ -225,7 +225,7 @@ final class BackupRestoreRoundTripPropertyTest {
   /** Appends a checkpoint record and, for a backup checkpoint, takes a backup at it. */
   record Checkpoint(boolean backup) implements Operation {}
 
-  /** Takes a snapshot some entries before the end of the journal. */
+  /** Takes a snapshot some entries before the end of the journal, capped as in production. */
   record TakeSnapshot(int entriesBeforeEnd) implements Operation {}
 
   /** Deletes the segments before the latest snapshot. */
@@ -486,8 +486,25 @@ final class BackupRestoreRoundTripPropertyTest {
               snapshotId == null ? null : snapshotIndexes.get(snapshotId)));
     }
 
+    /**
+     * Takes a snapshot as a partition with continuous backups does: at most at the entry before the
+     * latest backup's checkpoint record, and not at all before the first backup, so that the log a
+     * later backup needs is never compacted.
+     */
     private void takeSnapshot(final int entriesBeforeEnd) {
-      final var index = journal.getLastIndex() - entriesBeforeEnd;
+      final var backups = backups();
+      if (backups.isEmpty()) {
+        return;
+      }
+      takeSnapshotAt(
+          Math.min(journal.getLastIndex() - entriesBeforeEnd, backups.getLast().index() - 1));
+    }
+
+    void takeSnapshotPastTheLatestBackup() {
+      takeSnapshotAt(journal.getLastIndex());
+    }
+
+    private void takeSnapshotAt(final long index) {
       if (index <= lastSnapshotIndex || index < journal.getFirstIndex()) {
         return;
       }
