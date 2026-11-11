@@ -688,7 +688,7 @@ This has landed. Where the code settled differently:
   `ColumnFamilyRandomizedPropertyContractTest`, with more tries, and the differential test, which
   only run with `-Pinclude-random-tests`. The iteration stress test passes.
 
-### Phase 4: ordered transaction writer (`feat:`)
+### Phase 4: ordered transaction writer (done)
 
 - Replace EhCache's write-behind with the queue and writer of §4.6. `BackendLoaderWriter` becomes a
   loader: its `write` and `delete` do nothing, and `writeAll` moves to the writer.
@@ -700,7 +700,7 @@ This has landed. Where the code settled differently:
 - **Exit:** the cache module's tests and the whole contract suite are green, including the
   randomized and differential tests, plus the writer tests from §7.
 
-### Phase 5: snapshots, failures and close (`feat:`)
+### Phase 5: snapshots, failures and close (done)
 
 - `WriteBehindZeebeDb#createSnapshot` catches up, then checkpoints (§4.7).
 - Writer retries, the failure latch, fail-fast commits and snapshots, reads that keep working, and
@@ -708,7 +708,22 @@ This has landed. Where the code settled differently:
 - Close the writer and the cache before the backend (§4.8).
 - **Exit:** the snapshot, failure and close tests from §7 are green.
 
-### Phase 6: wiring and engine-level validation (`feat:` and `test:`)
+### Phase 6: wiring and engine-level validation (done)
+
+This has landed. Where the code settled differently:
+
+- The settings are unified configuration rather than experimental broker settings (§4.9), and can
+  be overridden per physical tenant.
+- With `-Dzeebe.db.writeBehind.enabled=true`, the whole engine suite (8,993 tests) is green against
+  the cache. One test in `EngineErrorHandlingTest` checked a response as soon as its record was in
+  the log. The response only goes out after the commit, which the cache makes a little longer, so
+  the test now waits for it.
+- Both broker ITs are in `WriteBehindCacheIT`, with a writer that holds everything back for an
+  hour and never fills a batch, so only the snapshot catch-up gets the state into RocksDB.
+  - The restart IT compacts the log behind the snapshot. Otherwise recovery replays the whole log,
+    which hides a snapshot that misses the cached state.
+  - In the follower IT, a broker joins the partition, since raft sends a snapshot to a member
+    without entries, and then takes it over.
 
 - Add the cache's settings to the unified configuration, under
   `camunda.data.primary-storage.write-behind-cache`, and map them to the broker's

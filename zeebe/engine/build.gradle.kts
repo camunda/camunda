@@ -20,6 +20,7 @@ dependencies {
   implementation(libs.org.slf4j.slf4j.api)
   implementation(project(":zeebe-protocol"))
   testImplementation(project(":zeebe-db-rocksdb"))
+  testImplementation(project(":zeebe-db-cache"))
   implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-msgpack-core"))

@@ -190,6 +190,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-cache</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-scheduler</artifactId>
       <scope>test</scope>
     </dependency>

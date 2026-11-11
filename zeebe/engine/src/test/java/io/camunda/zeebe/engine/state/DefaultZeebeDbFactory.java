@@ -11,6 +11,8 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.cache.WriteBehindConfiguration;
+import io.camunda.zeebe.db.cache.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -19,9 +21,15 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
+/**
+ * Creates the RocksDB factory the engine tests use. With {@code
+ * -Dzeebe.db.writeBehind.enabled=true}, it puts the write-behind cache in front of RocksDB, so the
+ * engine tests run against the cache.
+ */
 public final class DefaultZeebeDbFactory {
   private static final long MINIMUM_MEMORY_BYTES = 32 * 1024 * 1024; // 32 MB
   private static final int DEFAULT_PARTITION_COUNT = 3;
+  private static final String WRITE_BEHIND_ENABLED = "zeebe.db.writeBehind.enabled";
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     return defaultFactory(DEFAULT_PARTITION_COUNT);
@@ -38,11 +46,17 @@ public final class DefaultZeebeDbFactory {
     final var rocksDbConfig = new RocksDbConfiguration();
     rocksDbConfig.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
     rocksDbConfig.setMemoryLimit(memoryLimitBytes);
-    return new ZeebeRocksDbFactory<>(
-        rocksDbConfig,
-        consistencyChecks,
-        new AccessMetricsConfiguration(Kind.NONE),
-        SimpleMeterRegistry::new,
-        RocksDbResources.of(rocksDbConfig, new RuntimeInfo(partitions)));
+    final var rocksDbFactory =
+        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+            rocksDbConfig,
+            consistencyChecks,
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new,
+            RocksDbResources.of(rocksDbConfig, new RuntimeInfo(partitions)));
+    if (!Boolean.getBoolean(WRITE_BEHIND_ENABLED)) {
+      return rocksDbFactory;
+    }
+    return new WriteBehindZeebeDbFactory<>(
+        rocksDbFactory, WriteBehindConfiguration.DEFAULT, consistencyChecks);
   }
 }
