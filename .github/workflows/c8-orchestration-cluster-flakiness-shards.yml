@@ -319,19 +319,26 @@ jobs:
           npx playwright test "${args[@]}" --forbid-only --repeat-each="$REPEAT_EACH" || rc=$?
           echo "Playwright exited ${rc}; the score reads the report, not the exit code."
 
+      # Every artifact holds one top folder named after itself and is
+      # downloaded with merge-multiple, so it lands in <path>/<name>/ whether
+      # a pattern matches one artifact (unpacked flat) or several.
       - name: Collect the shard's report
         if: always()
+        env:
+          ARTIFACT: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
         run: |
           mkdir -p "$RUNNER_TEMP/shard/json-report" "$RUNNER_TEMP/shard/test-results"
           cp -r "$SUITE/json-report/." "$RUNNER_TEMP/shard/json-report/" 2>/dev/null || true
           cp -r "$SUITE/test-results/." "$RUNNER_TEMP/shard/test-results/" 2>/dev/null || true
+          mkdir -p "$RUNNER_TEMP/shard-artifact"
+          cp -r "$RUNNER_TEMP/shard" "$RUNNER_TEMP/shard-artifact/${ARTIFACT}"
 
       - name: Upload the shard's report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
-          path: ${{ runner.temp }}/shard/**
+          path: ${{ runner.temp }}/shard-artifact/
           retention-days: "7"
 
   score:
@@ -362,6 +369,7 @@ jobs:
         with:
           pattern: flaky-${{ inputs.label }}-*
           path: ${{ runner.temp }}/shards
+          merge-multiple: true
 
       - name: Wait before retrying the download
         if: steps.download.outcome == 'failure'
@@ -373,6 +381,7 @@ jobs:
         with:
           pattern: flaky-${{ inputs.label }}-*
           path: ${{ runner.temp }}/shards
+          merge-multiple: true
 
       - name: Score the pass
         id: score
@@ -403,22 +412,31 @@ jobs:
             jq -r '.cells | to_entries[] | "| \(.key) | \(.value.passed) | \(.value.failed) | \(.value.notRun) | \(.value.rate)% | \(.value.shardsOk)/\(.value.shards) |"' "$RUNNER_TEMP/score/score.json"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Wrap the score in its artifact folder
+        env:
+          ARTIFACT: flaky-score-${{ inputs.label }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/score-artifact/${ARTIFACT}"
+          cp "$RUNNER_TEMP/score/score.json" "$RUNNER_TEMP/score-artifact/${ARTIFACT}/"
+
       - name: Upload the score
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flaky-score-${{ inputs.label }}
-          path: ${{ runner.temp }}/score/score.json
+          path: ${{ runner.temp }}/score-artifact/
           retention-days: 14
 
       # The agent only needs the shards where the target failed, as one
       # artifact per pass instead of one per shard.
       - name: Keep the shards where the target failed
         id: failing
+        env:
+          LABEL: ${{ inputs.label }}
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/evidence"
+          mkdir -p "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}"
           jq -r '(.failingShards // [])[]' "$RUNNER_TEMP/score/score.json" | while read -r dir; do
-            cp -r "$RUNNER_TEMP/shards/${dir}" "$RUNNER_TEMP/evidence/"
+            cp -r "$RUNNER_TEMP/shards/${dir}" "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}/"
           done
           ls "$RUNNER_TEMP/evidence"
           echo "count=$(jq '.failingShards // [] | length' "$RUNNER_TEMP/score/score.json")" >> "$GITHUB_OUTPUT"

@@ -447,6 +447,7 @@ jobs:
         with:
           pattern: flaky-score-*
           path: ${{ runner.temp }}/scores
+          merge-multiple: true
       - name: Decide
         id: next
         run: |
@@ -534,6 +535,7 @@ jobs:
         with:
           pattern: flaky-{score,agent}-*
           path: ${{ runner.temp }}/out
+          merge-multiple: true
 
       - name: Decide
         id: final
