@@ -13,15 +13,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A property stored under {@link #value()} as map key. Supported field types: {@code long}, {@code
- * int}, {@code boolean}, {@code DirectBuffer} (msgpack string, or an already encoded msgpack value
- * if {@link #raw()}), enums (stored by {@code toString()}), {@code List<DirectBuffer>} (array of
- * strings) and other {@link MsgpackPojo} types.
+ * Optional. Every non-static field of a {@link MsgpackPojo} is stored under its field name unless
+ * it is annotated with {@link MsgpackIgnore}; this annotation only overrides the key or marks a raw
+ * value. Supported field types: {@code long}, {@code int}, {@code boolean}, {@code DirectBuffer}
+ * (msgpack string, or an already encoded msgpack value if {@link #raw()}), enums (stored by {@code
+ * toString()}), {@code List<DirectBuffer>} (array of strings), other {@link MsgpackPojo} types and
+ * {@code io.camunda.zeebe.msgpack.value.BaseValue}s (e.g. an {@code UnpackedObject}, embedded as a
+ * nested map that references the source buffer).
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)
 public @interface MsgpackProperty {
-  String value();
+  /** The map key. Defaults to the field name. */
+  String value() default "";
 
   /** The {@code DirectBuffer} holds a complete encoded msgpack value that is embedded as is. */
   boolean raw() default false;

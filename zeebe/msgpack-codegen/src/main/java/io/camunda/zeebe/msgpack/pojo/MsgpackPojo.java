@@ -16,10 +16,11 @@ import java.lang.annotation.Target;
  * Marks a plain data class for which a {@code <Name>Serializer} and a {@code <Name>Deserializer}
  * are generated in the same package.
  *
- * <p>The class needs a public no-arg constructor. Default values are the field initializers. Every
- * {@link MsgpackProperty} field needs a getter ({@code getX}, or {@code isX} for booleans) and, for
- * scalar and string fields, a setter. Properties are written in field declaration order, which is
- * part of the stored format.
+ * <p>The class needs a no-arg constructor that is accessible from the same package. Default values
+ * are the field initializers. The generated code reads and writes the fields directly, so they must
+ * not be private; scalar, string, enum and raw fields must not be final. Every non-static field is
+ * stored unless annotated with {@link MsgpackIgnore}. Properties are written in field declaration
+ * order and keyed by field name, both of which are part of the stored format.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.TYPE)

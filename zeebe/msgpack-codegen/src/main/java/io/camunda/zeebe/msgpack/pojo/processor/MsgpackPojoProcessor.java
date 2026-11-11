@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo.processor;
 
+import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
@@ -21,6 +22,7 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
@@ -41,12 +43,13 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     RAW,
     ENUM,
     STRING_LIST,
-    POJO
+    POJO,
+    VALUE
   }
 
-  private record Property(String key, Type type, String getter, String setter, String javaType) {}
+  private record Property(String key, Type type, String field, String javaType, boolean isFinal) {}
 
-  private record Model(String pkg, String name, List<Property> properties, String unknownGetter) {}
+  private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 
   @Override
   public SourceVersion getSupportedSourceVersion() {
@@ -76,31 +79,39 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     final var pkg =
         processingEnv.getElementUtils().getPackageOf(type).getQualifiedName().toString();
     final var properties = new ArrayList<Property>();
-    String unknownGetter = null;
+    String unknownField = null;
     for (final Element field : type.getEnclosedElements()) {
-      if (field.getKind() != ElementKind.FIELD) {
+      if (field.getKind() != ElementKind.FIELD
+          || field.getModifiers().contains(Modifier.STATIC)
+          || field.getAnnotation(MsgpackIgnore.class) != null) {
         continue;
       }
       final var fieldName = field.getSimpleName().toString();
+      if (field.getModifiers().contains(Modifier.PRIVATE)) {
+        throw new IllegalArgumentException(
+            "Field " + fieldName + " must not be private, or annotated with @MsgpackIgnore");
+      }
       if (field.getAnnotation(MsgpackUnknownProperties.class) != null) {
-        unknownGetter = "get" + capitalize(fieldName);
+        unknownField = fieldName;
         continue;
       }
       final var annotation = field.getAnnotation(MsgpackProperty.class);
-      if (annotation == null) {
-        continue;
-      }
+      final var raw = annotation != null && annotation.raw();
+      final var key =
+          annotation == null || annotation.value().isEmpty() ? fieldName : annotation.value();
       final var mirror = field.asType();
-      final var kind = typeOf(mirror, annotation.raw(), fieldName);
-      final var getter = (kind == Type.BOOLEAN ? "is" : "get") + capitalize(fieldName);
-      final var setter = "set" + capitalize(fieldName);
-      properties.add(
-          new Property(annotation.value(), kind, getter, setter, javaType(mirror, kind)));
+      final var kind = typeOf(mirror, raw, fieldName);
+      final var isFinal = field.getModifiers().contains(Modifier.FINAL);
+      final var mutable = kind != Type.POJO && kind != Type.VALUE && kind != Type.STRING_LIST;
+      if (isFinal && mutable) {
+        throw new IllegalArgumentException("Field " + fieldName + " must not be final");
+      }
+      properties.add(new Property(key, kind, fieldName, javaType(mirror, kind), isFinal));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
     }
-    return new Model(pkg, type.getSimpleName().toString(), properties, unknownGetter);
+    return new Model(pkg, type.getSimpleName().toString(), properties, unknownField);
   }
 
   private Type typeOf(final TypeMirror mirror, final boolean raw, final String field) {
@@ -129,6 +140,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         if (element.getAnnotation(MsgpackPojo.class) != null) {
           return Type.POJO;
         }
+        if (isBaseValue(element)) {
+          return Type.VALUE;
+        }
         break;
       default:
         break;
@@ -136,8 +150,22 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     throw new IllegalArgumentException("Unsupported type " + mirror + " of field " + field);
   }
 
+  private boolean isBaseValue(final TypeElement element) {
+    TypeMirror current = element.asType();
+    while (current.getKind() == javax.lang.model.type.TypeKind.DECLARED) {
+      final var currentElement = (TypeElement) ((DeclaredType) current).asElement();
+      if (currentElement
+          .getQualifiedName()
+          .contentEquals("io.camunda.zeebe.msgpack.value.BaseValue")) {
+        return true;
+      }
+      current = currentElement.getSuperclass();
+    }
+    return false;
+  }
+
   private String javaType(final TypeMirror mirror, final Type kind) {
-    return kind == Type.ENUM || kind == Type.POJO
+    return kind == Type.ENUM || kind == Type.POJO || kind == Type.VALUE
         ? ((TypeElement) ((DeclaredType) mirror).asElement()).getQualifiedName().toString()
         : mirror.toString();
   }
@@ -177,12 +205,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("  public int write(final MsgPackWriter w, final ").append(pojo).append(" v) {\n");
     final var count =
         m.properties().size()
-            + (m.unknownGetter() == null ? "" : " + v." + m.unknownGetter() + "().count()");
+            + (m.unknownField() == null ? "" : " + v." + m.unknownField() + ".count()");
     s.append("    int n = w.writeMapHeader(").append(count).append(");\n");
     int i = 0;
     for (final var p : m.properties()) {
       s.append("    n += w.writeString(KEY_").append(i).append(");\n");
-      final var get = "v." + p.getter() + "()";
+      final var get = "v." + p.field();
       switch (p.type()) {
         case LONG, INT -> s.append("    n += w.writeInteger(").append(get).append(");\n");
         case BOOLEAN -> s.append("    n += w.writeBoolean(").append(get).append(");\n");
@@ -216,11 +244,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 .append("Serializer.write(w, ")
                 .append(get)
                 .append(");\n");
+        case VALUE -> s.append("    n += ").append(get).append(".write(w);\n");
       }
       i++;
     }
-    if (m.unknownGetter() != null) {
-      s.append("    final var unknown = v.").append(m.unknownGetter()).append("();\n");
+    if (m.unknownField() != null) {
+      s.append("    final var unknown = v.").append(m.unknownField()).append(";\n");
       s.append(
           "    if (!unknown.isEmpty()) {\n"
               + "      n += w.writeRaw(unknown.buffer(), 0, unknown.length());\n"
@@ -238,7 +267,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("    n += MsgPackWriter.getEncodedStringLength(KEY_")
           .append(i)
           .append(".capacity());\n");
-      final var get = "v." + p.getter() + "()";
+      final var get = "v." + p.field();
       switch (p.type()) {
         case LONG, INT ->
             s.append("    n += MsgPackWriter.getEncodedLongValueLength(")
@@ -278,11 +307,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 .append("Serializer.getLength(")
                 .append(get)
                 .append(");\n");
+        case VALUE -> s.append("    n += ").append(get).append(".getEncodedLength();\n");
       }
       i++;
     }
-    if (m.unknownGetter() != null) {
-      s.append("    n += v.").append(m.unknownGetter()).append("().length();\n");
+    if (m.unknownField() != null) {
+      s.append("    n += v.").append(m.unknownField()).append(".length();\n");
     }
     s.append("    return n;\n  }\n\n");
 
@@ -351,31 +381,18 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
     s.append("  public void reset(final ").append(pojo).append(" target) {\n");
     for (final var p : m.properties()) {
+      final var f = p.field();
       switch (p.type()) {
         case STRING_LIST ->
-            s.append("    target.")
-                .append(p.getter())
-                .append("().clear();\n    target.")
-                .append(p.getter())
-                .append("().addAll(defaults.")
-                .append(p.getter())
-                .append("());\n");
-        case POJO ->
-            s.append("    ")
-                .append(field(p))
-                .append("Deserializer.reset(target.")
-                .append(p.getter())
-                .append("());\n");
-        default ->
-            s.append("    target.")
-                .append(p.setter())
-                .append("(defaults.")
-                .append(p.getter())
-                .append("());\n");
+            s.append(
+                "    target.%s.clear();\n    target.%s.addAll(defaults.%s);\n".formatted(f, f, f));
+        case POJO -> s.append("    %sDeserializer.reset(target.%s);\n".formatted(f, f));
+        case VALUE -> s.append("    target.%s.reset();\n".formatted(f));
+        default -> s.append("    target.%s = defaults.%s;\n".formatted(f, f));
       }
     }
-    if (m.unknownGetter() != null) {
-      s.append("    target.").append(m.unknownGetter()).append("().clear();\n");
+    if (m.unknownField() != null) {
+      s.append("    target.").append(m.unknownField()).append(".clear();\n");
     }
     s.append("  }\n\n");
 
@@ -393,7 +410,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     int i = 0;
     for (final var p : m.properties()) {
       s.append("        case ").append(i).append(" -> ");
-      final var set = "target." + p.setter();
+      final var set = "target." + p.field() + " = ";
       switch (p.type()) {
         case LONG -> s.append(set).append("(r.readInteger());\n");
         case INT -> s.append(set).append("((int) r.readInteger());\n");
@@ -409,11 +426,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 .append("));\n");
         case STRING_LIST -> {
           s.append(
-                  "{\n"
-                      + "          final int n = r.readArrayHeader();\n"
-                      + "          final var list = target.")
-              .append(p.getter())
-              .append("();\n");
+              "{\n          final int n = r.readArrayHeader();\n          final var list = target.%s;\n"
+                  .formatted(p.field()));
           s.append(
               "          for (int k = 0; k < n; k++) {\n"
                   + "            list.add(Decoding.readString(r));\n"
@@ -421,17 +435,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                   + "        }\n");
         }
         case POJO ->
-            s.append(field(p))
-                .append("Deserializer.read(r, target.")
-                .append(p.getter())
-                .append("());\n");
+            s.append("%sDeserializer.read(r, target.%s);\n".formatted(p.field(), p.field()));
+        case VALUE -> s.append("target.%s.read(r);\n".formatted(p.field()));
       }
       i++;
     }
-    if (m.unknownGetter() != null) {
-      s.append("        default -> {\n          r.skipValue();\n          target.")
-          .append(m.unknownGetter())
-          .append("().append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n");
+    if (m.unknownField() != null) {
+      s.append(
+          "        default -> {\n          r.skipValue();\n          target.%s.append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n"
+              .formatted(m.unknownField()));
     } else {
       s.append("        default -> r.skipValue();\n");
     }
@@ -519,13 +531,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   private static String field(final Property p) {
-    return p.getter()
-        .replaceFirst("^(get|is)", "")
-        .transform(n -> Character.toLowerCase(n.charAt(0)) + n.substring(1));
-  }
-
-  private static String capitalize(final String name) {
-    return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    return p.field();
   }
 
   private void write(
