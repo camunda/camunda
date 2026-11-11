@@ -986,10 +986,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
             .aggregations()
             .get(AGG_STATS)
             .stats();
+    if (stats.count() == 0 || stats.min() == null || stats.max() == null) {
+      return 1L;
+    }
     final double min = stats.min();
     final double max = stats.max();
 
-    if (max == min || stats.count() == 0) {
+    if (max == min) {
       // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
       return 1L;
     } else {
