@@ -13,11 +13,15 @@ on:
       - "release/**"
     paths:
       - "c8run/**"
+      # camunda.bat and the Unix launcher are generated from these templates.
+      - "dist/src/main/scripts/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
   pull_request:
     paths:
       - "c8run/**"
+      # camunda.bat and the Unix launcher are generated from these templates.
+      - "dist/src/main/scripts/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
   schedule:
@@ -326,12 +330,14 @@ jobs:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
+      # The directory name contains a space on purpose: C8Run must start from paths
+      # like C:\Program Files\..., where camunda.bat once failed on a quoted JAVACMD.
       - name: Extract packaged C8Run for E2E
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
-          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
-          $distribution = (Get-ChildItem e2e-distribution -Directory).FullName
+          New-Item -ItemType Directory -Path "e2e distribution" | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath "e2e distribution"
+          $distribution = (Get-ChildItem "e2e distribution" -Directory).FullName
           "C8RUN_E2E_DIR=$distribution" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         working-directory: .\c8run
 
