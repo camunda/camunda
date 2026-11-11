@@ -93,11 +93,13 @@ final class EngineStateRoundTripsTest {
     counting = new CountingConnection();
     database.observed().reset();
     database.observed().decorate(counting::wrap);
-    transactionContext = new JdbcTransactionContext();
+    final int partitionId = database.nextPartitionId();
+    transactionContext =
+        new JdbcTransactionContext(
+            EntitySession.readLastProcessedPosition(database.sessionFactory(), partitionId));
     sessions = new CountingSessionFactory(database.sessionFactory());
     final var session =
-        EngineStateDatabase.entitySession(
-            transactionContext, database.nextPartitionId(), sessions.factory());
+        EngineStateDatabase.entitySession(transactionContext, partitionId, sessions.factory());
     variableState = new VariableStateImpl(new RdbmsVariableStore(session));
     elementInstanceState =
         new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
@@ -194,17 +196,21 @@ final class EngineStateRoundTripsTest {
         100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.setAwaitResultRequestMetadata(
         100, TENANT_ID, new AwaitProcessInstanceResultMetadata().setRequestId(1));
+    // like the stream processor, which marks every transaction with the position of its command
+    transactionContext.markAsProcessed(1);
     counting.reset();
 
     // when
     transaction.commit();
 
-    // then - the parent's update collapsed into its insert, which shares a batch with the child's
+    // then - the parent's update collapsed into its insert, which shares a batch with the child's;
+    // the position is one more update
     assertThat(counting.batches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_ELEMENT_INSTANCE", "INSERT", 2),
             new Batch("CAM_RU_TAKEN_SEQUENCE_FLOW", "INSERT", 1),
-            new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "INSERT", 1));
+            new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "INSERT", 1),
+            new Batch("CAM_RU_PARTITION_STATE", "UPDATE", 1));
     assertThat(counting.otherStatements).isZero();
     assertThat(sessions.opened()).isOne();
     assertThat(counting.commits).isOne();
@@ -271,6 +277,23 @@ final class EngineStateRoundTripsTest {
 
     // then
     assertThat(counting.batches).isEmpty();
+    assertThat(sessions.opened()).isOne();
+    assertThat(counting.commits).isOne();
+  }
+
+  @Test
+  void shouldOnlyUpdateThePositionOfACommandWithoutChanges() throws Exception {
+    // given - a processed command that changes no relational state
+    final var transaction = transactionContext.getCurrentTransaction();
+    transactionContext.markAsProcessed(1);
+    counting.reset();
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(counting.batches).containsExactly(new Batch("CAM_RU_PARTITION_STATE", "UPDATE", 1));
+    assertThat(counting.otherStatements).isZero();
     assertThat(sessions.opened()).isOne();
     assertThat(counting.commits).isOne();
   }

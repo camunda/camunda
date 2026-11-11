@@ -182,8 +182,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var builder = StreamProcessor.builder();
     if (rdbmsEngineState != null) {
       final var mixedDb =
-          RdbmsEngineStateDb.open(
-              context.getZeebeDb(), rdbmsEngineState.dataSource(), context.getPartitionId());
+          RdbmsEngineStateDb.open(context.getZeebeDb(), rdbmsEngineState, context.getPartitionId());
       builder.zeebeDb(mixedDb);
     } else {
       builder.zeebeDb(context.getZeebeDb());

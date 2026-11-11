@@ -17,8 +17,10 @@ import io.camunda.zeebe.db.ZeebeDbTransaction;
  * that state stored in either store is committed or rolled back together.
  *
  * <p>Commits the JDBC transaction first, then the RocksDB one. A failure between the two commits
- * leaves the stores inconsistent; this is accepted, since the mixed mode is a temporary step until
- * all engine state lives in one store.
+ * leaves the database one command ahead of RocksDB. As RocksDB is rebuilt from a snapshot and the
+ * log on restart anyway, the stores converge: RocksDB re-applies the events of that command, while
+ * the JDBC side discards them, since the database contains the command's position (see {@link
+ * JdbcTransactionContext#markAsProcessed}).
  */
 public final class MixedTransactionContext implements TransactionContext {
 

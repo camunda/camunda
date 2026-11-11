@@ -94,6 +94,82 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
+  void shouldDiscardChangesOfAPositionTheDatabaseContains() throws Exception {
+    // given - a database that contains the changes up to position 10
+    final var restarted = new JdbcTransactionContext(10);
+    restarted.register(participant);
+    final var outcomes = new ArrayList<String>();
+    restarted.addTransactionListener(recording(outcomes));
+
+    for (final long position : new long[] {9, 10}) {
+      final var transaction = restarted.getCurrentTransaction();
+      participant.stage(position, "replayed");
+      restarted.markAsProcessed(position);
+
+      // when
+      transaction.commit();
+    }
+
+    // then
+    assertThat(visibleRows()).isEmpty();
+    assertThat(participant.flushes).isZero();
+    assertThat(participant.rollbacks).isEqualTo(2);
+    assertThat(participant.staged).isEmpty();
+    assertThat(outcomes).containsExactly("rollback", "rollback");
+  }
+
+  @Test
+  void shouldCommitChangesOfAPositionAfterTheDatabase() throws Exception {
+    // given
+    final var restarted = new JdbcTransactionContext(10);
+    restarted.register(participant);
+    final var transaction = restarted.getCurrentTransaction();
+    participant.stage(1, "a");
+    restarted.markAsProcessed(11);
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+    assertThat(participant.marked).containsExactly(11L);
+  }
+
+  @Test
+  void shouldCommitAllPositionsOfADatabaseWithoutPosition() throws Exception {
+    // given - the context of the default database position
+    final var transaction = context.getCurrentTransaction();
+    participant.stage(1, "a");
+    context.markAsProcessed(0);
+
+    // when
+    transaction.commit();
+
+    // then
+    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+    assertThat(participant.marked).containsExactly(0L);
+  }
+
+  @Test
+  void shouldCommitUnmarkedTransactionsAfterADiscardedOne() throws Exception {
+    // given
+    final var restarted = new JdbcTransactionContext(10);
+    restarted.register(participant);
+    final var discarded = restarted.getCurrentTransaction();
+    participant.stage(1, "replayed");
+    restarted.markAsProcessed(10);
+    discarded.commit();
+
+    // when - a transaction without a command, e.g. of a scheduled task
+    final var unmarked = restarted.getCurrentTransaction();
+    participant.stage(2, "b");
+    unmarked.commit();
+
+    // then
+    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(2L, "b"));
+  }
+
+  @Test
   void shouldCommitCallThatIsNotInATransaction() throws Exception {
     // given
     participant.stage(1, "a");
@@ -541,6 +617,11 @@ final class JdbcTransactionContextTest {
     }
 
     @Override
+    public void markAsProcessed(final long position) {
+      calls.add(name + " marked " + position);
+    }
+
+    @Override
     public void reset() {
       calls.add(name + " reset");
     }
@@ -550,6 +631,7 @@ final class JdbcTransactionContextTest {
 
     private final Connection connection;
     private final Map<Long, String> staged = new LinkedHashMap<>();
+    private final List<Long> marked = new ArrayList<>();
     private int flushes;
     private int commits;
     private int rollbacks;
@@ -597,6 +679,11 @@ final class JdbcTransactionContextTest {
     public void commitFailed() {
       failedCommits++;
       rollbackQuietly();
+    }
+
+    @Override
+    public void markAsProcessed(final long position) {
+      marked.add(position);
     }
 
     @Override

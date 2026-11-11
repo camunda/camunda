@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionParticipant;
+import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -77,6 +78,9 @@ import org.jspecify.annotations.Nullable;
  * at most one of them, so the order doesn't matter otherwise.
  */
 final class EntitySession implements JdbcTransactionParticipant {
+
+  /** The partition state row of the position {@link #markAsProcessed} writes. */
+  static final String LAST_PROCESSED_POSITION_KEY = "last-processed-position";
 
   private static final Object ABSENT = new Object();
 
@@ -454,6 +458,46 @@ final class EntitySession implements JdbcTransactionParticipant {
   @SuppressWarnings("unchecked")
   <K, E> Set<K> stagedKeys(final EntityType<K, E> type) {
     return Collections.unmodifiableSet((Set<K>) staged(type).keySet());
+  }
+
+  /**
+   * Stages the update of the partition's last processed position. The row exists, as {@link
+   * #readLastProcessedPosition} creates it before the stream processor starts, so a commit sends a
+   * single update.
+   */
+  @Override
+  public void markAsProcessed(final long position) {
+    update(
+        RdbmsProcessStore.PARTITION_STATE,
+        new PartitionStateRow(LAST_PROCESSED_POSITION_KEY, Long.toString(position)));
+  }
+
+  /**
+   * Reads the position of the last command whose changes the database contains for the partition,
+   * or {@link JdbcTransactionContext#NO_POSITION} if there is none. Creates the position's row if
+   * it doesn't exist yet, so that {@link #markAsProcessed} only needs to update it.
+   */
+  static long readLastProcessedPosition(
+      final SqlSessionFactory sessionFactory, final int partitionId) {
+    try (final var session = sessionFactory.openSession()) {
+      final PartitionStateRow row =
+          session.selectOne(
+              RdbmsProcessStore.PARTITION_STATE.select,
+              Map.of("partitionId", partitionId, "key", LAST_PROCESSED_POSITION_KEY));
+      if (row != null) {
+        return Long.parseLong(Objects.requireNonNull(row.value()));
+      }
+      session.insert(
+          RdbmsProcessStore.PARTITION_STATE.insert,
+          Map.of(
+              "partitionId",
+              partitionId,
+              "row",
+              new PartitionStateRow(
+                  LAST_PROCESSED_POSITION_KEY, Long.toString(JdbcTransactionContext.NO_POSITION))));
+      session.commit();
+      return JdbcTransactionContext.NO_POSITION;
+    }
   }
 
   /**
