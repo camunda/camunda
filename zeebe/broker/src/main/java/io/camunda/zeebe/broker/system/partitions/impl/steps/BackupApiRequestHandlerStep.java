@@ -78,7 +78,11 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             checkpointMetadataState,
             backupRangeState,
             context.getPersistedSnapshotStore(),
-            () -> snapshotDirector.forceSnapshot(),
+            // with the RDBMS primary storage, the partition has no snapshot director
+            () ->
+                snapshotDirector != null
+                    ? snapshotDirector.forceSnapshot()
+                    : CompletableActorFuture.completed(null),
             context.partitionId(),
             isBackupEnabled);
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);

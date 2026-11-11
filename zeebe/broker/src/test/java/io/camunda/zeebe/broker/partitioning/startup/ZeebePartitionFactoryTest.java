@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotApiHandlerTransitionStep;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -113,5 +115,30 @@ class ZeebePartitionFactoryTest {
                     ZeebePartitionFactory.resolveRuntimeDirectory(
                         brokerCfg, partitionId, runtimeRoot.toFile())))
         .isInstanceOf(UncheckedIOException.class);
+  }
+
+  @Test
+  void shouldTakeNoSnapshotsWithTheRdbmsPrimaryStorage() {
+    // when
+    final var steps = ZeebePartitionFactory.transitionSteps(true);
+
+    // then
+    assertThat(steps)
+        .extracting(PartitionTransitionStep::getName)
+        .doesNotContain("SnapshotDirector", "SnapshotAfterMigrationTransitionStep")
+        .contains("LogStorage", "StreamProcessor", "ExporterDirector");
+    assertThat(steps).noneMatch(SnapshotApiHandlerTransitionStep.class::isInstance);
+  }
+
+  @Test
+  void shouldTakeSnapshotsWithRocksDbAsPrimaryStorage() {
+    // when
+    final var steps = ZeebePartitionFactory.transitionSteps(false);
+
+    // then
+    assertThat(steps)
+        .extracting(PartitionTransitionStep::getName)
+        .contains("SnapshotDirector", "SnapshotAfterMigrationTransitionStep");
+    assertThat(steps).anyMatch(SnapshotApiHandlerTransitionStep.class::isInstance);
   }
 }

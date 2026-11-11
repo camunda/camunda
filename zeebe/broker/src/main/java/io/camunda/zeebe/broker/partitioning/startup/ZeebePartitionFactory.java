@@ -100,6 +100,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -373,24 +374,36 @@ public final class ZeebePartitionFactory {
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
-    return List.of(
-        new MetricsStep(),
-        new LogStoragePartitionTransitionStep(),
-        new LogStreamPartitionTransitionStep(),
-        new ZeebeDbPartitionTransitionStep(),
-        new MigrationTransitionStep(),
-        new QueryServicePartitionTransitionStep(),
-        new BackupStoreTransitionStep(),
-        new BackupServiceTransitionStep(),
-        new InterPartitionCommandServiceStep(),
-        new StreamProcessorTransitionStep(),
-        new CommandApiServiceTransitionStep(),
-        new SnapshotDirectorPartitionTransitionStep(),
-        new SnapshotAfterMigrationTransitionStep(),
-        new SnapshotApiHandlerTransitionStep(),
-        new ExporterDirectorPartitionTransitionStep(),
-        new BackupApiRequestHandlerStep(),
-        new AdminApiRequestHandlerStep());
+    return transitionSteps(engineState != null);
+  }
+
+  /**
+   * With the RDBMS primary storage, the partition takes no snapshots: each command commits its
+   * changes to the database, so there is nothing to take, and a new leader replays the log from the
+   * database. The steps that take snapshots, or hand them to other brokers, are left out.
+   */
+  static List<PartitionTransitionStep> transitionSteps(final boolean rdbmsPrimaryStorage) {
+    final var steps = new ArrayList<PartitionTransitionStep>();
+    steps.add(new MetricsStep());
+    steps.add(new LogStoragePartitionTransitionStep());
+    steps.add(new LogStreamPartitionTransitionStep());
+    steps.add(new ZeebeDbPartitionTransitionStep());
+    steps.add(new MigrationTransitionStep());
+    steps.add(new QueryServicePartitionTransitionStep());
+    steps.add(new BackupStoreTransitionStep());
+    steps.add(new BackupServiceTransitionStep());
+    steps.add(new InterPartitionCommandServiceStep());
+    steps.add(new StreamProcessorTransitionStep());
+    steps.add(new CommandApiServiceTransitionStep());
+    if (!rdbmsPrimaryStorage) {
+      steps.add(new SnapshotDirectorPartitionTransitionStep());
+      steps.add(new SnapshotAfterMigrationTransitionStep());
+      steps.add(new SnapshotApiHandlerTransitionStep());
+    }
+    steps.add(new ExporterDirectorPartitionTransitionStep());
+    steps.add(new BackupApiRequestHandlerStep());
+    steps.add(new AdminApiRequestHandlerStep());
+    return List.copyOf(steps);
   }
 
   private StateController createStateController(
