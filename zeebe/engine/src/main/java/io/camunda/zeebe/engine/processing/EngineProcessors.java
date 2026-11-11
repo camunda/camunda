@@ -412,7 +412,11 @@ public final class EngineProcessors {
         ValueType.USER_TASK_LOOKUP,
         UserTaskLookupIntent.FETCH,
         new UserTaskLookupFetchProcessor(
-            processingState, writers, tenantCheck, new UserTaskAuthorizationCheck(cslCheck)));
+            processingState,
+            writers,
+            tenantCheck,
+            new UserTaskAuthorizationCheck(cslCheck),
+            config.getMaxResponseMessageSize()));
 
     addIncidentProcessors(
         processingState,

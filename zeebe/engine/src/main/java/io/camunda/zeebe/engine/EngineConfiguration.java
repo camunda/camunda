@@ -38,6 +38,8 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT = false;
   public static final int DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT = Integer.MAX_VALUE;
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
+  // the broker's default for zeebe.broker.network.maxMessageSize ("4MB", where MB is 1024 * 1024)
+  public static final int DEFAULT_MAX_RESPONSE_MESSAGE_SIZE = 4 * 1024 * 1024;
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
@@ -150,6 +152,7 @@ public final class EngineConfiguration {
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int jobsTimeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
+  private int maxResponseMessageSize = DEFAULT_MAX_RESPONSE_MESSAGE_SIZE;
   private boolean enableAuthorization = DEFAULT_ENABLE_AUTHORIZATION_CHECKS;
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
   private Duration batchOperationSchedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
@@ -358,6 +361,19 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setValidatorsResultsOutputMaxSize(final int maxSize) {
     validatorsResultsOutputMaxSize = maxSize;
+    return this;
+  }
+
+  /**
+   * The broker's max message size, in bytes. Not a setting of its own: the broker sets it from its
+   * network configuration, so the engine can bound what it sends back in a response.
+   */
+  public int getMaxResponseMessageSize() {
+    return maxResponseMessageSize;
+  }
+
+  public EngineConfiguration setMaxResponseMessageSize(final int maxResponseMessageSize) {
+    this.maxResponseMessageSize = maxResponseMessageSize;
     return this;
   }
 

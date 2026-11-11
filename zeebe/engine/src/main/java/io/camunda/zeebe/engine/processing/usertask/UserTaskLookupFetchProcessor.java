@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -31,9 +32,13 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 /**
@@ -49,6 +54,10 @@ public final class UserTaskLookupFetchProcessor
 
   private static final String NO_USER_TASK_FOUND_MESSAGE =
       "Expected to fetch user task with key '%d', but no such user task was found";
+  private static final String RESPONSE_TOO_LARGE_MESSAGE =
+      "Expected to fetch user task with key '%d', but with %s the response is larger than the"
+          + " max message size of %s. Narrow fetchVariables to the variables you need, or read the"
+          + " variables from the user task search. Variables in the response: %s";
 
   private final UserTaskState userTaskState;
   private final VariableState variableState;
@@ -58,12 +67,14 @@ public final class UserTaskLookupFetchProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final int maxResponseMessageSize;
 
   public UserTaskLookupFetchProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final CslTenantCheck tenantCheck,
-      final UserTaskAuthorizationCheck userTaskAuth) {
+      final UserTaskAuthorizationCheck userTaskAuth,
+      final int maxResponseMessageSize) {
     userTaskState = processingState.getUserTaskState();
     variableState = processingState.getVariableState();
     bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
@@ -72,6 +83,7 @@ public final class UserTaskLookupFetchProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    this.maxResponseMessageSize = maxResponseMessageSize;
   }
 
   @Override
@@ -114,13 +126,6 @@ public final class UserTaskLookupFetchProcessor
     final long userTaskKey = command.getKey();
     final List<String> fetchVariables = command.getValue().getFetchVariables();
 
-    // built from scratch, so response fields sent with the command never reach the FETCHED event
-    final var fetched =
-        new UserTaskLookupRecord()
-            .setFetchVariables(fetchVariables)
-            .setTenantId(userTask.getTenantId());
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskLookupIntent.FETCHED, fetched);
-
     final UserTaskLookupRecord response =
         new UserTaskLookupRecord()
             .setFetchVariables(fetchVariables)
@@ -131,8 +136,61 @@ public final class UserTaskLookupFetchProcessor
     final DirectBuffer variables =
         BufferUtil.cloneBuffer(collectVariables(userTask.getElementInstanceKey(), fetchVariables));
     response.getUserTask().setVariables(variables);
+
+    // Checked before anything is written, so a rejected read leaves only the rejection on the log.
+    final int responseLength = response.getLength();
+    if (responseLength > maxResponseMessageSize) {
+      rejectCommand(
+          command,
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              RESPONSE_TOO_LARGE_MESSAGE.formatted(
+                  userTaskKey,
+                  formatSize(responseLength),
+                  formatSize(maxResponseMessageSize),
+                  describeVariableSizes(variables))));
+      return;
+    }
+
+    // built from scratch, so response fields sent with the command never reach the FETCHED event
+    final var fetched =
+        new UserTaskLookupRecord()
+            .setFetchVariables(fetchVariables)
+            .setTenantId(userTask.getTenantId());
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskLookupIntent.FETCHED, fetched);
     responseWriter.writeAcceptedResponseOnCommand(
         userTaskKey, UserTaskLookupIntent.FETCHED, response, command);
+  }
+
+  /**
+   * Lists every variable of the document with the size of its value, largest first, so the caller
+   * can pick the names to pass in {@code fetchVariables}. All of them, not only the largest: {@code
+   * fetchVariables} names the variables to return, so narrowing the read needs every name. The
+   * sizes are of the MessagePack values, close to but not the same as their JSON size.
+   */
+  private static String describeVariableSizes(final DirectBuffer document) {
+    final var reader = new MsgPackReader().wrap(document, 0, document.capacity());
+    final int variableCount = reader.readMapHeader();
+    final List<VariableSize> sizes = new ArrayList<>(variableCount);
+    for (int i = 0; i < variableCount; i++) {
+      final String name = BufferUtil.bufferAsString(reader.readToken().getValueBuffer());
+      final int valueOffset = reader.getOffset();
+      reader.skipValue();
+      sizes.add(new VariableSize(name, reader.getOffset() - valueOffset));
+    }
+    return sizes.stream()
+        .sorted(Comparator.comparingInt(VariableSize::size).reversed())
+        .map(variable -> "%s (~%s)".formatted(variable.name(), formatSize(variable.size())))
+        .collect(Collectors.joining(", "));
+  }
+
+  /**
+   * Prints a size the way the max message size is configured ("4MB"): MB and KB as Spring's
+   * DataSize reads them, 1024 * 1024 and 1024 bytes, so the limit in the message reads like the
+   * setting.
+   */
+  private static String formatSize(final long bytes) {
+    return ByteValue.prettyPrint(bytes).replace("iB", "B");
   }
 
   private DirectBuffer collectVariables(
@@ -162,4 +220,6 @@ public final class UserTaskLookupFetchProcessor
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
     responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
+
+  private record VariableSize(String name, int size) {}
 }
