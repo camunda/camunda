@@ -1,0 +1,15 @@
+{
+  "ab53ce9b": {
+    "version": "8.10",
+    "file": "tests/operate/multiInstanceSelection.spec.ts",
+    "titlePath": [
+      "Multi Instance Flow Node Selection",
+      "expand multi instance flow nodes in instance history"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43038120397",
+    "updated_at": "2026-11-11T14:37:28Z",
+    "cooldown_until": "2026-11-12T14:37:28Z"
+  }
+}
