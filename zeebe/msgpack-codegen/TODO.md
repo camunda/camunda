@@ -51,25 +51,34 @@ Derived from the column families of `DbElementInstanceState`, `DbJobState`, `DbV
 
 Supported by the generator today:
 
-- [ ] `processing/LastProcessedPosition` (written after every processed record)
-- [ ] `instance/ParentScopeKey` (variable scopes)
-- [ ] `instance/JobStateValue` (job state column family)
+- [x] `processing/LastProcessedPosition` (written after every processed record)
+- [x] `instance/ParentScopeKey` (variable scopes)
+- [x] `instance/JobStateValue` (job state column family)
 - [ ] `instance/JobRecordValue` (nests `JobRecord`, a `BaseValue`)
-- [ ] `instance/EventScopeInstance` (`List<DirectBuffer>` fields)
-- [ ] `deployment/LatestProcessVersion`
+- [x] `instance/EventScopeInstance` (`List<DirectBuffer>` fields)
+- [x] `deployment/LatestProcessVersion`
 - [ ] `deployment/DeploymentRaw` (nests `DeploymentRecord`, a `BaseValue`)
 
 Need `@MsgpackProperty(binary = true)`, supported now:
 
-- [ ] `variable/VariableInstance` (hot: every variable write)
-- [ ] `instance/EventTrigger`
-- [ ] `deployment/Digest`
+- [x] `variable/VariableInstance` (hot: every variable write)
+- [x] `instance/EventTrigger`
+- [x] `deployment/Digest`
 
 Deferred, the generator lacks the property types (deployment time only, not on the hot path):
 
 - [ ] `deployment/PersistedProcess`: binary plus `ArrayProperty` of a nested object, and it
       implements `ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess>`.
 - [ ] `deployment/VersionInfo`: `ArrayProperty<LongValue>`, a `List<Long>` field type.
+
+### Cost to measure in wave 1
+
+- [ ] `VariableInstance.wrap` and `IndexedRecord.wrap` copy the whole input because the nested
+      `VariableMetadataRecord` / `ProcessInstanceRecord` are still `UnpackedObject`s that decode by
+      reference. The binary value is copied a second time on decode. Both go away when the nested
+      records are migrated (they live in protocol-impl); until then, check them in the benchmark.
+- [ ] Migrated classes lost the content-based `equals`/`hashCode` of `UnpackedObject`. No test or
+      caller needed it, but a generated `equals` would be cheap if one shows up.
 
 ### Wave 2: everything else
 
