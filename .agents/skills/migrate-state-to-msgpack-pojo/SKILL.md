@@ -36,12 +36,13 @@ Open the class and every property it declares. Allowed property types:
 | `IntegerProperty(key, default)`               | `int field = default;`                                           |
 | `BooleanProperty(key, default)`               | `boolean field = default;`                                       |
 | `StringProperty(key, default)`                | `DirectBuffer field = Decoding.EMPTY;` (non-empty default: see step 3) |
+| `BinaryProperty(key)`                         | `@MsgpackProperty(binary = true) DirectBuffer field = Decoding.EMPTY;` |
 | `EnumProperty<E>(key)` without default        | `E field;` (null until set, writing null fails like before)      |
 | `EnumProperty<E>(key, default)`               | `E field = default;`                                             |
 | `ObjectProperty<X>(key, new X())`             | `final X field = new X();` (X is a `@MsgpackPojo` or an `UnpackedObject`) |
 | `ArrayProperty<StringValue>(key, StringValue::new)` | `final List<DirectBuffer> field = new ArrayList<>();`      |
 
-STOP if the class uses `BinaryProperty`, `DocumentProperty`, `PackedProperty`, `ArrayProperty` of
+STOP if the class uses `DocumentProperty`, `PackedProperty`, `ArrayProperty` of
 anything but `StringValue`, `PropertyGroup`, a property with `.sanitized()`, or any property
 whose default is computed. Report which one. The generator does not support them yet.
 

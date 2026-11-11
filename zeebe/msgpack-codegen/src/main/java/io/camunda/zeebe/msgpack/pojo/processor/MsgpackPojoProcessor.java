@@ -44,6 +44,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     BOOLEAN,
     STRING,
     RAW,
+    BINARY,
     ENUM,
     STRING_LIST,
     NESTED
@@ -111,10 +112,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
       final var annotation = field.getAnnotation(MsgpackProperty.class);
       final var raw = annotation != null && annotation.raw();
+      final var binary = annotation != null && annotation.binary();
       final var key =
           annotation == null || annotation.value().isEmpty() ? fieldName : annotation.value();
       final var mirror = field.asType();
-      final var kind = typeOf(mirror, raw, fieldName);
+      final var kind = typeOf(mirror, raw, binary, fieldName);
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       final var mutable = kind != Type.NESTED && kind != Type.STRING_LIST;
       if (isFinal && mutable) {
@@ -128,7 +130,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     return new Model(pkg, type.getSimpleName().toString(), properties, unknownField);
   }
 
-  private Type typeOf(final TypeMirror mirror, final boolean raw, final String field) {
+  private Type typeOf(
+      final TypeMirror mirror, final boolean raw, final boolean binary, final String field) {
     switch (mirror.getKind()) {
       case LONG:
         return Type.LONG;
@@ -141,7 +144,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         final var element = (TypeElement) declared.asElement();
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER)) {
-          return raw ? Type.RAW : Type.STRING;
+          return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
         }
         if (name.equals(LIST)
             && declared.getTypeArguments().size() == 1
@@ -277,6 +280,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         case LONG, INT -> s.append("    n += w.writeInteger(%s);\n".formatted(get));
         case BOOLEAN -> s.append("    n += w.writeBoolean(%s);\n".formatted(get));
         case STRING -> s.append("    n += w.writeString(%s);\n".formatted(get));
+        case BINARY -> s.append("    n += w.writeBinary(%s);\n".formatted(get));
         case RAW ->
             s.append("    n += w.writeRaw(requireRaw(%s, \"%s\"));\n".formatted(get, p.key()));
         case ENUM ->
@@ -314,6 +318,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         case STRING ->
             s.append(
                 "    n += MsgPackWriter.getEncodedStringLength(%s.capacity());\n".formatted(get));
+        case BINARY ->
+            s.append(
+                "    n += MsgPackWriter.getEncodedBinaryValueLength(%s.capacity());\n"
+                    .formatted(get));
         case RAW ->
             s.append("    n += requireRaw(%s, \"%s\").capacity();\n".formatted(get, p.key()));
         case ENUM ->
@@ -358,6 +366,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case BOOLEAN -> f + " = r.readBoolean();";
             case STRING -> f + " = Decoding.readString(r);";
             case RAW -> f + " = Decoding.readRaw(r);";
+            case BINARY -> f + " = Decoding.readBinary(r);";
             case ENUM ->
                 "%s = Decoding.readEnum(r, ENUM_NAMES_%d, ENUM_VALUES_%d);".formatted(f, i, i);
             case STRING_LIST ->

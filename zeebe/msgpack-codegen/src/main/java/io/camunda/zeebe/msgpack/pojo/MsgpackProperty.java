@@ -29,4 +29,7 @@ public @interface MsgpackProperty {
 
   /** The {@code DirectBuffer} holds a complete encoded msgpack value that is embedded as is. */
   boolean raw() default false;
+
+  /** The {@code DirectBuffer} is stored as a msgpack binary instead of a string. */
+  boolean binary() default false;
 }

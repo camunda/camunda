@@ -134,6 +134,7 @@ final class MsgpackPojoProcessorTest {
                     int count = 7;
                     boolean flag;
                     DirectBuffer name = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
+                    @MsgpackProperty(binary = true) DirectBuffer payload = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
                     @MsgpackProperty("theKind") Kind kind;
                     final List<DirectBuffer> ids = new ArrayList<>();
                     final Inner inner = new Inner();
@@ -146,6 +147,7 @@ final class MsgpackPojoProcessorTest {
     set(source, "key", 42L);
     set(source, "name", buffer("zeebe"));
     set(source, "flag", true);
+    set(source, "payload", buffer("bin"));
     set(source, "kind", result.load("sample.Kind").getEnumConstants()[1]);
     ((List<DirectBuffer>) get(source, "ids")).add(buffer("a"));
     ((List<DirectBuffer>) get(source, "ids")).add(buffer("b"));
@@ -167,6 +169,10 @@ final class MsgpackPojoProcessorTest {
     assertThat(get(read, "count")).isEqualTo(7);
     assertThat(get(read, "flag")).isEqualTo(true);
     assertThat(get(read, "name")).isEqualTo(buffer("zeebe"));
+    assertThat(get(read, "payload")).isEqualTo(buffer("bin"));
+    assertThat(bytes.byteArray())
+        .as("the payload is stored as msgpack bin8, not as a string")
+        .containsSequence((byte) 0xc4, (byte) 3, (byte) 'b', (byte) 'i', (byte) 'n');
     assertThat(get(read, "kind")).isEqualTo(get(source, "kind"));
     assertThat(get(read, "ids")).isEqualTo(List.of(buffer("a"), buffer("b")));
     assertThat(get(get(read, "inner"), "value")).isEqualTo(9);

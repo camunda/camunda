@@ -30,6 +30,14 @@ public final class Decoding {
     return copy(reader.getBuffer(), offset, length);
   }
 
+  /** Reads a binary into a buffer the caller owns; the source buffer may be reused afterwards. */
+  public static DirectBuffer readBinary(final MsgPackReader reader) {
+    final int length = reader.readBinaryLength();
+    final int offset = reader.getOffset();
+    reader.skipBytes(length);
+    return copy(reader.getBuffer(), offset, length);
+  }
+
   /** Reads one complete msgpack value as bytes into a buffer the caller owns. */
   public static DirectBuffer readRaw(final MsgPackReader reader) {
     final int start = reader.getOffset();

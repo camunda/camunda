@@ -23,8 +23,8 @@ below is open.
       at reusing buffers owned by the target.
 - [ ] **`toString`/JSON for the POJOs.** `UnpackedObject` gave every class a readable
       `toString()`. Nothing in the engine needs it yet; add a generated one if logs or assertions do.
-- [ ] **Property types the generator rejects:** `BinaryProperty`, `DocumentProperty`,
-      `PackedProperty`, `ArrayProperty` of non-strings, `PropertyGroup`, sanitized properties.
+- [ ] **Property types the generator rejects:** `DocumentProperty`,
+      `PackedProperty`, `ArrayProperty` of anything but strings (`LongValue`, nested objects), `PropertyGroup`, sanitized properties.
       Extend the generator when a class to migrate needs one.
 - [ ] **Registry lookup.** `Codecs.of` finds `<Name>Codec` by naming convention. Consider a
       generated `ServiceLoader` registration if a missing codec should fail earlier.
@@ -41,18 +41,48 @@ below is open.
 ## Migration of the remaining state classes
 
 Each one follows the `migrate-state-to-msgpack-pojo` skill, one commit per class.
+All paths are under `zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/`.
 
-- [ ] Try the skill with a small model on a small class first and refine it from what goes wrong.
+### Wave 1: the state written by a process with one service task (load test)
+
+Derived from the column families of `DbElementInstanceState`, `DbJobState`, `DbVariableState`,
+`DbEventScopeInstanceState`, `DbProcessState`, `DbDeploymentState` and the processing position.
+`ElementInstance`, `IndexedRecord` and `TaskListenerIndicesRecord` are already done.
+
+Supported by the generator today:
+
+- [ ] `processing/LastProcessedPosition` (written after every processed record)
+- [ ] `instance/ParentScopeKey` (variable scopes)
+- [ ] `instance/JobStateValue` (job state column family)
+- [ ] `instance/JobRecordValue` (nests `JobRecord`, a `BaseValue`)
+- [ ] `instance/EventScopeInstance` (`List<DirectBuffer>` fields)
+- [ ] `deployment/LatestProcessVersion`
+- [ ] `deployment/DeploymentRaw` (nests `DeploymentRecord`, a `BaseValue`)
+
+Need `@MsgpackProperty(binary = true)`, supported now:
+
+- [ ] `variable/VariableInstance` (hot: every variable write)
+- [ ] `instance/EventTrigger`
+- [ ] `deployment/Digest`
+
+Deferred, the generator lacks the property types (deployment time only, not on the hot path):
+
+- [ ] `deployment/PersistedProcess`: binary plus `ArrayProperty` of a nested object, and it
+      implements `ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess>`.
+- [ ] `deployment/VersionInfo`: `ArrayProperty<LongValue>`, a `List<Long>` field type.
+
+### Wave 2: everything else
+
 - [ ] Classes that extend `UnpackedObject` and are stored as `DbValue` (engine unless noted):
       `ClusterVariableInstance`, `CompensationSubscription`, `ConditionalSubscription`,
-      `EventScopeInstance`, `EventTrigger`, `Incident`, `IncidentKey`, `JobRecordValue`,
-      `JobStateValue`, `MessageStartEventSubscription`, `MessageSubscription`,
-      `ProcessMessageSubscription`, `PersistedProcess`, `PersistedDecision`, `PersistedForm`,
-      `PersistedResource`, `PersistedUser`, `PersistedRole`, `PersistedTenant`, `PersistedGroup`,
+      `Incident`, `IncidentKey`, `MessageStartEventSubscription`, `MessageSubscription`,
+      `ProcessMessageSubscription`, `PersistedDecision`, `PersistedForm`, `PersistedResource`,
+      `PersistedUser`, `PersistedRole`, `PersistedTenant`, `PersistedGroup`,
       `PersistedAuthorization`, `PersistedMappingRule`, `PersistedBatchOperation`,
       `PersistedBatchOperationChunk`, `PersistedCommandDistribution`, `SignalSubscription`,
-      `StoredMessage`, `TimerInstance`, `UserTaskRecordValue`, `VariableInstance`, `DbAgent*`, ...
+      `StoredMessage`, `TimerInstance`, `UserTaskRecordValue`, `DbAgent*`, ...
       The full list: `grep -rl "extends UnpackedObject" zeebe --include=*.java | xargs grep -l DbValue`.
-      Outside the engine: `LastProcessedPosition`, `NextValue` (stream-platform), `ExporterStateEntry`
+      Outside the engine: `NextValue` (stream-platform), `ExporterStateEntry`
       (broker), `CheckpointInfo`, `CheckpointMetadataValue` (backup). Those modules need the
       dependency and the annotation processor wiring first.
+- [ ] Try the skill with a small model first and refine it from what goes wrong (wave 1 does this).
