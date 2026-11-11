@@ -283,8 +283,8 @@ jobs:
           TEST_REF: ${{ inputs.test_ref }}
         run: |
           set -euo pipefail
-          npx playwright test --list --reporter=json \
-            --no-deps --project="$PROJECT" "$SPEC" > "$RUNNER_TEMP/list.json" 2>/dev/null || true
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$RUNNER_TEMP/list.json" npx playwright test --list --reporter=json \
+            --no-deps --project="$PROJECT" "$SPEC" > /dev/null 2>&1 || true
           target=$(jq -c --argjson path "$TITLE_PATH" '
             def walk($p; $lines): (.specs[]? | {path: ($p + [.title]), line, file, suites: $lines}),
                                   (.suites[]? as $s | $s | walk($p + [$s.title]; $lines + [$s.line]));
