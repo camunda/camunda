@@ -15,10 +15,12 @@
  */
 package io.camunda.client.impl.worker;
 
+import static io.camunda.client.impl.worker.SneakyThrow.sneakyThrow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.util.concurrent.Uninterruptibles;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -28,9 +30,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class BlockingExecutorTest {
 
@@ -59,23 +65,23 @@ public class BlockingExecutorTest {
         .isInstanceOf(RejectedExecutionException.class);
   }
 
-  @Test
-  public void shouldReleaseCapacityWhenWrappedExecutorRejectsCommand() {
-    // given a wrapped executor that refuses the first command and runs every later one
-    final AtomicBoolean refuseNextCommand = new AtomicBoolean(true);
+  @ParameterizedTest
+  @MethodSource("wrappedExecutorFailures")
+  public void shouldReleaseCapacityWhenWrappedExecutorThrows(final Throwable failure) {
+    // given a wrapped executor that throws for the first command and runs every later one
+    final AtomicBoolean failNextCommand = new AtomicBoolean(true);
     final Executor wrappedExecutor =
         command -> {
-          if (refuseNextCommand.compareAndSet(true, false)) {
-            throw new RejectedExecutionException("Wrapped executor is saturated");
+          if (failNextCommand.compareAndSet(true, false)) {
+            sneakyThrow(failure);
           }
           command.run();
         };
     final BlockingExecutor executor =
         new BlockingExecutor(wrappedExecutor, 1, Duration.ofMillis(10));
 
-    // when the wrapped executor refuses the command
-    assertThatThrownBy(() -> executor.execute(() -> {}))
-        .isInstanceOf(RejectedExecutionException.class);
+    // when the wrapped executor throws instead of taking the command
+    assertThatThrownBy(() -> executor.execute(() -> {})).isSameAs(failure);
 
     // then the capacity taken for that command is free again
     final AtomicBoolean executed = new AtomicBoolean(false);
@@ -266,5 +272,16 @@ public class BlockingExecutorTest {
       releaseCommand.countDown();
       wrappedExecutor.shutdownNow();
     }
+  }
+
+  private static Stream<Named<Throwable>> wrappedExecutorFailures() {
+    return Stream.of(
+        Named.of(
+            "RejectedExecutionException",
+            new RejectedExecutionException("Wrapped executor is saturated")),
+        Named.of("RuntimeException", new IllegalStateException("Wrapped executor is broken")),
+        Named.of("Error", new NoSuchMethodError("Wrapped executor dependency version skew")),
+        Named.of(
+            "undeclared checked exception", new IOException("Wrapped executor backend failure")));
   }
 }
