@@ -64,7 +64,9 @@ final class MyBatisExporterStateStoreTest {
   void shouldContinueAnExporterWhereThePreviousLeaderStopped() {
     // given - the former leader exported up to a position and stored metadata
     final var metadata = new UnsafeBuffer("cursor-42".getBytes(StandardCharsets.UTF_8));
-    exportersState().setExporterState("exporter-a", 42, metadata);
+    final var formerLeader = exportersState();
+    formerLeader.setExporterState("exporter-a", 42, metadata);
+    formerLeader.flush();
 
     // when - the new leader reads the state with stores of its own
     final var newLeader = exportersState();
@@ -81,8 +83,11 @@ final class MyBatisExporterStateStoreTest {
     final var state = exportersState();
     state.setPosition("exporter-a", 10);
 
+    state.flush();
+
     // when
     state.setPosition("exporter-a", 20);
+    state.flush();
 
     // then
     assertThat(exportersState().getPosition("exporter-a")).isEqualTo(20);
@@ -95,8 +100,11 @@ final class MyBatisExporterStateStoreTest {
     final var state = exportersState();
     state.setExporterState("exporter-a", 10, metadata);
 
+    state.flush();
+
     // when
     state.setPosition("exporter-a", 11);
+    state.flush();
 
     // then
     assertThat(exportersState().getExporterMetadata("exporter-a")).isEqualTo(metadata);
@@ -105,7 +113,9 @@ final class MyBatisExporterStateStoreTest {
   @Test
   void shouldKeepTheMetadataVersionOfAnInitializedExporter() {
     // when
-    exportersState().initializeExporterState("exporter-a", 5, null, 3);
+    final var initialized = exportersState();
+    initialized.initializeExporterState("exporter-a", 5, null, 3);
+    initialized.flush();
 
     // then
     final var state = exportersState();
@@ -138,19 +148,25 @@ final class MyBatisExporterStateStoreTest {
     // given
     final var state = exportersState();
     state.setPosition("exporter-a", 10);
+    state.flush();
+    state.setPosition("exporter-a", 11);
 
     // when
     state.removeExporterState("exporter-a");
+    state.flush();
 
-    // then
+    // then - neither the stored nor the held position remains
     assertThat(state.getPosition("exporter-a")).isEqualTo(ExportersState.VALUE_NOT_FOUND);
     assertThat(state.hasExporters()).isFalse();
+    assertThat(exportersState().hasExporters()).isFalse();
   }
 
   @Test
   void shouldKeepThePartitionsApart() {
     // given
-    exportersState().setPosition("exporter-a", 10);
+    final var state = exportersState();
+    state.setPosition("exporter-a", 10);
+    state.flush();
 
     // when
     final var otherPartition =
@@ -161,6 +177,46 @@ final class MyBatisExporterStateStoreTest {
     // then
     assertThat(otherPartition.hasExporters()).isFalse();
     assertThat(otherPartition.getPosition("exporter-a")).isEqualTo(ExportersState.VALUE_NOT_FOUND);
+  }
+
+  @Test
+  void shouldHoldThePositionsBackUntilTheyAreFlushed() {
+    // given
+    final var state = exportersState();
+    state.setPosition("exporter-a", 10);
+    state.flush();
+
+    // when - the exporter acknowledges more records
+    state.setPosition("exporter-a", 11);
+    state.setPosition("exporter-a", 12);
+
+    // then - the director sees them, but a new leader would continue from the stored position
+    assertThat(state.getPosition("exporter-a")).isEqualTo(12);
+    assertThat(state.getLowestPosition()).isEqualTo(12);
+    assertThat(exportersState().getPosition("exporter-a")).isEqualTo(10);
+
+    // when
+    state.flush();
+
+    // then
+    assertThat(exportersState().getPosition("exporter-a")).isEqualTo(12);
+  }
+
+  @Test
+  void shouldWriteTheHeldPositionsOfAllExportersInOneFlush() {
+    // given
+    final var state = exportersState();
+    state.setPosition("exporter-a", 10);
+    state.setPosition("exporter-b", 20);
+    assertThat(exportersState().hasExporters()).isFalse();
+
+    // when
+    state.flush();
+
+    // then
+    final var newLeader = exportersState();
+    assertThat(newLeader.getPosition("exporter-a")).isEqualTo(10);
+    assertThat(newLeader.getPosition("exporter-b")).isEqualTo(20);
   }
 
   private ExportersState exportersState() {

@@ -69,6 +69,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private static final String EXPORTER_STATE_TOPIC_FORMAT = "%s-exporterState-%d";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
+
+  /**
+   * How often the positions that the exporters acknowledged are written, when the exporter state is
+   * kept in a store that holds them back, see {@link ExporterStateStore#flush()}.
+   */
+  private static final Duration STATE_FLUSH_INTERVAL = Duration.ofSeconds(1);
+
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   // using primitive boolean since it is only used in actor
   private boolean allExportersOpened;
@@ -100,6 +107,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final int migrationStatusScanMaxRecords;
   private ExporterStateDistributionService exporterDistributionService;
   private ScheduledTimer exporterDistributionTimer;
+  private @Nullable ScheduledTimer stateFlushTimer;
   private final PartitionId partitionId;
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
@@ -414,6 +422,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
       // Initialize containers irrespective of if it is Active or Passive mode
       initContainers();
+      if (exporterStateStore != null) {
+        stateFlushTimer = actor.runAtFixedRate(STATE_FLUSH_INTERVAL, state::flush);
+      }
     } catch (final Exception e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
@@ -437,6 +448,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       logStreamReader.close();
     }
     logStream.removeRecordAvailableListener(this);
+    if (stateFlushTimer != null) {
+      stateFlushTimer.cancel();
+      stateFlushTimer = null;
+    }
+    if (state != null) {
+      // the last positions the exporters acknowledged, so the next leader starts after them
+      state.flush();
+    }
   }
 
   @Override

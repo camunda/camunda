@@ -138,6 +138,11 @@ public final class ExportersState {
     store.delete(exporterId);
   }
 
+  /** Writes the changes that the store held back, see {@link ExporterStateStore#flush()}. */
+  public void flush() {
+    store.flush();
+  }
+
   public boolean hasExporters() {
     return !store.isEmpty();
   }

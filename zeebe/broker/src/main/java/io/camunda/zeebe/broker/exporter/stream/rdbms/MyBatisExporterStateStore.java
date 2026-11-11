@@ -12,7 +12,10 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterStateStore;
 import io.camunda.zeebe.broker.exporter.stream.rdbms.ExporterStateMapper.ExporterStateRow;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -24,16 +27,28 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Keeps the exporter state of a partition in the relational database of the primary storage. Each
- * operation is one transaction of its own: only the exporter director of the partition's leader
- * writes it, and the state needs no transaction with the engine state.
+ * Keeps the exporter state of a partition in the relational database of the primary storage.
+ *
+ * <p>Exporters acknowledge a position after every record, so the store holds the updates back and
+ * writes the latest one of each exporter in a single transaction when it is {@link #flush()
+ * flushed}. Reads see the updates it holds. An exporter delivers at least once, so a position
+ * stored late only makes the next leader export the records after it again; the stored positions
+ * never get ahead of what was exported. Removing an exporter's state is written at once.
+ *
+ * <p>Only the exporter director of the partition's leader writes the state, and it needs no
+ * transaction with the engine state.
  */
 public final class MyBatisExporterStateStore implements ExporterStateStore {
 
+  private static final Logger LOG = LoggerFactory.getLogger(MyBatisExporterStateStore.class);
+
   private final SqlSessionFactory sessionFactory;
   private final int partitionId;
+  private final Map<String, ExporterStateRow> pending = new ConcurrentHashMap<>();
 
   public MyBatisExporterStateStore(final SqlSessionFactory sessionFactory, final int partitionId) {
     this.sessionFactory = sessionFactory;
@@ -64,38 +79,73 @@ public final class MyBatisExporterStateStore implements ExporterStateStore {
 
   @Override
   public Optional<ExporterStateEntry> find(final String exporterId) {
+    final var held = pending.get(exporterId);
+    if (held != null) {
+      return Optional.of(toEntry(held));
+    }
     return inTransaction(
         mapper ->
             Optional.ofNullable(mapper.selectExporterState(partitionId, exporterId))
                 .map(MyBatisExporterStateStore::toEntry));
   }
 
-  /** Updates the row, or inserts it if there is none: only one exporter director writes it. */
+  /** Holds the update back until the next {@link #flush()}. */
   @Override
   public void upsert(final String exporterId, final ExporterStateEntry entry) {
-    final var row = toRow(exporterId, entry);
-    write(
-        mapper -> {
-          if (mapper.updateExporterState(partitionId, row) == 0) {
-            mapper.insertExporterState(partitionId, row);
-          }
-        });
+    pending.put(exporterId, toRow(exporterId, entry));
   }
 
   @Override
   public void delete(final String exporterId) {
+    pending.remove(exporterId);
     write(mapper -> mapper.deleteExporterState(partitionId, exporterId));
   }
 
   @Override
   public void forEach(final BiConsumer<String, ExporterStateEntry> consumer) {
+    final Map<String, ExporterStateRow> rows = new TreeMap<>();
     inTransaction(mapper -> mapper.selectExporterStates(partitionId))
-        .forEach(row -> consumer.accept(row.exporterId(), toEntry(row)));
+        .forEach(row -> rows.put(row.exporterId(), row));
+    rows.putAll(pending);
+    rows.forEach((exporterId, row) -> consumer.accept(exporterId, toEntry(row)));
   }
 
   @Override
   public boolean isEmpty() {
-    return inTransaction(mapper -> mapper.countExporterStates(partitionId)) == 0;
+    return pending.isEmpty()
+        && inTransaction(mapper -> mapper.countExporterStates(partitionId)) == 0;
+  }
+
+  /**
+   * Writes the held updates in one transaction. If that fails, they stay held for the next flush.
+   * An update that arrives while flushing stays held too, since only the written ones are let go.
+   */
+  @Override
+  public void flush() {
+    if (pending.isEmpty()) {
+      return;
+    }
+    final var rows = Map.copyOf(pending);
+    try {
+      write(
+          mapper ->
+              rows.values()
+                  .forEach(
+                      row -> {
+                        if (mapper.updateExporterState(partitionId, row) == 0) {
+                          mapper.insertExporterState(partitionId, row);
+                        }
+                      }));
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Failed to store the positions of {} exporters of partition {}, retrying with the next "
+              + "flush",
+          rows.size(),
+          partitionId,
+          e);
+      return;
+    }
+    rows.forEach(pending::remove);
   }
 
   private void write(final Consumer<ExporterStateMapper> operation) {

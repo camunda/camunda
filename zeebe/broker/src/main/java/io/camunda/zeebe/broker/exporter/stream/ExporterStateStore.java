@@ -26,4 +26,11 @@ public interface ExporterStateStore {
   void forEach(BiConsumer<String, ExporterStateEntry> consumer);
 
   boolean isEmpty();
+
+  /**
+   * Writes the changes that the store held back, if it holds any back. A store may do so to write
+   * the frequent position updates of the exporters in fewer transactions: an exporter delivers at
+   * least once, so a position stored late only makes a new leader export some records again.
+   */
+  default void flush() {}
 }
