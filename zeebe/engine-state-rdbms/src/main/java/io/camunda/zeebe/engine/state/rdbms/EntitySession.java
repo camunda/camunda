@@ -524,6 +524,10 @@ final class EntitySession implements JdbcTransactionParticipant {
    * Stages the update of the partition's last processed position. The row exists, as {@link
    * #readLastProcessedPosition} creates it before the stream processor starts, so a commit sends a
    * single update.
+   *
+   * <p>A commit only writes the position with other changes. The position tells a restart which
+   * replayed changes the database already contains; a command without changes has none to skip, and
+   * replaying it changes nothing either, so an older position is just as right.
    */
   @Override
   public void markAsProcessed(final long position) {
@@ -567,6 +571,7 @@ final class EntitySession implements JdbcTransactionParticipant {
    */
   @Override
   public void commit() throws SQLException {
+    dropPositionWithoutChanges();
     final boolean hasWrites = staged.values().stream().anyMatch(writes -> !writes.isEmpty());
     if (session == null && !hasWrites) {
       return;
@@ -581,6 +586,20 @@ final class EntitySession implements JdbcTransactionParticipant {
           return null;
         });
     closeSession();
+  }
+
+  /** Drops the staged position if the transaction changed nothing else, see markAsProcessed. */
+  private void dropPositionWithoutChanges() {
+    final var partitionState = staged(RdbmsProcessStore.PARTITION_STATE);
+    if (partitionState.size() != 1 || !partitionState.containsKey(LAST_PROCESSED_POSITION_KEY)) {
+      return;
+    }
+    for (final var writes : staged.entrySet()) {
+      if (writes.getKey() != RdbmsProcessStore.PARTITION_STATE && !writes.getValue().isEmpty()) {
+        return;
+      }
+    }
+    partitionState.clear();
   }
 
   private void flush(final SqlSession batch) throws SQLException {

@@ -282,7 +282,7 @@ final class EngineStateRoundTripsTest {
   }
 
   @Test
-  void shouldOnlyUpdateThePositionOfACommandWithoutChanges() throws Exception {
+  void shouldNotAccessTheDatabaseForACommandWithoutChanges() throws Exception {
     // given - a processed command that changes no relational state
     final var transaction = transactionContext.getCurrentTransaction();
     transactionContext.markAsProcessed(1);
@@ -291,11 +291,11 @@ final class EngineStateRoundTripsTest {
     // when
     transaction.commit();
 
-    // then
-    assertThat(counting.batches).containsExactly(new Batch("CAM_RU_PARTITION_STATE", "UPDATE", 1));
+    // then - its position isn't needed on restart, so nothing is written
+    assertThat(counting.batches).isEmpty();
     assertThat(counting.otherStatements).isZero();
-    assertThat(sessions.opened()).isOne();
-    assertThat(counting.commits).isOne();
+    assertThat(sessions.opened()).isZero();
+    assertThat(counting.commits).isZero();
   }
 
   @Test
