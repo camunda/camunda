@@ -49,10 +49,10 @@ Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.ym
 
 ### Outputs
 
-|  Output  |                                              Description                                              |
-|----------|-------------------------------------------------------------------------------------------------------|
-| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'`                              |
-| `stale`  | `'true'` when this is a re-run of the branch head and an artifact has expired, otherwise `'false'`    |
+|  Output  |                                            Description                                             |
+|----------|----------------------------------------------------------------------------------------------------|
+| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'`                           |
+| `stale`  | `'true'` when this is a re-run of the branch head and an artifact has expired, otherwise `'false'` |
 
 ### Behavior
 
