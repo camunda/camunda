@@ -33,10 +33,10 @@ Plan files live in `optimize/upgrade/src/main/java/io/camunda/optimize/upgrade/p
 - Never switch the user's checkout. Read other branches with `git fetch origin <branch>` and
   `git show origin/<branch>:<path>`. Make edits in a temporary `git worktree` and remove it
   afterwards.
-- Never force-push. Ask for explicit confirmation before every push to a shared branch, workflow
-  trigger, release creation and label change.
-- Follow the repo commit rules: Conventional Commits, no scope, a body for every commit, and the
-  `Co-authored-by` trailer.
+- Never force-push. Ask for explicit confirmation before every push to a shared branch, tag
+  deletion, workflow trigger, release creation and label change. Deleting a published tag is the
+  most destructive step in this skill.
+- Follow the repo commit rules: Conventional Commits, no scope and a body for every commit.
 - PR bodies must use `.github/pull_request_template.md`. Tick "This PR does not need a linked
   issue" for release PRs.
 - Do not create backport PRs by hand. Use the `backport` skill and its label.
@@ -154,15 +154,23 @@ author (`gh api user --jq .login`). Apply this to the bump PR and the merge-back
 ## Recovering from a failed release
 
 Find the failed step first (`gh run view <id> --json jobs`). What is already published depends on
-where it stopped:
+where it stopped. The workflow runs these steps in order: Prepare release, Push Git changes,
+Perform release, "Remove tag for RC release", Build Docker Image, Start Smoketest, Wait for
+Optimize to start, Execute health check and push docker image, Create a GitHub release. The
+"Remove tag" step runs `if: env.IS_RC == 'true' || failure()`, so it deletes the tag when any step
+before it failed, but not when a later step fails. That is why the tag differs between rows.
 
-| Failed step                                   | Already published                              | Recovery |
-| --------------------------------------------- | ---------------------------------------------- | -------- |
-| "Push Git changes" (push rejected)            | nothing (the tag is removed by the workflow)   | Re-run with the same inputs once the release branch is quiet |
-| "Execute health check and push docker image"  | tag, release commits and the Maven artifacts   | Fix the cause, then undo the release commits and the tag and re-run (below) |
-| "Create a GitHub release"                     | everything                                     | Create the release by hand (step 5). Do not re-run |
+| Failed step                                                                                       | Already published                                                         | Tag after the failure | Recovery |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------- | -------- |
+| "Prepare release"                                                                                 | nothing (it only works locally)                                           | none                  | Fix the cause and re-run with the same inputs |
+| "Push Git changes" (push rejected)                                                                | nothing on the branch (the tag may have been pushed first)                | removed by the workflow | Re-run with the same inputs once the release branch is quiet |
+| "Perform release"                                                                                 | release commits are pushed, Maven artifacts may be partly deployed        | removed by the workflow | Follow "Re-running after the commits were pushed" below. There is no tag to delete, but do the redeploy confirmation, because Maven may be half-deployed |
+| "Build Docker Image", "Start Smoketest", "Wait for Optimize to start" or "Execute health check and push docker image" | tag, release commits and the Maven artifacts, no image (check Docker Hub if the push step failed) | stays                 | Fix the cause, then follow "Re-running after the commits were pushed" below |
+| "Create a GitHub release"                                                                         | everything                                                                | stays                 | Create the release by hand (step 5). Do not re-run |
 
-To re-run after the tag and release commits were pushed, without a force-push:
+### Re-running after the commits were pushed
+
+To re-run after the release commits were pushed, without a force-push:
 
 1. **Confirm first that the artifact repository accepts a redeploy of `<R>`**, because the Maven
    artifacts were already deployed. This worked for 8.7.31 (the second run passed "Perform
@@ -173,7 +181,9 @@ To re-run after the tag and release commits were pushed, without a force-push:
    `git revert --no-commit <next-iteration-sha> <release-sha>`, commit, and push normally.
 3. Check that the tree equals the commit before the release: `git diff <pre-release-sha> HEAD` must
    be empty and the pom must be back at `<R>-SNAPSHOT`.
-4. Delete the tag: `git push origin :refs/tags/<R>-optimize`.
+4. Delete the tag if it still exists (`git ls-remote --tags origin <R>-optimize`). After a failed
+   "Perform release" the workflow has already removed it. Otherwise confirm with the user, then
+   `git push origin :refs/tags/<R>-optimize`.
 5. Run the release workflow again with the same inputs.
 
 Never force-push a release branch. Use a revert.
