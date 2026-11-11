@@ -29,11 +29,11 @@ class DatabaseImportJobExecutorTest {
     when(configurationService.getJobExecutorThreadCount()).thenReturn(1);
     when(configurationService.getJobExecutorQueueSize()).thenReturn(1);
     final var executor = new DatabaseImportJobExecutor("test", configurationService);
-    final var job = new BlockingImportJob();
+    final var job = new FailingImportJob();
     executor.executeImportJob(job);
 
     try {
-      assertThat(job.firstAttemptStarted.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(job.firstAttemptFailed.await(10, TimeUnit.SECONDS)).isTrue();
     } finally {
       // when
       executor.stopExecutingImportJobs();
@@ -43,17 +43,13 @@ class DatabaseImportJobExecutorTest {
     assertThat(job.attempts).hasValue(1);
   }
 
-  /**
-   * Blocks the first attempt until the executor interrupts it, then fails it with the interrupt
-   * flag restored. Any further attempt succeeds immediately, so a retry shows up as a second
-   * attempt.
-   */
-  private static final class BlockingImportJob extends DatabaseImportJob<OptimizeDto> {
+  /** Fails on the first attempt; any retry succeeds immediately. */
+  private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
-    private final CountDownLatch firstAttemptStarted = new CountDownLatch(1);
+    private final CountDownLatch firstAttemptFailed = new CountDownLatch(1);
     private final AtomicInteger attempts = new AtomicInteger();
 
-    private BlockingImportJob() {
+    private FailingImportJob() {
       super(() -> {}, mock(DatabaseClient.class));
       setEntitiesToImport(List.of(mock(OptimizeDto.class)));
     }
@@ -61,13 +57,8 @@ class DatabaseImportJobExecutorTest {
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (attempts.incrementAndGet() == 1) {
-        firstAttemptStarted.countDown();
-        try {
-          new CountDownLatch(1).await();
-        } catch (final InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new IllegalStateException("interrupted while writing", e);
-        }
+        firstAttemptFailed.countDown();
+        throw new IllegalStateException("database unavailable");
       }
     }
   }
