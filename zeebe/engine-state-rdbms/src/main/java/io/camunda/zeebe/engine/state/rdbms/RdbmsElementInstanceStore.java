@@ -79,6 +79,13 @@ import org.jspecify.annotations.Nullable;
  */
 public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
+  static final EntityType<Long, ElementInstanceRow> ELEMENT_INSTANCE =
+      new EntityType<>(
+          ElementInstanceMapper.class,
+          "ElementInstance",
+          "element instance",
+          ElementInstanceRow::key);
+
   private static final short PROCESS_TYPE = (short) BpmnElementType.PROCESS.ordinal();
 
   /** See {@link ProcessInstanceRecord#hasParentProcessInstance()}. */
@@ -88,12 +95,6 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
       Comparator.comparing(TakenSequenceFlowRow::gatewayElementId)
           .thenComparing(TakenSequenceFlowRow::sequenceFlowElementId);
 
-  static final EntityType<Long, ElementInstanceRow> ELEMENT_INSTANCE =
-      new EntityType<>(
-          ElementInstanceMapper.class,
-          "ElementInstance",
-          "element instance",
-          ElementInstanceRow::key);
   private static final EntityType<TakenSequenceFlowKey, TakenSequenceFlowRow> TAKEN_SEQUENCE_FLOW =
       new EntityType<>(
           ElementInstanceMapper.class,

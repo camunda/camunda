@@ -445,42 +445,6 @@ final class JdbcTransactionContextTest {
     assertThat(order).containsExactly("failing commit", "failing failed", "other failed");
   }
 
-  /** A participant that only records the calls it gets. */
-  private static final class RecordingParticipant implements JdbcTransactionParticipant {
-
-    private final String name;
-    private final List<String> calls;
-    private @Nullable SQLException failCommitWith;
-
-    private RecordingParticipant(final String name, final List<String> calls) {
-      this.name = name;
-      this.calls = calls;
-    }
-
-    @Override
-    public void commit() throws SQLException {
-      calls.add(name + " commit");
-      if (failCommitWith != null) {
-        throw failCommitWith;
-      }
-    }
-
-    @Override
-    public void rollback() {
-      calls.add(name + " rollback");
-    }
-
-    @Override
-    public void commitFailed() {
-      calls.add(name + " failed");
-    }
-
-    @Override
-    public void reset() {
-      calls.add(name + " reset");
-    }
-  }
-
   /**
    * PostgreSQL reports retryable failures as plain SQLExceptions identified only by SQLState, and
    * batch execution wraps them in a BatchUpdateException.
@@ -544,6 +508,42 @@ final class JdbcTransactionContextTest {
         outcomes.add("rollback");
       }
     };
+  }
+
+  /** A participant that only records the calls it gets. */
+  private static final class RecordingParticipant implements JdbcTransactionParticipant {
+
+    private final String name;
+    private final List<String> calls;
+    private @Nullable SQLException failCommitWith;
+
+    private RecordingParticipant(final String name, final List<String> calls) {
+      this.name = name;
+      this.calls = calls;
+    }
+
+    @Override
+    public void commit() throws SQLException {
+      calls.add(name + " commit");
+      if (failCommitWith != null) {
+        throw failCommitWith;
+      }
+    }
+
+    @Override
+    public void rollback() {
+      calls.add(name + " rollback");
+    }
+
+    @Override
+    public void commitFailed() {
+      calls.add(name + " failed");
+    }
+
+    @Override
+    public void reset() {
+      calls.add(name + " reset");
+    }
   }
 
   private static final class StagingParticipant implements JdbcTransactionParticipant {

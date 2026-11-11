@@ -10,7 +10,6 @@ dependencies {
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
-  implementation(project(":zeebe-msgpack-value"))
   implementation(libs.org.mybatis.mybatis)
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.agrona.agrona)
