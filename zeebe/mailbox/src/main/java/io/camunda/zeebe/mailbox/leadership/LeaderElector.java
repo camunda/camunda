@@ -12,6 +12,8 @@ import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.leadership.LeaseStore;
 import io.camunda.zeebe.mailbox.api.leadership.PartitionLease;
 import io.camunda.zeebe.mailbox.leadership.LeadershipListener.Reason;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +63,7 @@ public final class LeaderElector {
   private final LongSupplier nanoClock;
   private final ClaimPolicy policy;
   private final LeaseObserver observer;
+  private final LeadershipMetrics metrics;
   private final Map<Integer, Held> held = new HashMap<>();
   private boolean closed;
 
@@ -79,6 +82,33 @@ public final class LeaderElector {
       final LeadershipListener listener,
       final Scheduler scheduler,
       final LongSupplier nanoClock) {
+    this(
+        store,
+        config,
+        nodeId,
+        zone,
+        partitions,
+        view,
+        listener,
+        scheduler,
+        nanoClock,
+        new SimpleMeterRegistry());
+  }
+
+  /**
+   * @param registry receives the metrics of the elector; see {@link LeadershipMetrics}
+   */
+  public LeaderElector(
+      final LeaseStore store,
+      final LeaseConfig config,
+      final String nodeId,
+      final String zone,
+      final Set<Integer> partitions,
+      final ClusterView view,
+      final LeadershipListener listener,
+      final Scheduler scheduler,
+      final LongSupplier nanoClock,
+      final MeterRegistry registry) {
     this.store = store;
     this.config = config;
     this.nodeId = nodeId;
@@ -90,6 +120,7 @@ public final class LeaderElector {
     this.nanoClock = nanoClock;
     policy = new ClaimPolicy(nodeId, zone);
     observer = new LeaseObserver(config.leaseDuration());
+    metrics = new LeadershipMetrics(registry, this.partitions);
   }
 
   public void start() {
@@ -236,7 +267,8 @@ public final class LeaderElector {
         continue;
       }
       final var lease = leases.get(partitionId);
-      if (!policy.shouldClaim(partitionId, lease, observer.hasRunOut(partitionId, now), view)) {
+      final boolean hasRunOut = observer.hasRunOut(partitionId, now);
+      if (!policy.shouldClaim(partitionId, lease, hasRunOut, view)) {
         continue;
       }
       final long observedTerm = lease == null ? LeaseStore.NO_LEASE : lease.term();
@@ -248,6 +280,8 @@ public final class LeaderElector {
             .ifPresent(
                 claimed -> {
                   held.put(partitionId, new Held(claimed.term(), startedNanos));
+                  metrics.claimed(partitionId, claimed.term());
+                  recordTakeover(partitionId, lease, hasRunOut, startedNanos);
                   listener.onLeading(partitionId, claimed.term());
                 });
       } catch (final MailboxStoreException e) {
@@ -258,8 +292,35 @@ public final class LeaderElector {
     }
   }
 
+  /** Records how long it took to take a lease over from another node. */
+  private void recordTakeover(
+      final int partitionId,
+      final @Nullable PartitionLease previous,
+      final boolean hasRunOut,
+      final long claimedNanos) {
+    if (previous == null || previous.leaderId().equals(nodeId)) {
+      return;
+    }
+    final long sinceNanos = observer.unchangedSinceNanos(partitionId);
+    if (sinceNanos < 0) {
+      return;
+    }
+    final String cause;
+    if (previous.released()) {
+      cause = "released";
+    } else {
+      cause = hasRunOut ? "expired" : "unreachable";
+    }
+    metrics.tookOver(
+        partitionId,
+        cause,
+        previous.zone().equals(zone),
+        Duration.ofNanos(claimedNanos - sinceNanos));
+  }
+
   private void stopLeading(final int partitionId, final long term, final Reason reason) {
     held.remove(partitionId);
+    metrics.stopped(partitionId, reason);
     listener.onNotLeading(partitionId, term, reason);
   }
 

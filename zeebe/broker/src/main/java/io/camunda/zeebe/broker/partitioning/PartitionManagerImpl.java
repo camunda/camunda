@@ -163,7 +163,8 @@ public final class PartitionManagerImpl
             clusterConfigurationService,
             rocksDbResources,
             secretStoreRegistry,
-            engineState);
+            engineState,
+            brokerMeterRegistry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

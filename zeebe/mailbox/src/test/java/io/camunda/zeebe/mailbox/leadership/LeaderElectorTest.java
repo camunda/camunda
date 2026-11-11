@@ -14,6 +14,8 @@ import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.leadership.LeaseStore;
 import io.camunda.zeebe.mailbox.api.leadership.PartitionLease;
 import io.camunda.zeebe.mailbox.leadership.LeadershipListener.Reason;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
@@ -126,6 +129,63 @@ final class LeaderElectorTest {
     assertThat(e1.events).contains("not leading 1 FENCED", "not leading 3 FENCED");
     assertThat(e1.elector.leading()).isEmpty();
     assertThat(w1.elector.leading()).isEmpty();
+  }
+
+  @Test
+  void shouldShowInTheMetricsWhichPartitionsTheNodeLeads() {
+    // given
+    tick(e1, e2, w1, w2);
+    store.failWritesOf("e1");
+
+    // when - e1 cannot renew for longer than fenceAfter
+    advance(CONFIG.renewInterval());
+    tick(e1);
+    advance(CONFIG.renewInterval());
+    tick(e1);
+
+    // then
+    assertThat(e1.gauge(LeadershipMetrics.LEADER, 1)).isZero();
+    assertThat(e1.gauge(LeadershipMetrics.TERM, 1)).isEqualTo(1);
+    assertThat(e1.transitions(1, "claimed")).isEqualTo(1);
+    assertThat(e1.transitions(1, "fenced")).isEqualTo(1);
+    assertThat(e2.gauge(LeadershipMetrics.LEADER, 2)).isEqualTo(1);
+    assertThat(e2.gauge(LeadershipMetrics.LEADER, 1)).isZero();
+  }
+
+  @Test
+  void shouldMeasureTheTakeoverOfAFailedLeaderInTheSameRegion() {
+    // given
+    tick(e1, e2, w1, w2);
+
+    // when - gossip no longer sees e1, a lease interval later
+    advance(CONFIG.renewInterval());
+    eastAlive.remove("e1");
+    tick(e2);
+
+    // then - e2 claims at once, so the delay is since its first read of the lease
+    final var takeover = e2.takeover(1);
+    assertThat(takeover.getId().getTag("cause")).isEqualTo("unreachable");
+    assertThat(takeover.getId().getTag("previous_zone")).isEqualTo("same");
+    assertThat(takeover.count()).isOne();
+    assertThat(takeover.totalTime(TimeUnit.SECONDS)).isEqualTo(3);
+  }
+
+  @Test
+  void shouldMeasureTheTakeoverOfAFailedRegion() {
+    // given
+    tick(e1, e2, w1, w2);
+
+    // when - the east region fails; the west region claims once the lease ran out
+    advance(CONFIG.renewInterval());
+    tick(w1, w2);
+    advance(CONFIG.leaseDuration());
+    tick(w1, w2);
+
+    // then - the lease stood still since the first read, before the region failed
+    final var takeover = w1.takeover(1);
+    assertThat(takeover.getId().getTag("cause")).isEqualTo("expired");
+    assertThat(takeover.getId().getTag("previous_zone")).isEqualTo("other");
+    assertThat(takeover.totalTime(TimeUnit.SECONDS)).isEqualTo(12);
   }
 
   @Test
@@ -249,6 +309,7 @@ final class LeaderElectorTest {
 
   private final class Node {
     private final List<String> events = new CopyOnWriteArrayList<>();
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
     private final LeaderElector elector;
 
     private Node(final String id, final String zone, final List<String> alive) {
@@ -278,7 +339,28 @@ final class LeaderElectorTest {
                 }
               },
               (task, delay) -> {},
-              clock::get);
+              clock::get,
+              registry);
+    }
+
+    private double gauge(final String name, final int partitionId) {
+      return registry.get(name).tag("partition", String.valueOf(partitionId)).gauge().value();
+    }
+
+    private double transitions(final int partitionId, final String event) {
+      return registry
+          .get(LeadershipMetrics.TRANSITIONS)
+          .tag("partition", String.valueOf(partitionId))
+          .tag("event", event)
+          .counter()
+          .count();
+    }
+
+    private Timer takeover(final int partitionId) {
+      return registry
+          .get(LeadershipMetrics.TAKEOVER_DELAY)
+          .tag("partition", String.valueOf(partitionId))
+          .timer();
     }
   }
 

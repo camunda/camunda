@@ -10,14 +10,22 @@ package io.camunda.zeebe.broker.client.impl.mailbox;
 import io.camunda.zeebe.broker.client.api.mailbox.GatewayMailboxSetup;
 import io.camunda.zeebe.mailbox.AdaptiveBackoff;
 import io.camunda.zeebe.mailbox.InboxSender;
+import io.camunda.zeebe.mailbox.MeteredMailboxStore;
 import io.camunda.zeebe.mailbox.PollLoop;
 import io.camunda.zeebe.mailbox.ResponseAwaiter;
 import io.camunda.zeebe.mailbox.Scheduler;
 import io.camunda.zeebe.mailbox.api.GatewayId;
+import io.camunda.zeebe.mailbox.api.MailboxStore;
 import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.MessageKind;
 import io.camunda.zeebe.mailbox.api.PartitionLeader;
 import io.camunda.zeebe.mailbox.leadership.LiveLeaders;
+import io.camunda.zeebe.mailbox.leadership.MeteredLeaseStore;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
@@ -25,8 +33,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -44,6 +54,16 @@ import org.slf4j.LoggerFactory;
  */
 public final class GatewayMailbox implements AutoCloseable {
 
+  /**
+   * The time from sending a request through the mailbox to its response. Tags: {@code partition},
+   * and {@code outcome}: {@code success}, {@code timeout}, {@code not_sent} if the insert into the
+   * inbox failed, or {@code failure}.
+   */
+  public static final String REQUEST_LATENCY = "zeebe.mailbox.gateway.request.latency";
+
+  public static final String PENDING_REQUESTS = "zeebe.mailbox.gateway.pending.requests";
+  public static final String KNOWN_LEADERS = "zeebe.mailbox.gateway.known.leaders";
+
   private static final Logger LOG = LoggerFactory.getLogger(GatewayMailbox.class);
 
   /** How old the copy of the recorded leaders may get. */
@@ -57,10 +77,19 @@ public final class GatewayMailbox implements AutoCloseable {
   private final ScheduledExecutorService leaderExecutor;
   private final PollLoop leaderLoop;
   private final Supplier<List<PartitionLeader>> leaderSource;
+  private final MeterRegistry registry;
+  private final List<Meter> gauges;
   private volatile Map<Integer, PartitionLeader> leaders = Map.of();
 
   public GatewayMailbox(final GatewayMailboxSetup setup) {
-    this(setup, InstantSource.system());
+    this(setup, new SimpleMeterRegistry());
+  }
+
+  /**
+   * @param registry receives the metrics of the mailbox and of the calls to its stores
+   */
+  public GatewayMailbox(final GatewayMailboxSetup setup, final MeterRegistry registry) {
+    this(setup, InstantSource.system(), System::nanoTime, registry);
   }
 
   GatewayMailbox(final GatewayMailboxSetup setup, final InstantSource clock) {
@@ -69,10 +98,28 @@ public final class GatewayMailbox implements AutoCloseable {
 
   GatewayMailbox(
       final GatewayMailboxSetup setup, final InstantSource clock, final LongSupplier nanoClock) {
+    this(setup, clock, nanoClock, new SimpleMeterRegistry());
+  }
+
+  GatewayMailbox(
+      final GatewayMailboxSetup setup,
+      final InstantSource clock,
+      final LongSupplier nanoClock,
+      final MeterRegistry registry) {
     this.setup = setup;
-    leaderSource = leaderSource(setup, nanoClock);
-    sender = new InboxSender(setup.store(), setup.gatewayId(), setup.executor(), clock);
-    awaiter = new ResponseAwaiter(setup.store(), new GatewayId(setup.gatewayId()), clock);
+    this.registry = registry;
+    final var store = new MeteredMailboxStore(setup.store(), registry);
+    leaderSource = leaderSource(setup, store, nanoClock, registry);
+    sender = new InboxSender(store, setup.gatewayId(), setup.executor(), clock);
+    awaiter = new ResponseAwaiter(store, new GatewayId(setup.gatewayId()), clock);
+    gauges =
+        List.of(
+            Gauge.builder(PENDING_REQUESTS, awaiter, ResponseAwaiter::pendingCount)
+                .description("The requests in the mailbox that wait for a response")
+                .register(registry),
+            Gauge.builder(KNOWN_LEADERS, this, mailbox -> mailbox.leaders.size())
+                .description("The partitions for which the gateway knows a leader in the mailbox")
+                .register(registry));
     pollExecutor =
         Executors.newSingleThreadScheduledExecutor(
             runnable -> {
@@ -110,12 +157,17 @@ public final class GatewayMailbox implements AutoCloseable {
    * lease runs out. Otherwise they are the records that the leaders keep in the mailbox store.
    */
   private static Supplier<List<PartitionLeader>> leaderSource(
-      final GatewayMailboxSetup setup, final LongSupplier nanoClock) {
+      final GatewayMailboxSetup setup,
+      final MailboxStore store,
+      final LongSupplier nanoClock,
+      final MeterRegistry registry) {
     final var leases = setup.leases();
     if (leases == null) {
-      return setup.store()::findLeaders;
+      return store::findLeaders;
     }
-    return new LiveLeaders(leases.store(), leases.leaseDuration(), nanoClock)::read;
+    return new LiveLeaders(
+            new MeteredLeaseStore(leases.store(), registry), leases.leaseDuration(), nanoClock)
+        ::read;
   }
 
   /** The zone of this gateway if the regions are simulated in one network, otherwise null. */
@@ -166,8 +218,11 @@ public final class GatewayMailbox implements AutoCloseable {
   public CompletableFuture<byte[]> send(
       final int partitionId, final byte[] payload, final Duration timeout) {
     final var requestId = sender.nextRequestId();
+    final var sample = Timer.start(registry);
     // wait first, so that a fast response cannot arrive before the wait has started
     final var response = awaiter.await(requestId, timeout);
+    response.whenComplete(
+        (ignored, error) -> sample.stop(requestTimer(partitionId, outcomeOf(error))));
     sender
         .send(partitionId, MessageKind.CLIENT_REQUEST, requestId, payload)
         .whenComplete(
@@ -182,8 +237,29 @@ public final class GatewayMailbox implements AutoCloseable {
     return response;
   }
 
+  private Timer requestTimer(final int partitionId, final String outcome) {
+    return Timer.builder(REQUEST_LATENCY)
+        .description("The time from putting a request into the inbox to its response, or failure")
+        .tag("partition", String.valueOf(partitionId))
+        .tag("outcome", outcome)
+        .publishPercentileHistogram()
+        .register(registry);
+  }
+
+  private static String outcomeOf(final @Nullable Throwable error) {
+    if (error == null) {
+      return "success";
+    }
+    final var cause = error instanceof CompletionException ? error.getCause() : error;
+    if (cause instanceof TimeoutException) {
+      return "timeout";
+    }
+    return cause instanceof IllegalStateException ? "not_sent" : "failure";
+  }
+
   @Override
   public void close() {
+    gauges.forEach(registry::remove);
     pollLoop.close();
     leaderLoop.close();
     pollExecutor.shutdownNow();

@@ -76,8 +76,10 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
+import io.camunda.zeebe.mailbox.MeteredMailboxStore;
 import io.camunda.zeebe.mailbox.Scheduler;
 import io.camunda.zeebe.mailbox.leadership.LeaderElector;
+import io.camunda.zeebe.mailbox.leadership.MeteredLeaseStore;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -169,13 +171,17 @@ public final class ZeebePartitionFactory {
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
-      final @Nullable RdbmsEngineStateResources engineState) {
+      final @Nullable RdbmsEngineStateResources engineState,
+      final MeterRegistry brokerMeterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
-    mailboxSetup = MailboxSetups.load(brokerCfg);
+    mailboxSetup = MailboxSetups.load(brokerCfg).map(setup -> metered(setup, brokerMeterRegistry));
     leaderships =
         LeaseSetups.load(brokerCfg)
-            .map(lease -> leaseLeaderships(lease, brokerCfg, localBroker, clusterServices))
+            .map(
+                lease ->
+                    leaseLeaderships(
+                        lease, brokerCfg, localBroker, clusterServices, brokerMeterRegistry))
             .orElseGet(PartitionLeaderships::raft);
     this.localBroker = localBroker;
     this.brokerClient = brokerClient;
@@ -309,11 +315,21 @@ public final class ZeebePartitionFactory {
    * standby. The partition distribution gives every broker every partition only if the replication
    * factor equals the cluster size.
    */
+  /** The setup with a store that records the latency of its calls, for every user of it. */
+  private static MailboxSetup metered(final MailboxSetup setup, final MeterRegistry registry) {
+    return new MailboxSetup(
+        new MeteredMailboxStore(setup.store(), registry),
+        setup.config(),
+        setup.simulatedZone(),
+        setup.senderExecutor());
+  }
+
   private static PartitionLeaderships leaseLeaderships(
       final LeaseSetup lease,
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
-      final ClusterServices clusterServices) {
+      final ClusterServices clusterServices,
+      final MeterRegistry registry) {
     final var cluster = brokerCfg.getCluster();
     if (cluster.getReplicationFactor() != cluster.getClusterSize()) {
       throw new IllegalStateException(
@@ -338,7 +354,7 @@ public final class ZeebePartitionFactory {
     return new LeaseLeaderships(
         listener ->
             new LeaderElector(
-                lease.store(),
+                new MeteredLeaseStore(lease.store(), registry),
                 lease.config(),
                 memberId.id(),
                 zone,
@@ -346,7 +362,8 @@ public final class ZeebePartitionFactory {
                 view,
                 listener,
                 Scheduler.of(executor),
-                System::nanoTime),
+                System::nanoTime,
+                registry),
         executor::shutdownNow);
   }
 

@@ -65,5 +65,14 @@ final class LeaseObserver {
     return nowNanos - observation.sinceNanos() >= leaseNanos;
   }
 
+  /**
+   * Since when, on the monotonic clock, the lease of the partition has had the term and counter it
+   * has now, or -1 if this node has not seen it since the last reset.
+   */
+  long unchangedSinceNanos(final int partitionId) {
+    final var observation = observations.get(partitionId);
+    return observation == null ? -1 : observation.sinceNanos();
+  }
+
   private record Observation(long term, long counter, long sinceNanos) {}
 }

@@ -31,6 +31,7 @@ public final class BrokerClientConfiguration {
   private final ActorScheduler scheduler;
   private final BrokerTopologyManager topologyManager;
   private final BrokerClientRequestMetrics metrics;
+  private final MeterRegistry meterRegistry;
 
   @Autowired
   public BrokerClientConfiguration(
@@ -44,6 +45,7 @@ public final class BrokerClientConfiguration {
     this.scheduler = scheduler;
     this.topologyManager = topologyManager;
     metrics = new BrokerClientRequestMetrics(meterRegistry);
+    this.meterRegistry = meterRegistry;
   }
 
   @Bean(destroyMethod = "close")
@@ -67,7 +69,9 @@ public final class BrokerClientConfiguration {
    */
   private @Nullable GatewayMailbox mailbox() {
     final var memberId = cluster.getMembershipService().getLocalMember().id().id();
-    return GatewayMailboxSetups.load(memberId).map(GatewayMailbox::new).orElse(null);
+    return GatewayMailboxSetups.load(memberId)
+        .map(setup -> new GatewayMailbox(setup, meterRegistry))
+        .orElse(null);
   }
 
   public record BrokerClientCfg(Duration requestTimeout) {}

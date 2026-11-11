@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.zeebe.broker.client.api.mailbox.GatewayLeases;
 import io.camunda.zeebe.broker.client.api.mailbox.GatewayMailboxSetup;
 import io.camunda.zeebe.mailbox.InMemoryMailboxStore;
+import io.camunda.zeebe.mailbox.MeteredMailboxStore;
 import io.camunda.zeebe.mailbox.api.GatewayId;
 import io.camunda.zeebe.mailbox.api.MailboxConfig;
 import io.camunda.zeebe.mailbox.api.MailboxStore;
@@ -23,6 +24,8 @@ import io.camunda.zeebe.mailbox.api.OutboxResponse;
 import io.camunda.zeebe.mailbox.api.PartitionLeader;
 import io.camunda.zeebe.mailbox.api.leadership.LeaseStore;
 import io.camunda.zeebe.mailbox.leadership.InMemoryLeaseStore;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.time.Duration;
@@ -299,6 +302,85 @@ final class GatewayMailboxTest {
     assertThat(first.get(5, java.util.concurrent.TimeUnit.SECONDS)).containsExactly(1);
     assertThat(second.get(5, java.util.concurrent.TimeUnit.SECONDS)).containsExactly(2);
     assertThat(store.takeResponses(new GatewayId(GATEWAY), Set.of())).isEmpty();
+  }
+
+  @Test
+  void shouldMeasureEachRequestByOutcome() throws Exception {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    mailbox = start(store, registry);
+    final var answered = mailbox.send(2, new byte[] {1}, Duration.ofSeconds(30));
+    final var request =
+        await()
+            .atMost(Duration.ofSeconds(5))
+            .until(() -> store.claim(2, "leader", 10, Duration.ofMinutes(1)), m -> !m.isEmpty())
+            .getFirst();
+    store.putResponse(
+        new OutboxResponse(new GatewayId(GATEWAY), request.requestId(), new byte[] {9}));
+    answered.get(5, java.util.concurrent.TimeUnit.SECONDS);
+
+    // when
+    final var unanswered = mailbox.send(2, new byte[] {2}, Duration.ofMillis(100));
+    await().atMost(Duration.ofSeconds(5)).until(unanswered::isDone);
+
+    // then
+    assertThat(requestLatency(registry, "success").count()).isOne();
+    assertThat(requestLatency(registry, "timeout").count()).isOne();
+    assertThat(
+            registry
+                .get(MeteredMailboxStore.STORE_LATENCY)
+                .tag("operation", "insert")
+                .tag("outcome", "success")
+                .timer()
+                .count())
+        .isEqualTo(2);
+  }
+
+  @Test
+  void shouldMeasureARequestThatCouldNotBeSent() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    mailbox = start(failingOn("insert"), registry);
+
+    // when
+    final var response = mailbox.send(2, new byte[] {1}, Duration.ofSeconds(30));
+    await().atMost(Duration.ofSeconds(5)).until(response::isDone);
+
+    // then
+    assertThat(requestLatency(registry, "not_sent").count()).isOne();
+  }
+
+  @Test
+  void shouldShowThePendingRequestsAndTheKnownLeaders() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    store.putLeader(new PartitionLeader(1, "us_0", "us", 3));
+    mailbox = start(store, registry);
+
+    // when
+    mailbox.send(2, new byte[] {1}, Duration.ofSeconds(30));
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(registry.get(GatewayMailbox.PENDING_REQUESTS).gauge().value()).isOne();
+    assertThat(registry.get(GatewayMailbox.KNOWN_LEADERS).gauge().value()).isOne();
+  }
+
+  private static Timer requestLatency(final SimpleMeterRegistry registry, final String outcome) {
+    return registry
+        .get(GatewayMailbox.REQUEST_LATENCY)
+        .tag("partition", "2")
+        .tag("outcome", outcome)
+        .timer();
+  }
+
+  private static GatewayMailbox start(
+      final MailboxStore store, final SimpleMeterRegistry registry) {
+    final var mailbox =
+        new GatewayMailbox(
+            new GatewayMailboxSetup(store, CONFIG, GATEWAY, Runnable::run), registry);
+    mailbox.start();
+    return mailbox;
   }
 
   private GatewayMailbox leaseMode(final InMemoryLeaseStore leases, final AtomicLong clock) {
