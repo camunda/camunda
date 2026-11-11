@@ -19,6 +19,7 @@ jobs:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-rdbms-api-tests.yml
     with:
       branch: main
+      playwright_workers: 8
     secrets: inherit
 
   nightly-api-tests-rdbms-all-in-one:
@@ -26,6 +27,7 @@ jobs:
     with:
       branch: main
       camunda_mode: all-in-one
+      playwright_workers: 8
     secrets: inherit
 
   # Auto-retry when a matrix leg failed because its self-hosted runner was

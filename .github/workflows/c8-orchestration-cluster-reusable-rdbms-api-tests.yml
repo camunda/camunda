@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         default: profiles
+      playwright_workers:
+        description: "Playwright worker count for the API tests. The 16-core runner has headroom beyond the suite's default of 4."
+        required: false
+        type: number
+        default: 4
 
 permissions:
   contents: read
@@ -422,7 +427,7 @@ jobs:
           DB_NAME: ${{ matrix.database.database-name }}
           INCLUDE_SLACK_REPORTER: true
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
-        run: DATABASE=RDBMS npm run test -- --project=api-tests
+        run: DATABASE=RDBMS npm run test -- --project=api-tests --workers=${{ inputs.playwright_workers }}
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Stop Camunda
