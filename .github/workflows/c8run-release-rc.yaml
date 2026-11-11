@@ -684,12 +684,20 @@ jobs:
             echo "PR for ${pr_branch} already exists; updated its branch."
             exit 0
           fi
+          # The ticked opt-out below is what the release-notes PR-gate reads; without it the
+          # check fails because this version bump tracks no issue.
+          body="$(printf '%s\n' \
+            "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train." \
+            "" \
+            "## Related issues" \
+            "" \
+            "- [x] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)")"
           gh pr create \
             --repo "${{ github.repository }}" \
             --base "${BRANCH}" \
             --head "${pr_branch}" \
             --title "deps: update c8run versions to ${CAMUNDA_VERSION}" \
-            --body "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train."
+            --body "${body}"
 
       - name: Observe build status
         if: always()
