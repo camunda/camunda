@@ -992,6 +992,14 @@ final class JobWorkerImplTest {
 
       // then
       assertWorkerGetsPastTheFailingJob(handledJobKeys);
+      Awaitility.await("the job whose activation failed to be reported is handed back")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getFailedJobs())
+                      .filteredOn(request -> request.getJobKey() == 0L)
+                      .extracting(FailJobRequest::getErrorMessage)
+                      .containsExactly(JobWorkerImpl.FAILED_HAND_OFF_ERROR_MSG));
     }
   }
 
