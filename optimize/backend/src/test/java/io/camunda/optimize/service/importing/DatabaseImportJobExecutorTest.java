@@ -18,6 +18,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +49,7 @@ class DatabaseImportJobExecutorTest {
     assertThat(job.attempts).hasValue(1);
   }
 
-  /** Fails on the first attempt; any retry succeeds immediately. */
+  /** Hangs on the first attempt until interrupted, then fails it; any retry succeeds. */
   private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
     private final AtomicInteger attempts = new AtomicInteger();
@@ -61,6 +62,10 @@ class DatabaseImportJobExecutorTest {
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (attempts.incrementAndGet() == 1) {
+        // a database that never answers, until the executor interrupts the thread
+        while (!Thread.currentThread().isInterrupted()) {
+          LockSupport.park();
+        }
         throw new IllegalStateException("database unavailable");
       }
     }
