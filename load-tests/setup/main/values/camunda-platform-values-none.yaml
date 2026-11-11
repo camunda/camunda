@@ -23,6 +23,8 @@ global:
           app: camunda-platform
           app.kubernetes.io/component: zeebe-gateway
       spec:
+        # Headless, so the clients resolve every gateway pod and round-robin over them. A ClusterIP gives one virtual IP, one HTTP/2 connection and one busy gateway.
+        clusterIP: None
         type: ClusterIP
         selector:
           app: camunda-sgw
