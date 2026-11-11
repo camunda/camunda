@@ -18,6 +18,7 @@ import {
   DEFAULT_PAGE_LIMIT,
   defaultAssertionOptions,
   extendedAssertionOptions,
+  suspensionAssertionOptions,
 } from '../constants';
 import {activateSingleJob, completeJob} from './job-requestHelpers';
 import {expectNoIncidents} from './incident-requestHelpers';
@@ -429,7 +430,7 @@ export async function expectSuspendedDate(
 export async function suspendAndExpectSuspended(
   request: APIRequestContext,
   processInstanceKey: string,
-  assertionOptions = defaultAssertionOptions,
+  assertionOptions = suspensionAssertionOptions,
 ): Promise<void> {
   await assertStatusCode(
     await suspendProcessInstance(request, processInstanceKey),
