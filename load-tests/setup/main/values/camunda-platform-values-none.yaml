@@ -11,6 +11,166 @@
 ########################################################################################
 global:
   noSecondaryStorage: true
+  # INC-8994 experiment: a standalone gateway (bin/gateway, 3 replicas, 1 CPU each) in front of brokers without embedded gateway.
+  # It reuses the broker ConfigMap (cluster name, contact points, OIDC) and the broker credentials secret.
+  extraManifests:
+    - |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: camunda-sgw
+        labels:
+          app: camunda-sgw
+      spec:
+        type: ClusterIP
+        selector:
+          app: camunda-sgw
+        ports:
+          - name: grpc
+            port: 26500
+            targetPort: 26500
+          - name: http
+            port: 8080
+            targetPort: 8080
+          - name: server
+            port: 9600
+            targetPort: 9600
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: camunda-sgw
+        labels:
+          app: camunda-sgw
+      spec:
+        replicas: 3
+        selector:
+          matchLabels:
+            app: camunda-sgw
+        template:
+          metadata:
+            labels:
+              app: camunda-sgw
+              camunda.io/purpose: load-test
+          spec:
+            imagePullSecrets:
+              - name: harbor-registry
+            serviceAccountName: camunda
+            nodeSelector:
+              component: benchmark-n2-standard-8
+              topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+            tolerations:
+              - key: nodepool
+                operator: Equal
+                value: n2-standard-8
+                effect: NoSchedule
+            securityContext:
+              fsGroup: 1001
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            containers:
+              - name: gateway
+                image: registry.camunda.cloud/team-zeebe/camunda:ck-bp-ctl-3-20261105-90c0c3a9
+                imagePullPolicy: Always
+                command: ["/usr/local/camunda/bin/gateway"]
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  readOnlyRootFilesystem: true
+                env:
+                  - name: LC_ALL
+                    value: C.UTF-8
+                  - name: K8S_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: K8S_SERVICE_NAME
+                    value: camunda
+                  - name: K8S_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: VALUES_ORCHESTRATION_CLIENT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: camunda-credentials
+                        key: orchestration-security-authentication-oidc-secret
+                  - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: ZEEBE_GATEWAY_CLUSTER_HOST
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: JAVA_TOOL_OPTIONS
+                    value: "-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError"
+                  - name: ZEEBE_LOG_APPENDER
+                    value: Stackdriver
+                  - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+                    value: zeebe-gateway
+                  - name: ZEEBE_LOG_LEVEL
+                    value: INFO
+                  - name: ATOMIX_LOG_LEVEL
+                    value: INFO
+                  - name: SPRING_CONFIG_ADDITIONALLOCATION
+                    value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml
+                ports:
+                  - containerPort: 26500
+                    name: grpc
+                  - containerPort: 26502
+                    name: internal
+                  - containerPort: 8080
+                    name: http
+                  - containerPort: 9600
+                    name: server
+                readinessProbe:
+                  httpGet:
+                    path: /actuator/health/readiness
+                    port: 9600
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  failureThreshold: 6
+                  timeoutSeconds: 2
+                resources:
+                  requests:
+                    cpu: 1000m
+                    memory: 1Gi
+                  limits:
+                    cpu: 1000m
+                    memory: 1Gi
+                volumeMounts:
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application.yaml
+                    subPath: application.yaml
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application.yml
+                    subPath: application.yml
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application-override.yml
+                    subPath: application-override.yml
+                  - name: tmp
+                    mountPath: /tmp
+                  - name: data
+                    mountPath: /usr/local/camunda/data
+                  - name: logs
+                    mountPath: /usr/local/camunda/logs
+            volumes:
+              - name: config
+                configMap:
+                  name: camunda-configuration
+                  defaultMode: 492
+              - name: tmp
+                emptyDir: {}
+              - name: data
+                emptyDir: {}
+              - name: logs
+                emptyDir: {}
 
 optimize:
   enabled: false
@@ -58,7 +218,9 @@ orchestration:
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.
     - file: application-override.yml
-      content: "# no overrides"
+      content: |
+        # INC-8994 experiment: brokers run without the embedded gateway, a standalone gateway Deployment (global.extraManifests) serves the clients.
+        zeebe.broker.gateway.enable: "false"
   history:
     retention:
       enabled: false
