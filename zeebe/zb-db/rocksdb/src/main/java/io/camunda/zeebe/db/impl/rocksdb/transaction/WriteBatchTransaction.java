@@ -202,7 +202,8 @@ public class WriteBatchTransaction implements ZeebeTransaction, AutoCloseable {
     }
   }
 
-  void addListener(final TransactionListener listener) {
+  @Override
+  public void addListener(final TransactionListener listener) {
     listeners.add(listener);
   }
 

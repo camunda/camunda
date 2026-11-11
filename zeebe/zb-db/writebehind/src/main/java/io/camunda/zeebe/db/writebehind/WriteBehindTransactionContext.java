@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.writebehind;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 
@@ -39,6 +40,11 @@ final class WriteBehindTransactionContext implements TransactionContext {
   @Override
   public ZeebeDbTransaction getCurrentTransaction() {
     return currentTransaction();
+  }
+
+  @Override
+  public void addTransactionListener(final TransactionListener listener) {
+    transaction.addListener(listener);
   }
 
   /** The transaction of this context, started if none is open. */

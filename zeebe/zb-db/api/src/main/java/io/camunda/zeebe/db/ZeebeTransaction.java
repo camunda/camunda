@@ -40,4 +40,7 @@ public interface ZeebeTransaction extends ZeebeDbTransaction {
   void commitInternal() throws Exception;
 
   void rollbackInternal() throws Exception;
+
+  /** Notifies the listener when a transaction ends, by commit or rollback. */
+  void addListener(TransactionListener listener);
 }

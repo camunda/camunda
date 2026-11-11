@@ -6,8 +6,9 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-workflow-engine"))
-  implementation(project(":zeebe-db"))
+  implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-util"))
+  implementation(libs.io.camunda.security.library.core)
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(libs.org.mybatis.mybatis)

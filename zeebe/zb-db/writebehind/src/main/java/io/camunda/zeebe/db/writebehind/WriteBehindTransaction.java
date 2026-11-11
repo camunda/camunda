@@ -8,8 +8,11 @@
 package io.camunda.zeebe.db.writebehind;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.jspecify.annotations.Nullable;
 
@@ -26,7 +29,15 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
 
   private final WriteBehindStore store;
   private final ConcurrentSkipListMap<RawKey, Version> writes = new ConcurrentSkipListMap<>();
+  private final List<TransactionListener> listeners = new ArrayList<>();
   private boolean inCurrentTransaction;
+
+  /**
+   * Whether the listeners still have to be told how the current transaction ended. It stays set
+   * when a commit fails, so the rollback that follows is reported, and a commit clears it, so the
+   * rollback that runs after every commit is not.
+   */
+  private boolean outcomePending;
 
   WriteBehindTransaction(final WriteBehindStore store) {
     this.store = store;
@@ -75,6 +86,7 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
   void resetTransaction() {
     writes.clear();
     inCurrentTransaction = true;
+    outcomePending = true;
   }
 
   boolean isInCurrentTransaction() {
@@ -100,6 +112,7 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
     inCurrentTransaction = false;
     if (writes.isEmpty()) {
       store.ensureUsable();
+      notifyOutcome(true);
       return;
     }
 
@@ -114,10 +127,30 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
     store.commit(keys, values);
     // only after success: the stream processor retries a failed commit with the same writes
     writes.clear();
+    notifyOutcome(true);
   }
 
   void rollbackInternal() {
     inCurrentTransaction = false;
     writes.clear();
+    notifyOutcome(false);
+  }
+
+  public void addListener(final TransactionListener listener) {
+    listeners.add(listener);
+  }
+
+  private void notifyOutcome(final boolean committed) {
+    if (!outcomePending) {
+      return;
+    }
+    outcomePending = false;
+    for (final var listener : listeners) {
+      if (committed) {
+        listener.onCommit();
+      } else {
+        listener.onRollback();
+      }
+    }
   }
 }

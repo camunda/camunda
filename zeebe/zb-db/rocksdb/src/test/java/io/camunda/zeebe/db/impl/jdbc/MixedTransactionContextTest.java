@@ -193,7 +193,7 @@ final class MixedTransactionContextTest {
     // then - RocksDB caught up, and the database applied position 5 once
     assertThat(isCommittedInRocksDb(1)).isTrue();
     assertThat(isCommittedInRocksDb(2)).isTrue();
-    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(1L, 10L, 2L, 20L));
+    assertThat(committedJdbcRows()).isEqualTo(Map.of(1L, 10L, 2L, 20L));
     assertThat(participant.marked).containsExactly(5L, 5L, 6L);
   }
 
