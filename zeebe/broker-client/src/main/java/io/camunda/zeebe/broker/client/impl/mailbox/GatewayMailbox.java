@@ -17,14 +17,18 @@ import io.camunda.zeebe.mailbox.api.GatewayId;
 import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.MessageKind;
 import io.camunda.zeebe.mailbox.api.PartitionLeader;
+import io.camunda.zeebe.mailbox.leadership.LiveLeaders;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +56,7 @@ public final class GatewayMailbox implements AutoCloseable {
   private final PollLoop pollLoop;
   private final ScheduledExecutorService leaderExecutor;
   private final PollLoop leaderLoop;
+  private final Supplier<List<PartitionLeader>> leaderSource;
   private volatile Map<Integer, PartitionLeader> leaders = Map.of();
 
   public GatewayMailbox(final GatewayMailboxSetup setup) {
@@ -59,7 +64,13 @@ public final class GatewayMailbox implements AutoCloseable {
   }
 
   GatewayMailbox(final GatewayMailboxSetup setup, final InstantSource clock) {
+    this(setup, clock, System::nanoTime);
+  }
+
+  GatewayMailbox(
+      final GatewayMailboxSetup setup, final InstantSource clock, final LongSupplier nanoClock) {
     this.setup = setup;
+    leaderSource = leaderSource(setup, nanoClock);
     sender = new InboxSender(setup.store(), setup.gatewayId(), setup.executor(), clock);
     awaiter = new ResponseAwaiter(setup.store(), new GatewayId(setup.gatewayId()), clock);
     pollExecutor =
@@ -94,6 +105,19 @@ public final class GatewayMailbox implements AutoCloseable {
             });
   }
 
+  /**
+   * In lease mode the leaders are those with a live lease, so a crashed leader drops out once its
+   * lease runs out. Otherwise they are the records that the leaders keep in the mailbox store.
+   */
+  private static Supplier<List<PartitionLeader>> leaderSource(
+      final GatewayMailboxSetup setup, final LongSupplier nanoClock) {
+    final var leases = setup.leases();
+    if (leases == null) {
+      return setup.store()::findLeaders;
+    }
+    return new LiveLeaders(leases.store(), leases.leaseDuration(), nanoClock)::read;
+  }
+
   /** The zone of this gateway if the regions are simulated in one network, otherwise null. */
   public @Nullable String simulatedZone() {
     return setup.simulatedZone();
@@ -121,7 +145,7 @@ public final class GatewayMailbox implements AutoCloseable {
   public void refreshLeaders() {
     try {
       final var refreshed = new HashMap<Integer, PartitionLeader>();
-      for (final var leader : setup.store().findLeaders()) {
+      for (final var leader : leaderSource.get()) {
         refreshed.put(leader.partitionId(), leader);
       }
       leaders = Map.copyOf(refreshed);

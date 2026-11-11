@@ -24,13 +24,25 @@ import org.jspecify.annotations.Nullable;
  *     gateway. The leaders of other zones then count as unknown in the topology, as they are when
  *     the regions are separated. Null in a real deployment, where gossip does not cross the border
  *     between regions.
+ * @param leases the leases of the brokers in lease mode, or null if the leaders come from Raft and
+ *     record themselves in the mailbox store
  */
 public record GatewayMailboxSetup(
     MailboxStore store,
     MailboxConfig config,
     String gatewayId,
     Executor executor,
-    @Nullable String simulatedZone) {
+    @Nullable String simulatedZone,
+    @Nullable GatewayLeases leases) {
+
+  public GatewayMailboxSetup(
+      final MailboxStore store,
+      final MailboxConfig config,
+      final String gatewayId,
+      final Executor executor,
+      final @Nullable String simulatedZone) {
+    this(store, config, gatewayId, executor, simulatedZone, null);
+  }
 
   public GatewayMailboxSetup(
       final MailboxStore store,

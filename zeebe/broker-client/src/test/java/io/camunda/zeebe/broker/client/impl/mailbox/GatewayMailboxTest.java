@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.broker.client.api.mailbox.GatewayLeases;
 import io.camunda.zeebe.broker.client.api.mailbox.GatewayMailboxSetup;
 import io.camunda.zeebe.mailbox.InMemoryMailboxStore;
 import io.camunda.zeebe.mailbox.api.GatewayId;
@@ -20,13 +21,18 @@ import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.MessageKind;
 import io.camunda.zeebe.mailbox.api.OutboxResponse;
 import io.camunda.zeebe.mailbox.api.PartitionLeader;
+import io.camunda.zeebe.mailbox.api.leadership.LeaseStore;
+import io.camunda.zeebe.mailbox.leadership.InMemoryLeaseStore;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.time.Duration;
+import java.time.InstantSource;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +47,8 @@ final class GatewayMailboxTest {
           10,
           Duration.ofHours(1),
           Duration.ofHours(1));
+
+  private static final Duration LEASE = Duration.ofSeconds(9);
 
   private final InMemoryMailboxStore store = new InMemoryMailboxStore();
   private GatewayMailbox mailbox;
@@ -63,6 +71,76 @@ final class GatewayMailboxTest {
 
     // then
     assertThat(mailbox.recordedLeader(1)).contains(new PartitionLeader(1, "us_0", "us", 3));
+  }
+
+  @Test
+  void shouldTakeTheLeadersFromLiveLeasesInLeaseMode() {
+    // given - a leader record in the mailbox store does not count in lease mode
+    final var leases = new InMemoryLeaseStore();
+    final var clock = new AtomicLong();
+    mailbox = leaseMode(leases, clock);
+    store.putLeader(new PartitionLeader(2, "us_1", "us", 1));
+    leases.claim(1, "us_0", "us", LeaseStore.NO_LEASE, 0);
+
+    // when
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).contains(new PartitionLeader(1, "us_0", "us", 1));
+    assertThat(mailbox.recordedLeader(2)).isEmpty();
+  }
+
+  @Test
+  void shouldDropALeaderWhoseLeaseRanOut() {
+    // given
+    final var leases = new InMemoryLeaseStore();
+    final var clock = new AtomicLong();
+    mailbox = leaseMode(leases, clock);
+    leases.claim(1, "us_0", "us", LeaseStore.NO_LEASE, 0);
+    mailbox.refreshLeaders();
+
+    // when - the leader crashed and renews no more
+    clock.addAndGet(LEASE.toNanos());
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isEmpty();
+  }
+
+  @Test
+  void shouldKeepALeaderThatRenews() {
+    // given
+    final var leases = new InMemoryLeaseStore();
+    final var clock = new AtomicLong();
+    mailbox = leaseMode(leases, clock);
+    leases.claim(1, "us_0", "us", LeaseStore.NO_LEASE, 0);
+    mailbox.refreshLeaders();
+
+    // when
+    clock.addAndGet(LEASE.toNanos() - 1);
+    leases.renew("us_0", Map.of(1, 1L));
+    mailbox.refreshLeaders();
+    clock.addAndGet(LEASE.toNanos() - 1);
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isPresent();
+  }
+
+  @Test
+  void shouldDropALeaderThatReleasedItsLease() {
+    // given
+    final var leases = new InMemoryLeaseStore();
+    mailbox = leaseMode(leases, new AtomicLong());
+    leases.claim(1, "us_0", "us", LeaseStore.NO_LEASE, 0);
+    mailbox.refreshLeaders();
+
+    // when
+    leases.release(1, "us_0", 1);
+    mailbox.refreshLeaders();
+
+    // then
+    assertThat(mailbox.recordedLeader(1)).isEmpty();
   }
 
   @Test
@@ -221,6 +299,14 @@ final class GatewayMailboxTest {
     assertThat(first.get(5, java.util.concurrent.TimeUnit.SECONDS)).containsExactly(1);
     assertThat(second.get(5, java.util.concurrent.TimeUnit.SECONDS)).containsExactly(2);
     assertThat(store.takeResponses(new GatewayId(GATEWAY), Set.of())).isEmpty();
+  }
+
+  private GatewayMailbox leaseMode(final InMemoryLeaseStore leases, final AtomicLong clock) {
+    return new GatewayMailbox(
+        new GatewayMailboxSetup(
+            store, CONFIG, GATEWAY, Runnable::run, null, new GatewayLeases(leases, LEASE)),
+        InstantSource.system(),
+        clock::get);
   }
 
   private static GatewayMailbox start(final MailboxStore store) {
