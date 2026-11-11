@@ -8,22 +8,30 @@
 package io.camunda.zeebe.engine.state.processing;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 
-public class LastProcessedPosition extends UnpackedObject implements DbValue {
-  private final LongProperty positionProp = new LongProperty("lastProcessPosition");
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class LastProcessedPosition extends MsgpackBufferValue<LastProcessedPosition>
+    implements DbValue {
 
-  public LastProcessedPosition() {
-    super(1);
-    declareProperty(positionProp);
-  }
+  long lastProcessPosition;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public LastProcessedPosition() {}
 
   public void set(final long position) {
-    positionProp.setValue(position);
+    lastProcessPosition = position;
   }
 
   public long get() {
-    return positionProp.getValue();
+    return lastProcessPosition;
   }
 }
