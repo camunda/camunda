@@ -8,25 +8,40 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class JobRecordValue extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class JobRecordValue extends MsgpackBufferValue<JobRecordValue> implements DbValue {
 
-  private final ObjectProperty<JobRecord> recordProp =
-      new ObjectProperty<>("jobRecord", new JobRecord());
+  final JobRecord jobRecord = new JobRecord();
 
-  public JobRecordValue() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public JobRecordValue() {}
 
   public JobRecord getRecord() {
-    return recordProp.getValue();
+    return jobRecord;
   }
 
   public void setRecordWithoutVariables(final JobRecord record) {
-    recordProp.getValue().wrapWithoutVariables(record);
+    jobRecord.wrapWithoutVariables(record);
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    // the nested record references the buffer it is read from, so it needs its own copy
+    final byte[] bytes = new byte[length];
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(new UnsafeBuffer(bytes), 0, length);
   }
 }
