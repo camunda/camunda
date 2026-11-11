@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -39,6 +40,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Transactions can be paused, which stalls the cache's writer: it is the only caller of {@code
  * runInTransaction}, since reads go straight to the column families.
+ *
+ * <p>A scan fixes its view when it starts, like a RocksDB iterator, by copying its range. Scans can
+ * be paused right after that, before their first callback.
  */
 final class InMemoryBackend {
 
@@ -47,6 +51,8 @@ final class InMemoryBackend {
   private final AtomicInteger transactions = new AtomicInteger();
   private final Semaphore pausedTransactions = new Semaphore(0);
   private volatile CountDownLatch resumed = new CountDownLatch(0);
+  private final Semaphore pausedScans = new Semaphore(0);
+  private volatile CountDownLatch scansResumed = new CountDownLatch(0);
   private final ZeebeDb<TestColumnFamily> db;
 
   @SuppressWarnings("unchecked")
@@ -77,6 +83,22 @@ final class InMemoryBackend {
 
   void resumeTransactions() {
     resumed.countDown();
+  }
+
+  /** Makes every scan that starts from now on wait before its first callback. */
+  void pauseScans() {
+    scansResumed = new CountDownLatch(1);
+  }
+
+  void resumeScans() {
+    scansResumed.countDown();
+  }
+
+  /** Waits until a scan is waiting because of {@link #pauseScans()}. */
+  void awaitPausedScan() throws InterruptedException {
+    if (!pausedScans.tryAcquire(10, TimeUnit.SECONDS)) {
+      throw new IllegalStateException("Expected a scan to pause, but none did");
+    }
   }
 
   /** Waits until a transaction is waiting because of {@link #pauseTransactions()}. */
@@ -153,9 +175,7 @@ final class InMemoryBackend {
               final KeyValuePairVisitor<RawKey, RawValue> visitor = invocation.getArgument(2);
               final DbKey prefix = invocation.getArgument(0);
               scan(
-                  rows(columnFamily)
-                      .tailMap(invocation.<RawKey>getArgument(1).bytes(), true)
-                      .entrySet(),
+                  rows(columnFamily).tailMap(invocation.<RawKey>getArgument(1).bytes(), true),
                   ((RawKey) prefix).bytes(),
                   keyInstance,
                   valueInstance,
@@ -169,9 +189,7 @@ final class InMemoryBackend {
               final KeyVisitor<RawKey> visitor = invocation.getArgument(2);
               final DbKey prefix = invocation.getArgument(0);
               scan(
-                  rows(columnFamily)
-                      .tailMap(invocation.<RawKey>getArgument(1).bytes(), true)
-                      .entrySet(),
+                  rows(columnFamily).tailMap(invocation.<RawKey>getArgument(1).bytes(), true),
                   ((RawKey) prefix).bytes(),
                   keyInstance,
                   valueInstance,
@@ -186,8 +204,7 @@ final class InMemoryBackend {
               scan(
                   rows(columnFamily)
                       .headMap(invocation.<RawKey>getArgument(0).bytes(), true)
-                      .descendingMap()
-                      .entrySet(),
+                      .descendingMap(),
                   new byte[0],
                   keyInstance,
                   valueInstance,
@@ -202,8 +219,7 @@ final class InMemoryBackend {
               scan(
                   rows(columnFamily)
                       .headMap(invocation.<RawKey>getArgument(0).bytes(), true)
-                      .descendingMap()
-                      .entrySet(),
+                      .descendingMap(),
                   new byte[0],
                   keyInstance,
                   valueInstance,
@@ -215,13 +231,20 @@ final class InMemoryBackend {
     return passThrough;
   }
 
-  private static void scan(
-      final Iterable<Map.Entry<byte[], byte[]>> entries,
+  private void scan(
+      final NavigableMap<byte[], byte[]> range,
       final byte[] prefix,
       final RawKey keyInstance,
       final RawValue valueInstance,
-      final KeyValuePairVisitor<RawKey, RawValue> visitor) {
-    for (final var entry : entries) {
+      final KeyValuePairVisitor<RawKey, RawValue> visitor)
+      throws InterruptedException {
+    final var view = new ArrayList<>(range.entrySet());
+    final var scansResumed = this.scansResumed;
+    if (scansResumed.getCount() > 0) {
+      pausedScans.release();
+      scansResumed.await();
+    }
+    for (final var entry : view) {
       final var key = entry.getKey();
       if (!OverlayMerge.startsWith(key, prefix)) {
         return;

@@ -187,6 +187,11 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     }
   }
 
+  /** Returns the key and value bytes of the versions the backend doesn't have yet. */
+  long pendingBytes() {
+    return dirtyIndex.bytes();
+  }
+
   @Override
   public void close() {
     cacheManager.close();
