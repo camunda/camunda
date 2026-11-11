@@ -86,6 +86,8 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizat
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionEntry;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -141,6 +143,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -5639,6 +5642,68 @@ final class JsonSerializableToJsonTest {
           "membershipDeletes": [],
           "authorizationDeletes": [],
           "errorMessage": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////// ProcessDefinitionSuspensionRecord /////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>)
+            () ->
+                new ProcessDefinitionSuspensionRecord()
+                    .setProcessDefinitionKey(1L)
+                    .setBpmnProcessId("process-1")
+                    .setVersion(3)
+                    .setTenantId("tenant-1")
+                    .setCascade(true)
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionEntry()
+                            .setProcessDefinitionKey(1L)
+                            .setVersion(3)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionEntry()
+                            .setProcessDefinitionKey(2L)
+                            .setVersion(2)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED))
+                    .setBatchOperationKey(99L),
+        """
+        {
+          "processDefinitionKey": 1,
+          "bpmnProcessId": "process-1",
+          "version": 3,
+          "tenantId": "tenant-1",
+          "cascade": true,
+          "resolvedVersions": [
+            {
+              "processDefinitionKey": 1,
+              "version": 3,
+              "outcome": "SUSPENDED"
+            },
+            {
+              "processDefinitionKey": 2,
+              "version": 2,
+              "outcome": "ALREADY_SUSPENDED"
+            }
+          ],
+          "batchOperationKey": 99
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>) ProcessDefinitionSuspensionRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
+          "bpmnProcessId": "",
+          "version": -1,
+          "tenantId": "<default>",
+          "cascade": false,
+          "resolvedVersions": [],
+          "batchOperationKey": -1
         }
         """
       },
