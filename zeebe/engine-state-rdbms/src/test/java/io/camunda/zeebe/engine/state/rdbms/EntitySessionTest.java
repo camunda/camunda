@@ -123,6 +123,24 @@ final class EntitySessionTest {
   }
 
   @Test
+  void shouldNotDeleteRowKnownToBeMissing() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var transaction = context.getCurrentTransaction();
+    session.get(ROW, "1");
+    session.get(ROW, "2");
+
+    // when
+    session.delete(ROW, "1");
+    session.delete(ROW, "2");
+    transaction.commit();
+
+    // then - only the existing row is deleted
+    assertThat(batches).containsExactly("DELETE 1");
+    assertThat(committedRows()).isEmpty();
+  }
+
+  @Test
   void shouldCollapseDeleteAndInsertIntoUpdate() throws Exception {
     // given
     commit(row("1", "a"));
