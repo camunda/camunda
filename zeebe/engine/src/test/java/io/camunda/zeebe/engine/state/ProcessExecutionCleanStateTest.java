@@ -7,11 +7,9 @@
  */
 package io.camunda.zeebe.engine.state;
 
-import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -23,10 +21,8 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,12 +62,8 @@ public final class ProcessExecutionCleanStateTest {
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
-  private ProcessingState processingState;
-
   @Before
   public void init() {
-    processingState = engineRule.getProcessingState();
-
     assertThatStateIsEmpty();
   }
 
@@ -908,10 +900,11 @@ public final class ProcessExecutionCleanStateTest {
         .untilAsserted(
             () -> {
               final var nonEmptyColumns =
-                  Arrays.stream(ZbColumnFamilies.values())
-                      .filter(not(IGNORE_NON_EMPTY_COLUMNS::contains))
-                      .filter(not(processingState::isEmpty))
-                      .collect(Collectors.toList());
+                  engineRule.collectState().entrySet().stream()
+                      .filter(column -> !IGNORE_NON_EMPTY_COLUMNS.contains(column.getKey()))
+                      .filter(column -> !column.getValue().isEmpty())
+                      .map(Map.Entry::getKey)
+                      .toList();
 
               assertThat(nonEmptyColumns).describedAs("Expected all columns to be empty").isEmpty();
             });

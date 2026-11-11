@@ -25,6 +25,8 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.state.message.PendingSubscriptions;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
@@ -500,6 +502,15 @@ public final class EngineRule extends ExternalResource {
 
   public ProcessingState getProcessingState(final int partitionId) {
     return environmentRule.getProcessingState(partitionId);
+  }
+
+  /**
+   * Returns the process message subscriptions waiting for a reply from the message partition. They
+   * are kept in a thread-safe map in memory, so unlike the rest of the processing state they can be
+   * read while the partition processes.
+   */
+  public List<PendingSubscription> getPendingProcessMessageSubscriptions() {
+    return PendingSubscriptions.of(getProcessingState().getTransientPendingSubscriptionState());
   }
 
   public StreamProcessor getStreamProcessor(final int partitionId) {

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,8 +19,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.TestStreams;
@@ -29,14 +26,12 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -50,10 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
@@ -64,8 +56,7 @@ import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,7 +64,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableLong;
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
@@ -96,9 +86,7 @@ public final class EngineErrorHandlingTest {
       RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
   private TestStreams streams;
-  private KeyGenerator keyGenerator;
   private CommandResponseWriter mockCommandResponseWriter;
-  private MutableProcessingState processingState;
   private StreamProcessor streamProcessor;
 
   @Before
@@ -124,8 +112,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingContext.getProcessingState().getKeyGenerator();
+              final var keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               failingKey.set(keyGenerator.getCurrentKey());
               secondKey.set(keyGenerator.nextKey());
               return TypedRecordProcessors.processors()
@@ -209,8 +196,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
+              final var keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
@@ -280,8 +266,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
@@ -320,9 +304,8 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
-              processingState
+              processingContext
+                  .getProcessingState()
                   .getElementInstanceState()
                   .newInstance(
                       1,
@@ -362,8 +345,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
@@ -398,8 +379,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.MULTI_INSTANCE,
@@ -439,8 +418,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
@@ -486,8 +463,6 @@ public final class EngineErrorHandlingTest {
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
@@ -524,15 +499,23 @@ public final class EngineErrorHandlingTest {
             Records.isEvent(
                 e, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    // then
+    // then - the engine rejects the next command for the banned instance
     assertThat(processor.getProcessCount()).isEqualTo(1);
-
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.valueType(ValueType.PROCESS_INSTANCE);
-    final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
-        .isTrue();
+    final Record<ProcessInstanceRecord> rejection =
+        Awaitility.await("until the COMPLETE_ELEMENT command is rejected")
+            .until(
+                () ->
+                    new RecordStream(streams.events(STREAM_NAME))
+                        .onlyProcessInstanceRecords()
+                        .onlyRejections()
+                        .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+                        .findFirst(),
+                Optional::isPresent)
+            .orElseThrow();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance is banned due to previous errors");
+    assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
 
     verify(dumpProcessorRef.get(), times(1)).processRecord(any());
     assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
@@ -551,7 +534,6 @@ public final class EngineErrorHandlingTest {
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
-              processingState = processingContext.getProcessingState();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
@@ -567,7 +549,14 @@ public final class EngineErrorHandlingTest {
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .write();
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+        .write();
 
+    // other instance
     streams
         .newRecord(STREAM_NAME)
         .event(Records.processInstance(2))
@@ -581,13 +570,22 @@ public final class EngineErrorHandlingTest {
             Records.isEvent(
                 e, ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    // then
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.valueType(ValueType.PROCESS_INSTANCE);
-    final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
-        .isTrue();
+    // then - the engine rejects the next command for the banned instance
+    final Record<ProcessInstanceRecord> rejection =
+        Awaitility.await("until the COMPLETE_ELEMENT command is rejected")
+            .until(
+                () ->
+                    new RecordStream(streams.events(STREAM_NAME))
+                        .onlyProcessInstanceRecords()
+                        .onlyRejections()
+                        .withIntent(ProcessInstanceIntent.COMPLETE_ELEMENT)
+                        .findFirst(),
+                Optional::isPresent)
+            .orElseThrow();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance is banned due to previous errors");
+    assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
     assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
   }
 
@@ -609,37 +607,42 @@ public final class EngineErrorHandlingTest {
         .intent(ErrorIntent.CREATED)
         .write();
 
-    final CountDownLatch latch = new CountDownLatch(1);
     streamProcessor =
         streams.startStreamProcessor(
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
-                  .withListener(
-                      new StreamProcessorLifecycleAware() {
-                        @Override
-                        public void onRecovered(final ReadonlyStreamProcessorContext ctx) {
-                          latch.countDown();
-                        }
-                      })
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
                       new DumpProcessor(processingContext.getWriters()));
             });
 
-    // when
-    latch.await(2000, TimeUnit.MILLISECONDS);
+    // when - the instance is sent another command, which is processed after the replay
+    streams
+        .newRecord(STREAM_NAME)
+        .event(Records.processInstance(1))
+        .recordType(RecordType.COMMAND)
+        .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+        .write();
 
-    // then
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.valueType(ValueType.PROCESS_INSTANCE);
-    final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    waitUntil(() -> processingState.getBannedInstanceState().isBanned(mockTypedRecord));
+    // then - the replayed error banned it
+    final Record<ProcessInstanceRecord> rejection =
+        Awaitility.await("until the ACTIVATE_ELEMENT command is rejected")
+            .until(
+                () ->
+                    new RecordStream(streams.events(STREAM_NAME))
+                        .onlyProcessInstanceRecords()
+                        .onlyRejections()
+                        .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+                        .findFirst(),
+                Optional::isPresent)
+            .orElseThrow();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance is banned due to previous errors");
+    assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
   }
 
   @Test
@@ -660,9 +663,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingState.getKeyGenerator();
-
               return TypedRecordProcessors.processors()
                   .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
                   .onCommand(
@@ -720,14 +720,10 @@ public final class EngineErrorHandlingTest {
                     .toList())
         .until(o -> o.size() == 2);
 
-    // then
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.valueType(ValueType.PROCESS_INSTANCE);
-    final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
-        .isFalse();
-
+    // then - no error was written to ban the instance, and its next job command was processed.
+    // The log already holds every record of the failing command: it was processed before the
+    // commands awaited above
+    assertThat(new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords()).isEmpty();
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 
@@ -741,8 +737,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
-              keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
@@ -821,7 +815,6 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.DEPLOYMENT,
@@ -862,13 +855,9 @@ public final class EngineErrorHandlingTest {
     // when
     waitForRecordWhichSatisfies(e -> Records.isEvent(e, ValueType.TIMER, TimerIntent.CREATED));
 
-    // then
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.valueType(ValueType.TIMER);
-    final MockTypedRecord<TimerRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-    Assertions.assertThat(processingState.getBannedInstanceState().isBanned(mockTypedRecord))
-        .isFalse();
+    // then - no error was written to ban an instance. The log already holds every record of the
+    // failing deployment: it was processed before the one that created the awaited timer
+    assertThat(new RecordStream(streams.events(STREAM_NAME)).onlyErrorRecords()).isEmpty();
     assertThat(processedInstances).containsExactly(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 

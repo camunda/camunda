@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -1571,9 +1572,14 @@ public class MigrateProcessInstanceRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, "process2");
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+    final var taskA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    // the subscription is confirmed, so it no longer waits for a reply
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
         .await();
 
     // when
@@ -1586,16 +1592,10 @@ public class MigrateProcessInstanceRejectionTest {
         .expectRejection()
         .migrate();
 
-    // then
-    ENGINE
-        .getProcessingState()
-        .getPendingProcessMessageSubscriptionState()
-        .visitPending(
-            System.currentTimeMillis(),
-            s -> {
-              fail("Encountered a pending process message subscription.");
-              return true;
-            });
+    // then - the rejection discarded the subscription change, so nothing waits for a reply
+    assertThat(ENGINE.getPendingProcessMessageSubscriptions())
+        .extracting(PendingSubscription::elementInstanceKey)
+        .doesNotContain(taskA.getKey());
   }
 
   @Test
@@ -1640,9 +1640,14 @@ public class MigrateProcessInstanceRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, "process2");
 
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+    final var taskA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    // the subscription is confirmed, so it no longer waits for a reply
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
         .await();
 
     // when
@@ -1655,16 +1660,10 @@ public class MigrateProcessInstanceRejectionTest {
         .expectRejection()
         .migrate();
 
-    // then
-    ENGINE
-        .getProcessingState()
-        .getPendingProcessMessageSubscriptionState()
-        .visitPending(
-            System.currentTimeMillis(),
-            s -> {
-              fail("Encountered a pending process message subscription.");
-              return true;
-            });
+    // then - the rejection discarded the subscription change, so nothing waits for a reply
+    assertThat(ENGINE.getPendingProcessMessageSubscriptions())
+        .extracting(PendingSubscription::elementInstanceKey)
+        .doesNotContain(taskA.getKey());
   }
 
   @Test
