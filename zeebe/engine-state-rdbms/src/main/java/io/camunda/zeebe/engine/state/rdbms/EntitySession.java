@@ -30,7 +30,6 @@ import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -67,10 +66,12 @@ import org.jspecify.annotations.Nullable;
  * database transaction: it is opened on the first database access, borrows a connection from the
  * pool, serves all reads and the flush, and is committed or rolled back and closed when the
  * transaction ends, returning the connection to the pool. A transaction that never accesses the
- * database borrows no connection. When a commit attempt fails, the session is rolled back and
- * closed, and the retry opens a new one on a connection of the pool, which evicts broken ones. The
- * session's executor sends pending batched statements before a query, but statements are only
- * batched by the flush. Reusing prepared statements across transactions is left to the JDBC driver.
+ * database borrows no connection. The pool sets the isolation level, read committed, once per
+ * connection, not the session per transaction. When a commit attempt fails, the session is rolled
+ * back and closed, and the retry opens a new one on a connection of the pool, which evicts broken
+ * ones. The session's executor sends pending batched statements before a query, but statements are
+ * only batched by the flush. Reusing prepared statements across transactions is left to the JDBC
+ * driver.
  *
  * <p>The flush sends all staged writes through that session and a single {@code flushStatements()}.
  * MyBatis' batch executor reuses a JDBC statement while consecutive calls use the same SQL, so the
@@ -668,8 +669,7 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private SqlSession session() {
     if (session == null) {
-      session =
-          sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+      session = sessionFactory.openSession(ExecutorType.BATCH);
     }
     return session;
   }

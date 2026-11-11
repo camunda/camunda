@@ -65,6 +65,8 @@ public class RdbmsEngineStateConfiguration {
     }
     dataSource.setMaximumPoolSize(cfg.getPoolSize());
     dataSource.setAutoCommit(false);
+    // set once per connection: setting it per transaction costs a statement each time
+    dataSource.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
     dataSource.setMetricRegistry(meterRegistry);
     return dataSource;
   }
