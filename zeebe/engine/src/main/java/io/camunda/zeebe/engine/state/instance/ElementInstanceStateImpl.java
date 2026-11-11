@@ -70,15 +70,17 @@ public final class ElementInstanceStateImpl implements MutableElementInstanceSta
     }
     // the shared instance is overwritten by the read of the parent below
     final long parent = instance.getParentKey();
-    final boolean isProcessInstance =
-        instance.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
+    final var elementType = instance.getValue().getBpmnElementType();
     store.deleteInstance(instance);
     variableState.removeScope(key);
-    if (isProcessInstance) {
+    if (elementType == BpmnElementType.PROCESS) {
       // only process instances can have one, stored under their key
       store.deleteAwaitResult(key);
     }
-    store.deleteTakenSequenceFlows(key);
+    if (elementType.isContainerElement()) {
+      // taken sequence flows belong to the flow scope of their gateway, which contains elements
+      store.deleteTakenSequenceFlows(key);
+    }
 
     if (parent > 0) {
       final var parentInstance = store.getSharedInstance(parent);

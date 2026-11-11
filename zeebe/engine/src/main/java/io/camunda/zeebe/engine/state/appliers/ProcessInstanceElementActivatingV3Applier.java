@@ -49,9 +49,12 @@ final class ProcessInstanceElementActivatingV3Applier
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
+    // only an inclusive gateway uses the count; read it before the cleanup decrements it
     final var numberOfTakenSequenceFlows =
-        elementInstanceState.getNumberOfTakenSequenceFlows(
-            value.getFlowScopeKey(), value.getElementIdBuffer());
+        value.getBpmnElementType() == BpmnElementType.INCLUSIVE_GATEWAY
+            ? elementInstanceState.getNumberOfTakenSequenceFlows(
+                value.getFlowScopeKey(), value.getElementIdBuffer())
+            : 0;
     cleanupSequenceFlowsTaken(value);
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
