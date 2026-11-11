@@ -61,15 +61,15 @@ final class IndexedScanTest {
     // given
     put(INDEXED, 1, 2, 3);
     scan(INDEXED);
-    final long iterators = store.iteratorsOpened();
+    final long iterators = store.metrics().iteratorsOpened.sum();
 
     // when
     final var result = scan(INDEXED);
 
     // then
     assertThat(result).containsExactly(Map.entry(1L, 1L), Map.entry(2L, 2L), Map.entry(3L, 3L));
-    assertThat(store.iteratorsOpened()).isEqualTo(iterators);
-    assertThat(store.indexedScans()).isEqualTo(2);
+    assertThat(store.metrics().iteratorsOpened.sum()).isEqualTo(iterators);
+    assertThat(store.metrics().indexedScans.sum()).isEqualTo(2);
   }
 
   @Test
@@ -86,7 +86,7 @@ final class IndexedScanTest {
     // then
     assertThat(scan(INDEXED))
         .containsExactly(Map.entry(2L, 20L), Map.entry(3L, 3L), Map.entry(4L, 4L));
-    assertThat(store.keyIndexSwitches()).isZero();
+    assertThat(store.metrics().keyIndexSwitches.sum()).isZero();
   }
 
   @Test
@@ -100,8 +100,8 @@ final class IndexedScanTest {
 
     // then
     assertThat(store.keyIndex(NOT_INDEXED)).isNull();
-    assertThat(store.iteratorsOpened()).isEqualTo(2);
-    assertThat(store.indexedScans()).isZero();
+    assertThat(store.metrics().iteratorsOpened.sum()).isEqualTo(2);
+    assertThat(store.metrics().indexedScans.sum()).isZero();
   }
 
   @Test
@@ -120,7 +120,7 @@ final class IndexedScanTest {
     // then
     assertThat(index.version()).isEqualTo(version);
     assertThat(ids).containsExactly(Map.entry(1L, 1L), Map.entry(2L, 20L), Map.entry(3L, 3L));
-    assertThat(store.keyIndexSwitches()).isZero();
+    assertThat(store.metrics().keyIndexSwitches.sum()).isZero();
   }
 
   @Test
@@ -178,7 +178,7 @@ final class IndexedScanTest {
 
     // then the view that the cursor switched to has the committed state of that moment
     assertThat(seen).containsExactly(10L, 25L, 30L, 40L, 50L);
-    assertThat(store.keyIndexSwitches()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexSwitches.sum()).isEqualTo(1);
     cursor.close();
   }
 
@@ -197,7 +197,7 @@ final class IndexedScanTest {
 
     // then
     assertThat(id(cursor)).isEqualTo(30);
-    assertThat(store.keyIndexSwitches()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexSwitches.sum()).isEqualTo(1);
     cursor.close();
   }
 
@@ -248,7 +248,7 @@ final class IndexedScanTest {
     result.forEach((id, value) -> assertThat(value).isEqualTo(id));
     assertThat(access.gets() - gets).isEqualTo(IndexSource.MAX_STORAGE_READS);
     assertThat(access.iterators() - iterators).isEqualTo(1);
-    assertThat(store.keyIndexSwitches()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexSwitches.sum()).isEqualTo(1);
   }
 
   @Test
@@ -275,7 +275,7 @@ final class IndexedScanTest {
 
     // then
     assertThat(seen).containsExactly(3L, 2L, 1L, 0L);
-    assertThat(store.keyIndexSwitches()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexSwitches.sum()).isEqualTo(1);
     cursor.close();
   }
 
@@ -335,7 +335,7 @@ final class IndexedScanTest {
     // then
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.DISABLED);
     assertThat(scan(INDEXED)).containsOnlyKeys(1L, 2L, 3L);
-    assertThat(store.indexedScans()).isEqualTo(1);
+    assertThat(store.metrics().indexedScans.sum()).isEqualTo(1);
   }
 
   @ParameterizedTest

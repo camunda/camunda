@@ -75,7 +75,7 @@ final class KeyIndexTest {
     // then
     assertThat(indexed(INDEXED)).containsExactly(1L, 3L, 4L);
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.LOADED);
-    assertThat(store.keyIndexLoads()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexLoads.sum()).isEqualTo(1);
   }
 
   @Test
@@ -85,7 +85,7 @@ final class KeyIndexTest {
 
     // then
     assertThat(store.keyIndex(NOT_INDEXED)).isNull();
-    assertThat(store.iteratorsOpened()).isZero();
+    assertThat(store.metrics().iteratorsOpened.sum()).isZero();
   }
 
   @Test
@@ -148,7 +148,7 @@ final class KeyIndexTest {
     final var index = store.keyIndex(INDEXED);
     assertThat(index.state()).isEqualTo(KeyIndex.State.DISABLED);
     assertThat(index.keys()).isEmpty();
-    assertThat(store.keyIndexDisables()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexDisables.sum()).isEqualTo(1);
   }
 
   @Test
@@ -183,7 +183,7 @@ final class KeyIndexTest {
     // and stays disabled
     store.loadKeyIndexIfNeeded(INDEXED);
     assertThat(index.state()).isEqualTo(KeyIndex.State.DISABLED);
-    assertThat(store.keyIndexLoads()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexLoads.sum()).isEqualTo(1);
   }
 
   @Test
@@ -198,7 +198,7 @@ final class KeyIndexTest {
     // then
     final var index = store.keyIndex(INDEXED);
     assertThat(index.state()).isEqualTo(KeyIndex.State.UNLOADED);
-    assertThat(store.keyIndexDiscardedLoads()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexDiscardedLoads.sum()).isEqualTo(1);
 
     // and the next load sees the new key
     store.loadKeyIndexIfNeeded(INDEXED);
@@ -232,8 +232,8 @@ final class KeyIndexTest {
 
     // then
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.DISABLED);
-    assertThat(store.keyIndexDiscardedLoads()).isEqualTo(3);
-    assertThat(store.keyIndexDisables()).isEqualTo(1);
+    assertThat(store.metrics().keyIndexDiscardedLoads.sum()).isEqualTo(3);
+    assertThat(store.metrics().keyIndexDisables.sum()).isEqualTo(1);
   }
 
   @ParameterizedTest
@@ -278,7 +278,7 @@ final class KeyIndexTest {
     shouldMatchCommittedStateAfterRandomOperations(seed);
 
     // then
-    assertThat(store.keyIndexDisables()).isPositive();
+    assertThat(store.metrics().keyIndexDisables.sum()).isPositive();
   }
 
   private void randomCommit(final Random random, final TreeMap<Long, Set<Long>> model) {

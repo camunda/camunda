@@ -114,7 +114,7 @@ final class MergingCursor implements AutoCloseable {
     final long version = index == null ? 1 : index.version();
     if (index != null && index.isStable(version)) {
       store.ensureUsable();
-      store.recordIndexedScan();
+      store.metrics().indexedScans.increment();
       committed = new IndexSource(store, index, version);
     } else {
       committed = new ViewSource(store.openView(prefix, prefix.length));
@@ -139,7 +139,7 @@ final class MergingCursor implements AutoCloseable {
    */
   private boolean restartFromView(final byte[] key) {
     committed().close();
-    store.recordKeyIndexSwitch();
+    store.metrics().keyIndexSwitches.increment();
     committed = new ViewSource(store.openView(prefix, prefix.length));
     seekInDirection(key);
     return isCommittedAt(key);

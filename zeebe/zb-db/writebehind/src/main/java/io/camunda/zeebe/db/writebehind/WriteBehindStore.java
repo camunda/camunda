@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -76,12 +75,7 @@ final class WriteBehindStore implements AutoCloseable {
   // built in the constructor and never changed, so readers need no lock
   private final Long2ObjectHashMap<KeyIndex> keyIndexes = new Long2ObjectHashMap<>();
 
-  private final LongAdder iteratorsOpened = new LongAdder();
-  private final LongAdder keyIndexLoads = new LongAdder();
-  private final LongAdder keyIndexDiscardedLoads = new LongAdder();
-  private final LongAdder keyIndexDisables = new LongAdder();
-  private final LongAdder indexedScans = new LongAdder();
-  private final LongAdder keyIndexSwitches = new LongAdder();
+  private final WriteBehindMetrics metrics = new WriteBehindMetrics();
 
   // only used by the writer thread
   private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
@@ -254,7 +248,7 @@ final class WriteBehindStore implements AutoCloseable {
     final long stamp = publishLock.readLock();
     try {
       final var storageIterator = storage.newIterator();
-      iteratorsOpened.increment();
+      metrics.iteratorsOpened.increment();
       final var range = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
       return new View(storageIterator, new TreeMap<>(range), lastSeq);
     } finally {
@@ -299,13 +293,13 @@ final class WriteBehindStore implements AutoCloseable {
       if (overCap) {
         disableKeyIndex(index, "it has more than %d keys".formatted(maxKeys));
       } else if (index.lastCommitSeq() > view.viewSeq()) {
-        keyIndexDiscardedLoads.increment();
+        metrics.keyIndexDiscardedLoads.increment();
         if (index.recordDiscardedLoad() >= MAX_DISCARDED_LOADS) {
           disableKeyIndex(index, "commits made %d loads obsolete".formatted(MAX_DISCARDED_LOADS));
         }
       } else {
         index.install(loaded);
-        keyIndexLoads.increment();
+        metrics.keyIndexLoads.increment();
       }
     } finally {
       publishLock.unlockWrite(stamp);
@@ -317,36 +311,8 @@ final class WriteBehindStore implements AutoCloseable {
     return keyIndexes.get(columnFamily);
   }
 
-  long iteratorsOpened() {
-    return iteratorsOpened.sum();
-  }
-
-  long keyIndexLoads() {
-    return keyIndexLoads.sum();
-  }
-
-  long keyIndexDiscardedLoads() {
-    return keyIndexDiscardedLoads.sum();
-  }
-
-  long indexedScans() {
-    return indexedScans.sum();
-  }
-
-  long keyIndexSwitches() {
-    return keyIndexSwitches.sum();
-  }
-
-  void recordIndexedScan() {
-    indexedScans.increment();
-  }
-
-  void recordKeyIndexSwitch() {
-    keyIndexSwitches.increment();
-  }
-
-  long keyIndexDisables() {
-    return keyIndexDisables.sum();
+  WriteBehindMetrics metrics() {
+    return metrics;
   }
 
   /** Under the write lock: applies a commit's keys to the indexes of the column families. */
@@ -379,7 +345,7 @@ final class WriteBehindStore implements AutoCloseable {
 
   private void disableKeyIndex(final KeyIndex index, final String reason) {
     index.disable();
-    keyIndexDisables.increment();
+    metrics.keyIndexDisables.increment();
     LOG.info(
         "Disabled the key index of column family {} until the next restart, because {}",
         index.columnFamily(),
