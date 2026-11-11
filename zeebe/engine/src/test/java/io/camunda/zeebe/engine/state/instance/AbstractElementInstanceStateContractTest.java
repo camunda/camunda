@@ -743,10 +743,12 @@ public abstract class AbstractElementInstanceStateContractTest {
 
   @Test
   void shouldRemoveAwaitResultMetadataWithInstance() {
-    // given
+    // given - only a process instance has await result metadata
     final long key = 100L;
     elementInstanceState.newInstance(
-        key, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+        key,
+        createProcessInstanceRecord().setBpmnElementType(BpmnElementType.PROCESS),
+        ProcessInstanceIntent.ELEMENT_ACTIVATED);
     elementInstanceState.setAwaitResultRequestMetadata(
         key,
         TENANT_ID,
