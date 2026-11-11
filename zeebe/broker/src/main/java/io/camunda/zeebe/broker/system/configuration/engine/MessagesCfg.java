@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.engine;
 
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
@@ -15,6 +16,17 @@ public final class MessagesCfg implements ConfigurationEntry {
 
   private int ttlCheckerBatchLimit = EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration ttlCheckerInterval = EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+  private int pendingSubscriptionRecoveryBatchLimit =
+      EngineConfiguration.DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT;
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    if (pendingSubscriptionRecoveryBatchLimit < 1) {
+      throw new IllegalArgumentException(
+          "Messages pendingSubscriptionRecoveryBatchLimit must be at least 1 but was %d"
+              .formatted(pendingSubscriptionRecoveryBatchLimit));
+    }
+  }
 
   public int getTtlCheckerBatchLimit() {
     return ttlCheckerBatchLimit;
@@ -32,6 +44,15 @@ public final class MessagesCfg implements ConfigurationEntry {
     this.ttlCheckerInterval = ttlCheckerInterval;
   }
 
+  public int getPendingSubscriptionRecoveryBatchLimit() {
+    return pendingSubscriptionRecoveryBatchLimit;
+  }
+
+  public void setPendingSubscriptionRecoveryBatchLimit(
+      final int pendingSubscriptionRecoveryBatchLimit) {
+    this.pendingSubscriptionRecoveryBatchLimit = pendingSubscriptionRecoveryBatchLimit;
+  }
+
   @Override
   public String toString() {
     return "MessagesCfg{"
@@ -39,6 +60,8 @@ public final class MessagesCfg implements ConfigurationEntry {
         + ttlCheckerBatchLimit
         + ", ttlCheckerInterval="
         + ttlCheckerInterval
+        + ", pendingSubscriptionRecoveryBatchLimit="
+        + pendingSubscriptionRecoveryBatchLimit
         + '}';
   }
 }
