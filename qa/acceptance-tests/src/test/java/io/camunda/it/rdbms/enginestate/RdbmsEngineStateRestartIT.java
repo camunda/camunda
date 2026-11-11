@@ -14,7 +14,6 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.nio.file.Path;
 import java.sql.DriverManager;
@@ -35,8 +34,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 /**
  * The experimental mixed engine state keeps its relational rows across a broker restart: the replay
  * rebuilds RocksDB from the log but skips the changes the database already contains, and a process
- * instance started before the restart completes after it. The replay starts at the last snapshot,
- * so it also applies events whose rows changed or were removed after the snapshot.
+ * instance started before the restart completes after it. With the RDBMS primary storage the
+ * partition takes no snapshots, so the replay starts at the beginning of the log and also applies
+ * events whose rows changed or were removed later.
  */
 @Tag("rdbms")
 @TestInstance(Lifecycle.PER_CLASS)
@@ -150,9 +150,9 @@ final class RdbmsEngineStateRestartIT {
   }
 
   @Test
-  void shouldReplayAProcessInstanceCompletedAfterTheSnapshot() throws SQLException {
-    // given - two instances waiting at their jobs, covered by a snapshot
-    final var processId = "mixed-engine-state-completed-after-snapshot";
+  void shouldReplayAProcessInstanceCompletedBeforeTheRestart() throws SQLException {
+    // given - two instances waiting at their jobs
+    final var processId = "mixed-engine-state-completed-before-restart";
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -161,36 +161,33 @@ final class RdbmsEngineStateRestartIT {
                 .serviceTask("task", t -> t.zeebeJobTypeExpression("=jobType"))
                 .endEvent()
                 .done(),
-            "completed-after-snapshot.bpmn")
+            "completed-before-restart.bpmn")
         .send()
         .join();
-    final long completedInstance = createInstance(processId, "completed-after-snapshot-a");
-    final long waitingInstance = createInstance(processId, "completed-after-snapshot-b");
+    final long completedInstance = createInstance(processId, "completed-before-restart-a");
+    final long waitingInstance = createInstance(processId, "completed-before-restart-b");
     Awaitility.await("jobs are created")
         .untilAsserted(
             () -> {
               assertThat(countRows("CAM_RU_JOB", completedInstance)).isOne();
               assertThat(countRows("CAM_RU_JOB", waitingInstance)).isOne();
             });
-    takeSnapshot();
 
-    // and - the first instance's job is activated and completed after the snapshot
-    client.newCompleteCommand(activateJob("completed-after-snapshot-a")).send().join();
+    // and - the first instance's job is activated and completed
+    client.newCompleteCommand(activateJob("completed-before-restart-a")).send().join();
     Awaitility.await("rows of the completed process instance are removed")
         .untilAsserted(
             () -> assertThat(countRows("CAM_RU_ELEMENT_INSTANCE", completedInstance)).isZero());
-    final long positionBeforeRestart = lastProcessedPosition();
 
     // when
     restart();
 
-    // then - the replay applied the completion, as the snapshot doesn't cover it
-    assertThat(PartitionsActuator.of(broker).query().get(1).processedPositionInSnapshot())
-        .isLessThan(positionBeforeRestart);
+    // then - the replay applied the creation and the completion again, without failing on rows
+    // that the database no longer has
     assertThat(countRows("CAM_RU_ELEMENT_INSTANCE", completedInstance)).isZero();
 
     // when - the other instance's job is completed after the restart
-    client.newCompleteCommand(activateJob("completed-after-snapshot-b")).send().join();
+    client.newCompleteCommand(activateJob("completed-before-restart-b")).send().join();
 
     // then
     Awaitility.await("rows of the other process instance are removed")
@@ -200,10 +197,10 @@ final class RdbmsEngineStateRestartIT {
   }
 
   @Test
-  void shouldTriggerATimerCreatedAfterTheSnapshot() throws SQLException {
-    // given - a snapshot before the instance and its timer, which stays in RocksDB, are created
-    final var processId = "mixed-engine-state-timer-after-snapshot";
-    final var jobType = "mixed-engine-state-timer-after-snapshot-task";
+  void shouldTriggerATimerCreatedBeforeTheRestart() throws SQLException {
+    // given - an instance with a timer, which stays in RocksDB and is rebuilt by the replay
+    final var processId = "mixed-engine-state-timer-before-restart";
+    final var jobType = "mixed-engine-state-timer-before-restart-task";
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -217,10 +214,9 @@ final class RdbmsEngineStateRestartIT {
                 .intermediateCatchEvent("timer", e -> e.timerWithDuration("PT30S"))
                 .connectTo("join")
                 .done(),
-            "timer-after-snapshot.bpmn")
+            "timer-before-restart.bpmn")
         .send()
         .join();
-    takeSnapshot();
     final long processInstanceKey = createInstance(processId, jobType);
     Awaitility.await("the job and the timer catch event are activated")
         .untilAsserted(
@@ -264,19 +260,6 @@ final class RdbmsEngineStateRestartIT {
                     .getJobs(),
             jobs -> !jobs.isEmpty())
         .getFirst();
-  }
-
-  /** Takes a snapshot that covers every command processed so far. */
-  private void takeSnapshot() throws SQLException {
-    final long position = lastProcessedPosition();
-    final var partitions = PartitionsActuator.of(broker);
-    Awaitility.await("a snapshot covers position " + position)
-        .untilAsserted(
-            () -> {
-              partitions.takeSnapshot();
-              assertThat(partitions.query().get(1).processedPositionInSnapshot())
-                  .isGreaterThanOrEqualTo(position);
-            });
   }
 
   private void restart() {
