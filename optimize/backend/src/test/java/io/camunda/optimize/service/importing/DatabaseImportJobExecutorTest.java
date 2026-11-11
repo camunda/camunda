@@ -29,24 +29,31 @@ class DatabaseImportJobExecutorTest {
     when(configurationService.getJobExecutorThreadCount()).thenReturn(1);
     when(configurationService.getJobExecutorQueueSize()).thenReturn(1);
     final var executor = new DatabaseImportJobExecutor("test", configurationService);
-    final var job = new FailingImportJob();
+    final var job = new BlockingImportJob();
     executor.executeImportJob(job);
-    assertThat(job.firstAttemptFailed.await(10, TimeUnit.SECONDS)).isTrue();
 
-    // when
-    executor.stopExecutingImportJobs();
+    try {
+      assertThat(job.firstAttemptStarted.await(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      // when
+      executor.stopExecutingImportJobs();
+    }
 
     // then
     assertThat(job.attempts).hasValue(1);
   }
 
-  /** Fails on the first attempt; any retry succeeds immediately. */
-  private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
+  /**
+   * Blocks the first attempt until the executor interrupts it, then fails it with the interrupt
+   * flag restored. Any further attempt succeeds immediately, so a retry shows up as a second
+   * attempt.
+   */
+  private static final class BlockingImportJob extends DatabaseImportJob<OptimizeDto> {
 
-    private final CountDownLatch firstAttemptFailed = new CountDownLatch(1);
+    private final CountDownLatch firstAttemptStarted = new CountDownLatch(1);
     private final AtomicInteger attempts = new AtomicInteger();
 
-    private FailingImportJob() {
+    private BlockingImportJob() {
       super(() -> {}, mock(DatabaseClient.class));
       setEntitiesToImport(List.of(mock(OptimizeDto.class)));
     }
@@ -54,8 +61,13 @@ class DatabaseImportJobExecutorTest {
     @Override
     protected void persistEntities(final List<OptimizeDto> newOptimizeEntities) {
       if (attempts.incrementAndGet() == 1) {
-        firstAttemptFailed.countDown();
-        throw new IllegalStateException("database unavailable");
+        firstAttemptStarted.countDown();
+        try {
+          new CountDownLatch(1).await();
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new IllegalStateException("interrupted while writing", e);
+        }
       }
     }
   }
