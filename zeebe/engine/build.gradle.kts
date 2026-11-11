@@ -44,6 +44,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(project(":camunda-search-client"))
   implementation(project(":camunda-search-domain"))
+  testImplementation(project(":zeebe-protocol-impl-pojo"))
   testImplementation(project(":zeebe-scheduler"))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-logstreams"))
