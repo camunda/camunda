@@ -290,6 +290,8 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
     variableState.setVariableLocal(1, 200, PROCESS_KEY, wrapString("a"), asMsgPack("1"));
     variableState.setVariableLocal(2, 201, PROCESS_KEY, wrapString("b"), asMsgPack("2"));
     variableState.setVariableLocal(3, 202, PROCESS_KEY, wrapString("c"), asMsgPack("3"));
+    // the query count is the one of rows in the database, not of rows the flusher still holds
+    database.awaitFlushed();
     transactionContext.getCurrentTransaction();
     elementInstanceState.getInstance(202);
 
