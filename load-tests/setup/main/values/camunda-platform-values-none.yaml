@@ -96,6 +96,11 @@ global:
                       secretKeyRef:
                         name: camunda-credentials
                         key: orchestration-security-authentication-oidc-secret
+                  # The mounted broker application.yaml activates the broker profile and binds an empty node id to an int.
+                  - name: SPRING_PROFILES_ACTIVE
+                    value: consolidated-auth
+                  - name: VALUES_ORCHESTRATION_NODE_ID
+                    value: "100"
                   - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
                     valueFrom:
                       fieldRef:
