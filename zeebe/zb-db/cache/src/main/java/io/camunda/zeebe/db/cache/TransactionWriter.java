@@ -51,6 +51,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   private final StampedLock publishLock;
   private final int batchSize;
   private final long maxWriteDelayNanos;
+  private final WriteBehindMetrics metrics;
   private final Runnable onFlushed;
   private final Consumer<Throwable> onFailure;
   private final ReentrantLock queueLock = new ReentrantLock();
@@ -74,6 +75,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       final DirtyIndex dirtyIndex,
       final StampedLock publishLock,
       final WriteBehindConfiguration configuration,
+      final WriteBehindMetrics metrics,
       final Runnable onFlushed,
       final Consumer<Throwable> onFailure) {
     backendColumnFamilies = new PassThroughColumnFamilies<>(backend, backend.createContext());
@@ -81,6 +83,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     this.publishLock = publishLock;
     batchSize = configuration.batchSize();
     maxWriteDelayNanos = configuration.maxWriteDelay().toNanos();
+    this.metrics = metrics;
     this.onFlushed = onFlushed;
     this.onFailure = onFailure;
     thread = new Thread(this::run, "zb-db-write-behind");
@@ -191,6 +194,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
         if (attempt == MAX_WRITE_ATTEMPTS) {
           throw e;
         }
+        metrics.observeWriteRetry();
         final long backoffNanos = INITIAL_BACKOFF.toNanos() << (attempt - 1);
         LOG.warn(
             "Failed to write {} keys to the backend (attempt {} of {}), retrying in {} ms",
@@ -291,9 +295,13 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       bytes += transaction.bytes();
     }
 
+    final long writeStart = System.nanoTime();
     if (!writeToBackend(newest)) {
       return;
     }
+    final int deletes = (int) newest.values().stream().filter(v -> v.bytes() == null).count();
+    metrics.observeWrite(
+        group.size(), newest.size() - deletes, deletes, System.nanoTime() - writeStart);
 
     final long stamp = publishLock.writeLock();
     try {

@@ -28,11 +28,13 @@ final class BackendLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & 
   private static final long LOADED = 0;
 
   private final DirtyIndex dirtyIndex;
+  private final WriteBehindMetrics metrics;
   private final ThreadLocal<PassThroughColumnFamilies<ColumnFamilyNames>> readers =
       new ThreadLocal<>();
 
-  BackendLoader(final DirtyIndex dirtyIndex) {
+  BackendLoader(final DirtyIndex dirtyIndex, final WriteBehindMetrics metrics) {
     this.dirtyIndex = dirtyIndex;
+    this.metrics = metrics;
   }
 
   /**
@@ -51,6 +53,7 @@ final class BackendLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & 
 
   @Override
   public CachedValue load(final CacheKey key) {
+    metrics.observeCacheLoad();
     final var unflushed = dirtyIndex.get(key);
     if (unflushed != null) {
       return unflushed;

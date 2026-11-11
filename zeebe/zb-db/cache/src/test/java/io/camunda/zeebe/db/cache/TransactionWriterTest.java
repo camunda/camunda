@@ -155,6 +155,7 @@ final class TransactionWriterTest {
             dirtyIndex,
             new StampedLock(),
             new TestConfiguration().batchSize(batchSize).maxWriteDelay(maxWriteDelay).build(),
+            new WriteBehindMetrics(backend.meterRegistry()),
             flushes::incrementAndGet,
             failures::add);
     writers.add(writer);

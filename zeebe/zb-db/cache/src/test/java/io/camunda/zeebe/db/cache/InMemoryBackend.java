@@ -19,6 +19,8 @@ import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,6 +51,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A scan fixes its view when it starts, like a RocksDB iterator, by copying its range. Scans can
  * be paused right after that, before their first callback.
+ *
+ * <p>Its meter registry is a {@link SimpleMeterRegistry}, in {@link #meterRegistry()}.
  */
 final class InMemoryBackend {
 
@@ -63,11 +67,13 @@ final class InMemoryBackend {
   private volatile CountDownLatch resumed = new CountDownLatch(0);
   private final Semaphore pausedScans = new Semaphore(0);
   private volatile CountDownLatch scansResumed = new CountDownLatch(0);
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ZeebeDb<TestColumnFamily> db;
 
   @SuppressWarnings("unchecked")
   InMemoryBackend() {
     db = mock(ZeebeDb.class);
+    when(db.getMeterRegistry()).thenReturn(meterRegistry);
     when(db.createContext()).thenAnswer(invocation -> createContext());
     when(db.createColumnFamily(any(), any(), any(), any()))
         .thenAnswer(
@@ -80,6 +86,10 @@ final class InMemoryBackend {
 
   ZeebeDb<TestColumnFamily> db() {
     return db;
+  }
+
+  MeterRegistry meterRegistry() {
+    return meterRegistry;
   }
 
   int transactions() {

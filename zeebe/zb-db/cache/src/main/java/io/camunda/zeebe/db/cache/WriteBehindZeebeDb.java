@@ -76,7 +76,7 @@ final class WriteBehindZeebeDb<
   @Override
   public void createSnapshot(final File snapshotDir) {
     store.catchUp();
-    backend.createSnapshot(snapshotDir);
+    store.metrics().timeSnapshotCheckpoint(() -> backend.createSnapshot(snapshotDir));
   }
 
   @Override

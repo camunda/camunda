@@ -510,16 +510,25 @@ hosts. Byte limits are what bound memory; `batchSize` only shapes the writer's g
 
 ### 4.10 Metrics
 
-Registered on the DB meter registry, so they go away when the DB closes:
+`WriteBehindMetrics` registers them on the backend's meter registry, which carries the partition's
+tags and goes away when the backend closes. They're documented in `WriteBehindMetricsDoc`, and all
+start with `zeebe.db.write.behind.`:
 
-- cache hits, misses and loads
-- committed keys vs. written upserts and deletes (coalescing ratio)
-- DirtyIndex size, queued transactions and `queuedBytes`, and the cache's estimated bytes
-- transactions and keys per backend transaction, and write latency
-- time commits wait on `maxPendingBytes`, and commit-lock wait time
-- optimistic read retries, and how long scans hold publications back (§4.5)
-- snapshot catch-up time and checkpoint duration
-- writer retries and failures
+- **Reads:** `cache.gets` and `cache.loads` (every miss is a load, so loads over gets is the miss
+  rate), `unflushed.reads` answered by the DirtyIndex, and `read.retries` and `read.locked` for
+  optimistic reads that a publication invalidated. The store and the loader count gets and loads
+  themselves, because EhCache counts a get that its loader answered as a hit.
+- **Read cache:** `cache.evictions` and `cache.size` in bytes, from the statistics of EhCache's heap
+  tier.
+- **Commits:** `committed.keys`, `commit.lock.wait`, and `commit.backpressure.wait`, which only
+  records commits that waited on `maxPendingBytes`.
+- **Not yet in the backend:** the gauges `unflushed.keys` (DirtyIndex size),
+  `pending.transactions` and `pending.size` (`queuedBytes`).
+- **Writer:** `written.keys` by operation (upsert or delete; compared with `committed.keys`, it shows
+  the coalescing), `write.transactions` and `write.keys` per backend transaction, `write.latency`
+  including retries, `write.retries`, and `failures`.
+- **Scans:** `scan.hold`, how long a scan holds publications back (§4.5).
+- **Snapshots:** `snapshot.catch.up` and `snapshot.checkpoint`.
 
 ### 4.11 Memory
 
@@ -672,7 +681,7 @@ This has landed. Where the code settled differently:
   when called outside one. That's fixed in `zeebe-db-rocksdb`, with contract tests.
 - The nested-prefix contract test stays ignored for the cache: the cache only reaches RocksDB's
   limit of two nested prefix scans while the backend's own scans are still open.
-- How long scans hold publications back isn't measured yet; it comes with the metrics (Phase 6).
+- How long scans hold publications back is measured since Phase 6 (§4.10).
 - Merge the overlay into the backend's scans in `CachedColumnFamily` (§4.5), holding
   `publishLock`'s read side from the copy until the backend's first callback.
 - **Exit:** the whole contract suite is green against both factories. So are the randomized
@@ -709,7 +718,7 @@ This has landed. Where the code settled differently:
   `zeebe-db-cache`; it's the place that picks both the backend and whether to cache it.
 - Register the DB with the partition's component health monitor in
   `ZeebeDbPartitionTransitionStep`.
-- Add the metrics.
+- Add the metrics (§4.10).
 - Make the engine's test copy of `DefaultZeebeDbFactory` (used by 10 engine test classes) wrap
   its factory when a system property is set, for example `-Dzeebe.db.writeBehind.enabled=true`.
   The engine gets a test dependency on `zeebe-db-cache`, so the `zeebe/engine` tests can run

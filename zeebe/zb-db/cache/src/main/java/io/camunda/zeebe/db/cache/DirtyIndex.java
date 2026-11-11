@@ -14,6 +14,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,6 +28,7 @@ final class DirtyIndex {
 
   private final Map<EnumValue, ConcurrentNavigableMap<CacheKey, CachedValue>> columnFamilies =
       new ConcurrentHashMap<>();
+  private final AtomicLong size = new AtomicLong();
 
   @Nullable CachedValue get(final CacheKey key) {
     final var versions = columnFamilies.get(key.columnFamily());
@@ -35,9 +37,13 @@ final class DirtyIndex {
 
   /** Publishes {@code value}, replacing any older unflushed version of the key. */
   void put(final CacheKey key, final CachedValue value) {
-    columnFamilies
-        .computeIfAbsent(key.columnFamily(), cf -> new ConcurrentSkipListMap<>())
-        .put(key, value);
+    final var replaced =
+        columnFamilies
+            .computeIfAbsent(key.columnFamily(), cf -> new ConcurrentSkipListMap<>())
+            .put(key, value);
+    if (replaced == null) {
+      size.incrementAndGet();
+    }
   }
 
   /**
@@ -53,6 +59,7 @@ final class DirtyIndex {
     final var current = versions.get(key);
     if (current != null && current.seq() == seq) {
       versions.remove(key);
+      size.decrementAndGet();
     }
   }
 
@@ -77,6 +84,11 @@ final class DirtyIndex {
       range = range.headMap(to, toInclusive);
     }
     return new TreeMap<>(range);
+  }
+
+  /** Returns how many keys have an unflushed version. */
+  long size() {
+    return size.get();
   }
 
   boolean isEmpty() {

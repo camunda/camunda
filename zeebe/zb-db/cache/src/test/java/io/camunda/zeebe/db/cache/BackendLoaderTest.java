@@ -17,7 +17,8 @@ final class BackendLoaderTest {
 
   private final InMemoryBackend backend = new InMemoryBackend();
   private final DirtyIndex dirtyIndex = new DirtyIndex();
-  private final BackendLoader<TestColumnFamily> loader = new BackendLoader<>(dirtyIndex);
+  private final BackendLoader<TestColumnFamily> loader =
+      new BackendLoader<>(dirtyIndex, new WriteBehindMetrics(backend.meterRegistry()));
   private final PassThroughColumnFamilies<TestColumnFamily> reader =
       new PassThroughColumnFamilies<>(backend.db(), backend.db().createContext());
 

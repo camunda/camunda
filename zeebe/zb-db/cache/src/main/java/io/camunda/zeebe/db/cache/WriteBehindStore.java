@@ -28,6 +28,7 @@ import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.MemoryUnit;
+import org.ehcache.core.internal.statistics.DefaultStatisticsService;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final StampedLock publishLock = new StampedLock();
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
+  private final WriteBehindMetrics metrics;
   private final BackendLoader<ColumnFamilyNames> loader;
   private final TransactionWriter<ColumnFamilyNames> writer;
   private final CacheManager cacheManager;
@@ -81,12 +83,20 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final int optimisticReadAttempts) {
     this.configuration = configuration;
     this.optimisticReadAttempts = optimisticReadAttempts;
-    loader = new BackendLoader<>(dirtyIndex);
+    metrics = new WriteBehindMetrics(backend.getMeterRegistry());
+    loader = new BackendLoader<>(dirtyIndex, metrics);
     writer =
         new TransactionWriter<>(
-            backend, dirtyIndex, publishLock, configuration, this::signalFlushed, this::fail);
+            backend,
+            dirtyIndex,
+            publishLock,
+            configuration,
+            metrics,
+            this::signalFlushed,
+            this::fail);
 
-    cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build(true);
+    final var statistics = new DefaultStatisticsService();
+    cacheManager = CacheManagerBuilder.newCacheManagerBuilder().using(statistics).build(true);
     cache =
         cacheManager.createCache(
             "state",
@@ -96,6 +106,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
                     ResourcePoolsBuilder.newResourcePoolsBuilder()
                         .heap(configuration.cacheMaxBytes(), MemoryUnit.B))
                 .withLoaderWriter(loader));
+
+    metrics.registerReadCache(statistics.getCacheStatistics("state"));
+    metrics.registerPending(
+        dirtyIndex::size, () -> writer.lastQueuedSeq() - writer.flushedSeq(), writer::queuedBytes);
   }
 
   /**
@@ -110,8 +124,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       return;
     }
 
+    final long lockStart = System.nanoTime();
     commitLock.lock();
     try {
+      final long lockWaitNanos = System.nanoTime() - lockStart;
       failIfFailed();
       awaitPendingBytesWithinLimit();
 
@@ -136,6 +152,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
         fail(e);
         throw e;
       }
+      metrics.observeCommit(versions.size(), lockWaitNanos);
       failIfFailed();
     } finally {
       commitLock.unlock();
@@ -193,6 +210,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    */
   void catchUp() {
     failIfFailed();
+    final long start = System.nanoTime();
     final long target = writer.lastQueuedSeq();
     writer.flushUpTo(target);
 
@@ -211,6 +229,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     } finally {
       flushLock.unlock();
     }
+    metrics.observeSnapshotCatchUp(System.nanoTime() - start);
 
     failIfFailed();
     if (writer.flushedSeq() < target) {
@@ -231,6 +250,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     failureListeners.add(listener);
   }
 
+  WriteBehindMetrics metrics() {
+    return metrics;
+  }
+
   /** Returns the key and value bytes of the transactions the backend doesn't have yet. */
   long pendingBytes() {
     return writer.queuedBytes();
@@ -246,17 +269,27 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
     for (int attempt = 0; attempt < optimisticReadAttempts; attempt++) {
       final long stamp = publishLock.tryOptimisticRead();
-      if (stamp == 0) {
-        continue;
+      if (stamp != 0) {
+        final var unflushed = dirtyIndex.get(key);
+        final CachedValue value;
+        if (unflushed != null) {
+          value = unflushed;
+        } else {
+          metrics.observeCacheGet();
+          value = loader.readThrough(reader, () -> cache.get(key));
+        }
+        if (publishLock.validate(stamp)) {
+          if (unflushed != null) {
+            metrics.observeUnflushedRead();
+          }
+          return value.bytes();
+        }
       }
-
-      final var value = lookup(key, reader);
-      if (publishLock.validate(stamp)) {
-        return value.bytes();
-      }
+      metrics.observeReadRetry();
     }
 
     // without the cache, so the lock isn't held while waiting on one of the cache's map bins
+    metrics.observeLockedRead();
     final long stamp = publishLock.readLock();
     try {
       final var unflushed = dirtyIndex.get(key);
@@ -266,20 +299,17 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     }
   }
 
-  private CachedValue lookup(
-      final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
-    final var unflushed = dirtyIndex.get(key);
-    if (unflushed != null) {
-      return unflushed;
-    }
-    return loader.readThrough(reader, () -> cache.get(key));
-  }
-
   private void awaitPendingBytesWithinLimit() {
     flushLock.lock();
     try {
+      final long start = System.nanoTime();
+      boolean waited = false;
       while (writer.queuedBytes() > configuration.maxPendingBytes() && failure.get() == null) {
+        waited = true;
         flushed.awaitUninterruptibly();
+      }
+      if (waited) {
+        metrics.observeBackpressureWait(System.nanoTime() - start);
       }
     } finally {
       flushLock.unlock();
@@ -304,6 +334,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private void fail(final Throwable cause) {
     if (failure.compareAndSet(null, cause)) {
       LOG.error("The write-behind store failed; commits and snapshots fail from now on", cause);
+      metrics.observeFailure();
       signalFlushed();
       failureListeners.forEach(listener -> listener.accept(cause));
     }
@@ -321,6 +352,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   final class ScanOverlay {
 
     private final NavigableMap<CacheKey, CachedValue> unflushed;
+    private final long startNanos = System.nanoTime();
     private long stamp;
 
     private ScanOverlay(final NavigableMap<CacheKey, CachedValue> unflushed, final long stamp) {
@@ -337,6 +369,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       if (stamp != 0) {
         publishLock.unlockRead(stamp);
         stamp = 0;
+        metrics.observeScanHold(System.nanoTime() - startNanos);
       }
     }
   }
