@@ -9,24 +9,27 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 
-public class JobStateValue extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class JobStateValue extends MsgpackBufferValue<JobStateValue> implements DbValue {
 
-  private final EnumProperty<JobState.State> stateProp =
-      new EnumProperty<>("jobState", JobState.State.class);
+  JobState.State jobState;
 
-  public JobStateValue() {
-    super(1);
-    declareProperty(stateProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public JobState.State getState() {
-    return stateProp.getValue();
+    return jobState;
   }
 
   public void setState(final JobState.State state) {
-    stateProp.setValue(state);
+    jobState = state;
   }
 }
