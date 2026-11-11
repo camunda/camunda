@@ -8,33 +8,39 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class EventScopeInstance extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class EventScopeInstance extends MsgpackBufferValue<EventScopeInstance>
+    implements DbValue {
 
-  private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
-  private final BooleanProperty interruptedProp = new BooleanProperty("interrupted", false);
+  boolean accepting;
 
-  private final ArrayProperty<StringValue> interruptingElementIdsProp =
-      new ArrayProperty<>("interrupting", StringValue::new);
+  @MsgpackProperty("interrupting")
+  final List<DirectBuffer> interruptingElementIds = new ArrayList<>();
 
-  private final ArrayProperty<StringValue> boundaryElementIdsProp =
-      new ArrayProperty<>("boundaryElementIds", StringValue::new);
+  final List<DirectBuffer> boundaryElementIds = new ArrayList<>();
 
-  public EventScopeInstance() {
-    super(4);
-    declareProperty(acceptingProp)
-        .declareProperty(interruptingElementIdsProp)
-        .declareProperty(boundaryElementIdsProp)
-        .declareProperty(interruptedProp);
-  }
+  boolean interrupted = false;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public EventScopeInstance() {}
 
   public EventScopeInstance(final EventScopeInstance other) {
     this();
@@ -46,36 +52,36 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
   }
 
   public boolean isAccepting() {
-    return acceptingProp.getValue();
+    return accepting;
   }
 
   public EventScopeInstance setAccepting(final boolean accepting) {
-    acceptingProp.setValue(accepting);
+    this.accepting = accepting;
     return this;
   }
 
   public boolean isInterrupted() {
-    return interruptedProp.getValue();
+    return interrupted;
   }
 
   public EventScopeInstance setInterrupted(final boolean interrupted) {
-    interruptedProp.setValue(interrupted);
+    this.interrupted = interrupted;
     return this;
   }
 
   public EventScopeInstance addInterruptingElementId(final DirectBuffer elementId) {
-    interruptingElementIdsProp.add().wrap(elementId);
+    interruptingElementIds.add(BufferUtil.cloneBuffer(elementId));
     return this;
   }
 
   public EventScopeInstance addBoundaryElementId(final DirectBuffer elementId) {
-    boundaryElementIdsProp.add().wrap(elementId);
+    boundaryElementIds.add(BufferUtil.cloneBuffer(elementId));
     return this;
   }
 
   public boolean isInterruptingElementId(final DirectBuffer elementId) {
-    for (final StringValue interruptingElementId : interruptingElementIdsProp) {
-      if (interruptingElementId.getValue().equals(elementId)) {
+    for (final DirectBuffer interruptingElementId : interruptingElementIds) {
+      if (interruptingElementId.equals(elementId)) {
         return true;
       }
     }
@@ -84,8 +90,8 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
   }
 
   public boolean isBoundaryElementId(final DirectBuffer elementId) {
-    for (final StringValue boundaryElementId : boundaryElementIdsProp) {
-      if (boundaryElementId.getValue().equals(elementId)) {
+    for (final DirectBuffer boundaryElementId : boundaryElementIds) {
+      if (boundaryElementId.equals(elementId)) {
         return true;
       }
     }
@@ -94,8 +100,7 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        acceptingProp, interruptingElementIdsProp, boundaryElementIdsProp, interruptedProp);
+    return Objects.hash(accepting, interruptingElementIds, boundaryElementIds, interrupted);
   }
 
   @Override
@@ -107,9 +112,9 @@ public final class EventScopeInstance extends UnpackedObject implements DbValue 
       return false;
     }
     final EventScopeInstance that = (EventScopeInstance) o;
-    return Objects.equals(acceptingProp, that.acceptingProp)
-        && Objects.equals(interruptingElementIdsProp, that.interruptingElementIdsProp)
-        && Objects.equals(boundaryElementIdsProp, that.boundaryElementIdsProp)
-        && Objects.equals(interruptedProp, that.interruptedProp);
+    return accepting == that.accepting
+        && interrupted == that.interrupted
+        && Objects.equals(interruptingElementIds, that.interruptingElementIds)
+        && Objects.equals(boundaryElementIds, that.boundaryElementIds);
   }
 }
