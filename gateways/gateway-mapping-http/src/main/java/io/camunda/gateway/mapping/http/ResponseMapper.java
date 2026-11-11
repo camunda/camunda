@@ -1156,7 +1156,8 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobs().stream()
-          .map(j -> new ActivatedJob(keyToLong(j.getJobKey()), j.getRetries()))
+          .map(
+              j -> new ActivatedJob(keyToLong(j.getJobKey()), j.getRetries(), j.getJobLeaseToken()))
           .toList();
     }
 
@@ -1171,7 +1172,7 @@ public final class ResponseMapper {
       for (final var job : sizeExceedingJobs) {
         try {
           final var key = job.getJobKey();
-          result.add(new ActivatedJob(keyToLong(key), job.getRetries()));
+          result.add(new ActivatedJob(keyToLong(key), job.getRetries(), job.getJobLeaseToken()));
         } catch (final NumberFormatException ignored) {
           // could happen
           LOG.warn(
