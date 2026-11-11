@@ -1113,15 +1113,13 @@ components:
       additionalProperties: true
       properties:
         dueDate:
-          type: string
-          format: date-time
+          allOf:
+            - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
           description: The due date of the task. Reset by providing an empty String.
-          nullable: true
         followUpDate:
-          type: string
-          format: date-time
+          allOf:
+            - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
           description: The follow-up date of the task. Reset by providing an empty String.
-          nullable: true
         candidateUsers:
           type: array
           description: The list of candidate users of the task. Reset by providing an empty list.

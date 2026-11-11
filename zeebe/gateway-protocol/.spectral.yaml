@@ -104,6 +104,68 @@ rules:
       field: description
       function: truthy
 
+  clearable-schema-accepts-empty-string:
+    description: >-
+      A schema marked x-clearable must set it to true, must not declare its own format, and
+      must accept the empty string that clears the value through an anyOf member with
+      maxLength 0. See section 2.22 of docs/rest-api-endpoint-guidelines.md.
+    severity: error
+    # resolved: false reports at the schema's source location. The parent
+    # operator (^) is used instead of a [?(@['x-clearable'])] filter for the
+    # same reason as valid-deprecated-enum-members below.
+    resolved: false
+    given: "$..x-clearable^"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [x-clearable, anyOf]
+          properties:
+            x-clearable:
+              const: true
+            anyOf:
+              type: array
+              contains:
+                type: object
+                required: [maxLength]
+                properties:
+                  maxLength:
+                    const: 0
+          not:
+            required: [format]
+    message: >-
+      A clearable schema must set `x-clearable: true`, must not declare a format, and must
+      accept an empty string through an anyOf member with `maxLength: 0`.
+
+  clearable-reference-declares-no-format:
+    description: >-
+      A property that references a clearable schema (x-clearable) must not declare a format
+      next to the reference: the format would reject the empty string that clears the value.
+      See section 2.22 of docs/rest-api-endpoint-guidelines.md.
+    severity: error
+    # Resolved, so a referenced schema's x-clearable is visible inside the
+    # property's allOf.
+    given: $..properties[*]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          if:
+            required: [allOf]
+            properties:
+              allOf:
+                type: array
+                contains:
+                  type: object
+                  required: [x-clearable]
+          then:
+            not:
+              required: [format]
+    message: >-
+      Property references a clearable schema, so it must not declare a format next to the
+      reference.
+
   operation-key-properties-must-be-strings:
     description: "`...Key` parameters must be of type `string`."
     severity: warn

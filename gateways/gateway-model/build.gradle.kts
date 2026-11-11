@@ -67,6 +67,7 @@ val openApiGenerateSimple =
       mapOf(
         "OffsetDateTime" to "String",
         "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+        "ClearableDateTime" to "String",
         "ResourceKey" to "String",
         "ScopeKey" to "String",
         "ElementInstanceKey" to "String",

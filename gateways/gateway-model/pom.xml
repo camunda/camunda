@@ -183,6 +183,7 @@
                 <typeMapping>OffsetDateTime=String</typeMapping>
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+                <typeMapping>ClearableDateTime=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
                 <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
