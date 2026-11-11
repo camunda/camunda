@@ -31,10 +31,10 @@ import org.jspecify.annotations.Nullable;
  * Holds the committed state that the backend doesn't have yet, and hands it to the writer.
  *
  * <p>A commit publishes all of its versions to the DirtyIndex under {@code publishLock}'s write
- * side, queues the whole transaction for the writer, then puts its versions into the read cache.
- * Readers validate against {@code publishLock}, so they see all of a transaction or none of it.
- * {@code commitLock} serializes committers from start to finish, so the queue holds transactions in
- * commit order, and the cache gets them in the same order.
+ * side, puts them into the read cache, then queues the whole transaction for the writer. Readers
+ * validate against {@code publishLock}, so they see all of a transaction or none of it. {@code
+ * commitLock} serializes committers from start to finish, so the queue holds transactions in commit
+ * order, and the cache gets them in the same order.
  *
  * <p>Point reads check the DirtyIndex before the cache: it holds every unflushed version, while the
  * cache can briefly hold an older one.
@@ -121,8 +121,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       }
 
       try {
-        writer.enqueue(CommittedTransaction.of(seq, versions));
+        // before the writer can write them and clean them out of the DirtyIndex, after which the
+        // cache must not still hold older versions
         versions.forEach(version -> cache.put(version.getKey(), version.getValue()));
+        writer.enqueue(CommittedTransaction.of(seq, versions));
       } catch (final RuntimeException e) {
         // the published versions may never reach the backend, or the cache may keep older ones
         fail(e);

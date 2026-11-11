@@ -236,8 +236,8 @@ The cached implementation:
     stamp = publishLock.writeLock()               // short; nothing inside it blocks
       for (key, v) in versions: dirtyIndex.put(key, v)
     publishLock.unlockWrite(stamp)
-    queue.add(transaction(seq, versions))         // the writer takes it from here (§4.6)
     for (key, v) in versions: cache.put(key, v)   // the read cache; a plain heap put
+    queue.add(transaction(seq, versions))         // the writer takes it from here (§4.6)
     txBuffer.clear()                              // only after success
   finally
     commitLock.unlock()
@@ -251,6 +251,10 @@ The cached implementation:
   until the write succeeds, so the retry writes the same changes; clearing in `finally` would let
   the retry "succeed" on an empty buffer. A store failure throws a non-recoverable exception, so it
   isn't retried.
+- **The cache gets the versions before the queue does.** Once the writer has written a version and
+  cleaned it out of the DirtyIndex, a read of that key goes to the cache. If the commit only put
+  its versions after queueing them, the writer could clean up first, and a reader could see a
+  newer version of one key next to an older version of another from the same transaction.
 - `publishLock` is a `StampedLock`. Its write side covers the DirtyIndex update for the whole
   transaction, and readers validate against it (§4.4, §4.5). So a reader sees all of a transaction
   or none of it, as with an atomic backend commit today.
