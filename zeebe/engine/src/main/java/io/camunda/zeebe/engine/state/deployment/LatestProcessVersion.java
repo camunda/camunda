@@ -8,22 +8,30 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 
-public class LatestProcessVersion extends UnpackedObject implements DbValue {
-  private final LongProperty latestProcessVersionProp = new LongProperty("latestProcessVersion");
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class LatestProcessVersion extends MsgpackBufferValue<LatestProcessVersion>
+    implements DbValue {
 
-  public LatestProcessVersion() {
-    super(1);
-    declareProperty(latestProcessVersionProp);
-  }
+  long latestProcessVersion;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public LatestProcessVersion() {}
 
   public void set(final long latestVersion) {
-    latestProcessVersionProp.setValue(latestVersion);
+    latestProcessVersion = latestVersion;
   }
 
   public long get() {
-    return latestProcessVersionProp.getValue();
+    return latestProcessVersion;
   }
 }
