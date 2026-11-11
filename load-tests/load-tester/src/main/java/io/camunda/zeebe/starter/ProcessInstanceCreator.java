@@ -37,22 +37,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("starter")
-public class ProcessInstanceCreator implements AutoCloseable {
+public class ProcessInstanceCreator implements SmartLifecycle {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(
@@ -66,6 +65,8 @@ public class ProcessInstanceCreator implements AutoCloseable {
   private final CamundaClient loaderClient;
   private final ScheduledThreadPoolExecutor executor;
   private final Set<CompletionStage<?>> pendingRequests = ConcurrentHashMap.newKeySet();
+  private volatile boolean started;
+  private CompletableFuture<Void> stopped;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
@@ -244,46 +245,56 @@ public class ProcessInstanceCreator implements AutoCloseable {
   }
 
   @Override
-  @EventListener(StarterFinished.class)
-  public void close() {
-    // Called on StarterFinished and again when Spring destroys the context: it can be called
-    // multiple times.
-    if (executor.isShutdown()) {
-      return;
-    }
-    executor.shutdown();
-    awaitPendingRequests();
-    LOG.info(
-        "Starter finished. Total process instance start requests submitted: {}",
-        (long) processInstancesSubmittedCounter.count());
-  }
-
-  private void awaitPendingRequests() {
-    LOG.info(
-        "Waiting for {} pending process instance requests to complete", pendingRequests.size());
-    final var completions =
-        pendingRequests.stream()
-            .map(request -> request.handle((response, error) -> null).toCompletableFuture())
-            .toArray(CompletableFuture[]::new);
-    try {
-      CompletableFuture.allOf(completions)
-          .get(starterCfg.getPendingRequestsShutdownTimeout().toMillis(), TimeUnit.MILLISECONDS);
-      LOG.info("All pending process instance requests completed");
-    } catch (final TimeoutException e) {
-      LOG.warn(
-          "Stopping with {} process instance requests still pending after {}",
-          pendingRequests.size(),
-          starterCfg.getPendingRequestsShutdownTimeout());
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-    } catch (final ExecutionException e) {
-      throw new IllegalStateException(e);
-    }
+  public boolean isAutoStartup() {
+    return false;
   }
 
   @EventListener(ApplicationReadyEvent.class)
-  void start() {
+  @Override
+  public void start() {
+    if (started) {
+      return;
+    }
+    started = true;
     schedule();
+  }
+
+  @Override
+  public boolean isRunning() {
+    return started;
+  }
+
+  @EventListener(StarterFinished.class)
+  @Override
+  public void stop() {
+    stop(() -> {});
+  }
+
+  @Override
+  public synchronized void stop(final Runnable callback) {
+    if (stopped == null) {
+      executor.shutdown();
+      LOG.info(
+          "Waiting for {} pending process instance requests to complete", pendingRequests.size());
+      final var completions =
+          pendingRequests.stream()
+              .map(request -> request.handle((response, error) -> null).toCompletableFuture())
+              .toArray(CompletableFuture[]::new);
+      stopped =
+          CompletableFuture.allOf(completions)
+              .whenComplete(
+                  (ok, error) -> {
+                    LOG.info("All pending process instance requests completed");
+                    logFinished();
+                  });
+    }
+    stopped.whenComplete((ok, error) -> callback.run());
+  }
+
+  private void logFinished() {
+    LOG.info(
+        "Starter finished. Total process instance start requests submitted: {}",
+        (long) processInstancesSubmittedCounter.count());
   }
 
   private void fail(final Throwable cause) {
