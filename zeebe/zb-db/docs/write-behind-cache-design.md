@@ -2,8 +2,9 @@
 
 Solution design for the `poc-single-storage-workshop-zbdb-cache` exploration. Status: implemented
 as a proof of concept in `zeebe/zb-db/writebehind`. This document describes the code on branch
-`cs/rdbms-cache-own-impl`. The next step, a key index for hot column families, is in
-[key-index-implementation.md](key-index-implementation.md).
+`cs/rdbms-cache-own-impl`, with the key index for hot column families (section 5). The first plan
+of the key index is in [key-index-implementation.md](key-index-implementation.md). Open problems
+have one file each in [../issues](../issues).
 
 ## 1. Goal
 
@@ -108,7 +109,9 @@ flowchart LR
 | `WriteBehindTransaction`        | Own writes of one context. Read-your-writes, commit and rollback.                                                                                                          |
 | `WriteBehindTransactionContext` | Same semantics as `DefaultTransactionContext`.                                                                                                                              |
 | `WriteBehindStore`              | Committed state: dirty index, read cache, queue, writer thread, byte back-pressure, failure state.                                                                         |
-| `MergingCursor`                 | Merges own writes, a copy of the dirty range and a RocksDB iterator.                                                                                                       |
+| `MergingCursor`                 | Merges own writes with one committed source: a key index source, or a copy of the dirty range with a RocksDB iterator.                                                    |
+| `KeyIndex`, `KeyIndexPolicy`    | The in-memory keys of one column family and its window (section 5).                                                                                                        |
+| `IndexSource`, `HandoverSource` | Committed sources that read keys from a `KeyIndex`. `HandoverSource` continues with a storage view at the window bound.                                                   |
 | `RawKey`, `Version`, `Values`   | Key bytes with unsigned bytewise order. A value and its commit sequence. Copy, encode and decode helpers.                                                                 |
 
 ### 4.3 Values as objects
@@ -181,7 +184,8 @@ Values from RocksDB are decoded only when the visitor reads them. The column fam
 two nested scans, as RocksDB's does.
 
 Each scan opens a native RocksDB iterator and seeks it, even when the result is already in memory.
-The key index (section 5) makes this iterator unnecessary for hot column families.
+The key index (section 5) makes this iterator unnecessary for hot column families: the cursor then
+merges the own writes with a key index source instead.
 
 ### 4.7 Writer
 
@@ -224,6 +228,8 @@ The wait runs on the snapshot store's actor, on the broker's I/O-bound pool.
 | `cacheMaxBytes`    | 64 MiB  | Caffeine maximum weight. `0` disables the cache.                                                              |
 | `maxWriteRetries`  | 10      | Retries of a recoverable write error before the store fails.                                                 |
 | `flushTimeout`     | 30 s    | Limit for the snapshot wait and for close.                                                                    |
+| `keyIndexColumnFamilies` | 6 column families | IDs of the column families that have a key index (section 5).                                       |
+| `keyIndexMaxKeys`  | 100000  | The most keys that one key index holds.                                                                       |
 
 Wiring:
 
@@ -243,14 +249,99 @@ Per partition, the heap holds the read cache (up to `cacheMaxBytes`), the dirty 
 of dirty ranges. RocksDB's native memory holds the same state too. For a fair benchmark, lower
 RocksDB's `memoryLimit` by the heap budgets, and watch GC.
 
-## 5. Next step: key index for hot column families
+## 5. Key index for hot column families
 
-Section 4.6 opens a RocksDB iterator on every scan. For selected column families, the store will
-keep every committed key in memory, in packed sorted chunks. A scan of such a column family reads
-the keys from memory and opens no iterator. `exists` and `get` answer "absent" from memory. Column
-families that are not selected keep the merged scan of section 4.6.
+Section 4.6 opens a RocksDB iterator on every scan. For selected column families, the store keeps
+the committed keys in memory, so that a scan of them opens no iterator and `exists` and `get`
+answer "absent" without a RocksDB read. Column families that are not selected keep the merged scan
+of section 4.6.
 
-The plan is in [key-index-implementation.md](key-index-implementation.md).
+### 5.1 The index
+
+- One `KeyIndex` per selected column family. It holds keys only, in a `ConcurrentSkipListSet` of
+  `RawKey`. Values still come from the dirty index, then the cache, then RocksDB.
+- The first scan loads it (`WriteBehindStore#prepareKeyIndex`). The load reads a storage view and
+  installs the keys under the write lock. If a commit wrote to the column family since the view,
+  the load is obsolete. Three obsolete loads in a row disable the index.
+- A commit applies its keys to the index in the same critical section that publishes the
+  versions. A seqlock protects readers: `KeyIndex#version` is odd while the key set changes.
+  Readers take no lock. They read the version, read the keys, and read the version again.
+- States: `UNLOADED`, `LOADED`, `DISABLED`. A disabled index stays disabled until the restart.
+
+### 5.2 The window
+
+A column family can have more keys than `keyIndexMaxKeys`. The policy of the column family
+(`KeyIndexPolicy`) then decides what the index does:
+
+|    Policy      |                              Behavior                              |
+|----------------|--------------------------------------------------------------------|
+| `DISABLE`      | The index turns off until the restart. This was the only behavior at first. |
+| `KEEP_LOWEST`  | The index holds the keys below a bound.                            |
+| `KEEP_HIGHEST` | The index holds the keys above a bound.                            |
+
+The window is one range at one end of the column family. The bound is the first key that the
+index does not cover. It is null while the index covers the whole column family. A key is in the
+index if and only if it is inside the window and has a committed value. The index says nothing
+about a key outside the window, and RocksDB answers for it.
+
+**Filling.** The first load collects up to `keyIndexMaxKeys` keys from the covered end: forward
+from the start for `KEEP_LOWEST`, backward from the end for `KEEP_HIGHEST`. The first key that it
+did not collect becomes the bound.
+
+**Commits.** A commit skips the keys outside the window. If the window holds more than
+`keyIndexMaxKeys` keys afterward, the index evicts keys from the far end of the window and moves
+the bound to the last key that it evicted. For `KEEP_HIGHEST`, new keys arrive at the top and the
+lowest keys leave. For `KEEP_LOWEST`, new keys usually arrive above the bound, so the commit skips
+them. The window only changes when a key arrives below the bound, or when deletes make it smaller.
+
+**Refill.** Deletes drain a window, for example when timers fire. A scan that finds fewer than
+`keyIndexMaxKeys / 4` keys in a window with a bound extends it. The scan thread reads a chunk of
+`keyIndexMaxKeys / 4` keys from RocksDB, away from the covered end, and moves the bound. A commit
+to the column family during the read makes the refill obsolete. Three obsolete refills in a row
+disable the index.
+
+**Scans.** At each seek, the cursor picks the source:
+
+- The seek key is inside the window: an `IndexSource`. When the scan runs out of the window in the
+  direction where the window is the first part of the scan (forward for `KEEP_LOWEST`, backward
+  for `KEEP_HIGHEST`), a `HandoverSource` continues with a storage view at the bound. The window
+  holds the keys before the bound and the view the keys from the bound, so no key repeats and no key
+  is lost. The cursor plans the handover, and it has its own counter.
+- The seek key is outside the window: a storage view for the whole scan.
+- A scan in the other direction inside the window stays in the window and needs no handover.
+
+An `IndexSource` reads the live key set and checks the version after each step. If the key set or
+the bound changes, the source turns stale and the cursor continues with a view at the current key.
+It also turns stale after four storage reads for values, because one iterator is cheaper than
+many point reads. See [the issue](../issues/index-source-turns-stale-after-four-storage-reads.md).
+
+**Point reads.** `get` and `exists` answer "absent" from the index only for a key inside the
+window, with an unchanged version. A key outside the window takes the normal path.
+
+### 5.3 Configuration
+
+`keyIndexColumnFamilies` selects the column families and `keyIndexMaxKeys` sets the cap. The
+policy of each column family is a constant in `WriteBehindConfiguration`, by column family
+name. The broker does not expose it. A column family without a policy has `DISABLE`.
+
+|    Policy      |                                             Column families                                             |
+|----------------|---------------------------------------------------------------------------------------------------------|
+| `KEEP_LOWEST`  | `TIMER_DUE_DATES`, `JOB_DEADLINES`, `MESSAGE_DEADLINES`, `JOB_BACKOFF`: scans start at the next due entry. |
+| `KEEP_HIGHEST` | `ELEMENT_INSTANCE_PARENT_CHILD`, `NUMBER_OF_TAKEN_SEQUENCE_FLOWS`: keys start with the parent key, and that key grows with time, so scans hit the newest parents. |
+
+The window of a `KEEP_HIGHEST` column family helps only with scans on recent keys. A scan under
+an old parent starts below the bound and uses a view.
+
+### 5.4 Tests
+
+- `KeyIndexTest`, `IndexedScanTest` and `WindowedIndexTest` in `zeebe-db-writebehind` use an
+  in-memory storage. `WindowedIndexTest` covers both policies, the handover, eviction, refill and a
+  random test against a model.
+- `zeebe-db-tests` runs every key index contract class again with windows (cap of 4 keys, column
+  families 0 and 1 with `KEEP_LOWEST`, 2 and 3 with `KEEP_HIGHEST`), and a differential test
+  against plain RocksDB for each policy. The randomized tests run with `-PincludeRandomTests`.
+  RocksDB reads with prefix-same-as-start, so a seek key must stay in the column family of the
+  scan. These tests found a violation of that rule.
 
 ## 6. Status
 
@@ -260,13 +351,16 @@ Done:
 - Contract tests against both implementations, and `RocksDbVsWriteBehindDifferentialTest`
   (random operations with a tiny cache and byte budget).
 - Engine test toggle, broker setting, load test.
+- Key index with windows for hot column families (section 5), with contract and differential
+  tests against RocksDB.
 
 Not done:
 
 - Concurrency stress tests.
 - Metrics.
 - Health reporting: a writer failure is visible only at the next DB call.
-- The key index (section 5).
+- The key index in the engine suite and in the load test. See
+  [the issue](../issues/key-index-windows-need-engine-and-load-validation.md).
 
 ## 7. Risks and open questions
 
@@ -281,3 +375,7 @@ Not done:
    per partition, so multiply them by the partitions per broker.
 5. **Is zb-db on the critical path?** With the WAL off, RocksDB writes stay in memory already. Only
    benchmarks answer this.
+6. **The key index refill is a pause on the processing thread.** See
+   [the issue](../issues/refill-stalls-the-processing-thread.md).
+7. **The key index windows add memory.** Six column families can hold 100000 keys each, about 80 MB
+   per partition. See [the issue](../issues/key-index-windows-use-more-memory.md).
