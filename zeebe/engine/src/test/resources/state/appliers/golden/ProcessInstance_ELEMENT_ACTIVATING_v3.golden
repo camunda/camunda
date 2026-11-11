@@ -49,7 +49,6 @@ final class ProcessInstanceElementActivatingV3Applier
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
-    createEventScope(elementInstanceKey, value);
     final var numberOfTakenSequenceFlows =
         elementInstanceState.getNumberOfTakenSequenceFlows(
             value.getFlowScopeKey(), value.getElementIdBuffer());
@@ -59,6 +58,7 @@ final class ProcessInstanceElementActivatingV3Applier
     final var elementInstance =
         elementInstanceState.newInstance(
             flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    createEventScope(elementInstanceKey, value);
 
     if (value.getBpmnElementType() == BpmnElementType.PROCESS
         && !value.hasParentProcessInstance()) {
