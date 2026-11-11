@@ -528,6 +528,14 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
+    # Deploys a custom model from `k6/data`, completes its user tasks, and sends a mix of
+    # read requests. Enabled by the `custom-model` scenario. `env` sets extra environment
+    # variables for this test only (see the script for the supported names). Each test can
+    # also set `resources`, which replaces `k6.resources` for this test only.
+    custom-model:
+      enabled: false
+      script: test.custom-model.js
+      env: {}
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write

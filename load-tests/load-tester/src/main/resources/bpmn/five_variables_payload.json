@@ -1,0 +1,7 @@
+{
+  "customerId": 123,
+  "orderId": "ORD-2026-000123",
+  "amount": 266.49,
+  "currency": "EUR",
+  "priority": "NORMAL"
+}

@@ -92,9 +92,13 @@ spec:
           secretKeyRef:
             key: zeebeGrpcAddress
             name: load-test-credentials
+      {{- range $name, $value := $test.env }}
+      - name: {{ $name }}
+        value: {{ $value | quote }}
+      {{- end }}
 
     resources:
-      {{- toYaml $root.Values.k6.resources | nindent 6 }}
+      {{- toYaml ($test.resources | default $root.Values.k6.resources) | nindent 6 }}
 
     nodeSelector:
       {{- if $root.Values.topologyZone }}

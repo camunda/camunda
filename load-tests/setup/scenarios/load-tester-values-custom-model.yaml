@@ -1,0 +1,50 @@
+# Custom model scenario values for the load-test-setup chart.
+#
+# - The k6 `custom-model` test deploys `k6/data/benchmark-process.bpmn`. It simulates people
+#   who search, assign, and complete the user tasks, and it sends one request per second to
+#   each read endpoint (see `charts/load-test-setup/k6/scripts/test.custom-model.js`).
+# - The starter starts `benchmark-process` instances. Until k6 deploys the model, the start
+#   requests fail. The starter also deploys its default `one_task.bpmn`, which nothing starts.
+# - The workers complete all service tasks (job type `logProcessInfo`) at once and send the
+#   start payload back, like an echo worker.
+#
+# To use another model: add it to `k6/data`, then override `starter.processId`, the worker
+# `jobType`, and the k6 `MODEL_FILE` and `PROCESS_ID` env values.
+load-tester:
+  starter:
+    rate: 50
+    processId: "benchmark-process"
+    payloadPath: "bpmn/five_variables_payload.json"
+  workers:
+    worker:
+      replicas: 3
+      capacity: 60
+      threads: 10
+      jobType: "logProcessInfo"
+      payloadPath: "bpmn/five_variables_payload.json"
+      completionDelay: 0ms
+
+k6:
+  tests:
+    custom-model:
+      enabled: true
+      env:
+        MODEL_FILE: "benchmark-process.bpmn"
+        PROCESS_ID: "benchmark-process"
+        API_RATE: "1"
+        # Each user loops: search open unassigned tasks, pick one, assign, think, complete.
+        # User task throughput is about USERS / (think time + ~0.2s of requests):
+        # 250 users with 2s-8s (5s on average) complete about 50 tasks per second.
+        USER_TASK_USERS: "250"
+        USER_TASK_THINK_TIME: "2s-8s"
+        USER_TASK_PAGE_SIZE: "20"
+        # k6 is a Go program: without this, its garbage collector ignores the container limit.
+        GOMEMLIMIT: "3200MiB"
+  # Applies to all k6 tests. Each simulated user is one k6 VU with its own JS runtime.
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
