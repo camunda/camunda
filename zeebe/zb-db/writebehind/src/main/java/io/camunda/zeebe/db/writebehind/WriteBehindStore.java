@@ -137,6 +137,25 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     return readStorage(key, prototype);
   }
 
+  /**
+   * A copy of the unflushed writes, taken at one instant: the latest value per key, or null for a
+   * delete. For users that read the storage in other ways than by key, for example with queries,
+   * and merge these writes into the result. Take it before such a read: a write that is flushed
+   * after the copy is in the storage when the read starts, and one that is flushed before is in the
+   * copy, so the two together hold every committed write.
+   */
+  public NavigableMap<K, @Nullable V> unflushedSnapshot() {
+    ensureUsable();
+    final var copy = new TreeMap<K, @Nullable V>();
+    final long stamp = publishLock.readLock();
+    try {
+      dirty.forEach((key, version) -> copy.put(key, version.value()));
+    } finally {
+      publishLock.unlockRead(stamp);
+    }
+    return copy;
+  }
+
   /** The unflushed version of a key, or else the cached one; null if the store has neither. */
   @Nullable Version<V> lookupInMemory(final K key) {
     final var unflushed = dirty.get(key);

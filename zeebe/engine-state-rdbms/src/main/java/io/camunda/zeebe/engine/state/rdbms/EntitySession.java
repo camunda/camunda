@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -105,6 +106,17 @@ final class EntitySession implements JdbcTransactionParticipant {
    */
   private final Map<EntityType<?, ?>, Map<Object, List<Object>>> loadedGroups = new HashMap<>();
 
+  /**
+   * The writes that the store hasn't flushed yet, as of the first database access of the
+   * transaction, see {@link WriteBehindStore#unflushedSnapshot}. The database doesn't hold them, so
+   * every row that is read from it is merged with them, like with the staged writes.
+   */
+  private @Nullable NavigableMap<EntityKey, @Nullable Object> unflushed;
+
+  /** The unflushed writes of {@link #unflushed} per type and key; a null row is a delete. */
+  private final Map<EntityType<?, ?>, Map<Object, @Nullable Object>> unflushedByType =
+      new HashMap<>();
+
   /** The session of the current transaction, null until its first database access. */
   private @Nullable SqlSession session;
 
@@ -122,8 +134,9 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   /**
    * @param store if not null, a commit hands the staged writes to this write-behind store instead
-   *     of writing them to the database, and reads of single rows go through it. A read of many
-   *     rows first waits until the store has flushed, so that the database holds every commit.
+   *     of writing them to the database, and reads of single rows go through it. The database
+   *     doesn't hold the writes that the store hasn't flushed yet, so the rows that a read of many
+   *     rows returns are merged with them.
    */
   EntitySession(
       final JdbcTransactionContext transactionContext,
@@ -285,6 +298,13 @@ final class EntitySession implements JdbcTransactionParticipant {
               if (!unknown.isEmpty()) {
                 final var rows = unwrapped(() -> query.select(mapper(mapperType), unknown));
                 final var cached = loaded(type);
+                final var notFlushed = unflushedOf(type);
+                for (final K key : unknown) {
+                  if (notFlushed.containsKey(key)) {
+                    final Object row = notFlushed.get(key);
+                    cached.put(key, row == null ? ABSENT : row);
+                  }
+                }
                 for (final E row : rows) {
                   cached.putIfAbsent(type.keyOf(row), row);
                 }
@@ -329,11 +349,23 @@ final class EntitySession implements JdbcTransactionParticipant {
               if (!unknown.isEmpty()) {
                 final var rows = unwrapped(() -> query.select(mapper(mapperType), unknown));
                 unknown.forEach(group -> keysByGroup.put(group, new ArrayList<>()));
+                final var notFlushed = unflushedOf(type);
                 for (final E row : rows) {
                   final K key = type.keyOf(row);
                   final Object group = type.groupOf(key);
                   final var keysOfGroup = unknown.contains(group) ? keysByGroup.get(group) : null;
-                  if (keysOfGroup != null && cached.putIfAbsent(key, row) != ABSENT) {
+                  if (keysOfGroup != null
+                      && !notFlushed.containsKey(key)
+                      && cached.putIfAbsent(key, row) != ABSENT) {
+                    keysOfGroup.add(key);
+                  }
+                }
+                for (final var write : notFlushed.entrySet()) {
+                  final K key = type.castKey(write.getKey());
+                  final Object group = type.groupOf(key);
+                  final var keysOfGroup = unknown.contains(group) ? keysByGroup.get(group) : null;
+                  if (keysOfGroup != null && write.getValue() != null) {
+                    cached.put(key, write.getValue());
                     keysOfGroup.add(key);
                   }
                 }
@@ -374,7 +406,8 @@ final class EntitySession implements JdbcTransactionParticipant {
               final Collection<?> committed =
                   loadedKeys != null
                       ? loadedKeys
-                      : unwrapped(() -> query.apply(mapper(mapperType)));
+                      : withUnflushedKeys(
+                          type, group, unwrapped(() -> query.apply(mapper(mapperType))));
               final var writes = staged(type);
               final List<K> result = new ArrayList<>();
               for (final Object key : committed) {
@@ -417,7 +450,7 @@ final class EntitySession implements JdbcTransactionParticipant {
       final Collection<? extends E> dbResults,
       final Predicate<? super E> stagedMatches,
       final Comparator<? super E> order) {
-    final var writes = staged(type);
+    final var writes = effective(type);
     final var cached = loaded(type);
     final List<E> result = new ArrayList<>();
     for (final E row : dbResults) {
@@ -438,7 +471,7 @@ final class EntitySession implements JdbcTransactionParticipant {
       final Collection<? extends K> dbKeys,
       final Predicate<? super E> stagedMatches,
       final Comparator<? super K> order) {
-    final var writes = staged(type);
+    final var writes = effective(type);
     final List<K> result = new ArrayList<>();
     for (final K key : dbKeys) {
       if (!writes.containsKey(key)) {
@@ -455,7 +488,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   /** The staged (not deleted) rows of the type matching the given condition. */
   <K, E> List<E> stagedMatching(final EntityType<K, E> type, final Predicate<? super E> condition) {
     final List<E> result = new ArrayList<>();
-    for (final var write : staged(type).values()) {
+    for (final var write : effective(type).values()) {
       if (write.row != null) {
         final E row = type.cast(write.row);
         if (condition.test(row)) {
@@ -473,7 +506,7 @@ final class EntitySession implements JdbcTransactionParticipant {
    */
   @SuppressWarnings("unchecked")
   <K, E> Set<K> stagedKeys(final EntityType<K, E> type) {
-    return Collections.unmodifiableSet((Set<K>) staged(type).keySet());
+    return Collections.unmodifiableSet((Set<K>) effective(type).keySet());
   }
 
   /**
@@ -654,6 +687,8 @@ final class EntitySession implements JdbcTransactionParticipant {
   private void clearLoaded() {
     loaded.clear();
     loadedGroups.clear();
+    unflushed = null;
+    unflushedByType.clear();
   }
 
   /** Whether the session knows the current row of the key, or that there is none. */
@@ -678,11 +713,74 @@ final class EntitySession implements JdbcTransactionParticipant {
     return group != null && loadedGroups(type).containsKey(group);
   }
 
+  /**
+   * The unflushed writes of the type, as a base under the staged ones: the rows that a query of the
+   * database doesn't return yet or returns in an outdated form.
+   */
+  private Map<Object, @Nullable Object> unflushedOf(final EntityType<?, ?> type) {
+    if (store == null) {
+      return Map.of();
+    }
+    var ofType = unflushedByType.get(type);
+    if (ofType == null) {
+      if (unflushed == null) {
+        unflushed = store.unflushedSnapshot();
+      }
+      ofType = new LinkedHashMap<>();
+      for (final var write :
+          unflushed.subMap(EntityKey.first(type), true, EntityKey.after(type), true).entrySet()) {
+        ofType.put(write.getKey().key(), write.getValue());
+      }
+      unflushedByType.put(type, ofType);
+    }
+    return ofType;
+  }
+
+  /**
+   * The writes that a query of the database must take into account: the unflushed ones, replaced by
+   * the staged ones of the same keys.
+   */
+  private Map<Object, Staged> effective(final EntityType<?, ?> type) {
+    final var writes = staged(type);
+    final var notFlushed = unflushedOf(type);
+    if (notFlushed.isEmpty()) {
+      return writes;
+    }
+    final Map<Object, Staged> merged = new LinkedHashMap<>();
+    notFlushed.forEach(
+        (key, row) ->
+            merged.put(key, new Staged(row == null ? Operation.DELETE : Operation.UPDATE, row)));
+    merged.putAll(writes);
+    return merged;
+  }
+
+  /** The keys of a group that a query of the database returned, with the unflushed writes. */
+  private <K, E> Collection<K> withUnflushedKeys(
+      final EntityType<K, E> type, final Object group, final Collection<K> committed) {
+    final var notFlushed = unflushedOf(type);
+    if (notFlushed.isEmpty()) {
+      return committed;
+    }
+    final List<K> keys = new ArrayList<>();
+    for (final K key : committed) {
+      if (!notFlushed.containsKey(key)) {
+        keys.add(key);
+      }
+    }
+    for (final var write : notFlushed.entrySet()) {
+      final K key = type.castKey(write.getKey());
+      if (write.getValue() != null && group.equals(type.groupOf(key))) {
+        keys.add(key);
+      }
+    }
+    return keys;
+  }
+
   private SqlSession session() {
     if (session == null) {
-      if (store != null) {
-        // the session reads the database, which holds every commit only after the flush
-        store.awaitFlushed();
+      if (store != null && unflushed == null) {
+        // taken before the first read, see WriteBehindStore#unflushedSnapshot
+        unflushed = store.unflushedSnapshot();
       }
       session =
           sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);

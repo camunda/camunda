@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRo
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
@@ -34,6 +35,9 @@ final class EntitySessionWriteBehindTest {
   private static final EntityType<String, PartitionStateRow> ROW =
       new EntityType<>(
           PartitionStateMapper.class, "PartitionState", "test row", PartitionStateRow::key);
+
+  private static final Comparator<PartitionStateRow> BY_KEY =
+      Comparator.comparing(PartitionStateRow::key);
 
   private static EngineStateDatabase database;
 
@@ -135,17 +139,62 @@ final class EntitySessionWriteBehindTest {
   }
 
   @Test
-  void shouldFlushBeforeAQueryReadsTheDatabase() throws Exception {
+  void shouldReturnUnflushedRowsFromQueriesWithoutFlushing() throws Exception {
+    // given
+    commit(row("1", "a"), row("2", "b"));
+
+    // when
+    final var result = session.query(ROW, List.of(), row -> true, BY_KEY);
+
+    // then
+    assertThat(result).containsExactly(row("1", "a"), row("2", "b"));
+    assertThat(committedRows()).isEmpty();
+  }
+
+  @Test
+  void shouldHideFlushedRowThatAnUnflushedDeleteRemoved() throws Exception {
+    // given a flushed row, and a delete that is not flushed
+    commit(row("1", "a"), row("2", "b"));
+    store.awaitFlushed();
+    final var transaction = context.getCurrentTransaction();
+    session.delete(ROW, "1");
+    transaction.commit();
+    final var committed = committedRows();
+
+    // when the query of the database still returns the deleted row
+    final var result = session.query(ROW, committed, row -> true, BY_KEY);
+
+    // then
+    assertThat(result).containsExactly(row("2", "b"));
+  }
+
+  @Test
+  void shouldReplaceFlushedRowByAnUnflushedUpdate() throws Exception {
+    // given
+    commit(row("1", "a"));
+    store.awaitFlushed();
+    update(row("1", "b"));
+
+    // when
+    final var result = session.query(ROW, committedRows(), row -> true, BY_KEY);
+
+    // then
+    assertThat(result).containsExactly(row("1", "b"));
+  }
+
+  @Test
+  void shouldReadUnflushedRowsOfSeveralKeysWithoutFlushing() throws Exception {
     // given
     commit(row("1", "a"));
 
-    // when a transaction accesses the database
-    final var transaction = context.getCurrentTransaction();
-    session.read(PartitionStateMapper.class, mapper -> 0);
-    transaction.rollback();
+    // when
+    final var rows =
+        session.getAll(
+            ROW, List.of("1", "2"), PartitionStateMapper.class, (mapper, keys) -> List.of());
 
     // then
-    assertThat(committedRows()).containsExactly(row("1", "a"));
+    assertThat(rows).containsExactly(row("1", "a"), null);
+    assertThat(committedRows()).isEmpty();
   }
 
   @Test
