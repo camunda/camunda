@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -185,6 +186,7 @@ public final class EventAppliers implements EventApplier {
     registerSecretReferenceEventAppliers(state);
     registerProcessDefinitionRestoreAppliers(state);
     registerPolicyUpdateAppliers(state);
+    registerProcessDefinitionSuspensionAppliers(state);
     return this;
   }
 
@@ -212,6 +214,11 @@ public final class EventAppliers implements EventApplier {
     register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
     register(PolicyUpdateIntent.VERSION_SWITCHED, NOOP_EVENT_APPLIER);
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProcessDefinitionSuspensionAppliers(final MutableProcessingState state) {
+    register(ProcessDefinitionSuspensionIntent.SUSPENDED, NOOP_EVENT_APPLIER);
+    register(ProcessDefinitionSuspensionIntent.RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

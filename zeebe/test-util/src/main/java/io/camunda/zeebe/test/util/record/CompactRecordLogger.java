@@ -123,6 +123,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequest
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -357,6 +358,8 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
+    valueLoggers.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, this::summarizeProcessDefinitionSuspension);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2305,6 +2308,23 @@ public class CompactRecordLogger {
     if (!value.getErrorMessage().isEmpty()) {
       result.append(" error:").append(value.getErrorMessage());
     }
+
+    return result.toString();
+  }
+
+  String summarizeProcessDefinitionSuspension(final Record<?> record) {
+    final var value = (ProcessDefinitionSuspensionRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    if (value.getProcessDefinitionKey() > 0) {
+      result.append("pdKey:").append(shortenKey(value.getProcessDefinitionKey()));
+    } else {
+      result.append(formatId(value.getBpmnProcessId())).append(" v").append(value.getVersion());
+    }
+    if (value.isCascade()) {
+      result.append(" cascade");
+    }
+    result.append(" resolved:").append(value.getResolvedVersions().size());
 
     return result.toString();
   }
