@@ -91,7 +91,7 @@ public class StateValueBenchmark {
     private static final int BUFFER_CAPACITY = 1024;
     private static final int BATCH_SIZE = 10_000;
 
-    @Param({"variable", "element"})
+    @Param({"variable", "element", "record"})
     public String value;
 
     @Param({"v1", "generated"})
@@ -115,6 +115,7 @@ public class StateValueBenchmark {
         case "variable/v1" -> init(VariableInstanceV1::new, i -> variableV1(i));
         case "variable/generated" -> init(VariableInstance::new, i -> variable(i));
         case "element/v1" -> init(ElementInstanceV1::new, i -> elementV1(i));
+        case "record/v1", "record/generated" -> init(ProcessInstanceRecord::new, i -> record(i));
         case "element/generated" -> init(ElementInstance::new, i -> element(i));
         default -> throw new IllegalArgumentException(value + "/" + impl);
       }
