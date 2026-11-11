@@ -37,8 +37,6 @@ below is open.
       `zeebe/pom.xml`, `zeebe/engine/pom.xml` `annotationProcessorPaths`) was written but never run,
       because the snapshot modules could not be resolved offline. Build `zeebe/engine -am` once.
 - [ ] **Nullness.** Add `@NullMarked`/`@Nullable` to the new module in a separate `refactor:` commit.
-- [ ] **Formatting.** Gradle has no `spotlessApply`; the new files were formatted with
-      google-java-format directly. Run `./mvnw license:format spotless:apply` on them.
 
 ## Migration of the remaining state classes
 

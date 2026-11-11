@@ -174,11 +174,9 @@ To confirm tests ran: the XML in `<module>/build/test-results/test/` has `tests=
 ## Step 7: format and commit
 
 ```bash
-./mvnw license:format spotless:apply -pl <module-path> -Dquickly
+./gradlew :<project>:spotlessApply
 ```
 
-If Maven cannot resolve snapshots offline, run
-`.agents/skills/migrate-state-to-msgpack-pojo/scripts/format.sh <changed .java files>` instead.
 Then:
 
 ```bash
