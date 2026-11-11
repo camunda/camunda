@@ -369,6 +369,10 @@ public final class TestStreams {
     return streamProcessor;
   }
 
+  public void exportDbMetrics(final String streamName) {
+    streamContextMap.get(streamName).zeebeDb.exportMetrics();
+  }
+
   public void pauseProcessing(final String streamName) {
     streamContextMap.get(streamName).streamProcessor.pauseProcessing().join();
     LOG.info("Paused processing for stream {}", streamName);

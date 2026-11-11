@@ -177,6 +177,10 @@ public class StreamProcessingComposite implements CommandWriter {
     return streams.getMeterRegistry(getLogName(partitionId));
   }
 
+  public void exportDbMetrics(final int partitionId) {
+    streams.exportDbMetrics(getLogName(partitionId));
+  }
+
   public MutableProcessingState getProcessingState() {
     return processingState;
   }
