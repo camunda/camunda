@@ -11,12 +11,10 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.pojo.Decoding;
-import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackScratch;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
-import io.camunda.zeebe.msgpack.spec.MsgPackReader;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -70,10 +68,6 @@ public final class ElementInstance implements DbValue {
   long agentInstanceKey = -1L;
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
-
-  // TODO: only needed while the column families require DbValue to read and write itself
-  @MsgpackIgnore private MsgPackWriter writer;
-  @MsgpackIgnore private MsgPackReader reader;
 
   public ElementInstance() {}
 
@@ -356,17 +350,11 @@ public final class ElementInstance implements DbValue {
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    if (writer == null) {
-      writer = new MsgPackWriter();
-    }
-    return ElementInstanceCodec.INSTANCE.write(writer.wrap(buffer, offset), this);
+    return ElementInstanceCodec.INSTANCE.write(MsgpackScratch.writer(buffer, offset), this);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    if (reader == null) {
-      reader = new MsgPackReader();
-    }
-    ElementInstanceCodec.INSTANCE.decode(reader.wrap(buffer, offset, length), this);
+    ElementInstanceCodec.INSTANCE.decode(MsgpackScratch.reader(buffer, offset, length), this);
   }
 }

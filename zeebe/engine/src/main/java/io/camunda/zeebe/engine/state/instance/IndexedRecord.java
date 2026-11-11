@@ -8,13 +8,11 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackScratch;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
-import io.camunda.zeebe.msgpack.spec.MsgPackReader;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
@@ -35,10 +33,6 @@ public final class IndexedRecord implements DbValue {
   final ProcessInstanceRecord value = new ProcessInstanceRecord();
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
-
-  // TODO: only needed while the column families require DbValue to read and write itself
-  @MsgpackIgnore private MsgPackWriter writer;
-  @MsgpackIgnore private MsgPackReader reader;
 
   IndexedRecord() {}
 
@@ -97,20 +91,15 @@ public final class IndexedRecord implements DbValue {
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    if (writer == null) {
-      writer = new MsgPackWriter();
-    }
-    return IndexedRecordCodec.INSTANCE.write(writer.wrap(buffer, offset), this);
+    return IndexedRecordCodec.INSTANCE.write(MsgpackScratch.writer(buffer, offset), this);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    if (reader == null) {
-      reader = new MsgPackReader();
-    }
     // the nested record references the buffer it is read from, so it needs its own copy
     final byte[] bytes = new byte[length];
     buffer.getBytes(offset, bytes, 0, length);
-    IndexedRecordCodec.INSTANCE.decode(reader.wrap(new UnsafeBuffer(bytes), 0, length), this);
+    IndexedRecordCodec.INSTANCE.decode(
+        MsgpackScratch.reader(new UnsafeBuffer(bytes), 0, length), this);
   }
 }
