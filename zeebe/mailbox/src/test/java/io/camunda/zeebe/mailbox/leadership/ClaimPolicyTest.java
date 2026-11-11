@@ -79,12 +79,34 @@ final class ClaimPolicyTest {
   }
 
   @Test
-  void shouldClaimAReleasedPartitionAtOnce() {
+  void shouldGiveAPartitionThatANodeOfTheRegionReleasedToTheNextNodeAtOnce() {
+    // given - e1 is first for partition 1, and released it
+    final var lease = new PartitionLease(1, "e1", EAST, 3, 8, true);
+
+    // then
+    assertThat(e2.shouldClaim(1, lease, false, bothAlive)).isTrue();
+    assertThat(e1.shouldClaim(1, lease, false, bothAlive)).isFalse();
+  }
+
+  @Test
+  void shouldLetTheReleasingNodeTakeThePartitionBackWhenNobodyElseDidWithinTheLease() {
+    // given - e1 is the only node of its region
+    final var lease = new PartitionLease(1, "e1", EAST, 3, 8, true);
+    final ClusterView onlyE1Alive = () -> List.of("e1");
+
+    // then
+    assertThat(e1.shouldClaim(1, lease, false, onlyE1Alive)).isFalse();
+    assertThat(e1.shouldClaim(1, lease, true, onlyE1Alive)).isTrue();
+  }
+
+  @Test
+  void shouldWaitForTheLeaseOfAPartitionThatAnotherRegionReleased() {
     // given
     final var lease = new PartitionLease(1, "w1", WEST, 3, 8, true);
 
-    // then
-    assertThat(e1.shouldClaim(1, lease, false, bothAlive)).isTrue();
+    // then - the released partition stays in its region if a node there takes it
+    assertThat(e1.shouldClaim(1, lease, false, bothAlive)).isFalse();
+    assertThat(e1.shouldClaim(1, lease, true, bothAlive)).isTrue();
   }
 
   @Test

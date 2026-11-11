@@ -8,6 +8,7 @@
 package io.camunda.zeebe.mailbox.leadership;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.mailbox.api.MailboxStoreException;
 import io.camunda.zeebe.mailbox.api.leadership.LeaseStore;
@@ -167,20 +168,56 @@ final class LeaderElectorTest {
   }
 
   @Test
-  void shouldLetAnotherRegionClaimAtOnceWhenALeaderIsClosed() {
+  void shouldLetAnotherRegionClaimAfterTheLeaseWhenARegionShutsDown() {
     // given
     tick(e1, e2, w1, w2);
-    eastAlive.clear();
 
     // when - the whole east region shuts down
+    eastAlive.clear();
     e1.elector.close();
     e2.elector.close();
+    tick(w1, w2);
+    final var atOnce = Map.copyOf(w1.elector.leading());
+    advance(CONFIG.leaseDuration());
     tick(w1, w2);
 
     // then
     assertThat(e1.events).contains("not leading 1 RELEASED", "not leading 3 RELEASED");
+    assertThat(atOnce).isEmpty();
     assertThat(w1.elector.leading()).containsOnlyKeys(1, 3);
     assertThat(w2.elector.leading()).containsOnlyKeys(2, 4);
+  }
+
+  @Test
+  void shouldHandAPartitionToTheNextNodeOfTheRegionOnStepDown() {
+    // given
+    tick(e1, e2, w1, w2);
+
+    // when
+    e1.elector.stepDownNow(1);
+    tick(e1, e2, w1, w2);
+
+    // then
+    assertThat(e1.events).contains("not leading 1 RELEASED");
+    assertThat(e1.elector.leading()).containsOnlyKeys(3);
+    assertThat(e2.elector.leading())
+        .containsOnly(Map.entry(1, 2L), Map.entry(2, 1L), Map.entry(4, 1L));
+    assertThat(w1.elector.leading()).isEmpty();
+  }
+
+  @Test
+  void shouldKeepLeadingWhenTheStepDownCannotReleaseTheLease() {
+    // given
+    tick(e1, e2, w1, w2);
+    store.failWritesOf("e1");
+
+    // when
+    final var stepDown = e1.elector.stepDown(1);
+
+    // then - the test scheduler does not run the task, so run it here
+    assertThat(stepDown).isNotDone();
+    assertThatThrownBy(() -> e1.elector.stepDownNow(1)).isInstanceOf(MailboxStoreException.class);
+    assertThat(e1.elector.leading()).containsKey(1);
   }
 
   @Test
@@ -282,6 +319,7 @@ final class LeaderElectorTest {
 
     @Override
     public boolean release(final int partitionId, final String nodeId, final long term) {
+      failIfWritesFail(nodeId);
       return delegate.release(partitionId, nodeId, term);
     }
 

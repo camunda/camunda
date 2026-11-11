@@ -19,8 +19,10 @@ import java.util.Map;
  *
  * <p>For each partition it remembers the term and counter it last saw, and since when, on its own
  * monotonic clock. A lease whose term and counter have not changed for the lease duration has run
- * out. A released lease has run out at once. After a failed read, every observation starts again,
- * so errors of the database, for example during its failover, never count as a failed leader.
+ * out. A release increases the counter, so a released lease runs out one lease duration after the
+ * release; the {@link ClaimPolicy} decides who may claim it sooner. After a failed read, every
+ * observation starts again, so errors of the database, for example during its failover, never count
+ * as a failed leader.
  *
  * <p>Not thread-safe. The elector calls it from its own thread.
  */
@@ -43,8 +45,7 @@ final class LeaseObserver {
           || previous.term() != lease.term()
           || previous.counter() != lease.renewalCounter()) {
         observations.put(
-            lease.partitionId(),
-            new Observation(lease.term(), lease.renewalCounter(), lease.released(), nowNanos));
+            lease.partitionId(), new Observation(lease.term(), lease.renewalCounter(), nowNanos));
       }
     }
     observations.keySet().retainAll(seen);
@@ -61,8 +62,8 @@ final class LeaseObserver {
     if (observation == null) {
       return false;
     }
-    return observation.released() || nowNanos - observation.sinceNanos() >= leaseNanos;
+    return nowNanos - observation.sinceNanos() >= leaseNanos;
   }
 
-  private record Observation(long term, long counter, boolean released, long sinceNanos) {}
+  private record Observation(long term, long counter, long sinceNanos) {}
 }

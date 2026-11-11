@@ -68,12 +68,16 @@ final class LeaseObserverTest {
   }
 
   @Test
-  void shouldSeeAReleasedLeaseRunOutAtOnce() {
-    // when
-    observer.observe(List.of(lease(1, 6, true)), 0);
+  void shouldLetAReleasedLeaseRunOutOnlyAfterTheLeaseDuration() {
+    // given
+    observer.observe(List.of(lease(1, 5, false)), 0);
+
+    // when - the release increases the counter
+    observer.observe(List.of(lease(1, 6, true)), 1);
 
     // then
-    assertThat(observer.hasRunOut(1, 0)).isTrue();
+    assertThat(observer.hasRunOut(1, LEASE_NANOS)).isFalse();
+    assertThat(observer.hasRunOut(1, LEASE_NANOS + 1)).isTrue();
   }
 
   @Test

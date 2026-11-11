@@ -22,8 +22,12 @@ import org.jspecify.annotations.Nullable;
  *       play a role, so a failure inside a region is detected as fast as today.
  *   <li>A leader of another region is replaced only when its lease has run out. Gossip cannot see
  *       it, and waiting for the lease keeps a short problem in one region from moving its leaders.
- *   <li>A lease of this node that it does not hold, for example from before a restart, is claimed
- *       again at once.
+ *   <li>A partition that a node of this region released goes at once to the next node of this
+ *       region, leaving out the node that released it. If no other node is there, it goes to the
+ *       first node, the releasing one included, once the lease has run out. The other region waits
+ *       for the lease too, so a step-down keeps the partition in its region.
+ *   <li>A lease of this node that it does not hold and did not release, for example from before a
+ *       restart, is claimed again at once.
  * </ul>
  *
  * <p>The claim is a compare-and-set in the store, so if two regions claim at the same time, at most
@@ -41,7 +45,7 @@ final class ClaimPolicy {
 
   /**
    * @param lease the lease row of the partition, or null if nobody claimed it yet
-   * @param leaseHasRunOut whether the observer saw the lease run out
+   * @param leaseHasRunOut whether the observer saw the lease unchanged for the lease duration
    * @param view what gossip sees of this region
    */
   boolean shouldClaim(
@@ -49,15 +53,23 @@ final class ClaimPolicy {
       final @Nullable PartitionLease lease,
       final boolean leaseHasRunOut,
       final ClusterView view) {
-    if (lease != null && lease.leaderId().equals(nodeId)) {
+    final var live = view.liveNodesInMyZone();
+    if (lease == null) {
+      return isFirst(partitionId, live);
+    }
+    if (lease.released()) {
+      if (lease.zone().equals(zone)) {
+        final var others = live.stream().filter(n -> !n.equals(lease.leaderId())).toList();
+        return isFirst(partitionId, others) || (leaseHasRunOut && isFirst(partitionId, live));
+      }
+      return leaseHasRunOut && isFirst(partitionId, live);
+    }
+    if (lease.leaderId().equals(nodeId)) {
       // the other nodes of this region see this node alive, so only this node can take it back
       return true;
     }
-    if (!nodeId.equals(firstInPriority(partitionId, view.liveNodesInMyZone()))) {
+    if (!isFirst(partitionId, live)) {
       return false;
-    }
-    if (lease == null || lease.released()) {
-      return true;
     }
     if (lease.zone().equals(zone)) {
       // a leader that is alive but stopped renewing, for example because it lost the database,
@@ -65,6 +77,10 @@ final class ClaimPolicy {
       return !view.isAlive(lease.leaderId()) || leaseHasRunOut;
     }
     return leaseHasRunOut;
+  }
+
+  private boolean isFirst(final int partitionId, final List<String> liveNodes) {
+    return nodeId.equals(firstInPriority(partitionId, liveNodes));
   }
 
   static @Nullable String firstInPriority(final int partitionId, final List<String> liveNodes) {

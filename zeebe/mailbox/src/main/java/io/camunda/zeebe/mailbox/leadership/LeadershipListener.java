@@ -19,7 +19,7 @@ public interface LeadershipListener {
     TAKEN_OVER,
     /** The node could not renew its lease in time, and stopped leading by itself. */
     FENCED,
-    /** The elector was closed and gave the partition up. */
+    /** The node gave the partition up, because it stepped down or the elector was closed. */
     RELEASED
   }
 }

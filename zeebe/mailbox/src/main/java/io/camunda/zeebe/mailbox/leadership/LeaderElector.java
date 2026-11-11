@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
@@ -95,7 +96,43 @@ public final class LeaderElector {
     scheduler.schedule(this::run, Duration.ZERO);
   }
 
-  /** Stops the loop and gives up the partitions that this node leads, so others claim at once. */
+  /**
+   * Gives up a partition that this node leads, so that the next node of its region claims it. The
+   * call to the store runs on the scheduler's thread, since it may block.
+   *
+   * @return completes when the node no longer leads the partition. Fails if the store could not
+   *     release the lease; the node then keeps leading, because otherwise it would take its own
+   *     unreleased lease back at once.
+   */
+  public CompletableFuture<Void> stepDown(final int partitionId) {
+    final var result = new CompletableFuture<Void>();
+    scheduler.schedule(
+        () -> {
+          try {
+            stepDownNow(partitionId);
+            result.complete(null);
+          } catch (final MailboxStoreException e) {
+            result.completeExceptionally(e);
+          }
+        },
+        Duration.ZERO);
+    return result;
+  }
+
+  /** Runs a step-down on the calling thread. Package-private, so a test can call it directly. */
+  synchronized void stepDownNow(final int partitionId) {
+    final var lease = held.get(partitionId);
+    if (lease == null) {
+      return;
+    }
+    store.release(partitionId, nodeId, lease.term());
+    stopLeading(partitionId, lease.term(), Reason.RELEASED);
+  }
+
+  /**
+   * Stops the loop and gives up the partitions that this node leads. The other nodes of the region
+   * claim them at once; the other region after the lease duration.
+   */
   public synchronized void close() {
     if (closed) {
       return;
