@@ -64,7 +64,7 @@ class TaskPanelPage {
 
   async openTask(name: string, options: {timeout?: number} = {}) {
     const timeout = options.timeout ?? 10000;
-    const task = this.taskCardByText(name);
+    const task = this.taskCardByName(name);
 
     await waitForAssertion({
       assertion: async () => {
@@ -83,14 +83,32 @@ class TaskPanelPage {
     name: string,
     options: {timeout?: number} = {},
   ): Promise<void> {
-    const card = this.taskCardByText(name);
+    const card = this.taskCardByName(name);
     await this.waitForTaskCard(card, name, options.timeout ?? 10000);
   }
 
-  private taskCardByText(text: string): Locator {
+  taskCardByName(text: string): Locator {
     return this.taskCards
       .filter({has: this.page.getByText(text, {exact: true})})
       .first();
+  }
+
+  taskLinkByName(name: string): Locator {
+    return this.taskCardByName(name).getByRole('link');
+  }
+
+  async assertTaskSuspended(name: string, suspended = true): Promise<void> {
+    const link = this.taskLinkByName(name);
+    await expect(link).toBeVisible({timeout: 15_000});
+    if (suspended) {
+      await expect(link).toHaveAccessibleName(/\(suspended\)$/, {
+        timeout: 15_000,
+      });
+    } else {
+      await expect(link).not.toHaveAccessibleName(/\(suspended\)$/, {
+        timeout: 15_000,
+      });
+    }
   }
 
   private async waitForTaskCard(
@@ -219,7 +237,7 @@ class TaskPanelPage {
           // from the URL — this tab lands on /tasklist with no `filter=`
           // param and there is no `all-open` segment to wait for.
           await expect(this.page).toHaveURL(
-            /\/tasklist(?:\?(?!.*\bfilter=).*)?$/,
+            /\/tasklist\/?(?:\?(?!.*\bfilter=).*)?$/,
             {timeout: 15000},
           );
         } else {

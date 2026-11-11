@@ -7,6 +7,7 @@
  */
 
 import type {APIRequestContext} from 'playwright-core';
+import type {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {expect} from '@playwright/test';
 import {
   assertRequiredFields,
@@ -26,6 +27,7 @@ import {
   createInstanceOnceDeployed,
   deployUserTaskProcess,
 } from './process-definition-requestHelpers';
+import {deployWithSubstitutions} from '../zeebeClient';
 
 export interface UserTask {
   userTaskKey: string;
@@ -170,6 +172,46 @@ export async function startUserTaskInstances(
   return {processDefinitionId, processInstanceKeys, userTaskKeys};
 }
 
+export async function startUserTaskForSuspension(
+  request: APIRequestContext,
+  prefix: string,
+  instancesToCancel: string[],
+  variables: JSONDoc,
+  withForm = false,
+) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  if (withForm) {
+    const formId = `${processDefinitionId}-form`;
+    await deployWithSubstitutions('./resources/user_task_suspension.form', {
+      user_task_suspension: formId,
+    });
+    await deployWithSubstitutions(
+      './resources/User_Task_Process_With_Form.bpmn',
+      {
+        Form_User_Task: processDefinitionId,
+        Form_00xfy2q: formId,
+      },
+    );
+  } else {
+    await deployUserTaskProcess(processDefinitionId);
+  }
+  const {processInstanceKey} = await createInstanceOnceDeployed(
+    processDefinitionId,
+    1,
+    variables,
+  );
+  instancesToCancel.push(processInstanceKey);
+  const userTaskKey = await findUserTask(
+    request,
+    processInstanceKey,
+    'CREATED',
+    undefined,
+    extendedAssertionOptions,
+  );
+  await expectUserTaskSuspended(request, userTaskKey, false);
+  return {processDefinitionId, processInstanceKey, userTaskKey};
+}
+
 export function assignUserTask(
   request: APIRequestContext,
   userTaskKey: string,
@@ -179,6 +221,18 @@ export function assignUserTask(
     buildUrl('/user-tasks/{userTaskKey}/assignment', {userTaskKey}),
     {headers: jsonHeaders(), data: {assignee}},
   );
+}
+
+export async function assignUserTaskAndExpectAssigned(
+  request: APIRequestContext,
+  userTaskKey: string,
+  assignee: string,
+) {
+  await assertStatusCode(
+    await assignUserTask(request, userTaskKey, assignee),
+    204,
+  );
+  await expectUserTaskAssigned(request, userTaskKey, assignee);
 }
 
 /**

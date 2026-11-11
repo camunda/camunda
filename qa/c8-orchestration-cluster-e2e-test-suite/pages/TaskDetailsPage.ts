@@ -39,6 +39,8 @@ class TaskDetailsPage {
   readonly addVariableButton: Locator;
   readonly detailsPanel: Locator;
   readonly detailsHeader: Locator;
+  readonly suspendedLabel: Locator;
+  readonly suspendedActionsTooltip: Locator;
   readonly pendingTaskDescription: Locator;
   readonly pickATaskHeader: Locator;
   readonly emptyTaskMessage: Locator;
@@ -49,6 +51,7 @@ class TaskDetailsPage {
   readonly nameColumnHeader: Locator;
   readonly valueColumnHeader: Locator;
   readonly form: Locator;
+  readonly formNameInput: Locator;
   readonly numberInput: Locator;
   readonly incrementButton: Locator;
   readonly decrementButton: Locator;
@@ -84,6 +87,13 @@ class TaskDetailsPage {
       name: 'Task details right panel',
     });
     this.detailsHeader = page.getByTitle('Task details header');
+    this.suspendedLabel = this.detailsHeader.getByText('Suspended', {
+      exact: true,
+    });
+    this.suspendedActionsTooltip = page.getByRole('tooltip', {
+      name: 'Process instance suspended. Available again when it resumes.',
+      exact: true,
+    });
     this.pendingTaskDescription = page.getByText('Pending task');
     this.pickATaskHeader = page.getByRole('heading', {
       name: 'Pick a task to work on',
@@ -102,6 +112,10 @@ class TaskDetailsPage {
       name: 'Value',
     });
     this.form = page.getByTestId('embedded-form');
+    this.formNameInput = this.form.getByRole('textbox', {
+      name: 'Name',
+      exact: true,
+    });
     this.numberInput = this.form.getByLabel('Number');
     this.incrementButton = page.getByRole('button', {name: 'Increment'});
     this.decrementButton = page.getByRole('button', {name: 'Decrement'});
@@ -253,6 +267,25 @@ class TaskDetailsPage {
 
   async clickAddVariableButton() {
     await this.addVariableButton.click({timeout: 60000});
+  }
+
+  async assertSuspendedActionDisabled(button: Locator): Promise<void> {
+    await expect(button).toBeDisabled();
+    // Disabled buttons do not receive pointer events; hover the tooltip wrapper.
+    await button.locator('..').hover();
+    await expect(this.suspendedActionsTooltip).toBeVisible();
+    await expect(this.suspendedActionsTooltip).toHaveText(
+      'Process instance suspended. Available again when it resumes.',
+    );
+    await this.page.keyboard.press('Escape');
+    await expect(this.suspendedActionsTooltip).toBeHidden();
+  }
+
+  variableValueInput(name: string): Locator {
+    return this.variablesTable.getByRole('textbox', {
+      name: `${name} Value`,
+      exact: true,
+    });
   }
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
