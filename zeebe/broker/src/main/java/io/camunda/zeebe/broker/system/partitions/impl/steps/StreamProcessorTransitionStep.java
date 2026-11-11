@@ -186,7 +186,8 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
               context.getZeebeDb(),
               rdbmsEngineState,
               context.getPartitionId(),
-              context.getBrokerCfg().getCluster().getReplicationFactor());
+              context.getBrokerCfg().getCluster().getReplicationFactor(),
+              context.getLeadership().isStandbyWhenInactive());
       builder.zeebeDb(mixedDb);
     } else {
       builder.zeebeDb(context.getZeebeDb());

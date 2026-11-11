@@ -44,15 +44,18 @@ final class RdbmsEngineStateDb {
   /**
    * The returned database owns no connection: relational stores borrow one per transaction.
    *
-   * @throws IllegalStateException if the partition is replicated: every replica's stream processor
-   *     would write into the one shared database
+   * @param onlyLeaderProcesses whether the nodes that do not lead stay standbys without a stream
+   *     processor, as in lease mode. Only then may the partition be replicated.
+   * @throws IllegalStateException if the partition is replicated to followers: every replica's
+   *     stream processor would write into the one shared database
    */
   static MixedZeebeDb<ZbColumnFamilies> open(
       final ZeebeDb<ZbColumnFamilies> rocksDb,
       final RdbmsEngineStateResources engineState,
       final int partitionId,
-      final int replicationFactor) {
-    if (replicationFactor > 1) {
+      final int replicationFactor,
+      final boolean onlyLeaderProcesses) {
+    if (replicationFactor > 1 && !onlyLeaderProcesses) {
       throw new IllegalStateException(
           ("Expected replication factor 1 for the experimental RDBMS engine state, but was %d: "
                   + "followers replay the log continuously and would write into the database "
@@ -66,7 +69,7 @@ final class RdbmsEngineStateDb {
             + "RocksDB/RDBMS engine state). The database keeps its rows across restarts and "
             + "contains the changes up to position {}, which the replay doesn't apply again; the "
             + "replay may fail on rows removed after the last snapshot. Replication factor > 1 is "
-            + "NOT supported.",
+            + "NOT supported, except in lease mode, where only the leader processes.",
         partitionId,
         lastProcessedPosition);
     return new MixedZeebeDb<>(rocksDb, lastProcessedPosition);
