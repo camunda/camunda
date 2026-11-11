@@ -49,6 +49,10 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-codegen</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
     <dependency>

@@ -7,6 +7,7 @@ dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-msgpack-value"))
+  implementation(project(":zeebe-msgpack-codegen"))
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-expression-language"))
   implementation(project(":zeebe-workflow-engine"))
