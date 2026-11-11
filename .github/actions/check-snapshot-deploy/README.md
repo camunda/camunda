@@ -20,9 +20,9 @@ On a re-run, this action therefore:
 
 1. **Skips the deploy when the run's commit is no longer the branch head.** It sets `deploy=false`
    and the job ends green: the run for the newer commit owns the snapshot, so nothing failed.
-2. **Fails when the run is a re-run of the branch head older than `max-age-hours`**, because its
-   artifacts have expired. It sets `stale=true`, so the caller can report the failure to CI
-   analytics with `user_reason: stale-rerun`.
+2. **Fails when the run is a re-run of the branch head and an artifact in `artifacts` has
+   expired**, because the deploy can't download it. It sets `stale=true`, so the caller can report
+   the failure to CI analytics with `user_reason: stale-rerun`.
 
 ## Scope
 
@@ -34,36 +34,36 @@ Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.ym
 - The repository must be checked out first (e.g. `actions/checkout`), since this action is
   referenced by local path.
 - The job's `GITHUB_TOKEN` needs `contents: read` to read the branch head and `actions: read` to
-  read when the run was created.
-- `curl`, `jq` and GNU `date` on the runner. The action doesn't use the `gh` CLI, because it isn't
+  list the run's artifacts.
+- `curl` and `jq` on the runner. The action doesn't use the `gh` CLI, because it isn't
   installed on the self-hosted runners (INC-8786).
 
 ## Usage
 
 ### Inputs
 
-|      Input      |                                                   Description                                                   | Required | Default |
-|-----------------|-----------------------------------------------------------------------------------------------------------------|----------|---------|
-| `github-token`  | Token with `contents: read` and `actions: read`                                                                 | true     |         |
-| `max-age-hours` | Maximum run age for a re-run of the branch head; keep in sync with the `retention-days` of downloaded artifacts | false    | `48`    |
+|     Input      |                         Description                          | Required |
+|----------------|--------------------------------------------------------------|----------|
+| `github-token` | Token with `contents: read` and `actions: read`              | true     |
+| `artifacts`    | Newline-separated names of the run's artifacts the job needs | true     |
 
 ### Outputs
 
-|  Output  |                                            Description                                            |
-|----------|---------------------------------------------------------------------------------------------------|
-| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'`                          |
-| `stale`  | `'true'` when this is a re-run of the branch head older than `max-age-hours`, otherwise `'false'` |
+|  Output  |                                              Description                                              |
+|----------|-------------------------------------------------------------------------------------------------------|
+| `deploy` | `'false'` when the caller must skip the deploy steps, otherwise `'true'`                              |
+| `stale`  | `'true'` when this is a re-run of the branch head and an artifact has expired, otherwise `'false'`    |
 
 ### Behavior
 
-|                      Situation                       |                                     Result                                      |
-|------------------------------------------------------|---------------------------------------------------------------------------------|
-| First attempt (`run_attempt == 1`)                   | Passes, `deploy=true`, no API call                                              |
-| Re-run, commit is no longer the branch head          | Passes with a notice and a step-summary note, `deploy=false`                    |
-| Re-run of the branch head within `max-age-hours`     | Passes, `deploy=true`                                                           |
-| Re-run of the branch head older than `max-age-hours` | Fails with an `::error::` and a step-summary note, `deploy=false`, `stale=true` |
-| GitHub API unreachable                               | Passes with a warning, `deploy=true` (fail open)                                |
-| `github-token` empty                                 | Fails                                                                           |
+|                         Situation                         |                                     Result                                      |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------|
+| First attempt (`run_attempt == 1`)                        | Passes, `deploy=true`, no API call                                              |
+| Re-run, commit is no longer the branch head               | Passes with a notice and a step-summary note, `deploy=false`                    |
+| Re-run of the branch head, all artifacts available        | Passes, `deploy=true`                                                           |
+| Re-run of the branch head, an artifact missing or expired | Fails with an `::error::` and a step-summary note, `deploy=false`, `stale=true` |
+| GitHub API unreachable                                    | Passes with a warning, `deploy=true` (fail open)                                |
+| `github-token` or `artifacts` empty                       | Fails                                                                           |
 
 ## Notes
 
@@ -80,11 +80,17 @@ Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.ym
   queue, which almost always matches commit order. On busy branches the head moves before about
   half of all first-attempt deploys start, so a head check there would hold the snapshot back for
   long stretches.
+- **A skipped re-run relies on the newer commit's run.** That run contains the re-run's commit,
+  so it publishes those changes when its tests pass. If that run fails too, the snapshot stays
+  behind the re-run's commit until the next green push run, the same as when a first attempt
+  fails. The deployed snapshot doesn't record its commit, so the action can't tell if the re-run
+  is ahead of it. To publish the snapshot right away, start a `workflow_dispatch` run on the
+  branch. It deploys once its checks pass, without the 3h Maven throttle.
 - **It fails open.** An API error must never block a legitimate deploy, so the worst case is the
   previous behavior.
-- **Age is measured from the run's `created_at`**, not from the commit time or `run_started_at`
-  (which a re-run resets). The artifacts are uploaded early in the first attempt, so `created_at`
-  is a close, slightly conservative stand-in for when their retention started.
+- **It checks the artifacts, not the run age.** "Re-run all jobs" uploads the artifacts again
+  before the deploy jobs start, so an old run can still deploy. List the same artifacts that the
+  job downloads. Then nothing has to stay in sync with their `retention-days`.
 - **A small race remains.** A commit can land between the head check and the push. The run for
   that commit then deploys after this one, through the same concurrency queue.
 
@@ -94,7 +100,7 @@ Only for the Unified CI snapshot deploy jobs in [`ci.yml`](../../workflows/ci.ym
 jobs:
   deploy-snapshot:
     permissions:
-      actions: read  # check-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy lists the run's artifacts
       contents: read  # check-snapshot-deploy reads the branch head
     steps:
       - uses: actions/checkout@v6
@@ -103,6 +109,8 @@ jobs:
         uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
+          artifacts: |
+            fe-operate-${{ github.run_id }}
       - uses: actions/download-artifact@v8
         if: steps.deploy-check.outputs.deploy == 'true'
         with:

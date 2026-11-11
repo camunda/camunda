@@ -377,7 +377,6 @@ jobs:
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
       # instead of rebuilding (see issue #52693).
-      # Keep retention-days in sync with check-snapshot-deploy's max-age-hours (default 48h) in those jobs.
       - uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: fe-operate-${{ github.run_id }}
@@ -2399,7 +2398,7 @@ jobs:
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
     permissions:
-      actions: read  # check-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy lists the run's artifacts
       contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2417,6 +2416,10 @@ jobs:
         uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
+          artifacts: |
+            fe-operate-${{ github.run_id }}
+            fe-webapp-${{ github.run_id }}
+            fe-identity-${{ github.run_id }}
       - name: Import Nexus credentials
         if: steps.deploy-check.outputs.deploy == 'true'
         id: nexus-secrets
@@ -2539,7 +2542,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      actions: read  # check-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy lists the run's artifacts
       contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2557,6 +2560,10 @@ jobs:
         uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
+          artifacts: |
+            fe-operate-${{ github.run_id }}
+            fe-webapp-${{ github.run_id }}
+            fe-identity-${{ github.run_id }}
       - uses: ./.github/actions/setup-build
         if: steps.deploy-check.outputs.deploy == 'true'
         with:
@@ -2629,7 +2636,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
-      actions: read  # check-snapshot-deploy reads the run's creation time
+      actions: read  # check-snapshot-deploy lists the run's artifacts
       contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
@@ -2649,6 +2656,8 @@ jobs:
         uses: ./.github/actions/check-snapshot-deploy
         with:
           github-token: ${{ github.token }}
+          artifacts: |
+            fe-optimize-${{ github.run_id }}
       - uses: ./.github/actions/setup-build
         if: steps.deploy-check.outputs.deploy == 'true'
         with:
