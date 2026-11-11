@@ -43,7 +43,8 @@ public final class CommandApiServicePartitionStep implements StartupStep<Partiti
             context.schedulingService(),
             context.brokerConfig().getExperimental().getQueryApi(),
             mailboxSetup(context).orElse(null),
-            context.brokerConfig().getCluster().getMemberId().id());
+            context.brokerConfig().getCluster().getMemberId().id(),
+            !isLeaseMode(context));
 
     context
         .concurrencyControl()
@@ -78,6 +79,12 @@ public final class CommandApiServicePartitionStep implements StartupStep<Partiti
         ? Optional.ofNullable(context.zeebePartitionFactory())
             .flatMap(ZeebePartitionFactory::mailboxSetup)
         : Optional.empty();
+  }
+
+  /** In lease mode the lease rows already tell who leads, so the leaders record nothing else. */
+  private static boolean isLeaseMode(final PartitionStartupContext context) {
+    final var factory = context.zeebePartitionFactory();
+    return factory != null && factory.isLeaseMode();
   }
 
   @Override

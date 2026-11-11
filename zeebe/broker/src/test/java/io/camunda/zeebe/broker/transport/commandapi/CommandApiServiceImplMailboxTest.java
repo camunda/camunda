@@ -199,6 +199,30 @@ final class CommandApiServiceImplMailboxTest {
   }
 
   @Test
+  void shouldNotRecordTheLeaderInLeaseMode() {
+    // given - in lease mode the lease rows tell who leads
+    final var leaseMode =
+        new CommandApiServiceImpl(
+            PARTITION,
+            mock(ServerTransport.class),
+            scheduler.get(),
+            new QueryApiCfg(),
+            MailboxSetup.of(store, CONFIG, null),
+            "eu_0",
+            false);
+    scheduler.submitActor(leaseMode).join();
+
+    // when
+    leaseMode.registerHandlers(PARTITION.number(), 4, logStream, mock(QueryService.class)).join();
+
+    // then
+    await()
+        .during(Duration.ofMillis(300))
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> store.findLeader(PARTITION.number()).isEmpty());
+  }
+
+  @Test
   void shouldCleanUpTheMailboxWhileLeadingTheDeploymentPartition() {
     // given
     final var cleaning = serviceOf(PARTITION);

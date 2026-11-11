@@ -69,6 +69,21 @@ public final class CommandApiServiceImpl extends Actor
       final QueryApiCfg queryApiCfg,
       final @Nullable MailboxSetup mailboxSetup,
       final String claimerId) {
+    this(partitionId, serverTransport, scheduler, queryApiCfg, mailboxSetup, claimerId, true);
+  }
+
+  /**
+   * @param recordLeaders if the leader records itself in the mailbox store, so that gateways of
+   *     other regions find it. Off in lease mode, where the lease rows tell who leads.
+   */
+  public CommandApiServiceImpl(
+      final PartitionId partitionId,
+      final ServerTransport serverTransport,
+      final ActorSchedulingService scheduler,
+      final QueryApiCfg queryApiCfg,
+      final @Nullable MailboxSetup mailboxSetup,
+      final String claimerId,
+      final boolean recordLeaders) {
     super("CommandApiService", partitionId);
     this.partitionId = partitionId;
     this.serverTransport = serverTransport;
@@ -86,7 +101,8 @@ public final class CommandApiServiceImpl extends Actor
                 mailboxSetup.senderExecutor(),
                 mailboxSetup.config().outboxTtl(),
                 System::nanoTime);
-    leaderPublisher = newLeaderPublisher(partitionId, mailboxSetup, claimerId);
+    leaderPublisher =
+        recordLeaders ? newLeaderPublisher(partitionId, mailboxSetup, claimerId) : null;
   }
 
   /** A node without a zone is not in a multi-region deployment, so there is nothing to record. */
