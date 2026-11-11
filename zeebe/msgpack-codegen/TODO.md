@@ -31,7 +31,7 @@ below is open.
 
 ## Verification
 
-- [ ] **Benchmark.** JMH comparison of the `*V1` classes and the new ones for `get` and `update`
+- [ ] **Benchmark** (V1 classes now live in main sources, `@VisibleForTesting`, so the microbenchmarks module can use them). JMH comparison of the `*V1` classes and the new ones for `get` and `update`
       through a column family, with the GC profiler. This decides whether to continue migrating.
 - [ ] **Maven build.** The Maven wiring (`msgpack-codegen/pom.xml`, `parent/pom.xml`,
       `zeebe/pom.xml`, `zeebe/engine/pom.xml` `annotationProcessorPaths`) was written but never run,

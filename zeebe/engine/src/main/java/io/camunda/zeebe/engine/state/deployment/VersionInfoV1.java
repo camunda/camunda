@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,7 @@ import java.util.stream.StreamSupport;
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class VersionInfoV1 extends UnpackedObject implements DbValue {
   // The property key is named nextValue. This is not a great name and doesn't describe what it is.
   // However, changing this is not backwards compatible. Changing the variable name is the best we

@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -28,6 +29,7 @@ import org.agrona.DirectBuffer;
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * serializers of the current class keep the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class ElementInstanceV1 extends UnpackedObject implements DbValue {
 
   // Static StringValue keys to avoid memory waste

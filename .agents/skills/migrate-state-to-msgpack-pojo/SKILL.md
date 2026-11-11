@@ -12,7 +12,7 @@ old class plus a byte comparison test proves that.
 
 Worked example, read it first: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/instance/`
 `ElementInstance.java`, `IndexedRecord.java`, `TaskListenerIndicesRecord.java`, their `*V1.java`
-copies and `ElementInstanceSerdeTest.java` under `src/test`. Background: `zeebe/msgpack-codegen/README.md`.
+copies (in `src/main`, marked `@VisibleForTesting`) and `ElementInstanceSerdeTest.java` under `src/test`. Background: `zeebe/msgpack-codegen/README.md`.
 
 ## Rules
 
@@ -73,11 +73,11 @@ Keep this list, you need it in steps 3 and 6. The defaults you write down become
 ## Step 2: freeze the old class as `<Name>V1`
 
 Copy the current class (and every other class you are migrating together with it, e.g. nested
-ones that are state classes) into the test sources, same package, renamed:
+ones that are state classes) into the MAIN sources (the microbenchmarks module needs them), same package, renamed:
 
 ```bash
-cp <path to Name.java> <module>/src/test/java/<same package path>/NameV1.java
-sed -i -E 's/\b(Name|NestedName)\b/\1V1/g' <module>/src/test/java/<same package path>/NameV1.java
+cp <path to Name.java> <module>/src/main/java/<same package path>/NameV1.java
+sed -i -E 's/\b(Name|NestedName)\b/\1V1/g' <module>/src/main/java/<same package path>/NameV1.java
 ```
 
 Do this BEFORE you edit the class (do not use `git show`, some environments block it).
@@ -91,7 +91,11 @@ Insert this Javadoc directly above the class declaration in each V1 file (if the
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 ```
+
+with `import io.camunda.zeebe.util.VisibleForTesting;` (the annotation goes on the class, after
+the Javadoc).
 
 ## Step 3: convert the class
 

@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
@@ -22,6 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class EventTriggerV1 extends UnpackedObject implements DbValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");

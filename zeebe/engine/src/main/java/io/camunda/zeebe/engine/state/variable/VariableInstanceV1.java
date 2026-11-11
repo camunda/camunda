@@ -13,12 +13,14 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.DirectBuffer;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class VariableInstanceV1 extends UnpackedObject implements DbValue {
 
   private final LongProperty keyProp = new LongProperty("key");

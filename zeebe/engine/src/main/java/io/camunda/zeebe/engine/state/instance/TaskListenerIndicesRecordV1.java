@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -18,6 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * serializers of the current class keep the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class TaskListenerIndicesRecordV1 extends UnpackedObject implements DbValue {
 
   private final IntegerProperty creatingTaskListenerIndexProp =

@@ -11,11 +11,13 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class JobRecordValueV1 extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<JobRecord> recordProp =

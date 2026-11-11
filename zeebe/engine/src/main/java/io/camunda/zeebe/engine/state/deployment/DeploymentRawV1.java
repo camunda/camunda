@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -18,6 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public final class DeploymentRawV1 extends UnpackedObject implements DbValue {
 
   private final ObjectProperty<DeploymentRecord> deploymentRecordProperty =

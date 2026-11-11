@@ -10,12 +10,14 @@ package io.camunda.zeebe.engine.state.deployment;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.agrona.DirectBuffer;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
+@VisibleForTesting
 public class DigestV1 extends UnpackedObject implements DbValue {
   private final BinaryProperty digestProp = new BinaryProperty("digest");
 
