@@ -1211,10 +1211,13 @@ public abstract class AbstractElementInstanceStateContractTest {
   }
 
   /** Creates the flow scopes the tests take sequence flows in. */
+  /** Gateways and the sequence flows they take are contained in a flow scope, e.g. a subprocess. */
   private void createFlowScopes() {
     for (final long flowScopeKey : List.of(FLOW_SCOPE_KEY, OTHER_FLOW_SCOPE_KEY)) {
       elementInstanceState.newInstance(
-          flowScopeKey, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+          flowScopeKey,
+          createProcessInstanceRecord().setBpmnElementType(BpmnElementType.SUB_PROCESS),
+          ProcessInstanceIntent.ELEMENT_ACTIVATED);
     }
   }
 

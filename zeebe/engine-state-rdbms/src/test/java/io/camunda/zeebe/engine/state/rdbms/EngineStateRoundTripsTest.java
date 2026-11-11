@@ -354,11 +354,12 @@ final class EngineStateRoundTripsTest {
         100, wrapString("gateway"), wrapString("flow"));
     elementInstanceState.removeInstance(101);
 
-    // then - one SELECT per distinct row or table read: 10 without the loaded-row cache. The
-    // removal reads the child's variables to delete them.
+    // then - one SELECT per distinct row or table read: 9 without the loaded-row cache. The
+    // removal reads the child's variables to delete them, but not its taken sequence flows, as a
+    // gateway contains no elements.
     final int selects = counting.otherStatements;
     transaction.rollback();
-    assertThat(selects).isEqualTo(5);
+    assertThat(selects).isEqualTo(4);
   }
 
   @Test
@@ -399,7 +400,7 @@ final class EngineStateRoundTripsTest {
     // then - the activation reads the process instance (the parent of the task) and the triggers
     // of the task. The completion reads the task, its triggers once (which tells that there
     // are none, so the deletion of the event scope reads nothing), and for the removal of the
-    // element instance its variables, its taken sequence flows and its parent
+    // element instance its variables and its parent; a task contains no taken sequence flows
     System.out.printf(
         "ROUND TRIPS task activation: %d selects, %s; completion: %d selects, %s%n",
         activationSelects, activationBatches, completionSelects, counting);
@@ -409,7 +410,7 @@ final class EngineStateRoundTripsTest {
             new Batch("CAM_RU_ELEMENT_INSTANCE", "INSERT", 1),
             new Batch("CAM_RU_ELEMENT_INSTANCE", "UPDATE", 1),
             new Batch("CAM_RU_EVENT_SCOPE", "INSERT", 1));
-    assertThat(completionSelects).isEqualTo(5);
+    assertThat(completionSelects).isEqualTo(4);
     assertThat(counting.batches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_ELEMENT_INSTANCE", "DELETE", 1),
