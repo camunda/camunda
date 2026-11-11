@@ -32,16 +32,20 @@ permissions: {}
 jobs:
   add-to-monorepo-os:
     name: Add to Monorepo OS board
-    # Pull requests from forks get no secrets, so no token can be minted for them.
-    if: github.event.pull_request.head.repo.fork != true
+    # Pull requests from forks get no secrets, so no token can be minted for them; reviews only matter once they approve.
+    if: >-
+      github.event.pull_request.head.repo.fork != true &&
+      (github.event_name != 'pull_request_review' || github.event.review.state == 'approved')
     runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       contents: read # checkout for observe-build-status
       id-token: write # mint GitHub OIDC token for Vault JWT auth
     steps:
+      # Trusted default branch, not the PR merge ref: the job has an OIDC token and Vault credentials.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
           sparse-checkout: .github/actions
 
