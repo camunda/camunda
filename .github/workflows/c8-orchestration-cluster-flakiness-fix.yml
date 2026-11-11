@@ -118,7 +118,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          sparse-checkout: .github/scripts/oc-flakiness
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
 
       - name: Download nightly reports
         run: |
@@ -210,12 +213,31 @@ jobs:
             echo "Dispatched $(jq -r '.version + " " + .file + " › " + .title' <<< "$t")"
           done
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/pick"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   janitor:
     name: Delete abandoned flaky-fix branches
     if: github.event_name == 'schedule' || inputs.spec == ''
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
       - name: Generate GitHub App Token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
@@ -252,6 +274,17 @@ jobs:
             echo "Deleted ${branch} (last commit ${committed})"
           done
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/janitor"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   # ─── Fix mode: one test ───────────────────────────────────────────────────
   prepare:
     name: Prepare
@@ -267,6 +300,14 @@ jobs:
       repeat_each: ${{ steps.prep.outputs.repeat_each }}
       workers: ${{ steps.prep.outputs.workers }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
       - name: Validate inputs and resolve the target
         id: prep
         env:
@@ -317,6 +358,17 @@ jobs:
             echo "repeat_each=${REPEAT_EACH}"
             echo "workers=${WORKERS}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/prepare"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   baseline:
     name: Baseline
@@ -396,7 +448,10 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-          sparse-checkout: .github/scripts/oc-flakiness
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
       - name: Download scores
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -414,6 +469,17 @@ jobs:
             echo "run_iter2=$(jq -r .run_iter2 <<< "$result")"
             echo "base=$(jq -r .base <<< "$result")"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/plan-iter2"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   fix2:
     name: Fix attempt 2
@@ -469,7 +535,10 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-          sparse-checkout: .github/scripts/oc-flakiness
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
 
       - name: Download scores and agent summaries
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -653,3 +722,14 @@ jobs:
           done
           echo "::error::could not update the ledger"
           exit 1
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/decide"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
