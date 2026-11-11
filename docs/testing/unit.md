@@ -223,8 +223,8 @@ with the `Test` suffix. So in our case, `MyClass` becomes `MyClassTest`.
 
 Some examples of class unit tests:
 
-- [DbCompositeKey](zeebe/zb-db/rocksdb/src/main/java/io/camunda/zeebe/db/impl/DbCompositeKey.java)
-- [DbCompositeKeyTest](zeebe/zb-db/rocksdb/src/test/java/io/camunda/zeebe/db/impl/DbCompositeKeyTest.java)
+- [DbCompositeKey](../../zeebe/zb-db/api/src/main/java/io/camunda/zeebe/db/impl/DbCompositeKey.java)
+- [DbCompositeKeyTest](../../zeebe/zb-db/api/src/test/java/io/camunda/zeebe/db/impl/DbCompositeKeyTest.java)
 
 > [!Note]
 > This convention allows the surefire-maven module (which runs all the unit tests as part of our
