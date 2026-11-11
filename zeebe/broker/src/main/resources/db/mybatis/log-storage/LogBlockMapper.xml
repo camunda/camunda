@@ -28,11 +28,6 @@
     SELECT TERM FROM ${prefix}LOG_PARTITION WHERE PARTITION_ID = #{partitionId}
   </select>
 
-  <select id="selectTermForUpdate" resultType="java.lang.Long" databaseId="mssql">
-    SELECT TERM FROM ${prefix}LOG_PARTITION WITH (UPDLOCK, ROWLOCK)
-    WHERE PARTITION_ID = #{partitionId}
-  </select>
-
   <select id="selectTermForUpdate" resultType="java.lang.Long">
     SELECT TERM FROM ${prefix}LOG_PARTITION WHERE PARTITION_ID = #{partitionId} FOR UPDATE
   </select>
@@ -51,7 +46,7 @@
     FROM ${prefix}LOG_BLOCK
     WHERE PARTITION_ID = #{partitionId} AND LOW_POSITION &lt;= #{position}
     ORDER BY LOW_POSITION DESC
-    ${keysetPaging.limit}
+    FETCH FIRST #{limit} ROWS ONLY
   </select>
 
   <select id="selectBlocksAfter" resultMap="logBlockResultMap">
@@ -59,7 +54,7 @@
     FROM ${prefix}LOG_BLOCK
     WHERE PARTITION_ID = #{partitionId} AND LOW_POSITION &gt; #{lowPosition}
     ORDER BY LOW_POSITION
-    ${keysetPaging.limit}
+    FETCH FIRST #{limit} ROWS ONLY
   </select>
 
 </mapper>

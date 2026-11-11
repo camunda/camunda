@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
   private static final Logger LOG =
       LoggerFactory.getLogger(LogStoragePartitionTransitionStep.class);
-  private static final Duration SCHEMA_POLL_INTERVAL = Duration.ofSeconds(1);
   private static final Duration INITIAL_CLAIM_RETRY_BACKOFF = Duration.ofMillis(500);
   private static final Duration MAX_CLAIM_RETRY_BACKOFF = Duration.ofSeconds(10);
   private static final String WRONG_TERM_ERROR_MSG =
@@ -40,7 +39,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
 
   /**
    * Bumped whenever a new Raft role is announced, so that an RDBMS log storage installation still
-   * waiting for the database gives way to the transition that follows it.
+   * retrying its claim gives way to the transition that follows it.
    */
   private final AtomicLong roleAnnouncements = new AtomicLong();
 
@@ -226,9 +225,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   }
 
   /**
-   * Installs the RDBMS log storage without blocking the partition: waits for the schema to exist,
-   * which on a fresh database happens only after the broker has started, and retries a leader's
-   * claim that failed on the database. Gives way once a newer transition is announced.
+   * Installs the RDBMS log storage without blocking the partition: retries a leader's claim that
+   * failed on the database. Gives way once a newer transition is announced.
    */
   private final class RdbmsLogStorageInstallation {
 
@@ -239,7 +237,6 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     private final CompletableActorFuture<Void> future;
     private final long roleAnnouncement = roleAnnouncements.get();
     private Duration claimRetryBackoff = INITIAL_CLAIM_RETRY_BACKOFF;
-    private boolean loggedWaitingForSchema;
 
     private RdbmsLogStorageInstallation(
         final PartitionTransitionContext context,
@@ -260,17 +257,6 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
             new TransitionSupersededException(
                 "Stopped installing the RDBMS log storage of partition %d for %s in term %d, a newer transition was announced"
                     .formatted(context.getPartitionId(), targetRole, term)));
-        return;
-      }
-
-      if (!repository.isReady()) {
-        if (!loggedWaitingForSchema) {
-          LOG.info(
-              "Waiting for the RDBMS schema before installing the log storage of partition {}",
-              context.getPartitionId());
-          loggedWaitingForSchema = true;
-        }
-        context.getConcurrencyControl().schedule(SCHEMA_POLL_INTERVAL, this::attempt);
         return;
       }
 

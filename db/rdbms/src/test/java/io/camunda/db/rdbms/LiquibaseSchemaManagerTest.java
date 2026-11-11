@@ -342,11 +342,6 @@ class LiquibaseSchemaManagerTest {
     }
 
     @Override
-    protected void migrateStorageSchema() {
-      // no-op — so that attempts count the schema migration's retries and nothing else
-    }
-
-    @Override
     protected void releaseStaleLockIfPresent() {
       // no-op
     }

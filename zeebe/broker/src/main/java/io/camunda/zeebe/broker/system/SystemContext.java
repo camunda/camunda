@@ -30,7 +30,6 @@ import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -138,7 +137,6 @@ public final class SystemContext {
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
-  private final Map<String, IntFunction<LogBlockRepository>> logBlockRepositories;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
@@ -161,7 +159,6 @@ public final class SystemContext {
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
       final Map<String, IntFunction<Long>> exportedPositionSuppliers,
-      final Map<String, IntFunction<LogBlockRepository>> logBlockRepositories,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
@@ -180,7 +177,6 @@ public final class SystemContext {
             oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
     this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
-    this.logBlockRepositories = Map.copyOf(logBlockRepositories);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -882,10 +878,6 @@ public final class SystemContext {
   /** Returns the per-physical-tenant RDBMS exported-position supplier map (unmodifiable). */
   public Map<String, IntFunction<Long>> getExportedPositionSuppliers() {
     return exportedPositionSuppliers;
-  }
-
-  public Map<String, IntFunction<LogBlockRepository>> getLogBlockRepositories() {
-    return logBlockRepositories;
   }
 
   public NodeIdProvider getNodeIdProvider() {

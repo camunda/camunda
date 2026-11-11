@@ -7,26 +7,19 @@
  */
 package io.camunda.zeebe.broker.logstreams.rdbms;
 
-import io.camunda.db.rdbms.LiquibaseSchemaManager;
-import io.camunda.db.rdbms.PerTenantSchemaConfig;
-import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
-import java.util.Properties;
 import java.util.UUID;
-import org.apache.ibatis.builder.xml.XMLMapperBuilder;
-import org.apache.ibatis.mapping.Environment;
-import org.apache.ibatis.session.Configuration;
+import liquibase.Liquibase;
+import liquibase.database.DatabaseFactory;
+import liquibase.database.jvm.JdbcConnection;
+import liquibase.resource.ClassLoaderResourceAccessor;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.h2.jdbcx.JdbcDataSource;
 
 /**
- * A fresh in-memory H2 database with the real RDBMS schema, and a session factory for the log
- * mapper configured as the broker's is: the table prefix and H2's vendor properties as variables.
+ * A fresh in-memory H2 database with the real log storage schema, and a session factory built as
+ * the broker builds it.
  */
 final class H2LogDatabase {
-
-  private static final String MAPPER = "mapper/LogBlockMapper.xml";
 
   private H2LogDatabase() {}
 
@@ -36,21 +29,17 @@ final class H2LogDatabase {
     dataSource.setUser("sa");
     dataSource.setPassword("");
 
-    final var vendorProperties = VendorDatabasePropertiesLoader.load("h2");
-    new LiquibaseSchemaManager(
-            new PerTenantSchemaConfig(dataSource, vendorProperties, prefix, true, null), "8.11.0")
-        .initialize();
-
-    final var configuration =
-        new Configuration(new Environment("test", new JdbcTransactionFactory(), dataSource));
-    configuration.setDatabaseId(vendorProperties.databaseId());
-    final var variables = new Properties();
-    variables.putAll(vendorProperties.properties());
-    variables.put("prefix", prefix);
-    configuration.setVariables(variables);
-    try (final var mapper = H2LogDatabase.class.getClassLoader().getResourceAsStream(MAPPER)) {
-      new XMLMapperBuilder(mapper, configuration, MAPPER, configuration.getSqlFragments()).parse();
+    try (final var connection = dataSource.getConnection()) {
+      final var database =
+          DatabaseFactory.getInstance()
+              .findCorrectDatabaseImplementation(new JdbcConnection(connection));
+      final var liquibase =
+          new Liquibase(
+              RdbmsLogStorageSchema.CHANGELOG, new ClassLoaderResourceAccessor(), database);
+      liquibase.setChangeLogParameter("prefix", prefix);
+      liquibase.update();
     }
-    return new SqlSessionFactoryBuilder().build(configuration);
+
+    return MyBatisLogBlockRepository.createSessionFactory(dataSource, prefix);
   }
 }

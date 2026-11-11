@@ -23,10 +23,8 @@ import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.RdbmsEngineStateConfiguration.RdbmsEngineStatePool;
-import io.camunda.zeebe.broker.RdbmsLogStorageConfiguration.RdbmsLogBlockRepositories;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
-import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -81,7 +79,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, IntFunction<Long>> rdbmsExportedPositionSuppliers;
-  private final Map<String, IntFunction<LogBlockRepository>> rdbmsLogBlockRepositories;
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
@@ -110,8 +107,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
-      @Autowired(required = false)
-          final @Nullable RdbmsLogBlockRepositories rdbmsLogBlockRepositories,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
@@ -134,8 +129,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
-    this.rdbmsLogBlockRepositories =
-        rdbmsLogBlockRepositories != null ? rdbmsLogBlockRepositories.byPhysicalTenant() : Map.of();
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
@@ -173,7 +166,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
             .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
-            .withLogBlockRepositories(rdbmsLogBlockRepositories)
             .withSecretStoreRegistries(secretStoreRegistries)
             .withResolvedDataDirectory(resolvedDataDirectory)
             .createSystemContext();

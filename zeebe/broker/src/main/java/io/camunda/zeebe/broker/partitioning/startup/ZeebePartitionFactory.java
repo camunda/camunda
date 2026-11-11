@@ -19,7 +19,8 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.MyBatisLogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -87,7 +88,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.function.IntFunction;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,8 +121,10 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
-  private final @Nullable IntFunction<LogBlockRepository> logBlockRepositoryFactory;
   private final @Nullable RdbmsEngineStateResources engineState;
+
+  /** Null unless the primary storage is the RDBMS, in which case the logs are stored there too. */
+  private final @Nullable SqlSessionFactory logSessionFactory;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -143,7 +146,6 @@ public final class ZeebePartitionFactory {
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
-      final @Nullable IntFunction<LogBlockRepository> logBlockRepositoryFactory,
       final @Nullable RdbmsEngineStateResources engineState) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -164,8 +166,12 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
-    this.logBlockRepositoryFactory = logBlockRepositoryFactory;
     this.engineState = engineState;
+    logSessionFactory =
+        engineState != null
+            ? MyBatisLogBlockRepository.createSessionFactory(
+                engineState.dataSource(), RdbmsLogStorageSchema.TABLE_PREFIX)
+            : null;
   }
 
   public ZeebePartition constructPartition(
@@ -224,8 +230,9 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
-    if (logBlockRepositoryFactory != null) {
-      context.setLogBlockRepository(logBlockRepositoryFactory.apply(partitionId.number()));
+    if (logSessionFactory != null) {
+      context.setLogBlockRepository(
+          new MyBatisLogBlockRepository(logSessionFactory, partitionId.number()));
     }
     context.setEngineState(engineState);
 

@@ -7,21 +7,28 @@
  */
 package io.camunda.zeebe.broker.logstreams.rdbms;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
+import java.util.Properties;
 import java.util.function.Function;
+import javax.sql.DataSource;
+import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.exceptions.PersistenceException;
+import org.apache.ibatis.mapping.Environment;
+import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 
 /**
- * {@link LogBlockRepository} on MyBatis, using the {@link LogBlockMapper} statements of the given
- * session factory, which also supplies the table prefix and the vendor's paging syntax. Every
- * method is one transaction in its own session.
+ * {@link LogBlockRepository} on MyBatis, using the {@link LogBlockMapper} statements of a session
+ * factory built by {@link #createSessionFactory}. Every method is one transaction in its own
+ * session.
  *
  * <p>An append first reads the partition's term with a row lock, then batch-inserts the blocks,
  * then commits. The row lock serializes appends with {@link #claimTerm}, so a new leader's claim
@@ -35,23 +42,37 @@ public final class MyBatisLogBlockRepository implements LogBlockRepository {
 
   private final SqlSessionFactory sessionFactory;
   private final int partitionId;
-  private final BooleanSupplier schemaReady;
 
-  /**
-   * @param schemaReady whether the schema, including this repository's tables, has been created
-   */
-  public MyBatisLogBlockRepository(
-      final SqlSessionFactory sessionFactory,
-      final int partitionId,
-      final BooleanSupplier schemaReady) {
+  public MyBatisLogBlockRepository(final SqlSessionFactory sessionFactory, final int partitionId) {
     this.sessionFactory = sessionFactory;
     this.partitionId = partitionId;
-    this.schemaReady = schemaReady;
   }
 
-  @Override
-  public boolean isReady() {
-    return schemaReady.getAsBoolean();
+  /**
+   * Builds the factory of the sessions of all partitions' repositories on the given database, which
+   * should be a connection pool whose tables were created by {@link
+   * RdbmsLogStorageSchema#CHANGELOG} with the same prefix. Build it once per pool.
+   */
+  public static SqlSessionFactory createSessionFactory(
+      final DataSource dataSource, final String tablePrefix) {
+    final var configuration =
+        new Configuration(new Environment("log-storage", new JdbcTransactionFactory(), dataSource));
+    final var variables = new Properties();
+    variables.put("prefix", tablePrefix);
+    configuration.setVariables(variables);
+
+    final var resource = RdbmsLogStorageSchema.MAPPER;
+    try (final var mapperXml =
+        MyBatisLogBlockRepository.class.getClassLoader().getResourceAsStream(resource)) {
+      if (mapperXml == null) {
+        throw new IllegalStateException("Missing MyBatis mapper resource " + resource);
+      }
+      new XMLMapperBuilder(mapperXml, configuration, resource, configuration.getSqlFragments())
+          .parse();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return new SqlSessionFactoryBuilder().build(configuration);
   }
 
   @Override
@@ -98,14 +119,14 @@ public final class MyBatisLogBlockRepository implements LogBlockRepository {
   @Override
   public Optional<LogBlock> findBlockAtOrBefore(final long position) {
     final var blocks =
-        read(mapper -> mapper.selectBlocksAtOrBefore(partitionId, position, page(1)), position);
+        read(mapper -> mapper.selectBlocksAtOrBefore(partitionId, position, 1), position);
     return blocks.isEmpty() ? Optional.empty() : Optional.of(blocks.getFirst());
   }
 
   @Override
   public List<LogBlock> readBlocksAfter(final long lowPosition, final int maxBlocks) {
     return read(
-        mapper -> mapper.selectBlocksAfter(partitionId, lowPosition, page(maxBlocks)), lowPosition);
+        mapper -> mapper.selectBlocksAfter(partitionId, lowPosition, maxBlocks), lowPosition);
   }
 
   /**
@@ -147,10 +168,6 @@ public final class MyBatisLogBlockRepository implements LogBlockRepository {
               .formatted(partitionId, position),
           e);
     }
-  }
-
-  private static Map<String, Integer> page(final int size) {
-    return Map.of("size", size);
   }
 
   private static boolean isIntegrityConstraintViolation(final Throwable error) {

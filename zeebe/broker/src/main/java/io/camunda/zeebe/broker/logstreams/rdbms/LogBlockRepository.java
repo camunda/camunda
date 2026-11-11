@@ -14,12 +14,6 @@ import java.util.Optional;
 public interface LogBlockRepository {
 
   /**
-   * @return whether the tables exist, so the other methods can be used; false while the schema is
-   *     still being created
-   */
-  boolean isReady();
-
-  /**
    * Claims the partition for a leader of the given term. Succeeds if no higher term has claimed it
    * yet; claiming the term that already holds the partition again succeeds too.
    *

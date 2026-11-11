@@ -27,7 +27,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
-import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -55,7 +54,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -169,12 +167,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
     return exportedPositionSuppliers.get(physicalTenantId);
-  }
-
-  @Override
-  public @Nullable IntFunction<LogBlockRepository> getLogBlockRepositoryFactory(
-      final String physicalTenantId) {
-    return null;
   }
 
   public void setExportedPositionSupplier(

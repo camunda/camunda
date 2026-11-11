@@ -26,7 +26,7 @@ final class MyBatisLogBlockRepositoryTest {
   @BeforeEach
   void setUp() throws Exception {
     sessionFactory = H2LogDatabase.create(PREFIX);
-    repository = new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID, () -> true);
+    repository = new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID);
   }
 
   @Test
@@ -187,8 +187,7 @@ final class MyBatisLogBlockRepositoryTest {
   @Test
   void shouldKeepPartitionsApart() {
     // given
-    final var otherPartition =
-        new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID + 1, () -> true);
+    final var otherPartition = new MyBatisLogBlockRepository(sessionFactory, PARTITION_ID + 1);
     repository.claimTerm(1);
     otherPartition.claimTerm(5);
 

@@ -8,11 +8,13 @@
 package io.camunda.zeebe.broker.logstreams.rdbms;
 
 import java.util.List;
-import java.util.Map;
 import org.apache.ibatis.annotations.Param;
 import org.jspecify.annotations.Nullable;
 
-/** MyBatis mapper for the RDBMS log tables; the statements are in {@code LogBlockMapper.xml}. */
+/**
+ * MyBatis mapper for the RDBMS log tables; the statements are in {@code
+ * db/mybatis/log-storage/LogBlockMapper.xml}.
+ */
 public interface LogBlockMapper {
 
   /** Raises the partition's term to {@code term} if it is lower; returns the rows updated. */
@@ -32,21 +34,13 @@ public interface LogBlockMapper {
       @Param("term") long term,
       @Param("data") byte[] data);
 
-  /**
-   * @param page a map with the page {@code size}, the shape the vendor's {@code keysetPaging.limit}
-   *     expects
-   */
   List<LogBlock> selectBlocksAtOrBefore(
       @Param("partitionId") int partitionId,
       @Param("position") long position,
-      @Param("page") Map<String, Integer> page);
+      @Param("limit") int limit);
 
-  /**
-   * @param page a map with the page {@code size}, the shape the vendor's {@code keysetPaging.limit}
-   *     expects
-   */
   List<LogBlock> selectBlocksAfter(
       @Param("partitionId") int partitionId,
       @Param("lowPosition") long lowPosition,
-      @Param("page") Map<String, Integer> page);
+      @Param("limit") int limit);
 }

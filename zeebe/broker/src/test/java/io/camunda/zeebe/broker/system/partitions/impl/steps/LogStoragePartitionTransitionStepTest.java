@@ -186,7 +186,6 @@ class LogStoragePartitionTransitionStepTest {
     @BeforeEach
     void setup() {
       transitionContext.setLogBlockRepository(repository);
-      when(repository.isReady()).thenReturn(true);
       when(repository.claimTerm(anyLong())).thenReturn(true);
       when(raftPartition.term()).thenReturn(1L);
     }
@@ -302,34 +301,6 @@ class LogStoragePartitionTransitionStepTest {
     }
 
     @Test
-    void shouldWaitForSchemaBeforeInstalling() {
-      // given
-      final var concurrencyControl = new TestConcurrencyControl(true);
-      transitionContext.setConcurrencyControl(concurrencyControl);
-      when(repository.isReady()).thenReturn(false);
-      initializeContext(Role.FOLLOWER);
-      step.prepareTransition(transitionContext, 1, Role.LEADER).join();
-
-      // when
-      final var installed = step.transitionTo(transitionContext, 1, Role.LEADER);
-      concurrencyControl.runAll();
-
-      // then
-      assertThat(installed.isDone()).isFalse();
-      verify(repository, never()).claimTerm(anyLong());
-
-      // when
-      when(repository.isReady()).thenReturn(true);
-      concurrencyControl.runAll();
-
-      // then
-      assertThat(installed.isDone()).isTrue();
-      installed.join();
-      verify(repository).claimTerm(1);
-      assertThat(transitionContext.getLogStorage()).isInstanceOf(RdbmsLogStorage.class);
-    }
-
-    @Test
     void shouldRetryClaimThatFailedOnTheDatabase() {
       // given
       final var concurrencyControl = new TestConcurrencyControl(true);
@@ -356,11 +327,12 @@ class LogStoragePartitionTransitionStepTest {
     }
 
     @Test
-    void shouldStopWaitingWhenNewerTransitionIsAnnounced() {
+    void shouldStopRetryingClaimWhenNewerTransitionIsAnnounced() {
       // given
       final var concurrencyControl = new TestConcurrencyControl(true);
       transitionContext.setConcurrencyControl(concurrencyControl);
-      when(repository.isReady()).thenReturn(false);
+      when(repository.claimTerm(1))
+          .thenThrow(new LogBlockRepositoryException("database unavailable"));
       initializeContext(Role.FOLLOWER);
       step.prepareTransition(transitionContext, 1, Role.LEADER).join();
       final var installed = step.transitionTo(transitionContext, 1, Role.LEADER);

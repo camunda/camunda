@@ -46,14 +46,24 @@ a database restart (e.g. its pod being rescheduled). A failed read counts as "no
 so log consumers wait rather than fail; a read failing while a partition prepared a transition
 marked the partition dead.
 
-**D7. Partitions wait for the database before installing the storage.** The RDBMS schema is created
-after the broker starts, so the log storage transition step waits, without blocking the partition,
-until the tenant's schema is ready (as the RDBMS exporter does). A leader's claim that fails on the
-database is retried rather than failing the transition.
+**D7. The log lives in the primary storage database, next to the engine state.** It is enabled
+by `camunda.data.primary-storage.type=rdbms`, which also moves the engine state to the RDBMS, and
+shares that connection pool. Its tables (`CAM_RU_LOG_BLOCK`, `CAM_RU_LOG_PARTITION`) come from a
+changelog of their own in the broker, migrated before the broker starts together with the engine
+state's and tracked in the same Liquibase tables. Partitions therefore never wait for the schema. A
+leader's claim that fails on the database is retried, without blocking the partition, rather than
+failing the transition.
 
-**D8. SQL runs through MyBatis, in the tenant's existing session factory.** The log mapper is loaded
-with the other RDBMS mappers, so the log and the RDBMS state storage being built alongside it can
-later share sessions, and commit state and log in one transaction.
+An earlier version stored the log in the RDBMS secondary storage, created by the exporter's
+`LiquibaseSchemaManager` after the broker started. It moved once the engine state prototype brought
+a primary storage database: the log is primary storage, it should not depend on the exporter's
+configuration or schema, and one pool lets log and state later share a transaction.
+
+**D8. SQL runs through MyBatis, in a session factory of its own on the primary storage pool.** The
+log mapper lives in the broker, which the engine state module does not depend on, so it is not
+loaded into the engine state's factory. Its statements are standard SQL, as the primary storage
+supports only PostgreSQL and H2 for now. Committing state and log in one transaction would need a
+shared session.
 
 **D9. The writer lingers before committing.** After taking the first queued block, it waits up to
 10 ms for more, trading that much latency for fewer, larger transactions. In load tests this cut the
@@ -63,8 +73,13 @@ set through `CAMUNDA_EXPERIMENTAL_RDBMSLOGSTORAGE_COMMITLINGERMS` (0 turns it of
 
 ## Consequences
 
-- Enabled with `camunda.experimental.rdbms-log-storage.enabled=true` alongside an RDBMS secondary
-  storage; otherwise partitions keep the Atomix log storage.
+- Enabled with `camunda.data.primary-storage.type=rdbms` (plus `primary-storage.rdbms.url` etc.),
+  which always moves the engine state too; otherwise partitions keep the Atomix log storage.
+- The engine state prototype deletes a partition's state rows on every start, while the log
+  survives. A restarted partition replays only from its RocksDB snapshot, so restarts do not work
+  yet with both enabled.
+- One pool per broker, with rows keyed by partition id only, so physical tenants sharing partition
+  ids would collide.
 - Snapshots are taken, but with Raft index and term `0-0`, as the Raft log holds no records; a
   "No log entry for next snapshot position" warning accompanies every snapshot, and Raft cannot send
   snapshots to followers. Deleting `LOG_BLOCK` rows below the snapshot and exported positions is
@@ -80,5 +95,5 @@ set through `CAMUNDA_EXPERIMENTAL_RDBMSLOGSTORAGE_COMMITLINGERMS` (0 turns it of
 - `maxFragmentSize` bounds the row size and must fit the database's limits.
 - Repository queries have no statement timeout yet, so a hung database call can still stall a
   partition.
-- Only H2 and PostgreSQL have been run; MySQL/MariaDB, MSSQL and Oracle have not.
+- Only H2 and PostgreSQL are supported, as for the engine state.
 

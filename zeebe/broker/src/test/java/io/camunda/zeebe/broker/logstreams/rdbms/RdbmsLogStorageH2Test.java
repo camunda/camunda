@@ -49,8 +49,7 @@ final class RdbmsLogStorageH2Test {
 
   @BeforeEach
   void setUp() throws Exception {
-    repository =
-        new MyBatisLogBlockRepository(H2LogDatabase.create(PREFIX), PARTITION_ID, () -> true);
+    repository = new MyBatisLogBlockRepository(H2LogDatabase.create(PREFIX), PARTITION_ID);
   }
 
   @AfterEach
