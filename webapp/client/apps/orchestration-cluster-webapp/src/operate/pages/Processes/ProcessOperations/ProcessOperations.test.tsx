@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
@@ -200,7 +200,9 @@ describe('<ProcessOperations />', () => {
 			let changeDefinition = () => {};
 			const OperationsWithChangingDefinition = () => {
 				const [definition, setDefinition] = useState(DEFINITION);
-				changeDefinition = () => setDefinition(nextDefinition);
+				useEffect(() => {
+					changeDefinition = () => setDefinition(nextDefinition);
+				}, []);
 				return <ProcessOperations definition={definition} />;
 			};
 			const screen = await renderWithRouter(OperationsWithChangingDefinition, {path: '/operate/processes'});

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
@@ -50,10 +50,12 @@ async function renderTable(overrides: RenderOverrides = {}, {initialEntry = '/'}
 		const [isFetching, setIsFetching] = useState(props.isFetching ?? false);
 		const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(props.isFetchingPreviousPage ?? false);
 		const [isFetchingNextPage, setIsFetchingNextPage] = useState(props.isFetchingNextPage ?? false);
-		setRowsState = setRows;
-		setIsFetchingState = setIsFetching;
-		setIsFetchingPreviousPageState = setIsFetchingPreviousPage;
-		setIsFetchingNextPageState = setIsFetchingNextPage;
+		useEffect(() => {
+			setRowsState = setRows;
+			setIsFetchingState = setIsFetching;
+			setIsFetchingPreviousPageState = setIsFetchingPreviousPage;
+			setIsFetchingNextPageState = setIsFetchingNextPage;
+		}, []);
 		return (
 			<SortableTable<Row>
 				{...props}

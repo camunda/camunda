@@ -272,7 +272,6 @@ export default defineConfig({
 				'vitest/valid-expect-in-promise': 'error',
 				'vitest/valid-title': 'error',
 				'vitest/consistent-each-for': ['error', {test: 'for', it: 'for', describe: 'each', suite: 'each'}],
-				'react/globals': 'off',
 			},
 		},
 		{
