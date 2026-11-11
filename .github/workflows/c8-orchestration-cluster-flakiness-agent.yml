@@ -62,9 +62,9 @@ on:
         value: ${{ jobs.publish.outputs.changed }}
       sha:
         value: ${{ jobs.publish.outputs.sha }}
-      has_patch:
-        description: "true or false once the agent ran to the end; empty when the job failed before that"
-        value: ${{ jobs.fix.outputs.has_patch }}
+      rejected:
+        description: "true when the patch failed the publish checks or lint; any other failure is the infrastructure's"
+        value: ${{ jobs.publish.outputs.rejected }}
 
 permissions:
   contents: read
@@ -357,6 +357,7 @@ jobs:
     outputs:
       changed: ${{ steps.push.outputs.changed }}
       sha: ${{ steps.push.outputs.sha }}
+      rejected: ${{ steps.apply.outcome == 'failure' || steps.lint.outcome == 'failure' }}
     env:
       ITERATION: ${{ inputs.iteration }}
       SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
@@ -425,6 +426,7 @@ jobs:
           cache-dependency-path: ${{ env.SUITE_PATH }}/package-lock.json
 
       - name: Lint the change
+        id: lint
         working-directory: ${{ env.SUITE_PATH }}
         run: |
           set -euo pipefail

@@ -540,11 +540,12 @@ jobs:
       - name: Decide
         id: final
         env:
-          # failure: the attempt ran but the agent never got to export a patch.
+          # success: the attempt completed, including a patch the publish
+          # checks rejected. failure: it broke for any other reason.
           FIX_RESULTS: >-
             ${{ format('{0},{1}',
-              needs.fix1.result != 'skipped' && (needs.fix1.outputs.has_patch != '' && 'success' || 'failure') || '',
-              needs.fix2.result != 'skipped' && (needs.fix2.outputs.has_patch != '' && 'success' || 'failure') || '') }}
+              needs.fix1.result != 'skipped' && ((needs.fix1.result == 'success' || needs.fix1.outputs.rejected == 'true') && 'success' || 'failure') || '',
+              needs.fix2.result != 'skipped' && ((needs.fix2.result == 'success' || needs.fix2.outputs.rejected == 'true') && 'success' || 'failure') || '') }}
         run: |
           set -euo pipefail
           o="$RUNNER_TEMP/out"

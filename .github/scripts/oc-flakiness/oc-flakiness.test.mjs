@@ -228,6 +228,23 @@ test('should count a repeat skipped after a serial prerequisite failed as a fail
   assert.match(scored.topErrors[0].message, /serial block/);
 });
 
+test('should count a serial skip as a failure even when the retry passed', () => {
+  // given
+  const skippedThenPassed = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('skipped'), result('passed')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, skippedThenPassed]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(scored.pooled, {passed: 1, failed: 1, rate: 50});
+  assert.deepEqual(scored.failingShards, ['flaky-baseline-e2e-v2-s0']);
+});
+
 test('should report green when every scored run passed', () => {
   // given
   const dir = shardDir([{cell: 'e2e-v2', tests: [passed, passed, passed, passed]}]);
@@ -293,4 +310,13 @@ test('should not judge the test when the baseline did not score or was green', (
 test('should block, not give up, when the agent job failed before producing a patch', () => {
   assert.equal(final({baseline: pass(60), fixResults: ['failure', '']}).action, 'blocked');
   assert.equal(final({baseline: pass(60), fixResults: ['success', '']}).action, 'delete_branch');
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(75), fixResults: ['success', 'failure']}).action,
+    'blocked',
+    'attempt 2 never finished, so attempt 1 falling short does not settle it',
+  );
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(92), fixResults: ['success', 'failure']}).action,
+    'open_pr',
+  );
 });

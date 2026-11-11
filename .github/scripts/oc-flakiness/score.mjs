@@ -34,19 +34,16 @@ const FAILED = new Set(['failed', 'timedOut']);
 const SERIAL_SKIP = 'skipped: an earlier test in its serial block failed';
 
 // In a serial block Playwright skips the remaining tests once one fails, and
-// reports them as `skipped` with a result but without the `skip`/`fixme`
-// annotation that test.skip() leaves. Such a repeat did not pass: counting it
-// as not run would let a change that moves the failure into a prerequisite
-// score as green. A repeat never started (results: []) is still not run.
+// reports that attempt as `skipped` without the `skip`/`fixme` annotation that
+// test.skip() leaves. Such a run did not pass, even when the suite's retry
+// then passes it (reported `expected`): counting it as passed or not run would
+// let a change that moves the failure into a prerequisite score as green. A
+// run never started (results: []) is still not run.
 function skippedBySerialFailure(test) {
   const intended = (test.annotations ?? []).some(
     (a) => a.type === 'skip' || a.type === 'fixme',
   );
-  return (
-    test.status === 'skipped' &&
-    !intended &&
-    (test.results ?? []).some((r) => r.status === 'skipped')
-  );
+  return !intended && test.results?.[0]?.status === 'skipped';
 }
 
 function rate(passed, failed) {
@@ -78,7 +75,12 @@ export function score({dir, file, titlePath, cells, planned}) {
         if (spec.file !== file || !sameTitlePath(path, titlePath)) continue;
         for (const test of spec.tests ?? []) {
           const last = test.results?.at(-1);
-          if (test.status === 'expected' && last?.status === 'passed') {
+          if (skippedBySerialFailure(test)) {
+            counts.failed += 1;
+            failingShards.add(basename(dirname(metaFile)));
+            const key = `${meta.cell}\u0000${SERIAL_SKIP}`;
+            errors.set(key, (errors.get(key) ?? 0) + 1);
+          } else if (test.status === 'expected' && last?.status === 'passed') {
             counts.passed += 1;
           } else if (
             (test.status === 'unexpected' || test.status === 'flaky') &&
@@ -87,11 +89,6 @@ export function score({dir, file, titlePath, cells, planned}) {
             counts.failed += 1;
             failingShards.add(basename(dirname(metaFile)));
             const key = `${meta.cell}\u0000${errorKey(test.results[0].error?.message)}`;
-            errors.set(key, (errors.get(key) ?? 0) + 1);
-          } else if (skippedBySerialFailure(test)) {
-            counts.failed += 1;
-            failingShards.add(basename(dirname(metaFile)));
-            const key = `${meta.cell}\u0000${SERIAL_SKIP}`;
             errors.set(key, (errors.get(key) ?? 0) + 1);
           } else {
             counts.notRun += 1;

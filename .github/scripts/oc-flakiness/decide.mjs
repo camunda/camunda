@@ -63,8 +63,9 @@ export function final({
     ['iter1', iter1],
     ['iter2', iter2],
   ].filter(([, pass]) => usable(pass));
+  const crashed = fixResults.some((r) => r === 'failure' || r === 'cancelled');
   if (scored.length === 0) {
-    if (fixResults.some((r) => r === 'failure' || r === 'cancelled')) {
+    if (crashed) {
       return {action: 'blocked', best: null, reason: 'a fix attempt failed before the agent finished'};
     }
     const anyRan = iter1 || iter2;
@@ -101,6 +102,13 @@ export function final({
     return {action: 'open_pr', best: best.name, reason: best.summary};
   }
   const best = pickBest(judged);
+  if (crashed) {
+    return {
+      action: 'blocked',
+      best: best.name,
+      reason: `${best.summary}; ${best.failure}; a later fix attempt failed before the agent finished`,
+    };
+  }
   return {
     action: 'delete_branch',
     best: best.name,
