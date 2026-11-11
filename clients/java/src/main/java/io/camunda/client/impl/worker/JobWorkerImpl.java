@@ -484,7 +484,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       // handed back before it is counted, so a metric that throws cannot keep it out of reach
       onRefused.accept(job, e);
       metrics.jobRefused(1);
-    } catch (final RuntimeException | Error e) {
+    } catch (final Throwable e) {
+      // Throwable rather than RuntimeException or Error: user code written in Kotlin, for example,
+      // can throw a checked exception without declaring it, and that must not stall polling either
       if (handlerStarted.get()) {
         LOG.warn(
             "Job with key {} ran on the calling thread, but handing it over failed afterwards. "
