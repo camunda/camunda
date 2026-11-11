@@ -8,10 +8,12 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -20,10 +22,13 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.health.HealthMonitor;
+import io.camunda.zeebe.util.health.HealthMonitorable;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -36,6 +41,9 @@ class ZeebeDbPartitionTransitionStepTest {
   private final StateController stateController = mock(StateController.class);
   private final ZeebeDb zeebeDb = mock(ZeebeDb.class);
   private final ZeebeDb zeebeDbFromPrevRole = mock(ZeebeDb.class);
+  private final ZeebeDb monitoredZeebeDb =
+      mock(ZeebeDb.class, withSettings().extraInterfaces(HealthMonitorable.class));
+  private final HealthMonitor healthMonitor = mock(HealthMonitor.class);
 
   private ZeebeDbPartitionTransitionStep step;
 
@@ -46,6 +54,7 @@ class ZeebeDbPartitionTransitionStepTest {
     when(stateController.closeDb()).thenReturn(TestActorFuture.completedFuture(null));
     transitionContext.setStateController(stateController);
     transitionContext.setConcurrencyControl(new TestConcurrencyControl());
+    transitionContext.setComponentHealthMonitor(healthMonitor);
 
     step = new ZeebeDbPartitionTransitionStep();
   }
@@ -163,6 +172,34 @@ class ZeebeDbPartitionTransitionStepTest {
     assertThat(transitionContext.getZeebeDb()).isNull();
     verify(stateController).closeDb();
     verify(stateController, never()).recover();
+  }
+
+  @Test
+  void shouldMonitorTheHealthOfARecoveredDbThatReportsIt() {
+    // given
+    when(stateController.recover()).thenReturn(TestActorFuture.completedFuture(monitoredZeebeDb));
+
+    // when
+    transitionTo(Role.FOLLOWER);
+
+    // then
+    verify(healthMonitor).registerComponent((HealthMonitorable) monitoredZeebeDb);
+  }
+
+  @Test
+  void shouldStopMonitoringTheHealthOfADbBeforeClosingIt() {
+    // given
+    transitionContext.setCurrentRole(Role.LEADER);
+    transitionContext.setZeebeDb(monitoredZeebeDb);
+
+    // when
+    assertThat(step.prepareTransition(transitionContext, 1, Role.FOLLOWER))
+        .succeedsWithin(Duration.ofMinutes(1));
+
+    // then
+    final var inOrder = inOrder(healthMonitor, stateController);
+    inOrder.verify(healthMonitor).removeComponent((HealthMonitorable) monitoredZeebeDb);
+    inOrder.verify(stateController).closeDb();
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {

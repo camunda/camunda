@@ -82,6 +82,12 @@ data.primary-storage.rocks-db.sst-partitioning-enabled
 data.primary-storage.rocks-db.statistics-enabled
 data.primary-storage.rocks-db.wal-disabled
 data.primary-storage.runtime-directory
+data.primary-storage.write-behind-cache.batch-size
+data.primary-storage.write-behind-cache.cache-size
+data.primary-storage.write-behind-cache.enabled
+data.primary-storage.write-behind-cache.max-pending-size
+data.primary-storage.write-behind-cache.max-write-delay
+data.primary-storage.write-behind-cache.snapshot-catch-up-timeout
 data.secondary-storage.autoconfigure-camunda-exporter
 data.secondary-storage.elasticsearch.backup.incomplete-check-timeout
 data.secondary-storage.elasticsearch.backup.repository-name

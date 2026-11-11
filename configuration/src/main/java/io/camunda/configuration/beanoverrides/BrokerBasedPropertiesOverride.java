@@ -884,6 +884,15 @@ public class BrokerBasedPropertiesOverride {
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);
 
+    final var writeBehindCache = primaryStorage.getWriteBehindCache();
+    final var brokerWriteBehindCache = data.getWriteBehindCache();
+    brokerWriteBehindCache.setEnabled(writeBehindCache.isEnabled());
+    brokerWriteBehindCache.setCacheSize(writeBehindCache.getCacheSize());
+    brokerWriteBehindCache.setMaxPendingSize(writeBehindCache.getMaxPendingSize());
+    brokerWriteBehindCache.setBatchSize(writeBehindCache.getBatchSize());
+    brokerWriteBehindCache.setMaxWriteDelay(writeBehindCache.getMaxWriteDelay());
+    brokerWriteBehindCache.setSnapshotCatchUpTimeout(writeBehindCache.getSnapshotCatchUpTimeout());
+
     populateBackupScheduler(override, primaryStorage.getBackup(), camunda);
   }
 

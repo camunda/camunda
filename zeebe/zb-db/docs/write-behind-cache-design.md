@@ -489,20 +489,24 @@ backend.createSnapshot(dir)                // the writer keeps writing
 
 ### 4.9 Configuration
 
-`WriteBehindConfiguration` is a record in `zeebe-db-cache`. The cache isn't RocksDB-specific, so its
-broker settings get their own experimental section rather than living in `RocksdbCfg`.
+`WriteBehindConfiguration` is a record in `zeebe-db-cache`. Its settings are part of the unified
+configuration, under `camunda.data.primary-storage.write-behind-cache`. That's next to `rocks-db`
+rather than inside it, because the cache isn't RocksDB-specific. They aren't experimental settings:
+`BrokerBasedPropertiesOverride` maps them to the broker's `data.writeBehindCache`
+(`WriteBehindCacheCfg`), which builds the `WriteBehindConfiguration`. They can be overridden per
+physical tenant, like the per-partition `rocks-db` settings.
 
 All sizes are per partition, so the broker-wide cost is these values times the partitions a broker
 hosts. Byte limits are what bound memory; `batchSize` only shapes the writer's groups.
 
-|         Property         | Default |                                                                Notes                                                                 |
-|--------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
-| `writeBehind.enabled`    | `false` | Broker setting: whether to wrap the partition's DB at all.                                                                           |
-| `cacheMaxBytes`          | 64 MB   | The read cache. EhCache's heap tier sized in bytes, which measures each entry on insert; measure that cost.                          |
-| `maxPendingBytes`        | 32 MB   | Key and value bytes of queued transactions before commits wait (§4.3).                                                               |
-| `batchSize`              | 1 000   | Distinct keys per backend transaction. A larger transaction is written alone (§4.6).                                                 |
-| `maxWriteDelay`          | 100 ms  | How long the oldest queued transaction waits for its group to fill. Longer gives more coalescing; shorter keeps the backend fresher. |
-| `snapshotCatchUpTimeout` | 30 s    | Bounds a snapshot's wait for the writer (§4.7). If it's exceeded, the snapshot fails and is retried.                                 |
+|  Property (under `write-behind-cache`)  | Default |                                                                Notes                                                                 |
+|----------------------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`                              | `false` | Whether to wrap the partition's DB at all. Not part of `WriteBehindConfiguration`.                                                   |
+| `cache-size` (`cacheMaxBytes`)         | 64 MB   | The read cache. EhCache's heap tier sized in bytes, which measures each entry on insert; measure that cost.                          |
+| `max-pending-size` (`maxPendingBytes`) | 32 MB   | Key and value bytes of queued transactions before commits wait (§4.3).                                                               |
+| `batch-size`                           | 1 000   | Distinct keys per backend transaction. A larger transaction is written alone (§4.6).                                                 |
+| `max-write-delay`                      | 100 ms  | How long the oldest queued transaction waits for its group to fill. Longer gives more coalescing; shorter keeps the backend fresher. |
+| `snapshot-catch-up-timeout`            | 30 s    | Bounds a snapshot's wait for the writer (§4.7). If it's exceeded, the snapshot fails and is retried.                                 |
 
 ### 4.10 Metrics
 
@@ -697,8 +701,9 @@ This has landed. Where the code settled differently:
 
 ### Phase 6: wiring and engine-level validation (`feat:` and `test:`)
 
-- **Ask first** (configuration is a public contract): add an experimental broker config section for
-  the cache, separate from `RocksdbCfg`, and map it to `WriteBehindConfiguration`.
+- Add the cache's settings to the unified configuration, under
+  `camunda.data.primary-storage.write-behind-cache`, and map them to the broker's
+  `data.writeBehindCache`, which builds the `WriteBehindConfiguration` (§4.9).
 - In `ZeebePartitionFactory`, wrap the partition's `ZeebeDbFactory` in a
   `WriteBehindZeebeDbFactory` when write-behind is enabled. The broker gets a dependency on
   `zeebe-db-cache`; it's the place that picks both the backend and whether to cache it.
@@ -789,6 +794,6 @@ against the cache wrapped around RocksDB.
     transactions, a `createSnapshot` that captures one consistent point while the writer keeps
     writing, and fixing a scan's view before its first callback. An RDBMS backend has to meet all
     four. The contract tests check the first two.
-11. **Approvals needed:** the experimental config keys ("ask first" in `AGENTS.md`). The EhCache
-    dependency was approved in Phase 2.
+11. **Approvals:** the config keys were approved in Phase 6 as unified configuration rather than
+    experimental settings. The EhCache dependency was approved in Phase 2.
 

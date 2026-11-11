@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.health.HealthMonitorable;
 
 public final class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -27,6 +28,9 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
     if (context.getZeebeDb() != null
         && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
       try {
+        if (context.getZeebeDb() instanceof final HealthMonitorable monitorable) {
+          context.getComponentHealthMonitor().removeComponent(monitorable);
+        }
         return context
             .getStateController()
             .closeDb()
@@ -88,6 +92,9 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
                     String.format(RECOVERY_FAILED_ERROR_MSG, context.getPartitionId()), error));
           } else {
             context.setZeebeDb(zeebeDb);
+            if (zeebeDb instanceof final HealthMonitorable monitorable) {
+              context.getComponentHealthMonitor().registerComponent(monitorable);
+            }
             transitionFuture.complete(null);
           }
         });

@@ -13,6 +13,7 @@ import io.camunda.configuration.data.primarystorage.Disk;
 import io.camunda.configuration.data.primarystorage.LogStream;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.configuration.data.primarystorage.RocksDb;
+import io.camunda.configuration.data.primarystorage.WriteBehindCache;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -60,6 +61,7 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
+  @NestedConfigurationProperty private WriteBehindCache writeBehindCache = new WriteBehindCache();
   @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
 
   public String getDirectory() {
@@ -110,6 +112,14 @@ public class PrimaryStorage {
 
   public void setRocksDb(final RocksDb rocksDb) {
     this.rocksDb = rocksDb;
+  }
+
+  public WriteBehindCache getWriteBehindCache() {
+    return writeBehindCache;
+  }
+
+  public void setWriteBehindCache(final WriteBehindCache writeBehindCache) {
+    this.writeBehindCache = writeBehindCache;
   }
 
   public PrimaryStorageBackup getBackup() {

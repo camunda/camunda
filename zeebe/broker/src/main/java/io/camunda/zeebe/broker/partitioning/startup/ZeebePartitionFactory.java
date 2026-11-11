@@ -57,6 +57,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.cache.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -182,7 +183,8 @@ public final class ZeebePartitionFactory {
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
     final StateController stateController =
-        createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
+        createStateController(
+            raftPartition, stateDbFactory(brokerCfg, zeebeFactory), snapshotStore, snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
@@ -243,7 +245,7 @@ public final class ZeebePartitionFactory {
 
   private StateController createStateController(
       final RaftPartition raftPartition,
-      final ZeebeDbFactory<ZbColumnFamilies> zeebeRocksDbFactory,
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeDbFactory,
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
     final Path runtimeDirectory =
@@ -251,12 +253,29 @@ public final class ZeebePartitionFactory {
 
     final var continuousBackup = brokerCfg.getData().getBackup().isContinuous();
     return new StateControllerImpl(
-        zeebeRocksDbFactory,
+        zeebeDbFactory,
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
         zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup),
         concurrencyControl);
+  }
+
+  /**
+   * Returns the factory for a partition's runtime state: {@code backend} itself, or {@code backend}
+   * behind the write-behind cache when that's enabled. Snapshot copies keep using {@code backend}.
+   */
+  @VisibleForTesting
+  static ZeebeDbFactory<ZbColumnFamilies> stateDbFactory(
+      final BrokerCfg brokerCfg, final ZeebeDbFactory<ZbColumnFamilies> backend) {
+    final var writeBehindCache = brokerCfg.getData().getWriteBehindCache();
+    if (!writeBehindCache.isEnabled()) {
+      return backend;
+    }
+    return new WriteBehindZeebeDbFactory<>(
+        backend,
+        writeBehindCache.createConfiguration(),
+        brokerCfg.getExperimental().getConsistencyChecks().getSettings());
   }
 
   /**
