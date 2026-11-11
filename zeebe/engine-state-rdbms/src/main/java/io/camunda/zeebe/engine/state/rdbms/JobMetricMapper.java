@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.engine.state.jobmetrics.StatusMetrics;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
@@ -43,7 +44,17 @@ interface JobMetricMapper {
   }
 
   /** The metrics of a batch are identified by the job type, tenant and worker. */
-  record JobMetricKey(String jobType, String tenantId, String workerName) {}
+  record JobMetricKey(String jobType, String tenantId, String workerName)
+      implements Comparable<JobMetricKey> {
+
+    @Override
+    public int compareTo(final JobMetricKey other) {
+      return Comparator.comparing(JobMetricKey::jobType)
+          .thenComparing(JobMetricKey::tenantId)
+          .thenComparing(JobMetricKey::workerName)
+          .compare(this, other);
+    }
+  }
 
   /**
    * The count of the jobs per status and the time of the status' last update, of a job type, tenant

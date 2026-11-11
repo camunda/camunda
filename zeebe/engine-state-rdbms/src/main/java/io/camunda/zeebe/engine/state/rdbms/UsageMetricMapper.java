@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
@@ -19,7 +20,17 @@ interface UsageMetricMapper {
    * A usage metric is identified by its type, the tenant and, for the unique task users, the hash
    * of the assignee; the counters have no assignee and use 0.
    */
-  record UsageMetricKey(short metricType, String tenantId, long assigneeHash) {}
+  record UsageMetricKey(short metricType, String tenantId, long assigneeHash)
+      implements Comparable<UsageMetricKey> {
+
+    @Override
+    public int compareTo(final UsageMetricKey other) {
+      return Comparator.comparingInt(UsageMetricKey::metricType)
+          .thenComparing(UsageMetricKey::tenantId)
+          .thenComparingLong(UsageMetricKey::assigneeHash)
+          .compare(this, other);
+    }
+  }
 
   /**
    * The counter of a tenant's process instances or decision evaluations, or a unique task user of a

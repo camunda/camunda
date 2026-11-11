@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.jspecify.annotations.Nullable;
@@ -92,7 +93,17 @@ interface ElementInstanceMapper {
       byte[] payload) {}
 
   record TakenSequenceFlowKey(
-      long flowScopeKey, String gatewayElementId, String sequenceFlowElementId) {}
+      long flowScopeKey, String gatewayElementId, String sequenceFlowElementId)
+      implements Comparable<TakenSequenceFlowKey> {
+
+    @Override
+    public int compareTo(final TakenSequenceFlowKey other) {
+      return Comparator.comparingLong(TakenSequenceFlowKey::flowScopeKey)
+          .thenComparing(TakenSequenceFlowKey::gatewayElementId)
+          .thenComparing(TakenSequenceFlowKey::sequenceFlowElementId)
+          .compare(this, other);
+    }
+  }
 
   /** How often a sequence flow was taken; belongs to the process instance of its flow scope. */
   record TakenSequenceFlowRow(

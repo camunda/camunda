@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
@@ -56,7 +57,15 @@ interface EventScopeMapper {
   }
 
   /** A trigger is identified by its scope and event key. */
-  record EventTriggerKey(long scopeKey, long eventKey) {}
+  record EventTriggerKey(long scopeKey, long eventKey) implements Comparable<EventTriggerKey> {
+
+    @Override
+    public int compareTo(final EventTriggerKey other) {
+      return Comparator.comparingLong(EventTriggerKey::scopeKey)
+          .thenComparingLong(EventTriggerKey::eventKey)
+          .compare(this, other);
+    }
+  }
 
   /** A trigger: the element to activate and the msgpack variables of the event, empty if none. */
   record EventTriggerRow(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.jspecify.annotations.Nullable;
@@ -106,7 +107,15 @@ interface ProcessDefinitionMapper {
   }
 
   /** The key of the rows that exist once per process id of a tenant. */
-  record ProcessIdKey(String tenantId, String bpmnProcessId) {}
+  record ProcessIdKey(String tenantId, String bpmnProcessId) implements Comparable<ProcessIdKey> {
+
+    @Override
+    public int compareTo(final ProcessIdKey other) {
+      return Comparator.comparing(ProcessIdKey::tenantId)
+          .thenComparing(ProcessIdKey::bpmnProcessId)
+          .compare(this, other);
+    }
+  }
 
   /**
    * The serialized {@code VersionInfo} of a process id, plus columns derived from it, and the

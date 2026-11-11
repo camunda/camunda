@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 import org.jspecify.annotations.Nullable;
@@ -42,7 +43,15 @@ interface VariableMapper {
   // CAM_RU_VARIABLE_DOCUMENT_STATE
 
   /** A variable is identified by its scope and name. */
-  record VariableKey(long scopeKey, String name) {}
+  record VariableKey(long scopeKey, String name) implements Comparable<VariableKey> {
+
+    @Override
+    public int compareTo(final VariableKey other) {
+      return Comparator.comparingLong(VariableKey::scopeKey)
+          .thenComparing(VariableKey::name)
+          .compare(this, other);
+    }
+  }
 
   /**
    * A variable: its key, msgpack value and msgpack {@code VariableMetadataRecord}, plus the process
