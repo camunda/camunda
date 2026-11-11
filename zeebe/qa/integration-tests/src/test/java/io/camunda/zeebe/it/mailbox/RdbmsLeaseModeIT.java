@@ -109,6 +109,37 @@ final class RdbmsLeaseModeIT {
   }
 
   @Test
+  void shouldKeepTheLatestKeyInTheDatabase() throws SQLException {
+    // given
+    final var processId = "lease-mode-key-" + UUID.randomUUID();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(), "process.bpmn")
+        .send()
+        .join();
+
+    // when
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    // then
+    assertThat(
+            Long.parseLong(
+                queryString(
+                    "SELECT value FROM CAM_RU_PARTITION_STATE"
+                        + " WHERE partition_id = 1 AND state_key = 'key-generator.latest-key'")))
+        .as("the latest key of the partition is in the database")
+        .isGreaterThanOrEqualTo(processInstanceKey);
+  }
+
+  @Test
   void shouldWriteTheLogInTheTermOfTheLease() throws SQLException {
     // when
     client.newTopologyRequest().send().join();
@@ -124,6 +155,15 @@ final class RdbmsLeaseModeIT {
     assertThat(querySingleLong("SELECT COUNT(*) FROM CAM_RU_LOG_BLOCK WHERE PARTITION_ID = 1"))
         .as("the records are written to the log in the database")
         .isPositive();
+  }
+
+  private static String queryString(final String sql) throws SQLException {
+    try (final var connection = DriverManager.getConnection(JDBC_URL, USER, "");
+        final var statement = connection.prepareStatement(sql);
+        final var result = statement.executeQuery()) {
+      assertThat(result.next()).as("a row for: %s", sql).isTrue();
+      return result.getString(1);
+    }
   }
 
   private static long querySingleLong(final String sql) throws SQLException {

@@ -112,6 +112,9 @@ final class RdbmsLeaseFailoverIT {
           .as("the new leader continues the instance that its predecessor created")
           .isEqualTo(processInstanceKey);
       client.newCompleteCommand(job).send().join();
+      assertThat(createInstance(client, processId))
+          .as("the new leader generates keys after the ones of its predecessor")
+          .isGreaterThan(processInstanceKey);
     }
   }
 

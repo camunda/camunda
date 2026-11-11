@@ -46,7 +46,10 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   private final MixedTransactionContext mixedContext;
   private final EntitySession entitySession;
 
-  /** Creates the partition's one {@link EntitySession}, shared by all its relational stores. */
+  /**
+   * Uses the partition's one {@link EntitySession}, shared by all its relational stores and its key
+   * generator.
+   */
   public RdbmsStateStores(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -55,8 +58,7 @@ public final class RdbmsStateStores extends RocksDbStateStores {
     super(zeebeDb, mixedContext.rocksDb());
     this.zeebeDb = zeebeDb;
     this.mixedContext = mixedContext;
-    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory);
-    mixedContext.jdbc().register(entitySession);
+    entitySession = EntitySession.of(mixedContext.jdbc(), partitionId, sessionFactory);
   }
 
   /**

@@ -120,6 +120,26 @@ final class EntitySession implements JdbcTransactionParticipant {
     this.sessionFactory = sessionFactory;
   }
 
+  /**
+   * The session of the partition on the context: registered with it by whichever of the partition's
+   * relational stores is built first, so all of them write in the same database transaction.
+   */
+  static EntitySession of(
+      final JdbcTransactionContext transactionContext,
+      final int partitionId,
+      final SqlSessionFactory sessionFactory) {
+    final var session =
+        transactionContext.participant(
+            EntitySession.class,
+            () -> new EntitySession(transactionContext, partitionId, sessionFactory));
+    if (session.partitionId != partitionId) {
+      throw new IllegalStateException(
+          "Expected the transaction context of partition %d, but it belongs to partition %d"
+              .formatted(partitionId, session.partitionId));
+    }
+    return session;
+  }
+
   int partitionId() {
     return partitionId;
   }
