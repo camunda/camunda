@@ -20,7 +20,8 @@ global:
       metadata:
         name: camunda-sgw
         labels:
-          app: camunda-sgw
+          app: camunda-platform
+          app.kubernetes.io/component: zeebe-gateway
       spec:
         type: ClusterIP
         selector:
