@@ -226,7 +226,27 @@ jobs:
 
       - name: Install Playwright Browsers
         shell: bash
-        run: npx playwright install --with-deps chromium
+        run: |
+          # Retry to absorb transient apt mirror/DNS failures on the hosted
+          # runner (e.g. "Temporary failure resolving 'security.ubuntu.com'").
+          # apt waits ~20s per failed lookup, so one stuck attempt can burn
+          # 10 minutes; each attempt is time-boxed to keep all retries inside
+          # the job timeout. The install is idempotent, so a retry resumes.
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if timeout 4m npx playwright install --with-deps chromium; then
+              echo "Playwright browsers installed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to install Playwright browsers failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+          echo "Failed to install Playwright browsers after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run API tests
@@ -420,7 +440,27 @@ jobs:
 
       - name: Install Playwright Browsers
         shell: bash
-        run: npx playwright install --with-deps chromium
+        run: |
+          # Retry to absorb transient apt mirror/DNS failures on the hosted
+          # runner (e.g. "Temporary failure resolving 'security.ubuntu.com'").
+          # apt waits ~20s per failed lookup, so one stuck attempt can burn
+          # 10 minutes; each attempt is time-boxed to keep all retries inside
+          # the job timeout. The install is idempotent, so a retry resumes.
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if timeout 4m npx playwright install --with-deps chromium; then
+              echo "Playwright browsers installed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to install Playwright browsers failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+          echo "Failed to install Playwright browsers after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run API tests
@@ -692,7 +732,27 @@ jobs:
 
       - name: Install Playwright Browsers
         shell: bash
-        run: npx playwright install --with-deps chromium
+        run: |
+          # Retry to absorb transient apt mirror/DNS failures on the hosted
+          # runner (e.g. "Temporary failure resolving 'security.ubuntu.com'").
+          # apt waits ~20s per failed lookup, so one stuck attempt can burn
+          # 10 minutes; each attempt is time-boxed to keep all retries inside
+          # the job timeout. The install is idempotent, so a retry resumes.
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if timeout 4m npx playwright install --with-deps chromium; then
+              echo "Playwright browsers installed on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to install Playwright browsers failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+          echo "Failed to install Playwright browsers after ${attempts} attempts."
+          exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run tests
