@@ -37,7 +37,11 @@ k6:
         # 250 users with 2s-8s (5s on average) complete about 50 tasks per second.
         USER_TASK_USERS: "250"
         USER_TASK_THINK_TIME: "2s-8s"
-        USER_TASK_PAGE_SIZE: "20"
+        # As in the issue #67171 load tests: newest tasks first, 200 tasks per search.
+        # `ASC` makes the users compete for the same oldest tasks: most assignments fail
+        # and the open tasks pile up.
+        USER_TASK_ORDER: "DESC"
+        USER_TASK_PAGE_SIZE: "200"
         # k6 is a Go program: without this, its garbage collector ignores the container limit.
         GOMEMLIMIT: "3200MiB"
   # Applies to all k6 tests. Each simulated user is one k6 VU with its own JS runtime.
