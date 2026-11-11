@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
-import static io.camunda.zeebe.engine.state.rdbms.RdbmsProcessStore.PARTITION_STATE;
-
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl;
 import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStore;
+import io.camunda.zeebe.engine.state.rdbms.JobMetricMapper.JobMetricBatchRow;
 import io.camunda.zeebe.engine.state.rdbms.JobMetricMapper.JobMetricKey;
 import io.camunda.zeebe.engine.state.rdbms.JobMetricMapper.JobMetricRow;
-import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import java.util.Comparator;
 import java.util.List;
@@ -23,16 +22,20 @@ import java.util.List;
  *
  * <p>The metrics of a job type, tenant and worker are a row, so an increment reads and writes one
  * row, which the session collapses when the combination is incremented more than once in a
- * transaction. The named numbers of the batch and the number of rows are values of the partition
- * state; the number is kept with the rows, in the same transaction, so counting needs no query.
+ * transaction. The named numbers of the batch and the number of rows are the single batch row of
+ * the partition; the number is kept with the rows, in the same transaction, so counting needs no
+ * query.
  */
 public final class RdbmsJobMetricsStore implements JobMetricsStore {
+
+  /** The partition has one batch row; the partition is implicit in the statements. */
+  static final int BATCH = 0;
 
   static final EntityType<JobMetricKey, JobMetricRow> JOB_METRIC =
       new EntityType<>(JobMetricMapper.class, "JobMetric", "job metric", JobMetricRow::key);
 
-  private static final String META_PREFIX = "job-metrics.";
-  private static final String KEY_COUNT = META_PREFIX + "key-count";
+  static final EntityType<Integer, JobMetricBatchRow> JOB_METRIC_BATCH =
+      new EntityType<>(JobMetricMapper.class, "JobMetricBatch", "job metric batch", row -> BATCH);
 
   private static final Comparator<JobMetricRow> BY_KEY =
       Comparator.comparing(JobMetricRow::jobType)
@@ -49,7 +52,7 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
 
   @Override
   public int countKeys() {
-    return (int) read(KEY_COUNT);
+    return batch().keyCount();
   }
 
   @Override
@@ -68,7 +71,7 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
     final var row = session.get(JOB_METRIC, key);
     if (row == null) {
       session.insert(JOB_METRIC, JobMetricRow.empty(key).incremented(status, timestamp));
-      write(KEY_COUNT, read(KEY_COUNT) + 1);
+      saveBatch(batch().withKeyCount(batch().keyCount() + 1));
     } else {
       session.update(JOB_METRIC, row.incremented(status, timestamp));
     }
@@ -83,12 +86,26 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
 
   @Override
   public long getMetadata(final String key) {
-    return read(META_PREFIX + key);
+    final var batch = batch();
+    return switch (key) {
+      case JobMetricsStateImpl.META_BATCH_STARTING_TIME -> batch.startTime();
+      case JobMetricsStateImpl.META_BATCH_ENDING_TIME -> batch.endTime();
+      case JobMetricsStateImpl.META_SIZE_LIMITS_EXCEEDED -> batch.sizeLimitExceeded() ? 1L : 0L;
+      default -> 0L;
+    };
   }
 
   @Override
   public void setMetadata(final String key, final long value) {
-    write(META_PREFIX + key, value);
+    final var batch = batch();
+    saveBatch(
+        switch (key) {
+          case JobMetricsStateImpl.META_BATCH_STARTING_TIME -> batch.withStartTime(value);
+          case JobMetricsStateImpl.META_BATCH_ENDING_TIME -> batch.withEndTime(value);
+          case JobMetricsStateImpl.META_SIZE_LIMITS_EXCEEDED ->
+              batch.withSizeLimitExceeded(value == 1L);
+          default -> throw new IllegalArgumentException("Unknown job metrics metadata key: " + key);
+        });
   }
 
   @Override
@@ -96,7 +113,7 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
     for (final var row : rows()) {
       session.delete(JOB_METRIC, row.key());
     }
-    write(KEY_COUNT, 0);
+    saveBatch(batch().withKeyCount(0));
   }
 
   /** The metrics of the batch, committed and staged. */
@@ -108,17 +125,16 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
         BY_KEY);
   }
 
-  private long read(final String stateKey) {
-    final var row = session.get(PARTITION_STATE, stateKey);
-    return row == null ? 0 : Long.parseLong(row.value());
+  private JobMetricBatchRow batch() {
+    final var row = session.get(JOB_METRIC_BATCH, BATCH);
+    return row == null ? JobMetricBatchRow.EMPTY : row;
   }
 
-  private void write(final String stateKey, final long value) {
-    final var row = new PartitionStateRow(stateKey, Long.toString(value));
-    if (session.get(PARTITION_STATE, stateKey) == null) {
-      session.insert(PARTITION_STATE, row);
+  private void saveBatch(final JobMetricBatchRow row) {
+    if (session.get(JOB_METRIC_BATCH, BATCH) == null) {
+      session.insert(JOB_METRIC_BATCH, row);
     } else {
-      session.update(PARTITION_STATE, row);
+      session.update(JOB_METRIC_BATCH, row);
     }
   }
 }

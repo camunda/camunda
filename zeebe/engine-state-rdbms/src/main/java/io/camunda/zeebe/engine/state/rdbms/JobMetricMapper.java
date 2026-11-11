@@ -17,6 +17,31 @@ interface JobMetricMapper {
   /** The committed job metrics of the current batch. */
   List<JobMetricRow> selectJobMetrics(@Param("partitionId") int partitionId);
 
+  /**
+   * The batch of the partition: the number of its job metric rows, its start and end time, -1 while
+   * there is none, and whether the size limits truncated it.
+   */
+  record JobMetricBatchRow(int keyCount, long startTime, long endTime, boolean sizeLimitExceeded) {
+
+    static final JobMetricBatchRow EMPTY = new JobMetricBatchRow(0, 0, 0, false);
+
+    JobMetricBatchRow withKeyCount(final int keyCount) {
+      return new JobMetricBatchRow(keyCount, startTime, endTime, sizeLimitExceeded);
+    }
+
+    JobMetricBatchRow withStartTime(final long startTime) {
+      return new JobMetricBatchRow(keyCount, startTime, endTime, sizeLimitExceeded);
+    }
+
+    JobMetricBatchRow withEndTime(final long endTime) {
+      return new JobMetricBatchRow(keyCount, startTime, endTime, sizeLimitExceeded);
+    }
+
+    JobMetricBatchRow withSizeLimitExceeded(final boolean sizeLimitExceeded) {
+      return new JobMetricBatchRow(keyCount, startTime, endTime, sizeLimitExceeded);
+    }
+  }
+
   /** The metrics of a batch are identified by the job type, tenant and worker. */
   record JobMetricKey(String jobType, String tenantId, String workerName) {}
 
