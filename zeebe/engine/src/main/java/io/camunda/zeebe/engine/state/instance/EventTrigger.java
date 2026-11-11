@@ -8,30 +8,36 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class EventTrigger extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class EventTrigger extends MsgpackBufferValue<EventTrigger> implements DbValue {
 
-  private final StringProperty elementIdProp = new StringProperty("elementId");
-  private final BinaryProperty variablesProp = new BinaryProperty("variables");
-  private final LongProperty eventKeyProp = new LongProperty("eventKey");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  DirectBuffer elementId = Decoding.EMPTY;
 
-  public EventTrigger() {
-    super(4);
-    declareProperty(elementIdProp)
-        .declareProperty(variablesProp)
-        .declareProperty(eventKeyProp)
-        .declareProperty(processInstanceKeyProp);
-  }
+  @MsgpackProperty(binary = true)
+  DirectBuffer variables = Decoding.EMPTY;
+
+  long eventKey;
+  long processInstanceKey = -1L;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public EventTrigger() {}
 
   // Copies over the previous event
   public EventTrigger(final EventTrigger other) {
@@ -44,38 +50,38 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   public DirectBuffer getElementId() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   public EventTrigger setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.cloneBuffer(elementId);
     return this;
   }
 
   public DirectBuffer getVariables() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   public EventTrigger setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = BufferUtil.cloneBuffer(variables);
     return this;
   }
 
   public long getEventKey() {
-    return eventKeyProp.getValue();
+    return eventKey;
   }
 
   public EventTrigger setEventKey(final long eventKey) {
-    eventKeyProp.setValue(eventKey);
+    this.eventKey = eventKey;
     return this;
   }
 
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public EventTrigger setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
