@@ -250,10 +250,14 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ env.SUITE }}/package-lock.json
 
+      # Same as the nightlies: resolve the newest versions in package.json's
+      # ranges. Stable branches lock Playwright releases that cannot install
+      # Chromium on the current ubuntu-latest image.
       - name: Install dependencies and Chromium
         working-directory: ${{ env.SUITE }}
         run: |
-          npm ci
+          rm -rf node_modules package-lock.json
+          npm install
           npx playwright install --with-deps chromium
 
       # Selection, on THIS ref because a fix can move the test:
