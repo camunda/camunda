@@ -63,7 +63,6 @@ public final class ValueTypes {
           ValueType.CONDITIONAL_EVALUATION,
           ValueType.EXPRESSION,
           ValueType.GLOBAL_LISTENER,
-          ValueType.PROCESS_DEFINITION_SUSPENSION,
           ValueType.AGENT_INSTANCE);
 
   private ValueTypes() {}
