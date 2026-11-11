@@ -46,15 +46,20 @@ jobs:
       pull-requests: write
       checks: read
       statuses: read
+      # Vault JWT login. Only pr-review-agent's config job (no AI) uses it; the
+      # agent's job gets the Anthropic key as a single-use wrapping token.
+      id-token: write
     # No release tag exists yet; pinned to main.
-    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@28ddf6918c6742e26986990fb5eddbb963fb66d9 # main
+    uses: camunda/pr-review-agent/.github/workflows/pr-review.yml@177467c59759473bd67b15e02c34fb0b1a0964ee # main
     with:
       config: operate-admin
       force_shadow_mode: true
+      vault_auth_method: jwt
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
-      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+      VAULT_JWT_PATH: ${{ secrets.VAULT_JWT_PATH }}
+      VAULT_JWT_ROLE: ${{ secrets.VAULT_JWT_ROLE }}
+      VAULT_JWT_AUDIENCE: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
   # A reusable-workflow job cannot run steps, so build status is observed here.
   observe-review-status:
