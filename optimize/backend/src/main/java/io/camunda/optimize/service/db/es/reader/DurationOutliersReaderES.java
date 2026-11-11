@@ -766,7 +766,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                         bucket.aggregations().get(AGG_STATS).extendedStats();
                     statsByFlowNodeId.put(flowNodeId, statsAgg);
 
-                    if (statsAgg.stdDeviation() != 0.0D) {
+                    if (statsAgg.stdDeviation() != null && statsAgg.stdDeviation() != 0.0D) {
                       double stdDeviationBoundLower = statsAgg.stdDeviationBounds().lower();
                       double stdDeviationBoundHigher = statsAgg.stdDeviationBounds().upper();
                       final double average = statsAgg.avg();
@@ -876,7 +876,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                   final FindingsDto finding = new FindingsDto();
                   finding.setTotalCount(stats.count());
 
-                  if (stats.stdDeviation() != 0.0D
+                  if (stats.stdDeviation() != null
+                      && stats.stdDeviation() != 0.0D
                       && allFlowNodeFilterAggs.get(getFilteredFlowNodeAggregationName(flowNodeId))
                           != null) {
                     final Aggregate flowNodeFilterAgg =
