@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import io.camunda.zeebe.mailbox.rdbms.RdbmsMailboxStores;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -40,6 +41,7 @@ public class SpringBrokerBridge {
   private Supplier<JobStreamClient> jobStreamClientSupplier;
   private Function<String, Runnable> tenantSchemaInitializer;
   private RdbmsEngineStateResources engineState;
+  private RdbmsMailboxStores mailboxStores;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -137,6 +139,19 @@ public class SpringBrokerBridge {
 
   public Optional<RdbmsEngineStateResources> getEngineState() {
     return Optional.ofNullable(engineState);
+  }
+
+  /**
+   * Experimental: registers the mailbox and lease stores in the database of the primary storage.
+   * With them, the broker elects its leaders by leases and reaches other regions through the
+   * mailbox.
+   */
+  public void registerMailboxStores(final RdbmsMailboxStores mailboxStores) {
+    this.mailboxStores = mailboxStores;
+  }
+
+  public Optional<RdbmsMailboxStores> getMailboxStores() {
+    return Optional.ofNullable(mailboxStores);
   }
 
   /**

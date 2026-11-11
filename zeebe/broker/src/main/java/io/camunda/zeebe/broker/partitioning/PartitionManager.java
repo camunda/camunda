@@ -108,7 +108,8 @@ public interface PartitionManager {
         physicalTenantContext.featureFlags(),
         physicalTenantContext.secretStoreRegistry(),
         topologyManager,
-        brokerStartupContext.getSpringBrokerBridge().getEngineState().orElse(null));
+        brokerStartupContext.getSpringBrokerBridge().getEngineState().orElse(null),
+        brokerStartupContext.getSpringBrokerBridge().getMailboxStores().orElse(null));
   }
 
   static RecoveryPartitionManager createRecoveryPartitionManager(

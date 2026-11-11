@@ -115,6 +115,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-mailbox-rdbms</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-mailbox-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker-client</artifactId>
     </dependency>
 

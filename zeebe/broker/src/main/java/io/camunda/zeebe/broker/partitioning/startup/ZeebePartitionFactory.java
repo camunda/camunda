@@ -80,6 +80,7 @@ import io.camunda.zeebe.mailbox.MeteredMailboxStore;
 import io.camunda.zeebe.mailbox.Scheduler;
 import io.camunda.zeebe.mailbox.leadership.LeaderElector;
 import io.camunda.zeebe.mailbox.leadership.MeteredLeaseStore;
+import io.camunda.zeebe.mailbox.rdbms.RdbmsMailboxStores;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -173,12 +174,15 @@ public final class ZeebePartitionFactory {
       final RocksDbResources rocksDbResources,
       final SecretStoreRegistry secretStoreRegistry,
       final @Nullable RdbmsEngineStateResources engineState,
+      final @Nullable RdbmsMailboxStores mailboxStores,
       final MeterRegistry brokerMeterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
-    mailboxSetup = MailboxSetups.load(brokerCfg).map(setup -> metered(setup, brokerMeterRegistry));
+    mailboxSetup =
+        MailboxSetups.load(brokerCfg, mailboxStores)
+            .map(setup -> metered(setup, brokerMeterRegistry));
     leaderships =
-        LeaseSetups.load(brokerCfg)
+        LeaseSetups.load(brokerCfg, mailboxStores, engineState != null)
             .map(
                 lease ->
                     leaseLeaderships(
@@ -368,7 +372,10 @@ public final class ZeebePartitionFactory {
         executor::shutdownNow);
   }
 
-  /** How this broker uses the cross-region mailbox. Empty unless a provider supplies one. */
+  /**
+   * How this broker uses the cross-region mailbox. Empty unless a provider supplies one or the
+   * primary storage is an RDBMS.
+   */
   public Optional<MailboxSetup> mailboxSetup() {
     return mailboxSetup;
   }

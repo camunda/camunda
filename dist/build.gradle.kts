@@ -353,6 +353,8 @@ dependencies {
   implementation(project(":zeebe-broker"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-engine-state-rdbms"))
+  implementation(project(":zeebe-mailbox-rdbms"))
+  implementation(project(":zeebe-mailbox-api"))
   implementation(project(":zeebe-broker-client"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-gateway-grpc"))

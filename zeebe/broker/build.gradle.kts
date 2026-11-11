@@ -39,6 +39,7 @@ dependencies {
   implementation(project(":zeebe-logstreams"))
   implementation(project(":zeebe-mailbox"))
   implementation(project(":zeebe-mailbox-api"))
+  implementation(project(":zeebe-mailbox-rdbms"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":dynamic-node-id-provider"))

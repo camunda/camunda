@@ -9,12 +9,15 @@ package io.camunda.zeebe.broker.mailbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.mailbox.InMemoryMailboxStore;
 import io.camunda.zeebe.mailbox.api.MailboxConfig;
+import io.camunda.zeebe.mailbox.rdbms.RdbmsMailboxStores;
 import java.util.List;
 import java.util.Optional;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 
 final class MailboxSetupsTest {
@@ -92,5 +95,39 @@ final class MailboxSetupsTest {
 
   private static MailboxSetup setup() {
     return MailboxSetup.of(new InMemoryMailboxStore(), MailboxConfig.defaults(), null);
+  }
+
+  @Test
+  void shouldUseTheMailboxOfTheRdbmsPrimaryStorage() {
+    // given
+    final var stores = RdbmsMailboxStores.create(mock(DataSource.class));
+
+    // when
+    final var setup = MailboxSetups.resolve(Optional.empty(), stores);
+
+    // then
+    assertThat(setup)
+        .hasValueSatisfying(
+            mailbox -> {
+              assertThat(mailbox.store()).isSameAs(stores.mailboxStore());
+              assertThat(mailbox.simulatedZone()).isNull();
+            });
+  }
+
+  @Test
+  void shouldPreferTheSetupOfAProviderOverTheRdbmsPrimaryStorage() {
+    // given
+    final var provided =
+        MailboxSetup.of(new InMemoryMailboxStore(), MailboxConfig.defaults(), null);
+    final var stores = RdbmsMailboxStores.create(mock(DataSource.class));
+
+    // then
+    assertThat(MailboxSetups.resolve(Optional.of(provided), stores)).contains(provided);
+  }
+
+  @Test
+  void shouldHaveNoMailboxWithoutProvidersOrRdbmsPrimaryStorage() {
+    // then
+    assertThat(MailboxSetups.resolve(Optional.empty(), null)).isEmpty();
   }
 }
