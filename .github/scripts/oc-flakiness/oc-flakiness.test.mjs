@@ -271,3 +271,8 @@ test('should not judge the test when the baseline did not score or was green', (
   assert.equal(final({baseline: pass(60)}).action, 'delete_branch');
   assert.equal(final({baseline: pass(60), iter1: pass(0, 'blocked')}).action, 'blocked');
 });
+
+test('should block, not give up, when the agent job failed before producing a patch', () => {
+  assert.equal(final({baseline: pass(60), fixResults: ['failure', '']}).action, 'blocked');
+  assert.equal(final({baseline: pass(60), fixResults: ['success', '']}).action, 'delete_branch');
+});

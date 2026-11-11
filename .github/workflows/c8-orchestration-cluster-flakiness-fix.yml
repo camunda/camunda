@@ -537,6 +537,12 @@ jobs:
 
       - name: Decide
         id: final
+        env:
+          # failure: the attempt ran but the agent never got to export a patch.
+          FIX_RESULTS: >-
+            ${{ format('{0},{1}',
+              needs.fix1.result != 'skipped' && (needs.fix1.outputs.has_patch != '' && 'success' || 'failure') || '',
+              needs.fix2.result != 'skipped' && (needs.fix2.outputs.has_patch != '' && 'success' || 'failure') || '') }}
         run: |
           set -euo pipefail
           o="$RUNNER_TEMP/out"
@@ -544,6 +550,7 @@ jobs:
             --baseline "$o/flaky-score-baseline/score.json" \
             --iter1 "$o/flaky-score-iter1/score.json" \
             --iter2 "$o/flaky-score-iter2/score.json" \
+            --fix-results "$FIX_RESULTS" \
             --min-rate "$MIN_PASS_RATE" --min-improvement "$MIN_IMPROVEMENT_PP")
           echo "$result"
           {

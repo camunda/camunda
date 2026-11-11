@@ -7,7 +7,8 @@
 //     -> {"run_iter2": bool, "base": "iter1" | "target", "reason": "..."}
 //
 //   node decide.mjs --mode final --baseline b.json [--iter1 i1.json]
-//                   [--iter2 i2.json] [--min-rate 80] [--min-improvement 10]
+//                   [--iter2 i2.json] [--fix-results <result>,<result>]
+//                   [--min-rate 80] [--min-improvement 10]
 //     -> {"action": "open_pr" | "delete_branch" | "not_reproduced" | "blocked",
 //         "best": "iter1" | "iter2" | null, "reason": "..."}
 //
@@ -36,7 +37,17 @@ export function next({baseline, iter1}) {
   };
 }
 
-export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10}) {
+// fixResults: the results of the jobs that ran the agent. A failed or
+// cancelled one never produced a patch to judge (an artifact outage, a
+// runner loss), which says nothing about the test.
+export function final({
+  baseline,
+  iter1,
+  iter2,
+  fixResults = [],
+  minRate = 80,
+  minImprovement = 10,
+}) {
   if (!baseline || baseline.verdict === 'blocked') {
     return {action: 'blocked', best: null, reason: 'baseline produced no score'};
   }
@@ -53,6 +64,9 @@ export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10
     ['iter2', iter2],
   ].filter(([, pass]) => usable(pass));
   if (scored.length === 0) {
+    if (fixResults.some((r) => r === 'failure' || r === 'cancelled')) {
+      return {action: 'blocked', best: null, reason: 'a fix attempt failed before the agent finished'};
+    }
     const anyRan = iter1 || iter2;
     return {
       action: anyRan ? 'blocked' : 'delete_branch',
@@ -106,6 +120,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       baseline,
       iter1: load('iter1'),
       iter2: load('iter2'),
+      fixResults: (args['fix-results'] ?? '').split(','),
       minRate: Number(args['min-rate'] ?? 80),
       minImprovement: Number(args['min-improvement'] ?? 10),
     });
