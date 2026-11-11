@@ -181,7 +181,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
       final long targetTerm,
       final Role targetRole) {
     if (targetRole != Role.LEADER) {
-      return right(RdbmsLogStorage.readOnly(repository, RdbmsLogStorage.Config.DEFAULT));
+      return right(
+          RdbmsLogStorage.readOnly(
+              repository, RdbmsLogStorage.Config.fromEnvironment(System.getenv())));
     }
 
     final var raftPartition = context.getRaftPartition();
@@ -209,7 +211,7 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
             "rdbms-log-writer-" + partitionId,
             repository,
             targetTerm,
-            RdbmsLogStorage.Config.DEFAULT,
+            RdbmsLogStorage.Config.fromEnvironment(System.getenv()),
             context.getPartitionTransitionMeterRegistry(),
             error -> {
               // Raft keeps this node leader while the database fails, so step down explicitly;

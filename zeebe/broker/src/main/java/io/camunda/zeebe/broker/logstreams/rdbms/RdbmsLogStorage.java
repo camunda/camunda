@@ -15,11 +15,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -64,6 +66,9 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
 
   private final AtomicReference<State> state = new AtomicReference<>(State.OPEN);
   private final @Nullable Thread writer;
+
+  /** Taken from the queue but too large for the last batch; starts the next one. Writer only. */
+  private @Nullable PendingAppend overflow;
 
   private RdbmsLogStorage(
       final LogBlockRepository repository,
@@ -171,8 +176,10 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
     final var batch = new ArrayList<PendingAppend>();
     try {
       while (state.get() == State.OPEN) {
-        batch.add(queue.take());
-        drainUpToMaxBatchSize(batch);
+        final var carriedOver = overflow;
+        overflow = null;
+        batch.add(carriedOver != null ? carriedOver : queue.take());
+        collectBatch(batch);
         writeWithRetry(batch);
         if (state.get() == State.OPEN) {
           notifyCommitted(batch);
@@ -186,13 +193,31 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
     }
   }
 
-  private void drainUpToMaxBatchSize(final List<PendingAppend> batch) {
+  /**
+   * Adds what has queued up to the batch, and keeps waiting for more until the commit linger has
+   * passed since the first block was taken, so more blocks share one transaction. Stops early once
+   * the next block would exceed the batch's byte limit, keeping that block for the next batch.
+   */
+  private void collectBatch(final List<PendingAppend> batch) throws InterruptedException {
     long batchBytes = batch.getFirst().data().length;
-    // only this thread takes from the queue, so the peeked element is the one polled
-    for (var next = queue.peek();
-        next != null && batchBytes + next.data().length <= config.maxBatchBytes();
-        next = queue.peek()) {
-      batch.add(queue.poll());
+    final long deadline = System.nanoTime() + config.commitLinger().toNanos();
+    while (true) {
+      var next = queue.poll();
+      if (next == null) {
+        final long remaining = deadline - System.nanoTime();
+        if (remaining <= 0) {
+          return;
+        }
+        next = queue.poll(remaining, TimeUnit.NANOSECONDS);
+        if (next == null) {
+          return;
+        }
+      }
+      if (batchBytes + next.data().length > config.maxBatchBytes()) {
+        overflow = next;
+        return;
+      }
+      batch.add(next);
       batchBytes += next.data().length;
     }
   }
@@ -291,13 +316,24 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
    * @param maxBatchBytes the most block bytes to write in one transaction; a single larger block is
    *     still written on its own
    * @param readerPageSize the most blocks a reader fetches with one query
+   * @param commitLinger how long the writer waits for more blocks after taking the first one, so
+   *     that fewer, larger transactions are committed at the cost of that much latency; zero
+   *     commits whatever has queued up at once
    */
   public record Config(
       Duration retryTimeout,
       Duration initialRetryBackoff,
       Duration maxRetryBackoff,
       int maxBatchBytes,
-      int readerPageSize) {
+      int readerPageSize,
+      Duration commitLinger) {
+
+    /**
+     * Experimental: read directly from the environment until the storage gets proper configuration,
+     * so load tests can try values without code changes.
+     */
+    public static final String COMMIT_LINGER_ENV =
+        "CAMUNDA_EXPERIMENTAL_RDBMSLOGSTORAGE_COMMITLINGERMS";
 
     public static final Config DEFAULT =
         new Config(
@@ -307,6 +343,32 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
             Duration.ofMillis(50),
             Duration.ofSeconds(1),
             16 * 1024 * 1024,
-            32);
+            32,
+            Duration.ZERO);
+
+    /** The defaults, with the commit linger taken from {@link #COMMIT_LINGER_ENV} if set. */
+    public static Config fromEnvironment(final Map<String, String> environment) {
+      final var lingerMillis = environment.get(COMMIT_LINGER_ENV);
+      if (lingerMillis == null || lingerMillis.isBlank()) {
+        return DEFAULT;
+      }
+      try {
+        return DEFAULT.withCommitLinger(Duration.ofMillis(Long.parseLong(lingerMillis.trim())));
+      } catch (final NumberFormatException e) {
+        LOG.warn(
+            "Ignoring {}={}, expected a number of milliseconds", COMMIT_LINGER_ENV, lingerMillis);
+        return DEFAULT;
+      }
+    }
+
+    public Config withCommitLinger(final Duration commitLinger) {
+      return new Config(
+          retryTimeout,
+          initialRetryBackoff,
+          maxRetryBackoff,
+          maxBatchBytes,
+          readerPageSize,
+          commitLinger);
+    }
   }
 }
