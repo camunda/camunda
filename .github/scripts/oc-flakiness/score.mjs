@@ -31,6 +31,23 @@ import {dirname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
 const FAILED = new Set(['failed', 'timedOut']);
+const SERIAL_SKIP = 'skipped: an earlier test in its serial block failed';
+
+// In a serial block Playwright skips the remaining tests once one fails, and
+// reports them as `skipped` with a result but without the `skip`/`fixme`
+// annotation that test.skip() leaves. Such a repeat did not pass: counting it
+// as not run would let a change that moves the failure into a prerequisite
+// score as green. A repeat never started (results: []) is still not run.
+function skippedBySerialFailure(test) {
+  const intended = (test.annotations ?? []).some(
+    (a) => a.type === 'skip' || a.type === 'fixme',
+  );
+  return (
+    test.status === 'skipped' &&
+    !intended &&
+    (test.results ?? []).some((r) => r.status === 'skipped')
+  );
+}
 
 function rate(passed, failed) {
   const total = passed + failed;
@@ -68,6 +85,10 @@ export function score({dir, file, titlePath, cells, planned}) {
           ) {
             counts.failed += 1;
             const key = `${meta.cell}\u0000${errorKey(test.results[0].error?.message)}`;
+            errors.set(key, (errors.get(key) ?? 0) + 1);
+          } else if (skippedBySerialFailure(test)) {
+            counts.failed += 1;
+            const key = `${meta.cell}\u0000${SERIAL_SKIP}`;
             errors.set(key, (errors.get(key) ?? 0) + 1);
           } else {
             counts.notRun += 1;

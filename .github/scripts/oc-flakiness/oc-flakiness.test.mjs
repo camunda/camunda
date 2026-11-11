@@ -193,6 +193,22 @@ test('should score a cell with a failure from half of its planned runs', () => {
   assert.equal(score({dir, ...scoreArgs}).verdict, 'scored');
 });
 
+test('should count a repeat skipped after a serial prerequisite failed as a failure', () => {
+  // given
+  const serialSkip = {projectName: 'chromium', status: 'skipped', results: [result('skipped')]};
+  const intendedSkip = {...serialSkip, annotations: [{type: 'skip'}]};
+  const notStarted = {projectName: 'chromium', status: 'skipped', results: []};
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, serialSkip, intendedSkip, notStarted]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs});
+
+  // then
+  assert.deepEqual(scored.pooled, {passed: 1, failed: 1, rate: 50});
+  assert.equal(scored.cells['e2e-v2'].notRun, 2);
+  assert.match(scored.topErrors[0].message, /serial block/);
+});
+
 test('should report green when every scored run passed', () => {
   // given
   const dir = shardDir([{cell: 'e2e-v2', tests: [passed, passed, passed, passed]}]);

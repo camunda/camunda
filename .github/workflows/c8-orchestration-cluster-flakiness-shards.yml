@@ -319,7 +319,7 @@ jobs:
           echo "Running ${location} ${REPEAT_EACH} times on ${WORKERS} worker(s) (project ${PROJECT})"
           rc=0
           npx playwright test "$location" "${grep_args[@]}" \
-            --no-deps --project="$PROJECT" \
+            --no-deps --project="$PROJECT" --forbid-only \
             --repeat-each="$REPEAT_EACH" --retries=0 --workers="$WORKERS" || rc=$?
           echo "Playwright exited ${rc}; the score reads the report, not the exit code."
 

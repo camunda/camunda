@@ -359,7 +359,8 @@ jobs:
             done
           done
           added=$(grep -E '^\+' "$patch" | grep -vE '^\+\+\+ ' || true)
-          if grep -qE '\b(test|it|describe)\.(skip|fixme|only)\b' <<< "$added"; then
+          # Any modifier chain: test.only, test.describe.serial.only, describe.parallel.skip, ...
+          if grep -qE '\b(test|it|describe)(\.[A-Za-z]+)*\.(skip|fixme|only)\b' <<< "$added"; then
             echo "::error::the patch adds test.skip, test.fixme or .only"
             exit 1
           fi
