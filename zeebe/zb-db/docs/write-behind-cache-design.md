@@ -1,4 +1,4 @@
-# Write-behind state cache for zb-db (EhCache 3)
+# Write-behind state cache for zb-db
 
 Solution design and implementation plan. Status: draft for the
 `poc-single-storage-workshop-zbdb-cache` exploration.
@@ -6,15 +6,16 @@ Solution design and implementation plan. Status: draft for the
 ## 1. Goal
 
 Committed state goes into an in-memory cache first. The backing store is updated asynchronously
-("write-behind") with batching and coalescing. The backing store is RocksDB today, and may be an
-RDBMS later, so the cache must work with any `ZeebeDb` and depend on `zeebe-db-api` only.
+("write-behind"), in groups of whole transactions with the keys they share coalesced. The backing
+store is RocksDB today, and may be an RDBMS later, so the cache must work with any `ZeebeDb` and
+depend on `zeebe-db-api` only.
 Hypotheses to validate, with RocksDB as the backend:
 
 - Hot point reads are served from the heap instead of JNI + memtable/block-cache lookups.
 - Short-lived state (keys inserted and deleted within the write window) never reaches RocksDB as
   a put. That means less memtable churn and fewer flushes and compactions.
-- The write-behind queue absorbs RocksDB write stalls, up to its capacity, so the processing thread
-  doesn't see them.
+- The write-behind queue absorbs RocksDB write stalls, up to `maxPendingBytes`, so the processing
+  thread doesn't see them.
 
 Non-goals: changing how callers use `ZeebeDb`/`ColumnFamily`, changing the snapshot or replication
 format, or using the cache as durable storage.
@@ -41,16 +42,23 @@ format, or using the cache as durable storage.
    - RocksDB lags behind (its processed position is below the lower bound). The log can then be
      compacted past records that replay still needs.
    - The checkpoint captures half a transaction. The restored state is then corrupt.
+
+   The design avoids both: the writer applies whole transactions in commit order (§4.6), and a
+   snapshot waits for the writer to catch up before the checkpoint (§4.7).
+
 3. **Iteration is everywhere.** The engine iterates column families at 137 call sites in 47 state
    classes, next to 626 point reads and writes (`get`, `exists`, `insert`, `update`, `upsert`,
    `delete…`). 79 of the 137 run per command, 19 of those also during replay, and only 12 never run
    in production; [engine-state-iteration.md](engine-state-iteration.md) lists them all. Ordered
    prefix scans are core: due timers, job deadlines, children of an element instance, variables of
    a scope. A hash cache can't serve them, and RocksDB alone is stale under write-behind.
+
 4. **Several actors share the DB.** Contexts are created by StreamProcessor, ExporterDirector,
    StateQueryService, backup/checkpoint state, DbPositionSupplier and migrations. Each context is
    single-threaded, but the store must be thread-safe across contexts.
+
 5. **Tests already encode the contracts.**
+
    - Read-your-writes, including iteration over your own uncommitted writes.
    - Delete-while-iterating (`ColumnFamilyContractTest#shouldDeleteOnForeachPair`,
      `#shouldDeleteWhileTrue`).
@@ -60,26 +68,30 @@ format, or using the cache as durable storage.
      a commit is one atomic `WriteBatch`, so readers see all of it or none of it, and a RocksDB
      iterator reads a single point in time. The design keeps both properties.
 
-## 3. What EhCache 3 write-behind gives, and what it doesn't
+## 3. EhCache 3: the read cache, not the writer
 
-Verified against the ehcache3 `v3.11.1` and `v3.12.0` sources. 3.12.0 is the latest release, and
-`BatchingLocalHeapWriteBehindQueue` is identical in both.
+The first version of this plan used EhCache's write-behind as the writer. Verified against the
+ehcache3 `v3.11.1` and `v3.12.0` sources (3.12.0 is the latest release, and
+`BatchingLocalHeapWriteBehindQueue` is identical in both), it works per key and can't keep a
+transaction together:
 
-|        Property         |                                                                                                Behaviour                                                                                                 |                                                               Impact                                                               |
-|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| Read of a pending write | `AbstractWriteBehind#load` returns the pending op for a key before it calls our loader.                                                                                                                  | Good: read-your-writes still works after eviction, apart from the next row.                                                        |
-| Pending-op bookkeeping  | After a batch is written, `latest.remove(key)` runs unconditionally. It also drops a *newer* pending op for the same key in a later batch.                                                               | If the entry is evicted in that window, a read falls through to the backend and gets the old value. We need our own pending index. |
-| Ordering                | `concurrencyLevel` stripes by `key.hashCode()`. Order is kept per key, not across keys. A batch splits into alternating `writeAll`/`deleteAll` calls, and batch boundaries don't match our transactions. | The backend never holds a transaction-consistent state on its own, so snapshots need a barrier.                                    |
-| Writer failure          | No retry. EhCache logs a WARN and removes the batch's keys from the cache (`store.remove`).                                                                                                              | Committed state silently disappears from the live view. Our writer must never throw.                                               |
-| Back-pressure           | A full queue blocks the committing thread in `BlockingQueue#put`. EhCache enqueues inside its per-key `compute` (`LocalLoaderWriterStore#put`), so that map bin stays locked while it waits.             | Blocks an actor thread, as RocksDB write stalls do today. Cache reads of other keys in the same map bin wait too.                  |
-| Load vs. put            | On a miss, `cache.get` runs the loader inside the heap store's per-key `compute` (`OnHeapStore#computeIfAbsent`). A concurrent `put` for that key waits, then wins.                                      | A load can't overwrite a newer committed value.                                                                                    |
-| Flush/drain             | No public API (`WriteBehind#getQueueSize` is internal).                                                                                                                                                  | We need our own "everything flushed" signal.                                                                                       |
-| Iteration               | None: unordered, and only resident entries.                                                                                                                                                              | We need our own ordered overlay.                                                                                                   |
-| Dependencies            | `org.ehcache:ehcache` pulls in `javax.cache:cache-api` (compile) and `jaxb-runtime` (runtime). Apache-2.0 license.                                                                                       | Exclude JAXB, since we configure the cache in code.                                                                                |
+|        Property        |                                                                                                Behaviour                                                                                                |                                Why it rules EhCache out as the writer                                |
+|------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| Ordering               | `concurrencyLevel` stripes by `key.hashCode()`. Order is kept per key, not across keys. Batches are cut every `batchSize` ops and coalesced per key, and their boundaries don't match our transactions. | The backend never holds whole transactions, so a snapshot of it needs a barrier that pauses commits. |
+| Pending-op bookkeeping | After a batch is written, `latest.remove(key)` runs unconditionally. It also drops a *newer* pending op for the same key in a later batch.                                                              | An evicted entry would load the old value from the backend.                                          |
+| Writer failure         | No retry. EhCache logs a WARN and removes the batch's keys from the cache (`store.remove`).                                                                                                             | Committed state would silently disappear from the live view.                                         |
+| Back-pressure          | A full queue blocks the committing thread in `BlockingQueue#put`, inside EhCache's per-key `compute`, so that map bin stays locked while it waits.                                                      | Readers of other keys in the same bin would wait too.                                                |
+| Flush/drain            | No public API (`WriteBehind#getQueueSize` is internal).                                                                                                                                                 | A snapshot couldn't ask the writer to hurry.                                                         |
 
-**Consequence:** EhCache gives us a hot point-read cache and an async writer that batches,
-coalesces and applies back-pressure. We still have to build the correctness pieces around it:
-ordered reads of unflushed state, snapshot consistency and error handling.
+So the writer is ours (§4.6), and EhCache is only the read cache. What the design relies on:
+
+|    Property     |                                                                              Behaviour                                                                              |                          Impact                           |
+|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| Load vs. put    | On a miss, `cache.get` runs the loader inside the heap store's per-key `compute` (`OnHeapStore#computeIfAbsent`). A concurrent `put` for that key waits, then wins. | A load can't overwrite a newer committed value (§4.4).    |
+| Loader-writer   | Without write-behind, `cache.put` calls the loader-writer's `write` synchronously.                                                                                  | Our `write` and `delete` do nothing; the writer persists. |
+| Byte-sized heap | The heap tier sized in bytes measures every entry on insert. It can't measure a record; it then doesn't keep the entry.                                             | `CacheKey` and `CachedValue` are plain classes (§4.2).    |
+| Iteration       | None: unordered, and only resident entries.                                                                                                                         | We need our own ordered overlay (§4.5).                   |
+| Dependencies    | `org.ehcache:ehcache` pulls in `javax.cache:cache-api` (compile) and `jaxb-runtime` (runtime). Apache-2.0 license.                                                  | JAXB is excluded, since we configure the cache in code.   |
 
 ## 4. Design
 
@@ -119,11 +131,11 @@ The column family metrics, `AccessMetricsConfiguration` and `DefaultColumnFamily
 - Toward the backend, the cache uses **pass-through column families**: for each column family, it
   creates a backend `ColumnFamily<RawKey, RawValue>`. `RawKey` and `RawValue` are cache-internal
   `DbKey`/`DbValue` implementations that write and read raw bytes unchanged. Through them:
-  - the writer applies a batch as one backend transaction (`runInTransaction` with `upsert` and
-    `deleteIfExists`)
+  - the writer applies a group of whole transactions as one backend transaction
+    (`runInTransaction` with `upsert` and `deleteIfExists`)
   - a cache miss loads with `get`
   - iteration uses the backend's `whileEqualPrefix`, `whileTrue` and `whileTrueReverse`
-- Snapshots go through `ZeebeDb#createSnapshot`, after a barrier (§4.7).
+- Snapshots go through `ZeebeDb#createSnapshot`, once the writer has caught up (§4.7).
 
 **Two contracts the cache relies on**, which the contract tests pin down for every backend:
 
@@ -131,7 +143,7 @@ The column family metrics, `AccessMetricsConfiguration` and `DefaultColumnFamily
   The cache merges its overlay with the backend's iteration, so the two orders must match. RocksDB
   does this; an RDBMS would need a binary key column with byte-wise ordering.
 - **Atomic, consistent backend.** A backend transaction commits all of its writes or none, and
-  `createSnapshot` captures one consistent point, even while other transactions commit.
+  `createSnapshot` captures one consistent point, even while the writer keeps writing.
 
 ```mermaid
 flowchart LR
@@ -141,15 +153,17 @@ flowchart LR
   subgraph store["WriteBehindStore (one per WriteBehindZeebeDb)"]
     LOCKS["commitLock (one committer at a time)<br/>publishLock (StampedLock)"]
     DIRTY["DirtyIndex<br/>one ConcurrentSkipListMap per column family<br/>unflushed versions only"]
-    CACHE["EhCache heap tier<br/>CacheKey → CachedValue"]
-    WB["EhCache write-behind<br/>(batching, coalescing, queue)"]
-    LW["BackendLoaderWriter"]
+    QUEUE["transaction queue<br/>whole transactions, in commit order"]
+    WRITER["writer (one thread)<br/>groups whole transactions"]
+    CACHE["EhCache heap tier (read cache)<br/>CacheKey → CachedValue"]
+    LOADER["BackendLoader<br/>(EhCache loader; writes nothing)"]
   end
   BACKEND[("backend ZeebeDb<br/>(RocksDB today)")]
   TX -- "1. publish" --> LOCKS --> DIRTY
-  LOCKS -- "2. enqueue" --> CACHE --> WB --> LW -- "one backend transaction" --> BACKEND
-  LW -- "remove flushed versions" --> DIRTY
-  CACHE -. "miss: load" .-> LW -. "DirtyIndex, then backend get" .-> BACKEND
+  LOCKS -- "2. enqueue" --> QUEUE --> WRITER -- "one backend transaction per group" --> BACKEND
+  LOCKS -- "3. put" --> CACHE
+  WRITER -- "remove flushed versions" --> DIRTY
+  CACHE -. "miss: load" .-> LOADER -. "DirtyIndex, then backend get" .-> BACKEND
 ```
 
 Read paths:
@@ -168,12 +182,14 @@ Read paths:
 - The DirtyIndex is one sorted map per column family, so a scan copies from a single map.
 - `CachedValue` has two fields:
   - `byte @Nullable [] bytes` (`null` means tombstone)
-  - `long seq` (global commit sequence; all writes of one transaction share it)
+  - `long seq` (global commit sequence; all writes of one transaction share it, and cleanup
+    matches on it)
+- `CacheKey` and `CachedValue` are plain final classes, not records: EhCache's byte-sized heap
+  can't measure a record, and then doesn't keep the entry (§3).
 - **A delete is a tombstone put. We never call `cache.remove()`.** This has three benefits:
-  - The writer gets the value, and so its `seq`, for deletes too. EhCache's `deleteAll` only hands us
-    keys.
+  - The queue and the DirtyIndex treat deletes like any other version, with a `seq`.
   - `exists()` gets negative caching.
-  - Coalescing folds an insert plus a delete into a single op.
+  - Coalescing within a group folds an insert plus a delete into a single op.
 - The arrays in the cache and the DirtyIndex are shared and never handed out:
   - Commit copies them in, because the cache serializes keys and values into reused buffers.
   - Every read copies them out: `get`, and an iterator's `key()`/`value()`. Callers can keep or
@@ -214,26 +230,22 @@ The cached implementation:
   commitLock.lock()                               // one committer at a time, start to finish
   try
     failIfStoreFailed()
-    wait while pendingBytes > maxPendingBytes     // byte back-pressure; wakes on cleanup or failure
-    if txBuffer exceeds writeThroughMaxKeys or writeThroughMaxBytes:
-      commitWriteThrough(); txBuffer.clear(); return   // see below
+    wait while queuedBytes > maxPendingBytes      // byte back-pressure; wakes on a flush or failure
     seq = nextSeq()
-    values = [(key, new CachedValue(op.bytes, seq)) for (key, op) in txBuffer]
+    versions = [(key, new CachedValue(op.bytes, seq)) for (key, op) in txBuffer]
     stamp = publishLock.writeLock()               // short; nothing inside it blocks
-      for (key, v) in values: dirtyIndex.put(key, v); pendingBytes += size(key, v)
+      for (key, v) in versions: dirtyIndex.put(key, v)
     publishLock.unlockWrite(stamp)
-    try
-      for (key, v) in values: cache.put(key, v)   // enqueue; may block on back-pressure
-    catch e: failStore(e); throw e                // published versions can't drain any more
-    failIfStoreFailed()                           // the writer may have failed while we waited
+    queue.add(transaction(seq, versions))         // the writer takes it from here (§4.6)
+    for (key, v) in versions: cache.put(key, v)   // the read cache; a plain heap put
     txBuffer.clear()                              // only after success
   finally
     commitLock.unlock()
   ```
 - **Read-only transactions take no lock.** `DefaultTransactionContext` commits every standalone
   operation, reads included. Without the fast path, a read on another actor would wait behind a
-  committer that is blocked on a full queue. One such read is the exporter-position read that the
-  StateController makes before each snapshot.
+  committer that is waiting on `maxPendingBytes`. One such read is the exporter-position read that
+  the StateController makes before each snapshot.
 - **The buffer is cleared only after success.** The stream processor retries a commit that throws
   a recoverable `ZeebeDbException` (`RecoverableRetryStrategy`). RocksDB's commit keeps its batch
   until the write succeeds, so the retry writes the same changes; clearing in `finally` would let
@@ -242,60 +254,31 @@ The cached implementation:
 - `publishLock` is a `StampedLock`. Its write side covers the DirtyIndex update for the whole
   transaction, and readers validate against it (§4.4, §4.5). So a reader sees all of a transaction
   or none of it, as with an atomic backend commit today.
-- `commitLock` serializes committers end to end, so the enqueue order matches the publication
-  order. Without it, two contexts writing the same key could leave the cache on one version and the
-  DirtyIndex on the other. Coalescing could then drop the newer version from the queue, so that it
-  is never flushed. Serializing costs little, because the stream processor does almost all commits.
+- `commitLock` serializes committers end to end. So the queue holds transactions in `seq` order,
+  which the writer relies on (§4.6). It also keeps the cache's puts in publication order: two
+  contexts writing the same key can't leave the cache on the older version. Serializing costs
+  little, because the stream processor does almost all commits.
 - Only two places change the DirtyIndex: publication (above) and cleanup after a flush (§4.6). Both
   hold `publishLock`'s write side. So no bookkeeping has to run as a side effect inside
   `ConcurrentSkipListMap#compute`, whose function may run more than once.
-- Back-pressure blocks outside `publishLock`, so a full queue doesn't stall readers' validation.
-  Cache reads of keys in the same map bin can still wait (§3).
-- **Byte back-pressure.** The queue and the cache count entries, not bytes, and one value can be
-  megabytes (a variable document, for example). So the store also tracks `pendingBytes`, the key and
-  value bytes in the DirtyIndex. A commit waits while it exceeds `maxPendingBytes`, before it
-  publishes anything. Cleanup lowers it and wakes the waiter.
-- **Enqueue failure.** `cache.put` can throw, for example a `RejectedExecutionException` once the
-  write-behind executor has shut down. The versions already published can then never drain, so
-  the store fails through the same path as a writer failure (§4.6): it reports to partition health,
-  and later commits, reads and snapshots fail fast. `finally` releases `commitLock`.
-- **Oversized transactions commit write-through**, so that one transaction can't swell the
-  DirtyIndex and the queue past their budget (§4.11). A transaction above `writeThroughMaxKeys` keys
-  or `writeThroughMaxBytes` bytes, still under `commitLock`:
-  1. waits, up to `drainTimeout`, until the DirtyIndex is empty. A timeout throws a recoverable
-     `ZeebeDbException`, and a store failure aborts the wait at once (§4.6).
-  2. under `publishLock`'s write side: sets `lastWriteThroughSeq` to a new seq, writes its buffer
-     to the backend in one backend transaction, then empties the cache with `Cache#clear`. That
-     call doesn't reach the loader-writer.
-
-  Details:
-  - **Errors map as they do today.** A failed backend transaction applies nothing, and the cache
-  isn't cleared yet. A recoverable backend error arrives as a `ZeebeDbException`, and the processor
-  retries with the buffer intact.
-  - **Readers wait for it.** Holding `publishLock`'s write side across the whole backend write,
-  including any write stall, plus the clear is what makes the transaction visible all at once.
-  Optimistic reads fail validation meanwhile, and the read-lock fallback and iterator creation
-  wait. This is the only place where a large write blocks readers; its duration is measured
-  (§4.10).
-  - **EhCache can still serve a version that the write-through replaced.** Cleanup empties the
-  DirtyIndex inside `writeAll`, but EhCache drops the batch's keys from its pending-op map
-  (`latest`) only after `writeAll` returns. A cache miss in that window loads the old pending
-  version without calling our loader. So a point read doesn't trust a cached value whose `seq` is
-  below `lastWriteThroughSeq`, and reads the backend instead (§4.4). Cache entries that our loader
-  installs can't be older than the write-through: the clear runs after the backend write, and a
-  load holds its key's bin from the backend read until it installs the value.
-  - **It's the only place that calls the cache under `publishLock`.** That's safe because holding
-  `commitLock` keeps out every committer, and committers are the only threads that can block
-  inside the cache.
-  - **The main case is the migration step.** `MigrationTransitionStep` runs every migration in one
-  transaction, and a migration can rewrite whole column families.
+- **Byte back-pressure.** `queuedBytes` counts the key and value bytes of the queued transactions,
+  including versions that a later transaction already replaced, because the queue holds them until
+  they're written. A commit waits while it exceeds `maxPendingBytes`, before it publishes anything,
+  and outside `publishLock`, so readers never wait for it. A flush lowers it and wakes the waiter.
+  The transaction that is publishing can push it past the limit by at most its own size.
+- **A failing `cache.put` fails the store** (§4.6): its versions are published and queued, but the
+  read cache could be left on an older version. Later commits and snapshots then fail fast.
+- **Large transactions take the same path.** The writer applies each one as a group of its own
+  (§4.6). Their bytes are already on the heap in the tx buffer before the commit, so bypassing the
+  DirtyIndex and the queue wouldn't lower peak memory. The main case is the migration step:
+  `MigrationTransitionStep` runs every migration in one transaction, and a migration can rewrite
+  whole column families.
 
 ### 4.4 Point reads
 
 ```text
 stamp = publishLock.tryOptimisticRead()
 v = txBuffer.get(key) ?: dirtyIndex.get(key) ?: cache.get(key)   // cache miss: the loader runs
-if v came from the cache and v.seq < lastWriteThroughSeq: v = backendGet(key)   // §4.3
 if publishLock.validate(stamp): return copy of v.bytes
 
 // after a few failed tries: read under the lock, without the cache
@@ -305,12 +288,8 @@ publishLock.unlockRead(stamp)
 return copy of v.bytes                                           // null for a tombstone or a miss
 ```
 
-- The DirtyIndex comes before the cache, for two reasons:
-
-  - The cache can briefly hold an older version, between publication and enqueue.
-  - EhCache's `latest.remove(key)` can drop a pending op.
-
-  The DirtyIndex holds every unflushed version, so checking it first covers both.
+- The DirtyIndex comes before the cache, because the cache can briefly hold an older version,
+  between publication and the commit's `cache.put`. The DirtyIndex holds every unflushed version.
 
 - **`backendGet` uses the calling context's pass-through column family.** Contexts are
   single-threaded, so each reads the backend through its own backend `TransactionContext` (§4.3).
@@ -321,21 +300,17 @@ return copy of v.bytes                                           // null for a t
   isn't enough. Take this sequence:
 
   1. A reader misses the DirtyIndex just before a commit publishes.
-  2. The entry is evicted, and EhCache has dropped its pending op.
+  2. The commit puts its version into the cache, and the entry is evicted.
   3. The reader misses the cache, and the loader reads the old value from the backend.
 
   Validation retries the read, but the old value would stay cached. It would then be served once
   the new version flushes and leaves the DirtyIndex. The load runs inside EhCache's per-key
   `compute`, so a DirtyIndex check there installs either the newest committed version or a value
-  that the pending enqueue overwrites. The loader stamps what it reads from the backend with the
-  latest commit `seq`.
+  that the commit's `cache.put` overwrites.
 
-- **No reader calls the cache while holding `publishLock`.** A committer blocked on a full queue
-  holds the cache's map bin (§3), and the writer needs `publishLock`'s write side for cleanup
-  before it can take the next batch. A reader that held the read lock while waiting for that bin
-  would close the cycle. So the read-lock fallback goes to the backend directly. That's correct
-  because, while publication and cleanup are excluded, anything not in the DirtyIndex has been
-  flushed.
+- **The read-lock fallback skips the cache.** It goes to the backend directly, which keeps the
+  lock's hold short and free of waits on the cache's map bins. That's correct because, while
+  publication and cleanup are excluded, anything not in the DirtyIndex has been flushed.
 
 - Validation makes the lookup atomic with respect to publications. Two reads can still straddle a
   commit and see an older K1 with a newer K2, as they can today. They can never see a newer K1 with
@@ -367,6 +342,9 @@ When the backend scan ends, emit the rest of the overlay range. Rules:
 
 - On equal keys, the tx buffer wins over the DirtyIndex copy, which wins over the backend.
 - The DirtyIndex copy covers only the prefix being scanned.
+- Like RocksDB, a forward scan stops at the first visible key after the start that isn't in the
+  prefix. If the start key lies outside the prefix, the backend is scanned without the prefix,
+  because a prefix scan would hide the key that stops RocksDB.
 - Key-only scans use the backend's key-only visitors in the same way; `count`, `isEmpty` and
   `exists` reuse the merge.
 
@@ -400,36 +378,45 @@ so cleanup doesn't wait for open scans, and a long scan doesn't hold back memory
 Costs:
 
 - **Publications wait for the backend's first entry.** With RocksDB that's one seek; with an RDBMS
-  it's a query round trip. Measure it in Phase 3 (§4.10).
+  it's a query round trip. Measure it (§4.10).
 - **The copy** costs O(dirty entries in the scanned prefix). A prefix scan touches a handful of
   entries. A scan over a whole column family that stops early (due timers, job deadlines) copies
   every dirty entry of that column family, which is bounded by the DirtyIndex budget (§4.11).
 
-### 4.6 Writer: `BackendLoaderWriter`
+### 4.6 Writer: whole transactions in commit order
 
-- `writeAll(entries)` applies the batch as one backend transaction, on a backend
-  `TransactionContext` that only the writer uses: `runInTransaction` with `upsert` for a value and
-  `deleteIfExists` for a tombstone, on the pass-through column family of each entry's column
-  family. `deleteAll` is never called, because we never call `cache.remove`.
+Commits append whole transactions to a queue, in `seq` order (§4.3). One writer thread, on a
+backend `TransactionContext` that only it uses, applies them:
+
+- **Groups of whole transactions.** It takes consecutive transactions from the queue and applies
+  them as one backend transaction: `runInTransaction` with `upsert` for a value and
+  `deleteIfExists` for a tombstone, on the pass-through column family of each key.
+  - **Coalescing within a group:** a key that several transactions in the group wrote is written
+    once, with its newest version. The group commits atomically, so the versions in between would
+    never be visible in the backend anyway.
+  - **A group closes** when it reaches `batchSize` distinct keys, when its oldest transaction has
+    waited `maxWriteDelay`, or when a snapshot asks the writer to flush (§4.7).
+  - **A transaction is never split.** One with more than `batchSize` keys is written alone.
+  - Since each group commits atomically and ends on a transaction boundary, the backend always
+    holds a prefix of the committed transactions. Snapshots rely on that (§4.7).
 - **Cleanup** runs right after a successful write, under `publishLock`'s write side:
-  - For each entry of the `writeAll`, it removes the DirtyIndex entry if its `seq` equals the one in
-    the batch. A newer version stays.
-  - Matching on `seq` rather than object identity means it doesn't matter whether EhCache hands us
-    the same object we passed to `put`.
-  - It lowers `pendingBytes`, then wakes everything waiting on the writer (§4.3, §4.7).
-- It never throws to EhCache:
-  - On a recoverable error, which the backend reports as a `ZeebeDbException`, it retries with
-    backoff, up to a limit. This stalls the queue, which turns into back-pressure.
-  - On a non-recoverable error, or once retries are exhausted, it sets `store.failure`, logs an
-    ERROR and reports the failure right away (next bullet). From then on, commits, reads and
-    snapshots fail fast with a non-recoverable exception.
-  - The failure also wakes every waiter at once: the snapshot drain, a write-through's drain, and
-    commits waiting on `pendingBytes`. Each re-checks `store.failure` and aborts instead of waiting
-    for its timeout.
-  - After a failure, the writer keeps taking queued batches but doesn't write them. A committer
-    blocked on a full queue then returns, sees the failure and throws.
-- **Failure reporting and recovery.** A partition with little traffic may not read or commit for a
-  long time, so the failure can't wait for the next DB call to surface. Instead:
+  - For each key of the group, it removes the DirtyIndex entry if its `seq` equals the version
+    written. A newer version, from a transaction after the group, stays.
+  - It lowers `queuedBytes`, records the group's last `seq` as flushed, then wakes everything
+    waiting on the writer: commits waiting on `maxPendingBytes`, and a snapshot catching up.
+- **Failures:**
+  - On a recoverable error, which the backend reports as a `ZeebeDbException` (or any
+    `RecoverableException`), it retries the same group with backoff, up to a limit. Retrying is
+    safe: the group is atomic and rewrites exactly the same versions. The queue stalls meanwhile,
+    which turns into back-pressure.
+  - On a non-recoverable error, once retries are exhausted, or when a `cache.put` fails (§4.3), the
+    store fails. The failure latch logs an ERROR, reports the failure (next bullet), and wakes
+    every waiter, which then aborts instead of waiting for its timeout. From then on, commits and
+    snapshots fail fast with a non-recoverable exception. Reads keep working, read-only commits
+    included: the DirtyIndex and the backend still hold the exact committed state, and processing
+    meets the failure at its next commit anyway.
+- **Failure reporting and recovery.** A partition with little traffic may not commit for a long
+  time, so the failure can't wait for the next commit to surface. Instead:
   - `WriteBehindZeebeDb` implements `HealthMonitorable` from `zeebe-util`.
   - `ZeebeDbPartitionTransitionStep` registers the DB with the partition's component health monitor
     when it is `HealthMonitorable`, the same way `StreamProcessorTransitionStep` registers the
@@ -443,80 +430,52 @@ Costs:
   (fact 1). Recovering in-process instead, by stepping down and reinstalling, would need a new
   recoverable path in `ZeebePartition` (§8).
 
-- After the store is closed, it drops writes and never touches the closed backend.
-
 - **Dropped: skipping tombstones for keys the backend never had.** Coalescing alone still writes a
-  tombstone for an insert followed by a delete. RocksDB could tell cheaply that a key was never
-  written (`keyMayExist`), but the API has no such call, and checking with `exists` costs a read per
-  tombstone. If Phase 6 shows the tombstones matter, the API can gain an optional
+  tombstone for an insert followed by a delete in different groups. RocksDB could tell cheaply that
+  a key was never written (`keyMayExist`), but the API has no such call, and checking with `exists`
+  costs a read per tombstone. If Phase 7 shows the tombstones matter, the API can gain an optional
   `ColumnFamily#mayExist` (§8).
 
-### 4.7 Snapshot barrier
+### 4.7 Snapshots: catching up, without a barrier
 
-The barrier is taken before the snapshot store runs the checkpoint, and off the I/O pool.
-`prepareSnapshot()` is a new method on `ZeebeDb` in `zeebe-db-api`. Its default completes at once,
-so a plain backend needs no change; `WriteBehindZeebeDb` overrides it:
+Every position a snapshot is filed under is read, and committed, before `createSnapshot` starts:
+the processed position from the stream processor (`AsyncSnapshotDirector`), and the exported and
+backup positions (`StateControllerImpl#tryFindNextSnapshotId`). So `WriteBehindZeebeDb` only has to
+make sure that the backend holds at least those transactions:
 
 ```text
-// StateControllerImpl#takeSnapshot, before handing over to the snapshot store
-zeebeDb.prepareSnapshot()                    // a future; no actor thread waits for the barrier
-  .onComplete(ok -> transientSnapshot.take(dir -> zeebeDb.createSnapshot(dir)))
-
-// prepareSnapshot, on the store's own barrier thread
-deadline = now + drainTimeout
-if !commitLock.tryLock(until deadline): fail the future
-try
-  wait until dirtyIndex.isEmpty() or the store fails, until deadline, else fail the future
-  failIfStoreFailed()
-  pauseWriter()                              // writeAll waits before it touches the backend
-finally
-  commitLock.unlock()                        // commits resume and fill the queue
-complete the future
-
-// createSnapshot, on the snapshot store's actor, as today
-try backend.createSnapshot(dir) finally resumeWriter()
+// WriteBehindZeebeDb#createSnapshot, on the snapshot store's actor, as today
+target = lastCommittedSeq
+writer.flushNow()                          // don't wait out maxWriteDelay
+wait until flushedSeq >= target, or the store fails, until snapshotCatchUpTimeout; else throw
+backend.createSnapshot(dir)                // the writer keeps writing
 ```
 
-- **One deadline covers both taking the lock and draining.** A committer can hold `commitLock` while
-  it's blocked on a full queue. With a stalled writer, a plain `lock()` would wait forever before
-  the drain timeout even started.
-- **No thread from the I/O pool waits for the barrier.** The checkpoint callback runs on the
-  snapshot store's actor, which is on the broker's I/O-bound pool (2 threads by default). The
-  ExporterDirector, which commits exporter positions, runs on the same pool. If the callback waited
-  for the barrier while an exporter waited on `commitLock`, both threads would block, and snapshots,
-  exports and backups would stall for every partition on the broker. So the barrier runs on the
-  store's own thread, and the I/O thread only runs the checkpoint, as it does today.
-- **Commits wait only for the drain.** During the checkpoint the writer is paused instead: commits
-  keep publishing and filling the queue, but the backend doesn't change, so the snapshot captures
-  the drained state. If the snapshot is abandoned after the barrier, the controller resumes the writer.
-- **A store failure** wakes the barrier, which fails the snapshot at once (§4.6).
-- Holding `commitLock` means no commit is in progress, including one that is still enqueuing, and
-  none can start. Read-only transactions don't take it (§4.3), so the StateController's
-  exporter-position read doesn't wait behind a stalled committer.
-- **The DirtyIndex holds exactly the unflushed versions**, because cleanup removes a version in the
-  same critical section that confirms its write. So "drained" simply means `dirtyIndex.isEmpty()`,
-  and there's no separate counter to keep in sync.
-- After the drain, the backend holds the state after the last committed transaction. That state is
-  transaction-consistent and at or past `lowerBoundSnapshotPosition`.
-- **Pause:**
-  - Commits wait for about `maxWriteDelay` plus the backlog write, and never longer than
-    `drainTimeout`. An exporter commit that waits does hold an I/O thread for that long.
-  - The checkpoint pauses only the writer, and has no timeout, as today. If it runs long, the
-    queue fills and back-pressure reaches the committers.
-  - With RocksDB and the WAL disabled, the checkpoint also flushes the memtables.
-  - This happens once per snapshot, every 5 minutes by default.
-- A write-through (§4.3) can land during the snapshot. It commits as one backend transaction, and
-  `createSnapshot` captures one consistent point (§4.1), so the snapshot holds either all of that
-  transaction or none of it.
+- **Nothing waits for a snapshot.** It takes no lock, commits go on, and so does the writer.
+- **The checkpoint holds whole transactions.** RocksDB's checkpoint is online: it flushes the
+  memtables (the WAL is off) and hard-links the files, while later writes go to new memtables that
+  aren't in it. Each backend transaction is in or out entirely, and groups end on transaction
+  boundaries (§4.6). So the checkpoint holds a prefix of whole transactions, at or past every
+  position the snapshot is filed under. That's the same guarantee as today, where processing also
+  goes on between reading the position and the checkpoint.
+- **Recovery is unchanged.** It restores the snapshot and replays the log from the processed
+  position stored in it. The snapshot lags the cache by about the writer's backlog, and replay
+  covers the difference.
+- **The wait runs on the snapshot store's actor**, on the broker's I/O-bound pool, and lasts about
+  the backlog write. A stalled writer times it out: that snapshot fails, and the next interval tries
+  again. A store failure aborts it at once.
+- **It needs one backend property:** `createSnapshot` captures one consistent point while the
+  writer keeps writing (§4.1).
 
 ### 4.8 Lifecycle and bypass
 
-- Each `WriteBehindZeebeDb` (one per partition) gets its own `CacheManager` and write-behind thread
-  pool.
-- `WriteBehindZeebeDb#close()` closes the `CacheManager` first, so the writer stops, and only then
-  closes the backend. In the other order, the writer would use a closed backend; with RocksDB, that
-  means JNI calls on a freed handle.
-- In runtime mode, close drops pending writes; the runtime directory is deleted afterwards anyway.
+- Each `WriteBehindZeebeDb` (one per partition) gets its own `CacheManager` and writer thread.
+- `WriteBehindZeebeDb#close()` stops the writer and waits for its in-flight backend transaction,
+  drops the queued transactions, closes the `CacheManager`, and only then closes the backend. In the
+  other order, the writer would use a closed backend; with RocksDB, that means JNI calls on a freed
+  handle.
+- Dropping queued writes is fine: in runtime mode, recovery deletes the runtime directory and
+  restores it from the latest snapshot (`StateControllerImpl#recoverInternal`).
 - Only the runtime DB is wrapped. `WriteBehindZeebeDbFactory#createDb(path)` (used by
   `StateControllerImpl#openDb`) returns a `WriteBehindZeebeDb`. Everything else stays on the plain
   backend, because it either delegates or never sees the wrapping factory:
@@ -526,40 +485,32 @@ try backend.createSnapshot(dir) finally resumeWriter()
 
 ### 4.9 Configuration
 
-Add a `WriteBehindConfiguration` record in `zeebe-db-cache`. The cache isn't RocksDB-specific, so
-its broker settings get their own experimental section rather than living in `RocksdbCfg`.
+`WriteBehindConfiguration` is a record in `zeebe-db-cache`. The cache isn't RocksDB-specific, so its
+broker settings get their own experimental section rather than living in `RocksdbCfg`.
 
 All sizes are per partition, so the broker-wide cost is these values times the partitions a broker
-hosts. Byte limits are what bound memory; the entry counts only shape batching.
+hosts. Byte limits are what bound memory; `batchSize` only shapes the writer's groups.
 
-|        Property        | Default |                                                                                                       Notes                                                                                                        |
-|------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `writeBehind.enabled`  | `false` |                                                                                                                                                                                                                    |
-| `cacheMaxBytes`        | 64 MB   | Resident cache. EhCache's heap tier sized in `MemoryUnit.MB`, which estimates each entry's size on insert; measure that cost.                                                                                      |
-| `maxPendingBytes`      | 32 MB   | Key and value bytes in the DirtyIndex before commits wait (§4.3).                                                                                                                                                  |
-| `batchSize`            | 1 000   |                                                                                                                                                                                                                    |
-| `maxWriteDelay`        | 100 ms  | Longer gives more coalescing; shorter gives a shorter snapshot pause.                                                                                                                                              |
-| `queueSize`            | 10 000  | Pending ops per stripe before back-pressure kicks in.                                                                                                                                                              |
-| `concurrencyLevel`     | 1       | One writer thread.                                                                                                                                                                                                 |
-| `coalescing`           | `true`  |                                                                                                                                                                                                                    |
-| `writeThroughMaxKeys`  | 10 000  | Transactions with more keys commit write-through (§4.3).                                                                                                                                                           |
-| `writeThroughMaxBytes` | 16 MB   | Transactions with more key and value bytes commit write-through (§4.3).                                                                                                                                            |
-| `drainTimeout`         | 30 s    | Bounds the snapshot barrier (taking the commit lock and draining, not the checkpoint) and a write-through's drain. If exceeded, the snapshot fails and is retried, and a write-through throws a recoverable error. |
+|         Property         | Default |                                                                Notes                                                                 |
+|--------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `writeBehind.enabled`    | `false` | Broker setting: whether to wrap the partition's DB at all.                                                                           |
+| `cacheMaxBytes`          | 64 MB   | The read cache. EhCache's heap tier sized in bytes, which measures each entry on insert; measure that cost.                          |
+| `maxPendingBytes`        | 32 MB   | Key and value bytes of queued transactions before commits wait (§4.3).                                                               |
+| `batchSize`              | 1 000   | Distinct keys per backend transaction. A larger transaction is written alone (§4.6).                                                 |
+| `maxWriteDelay`          | 100 ms  | How long the oldest queued transaction waits for its group to fill. Longer gives more coalescing; shorter keeps the backend fresher. |
+| `snapshotCatchUpTimeout` | 30 s    | Bounds a snapshot's wait for the writer (§4.7). If it's exceeded, the snapshot fails and is retried.                                 |
 
 ### 4.10 Metrics
 
 Registered on the DB meter registry, so they go away when the DB closes:
 
 - cache hits, misses and loads
-- committed ops vs. written puts and deletes (coalescing ratio)
-- DirtyIndex size (the unflushed keys), `pendingBytes`, and the cache's estimated bytes
-- batch size and write latency
-- time blocked on back-pressure (shows up as commit latency), time waiting on `pendingBytes`, and
-  commit-lock wait time
-- optimistic read retries, cached values bypassed because of a write-through, and how long scans
-  hold publications back (§4.5)
-- write-through commits and their duration (readers wait for it)
-- snapshot drain duration (commits wait for it) and checkpoint duration (the writer waits for it)
+- committed keys vs. written upserts and deletes (coalescing ratio)
+- DirtyIndex size, queued transactions and `queuedBytes`, and the cache's estimated bytes
+- transactions and keys per backend transaction, and write latency
+- time commits wait on `maxPendingBytes`, and commit-lock wait time
+- optimistic read retries, and how long scans hold publications back (§4.5)
+- snapshot catch-up time and checkpoint duration
 - writer retries and failures
 
 ### 4.11 Memory
@@ -568,13 +519,14 @@ With RocksDB, the design moves hot state from RocksDB's off-heap budget to the J
 partition, the heap now holds:
 
 - the cache: up to `cacheMaxBytes`
-- the DirtyIndex: only unflushed versions, since cleanup follows every write. It's bounded by
-  `maxPendingBytes`, which a commit checks before it publishes. So the one transaction that is
-  publishing can push it past the limit by at most its own size. Above `writeThroughMaxBytes` (or
-  `writeThroughMaxKeys`), a transaction bypasses the DirtyIndex altogether (§4.3).
+- the queue and the DirtyIndex, which share the same arrays. The queue holds every queued version,
+  including ones a later transaction replaced; the DirtyIndex holds the newest version of each
+  unflushed key. The queue's bytes are bounded by `maxPendingBytes`, which a commit checks before it
+  publishes, so the transaction that is publishing can push it past the limit by at most its own
+  size.
 - per-iterator copies of DirtyIndex ranges: short-lived and bounded by the DirtyIndex
 - the tx buffers. RocksDB's `WriteBatchWithIndex` kept these in native memory. A transaction is
-  buffered in full until it commits, whatever path it then takes.
+  buffered in full until it commits.
 
 Multiply by the partitions per broker. For a fair benchmark, lower RocksDB's `memoryLimit` by the
 same amount, and watch GC.
@@ -593,11 +545,23 @@ same amount, and watch GC.
   snapshot problem.
 - **EhCache write-behind alone, without our own overlay.** Incorrect: iteration is stale, the
   `latest.remove` race stays open, and there's no drain signal.
-- **Our own ordered write-behind on Caffeine.** Caffeine is already managed in `parent/pom.xml` and
-  used by the engine. The writer would apply whole transactions in commit order, so RocksDB is
-  always a consistent prefix and snapshots need no commit pause. It adds no new dependency. It needs
-  the same overlay and merge-iterator work. Keep it as the comparison point if EhCache's barrier
-  pause or queue semantics get in the way.
+- **EhCache's write-behind as the writer, with a snapshot barrier** (the first version of this
+  plan). EhCache batches, coalesces and stripes per key (§3), so the backend never holds whole
+  transactions. A snapshot then needs a barrier that drains the queue under the commit lock, which
+  pauses commits for up to `maxWriteDelay` plus the backlog on every snapshot, and a new
+  `ZeebeDb#prepareSnapshot()` that the StateController calls off the I/O pool. Large transactions
+  needed a write-through path, and reads needed workarounds for EhCache's pending-op race.
+  Rejected: the ordered writer (§4.6) needs none of it.
+- **A barrier that writes the DirtyIndex before the checkpoint.** Instead of draining, copy the
+  DirtyIndex under the commit lock, write it to the backend while the writer is paused, then take
+  the checkpoint. Commits pause only for the copy, but the writer pauses for the whole checkpoint,
+  and EhCache would still cut transactions apart. Rejected for the same reason.
+- **Snapshot an older backend, filed under the backend's own positions.** The broker would read the
+  positions from the backend rather than the processor. Rejected: it needs broker changes, and
+  waiting for the writer to catch up (§4.7) gives the same result without any.
+- **Caffeine as the read cache.** Caffeine is already managed in `parent/pom.xml` and used by the
+  engine. Now that the writer is ours, EhCache is only the read cache, and Caffeine could take that
+  role, with a weigher of our own. Keep it in mind if EhCache's sizing cost gets in the way.
 - **Tune RocksDB instead** (bigger memtables or block cache). This is the baseline to beat: with
   the WAL off, a RocksDB write is already an in-memory memtable insert.
 
@@ -650,8 +614,20 @@ Where the code settled differently from the steps below:
   green, and
   `EngineLargeStatePerformanceTest` stays within its tolerance.
 
-### Phase 2: write-behind core for point ops (`feat:`)
+### Phase 2: write-behind core for point ops (done)
 
+This has landed, with EhCache's write-behind as the writer; Phase 4 replaces it. Where the code
+settled differently from the steps below:
+
+- The exceptions, then the backend-neutral types, moved into `zeebe-db-api` (§4.1). The cached
+  factory takes the same `ConsistencyChecksSettings` as the backend.
+- `CachedValue` is a plain class: EhCache's byte-sized heap can't measure records (§3).
+- Building only on the API is a design rule, not a build rule.
+- The cache module's tests run against an in-memory backend built from Mockito answers, since the
+  cache module can't use RocksDB. It can pause its transactions and scans, which the concurrency
+  tests use.
+- `zeebe-db-cache` and `zeebe-db-tests` run in CI's `CORE_FEATURES` unit-test job.
+- `createSnapshot` throws until Phase 5.
 - **Ask first:** add `org.ehcache:ehcache` to the `parent/pom.xml` dependency management, excluding
   `jaxb-runtime`.
 - Create `zeebe/zb-db/cache` (artifact `zeebe-db-cache`) as a third child of `zeebe-db`.
@@ -679,28 +655,43 @@ Where the code settled differently from the steps below:
 - **Exit:** the point-op contract tests are green against the cached factory, plus the new
   point-read and commit tests from §7.
 
-### Phase 3: merged iteration (`feat:`)
+### Phase 3: merged iteration (done)
 
+This has landed. Where the code settled differently:
+
+- A start key outside the prefix scans the backend without the prefix (§4.5).
+- The differential test found that RocksDB's `count` and `countEqualPrefix` left a transaction open
+  when called outside one. That's fixed in `zeebe-db-rocksdb`, with contract tests.
+- The nested-prefix contract test stays ignored for the cache: the cache only reaches RocksDB's
+  limit of two nested prefix scans while the backend's own scans are still open.
+- How long scans hold publications back isn't measured yet; it comes with the metrics (Phase 6).
 - Merge the overlay into the backend's scans in `CachedColumnFamily` (§4.5), holding
   `publishLock`'s read side from the copy until the backend's first callback.
 - **Exit:** the whole contract suite is green against both factories. So are the randomized
   `ColumnFamilyRandomizedPropertyContractTest`, with more tries, and the differential test, which
   only run with `-Pinclude-random-tests`. The iteration stress test passes.
 
-### Phase 4: snapshot barrier, lifecycle and failures (`feat:`)
+### Phase 4: ordered transaction writer (`feat:`)
 
-- Add the snapshot barrier: `ZeebeDb#prepareSnapshot()` takes `commitLock` and drains on the
-  store's own thread under one deadline, then pauses the writer for the checkpoint.
-  `StateControllerImpl#takeSnapshot` waits for it before handing over to the snapshot store.
-- Close the cache before the backend.
-- Commit transactions above `writeThroughMaxKeys` or `writeThroughMaxBytes` write-through, with
-  the `lastWriteThroughSeq` check on cached reads.
-- Add writer retry, the failure latch that wakes every waiter, fail-fast, and draining without
-  writing after a failure. Make `WriteBehindZeebeDb` a `HealthMonitorable`.
-- **Exit:** the snapshot, write-through and failure tests from §7 are green, plus the
-  close-with-pending test.
+- Replace EhCache's write-behind with the queue and writer of §4.6. `BackendLoaderWriter` becomes a
+  loader: its `write` and `delete` do nothing, and `writeAll` moves to the writer.
+- Commits enqueue whole transactions, wait on `queuedBytes`, and put each version into the read
+  cache (§4.3).
+- `WriteBehindConfiguration` drops `queueSize`, `concurrencyLevel`, `coalescing`,
+  `writeThroughMaxKeys`, `writeThroughMaxBytes` and `drainTimeout`, and gains
+  `snapshotCatchUpTimeout` (§4.9).
+- **Exit:** the cache module's tests and the whole contract suite are green, including the
+  randomized and differential tests, plus the writer tests from §7.
 
-### Phase 5: wiring and engine-level validation (`feat:` and `test:`)
+### Phase 5: snapshots, failures and close (`feat:`)
+
+- `WriteBehindZeebeDb#createSnapshot` catches up, then checkpoints (§4.7).
+- Writer retries, the failure latch, fail-fast commits and snapshots, reads that keep working, and
+  `HealthMonitorable` (§4.6).
+- Close the writer and the cache before the backend (§4.8).
+- **Exit:** the snapshot, failure and close tests from §7 are green.
+
+### Phase 6: wiring and engine-level validation (`feat:` and `test:`)
 
 - **Ask first** (configuration is a public contract): add an experimental broker config section for
   the cache, separate from `RocksdbCfg`, and map it to `WriteBehindConfiguration`.
@@ -719,13 +710,14 @@ Where the code settled differently from the steps below:
   - have a follower install a snapshot that a cached leader took
 - **Exit:** the engine suite is green with the toggle on, and the broker restart IT is green.
 
-### Phase 6: benchmark, tune, decide
+### Phase 7: benchmark, tune, decide
 
 - Run `EngineLargeStatePerformanceTest` (engine), `LargeStateControllerPerformanceTest` (broker) and
   a realistic load test twice: with write-behind off as the baseline, and on. With it on, lower
   RocksDB memory by the cache budget. Turn on `accessMetrics: FINE` and `enableStatistics` to get
   per-column-family latency and RocksDB stall counters.
-- Sweep `maxWriteDelay` (10, 100 and 1000 ms) against `batchSize`, and record the snapshot pause.
+- Sweep `maxWriteDelay` (10, 100 and 1000 ms) against `batchSize`, and record the snapshot
+  catch-up time.
 - Run a large-value scenario (variables of about 1 MiB) on a broker with several partitions, and
   check that heap use stays within the byte budgets.
 - Optional optimizations:
@@ -739,65 +731,60 @@ Where the code settled differently from the steps below:
 These come on top of the contract suite and the differential test in `zeebe-db-tests`, which run
 against the cache wrapped around RocksDB.
 
-|                                                                                    Test                                                                                    |                                                      Proves                                                      |
-|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| Read after eviction with a pending write (cache size 1, `maxWriteDelay` 10 s)                                                                                              | Point reads never return a stale backend value                                                                   |
-| Overwrite while the previous batch is in flight, plus eviction                                                                                                             | The DirtyIndex covers EhCache's `latest.remove` race                                                             |
-| A reader misses the DirtyIndex, a commit publishes, the entry is evicted and EhCache drops its pending op, the reader loads; then drain and read again                     | No stale value stays cached                                                                                      |
-| Force the read-lock fallback, stall the writer until the queue is full, block a committer in `cache.put`, then read a clean key in the same map bin; let the writer resume | Reads don't deadlock with back-pressure                                                                          |
-| `cache.put` throws during a commit (test seam)                                                                                                                             | The store fails, `commitLock` is released, and snapshots fail fast                                               |
-| Mutate an array returned by `get` or by an iterator, then read again and drain                                                                                             | Callers can't change committed or persisted state                                                                |
-| Pause a commit mid-publication (test hook); another thread reads two of its keys and scans its range                                                                       | Readers see all of a transaction or none of it                                                                   |
-| Two contexts commit the same key concurrently in a loop                                                                                                                    | Point reads, scans and the backend agree after the drain, and the drain completes                                |
-| A transaction with more keys than the queue holds, and one above `writeThroughMaxKeys`                                                                                     | Both commit and drain; the write-through leaves no older version cached                                          |
-| A write-through while a batch's callback is paused after cleanup, before EhCache drops its pending op; then a cache miss on one of the batch's keys                        | The read returns the write-through's version, not the replaced one                                               |
-| A write-through fails with a recoverable backend error, and the processor retries the commit                                                                               | The retry applies the writes; nothing commits on an empty buffer                                                 |
-| Commits of large values (about 1 MiB each) beyond `maxPendingBytes`                                                                                                        | Commits wait instead of growing the heap past the budget                                                         |
-| Iteration sees pending puts and hides pending deletes (forward, reverse, startAt, prefix, key-only)                                                                        | The merge with the backend's scan (§4.5)                                                                         |
-| Writer flushes concurrently while long scans run on another thread (stress)                                                                                                | Scans see one point in time; the DirtyIndex stays within its budget (§4.11)                                      |
-| A test backend that pauses before its first scan callback, while another context commits                                                                                   | The merged scan sees that transaction whole or not at all, and publications resume after the first callback      |
-| Snapshot after N commits, opened with the plain factory                                                                                                                    | The barrier drains everything                                                                                    |
-| Snapshot loop against a concurrent committer, where each tx writes K keys plus a marker                                                                                    | Snapshots are transaction-consistent                                                                             |
-| Through `StateControllerImpl#takeTransientSnapshot`, with the writer stalled, a committer blocked on a full queue and an exporter committing                               | The position reads don't wait; the snapshot fails within `drainTimeout`; no I/O-pool thread waits on the barrier |
-| The writer fails after a snapshot barrier and a write-through have started waiting on the drain                                                                            | Both abort at once instead of waiting for `drainTimeout`                                                         |
-| A backend write fails (test seam in the writer) while no reads or commits happen                                                                                           | The failure is reported at once; commits and reads fail fast after it                                            |
-| Close with pending writes; `createDb(path, false)`                                                                                                                         | No crash on close; bulk copy is unaffected                                                                       |
+|                                                                  Test                                                                   |                                                                     Proves                                                                      |
+|-----------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| Read after eviction with a pending write                                                                                                | Point reads never return a stale backend value                                                                                                  |
+| Overwrite while the writer applies the older version, plus eviction                                                                     | Reads return the newer version, and the backend ends on it                                                                                      |
+| A reader misses the DirtyIndex, a commit publishes and puts, the entry is evicted, the reader loads; then flush and read again (stress) | No stale value stays cached                                                                                                                     |
+| Mutate an array returned by `get` or by an iterator, then read again and flush                                                          | Callers can't change committed or persisted state                                                                                               |
+| A reader reads two keys of a transaction while it's published (stress)                                                                  | Readers see all of a transaction or none of it                                                                                                  |
+| Two contexts commit the same key concurrently in a loop                                                                                 | Point reads and the backend agree after the flush                                                                                               |
+| A read-only commit while a committer waits on `maxPendingBytes`; reads under the lock meanwhile                                         | Neither waits for the committer                                                                                                                 |
+| Commits of large values (about 1 MiB each) beyond `maxPendingBytes`                                                                     | Commits wait instead of growing the heap past the budget                                                                                        |
+| Iteration sees pending puts and hides pending deletes (forward, reverse, startAt, prefix, key-only)                                     | The merge with the backend's scan (§4.5)                                                                                                        |
+| Writer flushes concurrently while scans run on another thread (stress)                                                                  | Scans see one point in time; the unflushed bytes stay within their budget (§4.11)                                                               |
+| A test backend that pauses before its first scan callback, while another context commits                                                | The merged scan sees that transaction whole or not at all, and publications resume after the first callback                                     |
+| Transactions of different sizes, with keys that several of them write                                                                   | The writer never splits a transaction, writes each key once per group with its newest version, and writes a transaction above `batchSize` alone |
+| A test backend that records each backend transaction                                                                                    | Every backend transaction ends on a transaction boundary                                                                                        |
+| Snapshots in a loop against a concurrent committer, where each transaction writes K keys plus a marker                                  | Every snapshot holds whole transactions, at or past the positions it is filed under                                                             |
+| A snapshot right after N commits, opened with the plain factory                                                                         | The catch-up includes every commit made before the snapshot                                                                                     |
+| A snapshot while the writer is stalled                                                                                                  | The snapshot fails within `snapshotCatchUpTimeout`, and commits don't wait                                                                      |
+| A backend write fails with a recoverable error, then succeeds                                                                           | The writer retries the same group, and nothing is lost                                                                                          |
+| A backend write fails for good while a snapshot and a commit wait                                                                       | Both abort at once; commits and snapshots fail fast; reads keep working; the failure is reported                                                |
+| Close with pending writes; `createDb(path, false)`                                                                                      | No crash on close; bulk copy is unaffected                                                                                                      |
 
 ## 8. Risks and open questions
 
 1. **Is zb-db on the critical path at all?** With the WAL off, RocksDB writes already stay in
-   memory. There's no up-front baseline any more, so only Phase 6 answers this, after the cache is
+   memory. There's no up-front baseline any more, so only Phase 7 answers this, after the cache is
    built.
-2. **Snapshot pause.** The stream processor and exporter director can't commit for about
-   `maxWriteDelay` plus the backlog write, once per snapshot, and never longer than `drainTimeout`.
-   During the snapshot only the writer is paused. A snapshot that runs long fills the queue and
-   back-pressure reaches the committers; today a slow checkpoint doesn't affect processing at all.
-3. **Blocked threads under back-pressure.** A full queue blocks the committer, and also cache reads
-   of keys that share its map bin (§3). That's the same class of problem as RocksDB write stalls
-   today, but now configurable and measured.
-4. **The broker's shared I/O pool.** The ExporterDirector and the snapshot store run on the I/O-bound
-   pool (2 threads by default), shared by every partition on the broker. The barrier stays off that
-   pool (§4.7), but an exporter commit still waits out a drain on an I/O thread, up to
-   `drainTimeout`. Watch export and snapshot latency across partitions while snapshots run.
+2. **Snapshots wait for the writer.** A snapshot waits out the writer's backlog on the snapshot
+   store's actor, which runs on the broker's I/O-bound pool (2 threads by default, shared by every
+   partition). Commits and exporters don't wait. Watch snapshot latency with many partitions.
+3. **Back-pressure.** A commit that finds `maxPendingBytes` exceeded waits before it publishes,
+   holding `commitLock` but nothing in the cache. That's the same class of problem as RocksDB write
+   stalls today, but now configurable and measured.
+4. **The backend lags the cache.** A restart replays a little more of the log than today: the
+   writer's backlog when the snapshot was taken.
 5. **Heap and GC pressure.** State moves on-heap, every read copies (as today), and each iterator
-   copies its DirtyIndex range. The byte budgets (§4.9, §4.11) are per partition, so multiply them by
-   the partitions per broker. Large transactions are buffered in full on the heap until they commit;
+   copies its DirtyIndex range. The queue also holds versions that a later transaction replaced,
+   until they're written. The byte budgets (§4.9, §4.11) are per partition, so multiply them by the
+   partitions per broker. Large transactions are buffered in full on the heap until they commit;
    RocksDB's `WriteBatchWithIndex` used native memory for this. The migration step, which runs every
    migration in one transaction, is the largest.
-6. **A write-through blocks readers** for the length of its backend write (§4.3). It's rare, mostly
-   the migration step before processing starts, but it's measured.
-7. **Serialized commits.** This is fine while the stream processor does almost all commits. Watch the
+6. **Serialized commits.** This is fine while the stream processor does almost all commits. Watch the
    commit-lock wait time for the exporter director.
-8. **Writer failure stops the partition**, on followers too. In-process recovery would need a new
+7. **Writer failure stops the partition**, on followers too. In-process recovery would need a new
    step-down path in `ZeebePartition`. Decide whether the POC needs it.
-9. **Going through the typed API costs copies.** The cache serializes a key or value once, and the
+8. **Going through the typed API costs copies.** The cache serializes a key or value once, and the
    pass-through column family copies those bytes again into the backend's own buffers. RocksDB's
-   column families used to serialize straight into theirs. Measure it in Phase 6.
-10. **Scans hold publications back** until the backend's first callback (§4.5). That's one seek with
-    RocksDB, but a query round trip with an RDBMS. Watch it before an RDBMS backend is used.
-11. **The backend contracts the cache relies on** (§4.1): byte-ordered iteration, atomic
-    transactions, a consistent `createSnapshot`, and fixing a scan's view before its first callback.
-    An RDBMS backend has to meet all four. The contract tests check the first three.
-12. **Approvals needed:** the new dependency and the experimental config keys (all "ask first" in
-    `AGENTS.md`).
+   column families used to serialize straight into theirs. Measure it in Phase 7.
+9. **Scans hold publications back** until the backend's first callback (§4.5). That's one seek with
+   RocksDB, but a query round trip with an RDBMS. Watch it before an RDBMS backend is used.
+10. **The backend contracts the cache relies on** (§4.1): byte-ordered iteration, atomic
+    transactions, a `createSnapshot` that captures one consistent point while the writer keeps
+    writing, and fixing a scan's view before its first callback. An RDBMS backend has to meet all
+    four. The contract tests check the first two.
+11. **Approvals needed:** the experimental config keys ("ask first" in `AGENTS.md`). The EhCache
+    dependency was approved in Phase 2.
 
