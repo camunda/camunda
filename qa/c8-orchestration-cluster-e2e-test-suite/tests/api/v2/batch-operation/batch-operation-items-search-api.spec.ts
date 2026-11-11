@@ -29,7 +29,6 @@ import {
   verifyIncidentsForProcessInstance,
   expectProcessInstanceCanBeFound,
 } from '@requestHelpers';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 const SEARCH_BATCH_OPERATION_ITEMS_PATH = '/batch-operation-items/search';
