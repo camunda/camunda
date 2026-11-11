@@ -56,6 +56,11 @@ public final class LeasePartitionLeadership implements PartitionLeadership {
   }
 
   @Override
+  public boolean isStandbyWhenInactive() {
+    return true;
+  }
+
+  @Override
   public synchronized Role role() {
     return role;
   }

@@ -31,6 +31,8 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadership;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadershipListener;
 import io.camunda.zeebe.broker.system.partitions.leadership.RaftPartitionLeadership;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -635,6 +637,37 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldReportAStandbyAsHealthy() {
+    // given - in lease mode an inactive partition is a standby that waits to lead
+    when(ctx.getLeadership()).thenReturn(new StandbyLeadership(new RaftPartitionLeadership(raft)));
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.INACTIVE, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(captor.capture());
+    assertThat(captor.getValue().getHealthReport().getStatus()).isEqualTo(HealthStatus.HEALTHY);
+  }
+
+  @Test
+  public void shouldReportAnInactiveRaftPartitionAsUnhealthy() {
+    // given
+    final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.INACTIVE, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(healthMonitor).registerComponent(captor.capture());
+    assertThat(captor.getValue().getHealthReport().getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
+  }
+
+  @Test
   public void shouldReportUnhealthyPerDefault() {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
@@ -855,6 +888,39 @@ public class ZeebePartitionTest {
     @Override
     public String getName() {
       return "noop-transition-step";
+    }
+  }
+
+  /** The Raft leadership, except that an inactive partition is a standby, as in lease mode. */
+  private record StandbyLeadership(PartitionLeadership delegate) implements PartitionLeadership {
+    @Override
+    public void addListener(final PartitionLeadershipListener listener) {
+      delegate.addListener(listener);
+    }
+
+    @Override
+    public void removeListener(final PartitionLeadershipListener listener) {
+      delegate.removeListener(listener);
+    }
+
+    @Override
+    public Role role() {
+      return delegate.role();
+    }
+
+    @Override
+    public long term() {
+      return delegate.term();
+    }
+
+    @Override
+    public CompletableFuture<Void> stepDown() {
+      return delegate.stepDown();
+    }
+
+    @Override
+    public boolean isStandbyWhenInactive() {
+      return true;
     }
   }
 }

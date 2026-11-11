@@ -38,4 +38,12 @@ public interface PartitionLeadership {
 
   /** Gives up the leadership, if this node leads, so that another node can lead. */
   CompletableFuture<Void> stepDown();
+
+  /**
+   * True if {@link Role#INACTIVE} means a healthy standby that waits to lead, as with leases. With
+   * Raft, an inactive partition is not part of the replication, so it is unhealthy.
+   */
+  default boolean isStandbyWhenInactive() {
+    return false;
+  }
 }

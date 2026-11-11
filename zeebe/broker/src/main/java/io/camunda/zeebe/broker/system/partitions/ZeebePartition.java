@@ -317,7 +317,11 @@ public final class ZeebePartition extends Actor
         leaderTransition(newTerm);
         break;
       case INACTIVE:
-        transitionToInactive();
+        if (context.getLeadership().isStandbyWhenInactive()) {
+          standbyTransition();
+        } else {
+          transitionToInactive();
+        }
         break;
       case PASSIVE:
       case PROMOTABLE:
@@ -380,6 +384,20 @@ public final class ZeebePartition extends Actor
           }
         });
     return followerTransitionFuture;
+  }
+
+  /**
+   * A standby has no services, but is healthy: it is ready to lead when the leader is gone. Without
+   * this, every standby partition would mark the broker as unhealthy.
+   */
+  private void standbyTransition() {
+    transitionToInactive()
+        .onComplete(
+            (ok, error) -> {
+              if (error == null) {
+                onRecoveredInternal();
+              }
+            });
   }
 
   private ActorFuture<Void> transitionToInactive() {
