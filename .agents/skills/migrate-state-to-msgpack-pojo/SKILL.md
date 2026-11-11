@@ -54,7 +54,8 @@ Also STOP if the class is a nested/inner class (not supported), or if anything e
 spy it. A class that is merely not `final` is fine: the migrated class is declared `final`, and
 you mention that in the commit body.
 
-Properties WITHOUT a default (`new BooleanProperty("k")`, `new LongProperty("k")`) throw when
+Properties WITHOUT a default (`new BooleanProperty("k")`, `LongProperty`, `StringProperty`,
+`BinaryProperty` without a default argument) throw when
 written before being set. Use the Java default (`false`, `0L`) as the initializer; the stored
 bytes are identical for everything the old class could write. In the serde tests set such a
 value explicitly on both the old and the new object, also in the "defaults" tests (the old class
@@ -132,6 +133,13 @@ Edit the class in place:
    - Drop `UnpackedObject`-only methods you do not find used anywhere (`toString`, `hashCode`,
      `writeJSON`, `copyFrom`). Search the repo first: `grep -rn "<method>" zeebe/ --include=*.java`.
      If something uses them, STOP-report.
+   - `UnpackedObject` also gave content-based `equals`/`hashCode`. If the old class did not
+     override them, the new one loses value equality (it uses identity). Search for equality use
+     (`assertThat(x).isEqualTo(`, `equals(`, sets or map keys of the class). If any exists, STOP-
+     report; if none, say in the commit body that value equality is gone.
+   - Test helpers typed on `UnpackedObject` (for example `serialize(UnpackedObject)`) no longer
+     accept the class. `grep -rn "UnpackedObject" <module>/src/test` and widen such parameters to
+     `io.camunda.zeebe.util.buffer.BufferWriter`.
 7. Dependencies: the module must have `implementation(project(":zeebe-msgpack-codegen"))` and
    `annotationProcessor(project(":zeebe-msgpack-codegen"))` in its `build.gradle.kts`, and in its
    `pom.xml` the `zeebe-msgpack-codegen` dependency plus the `annotationProcessorPaths` block copied
@@ -180,7 +188,10 @@ Every property from step 1 must be set to a non-default value in test 1. Use a c
 
 Then run the tests of everything that uses the class (search with
 `grep -rln "Name" <module>/src/test`), and for the engine the state tests:
-`--tests 'io.camunda.zeebe.engine.state.*'`. All must pass. A failure means behavior changed:
+`--tests 'io.camunda.zeebe.engine.state.*'`. All must pass. Gradle `-q` prints nothing on success. To confirm tests ran, sum the XML files, because nested
+test classes get mangled file names:
+`grep -ho 'tests="[0-9]*"' <module>/build/test-results/test/*.xml | grep -o '[0-9]*' | paste -sd+ | bc`.
+A failure means behavior changed:
 fix the class (usually a missing copy, a wrong default, or a wrong order), never the test, and
 never the V1 copy.
 
