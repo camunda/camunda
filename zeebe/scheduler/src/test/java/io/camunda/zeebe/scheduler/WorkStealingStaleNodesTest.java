@@ -265,6 +265,42 @@ final class WorkStealingStaleNodesTest {
     assertThat(queue.isEmpty()).isTrue();
   }
 
+  @Test
+  void shouldNotBringBackStaleNodesUnlinkedByAnotherThief() {
+    // given -- an older task, a stale run, a newer task, and another stale run
+    final var queue = new ActorTaskQueue();
+    final var other = new ActorTaskQueue();
+    final var older = new ActorTask(new Actor() {});
+    final var newer = new ActorTask(new Actor() {});
+    final var claimedElsewhere = new ActorTask(new Actor() {});
+    queue.append(older);
+    for (int i = 0; i < 100; i++) {
+      queue.append(claimedElsewhere);
+    }
+    queue.append(newer);
+    final var newerNode = queue.tail;
+    for (int i = 0; i < 100; i++) {
+      queue.append(claimedElsewhere);
+    }
+    other.append(claimedElsewhere);
+    assertThat(other.pop()).isSameAs(claimedElsewhere);
+    // a first thief walked to the newer task and claimed it, but has not unlinked yet
+    final var keep = queue.tail.prev;
+    final var observedPrev = keep.prev;
+    assertThat(newer.claim(newerNode.stateCount)).isTrue();
+    // a second thief walks past it, steals the older task and unlinks both stale runs
+    assertThat(queue.trySteal()).isSameAs(older);
+    assertThat(countNodes(queue)).isEqualTo(3);
+
+    // when -- the first thief resumes and unlinks with what it observed
+    ActorTaskQueue.skipStaleNodes(keep, observedPrev, newerNode, 99);
+
+    // then -- the newer unlink is kept
+    assertThat(countNodes(queue)).isEqualTo(3);
+    assertThat(queue.pop()).isNull();
+    assertThat(queue.isEmpty()).isTrue();
+  }
+
   /** Appends a waiting task, then {@code staleNodes} nodes of a task that was claimed elsewhere. */
   private static Victim queueWithWaitingTaskBehindStaleNodes(final int staleNodes) {
     final var queue = new ActorTaskQueue();

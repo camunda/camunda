@@ -50,8 +50,10 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    // newest node kept in the prev chain, and the number of stale nodes walked after it
+    // newest node kept in the prev chain, its prev as observed, and the number of stale nodes
+    // walked after it
     ActorTaskQueueNode keep = null;
+    ActorTaskQueueNode keepPrev = null;
     int skipped = 0;
     final ActorTaskQueueNode start = tail;
     ActorTaskQueueNode node = start;
@@ -59,7 +61,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
-        skipStaleNodes(keep, node, skipped);
+        skipStaleNodes(keep, keepPrev, node, skipped);
         return task;
       }
 
@@ -67,8 +69,9 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
       if (keep == null || keep == start || older == null) {
         // the tail cannot be unlinked and is still written by producers, so the walk keeps the tail
         // and the node after it; a node without prev is still being appended
-        skipStaleNodes(keep, node, skipped);
+        skipStaleNodes(keep, keepPrev, node, skipped);
         keep = node;
+        keepPrev = older;
         skipped = 0;
       } else {
         skipped++;
@@ -77,14 +80,22 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
       node = older;
     }
 
-    skipStaleNodes(keep, node, skipped);
+    skipStaleNodes(keep, keepPrev, node, skipped);
     return null;
   }
 
-  private static void skipStaleNodes(
-      final ActorTaskQueueNode keep, final ActorTaskQueueNode next, final int skipped) {
-    if (skipped >= MIN_STALE_NODES_TO_SKIP && next != null && keep.prev != next) {
-      UnsafeApi.putReferenceRelease(keep, PREV_OFFSET, next);
+  /**
+   * Links {@code keep} to {@code next}, unless its prev changed since the walk read it: another
+   * thief may have unlinked further in the meantime, and overwriting that would bring back the
+   * stale nodes it skipped.
+   */
+  static void skipStaleNodes(
+      final ActorTaskQueueNode keep,
+      final ActorTaskQueueNode observedPrev,
+      final ActorTaskQueueNode next,
+      final int skipped) {
+    if (skipped >= MIN_STALE_NODES_TO_SKIP && next != null) {
+      UnsafeApi.compareAndSetReference(keep, PREV_OFFSET, observedPrev, next);
     }
   }
 
