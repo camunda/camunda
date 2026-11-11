@@ -30,14 +30,6 @@ import org.springframework.core.serializer.support.SerializingConverter;
  */
 final class MigratingWebSessionAttributeConverter implements WebSessionAttributeConverter {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(MigratingWebSessionAttributeConverter.class);
-
-  // Pre-migration FQN -> current class; remove together with MigratingDeserializer,
-  // MigratingObjectInputStream, and the test stub once old sessions have naturally expired.
-  private static final Map<String, Class<?>> CLASS_RENAMES =
-      Map.of("io.camunda.security.auth.CamundaAuthentication", CamundaAuthentication.class);
-
   /**
    * Classes a persisted session attribute may contain, deny by default. Session attributes are read
    * back from secondary storage, which must not be able to make the process instantiate arbitrary
@@ -45,7 +37,8 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
    * tests. The JDK and JSON entries are the value types of the authentication claims, the Spring
    * Security entries the OIDC login. Array types are checked by their component type.
    */
-  private static final List<String> ALLOWED_CLASSES =
+  // package-private so the test can check that every entry is exercised
+  static final List<String> ALLOWED_CLASSES =
       List.of(
           "io.camunda.security.api.model.CamundaAuthentication",
           // basic login
@@ -69,7 +62,6 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
           "org.springframework.security.oauth2.core.**",
           // claim values
           "net.minidev.json.JSONObject",
-          "net.minidev.json.JSONArray",
           "com.nimbusds.oauth2.sdk.util.OrderedJSONObject",
           "java.lang.Object",
           "java.lang.Number",
@@ -96,18 +88,22 @@ final class MigratingWebSessionAttributeConverter implements WebSessionAttribute
           // the JDK picks the nested class by size (List12, ListN, ...); the trailing * is a prefix
           // match, "$**" would match nothing
           "java.util.ImmutableCollections$*",
-          "java.util.Collections$EmptyList",
           "java.util.Collections$EmptyMap",
           "java.util.Collections$EmptySet",
-          "java.util.Collections$SingletonList",
-          "java.util.Collections$SingletonMap",
-          "java.util.Collections$SingletonSet",
           "java.util.Map$Entry",
           "java.util.Collections$UnmodifiableCollection",
           "java.util.Collections$UnmodifiableList",
           "java.util.Collections$UnmodifiableMap",
           "java.util.Collections$UnmodifiableRandomAccessList",
           "java.util.Collections$UnmodifiableSet");
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(MigratingWebSessionAttributeConverter.class);
+
+  // Pre-migration FQN -> current class; remove together with MigratingDeserializer,
+  // MigratingObjectInputStream, and the test stub once old sessions have naturally expired.
+  private static final Map<String, Class<?>> CLASS_RENAMES =
+      Map.of("io.camunda.security.auth.CamundaAuthentication", CamundaAuthentication.class);
 
   private static final ObjectInputFilter ALLOWLIST =
       ObjectInputFilter.Config.createFilter(

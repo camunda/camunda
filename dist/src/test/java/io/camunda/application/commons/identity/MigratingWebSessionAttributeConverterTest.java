@@ -10,13 +10,19 @@ package io.camunda.application.commons.identity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import io.camunda.security.api.model.CamundaAuthentication;
 import jakarta.servlet.http.Cookie;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputFilter;
+import java.io.ObjectInputFilter.FilterInfo;
+import java.io.ObjectInputFilter.Status;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -25,6 +31,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.FactorGrantedAuthority;
@@ -34,17 +42,43 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.AuthenticationMethod;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.SavedCookie;
 
 class MigratingWebSessionAttributeConverterTest {
+
+  private static final Set<Class<?>> SEEN_CLASSES = ConcurrentHashMap.newKeySet();
+
+  // a discovery document as Keycloak serves it, shortened
+  private static final String DISCOVERY_DOCUMENT =
+      """
+      {
+        "issuer": "https://idp.example.com/realms/camunda",
+        "authorization_endpoint": "https://idp.example.com/auth",
+        "token_endpoint": "https://idp.example.com/token",
+        "userinfo_endpoint": "https://idp.example.com/userinfo",
+        "jwks_uri": "https://idp.example.com/jwks",
+        "scopes_supported": ["openid", "profile", "email"],
+        "subject_types_supported": ["public", "pairwise"],
+        "id_token_signing_alg_values_supported": ["RS256", "ES256"],
+        "response_types_supported": ["code", "id_token"],
+        "claims_supported": ["sub", "iss", "name"],
+        "frontchannel_logout_supported": true,
+        "mtls_endpoint_aliases": {
+          "token_endpoint": "https://mtls.idp.example.com/token"
+        }
+      }
+      """;
 
   private final MigratingWebSessionAttributeConverter converter =
       new MigratingWebSessionAttributeConverter();
@@ -86,10 +120,9 @@ class MigratingWebSessionAttributeConverterTest {
     final var auth =
         CamundaAuthentication.of(
             b -> b.user("bob").group("admins").tenant("default").claims(Map.of("sub", "bob")));
-    final byte[] payload = converter.serialize(auth);
 
     // when
-    final Object result = converter.deserialize(payload);
+    final Object result = roundTrip(auth);
 
     // then
     assertThat(result).isInstanceOf(CamundaAuthentication.class);
@@ -116,7 +149,7 @@ class MigratingWebSessionAttributeConverterTest {
     final var auth = CamundaAuthentication.of(b -> b.user("carol").claims(claims));
 
     // when
-    final var restored = (CamundaAuthentication) converter.deserialize(converter.serialize(auth));
+    final var restored = (CamundaAuthentication) roundTrip(auth);
 
     // then
     assertThat(restored.claims()).containsAllEntriesOf(claims);
@@ -142,7 +175,7 @@ class MigratingWebSessionAttributeConverterTest {
     final var auth = CamundaAuthentication.of(b -> b.user("frank").claims(claims));
 
     // when
-    final var restored = (CamundaAuthentication) converter.deserialize(converter.serialize(auth));
+    final var restored = (CamundaAuthentication) roundTrip(auth);
 
     // then
     assertThat(restored.claims()).containsAllEntriesOf(claims);
@@ -168,7 +201,7 @@ class MigratingWebSessionAttributeConverterTest {
             .build();
 
     // when
-    final var restored = (DefaultSavedRequest) converter.deserialize(converter.serialize(saved));
+    final var restored = (DefaultSavedRequest) roundTrip(saved);
 
     // then
     assertThat(restored.getRequestURI()).isEqualTo("/operate/processes");
@@ -179,7 +212,7 @@ class MigratingWebSessionAttributeConverterTest {
 
   @Test
   void shouldRoundTripBasicLoginSession() {
-    // given — the security context a basic login stores
+    // given — the security context a basic login stores, with the details a real request sets
     final var user =
         new User(
             "erin",
@@ -187,49 +220,77 @@ class MigratingWebSessionAttributeConverterTest {
             List.of(
                 new SimpleGrantedAuthority("ROLE_USER"),
                 FactorGrantedAuthority.fromAuthority("FACTOR_PASSWORD")));
-    final var context =
-        new SecurityContextImpl(
-            UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
+    final var authentication =
+        UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+    authentication.setDetails(new WebAuthenticationDetails("203.0.113.7", "session-id"));
+    final var context = new SecurityContextImpl(authentication);
 
     // when
-    final var restored = (SecurityContextImpl) converter.deserialize(converter.serialize(context));
+    final var restored = (SecurityContextImpl) roundTrip(context);
 
     // then
     assertThat(restored.getAuthentication().getName()).isEqualTo("erin");
     assertThat(restored.getAuthentication().getAuthorities())
         .extracting(a -> a.getAuthority())
         .containsExactlyInAnyOrder("ROLE_USER", "FACTOR_PASSWORD");
+    assertThat(restored.getAuthentication().getDetails())
+        .isEqualTo(new WebAuthenticationDetails("203.0.113.7", "session-id"));
   }
 
   @Test
-  void shouldRoundTripOidcLoginSession() {
-    // given — the session attributes an OIDC login stores: the security context and the
-    // authorized client
+  void shouldRoundTripOidcLoginSession() throws Exception {
+    // given — the claims as Spring's converters and the identity provider produce them: Instant for
+    // the timestamps, URL for the issuer, booleans, lists and nested maps
+    final var issuer = URI.create("https://idp.example.com/realms/camunda").toURL();
     final var idToken =
         new OidcIdToken(
             "id-token",
             Instant.now(),
             Instant.now().plusSeconds(60),
-            Map.of("sub", "dave", "iss", "https://idp.example.com"));
-    final var userInfo = new OidcUserInfo(Map.of("sub", "dave"));
+            Map.of(
+                "iss", issuer,
+                "sub", "dave",
+                "aud", List.of("camunda"),
+                "iat", Instant.now(),
+                "exp", Instant.now().plusSeconds(60),
+                "auth_time", Instant.now(),
+                "email_verified", true));
+    final var userInfo =
+        new OidcUserInfo(
+            Map.of(
+                "sub", "dave",
+                "email_verified", false,
+                "updated_at", Instant.now(),
+                "groups", List.of("admins", "operators"),
+                "address", Map.of("country", "DE")));
     final var user =
         new DefaultOidcUser(
             List.of(new OidcUserAuthority(idToken, userInfo)), idToken, userInfo, "sub");
     final var token =
         new OAuth2AuthenticationToken(user, List.of(new SimpleGrantedAuthority("ROLE_USER")), "id");
+    token.setDetails(new WebAuthenticationDetails("203.0.113.7", "session-id"));
     final var context = new SecurityContextImpl(token);
 
+    // the registration as provider discovery builds it, with the parsed discovery document as
+    // metadata, nested objects and arrays included
+    final var discoveryMetadata = discoveryMetadata();
     final var registration =
         ClientRegistration.withRegistrationId("id")
             .clientId("client")
             .clientSecret("secret")
+            .clientName("Camunda")
+            .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .redirectUri("https://camunda.example.com/sso-callback")
+            .issuerUri(issuer.toString())
             .authorizationUri("https://idp.example.com/auth")
             .tokenUri("https://idp.example.com/token")
             .userInfoUri("https://idp.example.com/userinfo")
+            .userInfoAuthenticationMethod(AuthenticationMethod.HEADER)
+            .userNameAttributeName("sub")
             .jwkSetUri("https://idp.example.com/jwks")
-            .scope("openid")
+            .scope("openid", "profile")
+            .providerConfigurationMetadata(discoveryMetadata)
             .build();
     final var client =
         new OAuth2AuthorizedClient(
@@ -239,19 +300,47 @@ class MigratingWebSessionAttributeConverterTest {
                 OAuth2AccessToken.TokenType.BEARER,
                 "access",
                 Instant.now(),
-                Instant.now().plusSeconds(60)),
+                Instant.now().plusSeconds(60),
+                Set.of("openid", "profile")),
             new OAuth2RefreshToken("refresh", Instant.now()));
 
+    // a registration configured by hand: no discovery metadata, and an access token without scopes
+    final var manualRegistration =
+        ClientRegistration.withRegistrationId("manual")
+            .clientId("client")
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .redirectUri("https://camunda.example.com/sso-callback")
+            .authorizationUri("https://idp.example.com/auth")
+            .tokenUri("https://idp.example.com/token")
+            .build();
+    final var manualClient =
+        new OAuth2AuthorizedClient(
+            manualRegistration,
+            "dave",
+            new OAuth2AccessToken(
+                OAuth2AccessToken.TokenType.BEARER,
+                "access",
+                Instant.now(),
+                Instant.now().plusSeconds(60)));
+
     // when
-    final var restoredContext =
-        (SecurityContextImpl) converter.deserialize(converter.serialize(context));
-    final var restoredClient =
-        (OAuth2AuthorizedClient) converter.deserialize(converter.serialize(client));
+    final var restoredContext = (SecurityContextImpl) roundTrip(context);
+    final var restoredClient = (OAuth2AuthorizedClient) roundTrip(client);
+    final var restoredManualClient = (OAuth2AuthorizedClient) roundTrip(manualClient);
 
     // then
-    assertThat(restoredContext.getAuthentication().getName()).isEqualTo(token.getName());
+    final var restoredToken = (OAuth2AuthenticationToken) restoredContext.getAuthentication();
+    final var restoredUser = (DefaultOidcUser) restoredToken.getPrincipal();
+    assertThat(restoredToken.getName()).isEqualTo(token.getName());
+    assertThat(restoredToken.getDetails())
+        .isEqualTo(new WebAuthenticationDetails("203.0.113.7", "session-id"));
+    assertThat(restoredUser.getIdToken().getClaims()).containsEntry("iss", issuer);
+    assertThat(restoredUser.getUserInfo().getClaims()).containsEntry("email_verified", false);
     assertThat(restoredClient.getPrincipalName()).isEqualTo("dave");
-    assertThat(restoredClient.getClientRegistration().getRegistrationId()).isEqualTo("id");
+    assertThat(restoredManualClient.getAccessToken().getScopes()).isEmpty();
+    assertThat(
+            restoredClient.getClientRegistration().getProviderDetails().getConfigurationMetadata())
+        .containsEntry("issuer", issuer.toString());
   }
 
   @Test
@@ -285,6 +374,91 @@ class MigratingWebSessionAttributeConverterTest {
 
     // when / then
     assertThatThrownBy(() -> converter.deserialize(payload)).isInstanceOf(RuntimeException.class);
+  }
+
+  /**
+   * Fails when an allowlist entry matches none of the classes the round trips above put into a
+   * stream, so a typo or a class that no session contains any more does not stay in the list.
+   */
+  @AfterAll
+  static void verifyEveryAllowedClassIsExercised() {
+    final var unused =
+        MigratingWebSessionAttributeConverter.ALLOWED_CLASSES.stream()
+            .filter(
+                entry -> {
+                  final var filter = ObjectInputFilter.Config.createFilter(entry);
+                  return SEEN_CLASSES.stream()
+                      .noneMatch(c -> filter.checkInput(filterInfo(c)) == Status.ALLOWED);
+                })
+            .toList();
+
+    assertThat(unused).as("allowlist entries that no round trip in this test produces").isEmpty();
+  }
+
+  private Object roundTrip(final Object value) {
+    final byte[] payload = converter.serialize(value);
+    recordClasses(payload);
+    return converter.deserialize(payload);
+  }
+
+  // Reads the payload with a filter that only records, the way the converter's own filter sees it.
+  // Array types are recorded by their component type, as the JDK pattern matcher checks them.
+  private static void recordClasses(final byte[] payload) {
+    try (final var in = new ObjectInputStream(new ByteArrayInputStream(payload))) {
+      in.setObjectInputFilter(
+          info -> {
+            Class<?> type = info.serialClass();
+            while (type != null && type.isArray()) {
+              type = type.getComponentType();
+            }
+            if (type != null && !type.isPrimitive()) {
+              SEEN_CLASSES.add(type);
+            }
+            return Status.UNDECIDED;
+          });
+      in.readObject();
+    } catch (final IOException | ClassNotFoundException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static FilterInfo filterInfo(final Class<?> type) {
+    return new FilterInfo() {
+      @Override
+      public Class<?> serialClass() {
+        return type;
+      }
+
+      @Override
+      public long arrayLength() {
+        return -1;
+      }
+
+      @Override
+      public long depth() {
+        return 1;
+      }
+
+      @Override
+      public long references() {
+        return 1;
+      }
+
+      @Override
+      public long streamBytes() {
+        return 1;
+      }
+    };
+  }
+
+  // toJSONObject() returns a net.minidev.json.JSONObject, as the metadata of a real provider
+  // discovery does. dist does not declare json-smart, so a direct call would fail the dependency
+  // analysis, and the method is called reflectively instead.
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> discoveryMetadata() throws Exception {
+    final var metadata = OIDCProviderMetadata.parse(DISCOVERY_DOCUMENT);
+    return (Map<String, Object>)
+        OIDCProviderMetadata.class.getMethod("toJSONObject").invoke(metadata);
   }
 
   private static byte[] serialize(final Object obj) throws IOException {
