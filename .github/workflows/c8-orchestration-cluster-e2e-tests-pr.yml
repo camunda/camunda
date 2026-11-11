@@ -12,6 +12,12 @@ name: C8 Orchestration Cluster E2E Tests PR Check
 # CI 30-minute budget, so it is visible on the PR but never blocks a merge.
 on:
   pull_request:
+    # The reusable matrix is sized by base branch and only knows main and
+    # stable/X.Y; release-* branches are irregularly named and validated by
+    # the release workflow instead.
+    branches:
+      - main
+      - "stable/**"
     paths:
       - "qa/c8-orchestration-cluster-e2e-test-suite/**"
       - "!qa/c8-orchestration-cluster-e2e-test-suite/**/*.md"

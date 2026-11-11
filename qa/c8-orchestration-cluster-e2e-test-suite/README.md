@@ -217,7 +217,8 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automatic PR Check
 
-When a pull request changes non-Markdown files under `qa/c8-orchestration-cluster-e2e-test-suite/`,
+When a pull request to `main` or a `stable/*` branch changes non-Markdown files under
+`qa/c8-orchestration-cluster-e2e-test-suite/`,
 `c8-orchestration-cluster-e2e-tests-pr.yml` runs the same matrix as the on-demand workflow for the
 PR's base branch. It is **not** a required check: a red result does not block the merge, but any
 failure must be reviewed and documented in the PR description, the same as for an on-demand run.
