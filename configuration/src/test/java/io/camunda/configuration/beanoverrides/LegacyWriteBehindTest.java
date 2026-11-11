@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,7 +34,9 @@ import org.springframework.util.unit.DataSize;
     properties = {
       "zeebe.broker.experimental.writeBehind.enabled=true",
       "zeebe.broker.experimental.writeBehind.maxPendingSize=16MB",
-      "zeebe.broker.experimental.writeBehind.cacheSize=128MB"
+      "zeebe.broker.experimental.writeBehind.cacheSize=128MB",
+      "zeebe.broker.experimental.writeBehind.keyIndexColumnFamilies=TIMER_DUE_DATES,JOB_DEADLINES",
+      "zeebe.broker.experimental.writeBehind.keyIndexMaxKeys=5000"
     })
 class LegacyWriteBehindTest {
   final BrokerBasedProperties brokerCfg;
@@ -49,5 +52,9 @@ class LegacyWriteBehindTest {
     assertThat(writeBehind.isEnabled()).isTrue();
     assertThat(writeBehind.getMaxPendingSize()).isEqualTo(DataSize.ofMegabytes(16));
     assertThat(writeBehind.getCacheSize()).isEqualTo(DataSize.ofMegabytes(128));
+    assertThat(writeBehind.getKeyIndexColumnFamilies())
+        .containsExactlyInAnyOrder(
+            ZbColumnFamilies.TIMER_DUE_DATES, ZbColumnFamilies.JOB_DEADLINES);
+    assertThat(writeBehind.getKeyIndexMaxKeys()).isEqualTo(5000);
   }
 }
