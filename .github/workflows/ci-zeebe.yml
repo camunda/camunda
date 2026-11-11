@@ -289,6 +289,7 @@ jobs:
         with:
           packages: strace
           no-install-recommends: "false"
+          skip-if-exists: /usr/bin/strace
       - name: Allow ptrace for strace tests
         run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
