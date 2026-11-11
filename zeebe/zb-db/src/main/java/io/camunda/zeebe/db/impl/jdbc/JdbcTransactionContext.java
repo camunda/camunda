@@ -98,6 +98,25 @@ public final class JdbcTransactionContext implements TransactionContext {
         });
   }
 
+  /**
+   * Marks the current transaction as the replay of the events of the command at the given position.
+   * If the database already contains this position, the transaction {@link
+   * #isReplayingCommittedChanges() replays committed changes} until it ends: the relational stores
+   * must then not change the rows, which are already in the later state of the database's position.
+   */
+  @Override
+  public void markAsReplaying(final long sourcePosition) {
+    transaction.markAsReplaying(sourcePosition);
+  }
+
+  /**
+   * Whether the current transaction replays events whose changes the database already contains, see
+   * {@link #markAsReplaying(long)}.
+   */
+  public boolean isReplayingCommittedChanges() {
+    return transaction.isReplayingCommittedChanges();
+  }
+
   @Override
   public ZeebeDbTransaction getCurrentTransaction() {
     if (!transaction.isInCurrentTransaction()) {

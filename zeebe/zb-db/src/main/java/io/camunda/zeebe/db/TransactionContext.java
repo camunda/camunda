@@ -43,4 +43,14 @@ public interface TransactionContext {
    * @param listener the listener to notify
    */
   void addTransactionListener(TransactionListener listener);
+
+  /**
+   * Tells the context that the current transaction replays the events of the command at the given
+   * position, before they are applied. A context whose stores are rebuilt from a snapshot and the
+   * log, like RocksDB, has nothing to do; one whose stores keep their changes across restarts uses
+   * it to tell whether it already contains the changes of these events.
+   *
+   * @param sourcePosition the position of the command whose events are replayed
+   */
+  default void markAsReplaying(final long sourcePosition) {}
 }

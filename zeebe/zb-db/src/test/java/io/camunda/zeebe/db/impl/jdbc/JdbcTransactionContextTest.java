@@ -151,6 +151,54 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
+  void shouldReplayCommittedChangesUpToTheDatabasePosition() throws Exception {
+    // given - a database that contains the changes up to position 10
+    final var restarted = new JdbcTransactionContext(10);
+    final var replaying = new ArrayList<Boolean>();
+
+    for (final long position : new long[] {9, 10, 11}) {
+      final var transaction = restarted.getCurrentTransaction();
+
+      // when
+      restarted.markAsReplaying(position);
+      replaying.add(restarted.isReplayingCommittedChanges());
+      transaction.commit();
+    }
+
+    // then
+    assertThat(replaying).containsExactly(true, true, false);
+  }
+
+  @Test
+  void shouldEndReplayingCommittedChangesWithTheTransaction() throws Exception {
+    // given
+    final var restarted = new JdbcTransactionContext(10);
+    final var replayed = restarted.getCurrentTransaction();
+    restarted.markAsReplaying(10);
+    final var rolledBack = restarted.isReplayingCommittedChanges();
+    replayed.rollback();
+
+    // when - a processed command after the replay
+    restarted.getCurrentTransaction();
+
+    // then
+    assertThat(rolledBack).isTrue();
+    assertThat(restarted.isReplayingCommittedChanges()).isFalse();
+  }
+
+  @Test
+  void shouldNotReplayCommittedChangesOfADatabaseWithoutPosition() {
+    // given - the context of the default database position
+    context.getCurrentTransaction();
+
+    // when
+    context.markAsReplaying(0);
+
+    // then
+    assertThat(context.isReplayingCommittedChanges()).isFalse();
+  }
+
+  @Test
   void shouldCommitUnmarkedTransactionsAfterADiscardedOne() throws Exception {
     // given
     final var restarted = new JdbcTransactionContext(10);

@@ -74,6 +74,19 @@ final class MixedTransactionContextTest {
   }
 
   @Test
+  void shouldTellTheJdbcContextWhichCommandIsReplayed() throws Exception {
+    // given - a database that contains the changes up to position 10
+    final var restarted = (MixedTransactionContext) new MixedZeebeDb<>(rocksDb, 10).createContext();
+    restarted.getCurrentTransaction();
+
+    // when
+    restarted.markAsReplaying(10);
+
+    // then
+    assertThat(restarted.jdbc().isReplayingCommittedChanges()).isTrue();
+  }
+
+  @Test
   void shouldCommitJdbcBeforeRocksDb() throws Exception {
     // given
     final List<Boolean> rocksDbCommittedDuringFlush = new ArrayList<>();
