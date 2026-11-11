@@ -1,0 +1,655 @@
+# description: OC flakiness fix agent. Daily, ranks the flaky tests of the last
+#              nightlies (E2E and API on Elasticsearch, every version) and dispatches
+#              one run of itself per test. Each run measures the test on sharded,
+#              fresh docker-compose stacks of every cell it was flaky in, lets Claude
+#              Code fix it on a flaky-fix/* branch (at most two attempts), re-measures,
+#              and opens a PR only when the fix clears the pass-rate thresholds. A fix
+#              that does not is deleted with its branch.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Flakiness Fix Agent
+
+run-name: >-
+  ${{ (github.event_name == 'workflow_dispatch' && inputs.spec != '')
+      && format('Flakiness fix — {0} {1}', inputs.version, inputs.spec)
+      || 'Flakiness fix — pick and dispatch' }}
+
+on:
+  schedule:
+    # After the last E2E/API nightly (main, 02:15 UTC) has finished.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "8.7, 8.8, 8.9, 8.10 or main. Leave spec empty to run the daily pick instead."
+        required: false
+        type: string
+      spec:
+        description: "Spec file relative to the suite root, e.g. tests/operate/operations.spec.ts"
+        required: false
+        type: string
+      title_path:
+        description: 'JSON array: describe titles then the test title, e.g. ["Operations","Retry and cancel single instance"]'
+        required: false
+        type: string
+      project:
+        description: "Playwright project the nightly ran the test under (chromium, api-tests, ...)"
+        required: false
+        type: string
+      cells:
+        description: 'JSON array of cells: e2e-v1, e2e-v2, e2e (main), api-profiles, api-all-in-one'
+        required: false
+        type: string
+      shards:
+        description: "Shards per cell, each on its own stack"
+        required: false
+        default: '5'
+        type: string
+      repeat_each:
+        description: "Runs of the test per shard"
+        required: false
+        default: '10'
+        type: string
+      workers:
+        description: "Playwright workers per shard"
+        required: false
+        default: '2'
+        type: string
+      max_targets:
+        description: "Pick mode: tests dispatched per day"
+        required: false
+        default: '3'
+        type: string
+      dispatch:
+        description: "Pick mode: dispatch the picked tests (false = only list them)"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    oc-flakiness-${{ inputs.spec != '' && format('{0}-{1}-{2}', inputs.version, inputs.spec, inputs.title_path) || 'pick' }}
+  cancel-in-progress: false
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+  STATE_BRANCH: oc-flakiness-state
+  # A PR needs every cell at MIN_PASS_RATE and the pooled rate up by
+  # MIN_IMPROVEMENT_PP over the baseline: the floor alone cannot tell a real fix
+  # from a no-op on a test that was already near it.
+  MIN_PASS_RATE: '80'
+  MIN_IMPROVEMENT_PP: '10'
+
+jobs:
+  # ─── Pick mode ────────────────────────────────────────────────────────────
+  pick:
+    name: Pick flaky tests
+    if: github.event_name == 'schedule' || inputs.spec == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      # Nightly runs per workflow that are read. Older runs say little about
+      # the test as it is today.
+      WINDOW: '7'
+      # workflow | version | kind. RDBMS is not covered yet.
+      NIGHTLIES: |
+        c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e
+        c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api
+        c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e
+        c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api
+        c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e
+        c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api
+        c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e
+        c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api
+        c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e
+        c8-orchestration-cluster-nightly-main-api-es.yml|main|api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/oc-flakiness
+
+      - name: Download nightly reports
+        run: |
+          set -euo pipefail
+          reports="$RUNNER_TEMP/reports"
+          mkdir -p "$reports"
+          while IFS='|' read -r workflow version kind; do
+            [[ -z "$workflow" ]] && continue
+            [[ "$version" == "main" ]] && safe="main" || safe="stable-${version}"
+            gh run list --repo "$REPO" --workflow "$workflow" --status completed \
+              --limit "$WINDOW" --json databaseId,createdAt \
+              --jq '.[] | "\(.databaseId) \(.createdAt)"' |
+            while read -r run_id created_at; do
+              gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
+                --jq '.artifacts[] | select(.expired | not) | .name' |
+              while read -r name; do
+                cell=""
+                if [[ "$kind" == "e2e" ]]; then
+                  case "$name" in
+                    "json-report-nightly-e2e-${safe}-v1") cell=e2e-v1 ;;
+                    "json-report-nightly-e2e-${safe}-v2") cell=e2e-v2 ;;
+                    "json-report-nightly-e2e-${safe}") cell=e2e ;;
+                  esac
+                else
+                  case "$name" in
+                    "json-report-nightly-api-${safe}-all-in-one") cell=api-all-in-one ;;
+                    "json-report-nightly-api-${safe}-profiles"|"json-report-nightly-api-${safe}") cell=api-profiles ;;
+                  esac
+                fi
+                [[ -z "$cell" ]] && continue
+                dir="${reports}/${version}/${cell}/${run_id}"
+                mkdir -p "$dir"
+                jq -n --arg c "$created_at" '{created_at: $c}' > "${dir}/meta.json"
+                gh run download "$run_id" --repo "$REPO" --name "$name" --dir "$dir" \
+                  || echo "::warning::could not download ${name} from run ${run_id}"
+              done
+            done
+          done <<< "$NIGHTLIES"
+          find "$reports" -name results.json | wc -l | xargs echo "reports downloaded:"
+
+      - name: Read the ledger
+        run: |
+          gh api "repos/${REPO}/contents/ledger.json?ref=${STATE_BRANCH}" --jq '.content' 2>/dev/null \
+            | base64 -d > "$RUNNER_TEMP/ledger.json" 2>/dev/null || true
+          jq -e 'type == "object"' "$RUNNER_TEMP/ledger.json" > /dev/null 2>&1 \
+            || echo '{}' > "$RUNNER_TEMP/ledger.json"
+
+      - name: Rank flaky tests
+        id: rank
+        env:
+          MAX_TARGETS: ${{ inputs.max_targets || '3' }}
+        run: |
+          set -euo pipefail
+          # Ask for extra candidates: some are dropped below because a fix branch
+          # for them already exists.
+          node .github/scripts/oc-flakiness/pick.mjs \
+            --reports "$RUNNER_TEMP/reports" --ledger "$RUNNER_TEMP/ledger.json" \
+            --max $(( MAX_TARGETS * 3 )) > "$RUNNER_TEMP/candidates.json"
+
+          gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" --jq '.[].ref' \
+            | sed 's#^refs/heads/##' > "$RUNNER_TEMP/branches.txt" || true
+          jq -c --rawfile branches "$RUNNER_TEMP/branches.txt" --argjson max "$MAX_TARGETS" '
+            ($branches | split("\n")) as $taken
+            | [.[] | select(("flaky-fix/" + .version + "-" + .fp) as $b | $taken | index($b) | not)]
+            | .[0:$max]
+          ' "$RUNNER_TEMP/candidates.json" > "$RUNNER_TEMP/targets.json"
+
+          {
+            echo "### Flaky tests picked"
+            echo
+            echo "| version | test | cells | flaky | failed | passed |"
+            echo "|---|---|---|---|---|---|"
+            jq -r '.[] | "| \(.version) | `\(.file)` › \(.titlePath | join(" › ")) | \(.cells | join(", ")) | \(.flaky) | \(.failed) | \(.passed) |"' \
+              "$RUNNER_TEMP/targets.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq . "$RUNNER_TEMP/targets.json"
+
+      - name: Dispatch one run per test
+        if: github.event_name == 'schedule' || inputs.dispatch
+        run: |
+          set -euo pipefail
+          jq -c '.[]' "$RUNNER_TEMP/targets.json" | while read -r t; do
+            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref main \
+              -f version="$(jq -r .version <<< "$t")" \
+              -f spec="$(jq -r .file <<< "$t")" \
+              -f title_path="$(jq -c .titlePath <<< "$t")" \
+              -f project="$(jq -r .project <<< "$t")" \
+              -f cells="$(jq -c .cells <<< "$t")"
+            echo "Dispatched $(jq -r '.version + " " + .file + " › " + .title' <<< "$t")"
+          done
+
+  janitor:
+    name: Delete abandoned flaky-fix branches
+    if: github.event_name == 'schedule' || inputs.spec == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # A run that crashed before its decide job leaves its branch behind. Two
+      # days is far longer than any run, and a branch with an open PR is kept.
+      - name: Delete stale branches
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d '2 days ago' +%s)
+          gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" \
+            --jq '.[] | "\(.ref) \(.object.sha)"' |
+          while read -r ref sha; do
+            branch="${ref#refs/heads/}"
+            committed=$(gh api "repos/${REPO}/commits/${sha}" --jq '.commit.committer.date')
+            [[ $(date -u -d "$committed" +%s) -gt "$cutoff" ]] && continue
+            open=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq 'length')
+            [[ "$open" -gt 0 ]] && continue
+            gh api -X DELETE "repos/${REPO}/git/refs/heads/${branch}"
+            echo "Deleted ${branch} (last commit ${committed})"
+          done
+
+  # ─── Fix mode: one test ───────────────────────────────────────────────────
+  prepare:
+    name: Prepare
+    if: github.event_name == 'workflow_dispatch' && inputs.spec != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.prep.outputs.skip }}
+      target_ref: ${{ steps.prep.outputs.target_ref }}
+      fp: ${{ steps.prep.outputs.fp }}
+      branch: ${{ steps.prep.outputs.branch }}
+      shard_ids: ${{ steps.prep.outputs.shard_ids }}
+      repeat_each: ${{ steps.prep.outputs.repeat_each }}
+      workers: ${{ steps.prep.outputs.workers }}
+    steps:
+      - name: Validate inputs and resolve the target
+        id: prep
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PROJECT: ${{ inputs.project }}
+          CELLS: ${{ inputs.cells }}
+          SHARDS: ${{ inputs.shards }}
+          REPEAT_EACH: ${{ inputs.repeat_each }}
+          WORKERS: ${{ inputs.workers }}
+        run: |
+          set -euo pipefail
+          case "$VERSION" in
+            main) target_ref=main; allowed='["e2e","api-profiles","api-all-in-one"]' ;;
+            8.7)  target_ref=stable/8.7; allowed='["e2e-v1","api-profiles"]' ;;
+            8.8)  target_ref=stable/8.8; allowed='["e2e-v1","e2e-v2","api-profiles"]' ;;
+            8.9)  target_ref=stable/8.9; allowed='["e2e-v1","e2e-v2","api-profiles","api-all-in-one"]' ;;
+            8.10) target_ref=stable/8.10; allowed='["e2e-v2","api-profiles","api-all-in-one"]' ;;
+            *) echo "::error::version must be 8.7, 8.8, 8.9, 8.10 or main"; exit 1 ;;
+          esac
+          jq -e 'type == "array" and length > 0 and all(type == "string")' <<< "$TITLE_PATH" > /dev/null \
+            || { echo "::error::title_path must be a non-empty JSON array of strings"; exit 1; }
+          jq -e --argjson allowed "$allowed" 'type == "array" and length > 0 and all(. as $c | $allowed | index($c))' <<< "$CELLS" > /dev/null \
+            || { echo "::error::cells must be a non-empty subset of ${allowed} for ${VERSION}"; exit 1; }
+          [[ -n "$PROJECT" ]] || { echo "::error::project is required"; exit 1; }
+          [[ "$SPEC" =~ ^[A-Za-z0-9_./-]+\.spec\.ts$ ]] || { echo "::error::spec must be a .spec.ts path"; exit 1; }
+          for n in "$SHARDS" "$REPEAT_EACH" "$WORKERS"; do
+            [[ "$n" =~ ^[1-9][0-9]?$ ]] || { echo "::error::shards, repeat_each and workers must be 1-99"; exit 1; }
+          done
+
+          title=$(jq -r '.[-1]' <<< "$TITLE_PATH")
+          fp=$(printf '%s::%s::%s' "$VERSION" "$SPEC" "$title" | sha256sum | cut -c1-8)
+          branch="flaky-fix/${VERSION}-${fp}"
+          skip=false
+          if gh api "repos/${REPO}/git/ref/heads/${branch}" > /dev/null 2>&1; then
+            echo "::notice::${branch} already exists; another run or an open PR covers this test."
+            skip=true
+          fi
+          {
+            echo "skip=${skip}"
+            echo "target_ref=${target_ref}"
+            echo "fp=${fp}"
+            echo "branch=${branch}"
+            echo "shard_ids=$(jq -cn --argjson n "$SHARDS" '[range(1; $n + 1)]')"
+            echo "repeat_each=${REPEAT_EACH}"
+            echo "workers=${WORKERS}"
+          } >> "$GITHUB_OUTPUT"
+
+  baseline:
+    name: Baseline
+    needs: [prepare]
+    if: needs.prepare.outputs.skip == 'false'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.prepare.outputs.target_ref }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: baseline
+
+  fix1:
+    name: Fix attempt 1
+    needs: [prepare, baseline]
+    if: needs.baseline.outputs.verdict == 'scored'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      target_ref: ${{ needs.prepare.outputs.target_ref }}
+      branch: ${{ needs.prepare.outputs.branch }}
+      base: target
+      iteration: 1
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      cells: ${{ inputs.cells }}
+      evidence: '["baseline"]'
+
+  validate1:
+    name: Validate attempt 1
+    needs: [prepare, fix1]
+    if: needs.fix1.outputs.changed == 'true'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.fix1.outputs.sha }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: iter1
+
+  plan-iter2:
+    name: Plan attempt 2
+    needs: [validate1]
+    if: needs.validate1.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_iter2: ${{ steps.next.outputs.run_iter2 }}
+      base: ${{ steps.next.outputs.base }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: .github/scripts/oc-flakiness
+      - name: Download scores
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-score-*
+          path: ${{ runner.temp }}/scores
+      - name: Decide
+        id: next
+        run: |
+          set -euo pipefail
+          s="$RUNNER_TEMP/scores"
+          result=$(node .github/scripts/oc-flakiness/decide.mjs --mode next \
+            --baseline "$s/flaky-score-baseline/score.json" --iter1 "$s/flaky-score-iter1/score.json")
+          echo "$result"
+          {
+            echo "run_iter2=$(jq -r .run_iter2 <<< "$result")"
+            echo "base=$(jq -r .base <<< "$result")"
+          } >> "$GITHUB_OUTPUT"
+
+  fix2:
+    name: Fix attempt 2
+    needs: [prepare, plan-iter2]
+    if: needs.plan-iter2.outputs.run_iter2 == 'true'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      target_ref: ${{ needs.prepare.outputs.target_ref }}
+      branch: ${{ needs.prepare.outputs.branch }}
+      base: ${{ needs.plan-iter2.outputs.base }}
+      iteration: 2
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      cells: ${{ inputs.cells }}
+      evidence: '["baseline","iter1"]'
+
+  validate2:
+    name: Validate attempt 2
+    needs: [prepare, fix2]
+    if: needs.fix2.outputs.changed == 'true'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.fix2.outputs.sha }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: iter2
+
+  decide:
+    name: Decide — PR or delete
+    needs: [prepare, baseline, fix1, validate1, fix2, validate2]
+    if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+          sparse-checkout: .github/scripts/oc-flakiness
+
+      - name: Download scores and agent summaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-{score,agent}-*
+          path: ${{ runner.temp }}/out
+
+      - name: Decide
+        id: final
+        run: |
+          set -euo pipefail
+          o="$RUNNER_TEMP/out"
+          result=$(node .github/scripts/oc-flakiness/decide.mjs --mode final \
+            --baseline "$o/flaky-score-baseline/score.json" \
+            --iter1 "$o/flaky-score-iter1/score.json" \
+            --iter2 "$o/flaky-score-iter2/score.json" \
+            --min-rate "$MIN_PASS_RATE" --min-improvement "$MIN_IMPROVEMENT_PP")
+          echo "$result"
+          {
+            echo "action=$(jq -r .action <<< "$result")"
+            echo "best=$(jq -r '.best // ""' <<< "$result")"
+            echo "reason=$(jq -r .reason <<< "$result")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Open the PR or delete the branch
+        id: act
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          ACTION: ${{ steps.final.outputs.action }}
+          BEST: ${{ steps.final.outputs.best }}
+          REASON: ${{ steps.final.outputs.reason }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          TARGET_REF: ${{ needs.prepare.outputs.target_ref }}
+          ITER1_SHA: ${{ needs.fix1.outputs.sha }}
+          ITER2_SHA: ${{ needs.fix2.outputs.sha }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          CELLS: ${{ inputs.cells }}
+        run: |
+          set -euo pipefail
+          o="$RUNNER_TEMP/out"
+          branch_exists=false
+          gh api "repos/${REPO}/git/ref/heads/${BRANCH}" > /dev/null 2>&1 && branch_exists=true
+          pr_url=""
+
+          if [[ "$ACTION" == "open_pr" ]]; then
+            best_sha="$ITER1_SHA"
+            [[ "$BEST" == "iter2" ]] && best_sha="$ITER2_SHA"
+            # Attempt 2 may have moved the branch past (or away from) the better attempt 1.
+            gh api -X PATCH "repos/${REPO}/git/refs/heads/${BRANCH}" -f sha="$best_sha" -F force=true > /dev/null
+
+            gh label create flaky-test-fix --repo "$REPO" --color FBCA04 \
+              --description "Bot-opened fix for a flaky orchestration cluster E2E/API test" 2>/dev/null || true
+            title=$(jq -r '.[-1]' <<< "$TITLE_PATH" | cut -c1-70)
+            summary_file="$o/flaky-agent-${BEST}/flaky-fix-summary.md"
+            {
+              echo "## Description"
+              echo
+              echo "Stabilizes the flaky test \`${SPEC}\` › $(jq -r 'join(" › ")' <<< "$TITLE_PATH") on \`${TARGET_REF}\`."
+              echo
+              echo "**Result:** ${REASON}. Each pass ran the test on fresh docker-compose stacks per cell (\`$(jq -r 'join(", ")' <<< "$CELLS")\`) with \`--retries=0\`."
+              echo
+              echo "| pass | verdict | pooled | per cell |"
+              echo "|---|---|---|---|"
+              for label in baseline iter1 iter2; do
+                f="$o/flaky-score-${label}/score.json"
+                [[ -f "$f" ]] || continue
+                jq -r --arg l "$label" '"| \($l) | \(.verdict) | \(.pooled.rate)% (\(.pooled.passed)/\(.pooled.passed + .pooled.failed)) | \([.cells | to_entries[] | "\(.key) \(.value.rate)%"] | join(", ")) |"' "$f"
+              done
+              echo
+              if [[ -f "$summary_file" ]]; then
+                echo "### Root cause and fix (agent)"
+                echo
+                cat "$summary_file"
+                echo
+              fi
+              echo "Run: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+              echo
+              echo "## Checklist"
+              echo
+              echo "- [x] The changed test was re-run on fresh stacks of every affected cell (see the table above)."
+              echo
+              echo "## Related issues"
+              echo
+              echo "- [x] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)"
+            } > "$RUNNER_TEMP/pr-body.md"
+            pr_url=$(gh pr create --repo "$REPO" --base "$TARGET_REF" --head "$BRANCH" \
+              --title "test: stabilize flaky \"${title}\" (${VERSION})" \
+              --body-file "$RUNNER_TEMP/pr-body.md" --label flaky-test-fix)
+            echo "Opened ${pr_url}"
+          elif [[ "$branch_exists" == "true" ]]; then
+            gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
+            echo "Deleted ${BRANCH}: ${REASON}"
+          fi
+          echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### ${ACTION}"
+            echo
+            echo "${REASON}"
+            [[ -n "$pr_url" ]] && { echo; echo "PR: ${pr_url}"; }
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The ledger keeps the pick job from spending a slot on the same test
+      # every day: a cooldown after a failed or pending attempt, and a
+      # verified_at that discounts the nightly hits a 100% baseline disproved.
+      - name: Record the outcome in the ledger
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          ACTION: ${{ steps.final.outputs.action }}
+          REASON: ${{ steps.final.outputs.reason }}
+          PR_URL: ${{ steps.act.outputs.pr_url }}
+          FP: ${{ needs.prepare.outputs.fp }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+        run: |
+          set -euo pipefail
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          case "$ACTION" in
+            open_pr)        cooldown=$(date -u -d '14 days' +%Y-%m-%dT%H:%M:%SZ) ;;
+            delete_branch)  cooldown=$(date -u -d '7 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
+            blocked)        cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
+            *)              cooldown="" ;;
+          esac
+          run_url="${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+
+          state="$RUNNER_TEMP/state"
+          remote="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          git init -q "$state"
+          git -C "$state" config user.name  "qa-processes[bot]"
+          git -C "$state" config user.email "qa-processes[bot]@users.noreply.github.com"
+          git -C "$state" remote add origin "$remote"
+
+          for attempt in 1 2 3 4 5; do
+            if git -C "$state" fetch -q --depth 1 origin "$STATE_BRANCH" 2>/dev/null; then
+              git -C "$state" checkout -q -B "$STATE_BRANCH" FETCH_HEAD
+            else
+              git -C "$state" checkout -q --orphan "$STATE_BRANCH"
+              git -C "$state" rm -rq --cached . 2>/dev/null || true
+            fi
+            [[ -f "$state/ledger.json" ]] || echo '{}' > "$state/ledger.json"
+            jq --arg fp "$FP" --arg v "$VERSION" --arg f "$SPEC" --argjson tp "$TITLE_PATH" \
+               --arg action "$ACTION" --arg reason "$REASON" --arg now "$now" \
+               --arg cooldown "$cooldown" --arg run "$run_url" --arg pr "$PR_URL" '
+              .[$fp] = ((.[$fp] // {}) + {
+                version: $v, file: $f, titlePath: $tp,
+                last_action: $action, last_reason: $reason, last_run: $run, updated_at: $now
+              })
+              | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
+              | if $action == "verified_green" then .[$fp].verified_at = $now else . end
+              | if $pr != "" then .[$fp].pr = $pr else . end
+            ' "$state/ledger.json" > "$state/ledger.tmp"
+            mv "$state/ledger.tmp" "$state/ledger.json"
+            git -C "$state" add ledger.json
+            git -C "$state" commit -qm "ledger: ${ACTION} ${VERSION} ${FP}"
+            if git -C "$state" push -q origin "HEAD:refs/heads/${STATE_BRANCH}"; then
+              echo "Ledger updated."
+              exit 0
+            fi
+            echo "Ledger push raced another run (attempt ${attempt}); retrying."
+            sleep $(( attempt * 5 ))
+          done
+          echo "::error::could not update the ledger"
+          exit 1
