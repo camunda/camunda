@@ -32,10 +32,11 @@
       "Search Variables API Tests",
       "Search Variables with invalid pagination parameters"
     ],
-    "last_action": "blocked",
-    "last_reason": "baseline produced no score",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43098544629",
-    "updated_at": "2026-11-11T21:12:26Z",
-    "cooldown_until": "2026-11-12T21:12:26Z"
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 85% (+15pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43101441670",
+    "updated_at": "2026-11-11T21:49:35Z",
+    "cooldown_until": "2026-11-25T21:49:35Z",
+    "pr": "https://github.com/camunda/camunda/pull/69103"
   }
 }
