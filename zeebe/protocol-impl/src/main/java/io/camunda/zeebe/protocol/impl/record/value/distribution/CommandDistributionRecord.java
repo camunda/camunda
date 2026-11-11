@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -83,6 +84,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MAPPING_RULE, MappingRuleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.POLICY_UPDATE, PolicyUpdateRecord::new);
+    RECORDS_BY_TYPE.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GROUP, GroupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SCALE, ScaleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);

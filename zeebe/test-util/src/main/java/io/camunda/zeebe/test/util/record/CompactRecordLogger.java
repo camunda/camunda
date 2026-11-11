@@ -127,6 +127,7 @@ import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -363,6 +364,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
     valueLoggers.put(ValueType.PROBE, this::summarizeProbe);
     valueLoggers.put(ValueType.PROBE_BATCH, this::summarizeProbeBatch);
+    valueLoggers.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, this::summarizeProcessDefinitionSuspension);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2330,6 +2333,23 @@ public class CompactRecordLogger {
       result.append(" reason:").append(value.getEndReason());
     }
     result.append(" tenantId:").append(value.getTenantId());
+
+    return result.toString();
+  }
+
+  String summarizeProcessDefinitionSuspension(final Record<?> record) {
+    final var value = (ProcessDefinitionSuspensionRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    if (value.getProcessDefinitionKey() > 0) {
+      result.append("pdKey:").append(shortenKey(value.getProcessDefinitionKey()));
+    } else {
+      result.append(formatId(value.getBpmnProcessId())).append(" v").append(value.getVersion());
+    }
+    if (value.isCascade()) {
+      result.append(" cascade");
+    }
+    result.append(" resolved:").append(value.getResolvedVersions().size());
 
     return result.toString();
   }
