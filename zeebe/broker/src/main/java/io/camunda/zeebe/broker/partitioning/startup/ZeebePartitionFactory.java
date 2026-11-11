@@ -58,6 +58,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotApiHandlerTr
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.leadership.RaftPartitionLeadership;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -216,6 +217,7 @@ public final class ZeebePartitionFactory {
             brokerCfg.getCluster().getPartitionsCount(),
             communicationService,
             raftPartition,
+            new RaftPartitionLeadership(raftPartition),
             partitionListeners,
             partitionRaftListeners,
             new AtomixPartitionMessagingService(

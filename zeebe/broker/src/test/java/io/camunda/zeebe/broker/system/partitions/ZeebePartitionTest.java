@@ -31,6 +31,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.system.partitions.leadership.RaftPartitionLeadership;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -86,6 +87,7 @@ public class ZeebePartitionTest {
 
     when(ctx.getPartitionAdminControl()).thenReturn(mock(PartitionAdminControl.class));
     when(ctx.getRaftPartition()).thenReturn(raft);
+    when(ctx.getLeadership()).thenReturn(new RaftPartitionLeadership(raft));
     when(ctx.getPartitionContext()).thenReturn(ctx);
     when(ctx.partitionId()).thenReturn(partitionId);
     when(ctx.getComponentHealthMonitor()).thenReturn(healthMonitor);
@@ -530,7 +532,8 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
-    order.verify(raft).removeRoleChangeListener(partition);
+    // the leadership passes a wrapper of the partition to Raft
+    order.verify(raft).removeRoleChangeListener(any());
     order.verify(transition).toInactive(anyLong());
     // raft must be stopped only after inactive transition is completed
     verify(raft, never()).stop();

@@ -30,6 +30,8 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadership;
+import io.camunda.zeebe.broker.system.partitions.leadership.RaftPartitionLeadership;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -126,6 +128,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public RaftPartition getRaftPartition() {
     return raftPartition;
+  }
+
+  @Override
+  public PartitionLeadership getLeadership() {
+    return new RaftPartitionLeadership(raftPartition);
   }
 
   @Override

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.raft.LeadershipTransferWriteBarrier;
-import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.camunda.cluster.PartitionId;
@@ -18,6 +17,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadershipListener;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.rebalance.ClusterConfigurationCoordinatorCheck;
 import io.camunda.zeebe.scheduler.Actor;
@@ -44,7 +44,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
-    implements RaftRoleChangeListener,
+    implements PartitionLeadershipListener,
         HealthMonitorable,
         FailureListener,
         DiskSpaceUsageListener,
@@ -289,9 +289,9 @@ public final class ZeebePartition extends Actor
   }
 
   /**
-   * Called by atomix on role change.
+   * Called by the leadership of the partition on role change.
    *
-   * @param newRole the new role of the raft partition
+   * @param newRole the new role of this node for the partition
    */
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
@@ -395,13 +395,13 @@ public final class ZeebePartition extends Actor
   }
 
   private void registerListeners() {
-    context.getRaftPartition().addRoleChangeListener(this);
+    context.getLeadership().addListener(this);
     context.getComponentHealthMonitor().addFailureListener(this);
     context.getRaftPartition().getServer().addSnapshotReplicationListener(this);
   }
 
   private void removeListeners() {
-    context.getRaftPartition().removeRoleChangeListener(this);
+    context.getLeadership().removeListener(this);
     context.getComponentHealthMonitor().removeFailureListener(this);
     context.getRaftPartition().getServer().removeSnapshotReplicationListener(this);
   }
@@ -466,7 +466,7 @@ public final class ZeebePartition extends Actor
           context.getPartitionId(),
           context.getCurrentRole(),
           context.getCurrentTerm());
-      context.getRaftPartition().stepDown();
+      context.getLeadership().stepDown();
     } else if (context.getCurrentRole() == Role.FOLLOWER) {
       LOG.info(
           "Unexpected failure occurred in partition {} (role {}, term {}), transitioning to inactive",
@@ -480,7 +480,7 @@ public final class ZeebePartition extends Actor
   /** Whether this node is still leader in the term it was leader in when the caller checked. */
   private boolean isCurrentLeaderTerm() {
     return context.getCurrentRole() == Role.LEADER
-        && context.getCurrentTerm() == context.getRaftPartition().term();
+        && context.getCurrentTerm() == context.getLeadership().term();
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
@@ -494,7 +494,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void stopPartitionOnError() {
-    context.getRaftPartition().removeRoleChangeListener(this);
+    context.getLeadership().removeListener(this);
     transitionToInactive()
         .onComplete(
             (ignore, e) -> {
@@ -663,7 +663,7 @@ public final class ZeebePartition extends Actor
                 context.getPartitionId(),
                 processorError);
             if (isCurrentLeaderTerm()) {
-              context.getRaftPartition().stepDown();
+              context.getLeadership().stepDown();
             }
             result.completeExceptionally(processorError);
           } else {

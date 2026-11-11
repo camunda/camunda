@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadership;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
@@ -83,6 +84,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition raftPartition;
+  private final PartitionLeadership leadership;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
@@ -137,6 +139,7 @@ public class PartitionStartupAndTransitionContextImpl
       final int partitionCount,
       final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
+      final PartitionLeadership leadership,
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final PartitionMessagingService partitionCommunicationService,
@@ -160,6 +163,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
+    this.leadership = leadership;
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
     this.brokerClient = brokerClient;
@@ -208,6 +212,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public RaftPartition getRaftPartition() {
     return raftPartition;
+  }
+
+  @Override
+  public PartitionLeadership getLeadership() {
+    return leadership;
   }
 
   @Override

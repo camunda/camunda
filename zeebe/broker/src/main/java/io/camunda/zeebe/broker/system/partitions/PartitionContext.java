@@ -13,6 +13,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadership;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -35,6 +36,9 @@ public interface PartitionContext {
   PartitionId partitionId();
 
   RaftPartition getRaftPartition();
+
+  /** Who leads the partition. The partition takes its role from it, not from Raft directly. */
+  PartitionLeadership getLeadership();
 
   void notifyListenersOfBecameRaftLeader(final long newTerm);
 
