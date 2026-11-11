@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the job metric table of the relational engine state, see JobMetricMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertJobMetric); the other statements are queries of the mapper.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.JobMetricMapper">
+
+  <resultMap id="jobMetricRow"
+    type="io.camunda.zeebe.engine.state.rdbms.JobMetricMapper$JobMetricRow">
+    <constructor>
+      <idArg column="job_type" javaType="String"/>
+      <idArg column="tenant_id" javaType="String"/>
+      <idArg column="worker" javaType="String"/>
+      <arg column="created_count" javaType="_int"/>
+      <arg column="created_last_updated_at" javaType="_long"/>
+      <arg column="completed_count" javaType="_int"/>
+      <arg column="completed_last_updated_at" javaType="_long"/>
+      <arg column="failed_count" javaType="_int"/>
+      <arg column="failed_last_updated_at" javaType="_long"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="jobMetricColumns">
+    job_type, tenant_id, worker, created_count, created_last_updated_at, completed_count,
+    completed_last_updated_at, failed_count, failed_last_updated_at
+  </sql>
+
+  <select id="selectJobMetric" resultMap="jobMetricRow">
+    SELECT <include refid="jobMetricColumns"/>
+    FROM CAM_RU_JOB_METRIC
+    WHERE partition_id = #{partitionId} AND job_type = #{key.jobType}
+      AND tenant_id = #{key.tenantId} AND worker = #{key.workerName}
+  </select>
+
+  <select id="selectJobMetrics" resultMap="jobMetricRow">
+    SELECT <include refid="jobMetricColumns"/>
+    FROM CAM_RU_JOB_METRIC
+    WHERE partition_id = #{partitionId}
+  </select>
+
+  <insert id="insertJobMetric">
+    INSERT INTO CAM_RU_JOB_METRIC (partition_id, job_type, tenant_id, worker, created_count,
+      created_last_updated_at, completed_count, completed_last_updated_at, failed_count,
+      failed_last_updated_at)
+    VALUES (#{partitionId}, #{row.jobType}, #{row.tenantId}, #{row.workerName}, #{row.createdCount},
+      #{row.createdLastUpdatedAt}, #{row.completedCount}, #{row.completedLastUpdatedAt},
+      #{row.failedCount}, #{row.failedLastUpdatedAt})
+  </insert>
+
+  <update id="updateJobMetric">
+    UPDATE CAM_RU_JOB_METRIC
+    SET created_count = #{row.createdCount},
+      created_last_updated_at = #{row.createdLastUpdatedAt},
+      completed_count = #{row.completedCount},
+      completed_last_updated_at = #{row.completedLastUpdatedAt},
+      failed_count = #{row.failedCount},
+      failed_last_updated_at = #{row.failedLastUpdatedAt}
+    WHERE partition_id = #{partitionId} AND job_type = #{row.jobType}
+      AND tenant_id = #{row.tenantId} AND worker = #{row.workerName}
+  </update>
+
+  <delete id="deleteJobMetric">
+    DELETE FROM CAM_RU_JOB_METRIC
+    WHERE partition_id = #{partitionId} AND job_type = #{key.jobType}
+      AND tenant_id = #{key.tenantId} AND worker = #{key.workerName}
+  </delete>
+
+</mapper>

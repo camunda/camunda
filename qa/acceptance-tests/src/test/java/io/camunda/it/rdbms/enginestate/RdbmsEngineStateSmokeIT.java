@@ -135,6 +135,14 @@ final class RdbmsEngineStateSmokeIT {
             () -> assertThat(countRows("process_instance_key", processInstanceKey)).isZero());
     assertThat(countVariableRows(processInstanceKey)).isZero();
     assertThat(jobRows(processInstanceKey)).isEmpty();
+    // the created and the completed job are counted under different workers: the creating one has
+    // none
+    Awaitility.await("the created process instance and the job are counted")
+        .untilAsserted(
+            () -> {
+              assertThat(usageMetricCount("<default>", 1)).isPositive();
+              assertThat(jobMetricRow(jobType)).isEqualTo("created=1 completed=1 failed=0");
+            });
 
     // then the records went to the log in PostgreSQL rather than to Atomix
     assertThat(countLogBlocks()).isPositive();
@@ -311,6 +319,41 @@ final class RdbmsEngineStateSmokeIT {
                   .formatted(result.getInt(1), result.getString(2), result.getObject(3) != null));
         }
         return rows;
+      }
+    }
+  }
+
+  private long usageMetricCount(final String tenantId, final int metricType) throws SQLException {
+    try (final var connection =
+            DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        final var statement =
+            connection.prepareStatement(
+                "SELECT COALESCE(SUM(metric_count), 0) FROM CAM_RU_USAGE_METRIC"
+                    + " WHERE tenant_id = ? AND metric_type = ?")) {
+      statement.setString(1, tenantId);
+      statement.setInt(2, metricType);
+      try (final var result = statement.executeQuery()) {
+        result.next();
+        return result.getLong(1);
+      }
+    }
+  }
+
+  private String jobMetricRow(final String jobType) throws SQLException {
+    try (final var connection =
+            DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        final var statement =
+            connection.prepareStatement(
+                "SELECT COALESCE(SUM(created_count), 0), COALESCE(SUM(completed_count), 0),"
+                    + " COALESCE(SUM(failed_count), 0) FROM CAM_RU_JOB_METRIC"
+                    + " WHERE job_type = ?")) {
+      statement.setString(1, jobType);
+      try (final var result = statement.executeQuery()) {
+        result.next();
+        return "created=%d completed=%d failed=%d"
+            .formatted(result.getInt(1), result.getInt(2), result.getInt(3));
       }
     }
   }

@@ -98,7 +98,10 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
                 assertThat(count)
                     .describedAs(table)
                     .isEqualTo(
-                        RdbmsEngineStateSchema.PROCESS_INSTANCE_TABLES.contains(table) ? 0 : 1));
+                        RdbmsEngineStateSchema.PROCESS_INSTANCE_TABLES.contains(table)
+                                || RdbmsEngineStateSchema.METRIC_TABLES.contains(table)
+                            ? 0
+                            : 1));
   }
 
   @Test

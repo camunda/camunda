@@ -111,7 +111,7 @@ public final class RdbmsProcessStore implements ProcessStore {
               "PendingProcessDeletion",
               "pending process deletion",
               Function.identity());
-  private static final EntityType<String, PartitionStateRow> PARTITION_STATE =
+  static final EntityType<String, PartitionStateRow> PARTITION_STATE =
       new EntityType<>(
           PartitionStateMapper.class, "PartitionState", "partition state", PartitionStateRow::key);
 
