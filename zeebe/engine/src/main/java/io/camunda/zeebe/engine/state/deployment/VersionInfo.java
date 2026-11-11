@@ -8,31 +8,39 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.StreamSupport;
 
-public final class VersionInfo extends UnpackedObject implements DbValue {
-  // The property key is named nextValue. This is not a great name and doesn't describe what it is.
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class VersionInfo extends MsgpackBufferValue<VersionInfo> implements DbValue {
+
+  // The stored key is named nextValue. This is not a great name and doesn't describe what it is.
   // However, changing this is not backwards compatible. Changing the variable name is the best we
   // can do to hide this name.
-  private final LongProperty highestVersionProp = new LongProperty("nextValue", -1L);
-  private final ArrayProperty<LongValue> knownVersions =
-      new ArrayProperty<>("knownVersions", LongValue::new);
+  @MsgpackProperty("nextValue")
+  long highestVersion = -1L;
 
-  public VersionInfo() {
-    super(2);
-    declareProperty(highestVersionProp).declareProperty(knownVersions);
-  }
+  final List<Long> knownVersions = new ArrayList<>();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public VersionInfo() {}
 
   public VersionInfo(final VersionInfo other) {
     this();
-    wrap(BufferUtil.createCopy(other));
+    final var copy = BufferUtil.createCopy(other);
+    wrap(copy, 0, copy.capacity());
   }
 
   /**
@@ -44,12 +52,12 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
    * @return the highest version we've ever known for this resource
    */
   public long getHighestVersion() {
-    return highestVersionProp.getValue();
+    return highestVersion;
   }
 
   public VersionInfo setHighestVersionIfHigher(final long version) {
     if (version > getHighestVersion()) {
-      highestVersionProp.setValue(version);
+      highestVersion = version;
     }
     return this;
   }
@@ -63,10 +71,7 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
   }
 
   public List<Long> getKnownVersions() {
-    return StreamSupport.stream(knownVersions.spliterator(), false)
-        .map(LongValue::getValue)
-        .sorted()
-        .toList();
+    return knownVersions.stream().sorted().toList();
   }
 
   public Optional<Integer> findVersionBefore(final long version) {
@@ -81,19 +86,13 @@ public final class VersionInfo extends UnpackedObject implements DbValue {
   }
 
   public void addKnownVersion(final long version) {
-    if (!getKnownVersions().contains(version)) {
-      knownVersions.add().setValue(version);
+    if (!knownVersions.contains(version)) {
+      knownVersions.add(version);
       setHighestVersionIfHigher(version);
     }
   }
 
   public void removeKnownVersion(final long version) {
-    final var iterator = knownVersions.iterator();
-    while (iterator.hasNext()) {
-      if (iterator.next().getValue() == version) {
-        iterator.remove();
-        break;
-      }
-    }
+    knownVersions.remove(Long.valueOf(version));
   }
 }
