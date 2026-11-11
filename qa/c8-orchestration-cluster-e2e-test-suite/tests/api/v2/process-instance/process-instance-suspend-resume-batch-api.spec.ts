@@ -141,7 +141,7 @@ async function completeAll(
   }
 }
 
-test.describe('Process Instance Batch Suspend and Resume API', () => {
+test.describe.parallel('Process Instance Batch Suspend and Resume API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {

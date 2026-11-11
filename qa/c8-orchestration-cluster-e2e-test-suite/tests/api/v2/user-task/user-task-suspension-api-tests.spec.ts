@@ -46,7 +46,7 @@ import {cancelProcessInstance} from '../../../../utils/zeebeClient';
 const instancesToCancel: string[] = [];
 const cancelingListeners = new Map<string, string>();
 
-test.describe('User Task Suspension API', () => {
+test.describe.parallel('User Task Suspension API', () => {
   test.afterAll(async ({request}) => {
     const cancellations = await Promise.allSettled(
       instancesToCancel.map((key) =>

@@ -82,7 +82,8 @@ async function deployTimerProcess(processDefinitionId: string) {
 }
 
 /* eslint-disable playwright/expect-expect */
-test.describe('Process Definition Draining Deletion — work already in flight', () => {
+test.describe
+  .parallel('Process Definition Draining Deletion — work already in flight', () => {
   let instancesToCancel: string[] = [];
 
   test.beforeEach(() => {
