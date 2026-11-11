@@ -8,33 +8,48 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/** DeplyomentRecord wrapper to store the record in the State. */
-public class DeploymentRaw extends UnpackedObject implements DbValue {
+/**
+ * DeploymentRecord wrapper to store the record in the State.
+ *
+ * <p>Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class DeploymentRaw extends MsgpackBufferValue<DeploymentRaw> implements DbValue {
 
-  private final ObjectProperty<DeploymentRecord> deploymentRecordProperty =
-      new ObjectProperty<>("deploymentRecord", new DeploymentRecord());
+  final DeploymentRecord deploymentRecord = new DeploymentRecord();
 
-  public DeploymentRaw() {
-    super(1);
-    declareProperty(deploymentRecordProperty);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public DeploymentRaw() {}
 
   public DeploymentRecord getDeploymentRecord() {
-    return deploymentRecordProperty.getValue();
+    return deploymentRecord;
   }
 
-  public void setDeploymentRecord(final DeploymentRecord deploymentRecord) {
+  public void setDeploymentRecord(final DeploymentRecord record) {
     final MutableDirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = deploymentRecord.getLength();
+    final int encodedLength = record.getLength();
     valueBuffer.wrap(new byte[encodedLength]);
 
-    deploymentRecord.write(valueBuffer, 0);
-    deploymentRecordProperty.getValue().wrap(valueBuffer, 0, encodedLength);
+    record.write(valueBuffer, 0);
+    deploymentRecord.wrap(valueBuffer, 0, encodedLength);
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    // the nested record references the buffer it is read from, so it needs its own copy
+    final byte[] bytes = new byte[length];
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(new UnsafeBuffer(bytes), 0, length);
   }
 }
