@@ -169,6 +169,32 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
+  test('filters the authorizations list by owner ID', async ({
+    identityHeader,
+    identityAuthorizationsPage,
+  }) => {
+    const role = NEW_AUTH_ROLE;
+    await identityHeader.navigateToAuthorizations();
+    await identityAuthorizationsPage.selectResourceTypeTab(
+      NEW_COMPONENT_AUTHORIZATION.resourceType,
+    );
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(role.id),
+    ).toBeVisible();
+
+    await identityAuthorizationsPage.ownerIdSearchInput.fill(
+      `${role.id}-no-match`,
+    );
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(role.id),
+    ).toBeHidden();
+
+    await identityAuthorizationsPage.ownerIdSearchInput.fill(role.id);
+    await expect(
+      identityAuthorizationsPage.getAuthorizationCell(role.id),
+    ).toBeVisible();
+  });
+
   test('delete component authorization for role', async ({
     page,
     identityHeader,
