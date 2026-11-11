@@ -264,7 +264,7 @@ test.describe('Suspended user tasks in Tasklist', () => {
     await taskPanelPage.openTask(task.processDefinitionId, {timeout: 60_000});
     await expect(taskDetailsPage.formNameInput).toBeEditable();
     await expect(taskDetailsPage.numberInput).toBeEditable();
-    await expect(taskDetailsPage.checkbox).toBeEnabled();
+    await expect(taskDetailsPage.checkbox).toBeEditable();
 
     await suspendAndExpectSuspended(request, task.processInstanceKey);
     await expectUserTaskSuspended(request, task.userTaskKey, true);
@@ -286,7 +286,7 @@ test.describe('Suspended user tasks in Tasklist', () => {
     await expect(taskDetailsPage.suspendedLabel).toBeHidden();
     await expect(taskDetailsPage.formNameInput).toBeEditable();
     await expect(taskDetailsPage.numberInput).toBeEditable();
-    await expect(taskDetailsPage.checkbox).toBeEnabled();
+    await expect(taskDetailsPage.checkbox).toBeEditable();
     await taskDetailsPage.fillTextInput('Name', 'Approved applicant');
     await taskDetailsPage.fillNumber('7');
     await taskDetailsPage.checkCheckbox();
@@ -355,7 +355,7 @@ test.describe('Suspended user tasks in Tasklist', () => {
     await expect(taskDetailsPage.suspendedLabel).toBeHidden();
     await expect(taskDetailsPage.formNameInput).toBeEditable();
     await expect(taskDetailsPage.numberInput).toBeEditable();
-    await expect(taskDetailsPage.checkbox).toBeEnabled();
+    await expect(taskDetailsPage.checkbox).toBeEditable();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await expect(taskDetailsPage.formNameInput).toHaveValue(
       'Unsaved applicant',
