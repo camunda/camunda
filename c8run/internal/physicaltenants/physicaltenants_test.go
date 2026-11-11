@@ -488,6 +488,31 @@ func TestProbeTreatsAuthRejectionAsReady(t *testing.T) {
 	assert.Contains(t, buf.String(), "up (unverified)")
 }
 
+func TestProbeRetriesRejectedLoginUntilSeededUserIsReady(t *testing.T) {
+	// given a tenant that rejects the seeded login until its user is initialized
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) <= 2 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	u, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(u.Port())
+	settings := types.C8RunSettings{Port: port, PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Username: "alice"}}}
+
+	// when
+	results := Probe(context.Background(), settings, 5, 50*time.Millisecond)
+
+	// then
+	assert.True(t, results[0].Ready)
+	assert.False(t, results[0].Unverified)
+	assert.Empty(t, results[0].Warning)
+	assert.EqualValues(t, 3, calls.Load())
+}
+
 func TestResolveFailsWhenPortsAreExhausted(t *testing.T) {
 	store := NewStore(filepath.Join(t.TempDir(), FileName))
 	require.NoError(t, store.Add([]Tenant{{ID: "a"}, {ID: "b"}}, nil))
