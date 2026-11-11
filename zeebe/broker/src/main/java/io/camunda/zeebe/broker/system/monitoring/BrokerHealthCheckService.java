@@ -213,6 +213,13 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     updateBrokerReadyStatus(partitionId);
   }
 
+  /** A standby has nothing to install, so it is as ready as an installed follower. */
+  @Override
+  public void onBecameStandby(final PartitionId partitionId, final long term) {
+    checkState();
+    updateBrokerReadyStatus(partitionId);
+  }
+
   private void checkState() {
     if (registeredPhysicalTenants.isEmpty()) {
       throw new IllegalStateException(

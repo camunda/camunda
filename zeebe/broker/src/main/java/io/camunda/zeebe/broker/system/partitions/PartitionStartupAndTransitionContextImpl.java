@@ -230,6 +230,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void notifyListenersOfBecameStandby(final long newTerm) {
+    partitionRaftListeners.forEach(l -> l.onBecameStandby(partitionId(), newTerm));
+  }
+
+  @Override
   public List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm) {
     return partitionListeners.stream()
         .map(l -> l.onBecomingLeader(getPartitionId(), newTerm, getLogStream(), getQueryService()))

@@ -653,6 +653,49 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldNotifyPartitionRaftListenersOnBecomingStandby() {
+    // given - in lease mode an inactive partition is a standby that waits to lead
+    when(ctx.getLeadership()).thenReturn(new StandbyLeadership(new RaftPartitionLeadership(raft)));
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.INACTIVE, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx, timeout(1000)).notifyListenersOfBecameStandby(anyLong());
+  }
+
+  @Test
+  public void shouldTellTheListenersOfAStandbyThatItIsInactiveBeforeItIsHealthy() {
+    // given - in lease mode an inactive partition is a standby that waits to lead
+    when(ctx.getLeadership()).thenReturn(new StandbyLeadership(new RaftPartitionLeadership(raft)));
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.INACTIVE, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    final var inOrder = inOrder(ctx);
+    inOrder.verify(ctx).notifyListenersOfBecomingInactive();
+    inOrder.verify(ctx).notifyListenersOfBecameStandby(anyLong());
+  }
+
+  @Test
+  public void shouldNotNotifyAStandbyWhenAnInactiveRaftPartitionStops() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.INACTIVE, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx, never()).notifyListenersOfBecameStandby(anyLong());
+  }
+
+  @Test
   public void shouldReportAnInactiveRaftPartitionAsUnhealthy() {
     // given
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);

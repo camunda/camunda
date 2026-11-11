@@ -33,4 +33,14 @@ public interface PartitionRaftListener {
    * @param term the current term
    */
   void onBecameRaftLeader(final PartitionId partitionId, final long term);
+
+  /**
+   * Is called by the {@link io.camunda.zeebe.broker.system.partitions.ZeebePartition} once it is a
+   * standby: in lease mode, a node that does not lead the partition installs nothing and waits to
+   * take it over. Unlike a follower, it is not called on becoming a Raft role.
+   *
+   * @param partitionId the corresponding partition id
+   * @param term the current term
+   */
+  default void onBecameStandby(final PartitionId partitionId, final long term) {}
 }

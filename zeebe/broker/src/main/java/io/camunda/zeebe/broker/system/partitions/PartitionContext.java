@@ -44,6 +44,8 @@ public interface PartitionContext {
 
   void notifyListenersOfBecameRaftFollower(final long newTerm);
 
+  void notifyListenersOfBecameStandby(final long newTerm);
+
   @Deprecated // will be moved to transition logic and happen automatically
   List<ActorFuture<Void>> notifyListenersOfBecomingLeader(final long newTerm);
 

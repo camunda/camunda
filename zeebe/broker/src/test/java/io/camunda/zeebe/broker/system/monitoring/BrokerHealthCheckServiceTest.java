@@ -101,6 +101,22 @@ public class BrokerHealthCheckServiceTest {
   }
 
   @Test
+  public void shouldBeReadyWhenThePartitionIsAStandby() {
+    // given a broker in lease mode that does not lead its partition
+    final var healthCheckService = newStartedHealthCheckService(DEFAULT_PHYSICAL_TENANT_ID);
+    healthCheckService.registerBootstrapPartitions(
+        DEFAULT_PHYSICAL_TENANT_ID, List.of(partition(DEFAULT_PHYSICAL_TENANT_ID, 1)));
+    scheduler.workUntilDone();
+
+    // when its partition becomes a standby
+    healthCheckService.onBecameStandby(new PartitionId(DEFAULT_PHYSICAL_TENANT_ID, 1), 1);
+    scheduler.workUntilDone();
+
+    // then the broker is ready, as it would be with an installed follower
+    assertThat(healthCheckService.isBrokerReady()).isTrue();
+  }
+
+  @Test
   public void shouldStayUnreadyWhenAPhysicalTenantRegistersAfterAnotherFinishedInstalling() {
     // given a broker where the default tenant registers and fully installs its partition before a
     // second physical tenant comes up. This is the ordering that a naive "all installed" latch gets

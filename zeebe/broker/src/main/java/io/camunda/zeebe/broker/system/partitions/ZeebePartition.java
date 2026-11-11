@@ -387,15 +387,21 @@ public final class ZeebePartition extends Actor
   }
 
   /**
-   * A standby has no services, but is healthy: it is ready to lead when the leader is gone. Without
-   * this, every standby partition would mark the broker as unhealthy.
+   * A standby has no services, but is healthy and ready: it is ready to lead when the leader is
+   * gone. Without this, every standby partition would mark the broker as unhealthy and keep it from
+   * ever reporting ready.
    */
   private void standbyTransition() {
+    final long term = context.getCurrentTerm();
     transitionToInactive()
         .onComplete(
             (ok, error) -> {
               if (error == null) {
+                // the topology ignores the health of a partition it knows no role for, and would
+                // keep a standby that later leads unhealthy, so it learns the role first
+                context.notifyListenersOfBecomingInactive();
                 onRecoveredInternal();
+                context.notifyListenersOfBecameStandby(term);
               }
             });
   }
