@@ -28,6 +28,9 @@ import java.util.Set;
  *     {@link KeyIndexPolicy}
  * @param keyIndexPolicies the policy per column family ID; a column family without one has {@link
  *     KeyIndexPolicy#DISABLE}. Fixed in code: the broker doesn't expose it.
+ * @param flushDelay how long the writer waits after the oldest unflushed commit before it writes.
+ *     State that a later commit deletes in this time never reaches the storage. A snapshot, a full
+ *     pending queue and a close flush at once. Zero writes as soon as a commit is queued.
  */
 public record WriteBehindConfiguration(
     long maxPendingBytes,
@@ -36,7 +39,8 @@ public record WriteBehindConfiguration(
     Duration flushTimeout,
     Set<Long> keyIndexColumnFamilies,
     int keyIndexMaxKeys,
-    Map<Long, KeyIndexPolicy> keyIndexPolicies) {
+    Map<Long, KeyIndexPolicy> keyIndexPolicies,
+    Duration flushDelay) {
 
   public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 100_000;
 
@@ -94,7 +98,8 @@ public record WriteBehindConfiguration(
         flushTimeout,
         DEFAULT_KEY_INDEX_COLUMN_FAMILIES,
         DEFAULT_KEY_INDEX_MAX_KEYS,
-        DEFAULT_KEY_INDEX_POLICIES);
+        DEFAULT_KEY_INDEX_POLICIES,
+        Duration.ZERO);
   }
 
   public static WriteBehindConfiguration defaults() {
@@ -109,7 +114,8 @@ public record WriteBehindConfiguration(
         flushTimeout,
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
-        keyIndexPolicies);
+        keyIndexPolicies,
+        flushDelay);
   }
 
   public WriteBehindConfiguration withMaxPendingBytes(final long maxPendingBytes) {
@@ -120,7 +126,8 @@ public record WriteBehindConfiguration(
         flushTimeout,
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
-        keyIndexPolicies);
+        keyIndexPolicies,
+        flushDelay);
   }
 
   public WriteBehindConfiguration withKeyIndexColumnFamilies(final Set<Long> columnFamilies) {
@@ -131,7 +138,8 @@ public record WriteBehindConfiguration(
         flushTimeout,
         columnFamilies,
         keyIndexMaxKeys,
-        keyIndexPolicies);
+        keyIndexPolicies,
+        flushDelay);
   }
 
   public WriteBehindConfiguration withKeyIndexMaxKeys(final int keyIndexMaxKeys) {
@@ -142,7 +150,8 @@ public record WriteBehindConfiguration(
         flushTimeout,
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
-        keyIndexPolicies);
+        keyIndexPolicies,
+        flushDelay);
   }
 
   /** Replaces the policies by column family ID. Production code uses the fixed table. */
@@ -154,6 +163,19 @@ public record WriteBehindConfiguration(
         flushTimeout,
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
-        policies);
+        policies,
+        flushDelay);
+  }
+
+  public WriteBehindConfiguration withFlushDelay(final Duration flushDelay) {
+    return new WriteBehindConfiguration(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        keyIndexColumnFamilies,
+        keyIndexMaxKeys,
+        keyIndexPolicies,
+        flushDelay);
   }
 }

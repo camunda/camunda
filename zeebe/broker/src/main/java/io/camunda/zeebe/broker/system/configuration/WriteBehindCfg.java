@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -21,6 +22,10 @@ import org.springframework.util.unit.DataSize;
  * <p>The key index keeps every committed key of the listed column families in memory, so that scans
  * of them open no RocksDB iterator. A column family with more than {@code keyIndexMaxKeys} keys
  * loses its index until the next restart.
+ *
+ * <p>The writer waits {@code flushDelay} after the oldest unflushed commit before it writes, so
+ * state that a later commit deletes in that time, like a finished process instance, never reaches
+ * RocksDB. A snapshot flushes at once.
  */
 public final class WriteBehindCfg {
   private static final WriteBehindConfiguration DEFAULTS = WriteBehindConfiguration.defaults();
@@ -35,6 +40,7 @@ public final class WriteBehindCfg {
                   DEFAULTS.keyIndexColumnFamilies().contains((long) columnFamily.getValue()))
           .collect(Collectors.toUnmodifiableSet());
   private int keyIndexMaxKeys = DEFAULTS.keyIndexMaxKeys();
+  private Duration flushDelay = Duration.ofSeconds(5);
 
   public boolean isEnabled() {
     return enabled;
@@ -76,6 +82,14 @@ public final class WriteBehindCfg {
     this.keyIndexMaxKeys = keyIndexMaxKeys;
   }
 
+  public Duration getFlushDelay() {
+    return flushDelay;
+  }
+
+  public void setFlushDelay(final Duration flushDelay) {
+    this.flushDelay = flushDelay;
+  }
+
   public WriteBehindConfiguration createConfiguration() {
     return DEFAULTS
         .withMaxPendingBytes(maxPendingSize.toBytes())
@@ -84,7 +98,8 @@ public final class WriteBehindCfg {
             keyIndexColumnFamilies.stream()
                 .map(columnFamily -> (long) columnFamily.getValue())
                 .collect(Collectors.toUnmodifiableSet()))
-        .withKeyIndexMaxKeys(keyIndexMaxKeys);
+        .withKeyIndexMaxKeys(keyIndexMaxKeys)
+        .withFlushDelay(flushDelay);
   }
 
   @Override
@@ -100,6 +115,8 @@ public final class WriteBehindCfg {
         + keyIndexColumnFamilies
         + ", keyIndexMaxKeys="
         + keyIndexMaxKeys
+        + ", flushDelay="
+        + flushDelay
         + '}';
   }
 }

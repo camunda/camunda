@@ -12,25 +12,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.RawDbAccess;
-import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -55,10 +46,6 @@ import org.slf4j.LoggerFactory;
 final class WriteBehindStore implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
-  private static final PendingTransaction STOP =
-      new PendingTransaction(Long.MAX_VALUE, new RawKey[0], new Version[0], 0);
-  private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
-  private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
   private static final int MAX_DISCARDED_LOADS = 3;
   private static final int LAST_KEY_SUFFIX_LENGTH = 256;
 
@@ -67,19 +54,13 @@ final class WriteBehindStore implements AutoCloseable {
   private final ConcurrentSkipListMap<RawKey, Version> dirty = new ConcurrentSkipListMap<>();
   private final @Nullable Cache<RawKey, Version> cache;
   private final StampedLock publishLock = new StampedLock();
-  private final LinkedBlockingQueue<PendingTransaction> queue = new LinkedBlockingQueue<>();
-  private final AtomicLong pendingBytes = new AtomicLong();
-  private final ReentrantLock flushLock = new ReentrantLock();
-  private final Condition flushed = flushLock.newCondition();
-  private final Thread writer;
 
   // built in the constructor and never changed, so readers need no lock
   private final Long2ObjectHashMap<KeyIndex> keyIndexes = new Long2ObjectHashMap<>();
 
-  private final WriteBehindMetrics metrics = new WriteBehindMetrics();
+  private final AsyncFlusher flusher;
 
-  // only used by the writer thread
-  private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
+  private final WriteBehindMetrics metrics = new WriteBehindMetrics();
 
   // guarded by publishLock's write side
   private long lastSeq;
@@ -88,8 +69,6 @@ final class WriteBehindStore implements AutoCloseable {
   private volatile boolean closed;
 
   private volatile long committedSeq;
-  private volatile long flushedSeq;
-  private volatile @Nullable Throwable failure;
 
   WriteBehindStore(final RawDbAccess storage, final WriteBehindConfiguration config) {
     this.storage = storage;
@@ -104,9 +83,8 @@ final class WriteBehindStore implements AutoCloseable {
     for (final long columnFamily : config.keyIndexColumnFamilies()) {
       keyIndexes.put(columnFamily, new KeyIndex(columnFamily, config.keyIndexPolicy(columnFamily)));
     }
-    writer = new Thread(this::runWriter, "zb-db-write-behind");
-    writer.setDaemon(true);
-    writer.start();
+    flusher = new AsyncFlusher(storage, config, this::ensureUsable, this::removeFlushed);
+    flusher.start();
   }
 
   /**
@@ -118,7 +96,7 @@ final class WriteBehindStore implements AutoCloseable {
    */
   void commit(final RawKey[] keys, final @Nullable DbValue[] values) {
     ensureUsable();
-    awaitPendingBelowLimit();
+    flusher.awaitCapacity();
 
     final var versions = new Version[keys.length];
     final long stamp = publishLock.writeLock();
@@ -136,8 +114,7 @@ final class WriteBehindStore implements AutoCloseable {
         }
       }
       updateKeyIndexes(keys, values, seq);
-      pendingBytes.addAndGet(bytes);
-      queue.add(new PendingTransaction(seq, keys, versions, bytes));
+      flusher.enqueue(seq, keys, versions, bytes);
       committedSeq = seq;
     } finally {
       publishLock.unlockWrite(stamp);
@@ -443,30 +420,12 @@ final class WriteBehindStore implements AutoCloseable {
    * fails or the flush takes longer than the configured timeout.
    */
   void awaitFlushed() {
-    final long target = committedSeq;
-    long remaining = config.flushTimeout().toNanos();
-    flushLock.lock();
-    try {
-      while (flushedSeq < target) {
-        ensureUsable();
-        if (remaining <= 0) {
-          throw new IllegalStateException(
-              "Expected to flush up to commit %d within %s, but only flushed up to %d"
-                  .formatted(target, config.flushTimeout(), flushedSeq));
-        }
-        remaining = flushed.awaitNanos(remaining);
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while waiting for the write-behind flush", e);
-    } finally {
-      flushLock.unlock();
-    }
+    flusher.awaitFlushed(committedSeq);
   }
 
   /** Throws if the writer failed or the store is closed, so that callers fail fast. */
   void ensureUsable() {
-    final var cause = failure;
+    final var cause = flusher.failure();
     if (cause != null) {
       throw new IllegalStateException(
           "Expected the write-behind writer to keep the storage up to date, but it failed", cause);
@@ -486,144 +445,22 @@ final class WriteBehindStore implements AutoCloseable {
         return;
       }
       closed = true;
-      queue.add(STOP);
+      flusher.requestStop();
     } finally {
       publishLock.unlockWrite(stamp);
     }
-    signalFlushed();
-    try {
-      writer.join(config.flushTimeout().toMillis());
-      if (writer.isAlive()) {
-        LOG.warn(
-            "Write-behind writer didn't stop within {}; interrupting it", config.flushTimeout());
-        writer.interrupt();
-        writer.join();
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
+    flusher.awaitStopped();
   }
 
-  private void awaitPendingBelowLimit() {
-    if (pendingBytes.get() <= config.maxPendingBytes()) {
-      return;
-    }
-    flushLock.lock();
-    try {
-      while (pendingBytes.get() > config.maxPendingBytes()) {
-        ensureUsable();
-        flushed.await();
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted while waiting for the write-behind flush", e);
-    } finally {
-      flushLock.unlock();
-    }
-  }
-
-  private void runWriter() {
-    final var group = new ArrayList<PendingTransaction>();
-    try {
-      while (true) {
-        group.add(queue.take());
-        queue.drainTo(group);
-        final boolean stop = group.getLast() == STOP;
-        if (stop) {
-          group.removeLast();
-        }
-        if (!group.isEmpty() && !flush(group)) {
-          return;
-        }
-        group.clear();
-        if (stop) {
-          return;
-        }
-      }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  /** Writes a group of consecutive transactions atomically; returns false if the store failed. */
-  private boolean flush(final List<PendingTransaction> group) {
-    final var latest = new HashMap<RawKey, Version>();
-    long bytes = 0;
-    for (final var transaction : group) {
-      for (int i = 0; i < transaction.keys().length; i++) {
-        latest.put(transaction.keys()[i], transaction.versions()[i]);
-      }
-      bytes += transaction.bytes();
-    }
-
-    if (!writeWithRetries(latest)) {
-      return false;
-    }
-
+  /** Called by the writer after the storage holds these versions. */
+  private void removeFlushed(final List<Map.Entry<RawKey, Version>> flushed) {
     final long stamp = publishLock.writeLock();
     try {
-      latest.forEach(dirty::remove);
+      for (final var entry : flushed) {
+        dirty.remove(entry.getKey(), entry.getValue());
+      }
     } finally {
       publishLock.unlockWrite(stamp);
-    }
-    pendingBytes.addAndGet(-bytes);
-    flushedSeq = group.getLast().seq();
-    signalFlushed();
-    return true;
-  }
-
-  private boolean writeWithRetries(final Map<RawKey, Version> latest) {
-    long delay = INITIAL_RETRY_DELAY_NANOS;
-    for (int attempt = 0; ; attempt++) {
-      try {
-        write(latest);
-        return true;
-      } catch (final ZeebeDbException e) {
-        if (attempt >= config.maxWriteRetries()) {
-          fail(e);
-          return false;
-        }
-        LOG.warn("Failed to write a batch to the storage, will retry (attempt {})", attempt + 1, e);
-        LockSupport.parkNanos(delay);
-        delay = Math.min(delay * 2, MAX_RETRY_DELAY_NANOS);
-      } catch (final Throwable e) {
-        fail(e);
-        return false;
-      }
-    }
-  }
-
-  private void write(final Map<RawKey, Version> latest) {
-    try (final var batch = storage.newBatch()) {
-      for (final var entry : latest.entrySet()) {
-        final var key = entry.getKey().bytes();
-        final var value = entry.getValue().value();
-        if (value != null) {
-          batch.put(key, Values.encode(value, encodeBuffer));
-        } else if (storage.keyMayExist(key, key.length)) {
-          // a key that the storage never had needs no delete; this keeps short-lived state out of
-          // it
-          batch.delete(key);
-        }
-      }
-      batch.write();
-    }
-  }
-
-  private void fail(final Throwable cause) {
-    LOG.error(
-        "Failed to write committed state to the storage; the write-behind store stops accepting work",
-        cause);
-    failure = cause;
-    signalFlushed();
-  }
-
-  private void signalFlushed() {
-    flushLock.lock();
-    try {
-      flushed.signalAll();
-    } finally {
-      flushLock.unlock();
     }
   }
 
@@ -633,6 +470,4 @@ final class WriteBehindStore implements AutoCloseable {
    * @param viewSeq the sequence of the last commit that the view includes
    */
   record View(DbIterator storageIterator, NavigableMap<RawKey, Version> dirty, long viewSeq) {}
-
-  private record PendingTransaction(long seq, RawKey[] keys, Version[] versions, long bytes) {}
 }

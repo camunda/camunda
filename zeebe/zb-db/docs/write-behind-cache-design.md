@@ -108,7 +108,8 @@ flowchart LR
 | `WriteBehindColumnFamily`       | Typed column family. Same consistency checks as RocksDB's. Keys are encoded like RocksDB's (8-byte big-endian column family prefix, then the key). Values stay objects. |
 | `WriteBehindTransaction`        | Own writes of one context. Read-your-writes, commit and rollback.                                                                                                          |
 | `WriteBehindTransactionContext` | Same semantics as `DefaultTransactionContext`.                                                                                                                              |
-| `WriteBehindStore`              | Committed state: dirty index, read cache, queue, writer thread, byte back-pressure, failure state.                                                                         |
+| `WriteBehindStore`              | Committed state: dirty index, read cache, key indexes, publish lock.                                                                                                       |
+| `AsyncFlusher`                  | The queue, the writer thread, the flush delay, byte back-pressure and the failure state.                                                                                   |
 | `MergingCursor`                 | Merges own writes with one committed source: a key index source, or a copy of the dirty range with a RocksDB iterator.                                                    |
 | `KeyIndex`, `KeyIndexPolicy`    | The in-memory keys of one column family and its window (section 5).                                                                                                        |
 | `IndexSource`, `HandoverSource` | Committed sources that read keys from a `KeyIndex`. `HandoverSource` continues with a storage view at the window bound.                                                   |
@@ -189,17 +190,54 @@ merges the own writes with a key index source instead.
 
 ### 4.7 Writer
 
-- One daemon thread takes the next transaction from the queue, plus every other queued one.
+`AsyncFlusher` holds all state that the writer shares with the committing thread: the queue, the
+writer thread, `pendingBytes`, `flushedSeq`, the failure and the locks. `WriteBehindStore` holds
+the dirty index, the cache and the key indexes. The two meet in four calls: `enqueue`,
+`awaitCapacity`, `awaitFlushed`, and a callback that drops flushed versions from the dirty index.
+
+- One daemon thread takes the oldest queued transaction and waits until it is due (below). Then
+  it takes every other queued transaction too.
 - It keeps the last version per key over the group, encodes the values, and writes one atomic
   `WriteBatch`.
 - It skips a delete when `keyMayExist` returns false. A key that RocksDB never had needs no delete,
   which keeps short-lived state out of RocksDB.
-- After the write, under the write lock, it drops each written version from the dirty index only
-  if the entry is still that version. A newer version stays.
+- After the write, it drops each written version from the dirty index only if the entry is still
+  that version. A newer version stays. It does this in chunks of 512 keys, and takes the write
+  lock once per chunk.
 - It lowers `pendingBytes`, sets `flushedSeq`, and wakes all waiters.
 - A recoverable `ZeebeDbException` is retried with exponential backoff (10 ms to 1 s), up to
   `maxWriteRetries`. Any other error, or the last failed retry, sets the store's failure. After
   that, commits, reads, scans and snapshots throw.
+
+**Flush delay.** The writer does not write at once. A transaction is due when one of these is true:
+
+- It is `flushDelay` old (default of the library: zero, of the broker: 5 s).
+- A snapshot waits for it (`awaitFlushed`).
+- The unflushed bytes reach half of `maxPendingBytes`.
+- The store closes or fails.
+
+When the oldest transaction is due, the writer takes everything that is queued. A key that
+changed several times in the delay is written once. A key that a commit created and deleted in the
+delay is never written, because of the `keyMayExist` rule. This is what keeps a short process
+instance out of RocksDB. The wait is one condition in `awaitFlushDue`. A policy that depends on
+other data, like the memory of the cache, changes this condition and nothing else.
+
+A delay is safe for recovery. The log holds every command, and a snapshot waits for the flush, so
+a restart replays from a snapshot that includes all state up to its position.
+
+**When the stream processor waits for the writer.** The committing thread must not wait. These are
+all the places where it can:
+
+|                     Place                      |                                                  When                                                  |                                                      Cost and limit                                                      |
+|------------------------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| `awaitCapacity` in `commit`                    | `pendingBytes` is above `maxPendingBytes`. The writer starts an early flush at half, so this is rare. | Waits for a whole flush. It is the only wait that depends on the speed of RocksDB.                                      |
+| Publish lock (write side) in `removeFlushed`   | The writer drops a chunk while a commit or read view needs the lock.                                  | One chunk of 512 drops. Before the chunking it was the whole group, which grows with `flushDelay`.             |
+| `enqueue` and `wakeWriter`                     | A commit adds to the queue. The commit that crosses the early-flush threshold wakes the writer.         | A queue insert, and one lock of `flushLock` per crossing. No I/O under `flushLock`.                                      |
+| Read view of a scan without a key index        | The scan copies the dirty range and opens a RocksDB iterator.                                           | The copy grows with the dirty index, so with `flushDelay`. Key indexes avoid it for the hot column families.            |
+
+What never blocks the stream processor: the RocksDB write, value encoding, retries after a failed
+write, and the snapshot wait. The snapshot wait runs on the snapshot store's actor. It flushes at
+once, so the group of a snapshot is as big as the delay allows.
 
 ### 4.8 Snapshots
 
@@ -228,6 +266,7 @@ The wait runs on the snapshot store's actor, on the broker's I/O-bound pool.
 | `cacheMaxBytes`    | 64 MiB  | Caffeine maximum weight. `0` disables the cache.                                                              |
 | `maxWriteRetries`  | 10      | Retries of a recoverable write error before the store fails.                                                 |
 | `flushTimeout`     | 30 s    | Limit for the snapshot wait and for close.                                                                    |
+| `flushDelay`       | 0 (broker: 5 s) | How long the writer waits after the oldest unflushed commit before it writes (section 4.7).        |
 | `keyIndexColumnFamilies` | 6 column families | IDs of the column families that have a key index (section 5).                                       |
 | `keyIndexMaxKeys`  | 100000  | The most keys that one key index holds.                                                                       |
 
