@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.policy;
 
+import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.NO_KEY;
+
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -98,7 +100,7 @@ public final class PolicyUpdateApplyChunkProcessor
         .forEach(
             identityCommand ->
                 commandWriter.appendFollowUpCommand(
-                    identityCommand.key(), identityCommand.intent(), identityCommand.value()));
+                    NO_KEY, identityCommand.intent(), identityCommand.value()));
 
     // the entities are already in the follow-up commands; repeating them would write the chunk
     // into the same batch twice

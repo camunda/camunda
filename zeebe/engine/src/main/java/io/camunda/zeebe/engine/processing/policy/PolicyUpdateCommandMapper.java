@@ -49,7 +49,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class PolicyUpdateCommandMapper {
 
-  /** The key of a command that does not refer to an existing record. */
+  /** The key of an entity that is not stored yet, and the record key of every follow-up command. */
   static final long NO_KEY = -1L;
 
   private final ProcessingState state;
@@ -150,9 +150,9 @@ public final class PolicyUpdateCommandMapper {
     final var existing = state.getTenantState().getTenantById(tenant.getTenantId());
     if (existing.isPresent()) {
       record.setTenantKey(existing.get().getTenantKey());
-      return new IdentityCommand(NO_KEY, TenantIntent.UPDATE, record);
+      return new IdentityCommand(TenantIntent.UPDATE, record);
     }
-    return new IdentityCommand(NO_KEY, TenantIntent.CREATE, record);
+    return new IdentityCommand(TenantIntent.CREATE, record);
   }
 
   private IdentityCommand roleUpsert(final RoleRecordValue role) {
@@ -164,9 +164,9 @@ public final class PolicyUpdateCommandMapper {
     final var existing = state.getRoleState().getRole(role.getRoleId());
     if (existing.isPresent()) {
       record.setRoleKey(existing.get().getRoleKey());
-      return new IdentityCommand(NO_KEY, RoleIntent.UPDATE, record);
+      return new IdentityCommand(RoleIntent.UPDATE, record);
     }
-    return new IdentityCommand(NO_KEY, RoleIntent.CREATE, record);
+    return new IdentityCommand(RoleIntent.CREATE, record);
   }
 
   private IdentityCommand groupUpsert(final GroupRecordValue group) {
@@ -178,9 +178,9 @@ public final class PolicyUpdateCommandMapper {
     final var existing = state.getGroupState().get(group.getGroupId());
     if (existing.isPresent()) {
       record.setGroupKey(existing.get().getGroupKey());
-      return new IdentityCommand(NO_KEY, GroupIntent.UPDATE, record);
+      return new IdentityCommand(GroupIntent.UPDATE, record);
     }
-    return new IdentityCommand(NO_KEY, GroupIntent.CREATE, record);
+    return new IdentityCommand(GroupIntent.CREATE, record);
   }
 
   private IdentityCommand mappingRuleUpsert(final MappingRuleRecordValue rule) {
@@ -193,9 +193,9 @@ public final class PolicyUpdateCommandMapper {
     final var existing = state.getMappingRuleState().get(rule.getMappingRuleId());
     if (existing.isPresent()) {
       record.setMappingRuleKey(existing.get().getMappingRuleKey());
-      return new IdentityCommand(NO_KEY, MappingRuleIntent.UPDATE, record);
+      return new IdentityCommand(MappingRuleIntent.UPDATE, record);
     }
-    return new IdentityCommand(NO_KEY, MappingRuleIntent.CREATE, record);
+    return new IdentityCommand(MappingRuleIntent.CREATE, record);
   }
 
   /**
@@ -212,7 +212,6 @@ public final class PolicyUpdateCommandMapper {
     return switch (membership.getTargetType()) {
       case ROLE ->
           new IdentityCommand(
-              NO_KEY,
               roleIntent,
               new RoleRecord()
                   .setRoleKey(targetKey)
@@ -221,7 +220,6 @@ public final class PolicyUpdateCommandMapper {
                   .setEntityId(membership.getMemberId()));
       case GROUP ->
           new IdentityCommand(
-              NO_KEY,
               groupIntent,
               new GroupRecord()
                   .setGroupKey(targetKey)
@@ -230,7 +228,6 @@ public final class PolicyUpdateCommandMapper {
                   .setEntityId(membership.getMemberId()));
       case TENANT ->
           new IdentityCommand(
-              NO_KEY,
               tenantIntent,
               new TenantRecord()
                   .setTenantKey(targetKey)
@@ -252,9 +249,9 @@ public final class PolicyUpdateCommandMapper {
     final var existingKey = findAuthorizationKey(authorization);
     if (existingKey.isPresent()) {
       record.setAuthorizationKey(existingKey.getAsLong());
-      return new IdentityCommand(NO_KEY, AuthorizationIntent.UPDATE, record);
+      return new IdentityCommand(AuthorizationIntent.UPDATE, record);
     }
-    return new IdentityCommand(NO_KEY, AuthorizationIntent.CREATE, record);
+    return new IdentityCommand(AuthorizationIntent.CREATE, record);
   }
 
   /**
@@ -271,7 +268,7 @@ public final class PolicyUpdateCommandMapper {
             .setResourceId(delete.getResourceId())
             .setResourcePropertyName(delete.getResourcePropertyName());
     record.setAuthorizationKey(findAuthorizationKey(record).orElse(NO_KEY));
-    return new IdentityCommand(NO_KEY, AuthorizationIntent.DELETE, record);
+    return new IdentityCommand(AuthorizationIntent.DELETE, record);
   }
 
   private IdentityCommand entityDelete(final PolicyDeleteEntryValue delete) {
@@ -280,16 +277,14 @@ public final class PolicyUpdateCommandMapper {
     return switch (delete.getEntityType()) {
       case TENANT ->
           new IdentityCommand(
-              NO_KEY, TenantIntent.DELETE, new TenantRecord().setTenantKey(key).setTenantId(id));
+              TenantIntent.DELETE, new TenantRecord().setTenantKey(key).setTenantId(id));
       case ROLE ->
-          new IdentityCommand(
-              NO_KEY, RoleIntent.DELETE, new RoleRecord().setRoleKey(key).setRoleId(id));
+          new IdentityCommand(RoleIntent.DELETE, new RoleRecord().setRoleKey(key).setRoleId(id));
       case GROUP ->
           new IdentityCommand(
-              NO_KEY, GroupIntent.DELETE, new GroupRecord().setGroupKey(key).setGroupId(id));
+              GroupIntent.DELETE, new GroupRecord().setGroupKey(key).setGroupId(id));
       case MAPPING_RULE ->
           new IdentityCommand(
-              NO_KEY,
               MappingRuleIntent.DELETE,
               new MappingRuleRecord().setMappingRuleKey(key).setMappingRuleId(id));
       default ->
@@ -354,6 +349,9 @@ public final class PolicyUpdateCommandMapper {
         .setResourcePropertyName(authorization.getResourcePropertyName());
   }
 
-  /** A command that applies one entry of the chunk, ready for the command writer. */
-  public record IdentityCommand(long key, Intent intent, UnifiedRecordValue value) {}
+  /**
+   * A command that applies one entry of the chunk. It is written without a record key, like the
+   * commands of the identity APIs, because the identity processors find entities by their ID.
+   */
+  public record IdentityCommand(Intent intent, UnifiedRecordValue value) {}
 }

@@ -247,7 +247,6 @@ final class PolicyUpdateCommandMapperTest {
           .extracting(IdentityCommand::intent)
           .containsExactly(
               TenantIntent.CREATE, RoleIntent.CREATE, GroupIntent.CREATE, MappingRuleIntent.CREATE);
-      assertThat(commands).extracting(IdentityCommand::key).containsOnly(NO_KEY);
     }
 
     @Test
