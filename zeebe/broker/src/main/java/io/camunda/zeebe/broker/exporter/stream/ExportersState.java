@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -26,16 +24,21 @@ public final class ExportersState {
   private static final UnsafeBuffer METADATA_NOT_FOUND = new UnsafeBuffer();
 
   private final TransactionContext transactionContext;
-  private final DbString exporterId;
-  private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
+  private final ExporterStateStore store;
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+    this(new RocksDbExporterStateStore(zeebeDb, transactionContext), transactionContext);
+  }
+
+  /**
+   * @param store where the state is kept
+   * @param transactionContext the context in which the state is read and changed
+   */
+  public ExportersState(
+      final ExporterStateStore store, final TransactionContext transactionContext) {
     this.transactionContext = transactionContext;
-    exporterId = new DbString();
-    exporterPositionColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, new ExporterStateEntry());
+    this.store = store;
   }
 
   public void setPosition(final String exporterId, final long position) {
@@ -52,7 +55,7 @@ public final class ExportersState {
           if (metadata != null) {
             exporterStateEntry.setMetadata(metadata);
           }
-          exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+          store.upsert(exporterId, exporterStateEntry);
         });
   }
 
@@ -61,13 +64,12 @@ public final class ExportersState {
       final long position,
       final DirectBuffer metadata,
       final long metadataVersion) {
-    this.exporterId.wrapString(exporterId);
     final var exporterStateEntry = new ExporterStateEntry();
     exporterStateEntry.setPosition(position).setMetadataVersion(metadataVersion);
     if (metadata != null) {
       exporterStateEntry.setMetadata(metadata);
     }
-    exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+    store.upsert(exporterId, exporterStateEntry);
   }
 
   public long getPosition(final String exporterId) {
@@ -90,14 +92,11 @@ public final class ExportersState {
   }
 
   private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {
-    this.exporterId.wrapString(exporterId);
-    return Optional.ofNullable(exporterPositionColumnFamily.get(this.exporterId));
+    return store.find(exporterId);
   }
 
   public void visitExporterState(final BiConsumer<String, ExporterStateEntry> consumer) {
-    exporterPositionColumnFamily.forEach(
-        (exporterId, exporterStateEntry) ->
-            consumer.accept(exporterId.toString(), exporterStateEntry));
+    store.forEach(consumer);
   }
 
   public long getLowestPosition() {
@@ -136,11 +135,10 @@ public final class ExportersState {
   }
 
   public void removeExporterState(final String exporterId) {
-    this.exporterId.wrapString(exporterId);
-    exporterPositionColumnFamily.deleteIfExists(this.exporterId);
+    store.delete(exporterId);
   }
 
   public boolean hasExporters() {
-    return !exporterPositionColumnFamily.isEmpty();
+    return !store.isEmpty();
   }
 }
