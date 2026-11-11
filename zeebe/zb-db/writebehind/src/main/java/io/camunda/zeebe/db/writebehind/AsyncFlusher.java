@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ final class AsyncFlusher {
   private final Condition flushWanted = flushLock.newCondition();
 
   // guarded by flushLock: the commits up to this sequence must not wait for the flush delay
+  @GuardedBy("flushLock")
   private long flushRequestedSeq;
 
   private volatile long flushedSeq;
@@ -103,7 +105,7 @@ final class AsyncFlusher {
     this.config = config;
     this.ensureUsable = ensureUsable;
     this.onFlushed = onFlushed;
-    flushThresholdBytes = config.maxPendingBytes() / 2;
+    flushThresholdBytes = Math.min(config.flushThresholdBytes(), config.maxPendingBytes());
     writer = new Thread(this::runWriter, "zb-db-write-behind");
     writer.setDaemon(true);
   }
@@ -132,8 +134,8 @@ final class AsyncFlusher {
 
   /**
    * The one place where the committing thread waits for the writer: while the unflushed bytes are
-   * above the limit. The writer starts an early flush at half the limit, so this only blocks when
-   * the storage is slower than the commits for a long time.
+   * above the limit. The writer starts an early flush at the flush threshold, so this only blocks
+   * when the storage is slower than the commits for a long time.
    */
   void awaitCapacity() {
     if (pendingBytes.get() <= config.maxPendingBytes()) {
@@ -239,7 +241,7 @@ final class AsyncFlusher {
    * Waits until the oldest queued transaction is due. This is the one place that decides when to
    * flush, so a new policy changes the condition of the loop and nothing else. A transaction is due
    * when it has waited for the flush delay, or earlier when a snapshot waits for it, when the
-   * unflushed bytes reach half of the limit, or when the store stops or fails.
+   * unflushed bytes reach the flush threshold, or when the store stops or fails.
    *
    * <p>The writer then takes everything that is queued, so a key that changed several times in the
    * delay is written once, and one that a commit deleted is not written at all.

@@ -31,6 +31,9 @@ import java.util.Set;
  * @param flushDelay how long the writer waits after the oldest unflushed commit before it writes.
  *     State that a later commit deletes in this time never reaches the storage. A snapshot, a full
  *     pending queue and a close flush at once. Zero writes as soon as a commit is queued.
+ * @param flushThresholdBytes the writer flushes without waiting for the delay when the unflushed
+ *     transactions hold this many bytes. Never more than {@code maxPendingBytes}, so that commits
+ *     do not wait for the limit before an early flush starts.
  */
 public record WriteBehindConfiguration(
     long maxPendingBytes,
@@ -40,7 +43,8 @@ public record WriteBehindConfiguration(
     Set<Long> keyIndexColumnFamilies,
     int keyIndexMaxKeys,
     Map<Long, KeyIndexPolicy> keyIndexPolicies,
-    Duration flushDelay) {
+    Duration flushDelay,
+    long flushThresholdBytes) {
 
   public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 100_000;
 
@@ -99,7 +103,8 @@ public record WriteBehindConfiguration(
         DEFAULT_KEY_INDEX_COLUMN_FAMILIES,
         DEFAULT_KEY_INDEX_MAX_KEYS,
         DEFAULT_KEY_INDEX_POLICIES,
-        Duration.ZERO);
+        Duration.ZERO,
+        maxPendingBytes / 2);
   }
 
   public static WriteBehindConfiguration defaults() {
@@ -115,7 +120,8 @@ public record WriteBehindConfiguration(
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
         keyIndexPolicies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
   }
 
   public WriteBehindConfiguration withMaxPendingBytes(final long maxPendingBytes) {
@@ -127,7 +133,8 @@ public record WriteBehindConfiguration(
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
         keyIndexPolicies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
   }
 
   public WriteBehindConfiguration withKeyIndexColumnFamilies(final Set<Long> columnFamilies) {
@@ -139,7 +146,8 @@ public record WriteBehindConfiguration(
         columnFamilies,
         keyIndexMaxKeys,
         keyIndexPolicies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
   }
 
   public WriteBehindConfiguration withKeyIndexMaxKeys(final int keyIndexMaxKeys) {
@@ -151,7 +159,8 @@ public record WriteBehindConfiguration(
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
         keyIndexPolicies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
   }
 
   /** Replaces the policies by column family ID. Production code uses the fixed table. */
@@ -164,7 +173,8 @@ public record WriteBehindConfiguration(
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
         policies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
   }
 
   public WriteBehindConfiguration withFlushDelay(final Duration flushDelay) {
@@ -176,6 +186,20 @@ public record WriteBehindConfiguration(
         keyIndexColumnFamilies,
         keyIndexMaxKeys,
         keyIndexPolicies,
-        flushDelay);
+        flushDelay,
+        flushThresholdBytes);
+  }
+
+  public WriteBehindConfiguration withFlushThresholdBytes(final long flushThresholdBytes) {
+    return new WriteBehindConfiguration(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        keyIndexColumnFamilies,
+        keyIndexMaxKeys,
+        keyIndexPolicies,
+        flushDelay,
+        flushThresholdBytes);
   }
 }

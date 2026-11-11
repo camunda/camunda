@@ -25,7 +25,7 @@ import org.springframework.util.unit.DataSize;
  *
  * <p>The writer waits {@code flushDelay} after the oldest unflushed commit before it writes, so
  * state that a later commit deletes in that time, like a finished process instance, never reaches
- * RocksDB. A snapshot flushes at once.
+ * RocksDB. A snapshot flushes at once, and so do {@code flushThreshold} unflushed bytes.
  */
 public final class WriteBehindCfg {
   private static final WriteBehindConfiguration DEFAULTS = WriteBehindConfiguration.defaults();
@@ -41,6 +41,7 @@ public final class WriteBehindCfg {
           .collect(Collectors.toUnmodifiableSet());
   private int keyIndexMaxKeys = DEFAULTS.keyIndexMaxKeys();
   private Duration flushDelay = Duration.ofSeconds(5);
+  private DataSize flushThreshold = DataSize.ofBytes(DEFAULTS.flushThresholdBytes());
 
   public boolean isEnabled() {
     return enabled;
@@ -90,6 +91,14 @@ public final class WriteBehindCfg {
     this.flushDelay = flushDelay;
   }
 
+  public DataSize getFlushThreshold() {
+    return flushThreshold;
+  }
+
+  public void setFlushThreshold(final DataSize flushThreshold) {
+    this.flushThreshold = flushThreshold;
+  }
+
   public WriteBehindConfiguration createConfiguration() {
     return DEFAULTS
         .withMaxPendingBytes(maxPendingSize.toBytes())
@@ -99,7 +108,8 @@ public final class WriteBehindCfg {
                 .map(columnFamily -> (long) columnFamily.getValue())
                 .collect(Collectors.toUnmodifiableSet()))
         .withKeyIndexMaxKeys(keyIndexMaxKeys)
-        .withFlushDelay(flushDelay);
+        .withFlushDelay(flushDelay)
+        .withFlushThresholdBytes(flushThreshold.toBytes());
   }
 
   @Override
@@ -117,6 +127,8 @@ public final class WriteBehindCfg {
         + keyIndexMaxKeys
         + ", flushDelay="
         + flushDelay
+        + ", flushThreshold="
+        + flushThreshold
         + '}';
   }
 }

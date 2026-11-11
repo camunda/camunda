@@ -109,9 +109,9 @@ final class FlushDelayTest {
   }
 
   @Test
-  void shouldFlushEarlyWhenUnflushedBytesReachHalfTheLimit() {
+  void shouldFlushEarlyWhenUnflushedBytesReachTheThreshold() {
     // given
-    open(config(LONG_DELAY).withMaxPendingBytes(100));
+    open(config(LONG_DELAY).withFlushThresholdBytes(100));
 
     // when
     put(1);

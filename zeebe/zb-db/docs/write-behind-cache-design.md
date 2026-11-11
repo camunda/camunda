@@ -213,7 +213,7 @@ the dirty index, the cache and the key indexes. The two meet in four calls: `enq
 
 - It is `flushDelay` old (default of the library: zero, of the broker: 5 s).
 - A snapshot waits for it (`awaitFlushed`).
-- The unflushed bytes reach half of `maxPendingBytes`.
+- The unflushed bytes reach `flushThresholdBytes` (default 16 MiB, never more than `maxPendingBytes`).
 - The store closes or fails.
 
 When the oldest transaction is due, the writer takes everything that is queued. A key that
@@ -230,7 +230,7 @@ all the places where it can:
 
 |                     Place                      |                                                  When                                                  |                                                      Cost and limit                                                      |
 |------------------------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `awaitCapacity` in `commit`                    | `pendingBytes` is above `maxPendingBytes`. The writer starts an early flush at half, so this is rare. | Waits for a whole flush. It is the only wait that depends on the speed of RocksDB.                                      |
+| `awaitCapacity` in `commit`                    | `pendingBytes` is above `maxPendingBytes`. The writer starts an early flush at `flushThresholdBytes`, so this is rare. | Waits for a whole flush. It is the only wait that depends on the speed of RocksDB.                                      |
 | Publish lock (write side) in `removeFlushed`   | The writer drops a chunk while a commit or read view needs the lock.                                  | One chunk of 512 drops. Before the chunking it was the whole group, which grows with `flushDelay`.             |
 | `enqueue` and `wakeWriter`                     | A commit adds to the queue. The commit that crosses the early-flush threshold wakes the writer.         | A queue insert, and one lock of `flushLock` per crossing. No I/O under `flushLock`.                                      |
 | Read view of a scan without a key index        | The scan copies the dirty range and opens a RocksDB iterator.                                           | The copy grows with the dirty index, so with `flushDelay`. Key indexes avoid it for the hot column families.            |
@@ -266,6 +266,7 @@ The wait runs on the snapshot store's actor, on the broker's I/O-bound pool.
 | `cacheMaxBytes`    | 64 MiB  | Caffeine maximum weight. `0` disables the cache.                                                              |
 | `maxWriteRetries`  | 10      | Retries of a recoverable write error before the store fails.                                                 |
 | `flushTimeout`     | 30 s    | Limit for the snapshot wait and for close.                                                                    |
+| `flushThresholdBytes` | 16 MiB | Unflushed bytes that end the flush delay. |
 | `flushDelay`       | 0 (broker: 5 s) | How long the writer waits after the oldest unflushed commit before it writes (section 4.7).        |
 | `keyIndexColumnFamilies` | 6 column families | IDs of the column families that have a key index (section 5).                                       |
 | `keyIndexMaxKeys`  | 100000  | The most keys that one key index holds.                                                                       |
