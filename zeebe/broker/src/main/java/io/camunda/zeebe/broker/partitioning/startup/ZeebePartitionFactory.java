@@ -58,7 +58,11 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotApiHandlerTr
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
-import io.camunda.zeebe.broker.system.partitions.leadership.RaftPartitionLeadership;
+import io.camunda.zeebe.broker.system.partitions.leadership.LeaseLeaderships;
+import io.camunda.zeebe.broker.system.partitions.leadership.LeaseSetup;
+import io.camunda.zeebe.broker.system.partitions.leadership.LeaseSetups;
+import io.camunda.zeebe.broker.system.partitions.leadership.MembershipClusterView;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeaderships;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -72,6 +76,8 @@ import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
+import io.camunda.zeebe.mailbox.Scheduler;
+import io.camunda.zeebe.mailbox.leadership.LeaderElector;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -93,7 +99,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -103,6 +114,10 @@ public final class ZeebePartitionFactory {
 
   public static final String DEFAULT_RUNTIME_DIRECTORY = "runtime";
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebePartitionFactory.class);
+
+  /** The zone of the leases of a broker without a zone, as in a single-region deployment. */
+  private static final String NO_ZONE = "default";
+
   private static final List<StartupStep<PartitionStartupContext>> STARTUP_STEPS = List.of();
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
@@ -123,6 +138,7 @@ public final class ZeebePartitionFactory {
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
   private final Optional<MailboxSetup> mailboxSetup;
+  private final PartitionLeaderships leaderships;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -157,6 +173,10 @@ public final class ZeebePartitionFactory {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     mailboxSetup = MailboxSetups.load(brokerCfg);
+    leaderships =
+        LeaseSetups.load(brokerCfg)
+            .map(lease -> leaseLeaderships(lease, brokerCfg, localBroker, clusterServices))
+            .orElseGet(PartitionLeaderships::raft);
     this.localBroker = localBroker;
     this.brokerClient = brokerClient;
     this.clusterServices = clusterServices;
@@ -217,7 +237,7 @@ public final class ZeebePartitionFactory {
             brokerCfg.getCluster().getPartitionsCount(),
             communicationService,
             raftPartition,
-            new RaftPartitionLeadership(raftPartition),
+            leaderships.forPartition(raftPartition),
             partitionListeners,
             partitionRaftListeners,
             new AtomixPartitionMessagingService(
@@ -269,6 +289,65 @@ public final class ZeebePartitionFactory {
         "Foreign key checks are disabled because the engine state is stored in a relational "
             + "database; RocksDB cannot check references to entities stored there.");
     return new ConsistencyChecksSettings(settings.enablePreconditions(), false);
+  }
+
+  /** True if the leaders come from leases in the database, not from Raft. */
+  public boolean isLeaseMode() {
+    return leaderships.isLeaseMode();
+  }
+
+  /**
+   * Stops electing leaders. Called when the partition manager stops. Releasing the leases calls the
+   * store, which may block, so it runs off the caller's actor thread.
+   */
+  public void close() {
+    CompletableFuture.runAsync(leaderships::close);
+  }
+
+  /**
+   * In lease mode any broker may lead any partition, so every broker must host every partition as a
+   * standby. The partition distribution gives every broker every partition only if the replication
+   * factor equals the cluster size.
+   */
+  private static PartitionLeaderships leaseLeaderships(
+      final LeaseSetup lease,
+      final BrokerCfg brokerCfg,
+      final BrokerInfo localBroker,
+      final ClusterServices clusterServices) {
+    final var cluster = brokerCfg.getCluster();
+    if (cluster.getReplicationFactor() != cluster.getClusterSize()) {
+      throw new IllegalStateException(
+          "Expected the replication factor to equal the cluster size in lease mode, so every broker"
+              + " can lead every partition, but it is %d with %d brokers"
+                  .formatted(cluster.getReplicationFactor(), cluster.getClusterSize()));
+    }
+    final var memberId = BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId());
+    final var zone = Objects.requireNonNullElse(memberId.zone(), NO_ZONE);
+    final var partitions =
+        IntStream.rangeClosed(1, cluster.getPartitionsCount())
+            .boxed()
+            .collect(Collectors.toUnmodifiableSet());
+    final var view = new MembershipClusterView(clusterServices.getMembershipService(), memberId);
+    final var executor =
+        Executors.newSingleThreadScheduledExecutor(
+            runnable -> {
+              final var thread = new Thread(runnable, "lease-elector");
+              thread.setDaemon(true);
+              return thread;
+            });
+    return new LeaseLeaderships(
+        listener ->
+            new LeaderElector(
+                lease.store(),
+                lease.config(),
+                memberId.id(),
+                zone,
+                partitions,
+                view,
+                listener,
+                Scheduler.of(executor),
+                System::nanoTime),
+        executor::shutdownNow);
   }
 
   /** How this broker uses the cross-region mailbox. Empty unless a provider supplies one. */

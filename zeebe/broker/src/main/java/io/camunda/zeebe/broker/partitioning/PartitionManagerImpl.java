@@ -337,6 +337,7 @@ public final class PartitionManagerImpl
     concurrencyControl.runOnCompletion(
         stop,
         (ok, error) -> {
+          zeebePartitionFactory.close();
           if (error != null) {
             LOGGER.error("Failed to stop partitions", error);
             result.completeExceptionally(error);

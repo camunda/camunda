@@ -8,8 +8,12 @@
 package io.camunda.zeebe.broker.system.partitions.leadership;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.mailbox.leadership.InMemoryLeaseStore;
 import io.camunda.zeebe.mailbox.leadership.LeaderElector;
 import io.camunda.zeebe.mailbox.leadership.LeaseConfig;
@@ -96,6 +100,38 @@ final class LeaseLeadershipsTest {
     assertThat(roles).containsExactly("LEADER@1", "INACTIVE@1");
     assertThat(store.findLease(1).orElseThrow().released()).isTrue();
     assertThat(leaderships.forPartition(2).role()).isEqualTo(Role.LEADER);
+  }
+
+  @Test
+  void shouldGiveUpTheLeaseWhenThePartitionStopsListening() {
+    // given - the partition leads, then stops after a failure it cannot recover from
+    leaderships.start();
+    tasks.poll().run();
+    final PartitionLeadershipListener partition = (role, term) -> {};
+    final var leadership = leaderships.forPartition(1);
+    leadership.addListener(partition);
+
+    // when
+    leadership.removeListener(partition);
+    runUntil(() -> leadership.role() == Role.INACTIVE);
+
+    // then
+    assertThat(store.findLease(1).orElseThrow().released()).isTrue();
+  }
+
+  @Test
+  void shouldStartElectingWhenTheFirstPartitionAsksForItsLeadership() {
+    // given
+    final var raftPartition = mock(RaftPartition.class);
+    when(raftPartition.id()).thenReturn(new PartitionId("default", 1));
+
+    // when
+    final var leadership = leaderships.forPartition(raftPartition);
+    tasks.poll().run();
+
+    // then
+    assertThat(leadership).isSameAs(leaderships.forPartition(1));
+    assertThat(leadership.role()).isEqualTo(Role.LEADER);
   }
 
   @Test

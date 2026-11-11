@@ -44,9 +44,15 @@ public final class LeasePartitionLeadership implements PartitionLeadership {
     listener.onNewRole(role, term);
   }
 
+  /**
+   * When the last listener goes while this node leads, the partition stopped, for example after a
+   * failure it cannot recover from. Nobody acts on the lease then, so it is given up.
+   */
   @Override
-  public void removeListener(final PartitionLeadershipListener listener) {
-    listeners.remove(listener);
+  public synchronized void removeListener(final PartitionLeadershipListener listener) {
+    if (listeners.remove(listener) && listeners.isEmpty() && role == Role.LEADER) {
+      stepDown();
+    }
   }
 
   @Override
