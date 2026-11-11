@@ -96,10 +96,7 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
   @Override
   public void removeUpdate(final String updateId) {
     this.updateId.wrapString(updateId);
-    chunkColumnFamily.whileEqualPrefix(
-        this.updateId,
-        (final DbCompositeKey<DbString, DbInt> key, final PersistedPolicyUpdateChunk chunk) ->
-            chunkColumnFamily.deleteExisting(key));
+    chunkColumnFamily.whileEqualPrefix(this.updateId, chunkColumnFamily::deleteExisting);
     updateColumnFamily.deleteIfExists(this.updateId);
   }
 }
