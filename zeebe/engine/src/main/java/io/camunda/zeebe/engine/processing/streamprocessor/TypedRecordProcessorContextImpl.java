@@ -112,7 +112,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       return new ScheduledTaskDbState(
           zeebeDb,
           transactionContext,
-          stateStoresFactory.create(partitionId, zeebeDb, transactionContext).jobState(),
+          stateStoresFactory.scheduledTaskJobState(partitionId, zeebeDb, transactionContext),
           partitionId,
           transientMessageSubscriptionState,
           transientProcessMessageSubscriptionState,
