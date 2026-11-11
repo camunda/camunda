@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateStore;
 import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -107,6 +108,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ExporterDirector exporterDirector;
   private LogStorage logStorage;
   private @Nullable LogBlockRepository logBlockRepository;
+  private @Nullable ExporterStateStore exporterStateStore;
   private QueryService queryService;
   private long currentTerm;
   private Role currentRole;
@@ -345,6 +347,15 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setLogBlockRepository(final @Nullable LogBlockRepository logBlockRepository) {
     this.logBlockRepository = logBlockRepository;
+  }
+
+  @Override
+  public @Nullable ExporterStateStore getExporterStateStore() {
+    return exporterStateStore;
+  }
+
+  public void setExporterStateStore(final @Nullable ExporterStateStore exporterStateStore) {
+    this.exporterStateStore = exporterStateStore;
   }
 
   @Override

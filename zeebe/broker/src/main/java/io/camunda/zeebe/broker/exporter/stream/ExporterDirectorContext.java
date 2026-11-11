@@ -30,6 +30,7 @@ public final class ExporterDirectorContext {
   private LogStream logStream;
   private Map<ExporterDescriptor, ExporterInitializationInfo> descriptors;
   private ZeebeDb zeebeDb;
+  private @Nullable ExporterStateStore exporterStateStore;
   private PartitionMessagingService partitionMessagingService;
   private ExporterMode exporterMode = ExporterMode.ACTIVE; // per default we export records
   private Duration distributionInterval = DEFAULT_DISTRIBUTION_INTERVAL;
@@ -56,6 +57,10 @@ public final class ExporterDirectorContext {
 
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
+  }
+
+  public @Nullable ExporterStateStore getExporterStateStore() {
+    return exporterStateStore;
   }
 
   public PartitionMessagingService getPartitionMessagingService() {
@@ -120,6 +125,13 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext zeebeDb(final ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
+    return this;
+  }
+
+  /** Where the exporters keep their positions instead of the RocksDB of {@link #zeebeDb}. */
+  public ExporterDirectorContext exporterStateStore(
+      final @Nullable ExporterStateStore exporterStateStore) {
+    this.exporterStateStore = exporterStateStore;
     return this;
   }
 

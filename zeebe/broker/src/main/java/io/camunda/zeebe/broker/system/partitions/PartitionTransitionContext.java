@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
+import io.camunda.zeebe.broker.exporter.stream.ExporterStateStore;
 import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.mailbox.MailboxSetup;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -114,6 +115,13 @@ public interface PartitionTransitionContext extends PartitionContext {
   @Nullable LogBlockRepository getLogBlockRepository();
 
   void setLogBlockRepository(@Nullable LogBlockRepository logBlockRepository);
+
+  /**
+   * @return where the exporters keep their positions, or null to keep them in RocksDB
+   */
+  default @Nullable ExporterStateStore getExporterStateStore() {
+    return null;
+  }
 
   int getMaxFragmentSize();
 

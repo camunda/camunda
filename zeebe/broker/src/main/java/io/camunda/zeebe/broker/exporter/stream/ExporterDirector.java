@@ -78,6 +78,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final LogStream logStream;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
+  private final @Nullable ExporterStateStore exporterStateStore;
   private final ExporterMetrics metrics;
   private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
@@ -147,6 +148,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             new RecordExporter(metrics, containers, partitionId.number(), clock));
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     zeebeDb = context.getZeebeDb();
+    exporterStateStore = context.getExporterStateStore();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
 
@@ -524,7 +526,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void recoverFromSnapshot() {
-    state = new ExportersState(zeebeDb, zeebeDb.createContext());
+    final var transactionContext = zeebeDb.createContext();
+    state =
+        new ExportersState(
+            exporterStateStore != null
+                ? exporterStateStore
+                : new RocksDbExporterStateStore(zeebeDb, transactionContext),
+            transactionContext);
     final long snapshotPosition = state.getLowestPosition();
     LOG.debug(
         "Recovered exporter '{}' from snapshot at lastExportedPosition {}",

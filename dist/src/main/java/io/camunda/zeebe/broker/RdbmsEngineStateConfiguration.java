@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.zeebe.broker.exporter.stream.rdbms.ExporterStateSchema;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.system.configuration.RdbmsEngineStateCfg;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
@@ -122,8 +123,8 @@ public class RdbmsEngineStateConfiguration {
 
   /**
    * All changelogs are tracked in the engine state's Liquibase tables; the log's is kept next to
-   * the log storage code in the broker, which the engine state module does not depend on, and the
-   * mailbox's next to the mailbox stores.
+   * the log storage code in the broker, which the engine state module does not depend on, the
+   * exporter state's next to the exporters, and the mailbox's next to the mailbox stores.
    */
   private static void migrateSchema(
       final HikariDataSource dataSource, final ResourceLoader resourceLoader)
@@ -135,6 +136,7 @@ public class RdbmsEngineStateConfiguration {
         RdbmsLogStorageSchema.CHANGELOG,
         Map.of("prefix", RdbmsLogStorageSchema.TABLE_PREFIX));
     migrate(dataSource, resourceLoader, RdbmsMailboxSchema.CHANGELOG, Map.of());
+    migrate(dataSource, resourceLoader, ExporterStateSchema.CHANGELOG, Map.of());
   }
 
   private static void migrate(

@@ -16,17 +16,22 @@ import io.camunda.configuration.cluster.Zone;
 import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -39,6 +44,9 @@ import org.junit.jupiter.api.Test;
  * <p>The leader stops gracefully and releases its lease. The other region still claims it only once
  * the lease has run out, as it would after a failed region, so that a step-down keeps a partition
  * in its own region.
+ *
+ * <p>The leader stores the positions of its exporters in the database too, so the new leader
+ * continues exporting where it stopped, instead of exporting every record of the partition again.
  *
  * <p>Runs on H2 in this JVM, so both brokers share one in-memory database. {@code
  * NON_KEYWORDS=VALUE} lets H2 accept the {@code value} column of the engine state's partition state
@@ -69,6 +77,7 @@ final class RdbmsLeaseFailoverIT {
               broker ->
                   broker
                       .withUnauthenticatedAccess()
+                      .withRecordingExporter(true)
                       .withSecondaryStorageType(SecondaryStorageType.none)
                       .withDataConfig(
                           data -> {
@@ -93,6 +102,10 @@ final class RdbmsLeaseFailoverIT {
       deploy(client, processId, jobType);
       processInstanceKey = createInstance(client, processId);
     }
+    final long activatedPosition = awaitActivationExported(processInstanceKey);
+    Awaitility.await("the leader stored the position of its exporter in the database")
+        .atMost(TAKEOVER_TIMEOUT)
+        .until(RdbmsLeaseFailoverIT::exportedPosition, position -> position >= activatedPosition);
 
     // when
     leader.stop();
@@ -112,6 +125,13 @@ final class RdbmsLeaseFailoverIT {
           .as("the new leader continues the instance that its predecessor created")
           .isEqualTo(processInstanceKey);
       client.newCompleteCommand(job).send().join();
+      Awaitility.await("the new leader exports the completed instance")
+          .atMost(TAKEOVER_TIMEOUT)
+          .until(() -> exported(processInstanceKey, ProcessInstanceIntent.ELEMENT_COMPLETED) > 0);
+      assertThat(exported(processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+          .as(
+              "the new leader continues exporting where its predecessor stopped, not from the start")
+          .isOne();
       assertThat(createInstance(client, processId))
           .as("the new leader generates keys after the ones of its predecessor")
           .isGreaterThan(processInstanceKey);
@@ -206,6 +226,44 @@ final class RdbmsLeaseFailoverIT {
     } catch (final SQLException e) {
       // the brokers create the table when they start
       return Optional.empty();
+    }
+  }
+
+  /** The position of the process instance's activation, once the leader exported it. */
+  private static long awaitActivationExported(final long processInstanceKey) {
+    return Awaitility.await("the leader exports the activation of the instance")
+        .atMost(TAKEOVER_TIMEOUT)
+        .until(
+            () ->
+                processRecords(processInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                    .mapToLong(Record::getPosition)
+                    .max(),
+            OptionalLong::isPresent)
+        .getAsLong();
+  }
+
+  private static long exported(final long processInstanceKey, final ProcessInstanceIntent intent) {
+    return processRecords(processInstanceKey, intent).count();
+  }
+
+  /** The exported records of the process instance itself, not of its elements. */
+  private static Stream<Record<?>> processRecords(
+      final long processInstanceKey, final ProcessInstanceIntent intent) {
+    return List.copyOf(RecordingExporter.getRecords()).stream()
+        .filter(record -> record.getKey() == processInstanceKey)
+        .filter(record -> record.getIntent() == intent);
+  }
+
+  /** The lowest position that an exporter of partition 1 stored in the database, or -1. */
+  private static long exportedPosition() {
+    try (final var connection = DriverManager.getConnection(JDBC_URL, USER, "");
+        final var statement =
+            connection.prepareStatement(
+                "SELECT MIN(exported_position) FROM CAM_RU_EXPORTER_STATE WHERE partition_id = 1");
+        final var result = statement.executeQuery()) {
+      return result.next() && result.getObject(1) != null ? result.getLong(1) : -1;
+    } catch (final SQLException e) {
+      return -1;
     }
   }
 

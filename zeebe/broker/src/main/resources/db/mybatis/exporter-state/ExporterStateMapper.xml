@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the exporter state table, created by
+  db/changelog/exporter-state/changelog-master.xml. Every statement is scoped to one partition, and
+  portable between PostgreSQL and H2.
+-->
+<mapper namespace="io.camunda.zeebe.broker.exporter.stream.rdbms.ExporterStateMapper">
+
+  <resultMap id="exporterState"
+    type="io.camunda.zeebe.broker.exporter.stream.rdbms.ExporterStateMapper$ExporterStateRow">
+    <constructor>
+      <idArg column="exporter_id" javaType="String"/>
+      <arg column="exported_position" javaType="_long"/>
+      <arg column="metadata_version" javaType="_long"/>
+      <arg column="metadata" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectExporterState" resultMap="exporterState">
+    SELECT exporter_id, exported_position, metadata_version, metadata
+    FROM CAM_RU_EXPORTER_STATE
+    WHERE partition_id = #{partitionId} AND exporter_id = #{exporterId}
+  </select>
+
+  <select id="selectExporterStates" resultMap="exporterState">
+    SELECT exporter_id, exported_position, metadata_version, metadata
+    FROM CAM_RU_EXPORTER_STATE
+    WHERE partition_id = #{partitionId}
+    ORDER BY exporter_id
+  </select>
+
+  <update id="updateExporterState">
+    UPDATE CAM_RU_EXPORTER_STATE
+    SET exported_position = #{row.position}, metadata_version = #{row.metadataVersion},
+        metadata = #{row.metadata}
+    WHERE partition_id = #{partitionId} AND exporter_id = #{row.exporterId}
+  </update>
+
+  <insert id="insertExporterState">
+    INSERT INTO CAM_RU_EXPORTER_STATE
+      (partition_id, exporter_id, exported_position, metadata_version, metadata)
+    VALUES (#{partitionId}, #{row.exporterId}, #{row.position}, #{row.metadataVersion},
+      #{row.metadata})
+  </insert>
+
+  <delete id="deleteExporterState">
+    DELETE FROM CAM_RU_EXPORTER_STATE
+    WHERE partition_id = #{partitionId} AND exporter_id = #{exporterId}
+  </delete>
+
+  <select id="countExporterStates" resultType="_int">
+    SELECT COUNT(*) FROM CAM_RU_EXPORTER_STATE WHERE partition_id = #{partitionId}
+  </select>
+
+</mapper>

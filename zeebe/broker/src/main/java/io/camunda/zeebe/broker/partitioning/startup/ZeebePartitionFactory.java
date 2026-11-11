@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.exporter.stream.rdbms.MyBatisExporterStateStore;
 import io.camunda.zeebe.broker.logstreams.rdbms.MyBatisLogBlockRepository;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
@@ -153,6 +154,9 @@ public final class ZeebePartitionFactory {
   /** Null unless the primary storage is the RDBMS, in which case the logs are stored there too. */
   private final @Nullable SqlSessionFactory logSessionFactory;
 
+  /** Null unless the primary storage is the RDBMS, which then keeps the exporter state too. */
+  private final @Nullable SqlSessionFactory exporterStateSessionFactory;
+
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -210,6 +214,10 @@ public final class ZeebePartitionFactory {
         engineState != null
             ? MyBatisLogBlockRepository.createSessionFactory(
                 engineState.dataSource(), RdbmsLogStorageSchema.TABLE_PREFIX)
+            : null;
+    exporterStateSessionFactory =
+        engineState != null
+            ? MyBatisExporterStateStore.createSessionFactory(engineState.dataSource())
             : null;
   }
 
@@ -271,6 +279,10 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
+    if (exporterStateSessionFactory != null) {
+      context.setExporterStateStore(
+          new MyBatisExporterStateStore(exporterStateSessionFactory, partitionId.number()));
+    }
     if (logSessionFactory != null) {
       context.setLogBlockRepository(
           new MyBatisLogBlockRepository(logSessionFactory, partitionId.number()));
