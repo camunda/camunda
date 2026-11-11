@@ -12,35 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
  * Observes the servlet filters in front of the security chains ({@code URLRedirectFilter}, {@code
- * NoCachingFilter}, {@code ResponseSecurityHeaderFilter}) and the actuator over real HTTP. Their
- * unit tests call the filters directly, so they cannot show how the filters interact with the
- * responses produced by the security chains.
+ * NoCachingFilter}) and the actuator over real HTTP. Their unit tests call the filters directly, so
+ * they cannot show how the filters interact with the responses produced by the security chains.
+ * Security header values are deliberately not asserted: under CSL the security chains own them.
  */
 public class ServletFiltersSecurityChainIT extends AbstractRequestAdjustmentSecurityChainIT {
-
-  @Test
-  void shouldAddConfiguredSecurityHeadersWhenEndpointIsPublic() {
-    // given the security headers are configured
-    final Map<String, String> expectedHeaders =
-        embeddedOptimizeExtension
-            .getConfigurationService()
-            .getSecurityConfiguration()
-            .getResponseHeaders()
-            .getHeadersWithValues();
-    assertThat(expectedHeaders).isNotEmpty();
-
-    // when an unauthenticated client requests a public endpoint
-    final Response response = get("/api/readyz");
-
-    // then every configured header is on the response
-    expectedHeaders.forEach(
-        (name, value) -> assertThat(response.getHeaderString(name)).as(name).isEqualTo(value));
-  }
 
   @Test
   void shouldSetNoStoreCacheControlWhenApiRespondsSuccessfully() {
