@@ -203,6 +203,20 @@ test('should pick the better iteration and prefer the earlier one on a tie', () 
   assert.equal(final({baseline: pass(50), iter1: pass(90), iter2: pass(90)}).best, 'iter1');
 });
 
+test('should prefer an iteration that clears every gate over a higher pooled rate', () => {
+  // given
+  const both = (a, b) => ({'e2e-v1': {rate: a}, 'e2e-v2': {rate: b}});
+  const iter1 = pass(82, 'scored', both(82, 82));
+  const iter2 = pass(89, 'scored', both(100, 78));
+
+  // when
+  const result = final({baseline: pass(60), iter1, iter2});
+
+  // then
+  assert.equal(result.action, 'open_pr');
+  assert.equal(result.best, 'iter1');
+});
+
 test('should not judge the test when the baseline did not score or was green', () => {
   assert.equal(final({baseline: pass(0, 'blocked')}).action, 'blocked');
   assert.equal(final({baseline: pass(100, 'green')}).action, 'verified_green');

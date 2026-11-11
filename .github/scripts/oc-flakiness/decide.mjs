@@ -61,32 +61,37 @@ export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10
     };
   }
 
-  // The earlier iteration wins a tie: the smaller diff for the same result.
-  const [bestName, best] = scored.reduce((a, b) =>
-    b[1].pooled.rate > a[1].pooled.rate ? b : a,
-  );
-  const improvement =
-    Math.round((best.pooled.rate - baseline.pooled.rate) * 10) / 10;
-  const weakCells = Object.entries(best.cells)
-    .filter(([, c]) => c.rate < minRate)
-    .map(([cell, c]) => `${cell} ${c.rate}%`);
+  const judged = scored.map(([name, pass]) => {
+    const improvement =
+      Math.round((pass.pooled.rate - baseline.pooled.rate) * 10) / 10;
+    const weakCells = Object.entries(pass.cells)
+      .filter(([, c]) => c.rate < minRate)
+      .map(([cell, c]) => `${cell} ${c.rate}%`);
+    const summary = `${name} ${pass.pooled.rate}% vs baseline ${baseline.pooled.rate}% (+${improvement}pp)`;
+    let failure = null;
+    if (weakCells.length > 0) {
+      failure = `below ${minRate}% in ${weakCells.join(', ')}`;
+    } else if (improvement < minImprovement) {
+      failure = `needs at least +${minImprovement}pp`;
+    }
+    return {name, rate: pass.pooled.rate, summary, failure};
+  });
 
-  const summary = `${bestName} ${best.pooled.rate}% vs baseline ${baseline.pooled.rate}% (+${improvement}pp)`;
-  if (weakCells.length > 0) {
-    return {
-      action: 'delete_branch',
-      best: bestName,
-      reason: `${summary}; below ${minRate}% in ${weakCells.join(', ')}`,
-    };
+  // Gates first, then rate: a higher pooled rate must not displace an
+  // iteration that clears every gate. The earlier iteration wins a tie,
+  // being the smaller diff for the same result.
+  const pickBest = (list) => list.reduce((a, b) => (b.rate > a.rate ? b : a));
+  const qualifying = judged.filter((j) => j.failure === null);
+  if (qualifying.length > 0) {
+    const best = pickBest(qualifying);
+    return {action: 'open_pr', best: best.name, reason: best.summary};
   }
-  if (improvement < minImprovement) {
-    return {
-      action: 'delete_branch',
-      best: bestName,
-      reason: `${summary}; needs at least +${minImprovement}pp`,
-    };
-  }
-  return {action: 'open_pr', best: bestName, reason: summary};
+  const best = pickBest(judged);
+  return {
+    action: 'delete_branch',
+    best: best.name,
+    reason: `${best.summary}; ${best.failure}`,
+  };
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

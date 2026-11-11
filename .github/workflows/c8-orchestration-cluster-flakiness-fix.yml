@@ -53,9 +53,9 @@ on:
         default: '10'
         type: string
       workers:
-        description: "Playwright workers per shard"
+        description: "Playwright workers per shard. Keep 1: parallel repeats share the shard's stack and can take each other's jobs"
         required: false
-        default: '2'
+        default: '1'
         type: string
       max_targets:
         description: "Pick mode: tests dispatched per day"
@@ -394,7 +394,7 @@ jobs:
   fix1:
     name: Fix attempt 1
     needs: [prepare, baseline]
-    if: needs.baseline.outputs.verdict == 'scored'
+    if: ${{ !cancelled() && needs.baseline.outputs.verdict == 'scored' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
@@ -415,7 +415,7 @@ jobs:
   validate1:
     name: Validate attempt 1
     needs: [prepare, fix1]
-    if: needs.fix1.outputs.changed == 'true'
+    if: ${{ !cancelled() && needs.fix1.outputs.changed == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
@@ -436,7 +436,7 @@ jobs:
   plan-iter2:
     name: Plan attempt 2
     needs: [validate1]
-    if: needs.validate1.result == 'success'
+    if: ${{ !cancelled() && needs.validate1.outputs.verdict != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -484,7 +484,7 @@ jobs:
   fix2:
     name: Fix attempt 2
     needs: [prepare, plan-iter2]
-    if: needs.plan-iter2.outputs.run_iter2 == 'true'
+    if: ${{ !cancelled() && needs.plan-iter2.outputs.run_iter2 == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
@@ -505,7 +505,7 @@ jobs:
   validate2:
     name: Validate attempt 2
     needs: [prepare, fix2]
-    if: needs.fix2.outputs.changed == 'true'
+    if: ${{ !cancelled() && needs.fix2.outputs.changed == 'true' }}
     uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
     secrets:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
@@ -656,7 +656,10 @@ jobs:
             echo "### ${ACTION}"
             echo
             echo "${REASON}"
-            [[ -n "$pr_url" ]] && { echo; echo "PR: ${pr_url}"; }
+            if [[ -n "$pr_url" ]]; then
+              echo
+              echo "PR: ${pr_url}"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       # The ledger keeps the pick job from spending a slot on the same test

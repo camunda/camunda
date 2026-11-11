@@ -256,11 +256,16 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      # Located by file:line rather than --grep: Playwright's --grep is
-      # case-insensitive, and this suite has sibling tests whose titles differ
-      # only in case. The line is looked up on THIS ref because a fix can move
-      # the test. --no-deps keeps the project's teardown project from running
-      # its own specs in full.
+      # Selection, on THIS ref because a fix can move the test:
+      # - by file:line, not --grep alone: --grep is case-insensitive and the
+      #   suite has sibling titles that differ only in case;
+      # - a test in a serial block runs with its whole outermost describe (or
+      #   the whole file when the file itself is serial), because its earlier
+      #   tests create the data it uses; the score counts the target only;
+      # - when one line declares several tests (a test() in a loop), an
+      #   anchored --grep on the title narrows it to the target.
+      # --no-deps keeps the project's teardown project from running its own
+      # specs in full.
       - name: Run the test ${{ inputs.repeat_each }} times
         working-directory: ${{ env.SUITE }}
         env:
@@ -277,23 +282,46 @@ jobs:
           WORKERS: ${{ inputs.workers }}
           TEST_REF: ${{ inputs.test_ref }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           npx playwright test --list --reporter=json \
-            --no-deps --project="$PROJECT" "$SPEC" > "$RUNNER_TEMP/list.json" 2>/dev/null
-          line=$(jq -r --argjson path "$TITLE_PATH" '
-            def walk_specs($p): (.specs[]? | {spec: ., path: ($p + [.title])}),
-                                (.suites[]? as $s | $s | walk_specs($p + [$s.title]));
-            [.suites[] | walk_specs([]) | select(.path == $path) | .spec.line] | first // empty
+            --no-deps --project="$PROJECT" "$SPEC" > "$RUNNER_TEMP/list.json" 2>/dev/null || true
+          target=$(jq -c --argjson path "$TITLE_PATH" '
+            def walk($p; $lines): (.specs[]? | {path: ($p + [.title]), line, file, suites: $lines}),
+                                  (.suites[]? as $s | $s | walk($p + [$s.title]; $lines + [$s.line]));
+            [.suites[] | walk([]; [])] as $all
+            | ($all | map(select(.path == $path)) | first) as $t
+            | if $t == null then empty
+              else $t + {siblings: ($all | map(select(.file == $t.file and .line == $t.line)) | length)}
+              end
           ' "$RUNNER_TEMP/list.json")
-          if [[ -z "$line" ]]; then
+          if [[ -z "$target" ]]; then
             echo "::error::test $(jq -r 'join(" › ")' <<< "$TITLE_PATH") not found in $SPEC on $TEST_REF"
             exit 1
           fi
-          echo "Running ${SPEC}:${line} ${REPEAT_EACH} times on ${WORKERS} workers (project ${PROJECT})"
-          npx playwright test "${SPEC}:${line}" \
+
+          file_path=$(find . -path ./node_modules -prune -o -type f -path "*${SPEC}" -print | head -1)
+          location="${SPEC}:$(jq -r .line <<< "$target")"
+          grep_args=()
+          if [[ -n "$file_path" ]] && grep -qE '^test\.describe\.configure\(\{ *mode: *.serial' "$file_path"; then
+            echo "The whole file is serial: running all of it."
+            location="$SPEC"
+          elif [[ -n "$file_path" ]] && grep -qE "describe\.serial|mode: *'serial'" "$file_path" \
+              && [[ $(jq '.suites | length' <<< "$target") -gt 0 ]]; then
+            echo "Serial describe: running the outermost describe so its earlier tests set up the data."
+            location="${SPEC}:$(jq -r '.suites[0]' <<< "$target")"
+          elif [[ $(jq .siblings <<< "$target") -gt 1 ]]; then
+            title=$(jq -r '.path[-1]' <<< "$target")
+            escaped=$(printf '%s' "$title" | sed -E 's/[][\.^$*+?(){}|/]/\\&/g')
+            echo "Several tests share this line: narrowing with --grep."
+            grep_args=(--grep "${escaped}\$")
+          fi
+
+          echo "Running ${location} ${REPEAT_EACH} times on ${WORKERS} worker(s) (project ${PROJECT})"
+          rc=0
+          npx playwright test "$location" "${grep_args[@]}" \
             --no-deps --project="$PROJECT" \
-            --repeat-each="$REPEAT_EACH" --retries=0 --workers="$WORKERS"
-          echo "Playwright exited $? (the score reads the report, not the exit code)"
+            --repeat-each="$REPEAT_EACH" --retries=0 --workers="$WORKERS" || rc=$?
+          echo "Playwright exited ${rc}; the score reads the report, not the exit code."
 
       - name: Collect the shard's report
         if: always()
