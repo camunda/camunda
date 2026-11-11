@@ -373,7 +373,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
           // about whether the executor is taking work. Counting them lets the poll that activated
           // them tell a response nobody took from one that is being worked through.
           refusedJobsInPoll.incrementAndGet();
-          returnJobToBroker(refusedJob, cause);
+          returnJobToBroker(refusedJob, ERROR_MSG, RETURN_JOB_ERROR_MSG, cause);
         });
   }
 
@@ -385,7 +385,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         // nothing to give back by hand: the executor frees the slot it took when the command
         // returns, early or not
         () -> {},
-        this::leaveStreamedJobToBroker);
+        (refusedJob, cause) -> leaveStreamedJobToBroker(refusedJob, STREAMED_ERROR_MSG, cause));
   }
 
   /**
@@ -465,14 +465,21 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    * <p>Never throws: a job that could not be handed back simply stays out of reach until its
    * timeout expires, which is where it would have been anyway. Letting a failure out of here would
    * stop the worker from handling the rest of the jobs it just activated.
+   *
+   * @param warning what to log about why the job is handed back, with the job key as placeholder
+   * @param errorMessage the error message the job is failed with
    */
-  private void returnJobToBroker(final ActivatedJob job, final RejectedExecutionException cause) {
-    LOG.warn(ERROR_MSG, job.getKey(), cause);
+  private void returnJobToBroker(
+      final ActivatedJob job,
+      final String warning,
+      final String errorMessage,
+      final Throwable cause) {
+    LOG.warn(warning, job.getKey(), cause);
     try {
       jobClient
           .newFailCommand(job)
           .retries(job.getRetries())
-          .errorMessage(RETURN_JOB_ERROR_MSG)
+          .errorMessage(errorMessage)
           .send()
           .exceptionally(
               error -> {
@@ -486,16 +493,19 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   }
 
   /**
-   * Leaves a refused streamed job to the broker, which holds on to it until its timeout expires.
+   * Leaves a streamed job the worker will not run to the broker, which holds on to it until its
+   * timeout expires.
    *
    * <p>The broker takes a streamed job back by itself when the push to the worker fails, which is
    * how the streaming path recovers without the worker having to say anything. That does not cover
-   * this case: the push had already succeeded and the job was only refused afterwards, so nothing
-   * tells the broker that this worker will never run it.
+   * this case: the push had already succeeded and the job was only turned down afterwards, so
+   * nothing tells the broker that this worker will never run it.
+   *
+   * @param warning what to log about why the job is left, with the job key as placeholder
    */
   private void leaveStreamedJobToBroker(
-      final ActivatedJob job, final RejectedExecutionException cause) {
-    LOG.warn(STREAMED_ERROR_MSG, job.getKey(), cause);
+      final ActivatedJob job, final String warning, final Throwable cause) {
+    LOG.warn(warning, job.getKey(), cause);
   }
 
   private void logFailedReturn(final ActivatedJob job, final Throwable error) {
