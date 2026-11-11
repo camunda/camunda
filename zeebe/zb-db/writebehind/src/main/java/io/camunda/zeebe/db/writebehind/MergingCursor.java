@@ -18,12 +18,19 @@ import org.jspecify.annotations.Nullable;
  * win; a delete hides the key.
  *
  * <p>The own writes are read live, so that writes made while iterating are visible as they are with
- * RocksDB's indexed write batch. The committed source is fixed when the cursor is created.
+ * RocksDB's indexed write batch.
+ *
+ * <p>Each seek picks the committed source: the {@link IndexSource} if the column family has a
+ * loaded key index, which opens no storage iterator, else a {@link ViewSource}. An index source can
+ * turn stale in the middle of a scan; the cursor then replaces it with a view that it seeks to the
+ * current key, so that no key is returned twice or skipped.
  */
 final class MergingCursor implements AutoCloseable {
 
   private final NavigableMap<RawKey, Version> own;
-  private final CommittedSource committed;
+  private final WriteBehindStore store;
+  private final byte[] prefix;
+  private @Nullable CommittedSource committed;
 
   private boolean forward = true;
   private @Nullable Entry<RawKey, Version> ownEntry;
@@ -31,22 +38,30 @@ final class MergingCursor implements AutoCloseable {
   // null while the current entry comes from the committed source
   private @Nullable DbValue currentValue;
 
-  MergingCursor(final NavigableMap<RawKey, Version> own, final CommittedSource committed) {
+  /**
+   * @param prefix the prefix of the scan, which restricts the storage view if the cursor needs one
+   */
+  MergingCursor(
+      final NavigableMap<RawKey, Version> own,
+      final WriteBehindStore store,
+      final byte[] prefix,
+      final int prefixLength) {
     this.own = own;
-    this.committed = committed;
+    this.store = store;
+    this.prefix = Arrays.copyOf(prefix, prefixLength);
   }
 
   void seek(final byte[] key) {
     forward = true;
     ownEntry = own.ceilingEntry(RawKey.copyOf(key));
-    committed.seek(key);
+    seekCommitted(key);
     settle();
   }
 
   void seekForPrev(final byte[] key) {
     forward = false;
     ownEntry = own.floorEntry(RawKey.copyOf(key));
-    committed.seekForPrev(key);
+    seekCommitted(key);
     settle();
   }
 
@@ -65,20 +80,76 @@ final class MergingCursor implements AutoCloseable {
     return current();
   }
 
-  /** Copies or decodes the current value into {@code target}. */
-  void readValue(final DbValue target) {
-    current();
+  /**
+   * Copies or decodes the current value into {@code target}. Returns false if the entry is gone: a
+   * commit deleted it while the cursor read from the key index. The cursor then stays at the key
+   * and {@link #advance()} moves on.
+   */
+  boolean readValue(final DbValue target) {
+    final var key = current();
     final var value = currentValue;
     if (value != null) {
       Values.copy(value, target);
-    } else {
-      committed.readValue(target);
+      return true;
     }
+    if (committed().readValue(target)) {
+      return true;
+    }
+    // the entry is current, so it stays when the view still has it
+    switchToView();
+    seekInDirection(key);
+    return committed().isValid() && Arrays.equals(committed().key(), key)
+        ? committed().readValue(target)
+        : false;
   }
 
   @Override
   public void close() {
-    committed.close();
+    if (committed != null) {
+      committed.close();
+      committed = null;
+    }
+  }
+
+  private void seekCommitted(final byte[] key) {
+    close();
+    final var index = store.keyIndex(RawKey.columnFamilyOf(key));
+    final long version = index == null ? 1 : index.version();
+    if (index != null && (version & 1) == 0 && index.state() == KeyIndex.State.LOADED) {
+      store.ensureUsable();
+      store.recordIndexedScan();
+      committed = new IndexSource(store, index, version);
+    } else {
+      committed = new ViewSource(store.openView(prefix, prefix.length));
+    }
+    seekInDirection(key);
+    if (committed().isStale()) {
+      switchToView();
+      seekInDirection(key);
+    }
+  }
+
+  private void seekInDirection(final byte[] key) {
+    if (forward) {
+      committed().seek(key);
+    } else {
+      committed().seekForPrev(key);
+    }
+  }
+
+  /** Replaces the stale index source with a view, which the caller seeks. */
+  private void switchToView() {
+    committed().close();
+    store.recordKeyIndexSwitch();
+    committed = new ViewSource(store.openView(prefix, prefix.length));
+  }
+
+  private CommittedSource committed() {
+    final var source = committed;
+    if (source == null) {
+      throw new IllegalStateException("Expected the cursor to be positioned, but it is not");
+    }
+    return source;
   }
 
   /** Moves to the first entry in iteration order that isn't deleted, or to the end. */
@@ -110,10 +181,10 @@ final class MergingCursor implements AutoCloseable {
   /** The smallest key of both sources in iteration order, or null if both are exhausted. */
   private byte @Nullable [] firstKey() {
     final byte[] ownKey = ownEntry == null ? null : ownEntry.getKey().bytes();
-    if (!committed.isValid()) {
+    if (!committed().isValid()) {
       return ownKey;
     }
-    final byte[] committedKey = committed.key();
+    final byte[] committedKey = committed().key();
     if (ownKey == null) {
       return committedKey;
     }
@@ -127,8 +198,15 @@ final class MergingCursor implements AutoCloseable {
   private void advancePast(final byte[] key) {
     final var rawKey = RawKey.copyOf(key);
     ownEntry = forward ? own.higherEntry(rawKey) : own.lowerEntry(rawKey);
-    if (committed.isValid() && Arrays.equals(committed.key(), key)) {
-      committed.advance();
+    if (committed().isValid() && Arrays.equals(committed().key(), key)) {
+      committed().advance();
+      if (committed().isStale()) {
+        switchToView();
+        seekInDirection(key);
+        if (committed().isValid() && Arrays.equals(committed().key(), key)) {
+          committed().advance();
+        }
+      }
     }
   }
 

@@ -29,8 +29,19 @@ interface CommittedSource extends AutoCloseable {
   /** Moves on in the direction of the last seek. */
   void advance();
 
-  /** Copies or decodes the value of the current key into {@code target}. */
-  void readValue(DbValue target);
+  /**
+   * Copies or decodes the value of the current key into {@code target}. Returns false if the source
+   * turned {@link #isStale() stale} instead.
+   */
+  boolean readValue(DbValue target);
+
+  /**
+   * Whether the source can't continue and its position is lost. Only a source that doesn't read a
+   * fixed instant can turn stale; the caller continues with another source.
+   */
+  default boolean isStale() {
+    return false;
+  }
 
   @Override
   void close();

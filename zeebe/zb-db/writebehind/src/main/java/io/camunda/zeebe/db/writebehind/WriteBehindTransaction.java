@@ -64,7 +64,7 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
 
   /** A cursor over every key that starts with the prefix, including this transaction's writes. */
   MergingCursor newCursor(final byte[] prefix, final int prefixLength) {
-    return new MergingCursor(writes, new ViewSource(store.openView(prefix, prefixLength)));
+    return new MergingCursor(writes, store, prefix, prefixLength);
   }
 
   /** Call before a scan of a column family: loads its key index if it has one that isn't loaded. */

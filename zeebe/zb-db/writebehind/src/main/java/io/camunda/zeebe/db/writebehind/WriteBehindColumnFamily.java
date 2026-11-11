@@ -312,8 +312,8 @@ final class WriteBehindColumnFamily<
         reverse,
         cursor -> {
           wrapKey(cursor.key());
-          cursor.readValue(valueInstance);
-          return visitor.visit(keyInstance, valueInstance);
+          // false if a concurrent commit deleted the entry; it is no longer there to visit
+          return !cursor.readValue(valueInstance) || visitor.visit(keyInstance, valueInstance);
         });
   }
 

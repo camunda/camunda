@@ -61,7 +61,11 @@ final class RawKey implements Comparable<RawKey> {
 
   /** The column family: the 8-byte prefix as a long. Every key of a column family has one. */
   long columnFamily() {
-    return (long) LONG_VIEW.get(bytes, 0);
+    return columnFamilyOf(bytes);
+  }
+
+  static long columnFamilyOf(final byte[] rawKey) {
+    return (long) LONG_VIEW.get(rawKey, 0);
   }
 
   /** The key bytes. Shared: callers must not change them, and must copy before handing them out. */

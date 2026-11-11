@@ -80,6 +80,8 @@ final class WriteBehindStore implements AutoCloseable {
   private final LongAdder keyIndexLoads = new LongAdder();
   private final LongAdder keyIndexDiscardedLoads = new LongAdder();
   private final LongAdder keyIndexDisables = new LongAdder();
+  private final LongAdder indexedScans = new LongAdder();
+  private final LongAdder keyIndexSwitches = new LongAdder();
 
   // only used by the writer thread
   private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
@@ -155,17 +157,31 @@ final class WriteBehindStore implements AutoCloseable {
    */
   @Nullable DbValue get(final RawKey key, final DbValue prototype) {
     ensureUsable();
+    final var inMemory = lookupInMemory(key);
+    if (inMemory != null) {
+      return inMemory.value();
+    }
+    if (absentFromKeyIndex(key)) {
+      return null;
+    }
+    return readStorage(key, prototype);
+  }
+
+  /** The unflushed version of a key, or else the cached one; null if the store has neither. */
+  @Nullable Version lookupInMemory(final RawKey key) {
     final var unflushed = dirty.get(key);
     if (unflushed != null) {
-      return unflushed.value();
+      return unflushed;
     }
-    if (cache != null) {
-      final var cached = cache.getIfPresent(key);
-      if (cached != null) {
-        return cached.value();
-      }
-    }
+    return cache == null ? null : cache.getIfPresent(key);
+  }
 
+  /**
+   * Reads the latest committed value from the storage, or returns null if there is none, unless a
+   * newer version is unflushed. A value read from the storage is decoded into a new instance of
+   * {@code prototype}'s class and cached.
+   */
+  @Nullable DbValue readStorage(final RawKey key, final DbValue prototype) {
     // Under the read lock no commit can publish this key and no flush can remove it, so if it isn't
     // in the dirty index now, the storage has its latest value and nothing can make the cached copy
     // stale before a later commit invalidates it.
@@ -189,15 +205,12 @@ final class WriteBehindStore implements AutoCloseable {
   /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
   boolean exists(final RawKey key) {
     ensureUsable();
-    final var unflushed = dirty.get(key);
-    if (unflushed != null) {
-      return !unflushed.isTombstone();
+    final var inMemory = lookupInMemory(key);
+    if (inMemory != null) {
+      return !inMemory.isTombstone();
     }
-    if (cache != null) {
-      final var cached = cache.getIfPresent(key);
-      if (cached != null) {
-        return !cached.isTombstone();
-      }
+    if (absentFromKeyIndex(key)) {
+      return false;
     }
     final long stamp = publishLock.readLock();
     try {
@@ -209,6 +222,28 @@ final class WriteBehindStore implements AutoCloseable {
     } finally {
       publishLock.unlockRead(stamp);
     }
+  }
+
+  /**
+   * Whether a loaded key index shows that the key has no committed value. A commit changes the
+   * dirty index and the key index in one critical section, so a reader that missed the dirty index
+   * before a commit and then sees the new key set finds the key, and one that sees the old key set
+   * gets the state from before the commit. A key in the index gives no answer, as it holds no
+   * values.
+   */
+  private boolean absentFromKeyIndex(final RawKey key) {
+    if (keyIndexes.isEmpty()) {
+      return false;
+    }
+    final var index = keyIndexes.get(key.columnFamily());
+    if (index == null) {
+      return false;
+    }
+    final long version = index.version();
+    return (version & 1) == 0
+        && index.state() == KeyIndex.State.LOADED
+        && !index.keys().contains(key)
+        && index.version() == version;
   }
 
   /**
@@ -303,6 +338,22 @@ final class WriteBehindStore implements AutoCloseable {
 
   long keyIndexDiscardedLoads() {
     return keyIndexDiscardedLoads.sum();
+  }
+
+  long indexedScans() {
+    return indexedScans.sum();
+  }
+
+  long keyIndexSwitches() {
+    return keyIndexSwitches.sum();
+  }
+
+  void recordIndexedScan() {
+    indexedScans.increment();
+  }
+
+  void recordKeyIndexSwitch() {
+    keyIndexSwitches.increment();
   }
 
   long keyIndexDisables() {

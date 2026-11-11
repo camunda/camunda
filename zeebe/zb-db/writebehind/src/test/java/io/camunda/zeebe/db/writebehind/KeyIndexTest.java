@@ -9,19 +9,11 @@ package io.camunda.zeebe.db.writebehind;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.db.AccessMetricsConfiguration;
-import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.RawAccessibleDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -60,17 +52,7 @@ final class KeyIndexTest {
   }
 
   private void open(final WriteBehindConfiguration config) {
-    final var rocksConfig = new RocksDbConfiguration();
-    rocksConfig.setMemoryAllocationStrategy(MemoryAllocationStrategy.BROKER);
-    rocksConfig.setMemoryLimit(64 * 1024 * 1024);
-    final var factory =
-        new ZeebeRocksDbFactory<DefaultColumnFamily>(
-            rocksConfig,
-            new ConsistencyChecksSettings(true, true),
-            new AccessMetricsConfiguration(Kind.NONE),
-            SimpleMeterRegistry::new);
-    db =
-        (RawAccessibleDb<DefaultColumnFamily>) factory.createDb(new File(directory.toFile(), "db"));
+    db = RocksDbSupport.open(directory);
     store = new WriteBehindStore(db.rawAccess(), config);
   }
 

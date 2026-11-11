@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import java.util.Set;
 
 /** Write-behind DB over the same RocksDB setup as {@link RocksDbTestFactory}. */
 final class WriteBehindTestFactory {
@@ -21,6 +22,13 @@ final class WriteBehindTestFactory {
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create() {
     return create(WriteBehindConfiguration.defaults());
+  }
+
+  /** Indexes the keys of the column families with IDs 0 to 3, which the contract tests use. */
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> createWithKeyIndex() {
+    return create(
+        WriteBehindConfiguration.defaults().withKeyIndexColumnFamilies(Set.of(0L, 1L, 2L, 3L)));
   }
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>

@@ -74,7 +74,7 @@ final class ViewSource implements CommittedSource {
   }
 
   @Override
-  public void readValue(final DbValue target) {
+  public boolean readValue(final DbValue target) {
     current();
     final var value = currentValue;
     if (value != null) {
@@ -83,6 +83,7 @@ final class ViewSource implements CommittedSource {
       final var bytes = stored.value();
       target.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
     }
+    return true;
   }
 
   @Override
