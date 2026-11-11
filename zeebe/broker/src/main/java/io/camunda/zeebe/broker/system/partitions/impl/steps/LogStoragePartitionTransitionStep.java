@@ -35,6 +35,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   private static final Duration SCHEMA_POLL_INTERVAL = Duration.ofSeconds(1);
   private static final Duration INITIAL_CLAIM_RETRY_BACKOFF = Duration.ofMillis(500);
   private static final Duration MAX_CLAIM_RETRY_BACKOFF = Duration.ofSeconds(10);
+  private static final String WRONG_TERM_ERROR_MSG =
+      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
   /**
    * Bumped whenever a new Raft role is announced, so that an RDBMS log storage installation still
@@ -46,9 +48,6 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
     roleAnnouncements.incrementAndGet();
   }
-
-  private static final String WRONG_TERM_ERROR_MSG =
-      "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
   @Override
   public ActorFuture<Void> prepareTransition(

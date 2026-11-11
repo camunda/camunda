@@ -165,6 +165,19 @@ class LogStoragePartitionTransitionStepTest {
     assertThat(transitionContext.getLogStorage()).isNull();
   }
 
+  private void initializeContext(final Role currentRole) {
+    transitionContext.setCurrentRole(currentRole);
+    if (currentRole != null && currentRole != Role.INACTIVE) {
+      transitionContext.setLogStorage(logStorageFromPrevRole);
+    }
+  }
+
+  private void transitionTo(final Role role) {
+    step.prepareTransition(transitionContext, 1, role).join();
+    step.transitionTo(transitionContext, 1, role).join();
+    transitionContext.setCurrentRole(role);
+  }
+
   @Nested
   class WithRdbmsLogStorage {
 
@@ -365,18 +378,5 @@ class LogStoragePartitionTransitionStepTest {
       storage.append(
           1, 1, new DirectBufferWriter(new UnsafeBuffer(new byte[] {1})), new AppendListener() {});
     }
-  }
-
-  private void initializeContext(final Role currentRole) {
-    transitionContext.setCurrentRole(currentRole);
-    if (currentRole != null && currentRole != Role.INACTIVE) {
-      transitionContext.setLogStorage(logStorageFromPrevRole);
-    }
-  }
-
-  private void transitionTo(final Role role) {
-    step.prepareTransition(transitionContext, 1, role).join();
-    step.transitionTo(transitionContext, 1, role).join();
-    transitionContext.setCurrentRole(role);
   }
 }
