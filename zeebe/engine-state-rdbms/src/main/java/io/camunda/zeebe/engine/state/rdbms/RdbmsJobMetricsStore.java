@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.rdbms.JobMetricMapper.JobMetricRow;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import java.util.Comparator;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Stores the job metrics of the current batch in a relational database, through the partition's
@@ -45,9 +46,16 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
   private final EntitySession session;
   private final int partitionId;
 
+  /** Most job events update their metrics and the batch, so their rows are kept, see the cache. */
+  private final CommittedRowCache<JobMetricKey, JobMetricRow> metrics;
+
+  private final CommittedRowCache<Integer, JobMetricBatchRow> batches;
+
   RdbmsJobMetricsStore(final EntitySession session) {
     this.session = session;
     partitionId = session.partitionId();
+    metrics = new CommittedRowCache<>(session.transactionContext());
+    batches = new CommittedRowCache<>(session.transactionContext());
   }
 
   @Override
@@ -57,7 +65,7 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
 
   @Override
   public boolean containsKey(final String jobType, final String tenantId, final String workerName) {
-    return session.get(JOB_METRIC, new JobMetricKey(jobType, tenantId, workerName)) != null;
+    return metric(new JobMetricKey(jobType, tenantId, workerName)) != null;
   }
 
   @Override
@@ -68,12 +76,16 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
       final JobMetricsExportState status,
       final long timestamp) {
     final var key = new JobMetricKey(jobType, tenantId, workerName);
-    final var row = session.get(JOB_METRIC, key);
+    final var row = metric(key);
     if (row == null) {
-      session.insert(JOB_METRIC, JobMetricRow.empty(key).incremented(status, timestamp));
+      final var inserted = JobMetricRow.empty(key).incremented(status, timestamp);
+      session.insert(JOB_METRIC, inserted);
+      metrics.put(key, inserted);
       saveBatch(batch().withKeyCount(batch().keyCount() + 1));
     } else {
-      session.update(JOB_METRIC, row.incremented(status, timestamp));
+      final var updated = row.incremented(status, timestamp);
+      session.update(JOB_METRIC, updated);
+      metrics.put(key, updated);
     }
   }
 
@@ -112,6 +124,7 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
   public void deleteMetrics() {
     for (final var row : rows()) {
       session.delete(JOB_METRIC, row.key());
+      metrics.remove(row.key());
     }
     saveBatch(batch().withKeyCount(0));
   }
@@ -125,16 +138,21 @@ public final class RdbmsJobMetricsStore implements JobMetricsStore {
         BY_KEY);
   }
 
+  private @Nullable JobMetricRow metric(final JobMetricKey key) {
+    return metrics.get(key, k -> session.get(JOB_METRIC, k));
+  }
+
   private JobMetricBatchRow batch() {
-    final var row = session.get(JOB_METRIC_BATCH, BATCH);
+    final var row = batches.get(BATCH, k -> session.get(JOB_METRIC_BATCH, k));
     return row == null ? JobMetricBatchRow.EMPTY : row;
   }
 
   private void saveBatch(final JobMetricBatchRow row) {
-    if (session.get(JOB_METRIC_BATCH, BATCH) == null) {
+    if (batches.get(BATCH, k -> session.get(JOB_METRIC_BATCH, k)) == null) {
       session.insert(JOB_METRIC_BATCH, row);
     } else {
       session.update(JOB_METRIC_BATCH, row);
     }
+    batches.put(BATCH, row);
   }
 }

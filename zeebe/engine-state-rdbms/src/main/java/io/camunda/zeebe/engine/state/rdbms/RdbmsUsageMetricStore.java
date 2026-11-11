@@ -51,9 +51,13 @@ public final class RdbmsUsageMetricStore implements UsageMetricStore {
   private final EntitySession session;
   private final int partitionId;
 
+  /** Most process instance creations update a counter, so the rows are kept, see the cache. */
+  private final CommittedRowCache<UsageMetricKey, UsageMetricRow> metrics;
+
   RdbmsUsageMetricStore(final EntitySession session) {
     this.session = session;
     partitionId = session.partitionId();
+    metrics = new CommittedRowCache<>(session.transactionContext());
   }
 
   @Override
@@ -103,19 +107,25 @@ public final class RdbmsUsageMetricStore implements UsageMetricStore {
                   "Expected a counter event type RPI or EDI, but got " + eventType);
         };
     final var key = new UsageMetricKey(metricType, tenantId, 0);
-    final var row = session.get(USAGE_METRIC, key);
+    final var row = metric(key);
     if (row == null) {
-      session.insert(USAGE_METRIC, new UsageMetricRow(metricType, tenantId, 0, 1));
+      final var inserted = new UsageMetricRow(metricType, tenantId, 0, 1);
+      session.insert(USAGE_METRIC, inserted);
+      metrics.put(key, inserted);
     } else {
-      session.update(USAGE_METRIC, row.incremented());
+      final var updated = row.incremented();
+      session.update(USAGE_METRIC, updated);
+      metrics.put(key, updated);
     }
   }
 
   @Override
   public void addAssignee(final String tenantId, final long assigneeHash) {
     final var key = new UsageMetricKey(TU, tenantId, assigneeHash);
-    if (session.get(USAGE_METRIC, key) == null) {
-      session.insert(USAGE_METRIC, new UsageMetricRow(TU, tenantId, assigneeHash, 1));
+    if (metric(key) == null) {
+      final var inserted = new UsageMetricRow(TU, tenantId, assigneeHash, 1);
+      session.insert(USAGE_METRIC, inserted);
+      metrics.put(key, inserted);
     }
   }
 
@@ -123,6 +133,7 @@ public final class RdbmsUsageMetricStore implements UsageMetricStore {
   public void resetActiveBucket(final long fromTime) {
     for (final var row : rows()) {
       session.delete(USAGE_METRIC, row.key());
+      metrics.remove(row.key());
     }
     final var value = new PartitionStateRow(FROM_TIME_KEY, Long.toString(fromTime));
     if (session.get(PARTITION_STATE, FROM_TIME_KEY) == null) {
@@ -133,6 +144,10 @@ public final class RdbmsUsageMetricStore implements UsageMetricStore {
   }
 
   /** The metrics of the bucket, committed and staged. */
+  private @Nullable UsageMetricRow metric(final UsageMetricKey key) {
+    return metrics.get(key, k -> session.get(USAGE_METRIC, k));
+  }
+
   private List<UsageMetricRow> rows() {
     return session.query(
         USAGE_METRIC,

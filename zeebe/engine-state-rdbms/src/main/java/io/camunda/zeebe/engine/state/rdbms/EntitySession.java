@@ -150,6 +150,11 @@ final class EntitySession implements JdbcTransactionParticipant {
     return partitionId;
   }
 
+  /** The context of the transactions the session takes part in. */
+  JdbcTransactionContext transactionContext() {
+    return transactionContext;
+  }
+
   /** Called with every key the engine generates, see {@link #isGeneratedInTransaction}. */
   void keyGenerated(final long key) {
     if (firstGeneratedKey == NO_GENERATED_KEY) {
