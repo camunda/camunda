@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -217,7 +218,7 @@ final class WriteBehindStoreTest {
   }
 
   @Test
-  void shouldFailCommitsAndReadsOnceAnEnqueueFails() {
+  void shouldFailCommitsOnceAnEnqueueFails() {
     // given
     final var store = store(STALLED, UNLIMITED, UNLIMITED);
     store.close();
@@ -229,8 +230,87 @@ final class WriteBehindStoreTest {
     // then
     assertThatThrownBy(() -> store.commit(Map.of(key(2), new Op(bytes(20)))))
         .isInstanceOf(UnrecoverableException.class);
-    assertThatThrownBy(() -> store.commit(Map.of())).isInstanceOf(UnrecoverableException.class);
-    assertThatThrownBy(() -> store.get(key(1), reader)).isInstanceOf(UnrecoverableException.class);
+    store.commit(Map.of());
+    assertThat(store.failure()).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldRetryARecoverableBackendError() {
+    // given
+    backend.failTransactions(2, () -> new ZeebeDbException("expected", new RuntimeException()));
+
+    try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
+      // when
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+      store.catchUp();
+
+      // then
+      assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
+      assertThat(store.failure()).isNull();
+    }
+  }
+
+  @Test
+  void shouldFailOnceRetriesRunOut() {
+    // given
+    backend.failTransactions(
+        Integer.MAX_VALUE, () -> new ZeebeDbException("expected", new RuntimeException()));
+
+    try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
+      // when
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+
+      // then
+      await().untilAsserted(() -> assertThat(store.failure()).isInstanceOf(ZeebeDbException.class));
+      assertThatThrownBy(() -> store.commit(Map.of(key(2), new Op(bytes(20)))))
+          .isInstanceOf(UnrecoverableException.class);
+    }
+  }
+
+  @Test
+  void shouldAbortWaitersButKeepReadingOnceTheBackendFailsForGood() throws Exception {
+    // given - the writer is paused on the first commit; the second commit and a snapshot's catch-up
+    // wait for it, and neither would give up within the test
+    final var store =
+        new WriteBehindStore<>(
+            backend.db(),
+            new TestConfiguration()
+                .maxWriteDelay(QUICK)
+                .maxPendingBytes(0)
+                .snapshotCatchUpTimeout(Duration.ofMinutes(5))
+                .build());
+    try {
+      backend.pauseTransactions();
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+      backend.awaitPausedTransaction();
+      final var catchingUp = CompletableFuture.runAsync(store::catchUp);
+      final var committing =
+          CompletableFuture.runAsync(() -> store.commit(Map.of(key(2), new Op(bytes(20)))));
+
+      // when
+      backend.failTransactions(1, () -> new IllegalStateException("expected"));
+      backend.resumeTransactions();
+
+      // then
+      assertThat(catchingUp)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingCause()
+          .isInstanceOf(UnrecoverableException.class);
+      assertThat(committing)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingCause()
+          .isInstanceOf(UnrecoverableException.class);
+      assertThat(store.get(key(1), reader)).containsExactly(10);
+      store.commit(Map.of());
+      assertThatThrownBy(() -> store.commit(Map.of(key(3), new Op(bytes(30)))))
+          .isInstanceOf(UnrecoverableException.class);
+      assertThatThrownBy(store::catchUp).isInstanceOf(UnrecoverableException.class);
+    } finally {
+      backend.resumeTransactions();
+      store.close();
+    }
   }
 
   private WriteBehindStore<TestColumnFamily> store(

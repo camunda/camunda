@@ -9,18 +9,23 @@ package io.camunda.zeebe.db.cache;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.util.exception.RecoverableException;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Writes committed transactions to the backend in commit order, on a thread of its own.
@@ -36,6 +41,10 @@ import org.jspecify.annotations.Nullable;
  */
 final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
+
+  private static final Logger LOG = LoggerFactory.getLogger(TransactionWriter.class);
+  private static final int MAX_WRITE_ATTEMPTS = 5;
+  private static final Duration INITIAL_BACKOFF = Duration.ofMillis(10);
 
   private final PassThroughColumnFamilies<ColumnFamilyNames> backendColumnFamilies;
   private final DirtyIndex dirtyIndex;
@@ -153,6 +162,64 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     }
   }
 
+  /**
+   * Writes {@code newest} as one backend transaction. A recoverable error is retried with backoff,
+   * since the group rewrites exactly the same versions; anything else, or running out of attempts,
+   * is thrown.
+   *
+   * @return {@code false} if the writer was closed while waiting to retry
+   */
+  private boolean writeToBackend(final TreeMap<CacheKey, CachedValue> newest)
+      throws InterruptedException {
+    for (int attempt = 1; ; attempt++) {
+      try {
+        backendColumnFamilies
+            .context()
+            .runInTransaction(
+                () ->
+                    newest.forEach(
+                        (key, version) -> {
+                          final var value = version.bytes();
+                          if (value == null) {
+                            backendColumnFamilies.deleteIfExists(key);
+                          } else {
+                            backendColumnFamilies.upsert(key, value);
+                          }
+                        }));
+        return true;
+      } catch (final RecoverableException e) {
+        if (attempt == MAX_WRITE_ATTEMPTS) {
+          throw e;
+        }
+        final long backoffNanos = INITIAL_BACKOFF.toNanos() << (attempt - 1);
+        LOG.warn(
+            "Failed to write {} keys to the backend (attempt {} of {}), retrying in {} ms",
+            newest.size(),
+            attempt,
+            MAX_WRITE_ATTEMPTS,
+            TimeUnit.NANOSECONDS.toMillis(backoffNanos),
+            e);
+        if (!awaitUnlessClosed(backoffNanos)) {
+          return false;
+        }
+      }
+    }
+  }
+
+  /** Waits {@code nanos}, or less if the writer is closed. Returns whether it's still open. */
+  private boolean awaitUnlessClosed(final long nanos) throws InterruptedException {
+    queueLock.lock();
+    try {
+      long remaining = nanos;
+      while (!closed && remaining > 0) {
+        remaining = queueChanged.awaitNanos(remaining);
+      }
+      return !closed;
+    } finally {
+      queueLock.unlock();
+    }
+  }
+
   private void run() {
     try {
       List<CommittedTransaction> group;
@@ -216,7 +283,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     return distinct;
   }
 
-  private void write(final List<CommittedTransaction> group) {
+  private void write(final List<CommittedTransaction> group) throws InterruptedException {
     final var newest = new TreeMap<CacheKey, CachedValue>();
     long bytes = 0;
     for (final var transaction : group) {
@@ -224,19 +291,9 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       bytes += transaction.bytes();
     }
 
-    backendColumnFamilies
-        .context()
-        .runInTransaction(
-            () ->
-                newest.forEach(
-                    (key, version) -> {
-                      final var value = version.bytes();
-                      if (value == null) {
-                        backendColumnFamilies.deleteIfExists(key);
-                      } else {
-                        backendColumnFamilies.upsert(key, value);
-                      }
-                    }));
+    if (!writeToBackend(newest)) {
+      return;
+    }
 
     final long stamp = publishLock.writeLock();
     try {

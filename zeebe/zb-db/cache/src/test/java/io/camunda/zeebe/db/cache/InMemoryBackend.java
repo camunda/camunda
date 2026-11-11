@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
@@ -40,7 +41,8 @@ import org.jspecify.annotations.Nullable;
  * and reverse scans, and transactions that run their operations directly. It is safe to use from
  * several threads.
  *
- * <p>It records the writes of each transaction, in {@link #transactionLog()}.
+ * <p>It records the writes of each transaction, in {@link #transactionLog()}. Transactions can be
+ * made to fail, with {@link #failTransactions}.
  *
  * <p>Transactions can be paused, which stalls the cache's writer: it is the only caller of {@code
  * runInTransaction}, since reads go straight to the column families.
@@ -55,6 +57,8 @@ final class InMemoryBackend {
   private final AtomicInteger transactions = new AtomicInteger();
   private final List<List<String>> transactionLog = new CopyOnWriteArrayList<>();
   private final ThreadLocal<List<String>> currentTransaction = new ThreadLocal<>();
+  private final AtomicInteger failingTransactions = new AtomicInteger();
+  private volatile Supplier<RuntimeException> transactionFailure = IllegalStateException::new;
   private final Semaphore pausedTransactions = new Semaphore(0);
   private volatile CountDownLatch resumed = new CountDownLatch(0);
   private final Semaphore pausedScans = new Semaphore(0);
@@ -88,6 +92,15 @@ final class InMemoryBackend {
    */
   List<List<String>> transactionLog() {
     return transactionLog;
+  }
+
+  /**
+   * Makes the next {@code count} transactions throw instead of writing anything, including one that
+   * is paused right now.
+   */
+  void failTransactions(final int count, final Supplier<RuntimeException> failure) {
+    transactionFailure = failure;
+    failingTransactions.set(count);
   }
 
   /** Makes every transaction that starts from now on wait until {@link #resumeTransactions()}. */
@@ -143,6 +156,9 @@ final class InMemoryBackend {
               if (resumed.getCount() > 0) {
                 pausedTransactions.release();
                 resumed.await();
+              }
+              if (failingTransactions.getAndUpdate(left -> Math.max(left - 1, 0)) > 0) {
+                throw transactionFailure.get();
               }
               transactions.incrementAndGet();
               final List<String> writes = new ArrayList<>();

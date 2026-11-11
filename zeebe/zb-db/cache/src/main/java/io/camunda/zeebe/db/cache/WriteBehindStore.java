@@ -15,10 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.Consumer;
 import org.ehcache.Cache;
 import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
@@ -26,6 +29,8 @@ import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.MemoryUnit;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Holds the committed state that the backend doesn't have yet, and hands it to the writer.
@@ -42,6 +47,7 @@ import org.jspecify.annotations.Nullable;
 final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
 
+  private static final Logger LOG = LoggerFactory.getLogger(WriteBehindStore.class);
   private static final int OPTIMISTIC_READ_ATTEMPTS = 3;
 
   private final WriteBehindConfiguration configuration;
@@ -57,7 +63,8 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final Cache<CacheKey, CachedValue> cache;
 
   private long lastSeq; // guarded by commitLock
-  private volatile @Nullable Throwable failure;
+  private final AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
+  private final List<Consumer<Throwable>> failureListeners = new CopyOnWriteArrayList<>();
 
   WriteBehindStore(
       final ZeebeDb<ColumnFamilyNames> backend, final WriteBehindConfiguration configuration) {
@@ -100,7 +107,6 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    */
   void commit(final Map<CacheKey, Op> writes) {
     if (writes.isEmpty()) {
-      failIfFailed();
       return;
     }
 
@@ -168,7 +174,6 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final boolean fromInclusive,
       final @Nullable CacheKey to,
       final boolean toInclusive) {
-    failIfFailed();
     final long stamp = publishLock.readLock();
     try {
       return new ScanOverlay(
@@ -196,7 +201,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     flushLock.lock();
     try {
       long remaining = timeout.toNanos();
-      while (writer.flushedSeq() < target && failure == null && remaining > 0) {
+      while (writer.flushedSeq() < target && failure.get() == null && remaining > 0) {
         flushed.awaitNanos(remaining);
         remaining = deadline - System.nanoTime();
       }
@@ -216,6 +221,16 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     }
   }
 
+  /** Returns why the store failed, or {@code null} if it hasn't. */
+  @Nullable Throwable failure() {
+    return failure.get();
+  }
+
+  /** Calls {@code listener} once the store fails. */
+  void addFailureListener(final Consumer<Throwable> listener) {
+    failureListeners.add(listener);
+  }
+
   /** Returns the key and value bytes of the transactions the backend doesn't have yet. */
   long pendingBytes() {
     return writer.queuedBytes();
@@ -229,8 +244,6 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
   private byte @Nullable [] committedValue(
       final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
-    failIfFailed();
-
     for (int attempt = 0; attempt < optimisticReadAttempts; attempt++) {
       final long stamp = publishLock.tryOptimisticRead();
       if (stamp == 0) {
@@ -265,7 +278,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private void awaitPendingBytesWithinLimit() {
     flushLock.lock();
     try {
-      while (writer.queuedBytes() > configuration.maxPendingBytes() && failure == null) {
+      while (writer.queuedBytes() > configuration.maxPendingBytes() && failure.get() == null) {
         flushed.awaitUninterruptibly();
       }
     } finally {
@@ -283,13 +296,21 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     }
   }
 
+  /**
+   * Fails the store, once: commits and snapshots fail fast from then on, and everything waiting on
+   * the writer aborts. Reads keep working, since the DirtyIndex and the backend still hold the
+   * exact committed state.
+   */
   private void fail(final Throwable cause) {
-    failure = cause;
-    signalFlushed();
+    if (failure.compareAndSet(null, cause)) {
+      LOG.error("The write-behind store failed; commits and snapshots fail from now on", cause);
+      signalFlushed();
+      failureListeners.forEach(listener -> listener.accept(cause));
+    }
   }
 
   private void failIfFailed() {
-    final var cause = failure;
+    final var cause = failure.get();
     if (cause != null) {
       throw new UnrecoverableException(
           "Expected the write-behind store to be usable, but it failed earlier", cause);
