@@ -37,7 +37,9 @@ public final class RdbmsEngineStateSchema {
           "CAM_RU_RUNTIME_INSTRUCTIONS",
           "CAM_RU_VARIABLE",
           "CAM_RU_VARIABLE_DOCUMENT_STATE",
-          "CAM_RU_JOB");
+          "CAM_RU_JOB",
+          "CAM_RU_EVENT_SCOPE",
+          "CAM_RU_EVENT_TRIGGER");
 
   /** The tables of the process definitions and their lookups. */
   public static final List<String> PROCESS_DEFINITION_TABLES =

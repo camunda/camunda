@@ -402,6 +402,90 @@
     </createIndex>
   </changeSet>
 
+  <!--
+    Event scopes and their triggers, as stored by RdbmsEventScopeStore.
+
+    An event scope is an element instance that can be triggered by events: accepting and
+    interrupted are the flags of the msgpack EventScopeInstance in payload (the source of truth
+    for reads, with the interrupting and boundary element ids), as columns for readability. The
+    process instance columns are those of the scope's element instance.
+  -->
+  <changeSet id="create-event-scope" author="camunda">
+    <createTable tableName="CAM_RU_EVENT_SCOPE">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="event_scope_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="accepting" type="BOOLEAN">
+        <constraints nullable="false"/>
+      </column>
+      <column name="interrupted" type="BOOLEAN">
+        <constraints nullable="false"/>
+      </column>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${engineState.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_EVENT_SCOPE" constraintName="CAM_RU_EVENT_SCOPE_PKEY"
+      columnNames="partition_id, event_scope_key"/>
+    <createIndex tableName="CAM_RU_EVENT_SCOPE" indexName="CAM_RU_EVENT_SCOPE_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
+  </changeSet>
+
+  <!--
+    The triggered events of a scope, waiting to be taken in event_key order (the primary key's).
+    The scope is an event scope, or the process definition for the start event of a process
+    instance to create. variables is the msgpack document of the event, NULL if it has none (as
+    Oracle stores an empty BLOB). process_instance_key is the trigger's, root_process_instance_key
+    and tenant_id those of the event scope; for a start event the process instance to create is
+    its own root, and the tenant the process definition's.
+  -->
+  <changeSet id="create-event-trigger" author="camunda">
+    <createTable tableName="CAM_RU_EVENT_TRIGGER">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="event_scope_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="event_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="element_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="variables" type="${engineState.binaryType}"/>
+      <column name="process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="root_process_instance_key" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_EVENT_TRIGGER" constraintName="CAM_RU_EVENT_TRIGGER_PKEY"
+      columnNames="partition_id, event_scope_key, event_key"/>
+    <createIndex tableName="CAM_RU_EVENT_TRIGGER" indexName="CAM_RU_EVENT_TRIGGER_ROOT_INSTANCE">
+      <column name="partition_id"/>
+      <column name="root_process_instance_key"/>
+    </createIndex>
+  </changeSet>
+
   <!-- Process definitions and their lookups, as stored by RdbmsProcessStore. -->
 
   <!--

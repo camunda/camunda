@@ -20,8 +20,10 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateTest;
+import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
@@ -111,6 +113,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   private int partitionId;
   private MutableVariableState variableState;
   private MutableJobState jobState;
+  private MutableEventScopeInstanceState eventScopeState;
 
   @BeforeAll
   static void startDatabase() throws Exception {
@@ -138,6 +141,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     final var session = database.entitySession(transactionContext, partitionId);
     variableState = new VariableStateImpl(new RdbmsVariableStore(session));
     jobState = new JobStateImpl(new RdbmsJobStore(session));
+    eventScopeState = new EventScopeInstanceStateImpl(new RdbmsEventScopeStore(session));
     return new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
   }
 
@@ -458,6 +462,8 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     variableState.storeVariableDocumentState(2, new VariableDocumentRecord().setScopeKey(100));
     jobState.insertJobRecordActivatable(
         3, new JobRecord().setType("task").setTenantId(TENANT_ID).setProcessInstanceKey(100));
+    eventScopeState.createInstance(100, List.of(), List.of());
+    eventScopeState.triggerEvent(100, 4, wrapString("event"), wrapString("{}"), 100);
     connectionSpy.failNextCommit = true;
 
     // when - the first commit fails after all statements were sent, and is rolled back
@@ -826,6 +832,10 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
               .setProcessInstanceKey(rootKey + 100)
               .setRootProcessInstanceKey(rootKey)
               .setElementInstanceKey(rootKey + 101));
+      // an event scope of the called instance's sub-process, with a trigger
+      eventScopeState.createInstance(rootKey + 101, List.of(), List.of());
+      eventScopeState.triggerEvent(
+          rootKey + 101, rootKey + 3, wrapString("event"), wrapString("{}"), rootKey + 100);
     }
 
     // when
@@ -843,7 +853,9 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
             entry("CAM_RU_RUNTIME_INSTRUCTIONS", 1L),
             entry("CAM_RU_VARIABLE", 2L),
             entry("CAM_RU_VARIABLE_DOCUMENT_STATE", 1L),
-            entry("CAM_RU_JOB", 1L));
+            entry("CAM_RU_JOB", 1L),
+            entry("CAM_RU_EVENT_SCOPE", 1L),
+            entry("CAM_RU_EVENT_TRIGGER", 1L));
     assertThat(committedRowCounts()).containsEntry("CAM_RU_ELEMENT_INSTANCE", 8L);
   }
 

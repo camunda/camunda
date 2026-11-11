@@ -43,6 +43,19 @@ public interface EventScopeStore {
       DirectBuffer variables,
       long processInstanceKey);
 
+  /**
+   * Inserts the trigger of a start event, whose scope is the process definition key and has no
+   * scope instance. The process instance key is the one of the process instance to create.
+   */
+  default void insertStartEventTrigger(
+      final long processDefinitionKey,
+      final long eventKey,
+      final DirectBuffer elementId,
+      final DirectBuffer variables,
+      final long processInstanceKey) {
+    insertTrigger(processDefinitionKey, eventKey, elementId, variables, processInstanceKey);
+  }
+
   /** Deletes the trigger if it exists. */
   void deleteTrigger(long scopeKey, long eventKey);
 
