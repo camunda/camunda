@@ -299,19 +299,22 @@ action handles re-runs early:
 - If the run's commit is no longer the branch head, it skips the deploy and the job stays green.
   Deploying it would roll the snapshot back
   ([#67319](https://github.com/camunda/camunda/issues/67319)).
-- If the run is a re-run of the branch head older than 48h, the job fails with a clear message and
-  is reported to CI analytics with `user_reason: stale-rerun`, so the alert can exclude it by that
-  reason.
+- If the run is a re-run of the branch head and its `fe-*` artifacts have expired, the job fails
+  with a clear message and is reported to CI analytics with `user_reason: stale-rerun`, so the
+  alert can exclude it by that reason. "Re-run all jobs" uploads the artifacts again, so it
+  deploys.
 
 Branches without that action still fail and raise this alert (e.g. INC-8805, INC-8806, INC-8807),
 and can roll the snapshot back if the re-run is within 2 days.
 
-**How to confirm:** the run's `created_at` is days before its `run_started_at`, and
-`run_attempt` is greater than 1:
+**How to confirm:** the run's `created_at` is days before its `run_started_at`, `run_attempt` is
+greater than 1, and the `fe-*` artifacts have `expired: true`:
 
 ```bash
 gh api repos/camunda/camunda/actions/runs/<run_id> \
   --jq '{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}'
+gh api "repos/camunda/camunda/actions/runs/<run_id>/artifacts?per_page=100" \
+  --jq '.artifacts[] | select(.name | startswith("fe-")) | {name, expired, expires_at}'
 ```
 
 **What to do:** check that the latest run on the branch deployed successfully, then close the

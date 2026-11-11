@@ -7,30 +7,29 @@ description: Decides whether a Unified CI snapshot deploy job may publish its sn
 
 inputs:
   github-token:
-    description: 'Token with contents: read and actions: read, used to read the branch head and the run creation time'
+    description: 'Token with contents: read and actions: read, used to read the branch head and the run artifacts'
     required: true
-  max-age-hours:
-    description: 'Maximum run age in hours for a re-run of the branch head; keep in sync with the retention-days of the artifacts the job downloads'
-    required: false
-    default: '48'
+  artifacts:
+    description: 'Newline-separated names of the artifacts of this run that the job downloads'
+    required: true
 
 outputs:
   deploy:
     description: "'false' when this re-run's commit is no longer the branch head, so the snapshot deploy must be skipped; otherwise 'true'"
     value: ${{ steps.check.outputs.deploy }}
   stale:
-    description: "'true' when this is a re-run of the branch head older than max-age-hours (the job fails), otherwise 'false'"
+    description: "'true' when this is a re-run of the branch head and an artifact has expired (the job fails), otherwise 'false'"
     value: ${{ steps.check.outputs.stale }}
 
 runs:
   using: composite
   steps:
-    - name: Check branch head and run age on re-run
+    - name: Check branch head and artifacts on re-run
       id: check
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-        MAX_AGE_HOURS: ${{ inputs.max-age-hours }}
+        ARTIFACTS: ${{ inputs.artifacts }}
       run: |
         set -euo pipefail
         echo "deploy=true" >> "$GITHUB_OUTPUT"
@@ -38,6 +37,10 @@ runs:
 
         if [[ -z "${GH_TOKEN}" ]]; then
           echo "::error::Input github-token is required."
+          exit 1
+        fi
+        if [[ -z "${ARTIFACTS//[[:space:]]/}" ]]; then
+          echo "::error::Input artifacts is required."
           exit 1
         fi
         # First attempts deploy in commit order through the jobs' concurrency queue.
@@ -63,20 +66,27 @@ runs:
           exit 0
         fi
 
-        created_at=$(api "actions/runs/${GITHUB_RUN_ID}" | jq -r '.created_at // empty') || true
-        if [[ -z "${created_at}" ]]; then
-          echo "::warning::Could not determine creation time of run ${GITHUB_RUN_ID}; skipping the stale re-run check."
+        # "Re-run all jobs" uploads the artifacts again, so check them instead of the run age.
+        missing=()
+        while read -r name; do
+          [[ -z "${name}" ]] && continue
+          available=$(api "actions/runs/${GITHUB_RUN_ID}/artifacts?name=${name}" \
+            | jq -r '[.artifacts[] | select(.expired == false)] | length') || true
+          if [[ -z "${available}" ]]; then
+            echo "::warning::Could not list artifact ${name} of run ${GITHUB_RUN_ID}; skipping the stale re-run check."
+            exit 0
+          fi
+          if (( available == 0 )); then
+            missing+=("${name}")
+          fi
+        done <<< "${ARTIFACTS}"
+        if (( ${#missing[@]} == 0 )); then
           exit 0
         fi
-        age_seconds=$(( $(date -u +%s) - $(date -u -d "${created_at}" +%s) ))
-        if (( age_seconds <= MAX_AGE_HOURS * 3600 )); then
-          exit 0
-        fi
-        age_hours=$(( age_seconds / 3600 ))
 
         echo "deploy=false" >> "$GITHUB_OUTPUT"
         echo "stale=true" >> "$GITHUB_OUTPUT"
-        msg="Stale re-run: run ${GITHUB_RUN_ID} was created at ${created_at} (${age_hours}h ago, limit ${MAX_AGE_HOURS}h) and its artifacts have expired. Start a new run on ${GITHUB_REF_NAME} instead (push or workflow_dispatch)."
+        msg="Stale re-run: artifacts ${missing[*]} of run ${GITHUB_RUN_ID} have expired. Start a new run on ${GITHUB_REF_NAME} instead (push or workflow_dispatch)."
         echo "::error::${msg}"
         echo "### :warning: ${msg}" >> "$GITHUB_STEP_SUMMARY"
         exit 1
