@@ -27,6 +27,7 @@ describe('<EmptyMessage />', () => {
 	it('should not render additional info when not provided', async () => {
 		const screen = await render(<EmptyMessage message="No data available" />);
 
-		expect(screen.getByText('Try again later').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('No data available')).toBeVisible();
+		await expect.element(screen.getByText('Try again later')).not.toBeInTheDocument();
 	});
 });

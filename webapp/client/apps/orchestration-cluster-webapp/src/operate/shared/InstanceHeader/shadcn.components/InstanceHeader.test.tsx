@@ -53,7 +53,8 @@ describe('<InstanceHeader />', () => {
 			<InstanceHeader state="ACTIVE" instanceName="orderProcess" headerColumns={[]} bodyColumns={[]} />,
 		);
 
-		expect(screen.getByText(/incidents?$/).elements()).toHaveLength(0);
+		await expect.element(screen.getByText('orderProcess')).toBeVisible();
+		await expect.element(screen.getByText(/incidents?$/)).not.toBeInTheDocument();
 	});
 
 	it('should show the name subtitle', async () => {
@@ -83,7 +84,8 @@ describe('<InstanceHeader />', () => {
 			/>,
 		);
 
-		expect(screen.getByText('hidden-content').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('orderProcess')).toBeVisible();
+		await expect.element(screen.getByText('hidden-content')).not.toBeInTheDocument();
 	});
 
 	it('should render additional content', async () => {

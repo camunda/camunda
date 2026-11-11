@@ -109,8 +109,8 @@ describe('<CopyButton />', () => {
 
 		await screen.rerender(<CopyButton value="first" />);
 
-		expect(screen.getByText('Copy', {exact: true}).elements()).toHaveLength(1);
-		expect(screen.getByText('Copied', {exact: true}).elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should stay in the copy state when the clipboard write is rejected', async () => {
@@ -151,8 +151,8 @@ describe('<CopyButton />', () => {
 		resolveWrite();
 		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		expect(screen.getByText('Copy', {exact: true}).elements()).toHaveLength(1);
-		expect(screen.getByText('Copied', {exact: true}).elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should not show copied feedback for a stale write that resolves after the value cycled back', async () => {
@@ -172,8 +172,8 @@ describe('<CopyButton />', () => {
 		resolveWrite();
 		await new Promise((resolve) => setTimeout(resolve, 50));
 
-		expect(screen.getByText('Copy', {exact: true}).elements()).toHaveLength(1);
-		expect(screen.getByText('Copied', {exact: true}).elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Copied', {exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should use the tooltip label for the icon-only variant', async () => {
