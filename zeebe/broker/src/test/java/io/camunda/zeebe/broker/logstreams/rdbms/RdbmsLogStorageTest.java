@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,7 +36,13 @@ final class RdbmsLogStorageTest {
 
   private static final long TERM = 3;
   private static final Config CONFIG =
-      new Config(Duration.ofMillis(500), Duration.ofMillis(5), Duration.ofMillis(20), 1024, 2);
+      new Config(
+          Duration.ofMillis(500),
+          Duration.ofMillis(5),
+          Duration.ofMillis(20),
+          1024,
+          2,
+          Duration.ZERO);
 
   private final InMemoryLogBlockRepository repository = new InMemoryLogBlockRepository();
   private final List<String> events = new CopyOnWriteArrayList<>();
@@ -194,6 +201,73 @@ final class RdbmsLogStorageTest {
   }
 
   @Test
+  void shouldWaitForMoreBlocksWithinCommitLinger() {
+    // given
+    storage.close();
+    storage = lingeringStorage(Duration.ofMillis(500));
+
+    // when
+    append(1, 1);
+    append(2, 2);
+    append(3, 3);
+
+    // then
+    await().until(() -> repository.blocks().size() == 3);
+    assertThat(repository.appendCalls())
+        .extracting(call -> call.stream().map(LogBlock::lowPosition).toList())
+        .containsExactly(List.of(1L, 2L, 3L));
+  }
+
+  @Test
+  void shouldCommitOnceCommitLingerHasPassed() {
+    // given
+    storage.close();
+    storage = lingeringStorage(Duration.ofMillis(50));
+
+    // when
+    append(1, 3);
+
+    // then
+    await().until(() -> events.contains("commit 3"));
+    assertThat(repository.appendCalls()).hasSize(1);
+  }
+
+  @Test
+  void shouldNotLingerPastMaxBatchBytes() {
+    // given
+    storage.close();
+    storage = lingeringStorage(Duration.ofMillis(500));
+
+    // when
+    append(1, 1, 600);
+    append(2, 2, 600);
+    append(3, 3, 600);
+
+    // then
+    await().until(() -> repository.blocks().size() == 3);
+    assertThat(repository.appendCalls())
+        .extracting(call -> call.stream().map(LogBlock::lowPosition).toList())
+        .containsExactly(List.of(1L), List.of(2L), List.of(3L));
+  }
+
+  @Test
+  void shouldTakeCommitLingerFromEnvironment() {
+    // when
+    final var config = Config.fromEnvironment(Map.of(Config.COMMIT_LINGER_ENV, "15"));
+
+    // then
+    assertThat(config.commitLinger()).isEqualTo(Duration.ofMillis(15));
+  }
+
+  @Test
+  void shouldNotLingerWithoutOrWithInvalidEnvironmentValue() {
+    // when / then
+    assertThat(Config.fromEnvironment(Map.of()).commitLinger()).isZero();
+    assertThat(Config.fromEnvironment(Map.of(Config.COMMIT_LINGER_ENV, "soon")).commitLinger())
+        .isZero();
+  }
+
+  @Test
   void shouldNotWriteMoreThanMaxBatchBytesInOneTransaction() {
     // given
     repository.holdAppends();
@@ -311,6 +385,19 @@ final class RdbmsLogStorageTest {
     // when / then
     assertThatThrownBy(() -> readOnly.append(1, 3, bytes(1), new RecordingListener()))
         .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  private RdbmsLogStorage lingeringStorage(final Duration commitLinger) {
+    final var lingering =
+        RdbmsLogStorage.writable(
+            "test-writer",
+            repository,
+            TERM,
+            CONFIG.withCommitLinger(commitLinger),
+            meterRegistry,
+            failures::add);
+    lingering.addAppendedListener(position -> events.add("appended " + position));
+    return lingering;
   }
 
   private void append(final long low, final long high) {
