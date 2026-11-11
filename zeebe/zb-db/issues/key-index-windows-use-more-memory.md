@@ -1,13 +1,13 @@
-# Key index windows can use about 80 MB per partition
+# Key index windows can use about 30 MB per partition
 
 Status: open.
 
 ## Problem
 
 Before the windows, a column family above `keyIndexMaxKeys` held no keys in the index. Now each
-column family with a window policy can hold `keyIndexMaxKeys` keys all the time. Six column families have a policy: the four deadline column families, `ELEMENT_INSTANCE_PARENT_CHILD` and `NUMBER_OF_TAKEN_SEQUENCE_FLOWS`. All six can be at the cap. One key needs about 100 to
-130 bytes. With the default cap of 100000 keys, this is about 13 MB per column family and about
-80 MB per partition. The cap limits the memory, but it is new memory.
+column family with a window policy can hold `keyIndexMaxKeys` keys all the time. 23 column families have a policy (see section 5.3 of the design). All of them can be at the cap. One key needs about 100 to
+130 bytes. With the default cap of 10000 keys, this is about 1.3 MB per column family and about
+30 MB per partition. The cap limits the memory, but it is new memory.
 
 ## Idea
 

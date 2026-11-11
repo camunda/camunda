@@ -268,8 +268,8 @@ The wait runs on the snapshot store's actor, on the broker's I/O-bound pool.
 | `flushTimeout`     | 30 s    | Limit for the snapshot wait and for close.                                                                    |
 | `flushThresholdBytes` | 16 MiB | Unflushed bytes that end the flush delay. |
 | `flushDelay`       | 0 (broker: 5 s) | How long the writer waits after the oldest unflushed commit before it writes (section 4.7).        |
-| `keyIndexColumnFamilies` | 6 column families | IDs of the column families that have a key index (section 5).                                       |
-| `keyIndexMaxKeys`  | 100000  | The most keys that one key index holds.                                                                       |
+| `keyIndexColumnFamilies` | 23 column families | IDs of the column families that have a key index (section 5).                                       |
+| `keyIndexMaxKeys`  | 10000   | The most keys that one key index holds.                                                                       |
 
 Wiring:
 
@@ -367,7 +367,7 @@ name. The broker does not expose it. A column family without a policy has `DISAB
 |    Policy      |                                             Column families                                             |
 |----------------|---------------------------------------------------------------------------------------------------------|
 | `KEEP_LOWEST`  | `TIMER_DUE_DATES`, `JOB_DEADLINES`, `MESSAGE_DEADLINES`, `JOB_BACKOFF`: scans start at the next due entry. |
-| `KEEP_HIGHEST` | `ELEMENT_INSTANCE_PARENT_CHILD`, `NUMBER_OF_TAKEN_SEQUENCE_FLOWS`: keys start with the parent key, and that key grows with time, so scans hit the newest parents. |
+| `KEEP_HIGHEST` | Keys start with an element instance, scope, job or process instance key. That key grows with time, so reads and scans hit the newest keys: `ELEMENT_INSTANCE_PARENT_CHILD`, `NUMBER_OF_TAKEN_SEQUENCE_FLOWS`, `ELEMENT_INSTANCE_KEY`, `ELEMENT_INSTANCE_CHILD_PARENT`, `EVENT_SCOPE`, `EVENT_TRIGGER`, `VARIABLES`, `TIMERS`, `PROCESS_SUBSCRIPTION_BY_KEY`, `SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME`, `CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY`, `SECRET_REFERENCES_BY_JOB`, `BANNED_INSTANCE`, `SUSPENDED_PROCESS_INSTANCES`, `JOBS`, `JOB_STATES`, `RUNTIME_INSTRUCTIONS`, `AWAIT_WORKLOW_RESULT`, `COMPENSATION_SUBSCRIPTION` (its keys start with the tenant, which is constant for one tenant). Most of their lookups and scans find nothing (the engine checks for variables, triggers, timers and subscriptions when an element ends), so the index answers them without a storage read. |
 
 The window of a `KEEP_HIGHEST` column family helps only with scans on recent keys. A scan under
 an old parent starts below the bound and uses a view.
@@ -417,5 +417,5 @@ Not done:
    benchmarks answer this.
 6. **The key index refill is a pause on the processing thread.** See
    [the issue](../issues/refill-stalls-the-processing-thread.md).
-7. **The key index windows add memory.** Six column families can hold 100000 keys each, about 80 MB
+7. **The key index windows add memory.** 23 column families can hold 10000 keys each, about 30 MB
    per partition. See [the issue](../issues/key-index-windows-use-more-memory.md).

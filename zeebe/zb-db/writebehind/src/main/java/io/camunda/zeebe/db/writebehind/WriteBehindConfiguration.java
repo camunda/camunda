@@ -9,10 +9,10 @@ package io.camunda.zeebe.db.writebehind;
 
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.Duration;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Settings of one write-behind DB. All sizes are per DB, so per partition.
@@ -46,30 +46,50 @@ public record WriteBehindConfiguration(
     Duration flushDelay,
     long flushThresholdBytes) {
 
-  public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 100_000;
-
-  public static final Set<Long> DEFAULT_KEY_INDEX_COLUMN_FAMILIES =
-      Set.of(
-          (long) ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD.getValue(),
-          (long) ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS.getValue(),
-          (long) ZbColumnFamilies.TIMER_DUE_DATES.getValue(),
-          (long) ZbColumnFamilies.JOB_DEADLINES.getValue(),
-          (long) ZbColumnFamilies.JOB_BACKOFF.getValue(),
-          (long) ZbColumnFamilies.MESSAGE_DEADLINES.getValue());
+  public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 10_000;
 
   /**
    * Column families whose scans always start at one end of the key space, so a window at that end
    * serves them although they hold more keys than the cap.
+   *
+   * <p>The first group is scanned from the lowest key (next due entry). The second group has keys
+   * that start with an element instance, scope, job or process instance key, which grows with time,
+   * so the engine reads and scans the newest keys. Most of their lookups and scans find nothing:
+   * the engine checks for variables, event triggers, timers and subscriptions when an element ends.
    */
   private static final Map<ZbColumnFamilies, KeyIndexPolicy> HOTSPOT_POLICIES =
-      new EnumMap<>(
-          Map.of(
-              ZbColumnFamilies.TIMER_DUE_DATES, KeyIndexPolicy.KEEP_LOWEST,
-              ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
-              ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
-              ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST,
-              ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST,
-              ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, KeyIndexPolicy.KEEP_HIGHEST));
+      Map.ofEntries(
+          Map.entry(ZbColumnFamilies.TIMER_DUE_DATES, KeyIndexPolicy.KEEP_LOWEST),
+          Map.entry(ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
+          Map.entry(ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
+          Map.entry(ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST),
+          Map.entry(ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.ELEMENT_INSTANCE_KEY, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.EVENT_SCOPE, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.EVENT_TRIGGER, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.VARIABLES, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.TIMERS, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(
+              ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(
+              ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.SECRET_REFERENCES_BY_JOB, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.BANNED_INSTANCE, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.SUSPENDED_PROCESS_INSTANCES, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.JOBS, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.JOB_STATES, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.RUNTIME_INSTRUCTIONS, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.AWAIT_WORKLOW_RESULT, KeyIndexPolicy.KEEP_HIGHEST),
+          Map.entry(ZbColumnFamilies.COMPENSATION_SUBSCRIPTION, KeyIndexPolicy.KEEP_HIGHEST));
+
+  /** Every column family with a policy has a key index by default. */
+  public static final Set<Long> DEFAULT_KEY_INDEX_COLUMN_FAMILIES =
+      HOTSPOT_POLICIES.keySet().stream()
+          .map(columnFamily -> (long) columnFamily.getValue())
+          .collect(Collectors.toUnmodifiableSet());
 
   private static final Map<Long, KeyIndexPolicy> DEFAULT_KEY_INDEX_POLICIES =
       toIds(HOTSPOT_POLICIES);
