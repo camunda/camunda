@@ -103,8 +103,7 @@ public final class PolicyUpdateCommandMapper {
     return Either.right(commands);
   }
 
-  /** The entries of the chunk that name no entity type, so no command can be derived from them. */
-  static List<String> findUnmappableEntries(final PolicyUpdateRecordValue chunk) {
+  private static List<String> findUnmappableEntries(final PolicyUpdateRecordValue chunk) {
     final var errors = new ArrayList<String>();
     for (final var membership : chunk.getMemberships()) {
       if (!isMembershipTarget(membership.getTargetType())) {

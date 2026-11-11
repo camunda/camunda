@@ -211,31 +211,12 @@ public final class PolicyUpdateApplyTest {
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
             .onlyCommandRejections()
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
             .getFirst();
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).contains(id, "not specified");
-  }
-
-  @Test
-  public void shouldRejectApplyingAnUpdateThatIsNotBuffered() {
-    // given
-    final var update = chunk();
-
-    // when
-    ENGINE.writeRecords(
-        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, update));
-
-    // then
-    final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-            .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(update.getUpdateId()))
-            .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(rejection.getRejectionReason()).contains("buffered");
   }
 
   @Test

@@ -13,17 +13,14 @@ import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * The buffer of the open policy update on partition 1. There is at most one open update: its chunks
- * are buffered until all of them are there, and are applied one after another.
+ * The buffer of policy updates on partition 1: the chunks of an update are buffered until all of
+ * them are there, and are then applied one after another.
  */
 @NullMarked
 public interface PolicyUpdateState {
 
-  /** The open update, if there is one. */
-  Optional<PersistedPolicyUpdate> getOpenUpdate();
-
-  /** Whether the chunk of the update is buffered. */
-  boolean hasChunk(String updateId, int chunkIndex);
+  /** The buffered update, if at least one of its chunks is buffered. */
+  Optional<PersistedPolicyUpdate> getUpdate(String updateId);
 
   /** The buffered chunk of the update, if it is there. */
   Optional<PolicyUpdateRecord> getChunk(String updateId, int chunkIndex);

@@ -32,17 +32,4 @@ final class PolicyUpdateRecords {
         .setChunkIndex(chunkIndex)
         .setChunkCount(update.getChunkCount());
   }
-
-  /**
-   * Whether both records describe the same update: the same policy, policy version, base policy
-   * version, Hub sequence and chunk count. The update ID and the chunk index are not compared.
-   */
-  static boolean hasSameIdentifiers(
-      final PolicyUpdateRecordValue update, final PolicyUpdateRecordValue chunk) {
-    return update.getPolicyId().equals(chunk.getPolicyId())
-        && update.getPolicyVersion() == chunk.getPolicyVersion()
-        && update.getBasePolicyVersion() == chunk.getBasePolicyVersion()
-        && update.getSeqNo() == chunk.getSeqNo()
-        && update.getChunkCount() == chunk.getChunkCount();
-  }
 }

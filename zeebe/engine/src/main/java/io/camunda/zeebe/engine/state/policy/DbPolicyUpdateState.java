@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -50,25 +49,9 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
   }
 
   @Override
-  public Optional<PersistedPolicyUpdate> getOpenUpdate() {
-    final var openUpdateId = new AtomicReference<String>();
-    updateColumnFamily.whileTrue(
-        key -> {
-          openUpdateId.set(key.toString());
-          return false;
-        });
-    if (openUpdateId.get() == null) {
-      return Optional.empty();
-    }
-    updateId.wrapString(openUpdateId.get());
-    return Optional.ofNullable(updateColumnFamily.get(updateId, PersistedPolicyUpdate::new));
-  }
-
-  @Override
-  public boolean hasChunk(final String updateId, final int chunkIndex) {
+  public Optional<PersistedPolicyUpdate> getUpdate(final String updateId) {
     this.updateId.wrapString(updateId);
-    this.chunkIndex.wrapInt(chunkIndex);
-    return chunkColumnFamily.exists(updateIdAndChunkIndex);
+    return Optional.ofNullable(updateColumnFamily.get(this.updateId, PersistedPolicyUpdate::new));
   }
 
   @Override
@@ -86,11 +69,12 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
     final var update =
         Optional.ofNullable(updateColumnFamily.get(updateId, PersistedPolicyUpdate::new))
             .orElseGet(() -> new PersistedPolicyUpdate().setUpdate(chunk));
-    update.setBufferedChunkCount(update.getBufferedChunkCount() + 1);
-    updateColumnFamily.upsert(updateId, update);
-
     chunkIndex.wrapInt(chunk.getChunkIndex());
-    chunkColumnFamily.insert(updateIdAndChunkIndex, bufferedChunk.setChunk(chunk));
+    if (!chunkColumnFamily.exists(updateIdAndChunkIndex)) {
+      update.setBufferedChunkCount(update.getBufferedChunkCount() + 1);
+    }
+    updateColumnFamily.upsert(updateId, update);
+    chunkColumnFamily.upsert(updateIdAndChunkIndex, bufferedChunk.setChunk(chunk));
   }
 
   @Override
