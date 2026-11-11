@@ -880,6 +880,7 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setMemoryLimit(unifiedRocksDb.getMemoryLimit());
     brokerRocksDb.setMemoryAllocationStrategy(unifiedRocksDb.getMemoryAllocationStrategy());
     brokerRocksDb.setMemoryFraction(unifiedRocksDb.getMemoryFraction());
+    brokerRocksDb.setMemoryMinimum(unifiedRocksDb.getMemoryMinimum());
     brokerRocksDb.setMaxOpenFiles(unifiedRocksDb.getMaxOpenFiles());
     brokerRocksDb.setMaxWriteBufferNumber(unifiedRocksDb.getMaxWriteBufferNumber());
     brokerRocksDb.setMinWriteBufferNumberToMerge(unifiedRocksDb.getMinWriteBufferNumberToMerge());
