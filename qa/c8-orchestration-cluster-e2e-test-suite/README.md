@@ -211,8 +211,6 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 - **Utilities/fixtures**: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
 - **Test data**: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
 
-`tests/tasklist/task-suspension.spec.ts` covers suspended task markers, action tooltips, read-only forms, resumption, and unsaved form input against a real backend. It reuses the existing user-task BPMN models with unique process IDs and a dedicated text/number/checkbox form. It requires an image containing merge commit `037526fc174` and verifies that the task list and open details update in place after suspension or resumption, without reloading or reopening the task. Unsaved input is checked while the same form remains mounted, not across navigation.
-
 ---
 
 ## GitHub Actions for Testing
@@ -264,7 +262,6 @@ We welcome contributions! To contribute:
 > [!IMPORTANT]
 > **Do not request a review until the suite has run and the results have been verified.**
 > Before assigning reviewers to your PR:
->
 > 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch instead.
 > 2. Wait for the workflow to complete.
 > 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
