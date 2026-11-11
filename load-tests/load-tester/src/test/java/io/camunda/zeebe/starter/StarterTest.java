@@ -145,7 +145,7 @@ class StarterTest {
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
-  void shouldWaitForInFlightRequestsWhenClosingTheCreator() throws Exception {
+  void shouldWaitForPendingRequestsWhenStoppingTheCreator() throws Exception {
     // given
     final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
     final var pendingResponse = new CompletedFuture<ProcessInstanceEvent>();
@@ -179,14 +179,15 @@ class StarterTest {
             });
 
     // when
-    final var closed = CompletableFuture.runAsync(creator::close);
+    final var stopped = new CompletableFuture<Void>();
+    creator.stop(() -> stopped.complete(null));
 
     // then
-    assertThat(closed)
+    assertThat(stopped)
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(TimeoutException.class);
     pendingResponse.complete(mock(ProcessInstanceEvent.class));
-    assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(stopped).succeedsWithin(Duration.ofSeconds(5));
   }
 
   private static final class CompletedFuture<T> extends CompletableFuture<T>
