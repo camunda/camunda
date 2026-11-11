@@ -8,49 +8,69 @@
 package io.camunda.zeebe.engine.state.variable;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public final class VariableInstance extends UnpackedObject implements DbValue {
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class VariableInstance extends MsgpackBufferValue<VariableInstance>
+    implements DbValue {
 
-  private final LongProperty keyProp = new LongProperty("key");
-  private final BinaryProperty valueProp = new BinaryProperty("value");
-  private final ObjectProperty<VariableMetadataRecord> metadataProp =
-      new ObjectProperty<>("metadata", new VariableMetadataRecord());
+  long key;
 
-  public VariableInstance() {
-    super(3);
-    declareProperty(keyProp).declareProperty(valueProp).declareProperty(metadataProp);
-  }
+  @MsgpackProperty(binary = true)
+  DirectBuffer value = Decoding.EMPTY;
+
+  // the metadata record is not migrated yet, so it is decoded by reference to the input buffer
+  final VariableMetadataRecord metadata = new VariableMetadataRecord();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public VariableInstance() {}
 
   public VariableMetadataRecord getMetadata() {
-    return metadataProp.getValue();
+    return metadata;
   }
 
   public VariableInstance setMetadata(final VariableMetadataRecord metadata) {
-    metadataProp.getValue().wrap(metadata);
+    this.metadata.wrap(metadata);
     return this;
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key;
   }
 
   public VariableInstance setKey(final long key) {
-    keyProp.setValue(key);
+    this.key = key;
     return this;
   }
 
   public VariableInstance setValue(final DirectBuffer value, final int offset, final int length) {
-    valueProp.setValue(value, offset, length);
+    this.value = BufferUtil.cloneBuffer(value, offset, length);
     return this;
   }
 
   public DirectBuffer getValue() {
-    return valueProp.getValue();
+    return value;
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    // the nested metadata references the buffer it is read from, so it needs its own copy
+    final byte[] bytes = new byte[length];
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(new UnsafeBuffer(bytes), 0, length);
   }
 }

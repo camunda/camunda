@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -98,7 +99,7 @@ final class VariableInstanceTest {
     return variable;
   }
 
-  private static DirectBuffer serialize(final UnpackedObject object) {
+  private static DirectBuffer serialize(final BufferWriter object) {
     final var buffer = new UnsafeBuffer(new byte[object.getLength()]);
     object.write(buffer, 0);
     return buffer;
