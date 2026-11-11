@@ -25,10 +25,12 @@ import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -36,28 +38,37 @@ import org.slf4j.helpers.NOPLogger;
 
 /** Maps arbitrary {@link Throwable} to {@link StatusRuntimeException} and logs the exception. */
 public final class GrpcErrorMapper {
+  private static final Duration TIMEOUT_LOG_INTERVAL = Duration.ofSeconds(10);
+
+  // maps the details of a response without logging them a second time
+  private static final GrpcErrorMapper SILENT_MAPPER = new GrpcErrorMapper(NOPLogger.NOP_LOGGER);
+
+  private final Logger logger;
+  // Timeouts arrive in floods when the gateway or broker is overloaded, so only they are throttled
+  private final Logger timeoutLogger;
+
+  public GrpcErrorMapper() {
+    this(Loggers.GATEWAY_LOGGER);
+  }
+
+  GrpcErrorMapper(final Logger logger) {
+    this.logger = logger;
+    timeoutLogger = new ThrottledLogger(logger, TIMEOUT_LOG_INTERVAL);
+  }
+
   public StatusRuntimeException mapError(final Throwable error) {
-    return mapError(error, Loggers.GATEWAY_LOGGER);
+    return StatusProto.toStatusRuntimeException(mapErrorToStatus(error, error));
   }
 
-  StatusRuntimeException mapError(final Throwable error, final Logger logger) {
-    return StatusProto.toStatusRuntimeException(mapErrorToStatus(error, logger));
-  }
-
-  private Status mapErrorToStatus(final Throwable error, final Logger logger) {
-    return mapErrorToStatus(error, error, logger);
-  }
-
-  private Status mapErrorToStatus(
-      final Throwable rootError, final Throwable error, final Logger logger) {
+  private Status mapErrorToStatus(final Throwable rootError, final Throwable error) {
     final Builder builder = Status.newBuilder();
 
     switch (error) {
       case final ExecutionException e -> {
-        return mapErrorToStatus(rootError, e.getCause(), logger);
+        return mapErrorToStatus(rootError, e.getCause());
       }
       case final BrokerErrorException brokerError -> {
-        final Status status = mapBrokerErrorToStatus(rootError, brokerError.getError(), logger);
+        final Status status = mapBrokerErrorToStatus(rootError, brokerError.getError());
         builder.mergeFrom(status);
       }
       case final BrokerRejectionException rejection -> {
@@ -69,9 +80,9 @@ public final class GrpcErrorMapper {
         builder
             .setCode(Code.DEADLINE_EXCEEDED_VALUE)
             .setMessage("Time out between gateway and broker: " + error.getMessage());
-        logger.debug(
-            "Expected to handle gRPC request, but request timed out between gateway and broker",
-            rootError);
+        timeoutLogger.debug(
+            "Expected to handle gRPC request, but request timed out between gateway and broker: {}",
+            error.getMessage());
       }
       case final MsgpackPropertyException ignored -> {
         builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
@@ -105,8 +116,7 @@ public final class GrpcErrorMapper {
         // RequestRetriesExhaustedException will sometimes carry suppressed exceptions which can be
         // added/mapped as error details to give more information to the user
         for (final Throwable suppressed : error.getSuppressed()) {
-          builder.addDetails(
-              Any.pack(mapErrorToStatus(rootError, suppressed, NOPLogger.NOP_LOGGER)));
+          builder.addDetails(Any.pack(SILENT_MAPPER.mapErrorToStatus(rootError, suppressed)));
         }
 
         // this error occurs when all partitions have exhausted for requests which have no fixed
@@ -160,8 +170,7 @@ public final class GrpcErrorMapper {
     return builder.build();
   }
 
-  private Status mapBrokerErrorToStatus(
-      final Throwable rootError, final BrokerError error, final Logger logger) {
+  private Status mapBrokerErrorToStatus(final Throwable rootError, final BrokerError error) {
     final Builder builder = Status.newBuilder();
     String message = error.getMessage();
 
