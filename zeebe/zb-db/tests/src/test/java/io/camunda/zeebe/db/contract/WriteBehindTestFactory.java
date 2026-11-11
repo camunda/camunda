@@ -8,10 +8,12 @@
 package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.writebehind.KeyIndexPolicy;
 import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import java.util.Map;
 import java.util.Set;
 
 /** Write-behind DB over the same RocksDB setup as {@link RocksDbTestFactory}. */
@@ -29,6 +31,24 @@ final class WriteBehindTestFactory {
       ZeebeDbFactory<ColumnFamilyType> createWithKeyIndex() {
     return create(
         WriteBehindConfiguration.defaults().withKeyIndexColumnFamilies(Set.of(0L, 1L, 2L, 3L)));
+  }
+
+  /**
+   * Like {@link #createWithKeyIndex()}, but the index of every column family keeps a window of at
+   * most 4 keys: the lowest ones for the IDs 0 and 1, the highest ones for the IDs 2 and 3.
+   */
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> createWithKeyIndexWindow() {
+    return create(
+        WriteBehindConfiguration.defaults()
+            .withKeyIndexColumnFamilies(Set.of(0L, 1L, 2L, 3L))
+            .withKeyIndexMaxKeys(4)
+            .withKeyIndexPolicies(
+                Map.of(
+                    0L, KeyIndexPolicy.KEEP_LOWEST,
+                    1L, KeyIndexPolicy.KEEP_LOWEST,
+                    2L, KeyIndexPolicy.KEEP_HIGHEST,
+                    3L, KeyIndexPolicy.KEEP_HIGHEST)));
   }
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>

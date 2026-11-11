@@ -145,8 +145,8 @@ public record WriteBehindConfiguration(
         keyIndexPolicies);
   }
 
-  /** For tests: replaces the policies of the column families by ID. */
-  WriteBehindConfiguration withKeyIndexPolicies(final Map<Long, KeyIndexPolicy> policies) {
+  /** Replaces the policies by column family ID. Production code uses the fixed table. */
+  public WriteBehindConfiguration withKeyIndexPolicies(final Map<Long, KeyIndexPolicy> policies) {
     return new WriteBehindConfiguration(
         maxPendingBytes,
         cacheMaxBytes,
