@@ -53,7 +53,8 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
-import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
+import io.camunda.zeebe.engine.state.metrics.DbUsageMetricStore;
+import io.camunda.zeebe.engine.state.metrics.UsageMetricStateImpl;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentDefinitionState;
@@ -330,7 +331,7 @@ public class RocksDbStateStores implements ProcessingStateStores {
 
   @Override
   public MutableUsageMetricState usageMetricState() {
-    return new DbUsageMetricState(zeebeDb, transactionContext);
+    return new UsageMetricStateImpl(new DbUsageMetricStore(zeebeDb, transactionContext));
   }
 
   @Override

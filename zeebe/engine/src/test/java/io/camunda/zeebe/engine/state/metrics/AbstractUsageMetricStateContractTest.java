@@ -9,46 +9,72 @@ package io.camunda.zeebe.engine.state.metrics;
 
 import static io.camunda.zeebe.engine.state.metrics.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
-import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ProcessingStateExtension.class)
-public class DbUsageMetricStateTest {
+/**
+ * Behaviour every {@link MutableUsageMetricState} implementation must share. Each backend runs
+ * these tests by extending this class.
+ */
+public abstract class AbstractUsageMetricStateContractTest {
 
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private static final long ASSIGNEE_HASH_2 = getStringHashValue("assignee2");
   private static final long ASSIGNEE_HASH_3 = getStringHashValue("assignee3");
-  private ZeebeDb<ZbColumnFamilies> zeebeDb;
-  private TransactionContext transactionContext;
-  private InstantSource mockClock;
-  private MutableUsageMetricState state;
+  protected MutableUsageMetricState state;
+
+  /** Creates the state under test. Called before each test. */
+  protected abstract MutableUsageMetricState createUsageMetricState();
 
   @BeforeEach
   void beforeEach() {
-    mockClock = mock(InstantSource.class);
-    state = new DbUsageMetricState(zeebeDb, transactionContext);
+    state = createUsageMetricState();
+  }
+
+  @Test
+  public void shouldHaveNoActiveBucketBeforeAnythingIsRecorded() {
+    // when - then
+    assertThat(state.getActiveBucket()).isNull();
+  }
+
+  @Test
+  public void shouldCreateActiveBucketWithoutStartTimeOnFirstRecord() {
+    // when
+    state.recordRPIMetric("tenant1");
+
+    // then
+    final var actual = state.getActiveBucket();
+    assertThat(actual.getFromTime()).isEqualTo(PersistedUsageMetrics.TIME_NOT_SET);
+    assertThat(actual.getToTime()).isEqualTo(PersistedUsageMetrics.TIME_NOT_SET);
+    assertThat(actual.getTenantRPIMap()).containsExactlyEntriesOf(Map.of("tenant1", 1L));
+  }
+
+  @Test
+  public void shouldDiscardRecordedMetricsOnReset() {
+    // given
     state.resetActiveBucket(1L);
+    state.recordRPIMetric("tenant1");
+    state.recordEDIMetric("tenant1");
+    state.recordTUMetric("tenant1", "assignee1");
+
+    // when
+    state.resetActiveBucket(2L);
+
+    // then
+    final var actual = state.getActiveBucket();
+    assertThat(actual.getFromTime()).isEqualTo(2L);
+    assertThat(actual.getTenantRPIMap()).isEmpty();
+    assertThat(actual.getTenantEDIMap()).isEmpty();
+    assertThat(actual.getTenantTUMap()).isEmpty();
   }
 
   @Test
   public void shouldResetActiveBucket() {
-    // given
-    final var eventTime = InstantSource.system().millis();
-    when(mockClock.millis()).thenReturn(eventTime);
-
     // when
     state.resetActiveBucket(1L);
 
@@ -64,8 +90,6 @@ public class DbUsageMetricStateTest {
   @Test
   public void shouldRecordRPIMetrics() {
     // given
-    final var eventTime = InstantSource.system().millis();
-    when(mockClock.millis()).thenReturn(eventTime);
     state.resetActiveBucket(1L);
 
     // when
@@ -88,8 +112,6 @@ public class DbUsageMetricStateTest {
   @Test
   public void shouldRecordEDIMetrics() {
     // given
-    final var eventTime = InstantSource.system().millis();
-    when(mockClock.millis()).thenReturn(eventTime);
     state.resetActiveBucket(1L);
 
     // when
@@ -112,8 +134,6 @@ public class DbUsageMetricStateTest {
   @Test
   public void shouldRecordTUMetrics() {
     // given
-    final var eventTime = InstantSource.system().millis();
-    when(mockClock.millis()).thenReturn(eventTime);
     state.resetActiveBucket(1L);
 
     // when
