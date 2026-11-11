@@ -119,7 +119,7 @@ public final class PolicyUpdateAppendChunkProcessor
               "Expected no other policy update to be open when appending a chunk of '%s', but '%s' is still open"
                   .formatted(chunk.getUpdateId(), update.getUpdateId())));
     }
-    if (!hasSameIdentifiers(update, chunk)) {
+    if (!PolicyUpdateRecords.hasSameIdentifiers(update, chunk)) {
       return Optional.of(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
@@ -146,14 +146,5 @@ public final class PolicyUpdateAppendChunkProcessor
                   .formatted(chunk.getChunkIndex(), chunk.getUpdateId())));
     }
     return Optional.empty();
-  }
-
-  private static boolean hasSameIdentifiers(
-      final PolicyUpdateRecord update, final PolicyUpdateRecord chunk) {
-    return update.getPolicyId().equals(chunk.getPolicyId())
-        && update.getPolicyVersion() == chunk.getPolicyVersion()
-        && update.getBasePolicyVersion() == chunk.getBasePolicyVersion()
-        && update.getSeqNo() == chunk.getSeqNo()
-        && update.getChunkCount() == chunk.getChunkCount();
   }
 }
