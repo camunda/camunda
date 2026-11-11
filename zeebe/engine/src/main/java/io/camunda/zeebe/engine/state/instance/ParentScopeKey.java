@@ -8,22 +8,29 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 
-public class ParentScopeKey extends UnpackedObject implements DbValue {
-  private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
+ */
+@MsgpackPojo
+public final class ParentScopeKey extends MsgpackBufferValue<ParentScopeKey> implements DbValue {
 
-  public ParentScopeKey() {
-    super(1);
-    declareProperty(keyProp);
-  }
+  long parentScopeKey = -1L;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public ParentScopeKey() {}
 
   public void set(final long key) {
-    keyProp.setValue(key);
+    parentScopeKey = key;
   }
 
   public long get() {
-    return keyProp.getValue();
+    return parentScopeKey;
   }
 }
