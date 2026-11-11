@@ -253,7 +253,9 @@ jobs:
     name: "Lint / Flattened POM Metadata"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
@@ -262,6 +264,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      # Installed before the Maven build so an apt outage fails the job before
+      # spending minutes on the build; the composite below then skips its own install.
+      - name: Install xmllint
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libxml2-utils
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: validate-pom-metadata
