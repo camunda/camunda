@@ -244,8 +244,9 @@ jobs:
           Flaky in nightly cells: ${CELLS}
           ${start}
 
-          It was just run many times, each shard on its own fresh docker-compose stack,
-          with --retries=0. The per-pass scores (pass rate per cell and the most common
+          Each shard just ran the nightly's whole test selection (the other tests run
+          alongside it, as in the nightly) on its own fresh docker-compose stack. A run
+          counts as failed when the test's first attempt failed. The per-pass scores (pass rate per cell and the most common
           failure messages) are:
           ${scores}
 

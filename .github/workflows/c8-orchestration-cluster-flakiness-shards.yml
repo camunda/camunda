@@ -1,6 +1,6 @@
 # description: Reusable workflow — one validation pass of the OC flakiness fix agent.
-#              Runs ONE test N times per shard, each shard on its own docker-compose
-#              stack started the way the matching nightly starts it, for every cell
+#              Each shard runs the matching nightly's whole test selection on its own
+#              docker-compose stack started the way that nightly starts it, for every cell
 #              (e2e-v1 / e2e-v2 / e2e / api-profiles / api-all-in-one) the test was
 #              flaky in. Called only by c8-orchestration-cluster-flakiness-fix.yml.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
@@ -29,9 +29,6 @@ on:
         required: true
         type: string
       repeat_each:
-        required: true
-        type: number
-      workers:
         required: true
         type: number
       spec:
@@ -260,14 +257,13 @@ jobs:
           npm install
           npx playwright install --with-deps chromium
 
-      # The whole spec file runs, not the target alone: nightly flakes often
-      # depend on the other tests of the file (shared beforeAll/afterAll
-      # hooks, their data, their load), and a target run alone on an idle
-      # stack passed 50/50 for tests that were flaky every other night. The
-      # score counts the target only. The list check runs on THIS ref
-      # because a fix can rename or move the test. --no-deps keeps the
-      # project's teardown project from running its own specs in full.
-      - name: Run the spec file ${{ inputs.repeat_each }} times
+      # Each shard runs what the matching nightly runs (same projects, filters,
+      # workers and retries), not the target alone: the nightly flakes come
+      # from the rest of the suite (other files' data and cleanup, full-suite
+      # load), and the target alone or its spec file alone passed 50/50 for
+      # tests flaky on most nights. The score counts the target only. The list
+      # check runs on THIS ref because a fix can rename or move the test.
+      - name: Run the nightly test selection
         working-directory: ${{ env.SUITE }}
         env:
           LOCAL_TEST: "false"
@@ -276,11 +272,12 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           INCLUDE_SLACK_REPORTER: "false"
           C8E2E_GLOBAL_TIMEOUT_MIN: "50"
+          VERSION: ${{ inputs.version }}
+          CELL: ${{ matrix.cell }}
           SPEC: ${{ inputs.spec }}
           TITLE_PATH: ${{ inputs.title_path }}
           PROJECT: ${{ inputs.project }}
           REPEAT_EACH: ${{ inputs.repeat_each }}
-          WORKERS: ${{ inputs.workers }}
           TEST_REF: ${{ inputs.test_ref }}
         run: |
           set -euo pipefail
@@ -295,11 +292,31 @@ jobs:
             exit 1
           fi
 
-          echo "Running ${SPEC} ${REPEAT_EACH} times on ${WORKERS} worker(s) (project ${PROJECT})"
+          # Mirrors the run step of c8-orchestration-cluster-reusable-e2e-tests.yml
+          # and c8-orchestration-cluster-reusable-api-tests.yml.
+          args=()
+          case "$CELL" in
+            api-*) args=(--project=api-tests) ;;
+            *)
+              args=(--project=chromium)
+              if docker ps --format '{{.Names}}' | grep -qx optimize; then
+                args+=(--project=optimize-startup)
+              fi
+              case "${VERSION}/${CELL}" in
+                main/e2e) ;;
+                8.9/e2e-v2) args+=(--grep-invert "tests/(common-flows/v1|tasklist/v1)/") ;;
+                */e2e-v2) args+=(--grep-invert "@v1-only") ;;
+                8.9/e2e-v1) args=(--project=chromium tests/common-flows/v1/ tests/tasklist/v1/) ;;
+                8.8/e2e-v1) args=(--project=chromium tests/tasklist/ tests/common-flows/) ;;
+                */e2e-v1) ;;
+                *) echo "::error::no nightly selection for ${VERSION}/${CELL}"; exit 1 ;;
+              esac
+              ;;
+          esac
+
+          echo "Running the ${VERSION}/${CELL} nightly selection ${REPEAT_EACH} time(s): ${args[*]}"
           rc=0
-          npx playwright test "$SPEC" \
-            --no-deps --project="$PROJECT" --forbid-only \
-            --repeat-each="$REPEAT_EACH" --retries=0 --workers="$WORKERS" || rc=$?
+          npx playwright test "${args[@]}" --forbid-only --repeat-each="$REPEAT_EACH" || rc=$?
           echo "Playwright exited ${rc}; the score reads the report, not the exit code."
 
       - name: Collect the shard's report
