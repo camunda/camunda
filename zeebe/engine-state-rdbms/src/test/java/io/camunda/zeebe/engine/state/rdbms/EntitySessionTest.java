@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
+import io.camunda.zeebe.protocol.Protocol;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -332,6 +333,45 @@ final class EntitySessionTest {
 
     // then
     assertThat(selects).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotReadRowsOfKeysGeneratedInTransaction() {
+    // given
+    final long firstGeneratedKey = Protocol.encodePartitionId(partitionId, 100);
+    context.getCurrentTransaction();
+    selects = 0;
+
+    // when
+    session.keyGenerated(firstGeneratedKey);
+    session.keyGenerated(firstGeneratedKey + 1);
+
+    // then - rows of the generated keys can't exist yet
+    assertThat(session.get(RdbmsProcessStore.PROCESS, firstGeneratedKey)).isNull();
+    assertThat(session.get(RdbmsProcessStore.PROCESS, firstGeneratedKey + 5)).isNull();
+    assertThat(selects).isZero();
+
+    // then - older keys and keys of other partitions are read
+    session.get(RdbmsProcessStore.PROCESS, firstGeneratedKey - 1);
+    session.get(RdbmsProcessStore.PROCESS, Protocol.encodePartitionId(partitionId + 1, 1));
+    assertThat(selects).isEqualTo(2);
+  }
+
+  @Test
+  void shouldReadKeysGeneratedInPreviousTransaction() throws Exception {
+    // given
+    final long generatedKey = Protocol.encodePartitionId(partitionId, 100);
+    final var transaction = context.getCurrentTransaction();
+    session.keyGenerated(generatedKey);
+    transaction.commit();
+    context.getCurrentTransaction();
+    selects = 0;
+
+    // when
+    session.get(RdbmsProcessStore.PROCESS, generatedKey);
+
+    // then
+    assertThat(selects).isOne();
   }
 
   @Test

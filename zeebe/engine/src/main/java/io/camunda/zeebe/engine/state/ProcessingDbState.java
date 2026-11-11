@@ -173,7 +173,8 @@ public class ProcessingDbState implements MutableProcessingState {
     this.zeebeDb = zeebeDb;
     pendingSubscriptionRecoveryBatchLimit =
         config.getMessagesPendingSubscriptionRecoveryBatchLimit();
-    this.keyGenerator = Objects.requireNonNull(keyGenerator);
+    this.keyGenerator =
+        new ObservedKeyGenerator(Objects.requireNonNull(keyGenerator), stores::onKeyGenerated);
 
     variableState = stores.variableState();
     clusterVariableState = stores.clusterVariableState();

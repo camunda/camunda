@@ -100,7 +100,8 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
           ElementInstanceMapper.class,
           "TakenSequenceFlow",
           "taken sequence flow",
-          TakenSequenceFlowRow::key);
+          TakenSequenceFlowRow::key,
+          TakenSequenceFlowKey::flowScopeKey);
   private static final EntityType<Long, PayloadRow> AWAIT_RESULT =
       new EntityType<>(
           ElementInstanceMapper.class,
@@ -182,9 +183,12 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   @Override
   public void forEachChildKey(final long parentKey, final Function<Long, Boolean> visitor) {
-    final var committedKeys =
-        session.read(
-            ElementInstanceMapper.class, mapper -> mapper.selectChildKeys(partitionId, parentKey));
+    final List<Long> committedKeys =
+        session.isGeneratedInTransaction(parentKey)
+            ? List.of()
+            : session.read(
+                ElementInstanceMapper.class,
+                mapper -> mapper.selectChildKeys(partitionId, parentKey));
     final var childKeys =
         session.queryKeys(
             ELEMENT_INSTANCE,
@@ -485,9 +489,12 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
 
   /** The children of the given parent, ordered by key. */
   private List<ElementInstanceRow> readChildren(final long parentKey) {
-    final var committed =
-        session.read(
-            ElementInstanceMapper.class, mapper -> mapper.selectChildren(partitionId, parentKey));
+    final List<ElementInstanceRow> committed =
+        session.isGeneratedInTransaction(parentKey)
+            ? List.of()
+            : session.read(
+                ElementInstanceMapper.class,
+                mapper -> mapper.selectChildren(partitionId, parentKey));
     return session.query(
         ELEMENT_INSTANCE,
         committed,
@@ -501,10 +508,14 @@ public final class RdbmsElementInstanceStore implements ElementInstanceStore {
    */
   private List<TakenSequenceFlowRow> readTakenSequenceFlows(
       final long flowScopeKey, final @Nullable String gatewayElementId) {
-    final var committed =
-        session.read(
-            ElementInstanceMapper.class,
-            mapper -> mapper.selectTakenSequenceFlows(partitionId, flowScopeKey, gatewayElementId));
+    // a taken sequence flow needs its flow scope's element instance, see class javadoc
+    final List<TakenSequenceFlowRow> committed =
+        flowScopeKey < 0 || session.isGeneratedInTransaction(flowScopeKey)
+            ? List.of()
+            : session.read(
+                ElementInstanceMapper.class,
+                mapper ->
+                    mapper.selectTakenSequenceFlows(partitionId, flowScopeKey, gatewayElementId));
     return session.query(
         TAKEN_SEQUENCE_FLOW,
         committed,
