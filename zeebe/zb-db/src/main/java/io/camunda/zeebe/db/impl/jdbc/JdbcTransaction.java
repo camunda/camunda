@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 final class JdbcTransaction implements ZeebeDbTransaction {
@@ -47,6 +48,18 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   void register(final JdbcTransactionParticipant participant) {
     participants.add(participant);
+  }
+
+  <T extends JdbcTransactionParticipant> T participant(
+      final Class<T> type, final Supplier<T> create) {
+    for (final var participant : participants) {
+      if (type.isInstance(participant)) {
+        return type.cast(participant);
+      }
+    }
+    final var participant = create.get();
+    participants.add(participant);
+    return participant;
   }
 
   void addListener(final TransactionListener listener) {

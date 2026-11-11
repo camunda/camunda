@@ -78,6 +78,33 @@ final class JdbcTransactionContextTest {
   }
 
   @Test
+  void shouldShareTheRegisteredParticipantOfAType() {
+    // when
+    final var shared =
+        context.participant(StagingParticipant.class, () -> new StagingParticipant(connection));
+
+    // then
+    assertThat(shared).isSameAs(participant);
+  }
+
+  @Test
+  void shouldRegisterAParticipantOfATypeThatIsMissing() throws Exception {
+    // given
+    final var otherContext = new JdbcTransactionContext();
+    final var created = new StagingParticipant(connection);
+
+    // when
+    final var registered = otherContext.participant(StagingParticipant.class, () -> created);
+    created.stage(1, "a");
+    otherContext.getCurrentTransaction().commit();
+
+    // then
+    assertThat(registered).isSameAs(created);
+    assertThat(otherContext.participant(StagingParticipant.class, () -> null)).isSameAs(created);
+    assertThat(visibleRows()).containsExactlyEntriesOf(Map.of(1L, "a"));
+  }
+
+  @Test
   void shouldDiscardStagedWritesOnRollback() throws Exception {
     // given
     final var transaction = context.getCurrentTransaction();

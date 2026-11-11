@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.SQLException;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -53,6 +54,16 @@ public final class JdbcTransactionContext implements TransactionContext {
 
   public void register(final JdbcTransactionParticipant participant) {
     transaction.register(participant);
+  }
+
+  /**
+   * Returns the registered participant of the type, or registers the one that {@code create}
+   * returns. Stores that are built separately but must commit together, like the engine state and
+   * the key generator of a partition, share one participant this way.
+   */
+  public <T extends JdbcTransactionParticipant> T participant(
+      final Class<T> type, final Supplier<T> create) {
+    return transaction.participant(type, create);
   }
 
   @Override
