@@ -301,6 +301,10 @@ registerProject(":zeebe-atomix-membership-api", "zeebe/atomix/membership-api")
 
 registerProject(":zeebe-msgpack-value", "zeebe/msgpack-value")
 
+registerProject(":zeebe-msgpack-codegen", "zeebe/msgpack-codegen")
+
+registerProject(":zeebe-protocol-impl-pojo", "zeebe/protocol-impl-pojo")
+
 registerProject(":zeebe-qa-util", "zeebe/qa/util")
 
 registerProject(":camunda-schema-manager", "schema-manager")
