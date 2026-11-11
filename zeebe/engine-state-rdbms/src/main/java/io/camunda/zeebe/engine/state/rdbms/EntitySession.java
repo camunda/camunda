@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionParticipant;
+import io.camunda.zeebe.db.writebehind.WriteBehindStore;
 import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -87,6 +88,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
+  private final @Nullable WriteBehindStore<EntityKey, Object> store;
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
 
   /**
@@ -115,9 +117,23 @@ final class EntitySession implements JdbcTransactionParticipant {
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final SqlSessionFactory sessionFactory) {
+    this(transactionContext, partitionId, sessionFactory, null);
+  }
+
+  /**
+   * @param store if not null, a commit hands the staged writes to this write-behind store instead
+   *     of writing them to the database, and reads of single rows go through it. A read of many
+   *     rows first waits until the store has flushed, so that the database holds every commit.
+   */
+  EntitySession(
+      final JdbcTransactionContext transactionContext,
+      final int partitionId,
+      final SqlSessionFactory sessionFactory,
+      final @Nullable WriteBehindStore<EntityKey, Object> store) {
     this.transactionContext = transactionContext;
     this.partitionId = partitionId;
     this.sessionFactory = sessionFactory;
+    this.store = store;
   }
 
   int partitionId() {
@@ -143,7 +159,7 @@ final class EntitySession implements JdbcTransactionParticipant {
           if (isInLoadedGroup(type, key)) {
             return null;
           }
-          final E row = unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
+          final E row = readCommitted(type, key);
           cached.put(key, row == null ? ABSENT : row);
           return row;
         });
@@ -511,6 +527,10 @@ final class EntitySession implements JdbcTransactionParticipant {
     if (session == null && !hasWrites) {
       return;
     }
+    if (store != null) {
+      commitToStore(store, hasWrites);
+      return;
+    }
     unwrapped(
         () -> {
           final var current = session();
@@ -521,6 +541,45 @@ final class EntitySession implements JdbcTransactionParticipant {
           return null;
         });
     closeSession();
+  }
+
+  /**
+   * Ends the transaction's session, which only read, and publishes the staged writes to the store,
+   * which writes them to the database later.
+   */
+  private void commitToStore(
+      final WriteBehindStore<EntityKey, Object> target, final boolean hasWrites)
+      throws SQLException {
+    if (session != null) {
+      unwrapped(
+          () -> {
+            session().commit(true);
+            return null;
+          });
+      closeSession();
+    }
+    if (!hasWrites) {
+      return;
+    }
+    final List<EntityKey> keys = new ArrayList<>();
+    final List<@Nullable Object> rows = new ArrayList<>();
+    for (final var entry : staged.entrySet()) {
+      for (final var write : entry.getValue().entrySet()) {
+        keys.add(new EntityKey(entry.getKey(), write.getKey()));
+        rows.add(write.getValue().operation == Operation.DELETE ? null : write.getValue().row);
+      }
+    }
+    target.commit(keys.toArray(new EntityKey[0]), rows.toArray());
+  }
+
+  /** The committed row of the key: from the store if there is one, else from the database. */
+  private <K, E> @Nullable E readCommitted(final EntityType<K, E> type, final K key)
+      throws SQLException {
+    if (store == null) {
+      return unwrapped(() -> session().<E>selectOne(type.select, keyParameter(key)));
+    }
+    final Object row = store.get(new EntityKey(type, key), JdbcBackend.NO_PROTOTYPE);
+    return row == null ? null : type.cast(row);
   }
 
   private void flush(final SqlSession batch) throws SQLException {
@@ -621,6 +680,10 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private SqlSession session() {
     if (session == null) {
+      if (store != null) {
+        // the session reads the database, which holds every commit only after the flush
+        store.awaitFlushed();
+      }
       session =
           sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
     }

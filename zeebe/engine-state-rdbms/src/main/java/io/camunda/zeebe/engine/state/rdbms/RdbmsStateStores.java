@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
+import io.camunda.zeebe.db.writebehind.WriteBehindStore;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Element instances, variables, jobs, event scopes and process definitions live in the relational
@@ -52,10 +54,19 @@ public final class RdbmsStateStores extends RocksDbStateStores {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final MixedTransactionContext mixedContext,
       final SqlSessionFactory sessionFactory) {
+    this(partitionId, zeebeDb, mixedContext, sessionFactory, null);
+  }
+
+  private RdbmsStateStores(
+      final int partitionId,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final MixedTransactionContext mixedContext,
+      final SqlSessionFactory sessionFactory,
+      final @Nullable WriteBehindStore<EntityKey, Object> store) {
     super(zeebeDb, mixedContext.rocksDb());
     this.zeebeDb = zeebeDb;
     this.mixedContext = mixedContext;
-    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory);
+    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory, store);
     mixedContext.jdbc().register(entitySession);
   }
 
@@ -71,7 +82,8 @@ public final class RdbmsStateStores extends RocksDbStateStores {
             partitionId,
             zeebeDb,
             (MixedTransactionContext) transactionContext,
-            resources.sessionFactory());
+            resources.sessionFactory(),
+            resources.writeBehindStore(partitionId));
   }
 
   @Override

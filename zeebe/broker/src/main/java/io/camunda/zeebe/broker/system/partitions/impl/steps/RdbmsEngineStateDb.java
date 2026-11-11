@@ -69,6 +69,7 @@ final class RdbmsEngineStateDb {
             + "NOT supported.",
         partitionId,
         lastProcessedPosition);
-    return new MixedZeebeDb<>(rocksDb, lastProcessedPosition);
+    return new MixedZeebeDb<>(
+        rocksDb, lastProcessedPosition, engineState.openPartition(partitionId));
   }
 }

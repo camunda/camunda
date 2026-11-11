@@ -34,6 +34,9 @@ import org.springframework.core.io.ResourceLoader;
 @Profile("broker")
 public class RdbmsEngineStateConfiguration {
 
+  /** Experimental: set to true to write the engine state rows to the database after the commit. */
+  private static final String WRITE_BEHIND_PROPERTY = "zeebe.engine.rdbms.writeBehind";
+
   @Bean(destroyMethod = "close")
   public RdbmsEngineStatePool rdbmsEngineStatePool(
       final BrokerBasedConfiguration configuration,
@@ -48,7 +51,7 @@ public class RdbmsEngineStateConfiguration {
     final var dataSource = createDataSource(cfg, meterRegistry);
     try {
       migrateSchema(dataSource, resourceLoader);
-      return new RdbmsEngineStatePool(RdbmsEngineStateResources.create(dataSource));
+      return new RdbmsEngineStatePool(RdbmsEngineStateResources.create(dataSource, Boolean.getBoolean(WRITE_BEHIND_PROPERTY)));
     } catch (final LiquibaseException | RuntimeException e) {
       dataSource.close();
       throw e;

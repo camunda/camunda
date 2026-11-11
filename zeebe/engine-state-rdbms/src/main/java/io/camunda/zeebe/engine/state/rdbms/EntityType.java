@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
@@ -22,12 +23,17 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Rows must be immutable snapshots (e.g. records holding serialized payloads): the session hands
  * the same instance to every reader and to the flush. Keys must implement {@code equals} and {@code
- * hashCode}.
+ * hashCode}, and must be {@link Comparable} if the type is written through a write-behind store.
  *
  * @param <K> the primary key
  * @param <E> the row
  */
 final class EntityType<K, E> {
+
+  private static final AtomicInteger IDS = new AtomicInteger();
+
+  /** Tells the types apart in an ordering, and names the type's group of rows. */
+  final int id = IDS.incrementAndGet();
 
   final String description;
   final String select;
