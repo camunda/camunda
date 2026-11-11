@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConsistencyCheckCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -180,10 +182,11 @@ public final class ZeebePartitionFactory {
     final var partitionId = raftPartition.id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
+    final var consistencyChecksSettings = consistencyCheckSettings(consistencyChecks);
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             rocksDbConfiguration,
-            consistencyChecks.getSettings(),
+            consistencyChecksSettings,
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
@@ -225,6 +228,24 @@ public final class ZeebePartitionFactory {
         new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+  }
+
+  /**
+   * With the relational engine state, entities such as element instances live in the database, so
+   * RocksDB's foreign key checks would reject references to them (e.g. a timer's element instance).
+   * They are switched off in that mode.
+   */
+  private ConsistencyChecksSettings consistencyCheckSettings(
+      final ConsistencyCheckCfg consistencyChecks) {
+    final var settings = consistencyChecks.getSettings();
+    if (!brokerCfg.getData().getRdbmsEngineState().isEnabled()
+        || !settings.enableForeignKeyChecks()) {
+      return settings;
+    }
+    LOGGER.warn(
+        "Foreign key checks are disabled because the engine state is stored in a relational "
+            + "database; RocksDB cannot check references to entities stored there.");
+    return new ConsistencyChecksSettings(settings.enablePreconditions(), false);
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {
