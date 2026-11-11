@@ -656,6 +656,51 @@ final class JobWorkerImplTest {
 
   @ParameterizedTest
   @EnumSource(Decline.class)
+  void shouldHandAJobBackEvenWhenReportingItAsRefusedThrows(final Decline decline) {
+    // given a worker whose handler executor turns down every job, and whose metrics throw whenever
+    // a job is reported as refused
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.declining(decline);
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void jobRefused(final int count) {
+            throw new IllegalStateException("simulated metrics failure on refusal");
+          }
+        };
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .metrics(metrics)
+                .open()) {
+
+      // when the executor turns down the activated jobs
+      // then they are still handed back: a failing metric must not keep a job out of reach
+      Awaitility.await("Turned down jobs should be failed back although reporting them throws")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getFailedJobs())
+                      .extracting(FailJobRequest::getJobKey)
+                      .contains(0L, 1L, 2L, 3L));
+    }
+  }
+
+  @ParameterizedTest
+  @EnumSource(Decline.class)
   void shouldLeaveAStreamedJobTheExecutorTurnsDownToTheBroker(final Decline decline) {
     // given a worker that streams jobs and whose handler executor turns down every job
     final int maxJobsActive = 4;

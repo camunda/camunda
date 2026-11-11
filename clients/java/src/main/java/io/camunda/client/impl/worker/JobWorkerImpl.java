@@ -481,8 +481,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
         return;
       }
 
-      metrics.jobRefused(1);
+      // handed back before it is counted, so a metric that throws cannot keep it out of reach
       onRefused.accept(job, e);
+      metrics.jobRefused(1);
     } catch (final RuntimeException | Error e) {
       if (handlerStarted.get()) {
         LOG.warn(
