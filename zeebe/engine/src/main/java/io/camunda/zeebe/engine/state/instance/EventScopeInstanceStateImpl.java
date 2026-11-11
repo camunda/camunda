@@ -92,7 +92,8 @@ public final class EventScopeInstanceStateImpl implements MutableEventScopeInsta
       final DirectBuffer elementId,
       final DirectBuffer variables,
       final long processInstanceKey) {
-    store.insertTrigger(processDefinitionKey, eventKey, elementId, variables, processInstanceKey);
+    store.insertStartEventTrigger(
+        processDefinitionKey, eventKey, elementId, variables, processInstanceKey);
   }
 
   @Override

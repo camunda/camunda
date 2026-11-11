@@ -102,6 +102,9 @@ final class EntitySession implements JdbcTransactionParticipant {
   /** The caches of values derived from loaded rows, see {@link #newTransactionCache()}. */
   private final List<Map<?, ?>> transactionCaches = new ArrayList<>();
 
+  /** The actions that run before each flush, see {@link #beforeFlush}. */
+  private final List<Runnable> flushPreparations = new ArrayList<>();
+
   /** The session of the current transaction, null until its first database access. */
   private @Nullable SqlSession session;
 
@@ -386,6 +389,16 @@ final class EntitySession implements JdbcTransactionParticipant {
     return cache;
   }
 
+  /**
+   * Registers an action that runs on every commit with staged writes, before they are flushed, to
+   * complete staged rows with what is only known at the end of the transaction. It may replace
+   * staged rows through {@link #update}, and should not need a query. It runs again when a failed
+   * commit is retried, on the rows it completed already.
+   */
+  void beforeFlush(final Runnable preparation) {
+    flushPreparations.add(preparation);
+  }
+
   /** The mapper of the current transaction's session; keep it within the transaction. */
   private <M> M mapper(final Class<M> type) {
     final var existing = mappers.get(type);
@@ -478,6 +491,9 @@ final class EntitySession implements JdbcTransactionParticipant {
   @Override
   public void commit() throws SQLException {
     final boolean hasWrites = staged.values().stream().anyMatch(writes -> !writes.isEmpty());
+    if (hasWrites) {
+      flushPreparations.forEach(Runnable::run);
+    }
     if (session == null && !hasWrites) {
       return;
     }

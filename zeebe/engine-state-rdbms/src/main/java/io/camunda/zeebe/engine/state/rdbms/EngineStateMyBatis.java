@@ -37,6 +37,8 @@ public final class EngineStateMyBatis {
           ElementInstanceMapper.class,
           VariableMapper.class,
           JobMapper.class,
+          // after the job mapper, whose limit fragment it includes
+          EventScopeMapper.class,
           ProcessDefinitionMapper.class,
           PartitionStateMapper.class);
 

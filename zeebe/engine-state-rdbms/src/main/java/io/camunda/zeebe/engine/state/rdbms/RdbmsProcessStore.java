@@ -92,7 +92,7 @@ public final class RdbmsProcessStore implements ProcessStore {
   private static final Comparator<ProcessDefinitionRow> BY_KEY =
       Comparator.comparingLong(ProcessDefinitionRow::processDefinitionKey);
 
-  private static final EntityType<Long, ProcessDefinitionRow> PROCESS =
+  static final EntityType<Long, ProcessDefinitionRow> PROCESS =
       new EntityType<>(
           ProcessDefinitionMapper.class,
           "ProcessDefinition",

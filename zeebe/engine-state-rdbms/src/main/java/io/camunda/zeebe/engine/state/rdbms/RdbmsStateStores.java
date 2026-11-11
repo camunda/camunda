@@ -15,8 +15,10 @@ import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
+import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
@@ -25,9 +27,9 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
- * Element instances, variables, jobs and process definitions live in the relational database,
- * everything else stays in RocksDB. Requires the {@link MixedTransactionContext} of a {@code
- * MixedZeebeDb}.
+ * Element instances, variables, jobs, event scopes and process definitions live in the relational
+ * database, everything else stays in RocksDB. Requires the {@link MixedTransactionContext} of a
+ * {@code MixedZeebeDb}.
  */
 public final class RdbmsStateStores extends RocksDbStateStores {
 
@@ -82,6 +84,11 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   @Override
   public MutableJobState jobState() {
     return new JobStateImpl(new RdbmsJobStore(entitySession));
+  }
+
+  @Override
+  public MutableEventScopeInstanceState eventScopeInstanceState() {
+    return new EventScopeInstanceStateImpl(new RdbmsEventScopeStore(entitySession));
   }
 
   @Override
