@@ -161,9 +161,9 @@ final class EngineStateRoundTripsTest {
     counting.reset();
     second.commit();
 
-    // then - the first increment read the same rows, the others none; the batch row is updated,
-    // as the start time is set while the batch has a single key
-    assertThat(queries).isEqualTo(3);
+    // then - no increment reads, the committed rows are kept; the batch row is updated, as the
+    // start time is set while the batch has a single key
+    assertThat(queries).isZero();
     assertThat(counting.batches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_USAGE_METRIC", "UPDATE", 1),
