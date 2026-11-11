@@ -4,6 +4,7 @@ dependencies {
   api(libs.org.agrona.agrona)
   api(project(":zeebe-msgpack-core"))
   api(project(":zeebe-msgpack-value"))
+  api(project(":zeebe-util"))
   implementation(libs.org.jspecify.jspecify)
 }
 

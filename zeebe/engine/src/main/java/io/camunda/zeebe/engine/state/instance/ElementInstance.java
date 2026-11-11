@@ -11,8 +11,9 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
-import io.camunda.zeebe.msgpack.pojo.MsgpackScratch;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -22,14 +23,13 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 /**
  * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
  * order are the stored format.
  */
 @MsgpackPojo
-public final class ElementInstance implements DbValue {
+public final class ElementInstance extends MsgpackBufferValue<ElementInstance> implements DbValue {
 
   long parentKey = -1L;
   int childCount;
@@ -342,19 +342,8 @@ public final class ElementInstance implements DbValue {
     this.agentInstanceKey = agentInstanceKey;
   }
 
-  // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
   @Override
-  public int getLength() {
-    return ElementInstanceCodec.INSTANCE.getLength(this);
-  }
-
-  @Override
-  public int write(final MutableDirectBuffer buffer, final int offset) {
-    return ElementInstanceCodec.INSTANCE.write(MsgpackScratch.writer(buffer, offset), this);
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    ElementInstanceCodec.INSTANCE.decode(MsgpackScratch.reader(buffer, offset, length), this);
+  protected MsgpackCodec<ElementInstance> codec() {
+    return ElementInstanceCodec.INSTANCE;
   }
 }

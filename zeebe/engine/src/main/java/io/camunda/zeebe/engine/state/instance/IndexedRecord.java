@@ -8,9 +8,10 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
-import io.camunda.zeebe.msgpack.pojo.MsgpackScratch;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -24,7 +25,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * order are the stored format.
  */
 @MsgpackPojo
-public final class IndexedRecord implements DbValue {
+public final class IndexedRecord extends MsgpackBufferValue<IndexedRecord> implements DbValue {
 
   long key;
   ProcessInstanceIntent state;
@@ -83,15 +84,9 @@ public final class IndexedRecord implements DbValue {
     return this;
   }
 
-  // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
   @Override
-  public int getLength() {
-    return IndexedRecordCodec.INSTANCE.getLength(this);
-  }
-
-  @Override
-  public int write(final MutableDirectBuffer buffer, final int offset) {
-    return IndexedRecordCodec.INSTANCE.write(MsgpackScratch.writer(buffer, offset), this);
+  protected MsgpackCodec<IndexedRecord> codec() {
+    return IndexedRecordCodec.INSTANCE;
   }
 
   @Override
@@ -99,7 +94,6 @@ public final class IndexedRecord implements DbValue {
     // the nested record references the buffer it is read from, so it needs its own copy
     final byte[] bytes = new byte[length];
     buffer.getBytes(offset, bytes, 0, length);
-    IndexedRecordCodec.INSTANCE.decode(
-        MsgpackScratch.reader(new UnsafeBuffer(bytes), 0, length), this);
+    super.wrap(new UnsafeBuffer(bytes), 0, length);
   }
 }

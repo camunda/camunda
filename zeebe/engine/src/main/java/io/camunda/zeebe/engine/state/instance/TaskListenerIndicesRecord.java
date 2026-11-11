@@ -9,19 +9,19 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
-import io.camunda.zeebe.msgpack.pojo.MsgpackScratch;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 /**
  * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
  * order are the stored format.
  */
 @MsgpackPojo
-public final class TaskListenerIndicesRecord implements DbValue {
+public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskListenerIndicesRecord>
+    implements DbValue {
 
   int creatingTaskListenerIndex;
   int assigningTaskListenerIndex;
@@ -60,22 +60,9 @@ public final class TaskListenerIndicesRecord implements DbValue {
     cancelingTaskListenerIndex = 0;
   }
 
-  // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
   @Override
-  public int getLength() {
-    return TaskListenerIndicesRecordCodec.INSTANCE.getLength(this);
-  }
-
-  @Override
-  public int write(final MutableDirectBuffer buffer, final int offset) {
-    return TaskListenerIndicesRecordCodec.INSTANCE.write(
-        MsgpackScratch.writer(buffer, offset), this);
-  }
-
-  @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    TaskListenerIndicesRecordCodec.INSTANCE.decode(
-        MsgpackScratch.reader(buffer, offset, length), this);
+  protected MsgpackCodec<TaskListenerIndicesRecord> codec() {
+    return TaskListenerIndicesRecordCodec.INSTANCE;
   }
 
   private void setTaskListenerIndex(final ZeebeTaskListenerEventType eventType, final int value) {
