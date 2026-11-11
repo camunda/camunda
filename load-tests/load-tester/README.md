@@ -41,19 +41,39 @@ To build the docker images for the load test application, run the following comm
 ## Health probes
 
 Both roles serve `/health/readiness` and `/health/liveness` on port 9600 (no `/actuator` prefix).
+The readiness group contains `readinessState` and `connectionReady`. Neither probe group contains
+the `camundaClient` indicator of the aggregate `/health` endpoint, which sends a status request to
+the cluster.
 
-- **Readiness (starter):** ready once the cluster topology was retrieved and the benchmark process
-  was deployed. The web server, and with it both health endpoints, starts only after that.
-- **Readiness (worker):** ready once the cluster topology was retrieved. The topology request
-  retries every error, so a pod that cannot authenticate stays not ready.
-- **Liveness (starter):** DOWN when no start request succeeded for
+### Starter
+
+- **Readiness:** ready once the cluster topology was retrieved and the benchmark process was
+  deployed. The web server, and with it both health endpoints, starts only after that. After that,
+  a cluster outage keeps it `UP`.
+- **Liveness:** DOWN when no start request succeeded for
   `load-tester.starter.liveness-max-no-success-age` (default 2 minutes). The clock starts once
   connected, and the age has to exceed the interval between two requests. Backpressure answers
-  (gRPC `RESOURCE_EXHAUSTED`, HTTP 429) count as success, every other failure does not.
-- **Liveness (worker):** none. A worker without jobs cannot be told apart from one without load.
+  (gRPC `RESOURCE_EXHAUSTED`, HTTP 429) count as success, every other failure does not. This covers
+  a cluster outage longer than the window and a stopped request scheduler. The liveness group
+  contains `starterLiveness`.
+- **Not covered:** a client that cannot reach the cluster after the initial connection, other than
+  through `starterLiveness`.
 
-A startup probe on `/health/readiness` restarts a pod that never connects. Reference configuration
-for the Helm chart, which does not apply it yet:
+The `camundaClient` indicator uses the client that sends the load. At 300 starts per second it waits
+behind the pending requests and can take more than 10 seconds, so `/health` can be slow.
+
+### Worker
+
+- **Readiness:** ready once the cluster topology was retrieved. The topology request retries every
+  error, so a pod that cannot authenticate stays not ready. After that, a cluster outage keeps it
+  `UP`.
+- **Liveness:** none. A worker without jobs cannot be told apart from one without load.
+- **Not covered:** a client that cannot reach the cluster after the initial connection, and a
+  worker whose job stream stopped.
+
+### Probe configuration
+
+The probes can be configured as below:
 
 ```yaml
 startupProbe:
