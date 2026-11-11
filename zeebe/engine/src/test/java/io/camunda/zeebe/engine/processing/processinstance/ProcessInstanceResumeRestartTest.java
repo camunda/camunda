@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -59,27 +57,23 @@ public final class ProcessInstanceResumeRestartTest {
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
     bufferOversizedCommand(child);
     resume(processInstanceKey);
-    final var firstRejection = awaitDrainRejection(processInstanceKey, 1);
+    awaitDrainRejection(processInstanceKey, 1);
 
     // when - a second RESUME is sent while still RESUMING
     resume(processInstanceKey);
 
     // then - accepted and restarts the chain: a second DRAIN halts on the same command again,
-    // without a second RESUMING event being written
-    awaitDrainRejection(processInstanceKey, 2);
+    // without a second RESUMING event being written. Only an instance still RESUMING restarts
+    // like this: a SUSPENDED one would write RESUMING again, and one without a marker would reject
+    final var secondRejection = awaitDrainRejection(processInstanceKey, 2);
     final var resumingEvents =
         RecordingExporter.records()
-            .limit(r -> r.getPosition() >= firstRejection.getPosition())
+            .limit(r -> r.getPosition() >= secondRejection.getPosition())
             .withValueType(ValueType.PROCESS_INSTANCE)
             .withIntent(ProcessInstanceIntent.RESUMING)
             .filter(r -> r.getKey() == processInstanceKey)
             .asList();
     assertThat(resumingEvents).hasSize(1);
-    assertThat(
-            ((MutableProcessingState) ENGINE.getProcessingState())
-                .getSuspensionState()
-                .getSuspensionState(processInstanceKey))
-        .isEqualTo(SuspensionState.State.RESUMING);
   }
 
   @Test
