@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the lease table, created by db/changelog/mailbox/changelog-master.xml. All
+  statements are portable between PostgreSQL and H2.
+-->
+<mapper namespace="io.camunda.zeebe.mailbox.rdbms.LeaseMapper">
+
+  <resultMap id="partitionLease" type="io.camunda.zeebe.mailbox.api.leadership.PartitionLease">
+    <constructor>
+      <idArg column="partition_id" javaType="_int"/>
+      <arg column="leader_id" javaType="String"/>
+      <arg column="zone" javaType="String"/>
+      <arg column="term" javaType="_long"/>
+      <arg column="renewal_counter" javaType="_long"/>
+      <arg column="released" javaType="_boolean"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="heldInTheirTerms">
+    leader_id = #{leaderId}
+    AND released = FALSE
+    AND <foreach collection="terms" item="held" open="(" separator=" OR " close=")">
+      (partition_id = #{held.partitionId} AND term = #{held.term})
+    </foreach>
+  </sql>
+
+  <insert id="insertLease">
+    INSERT INTO CAM_RU_PARTITION_LEASE
+      (partition_id, leader_id, zone, term, renewal_counter, released)
+    VALUES (#{partitionId}, #{leaderId}, #{zone}, 1, 0, FALSE)
+  </insert>
+
+  <update id="takeOverLease">
+    UPDATE CAM_RU_PARTITION_LEASE
+    SET leader_id = #{leaderId}, zone = #{zone}, term = term + 1, renewal_counter = 0,
+        released = FALSE
+    WHERE partition_id = #{partitionId}
+      AND term = #{observedTerm}
+      AND renewal_counter = #{observedCounter}
+  </update>
+
+  <update id="renewLeases">
+    UPDATE CAM_RU_PARTITION_LEASE
+    SET renewal_counter = renewal_counter + 1
+    WHERE <include refid="heldInTheirTerms"/>
+  </update>
+
+  <select id="selectHeldPartitions" resultType="java.lang.Integer">
+    SELECT partition_id FROM CAM_RU_PARTITION_LEASE WHERE <include refid="heldInTheirTerms"/>
+  </select>
+
+  <update id="releaseLease">
+    UPDATE CAM_RU_PARTITION_LEASE
+    SET renewal_counter = renewal_counter + 1, released = TRUE
+    WHERE partition_id = #{partitionId}
+      AND leader_id = #{leaderId}
+      AND term = #{term}
+      AND released = FALSE
+  </update>
+
+  <select id="selectLease" resultMap="partitionLease">
+    SELECT partition_id, leader_id, zone, term, renewal_counter, released
+    FROM CAM_RU_PARTITION_LEASE
+    WHERE partition_id = #{partitionId}
+  </select>
+
+  <select id="selectLeases" resultMap="partitionLease">
+    SELECT partition_id, leader_id, zone, term, renewal_counter, released
+    FROM CAM_RU_PARTITION_LEASE
+  </select>
+
+</mapper>

@@ -237,6 +237,8 @@ registerProject(":zeebe-mailbox-api", "zeebe/mailbox-api")
 
 registerProject(":zeebe-mailbox", "zeebe/mailbox")
 
+registerProject(":zeebe-mailbox-rdbms", "zeebe/mailbox-rdbms")
+
 registerProject(":camunda-process-test-java", "testing/camunda-process-test-java")
 
 registerProject(":camunda-process-test-coverage", "testing/camunda-process-test-coverage")

@@ -74,6 +74,7 @@
     <module>dynamic-node-id-provider</module>
     <module>mailbox-api</module>
     <module>mailbox</module>
+    <module>mailbox-rdbms</module>
   </modules>
 
   <profiles>

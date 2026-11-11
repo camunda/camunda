@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the mailbox tables, created by db/changelog/mailbox/changelog-master.xml. All
+  statements are portable between PostgreSQL and H2. Times are epoch milliseconds that the store
+  computes from the database clock (selectNow).
+-->
+<mapper namespace="io.camunda.zeebe.mailbox.rdbms.MailboxMapper">
+
+  <resultMap id="inboxMessage" type="io.camunda.zeebe.mailbox.api.InboxMessage">
+    <constructor>
+      <idArg column="sequence_number" javaType="_long"/>
+      <arg column="partition_id" javaType="_int"/>
+      <arg column="kind" javaType="io.camunda.zeebe.mailbox.api.MessageKind"/>
+      <arg column="sender" javaType="String"/>
+      <arg column="request_id" javaType="_long"/>
+      <arg column="payload" javaType="_byte[]"/>
+      <arg column="delivery_count" javaType="_int"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="responseRow" type="io.camunda.zeebe.mailbox.rdbms.MailboxMapper$ResponseRow">
+    <constructor>
+      <idArg column="request_id" javaType="_long"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="partitionLeader" type="io.camunda.zeebe.mailbox.api.PartitionLeader">
+    <constructor>
+      <idArg column="partition_id" javaType="_int"/>
+      <arg column="node_id" javaType="String"/>
+      <arg column="zone" javaType="String"/>
+      <arg column="term" javaType="_long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectNow" resultType="java.time.Instant">
+    SELECT CURRENT_TIMESTAMP
+  </select>
+
+  <!-- CAM_RU_MAILBOX_INBOX -->
+
+  <insert id="insertMessage">
+    INSERT INTO CAM_RU_MAILBOX_INBOX
+      (partition_id, kind, sender, request_id, payload, created_at, delivery_count)
+    VALUES (#{partitionId}, #{kind}, #{sender}, #{requestId}, #{payload}, #{createdAt}, 0)
+  </insert>
+
+  <select id="selectAvailableSequencesForUpdate" resultType="java.lang.Long">
+    SELECT sequence_number
+    FROM CAM_RU_MAILBOX_INBOX
+    WHERE partition_id = #{partitionId}
+      AND kind IN <foreach collection="kinds" item="kind" open="(" separator="," close=")">#{kind}</foreach>
+      AND (claimer_id IS NULL OR claim_expires_at &lt;= #{now})
+    ORDER BY sequence_number
+    FETCH FIRST #{limit} ROWS ONLY
+    FOR UPDATE
+  </select>
+
+  <update id="claimMessages">
+    UPDATE CAM_RU_MAILBOX_INBOX
+    SET claimer_id = #{claimerId},
+        claim_expires_at = #{expiresAt},
+        delivery_count = delivery_count + 1
+    WHERE sequence_number IN
+      <foreach collection="sequences" item="sequence" open="(" separator="," close=")">#{sequence}</foreach>
+  </update>
+
+  <select id="selectMessages" resultMap="inboxMessage">
+    SELECT sequence_number, partition_id, kind, sender, request_id, payload, delivery_count
+    FROM CAM_RU_MAILBOX_INBOX
+    WHERE sequence_number IN
+      <foreach collection="sequences" item="sequence" open="(" separator="," close=")">#{sequence}</foreach>
+    ORDER BY sequence_number
+  </select>
+
+  <delete id="deleteClaimedMessages">
+    DELETE FROM CAM_RU_MAILBOX_INBOX
+    WHERE partition_id = #{partitionId}
+      AND claimer_id = #{claimerId}
+      AND sequence_number IN
+        <foreach collection="sequences" item="sequence" open="(" separator="," close=")">#{sequence}</foreach>
+  </delete>
+
+  <update id="releaseClaims">
+    UPDATE CAM_RU_MAILBOX_INBOX
+    SET claimer_id = NULL, claim_expires_at = NULL
+    WHERE partition_id = #{partitionId} AND claimer_id = #{claimerId}
+  </update>
+
+  <delete id="deleteMessagesCreatedAtOrBefore">
+    DELETE FROM CAM_RU_MAILBOX_INBOX WHERE created_at &lt;= #{cutoff}
+  </delete>
+
+  <!-- CAM_RU_MAILBOX_OUTBOX -->
+
+  <insert id="insertResponse">
+    INSERT INTO CAM_RU_MAILBOX_OUTBOX (gateway_id, request_id, payload, created_at)
+    VALUES (#{gatewayId}, #{requestId}, #{payload}, #{createdAt})
+  </insert>
+
+  <select id="selectResponsesForUpdate" resultMap="responseRow">
+    SELECT request_id, payload
+    FROM CAM_RU_MAILBOX_OUTBOX
+    WHERE gateway_id = #{gatewayId}
+      AND request_id IN
+        <foreach collection="requestIds" item="requestId" open="(" separator="," close=")">#{requestId}</foreach>
+    FOR UPDATE
+  </select>
+
+  <delete id="deleteResponses">
+    DELETE FROM CAM_RU_MAILBOX_OUTBOX
+    WHERE gateway_id = #{gatewayId}
+      AND request_id IN
+        <foreach collection="requestIds" item="requestId" open="(" separator="," close=")">#{requestId}</foreach>
+  </delete>
+
+  <delete id="deleteResponsesCreatedAtOrBefore">
+    DELETE FROM CAM_RU_MAILBOX_OUTBOX WHERE created_at &lt;= #{cutoff}
+  </delete>
+
+  <!-- CAM_RU_PARTITION_LEADER -->
+
+  <select id="selectLeaderTermForUpdate" resultType="java.lang.Long">
+    SELECT term FROM CAM_RU_PARTITION_LEADER WHERE partition_id = #{partitionId} FOR UPDATE
+  </select>
+
+  <insert id="insertLeader">
+    INSERT INTO CAM_RU_PARTITION_LEADER (partition_id, node_id, zone, term)
+    VALUES (#{leader.partitionId}, #{leader.nodeId}, #{leader.zone}, #{leader.term})
+  </insert>
+
+  <update id="updateLeader">
+    UPDATE CAM_RU_PARTITION_LEADER
+    SET node_id = #{leader.nodeId}, zone = #{leader.zone}, term = #{leader.term}
+    WHERE partition_id = #{leader.partitionId}
+  </update>
+
+  <delete id="deleteLeader">
+    DELETE FROM CAM_RU_PARTITION_LEADER
+    WHERE partition_id = #{partitionId} AND node_id = #{nodeId} AND term = #{term}
+  </delete>
+
+  <select id="selectLeader" resultMap="partitionLeader">
+    SELECT partition_id, node_id, zone, term
+    FROM CAM_RU_PARTITION_LEADER
+    WHERE partition_id = #{partitionId}
+  </select>
+
+  <select id="selectLeaders" resultMap="partitionLeader">
+    SELECT partition_id, node_id, zone, term FROM CAM_RU_PARTITION_LEADER
+  </select>
+
+</mapper>

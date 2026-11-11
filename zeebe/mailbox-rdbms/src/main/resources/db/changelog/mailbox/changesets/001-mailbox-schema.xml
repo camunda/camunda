@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    Liquibase would map BLOB to oid (a large object reference) on PostgreSQL, and H2 rejects BLOB in
+    MODE=PostgreSQL.
+  -->
+  <property name="mailbox.binaryType" value="BYTEA" dbms="postgresql,h2"/>
+  <property name="mailbox.binaryType" value="BLOB"/>
+
+  <!--
+    One lease per partition. A node claims it by raising TERM with a compare-and-set on TERM and
+    RENEWAL_COUNTER, and renews it by raising RENEWAL_COUNTER. The database keeps no time: the
+    nodes measure how long a counter stays unchanged on their own monotonic clocks.
+  -->
+  <changeSet id="create-partition-lease" author="camunda">
+    <createTable tableName="CAM_RU_PARTITION_LEASE">
+      <column name="partition_id" type="INT">
+        <constraints primaryKey="true" primaryKeyName="CAM_RU_PARTITION_LEASE_PK" nullable="false"/>
+      </column>
+      <column name="leader_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="zone" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="term" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="renewal_counter" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="released" type="BOOLEAN">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <!--
+    The inbox of every partition: requests of gateways and commands of other partitions that the
+    leader of the partition takes out. The store assigns SEQUENCE_NUMBER, which orders the messages. A
+    claim is a CLAIMER_ID with an expiry. Times are epoch milliseconds of the database clock.
+  -->
+  <changeSet id="create-mailbox-inbox" author="camunda">
+    <createTable tableName="CAM_RU_MAILBOX_INBOX">
+      <column name="sequence_number" type="BIGINT" autoIncrement="true">
+        <constraints primaryKey="true" primaryKeyName="CAM_RU_MAILBOX_INBOX_PK" nullable="false"/>
+      </column>
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="kind" type="VARCHAR(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="sender" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="request_id" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="payload" type="${mailbox.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_at" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="claimer_id" type="VARCHAR(255)"/>
+      <column name="claim_expires_at" type="BIGINT"/>
+      <column name="delivery_count" type="INT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addUniqueConstraint tableName="CAM_RU_MAILBOX_INBOX"
+      columnNames="partition_id, sender, request_id" constraintName="CAM_RU_MAILBOX_INBOX_KEY"/>
+    <createIndex tableName="CAM_RU_MAILBOX_INBOX" indexName="CAM_RU_MAILBOX_INBOX_BY_PARTITION">
+      <column name="partition_id"/>
+      <column name="sequence_number"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- Responses for the gateways to collect, by the request id of the gateway. -->
+  <changeSet id="create-mailbox-outbox" author="camunda">
+    <createTable tableName="CAM_RU_MAILBOX_OUTBOX">
+      <column name="gateway_id" type="VARCHAR(255)">
+        <constraints primaryKey="true" primaryKeyName="CAM_RU_MAILBOX_OUTBOX_PK" nullable="false"/>
+      </column>
+      <column name="request_id" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="CAM_RU_MAILBOX_OUTBOX_PK" nullable="false"/>
+      </column>
+      <column name="payload" type="${mailbox.binaryType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_at" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+  <!--
+    The leader that each partition recorded for gateways of other regions, when the leaders come
+    from Raft. In lease mode, the leases tell who leads instead.
+  -->
+  <changeSet id="create-partition-leader" author="camunda">
+    <createTable tableName="CAM_RU_PARTITION_LEADER">
+      <column name="partition_id" type="INT">
+        <constraints primaryKey="true" primaryKeyName="CAM_RU_PARTITION_LEADER_PK" nullable="false"/>
+      </column>
+      <column name="node_id" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="zone" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="term" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>
