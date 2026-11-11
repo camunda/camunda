@@ -29,6 +29,8 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Backup Restore"
