@@ -24,5 +24,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43087443063",
     "updated_at": "2026-11-11T19:32:29Z",
     "cooldown_until": "2026-11-12T19:32:29Z"
+  },
+  "f9a130cc": {
+    "version": "8.8",
+    "file": "api/v2/variable/variable-search-api.spec.ts",
+    "titlePath": [
+      "Search Variables API Tests",
+      "Search Variables with invalid pagination parameters"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43088646558",
+    "updated_at": "2026-11-11T19:38:23Z",
+    "cooldown_until": "2026-11-12T19:38:23Z"
   }
 }
