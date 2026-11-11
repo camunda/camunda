@@ -142,7 +142,7 @@ final class DigestSerdeTest {
   }
 
   @Test
-  void shouldReadBinaryAsViewOnTheBufferLikeV1() {
+  void shouldReadViewsOnTheBufferLikeV1() {
     // given
     final var instance = new Digest();
     instance.set(new UnsafeBuffer(DIGEST));

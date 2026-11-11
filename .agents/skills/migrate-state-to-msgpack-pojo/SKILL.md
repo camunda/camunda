@@ -131,6 +131,8 @@ Edit the class in place:
    - `StringProperty.setValue(DirectBuffer v)` -> `field = BufferUtil.cloneBuffer(v)` (the old
      code copied into its own storage; the caller may reuse its buffer)
    - setting a string to "" -> `field = Decoding.EMPTY`
+   - decoding needs no code: strings, binaries and raw values are read as views on the input
+     buffer, exactly like the old properties. Never add a copy on read to a class that had none.
    - `ArrayProperty.add().wrap(buf)` -> `list.add(BufferUtil.cloneBuffer(buf))`
    - methods that returned a stream/list of the array property -> return `List.copyOf(list)`
    - nested object `prop.getValue()` -> the final nested field

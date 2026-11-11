@@ -177,7 +177,7 @@ final class EventTriggerSerdeTest {
   }
 
   @Test
-  void shouldReadBinaryAsViewOnTheBufferLikeV1() {
+  void shouldReadViewsOnTheBufferLikeV1() {
     // given
     final var instance = new EventTrigger();
     instance.setElementId(BufferUtil.wrapString("boundary"));
@@ -193,7 +193,7 @@ final class EventTriggerSerdeTest {
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
-    assertThat(BufferUtil.bufferAsString(read.getElementId())).isEqualTo("boundary");
+    assertThat(read.getElementId()).isEqualTo(v1.getElementId());
     assertThat(read.getVariables()).isEqualTo(v1.getVariables());
   }
 

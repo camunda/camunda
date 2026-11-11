@@ -146,7 +146,7 @@ final class EventScopeInstanceSerdeTest {
   }
 
   @Test
-  void shouldNotReferenceTheBufferItWasReadFrom() {
+  void shouldReadViewsOnTheBufferLikeV1() {
     // given
     final var instance = new EventScopeInstance();
     instance.addInterruptingElementId(BufferUtil.wrapString("interrupting"));
@@ -155,13 +155,18 @@ final class EventScopeInstanceSerdeTest {
     final int length = instance.write(buffer, 0);
     final var read = new EventScopeInstance();
     read.wrap(buffer, 0, length);
+    final var v1 = new EventScopeInstanceV1();
+    v1.wrap(buffer, 0, length);
 
     // when the buffer is reused
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
-    assertThat(read.isInterruptingElementId(BufferUtil.wrapString("interrupting"))).isTrue();
-    assertThat(read.isBoundaryElementId(BufferUtil.wrapString("boundary"))).isTrue();
+    final var interrupting = BufferUtil.wrapString("interrupting");
+    final var boundary = BufferUtil.wrapString("boundary");
+    assertThat(read.isInterruptingElementId(interrupting))
+        .isEqualTo(v1.isInterruptingElementId(interrupting));
+    assertThat(read.isBoundaryElementId(boundary)).isEqualTo(v1.isBoundaryElementId(boundary));
   }
 
   private static String hex(final ExpandableArrayBuffer buffer, final int length) {

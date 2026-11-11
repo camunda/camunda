@@ -22,12 +22,15 @@ public final class Decoding {
     return new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8));
   }
 
-  /** Reads a string into a buffer the caller owns; the source buffer may be reused afterwards. */
+  /**
+   * Reads a string as a view on the source buffer, like the StringProperty it replaces: nothing is
+   * copied, so the result is only valid while the source buffer is not reused.
+   */
   public static DirectBuffer readString(final MsgPackReader reader) {
     final int length = reader.readStringLength();
     final int offset = reader.getOffset();
     reader.skipBytes(length);
-    return copy(reader.getBuffer(), offset, length);
+    return new UnsafeBuffer(reader.getBuffer(), offset, length);
   }
 
   /**
@@ -41,11 +44,11 @@ public final class Decoding {
     return new UnsafeBuffer(reader.getBuffer(), offset, length);
   }
 
-  /** Reads one complete msgpack value as bytes into a buffer the caller owns. */
+  /** Reads one complete msgpack value as a view on the source buffer, see {@link #readString}. */
   public static DirectBuffer readRaw(final MsgPackReader reader) {
     final int start = reader.getOffset();
     reader.skipValue();
-    return copy(reader.getBuffer(), start, reader.getOffset() - start);
+    return new UnsafeBuffer(reader.getBuffer(), start, reader.getOffset() - start);
   }
 
   /** Reads a string and resolves it to the constant with the same name, without allocating. */
@@ -81,14 +84,5 @@ public final class Decoding {
       }
     }
     return true;
-  }
-
-  private static DirectBuffer copy(final DirectBuffer source, final int offset, final int length) {
-    if (length == 0) {
-      return EMPTY;
-    }
-    final byte[] bytes = new byte[length];
-    source.getBytes(offset, bytes, 0, length);
-    return new UnsafeBuffer(bytes);
   }
 }

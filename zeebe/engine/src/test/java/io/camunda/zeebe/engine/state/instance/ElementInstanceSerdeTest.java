@@ -161,7 +161,7 @@ final class ElementInstanceSerdeTest {
   }
 
   @Test
-  void shouldNotReferenceTheBufferItWasReadFrom() {
+  void shouldReadViewsOnTheBufferLikeV1() {
     // given
     final var instance =
         new ElementInstance(13L, ProcessInstanceIntent.ELEMENT_ACTIVATED, processInstanceRecord());
@@ -171,13 +171,15 @@ final class ElementInstanceSerdeTest {
     final int length = instance.write(buffer, 0);
     final var read = new ElementInstance();
     read.wrap(buffer, 0, length);
+    final var v1 = new ElementInstanceV1();
+    v1.wrap(buffer, 0, length);
 
     // when the buffer is reused
     buffer.setMemory(0, buffer.capacity(), (byte) 0);
 
     // then
-    assertThat(BufferUtil.bufferAsString(read.getInterruptingElementId())).isEqualTo("boundary");
-    assertThat(read.getActiveSequenceFlowIds()).containsExactly(BufferUtil.wrapString("flow"));
+    assertThat(read.getInterruptingElementId()).isEqualTo(v1.getInterruptingElementId());
+    assertThat(read.getActiveSequenceFlowIds()).isEqualTo(v1.getActiveSequenceFlowIds());
   }
 
   private static ProcessInstanceRecord processInstanceRecord() {
