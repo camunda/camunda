@@ -69,8 +69,7 @@ Deferred, the generator lacks the property types (deployment time only, not on t
 
 - [ ] `deployment/PersistedProcess`: binary plus `ArrayProperty` of a nested object, and it
       implements `ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess>`.
-- [ ] `deployment/VersionInfo`: `ArrayProperty<LongValue>`; `List<Long>` is supported now, so it
-      can be migrated (its `removeKnownVersion` iterator removal becomes `list.remove(Long)`).
+- [x] `deployment/VersionInfo`
 
 ### Cost to measure in wave 1
 
