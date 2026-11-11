@@ -9,6 +9,7 @@ The engine has two test entry points: `ProcessingStateExtension` (JUnit 5) for s
   - State is an implementation detail; the appended records are the engine's actual output and the contract with consumers.
   - State classes are not thread-safe; reading them from the test thread while the engine writes is unsafe.
   - State-only assertions are appropriate in `ProcessingStateExtension` tests for state/applier behavior, not in `EngineRule` tests.
+- **Don't mutate state from an `EngineRule` test.** Reach the state through the test clients, or, when no command gets there, write the event with `stop()`, `writeRecords(event)`, `start()`.
 - **Tests must be fast AND reliable.** Re-run any new or modified test **at least 3 times** before declaring it stable. Flaky tests will erode trust in the suite.
 - **`EngineRule` is expensive — default to per-class.** Use per-test isolation only when the test genuinely cannot share state with its siblings.
 - **Use `// given / // when / // then`** structure, AssertJ assertions, and Awaitility for async waiting (never `Thread.sleep`).
