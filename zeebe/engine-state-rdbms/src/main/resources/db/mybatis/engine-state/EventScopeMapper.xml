@@ -84,16 +84,11 @@
       AND event_key = #{key.eventKey}
   </select>
 
-  <!-- A range of the primary key; the limit fragment is the job mapper's, per databaseId. -->
   <select id="selectEventTriggersOfScope" resultMap="eventTriggerRow">
     SELECT <include refid="eventTriggerColumns"/>
     FROM CAM_RU_EVENT_TRIGGER
     WHERE partition_id = #{partitionId} AND event_scope_key = #{scopeKey}
-      <if test="afterEventKey != null">
-        AND event_key &gt; #{afterEventKey}
-      </if>
     ORDER BY event_key
-    <include refid="io.camunda.zeebe.engine.state.rdbms.JobMapper.limit"/>
   </select>
 
   <select id="selectEventTriggerKeysOfScope" resultType="long">

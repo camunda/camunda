@@ -58,8 +58,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>The session remembers what a transaction read: single variables, including missing ones, and
  * whole scopes after a document read. Repeated lookups of a command therefore need no query, and a
- * chain lookup only queries the scopes whose variable isn't known yet. The chains are remembered
- * for the transaction as well.
+ * chain lookup only queries the scopes whose variable isn't known yet.
  *
  * <p>Every row records the process instance, root process instance and tenant of its scope. A
  * variable takes them from the record of the event that sets it, as its scope may not exist yet
@@ -89,13 +88,9 @@ public final class RdbmsVariableStore implements VariableStore {
   private final EntitySession session;
   private final int partitionId;
 
-  /** The chain of each scope looked up in the transaction, nearest scope first. */
-  private final Map<Long, long[]> scopeChains;
-
   RdbmsVariableStore(final EntitySession session) {
     this.session = session;
     partitionId = session.partitionId();
-    scopeChains = session.newTransactionCache();
   }
 
   @Override
@@ -241,19 +236,11 @@ public final class RdbmsVariableStore implements VariableStore {
   @Override
   public void prefetchVariables(
       final Collection<Long> scopeKeys, final @Nullable Collection<DirectBuffer> names) {
-    final List<Long> unknownChains = new ArrayList<>();
-    for (final long scopeKey : new LinkedHashSet<>(scopeKeys)) {
-      if (!scopeChains.containsKey(scopeKey)) {
-        unknownChains.add(scopeKey);
-      }
-    }
-    if (!unknownChains.isEmpty()) {
-      session.getAll(
-          ELEMENT_INSTANCE,
-          unknownChains,
-          ElementInstanceMapper.class,
-          (mapper, keys) -> mapper.selectElementInstances(partitionId, keys));
-    }
+    session.getAll(
+        ELEMENT_INSTANCE,
+        List.copyOf(new LinkedHashSet<>(scopeKeys)),
+        ElementInstanceMapper.class,
+        (mapper, keys) -> mapper.selectElementInstances(partitionId, keys));
 
     final var scopes = new LinkedHashSet<Long>();
     for (final long scopeKey : scopeKeys) {
@@ -276,16 +263,11 @@ public final class RdbmsVariableStore implements VariableStore {
 
   /** The parent scope is the parent of the element instance, which the engine created with it. */
   @Override
-  public void createScope(final long childKey, final long parentKey) {
-    // a scope looked up before its element instance existed had no chain yet
-    scopeChains.remove(childKey);
-  }
+  public void createScope(final long childKey, final long parentKey) {}
 
   /** The element instance state removes the element instance, the scope's parent with it. */
   @Override
-  public void deleteScope(final long scopeKey) {
-    scopeChains.remove(scopeKey);
-  }
+  public void deleteScope(final long scopeKey) {}
 
   @Override
   public long getParentScopeKey(final long childScopeKey) {
@@ -338,14 +320,8 @@ public final class RdbmsVariableStore implements VariableStore {
    * instance.
    */
   private long[] scopeChain(final long scopeKey) {
-    final long[] known = scopeChains.get(scopeKey);
-    if (known != null) {
-      return known;
-    }
     final var scope = session.get(ELEMENT_INSTANCE, scopeKey);
-    final long[] chain = scope == null ? new long[] {scopeKey} : chainOf(scope);
-    scopeChains.put(scopeKey, chain);
-    return chain;
+    return scope == null ? new long[] {scopeKey} : chainOf(scope);
   }
 
   private static long[] chainOf(final ElementInstanceRow scope) {
