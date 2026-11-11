@@ -21,8 +21,8 @@
     ],
     "last_action": "blocked",
     "last_reason": "baseline produced no score",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43085563191",
-    "updated_at": "2026-11-11T19:22:36Z",
-    "cooldown_until": "2026-11-12T19:22:36Z"
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43087443063",
+    "updated_at": "2026-11-11T19:32:29Z",
+    "cooldown_until": "2026-11-12T19:32:29Z"
   }
 }
