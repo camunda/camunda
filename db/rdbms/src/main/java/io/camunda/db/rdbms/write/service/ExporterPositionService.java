@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -76,12 +77,10 @@ public class ExporterPositionService {
           final ExporterPositionModel lockedPosition = mapper.findOneForUpdate(partitionId);
           if (lockedPosition != null) {
             final long expectedPosition = expectedPositionSupplier.getAsLong();
-            if (lockedPosition.lastExportedPosition() != expectedPosition) {
-              throw new IllegalStateException(
-                  String.format(
-                      "Exporter position mismatch for partition %d: expected %d but found %d. "
-                          + "Another exporter instance may have already exported to this partition.",
-                      partitionId, expectedPosition, lockedPosition.lastExportedPosition()));
+            final long dbPosition = lockedPosition.lastExportedPosition();
+            if (dbPosition != expectedPosition) {
+              throw new ExporterPositionMismatchException(
+                  partitionId, expectedPosition, dbPosition);
             }
           }
         });

@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsSchemaManager;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -97,10 +98,12 @@ public final class RdbmsExporter {
 
   public void open(final Controller controller) {
     this.controller = controller;
+    rdbmsWriters.getExecutionQueue().reset();
     LOG.info(
-        "[RDBMS Exporter P{}] Opening exporter with broker position {}",
+        "[RDBMS Exporter P{}] Opening exporter with broker position {}, last flushed position {}",
         partitionId,
-        controller.getLastExportedRecordPosition());
+        controller.getLastExportedRecordPosition(),
+        lastFlushedPosition);
 
     if (!rdbmsSchemaManager.isInitialized()) {
       LOG.warn("[RDBMS Exporter P{}] Schema is not yet ready for use", partitionId);
@@ -108,7 +111,12 @@ public final class RdbmsExporter {
     }
 
     initializeRdbmsPosition();
-    lastPosition = controller.getLastExportedRecordPosition();
+    // Use whichever of the broker-acked position and this instance's own last-flushed position
+    // (preserved across a close+reopen on the same instance) is more advanced. On a cold start
+    // lastFlushedPosition is still -1, so this is exactly the broker position, matching what a
+    // fresh restart would use. On an in-process reopen, this instance may have already flushed
+    // further than what's been acknowledged to the broker.
+    lastPosition = Math.max(controller.getLastExportedRecordPosition(), lastFlushedPosition);
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
       if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
         // This is needed since the brokers last exported position is from its last snapshot and can
@@ -198,6 +206,8 @@ public final class RdbmsExporter {
             partitionId);
         throw e;
       }
+
+      rdbmsWriters.getExecutionQueue().reset();
     } catch (final Exception e) {
       LOG.warn(
           "[RDBMS Exporter P{}] Failed to flush records before closing exporter.", partitionId, e);
@@ -278,6 +288,17 @@ public final class RdbmsExporter {
         if (flushed) {
           resetIntervalFlush(exportStartNanos);
         }
+      } catch (final ExporterPositionMismatchException e) {
+        LOG.warn(
+            "[RDBMS Exporter P{}] Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.",
+            partitionId);
+        throw new ExporterException(
+            String.format(
+                "[RDBMS Exporter P%d] Flush failed due to exporter position conflict;"
+                    + " exporter will reopen to re-sync.",
+                partitionId),
+            e,
+            ExporterException.Compensation.REOPEN);
       } catch (final Exception e) {
         LOG.warn(
             "[RDBMS Exporter P{}] Failed to flush record for positions {} to {} to the database.",
