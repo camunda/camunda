@@ -36,7 +36,10 @@ final class IndexedScanTest {
 
   @BeforeEach
   void setUp() {
-    open(WriteBehindConfiguration.defaults().withKeyIndexColumnFamilies(Set.of(INDEXED)));
+    open(
+        WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(Map.of())
+            .withKeyIndexColumnFamilies(Set.of(INDEXED)));
   }
 
   @AfterEach
@@ -142,18 +145,20 @@ final class IndexedScanTest {
   }
 
   @Test
-  void shouldNotAnswerAbsentFromUnloadedIndex() {
-    // given
+  void shouldLoadIndexOnFirstPointReadAndAnswerAbsentAfterwards() {
+    // given an index that no scan has loaded
     put(INDEXED, 1);
     store.awaitFlushed();
 
     // when
+    final boolean first = store.exists(key(INDEXED, 99));
     final long gets = access.gets();
-    final boolean exists = store.exists(key(INDEXED, 99));
+    final boolean second = store.exists(key(INDEXED, 98));
 
-    // then
-    assertThat(exists).isFalse();
-    assertThat(access.gets()).isGreaterThan(gets);
+    // then the first read loaded the index, so the second needs no storage read
+    assertThat(first).isFalse();
+    assertThat(second).isFalse();
+    assertThat(access.gets()).isEqualTo(gets);
   }
 
   @Test
@@ -206,6 +211,8 @@ final class IndexedScanTest {
     // given
     reopen(
         WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(Map.of())
+            .withKeyIndexPolicies(Map.of())
             .withCacheMaxBytes(0)
             .withKeyIndexColumnFamilies(Set.of(INDEXED)));
     put(INDEXED, 1, 2, 3);
@@ -232,6 +239,8 @@ final class IndexedScanTest {
     // given
     reopen(
         WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(Map.of())
+            .withKeyIndexPolicies(Map.of())
             .withCacheMaxBytes(0)
             .withKeyIndexColumnFamilies(Set.of(INDEXED)));
     put(INDEXED, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -324,6 +333,8 @@ final class IndexedScanTest {
     // given
     reopen(
         WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(Map.of())
+            .withKeyIndexPolicies(Map.of())
             .withKeyIndexColumnFamilies(Set.of(INDEXED))
             .withKeyIndexMaxKeys(2));
     put(INDEXED, 1, 2);
@@ -346,6 +357,8 @@ final class IndexedScanTest {
     // stable keys are never touched, volatile keys come and go between the steps
     reopen(
         WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(Map.of())
+            .withKeyIndexPolicies(Map.of())
             .withCacheMaxBytes(seed % 2 == 0 ? 0 : 1 << 20)
             .withKeyIndexColumnFamilies(Set.of(INDEXED)));
     final var random = new Random(seed);

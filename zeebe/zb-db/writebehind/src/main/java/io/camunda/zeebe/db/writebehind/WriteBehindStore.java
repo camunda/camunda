@@ -231,6 +231,10 @@ final class WriteBehindStore implements AutoCloseable {
     if (index == null) {
       return false;
     }
+    if (index.state() == KeyIndex.State.UNLOADED) {
+      // a column family that is only read by key, never scanned, would otherwise never load
+      loadKeyIndex(index);
+    }
     final long version = index.version();
     final var bound = index.bound();
     return index.isStable(version)
