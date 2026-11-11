@@ -48,6 +48,7 @@ import org.jspecify.annotations.Nullable;
  * <ul>
  *   <li>insert, then update: one insert with the latest row (it isn't in the database yet)
  *   <li>insert, then delete: nothing is written
+ *   <li>delete of a row the session knows is missing, e.g. from an earlier read: nothing is written
  *   <li>update, then delete: one delete
  *   <li>delete, then insert: one update. This assumes the deleted row exists in the database; if it
  *       doesn't, the flush fails like any update of a missing row.
@@ -236,7 +237,10 @@ final class EntitySession implements JdbcTransactionParticipant {
         });
   }
 
-  /** Stages the deletion of the row with the given key; deleting a missing row is no error. */
+  /**
+   * Stages the deletion of the row with the given key; deleting a missing row is no error. If the
+   * session knows that the row doesn't exist, e.g. from an earlier read, nothing is staged.
+   */
   <K, E> void delete(final EntityType<K, E> type, final K key) {
     transactionContext.call(
         () -> {
@@ -244,6 +248,8 @@ final class EntitySession implements JdbcTransactionParticipant {
           final var write = writes.get(key);
           if (write != null && write.operation == Operation.INSERT) {
             writes.remove(key);
+          } else if (write == null && isCommittedAbsent(type, key)) {
+            return null;
           } else {
             writes.put(key, new Staged(Operation.DELETE, null));
           }
@@ -650,9 +656,15 @@ final class EntitySession implements JdbcTransactionParticipant {
     return committed == null || committed == ABSENT ? null : type.cast(committed);
   }
 
+  /** Whether the session knows that the database has no row of the key. */
+  private <K, E> boolean isCommittedAbsent(final EntityType<K, E> type, final K key) {
+    final Object committed = loaded(type).get(key);
+    return committed != null ? committed == ABSENT : isKnownAbsent(type, key);
+  }
+
   /**
-   * Whether the database has no row of the key: its group was loaded without it, or the key belongs
-   * to an engine key generated in this transaction.
+   * Whether the database has no row of a key that wasn't loaded itself: its group was loaded
+   * without it, or the key belongs to an engine key generated in this transaction.
    */
   private <K, E> boolean isKnownAbsent(final EntityType<K, E> type, final K key) {
     final Object group = type.groupOf(key);
