@@ -32,8 +32,6 @@ import org.junit.jupiter.api.Test;
 
 final class RdbmsLogStorageTest {
 
-  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-
   private static final long TERM = 3;
   private static final Config CONFIG =
       new Config(
@@ -44,6 +42,7 @@ final class RdbmsLogStorageTest {
           2,
           Duration.ZERO);
 
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final InMemoryLogBlockRepository repository = new InMemoryLogBlockRepository();
   private final List<String> events = new CopyOnWriteArrayList<>();
   private final List<Throwable> failures = new CopyOnWriteArrayList<>();

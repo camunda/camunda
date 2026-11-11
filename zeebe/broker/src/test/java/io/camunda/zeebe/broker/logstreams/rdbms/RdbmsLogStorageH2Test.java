@@ -40,11 +40,10 @@ import org.junit.jupiter.api.Test;
  */
 final class RdbmsLogStorageH2Test {
 
-  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-
   private static final String PREFIX = "TEST_";
   private static final int PARTITION_ID = 1;
 
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final List<AutoCloseable> resources = new ArrayList<>();
   private MyBatisLogBlockRepository repository;
 
