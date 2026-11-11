@@ -499,7 +499,7 @@ physical tenant, like the per-partition `rocks-db` settings.
 All sizes are per partition, so the broker-wide cost is these values times the partitions a broker
 hosts. Byte limits are what bound memory; `batchSize` only shapes the writer's groups.
 
-|  Property (under `write-behind-cache`)  | Default |                                                                Notes                                                                 |
+| Property (under `write-behind-cache`)  | Default |                                                                Notes                                                                 |
 |----------------------------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------|
 | `enabled`                              | `false` | Whether to wrap the partition's DB at all. Not part of `WriteBehindConfiguration`.                                                   |
 | `cache-size` (`cacheMaxBytes`)         | 64 MB   | The read cache. EhCache's heap tier sized in bytes, which measures each entry on insert; measure that cost.                          |
@@ -724,7 +724,6 @@ This has landed. Where the code settled differently:
     which hides a snapshot that misses the cached state.
   - In the follower IT, a broker joins the partition, since raft sends a snapshot to a member
     without entries, and then takes it over.
-
 - Add the cache's settings to the unified configuration, under
   `camunda.data.primary-storage.write-behind-cache`, and map them to the broker's
   `data.writeBehindCache`, which builds the `WriteBehindConfiguration` (§4.9).

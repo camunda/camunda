@@ -43,16 +43,16 @@ The benchmarks ran through temporary, uncommitted changes:
 One partition with 200 000 instances of state; each operation creates an instance and waits for
 its job.
 
-| Configuration                              |        ops/s |
-|--------------------------------------------|--------------|
-| off, run 1                                 | 1 914 ± 95   |
-| on (100 ms, 1 000), run 1                  | 1 962 ± 81   |
-| off, run 2                                 | 1 764 ± 86   |
-| on (100 ms, 1 000), run 2                  | 1 793 ± 115  |
-| on, `maxWriteDelay` 10 ms                  | 1 827 ± 109  |
-| on, `maxWriteDelay` 1 000 ms               | 2 041 ± 63   |
-| on, `batchSize` 100                        | 2 010 ± 70   |
-| on, `batchSize` 10 000                     | 1 919 ± 70   |
+|        Configuration         |    ops/s    |
+|------------------------------|-------------|
+| off, run 1                   | 1 914 ± 95  |
+| on (100 ms, 1 000), run 1    | 1 962 ± 81  |
+| off, run 2                   | 1 764 ± 86  |
+| on (100 ms, 1 000), run 2    | 1 793 ± 115 |
+| on, `maxWriteDelay` 10 ms    | 1 827 ± 109 |
+| on, `maxWriteDelay` 1 000 ms | 2 041 ± 63  |
+| on, `batchSize` 100          | 2 010 ± 70  |
+| on, `batchSize` 10 000       | 1 919 ± 70  |
 
 The two baseline runs differ by 150 ops/s. On average, the runs with the cache are 4.7% faster
 than the baseline (1 925 against 1 839 ops/s), and each interleaved pair differs by 2%. No setting
@@ -80,12 +80,12 @@ while generating the state.
 
 Instances created in 60 s:
 
-| Configuration                    | Runs                         |    Mean |
-|----------------------------------|------------------------------|---------|
-| off                              | 129 120, 130 780, 126 220    | 128 707 |
-| on (100 ms, 1 000)               | 132 849, 131 486, 137 880    | 134 072 |
-| on, `maxWriteDelay` 10 ms        | 134 100                      |         |
-| on, `maxWriteDelay` 1 000 ms     | 137 244                      |         |
+|        Configuration         |           Runs            |  Mean   |
+|------------------------------|---------------------------|---------|
+| off                          | 129 120, 130 780, 126 220 | 128 707 |
+| on (100 ms, 1 000)           | 132 849, 131 486, 137 880 | 134 072 |
+| on, `maxWriteDelay` 10 ms    | 134 100                   |         |
+| on, `maxWriteDelay` 1 000 ms | 137 244                   |         |
 
 Every run with the cache created more instances than every run without it, but the mean gain
 (4.2%) is close to the spread between baseline runs.
@@ -110,16 +110,16 @@ What the cache's metrics showed, for a run at the defaults:
 
 ## Broker, large values: 3 partitions, 1 MiB variables
 
-| Metric                         | Off              | On               |
-|--------------------------------|------------------|------------------|
-| Instances created in 60 s      | 5 140, 5 385     | 5 178, 5 293     |
-| Live set after GC              | 1.74 GB          | 2.19 GB          |
-| Allocation                     | 3 453 MB/s       | 3 582 MB/s       |
-| GC pause time per run          | 0.64 s           | 0.91 s           |
-| Read cache, all partitions     |                  | up to 208 MB     |
-| Pending, all partitions        |                  | up to 25 MB      |
-| Snapshot catch-up (max)        |                  | 2.3–3.3 ms       |
-| Checkpoint (mean)              |                  | 236–252 ms       |
+|           Metric           |     Off      |      On      |
+|----------------------------|--------------|--------------|
+| Instances created in 60 s  | 5 140, 5 385 | 5 178, 5 293 |
+| Live set after GC          | 1.74 GB      | 2.19 GB      |
+| Allocation                 | 3 453 MB/s   | 3 582 MB/s   |
+| GC pause time per run      | 0.64 s       | 0.91 s       |
+| Read cache, all partitions |              | up to 208 MB |
+| Pending, all partitions    |              | up to 25 MB  |
+| Snapshot catch-up (max)    |              | 2.3–3.3 ms   |
+| Checkpoint (mean)          |              | 236–252 ms   |
 
 - Throughput is the same with and without the cache.
 - The live set grew by 455 MB, against a budget of 288 MiB (3 × 96 MiB). The read cache (208 MB)
@@ -153,3 +153,4 @@ What the cache's metrics showed, for a run at the defaults:
   that RocksDB reads go to disk.
 - **The off-heap tier and `mayExist`.** Neither addresses the findings above.
 - **An ADR.** It's only planned for a go.
+
