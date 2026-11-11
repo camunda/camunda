@@ -29,6 +29,125 @@
     "cursorSync": "Crosshair",
     "editable": true,
     "elements": {
+      "panel-139": {
+        "kind": "Panel",
+        "spec": {
+          "data": {
+            "kind": "QueryGroup",
+            "spec": {
+              "queries": [
+                {
+                  "kind": "PanelQuery",
+                  "spec": {
+                    "hidden": false,
+                    "query": {
+                      "datasource": {
+                        "name": "${DS_PROMETHEUS}"
+                      },
+                      "group": "prometheus",
+                      "kind": "DataQuery",
+                      "spec": {
+                        "editorMode": "code",
+                        "exemplar": false,
+                        "expr": "max by (listener) (\n  sum by (listener, partition) (\n    zeebe_stream_processor_on_recovered_listener_duration_seconds_sum{\n      namespace=~\"$namespace\",\n      camunda_region=~\"$region\"\n    }\n  )\n  /\n  sum by (listener, partition) (\n    zeebe_stream_processor_on_recovered_listener_duration_seconds_count{\n      namespace=~\"$namespace\",\n      camunda_region=~\"$region\"\n    }\n  )\n)\n",
+                        "instant": false,
+                        "legendFormat": "{{listener}}",
+                        "range": true
+                      },
+                      "version": "v0"
+                    },
+                    "refId": "A"
+                  }
+                }
+              ],
+              "queryOptions": {},
+              "transformations": []
+            }
+          },
+          "description": "Per listener, the highest per-partition average onRecovered duration in the current leader term. Resets on a leader change or broker restart.",
+          "id": 139,
+          "links": [],
+          "title": "Highest onRecovered Listener Duration",
+          "vizConfig": {
+            "group": "timeseries",
+            "kind": "VizConfig",
+            "spec": {
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "showValues": false,
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "line"
+                    }
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      }
+                    ]
+                  },
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "options": {
+                "legend": {
+        "calcs": [
+          "min",
+          "max",
+          "mean"
+        ],
+        "displayMode": "table",
+        "placement": "bottom",
+        "showLegend": true,
+        "sortBy": "Max",
+        "sortDesc": true
+      },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "all",
+                  "sort": "desc"
+                }
+              }
+            },
+            "version": "12.2.0"
+          }
+        }
+      },
       "panel-1": {
         "kind": "Panel",
         "spec": {
@@ -11768,7 +11887,22 @@
                         "x": 12,
                         "y": 164
                       }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-139"
+                        },
+                        "height": 8,
+                        "width": 12,
+                        "x": 0,
+                        "y": 172
+                      }
                     }
+
+
                   ]
                 }
               },
