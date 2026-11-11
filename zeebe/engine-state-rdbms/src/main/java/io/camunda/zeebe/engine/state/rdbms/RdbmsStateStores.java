@@ -17,13 +17,18 @@ import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl;
+import io.camunda.zeebe.engine.state.metrics.UsageMetricStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.time.InstantSource;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
@@ -89,6 +94,17 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   @Override
   public MutableEventScopeInstanceState eventScopeInstanceState() {
     return new EventScopeInstanceStateImpl(new RdbmsEventScopeStore(entitySession));
+  }
+
+  @Override
+  public MutableUsageMetricState usageMetricState() {
+    return new UsageMetricStateImpl(new RdbmsUsageMetricStore(entitySession));
+  }
+
+  @Override
+  public MutableJobMetricsState jobMetricsState(
+      final InstantSource clock, final EngineConfiguration config) {
+    return new JobMetricsStateImpl(new RdbmsJobMetricsStore(entitySession), clock, config);
   }
 
   @Override

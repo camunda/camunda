@@ -641,4 +641,76 @@
       columnNames="partition_id, state_key"/>
   </changeSet>
 
+  <!--
+    The active bucket of the usage metrics: a counter per tenant of the created process instances
+    (metric_type 1) and of the evaluated decisions (2), and a row per unique task user of a tenant
+    (3), identified by the hash of the assignee, with a count of 1. The counters have no assignee
+    and use an assignee_hash of 0. The start time of the bucket is in the partition state.
+  -->
+  <changeSet id="create-usage-metric" author="camunda">
+    <createTable tableName="CAM_RU_USAGE_METRIC">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="metric_type" type="SMALLINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="assignee_hash" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="metric_count" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_USAGE_METRIC"
+      constraintName="CAM_RU_USAGE_METRIC_PKEY"
+      columnNames="partition_id, metric_type, tenant_id, assignee_hash"/>
+  </changeSet>
+
+  <!--
+    The job metrics of the current batch: per job type, tenant and worker, the number of jobs per
+    status and the time of the status' last update, -1 while there is none. The start and end time
+    of the batch and whether the size limits truncated it are in the partition state.
+  -->
+  <changeSet id="create-job-metric" author="camunda">
+    <createTable tableName="CAM_RU_JOB_METRIC">
+      <column name="partition_id" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="job_type" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tenant_id" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="worker" type="${engineState.textType}">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_count" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_last_updated_at" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="completed_count" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="completed_last_updated_at" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="failed_count" type="INT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="failed_last_updated_at" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addPrimaryKey tableName="CAM_RU_JOB_METRIC"
+      constraintName="CAM_RU_JOB_METRIC_PKEY"
+      columnNames="partition_id, job_type, tenant_id, worker"/>
+  </changeSet>
+
 </databaseChangeLog>

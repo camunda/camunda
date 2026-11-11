@@ -11,14 +11,19 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.JobState.ActivatableJobVisitor;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
+import io.camunda.zeebe.engine.state.jobmetrics.JobMetricsStateImpl;
+import io.camunda.zeebe.engine.state.metrics.UsageMetricStateImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -26,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.InvocationTargetException;
@@ -34,6 +40,7 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -68,6 +75,8 @@ final class EngineStateRoundTripsTest {
   private MutableVariableState variableState;
   private MutableJobState jobState;
   private MutableEventScopeInstanceState eventScopeState;
+  private MutableUsageMetricState usageMetricState;
+  private MutableJobMetricsState jobMetricsState;
 
   @BeforeAll
   static void startDatabase() throws Exception {
@@ -94,12 +103,79 @@ final class EngineStateRoundTripsTest {
         new ElementInstanceStateImpl(new RdbmsElementInstanceStore(session), variableState);
     jobState = new JobStateImpl(new RdbmsJobStore(session));
     eventScopeState = new EventScopeInstanceStateImpl(new RdbmsEventScopeStore(session));
+    usageMetricState = new UsageMetricStateImpl(new RdbmsUsageMetricStore(session));
+    jobMetricsState =
+        new JobMetricsStateImpl(
+            new RdbmsJobMetricsStore(session), InstantSource.system(), new EngineConfiguration());
   }
 
   @AfterEach
   void endTransaction() throws Exception {
     transactionContext.getCurrentTransaction().rollback();
     database.observed().reset();
+  }
+
+  @Test
+  void shouldInsertRepeatedlyIncrementedMetricsWithOneStatementPerRow() throws Exception {
+    // given - three increments of the same usage and job metric in one transaction
+    final var transaction = transactionContext.getCurrentTransaction();
+    counting.reset();
+    incrementMetrics();
+    final int queriesOfFirstIncrement = counting.otherStatements;
+    incrementMetrics();
+    incrementMetrics();
+
+    // then - only the first increment reads: the usage metric, the job metric, the key count, and
+    // the start and end time of the batch
+    assertThat(queriesOfFirstIncrement).isEqualTo(5);
+    assertThat(counting.otherStatements).isEqualTo(queriesOfFirstIncrement);
+    counting.reset();
+
+    // when
+    transaction.commit();
+
+    // then - one insert per metric row, and one per value of the partition state: the key count,
+    // and the start and end time of the batch
+    assertThat(counting.batches)
+        .containsExactlyInAnyOrder(
+            new Batch("CAM_RU_USAGE_METRIC", "INSERT", 1),
+            new Batch("CAM_RU_JOB_METRIC", "INSERT", 1),
+            new Batch("CAM_RU_PARTITION_STATE", "INSERT", 3));
+    assertThat(counting.otherStatements).isZero();
+  }
+
+  @Test
+  void shouldUpdateCommittedMetricsWithOneStatementPerRow() throws Exception {
+    // given
+    final var first = transactionContext.getCurrentTransaction();
+    incrementMetrics();
+    first.commit();
+
+    // when - three increments of the committed metrics
+    final var second = transactionContext.getCurrentTransaction();
+    counting.reset();
+    incrementMetrics();
+    incrementMetrics();
+    incrementMetrics();
+    final int queries = counting.otherStatements;
+    counting.reset();
+    second.commit();
+
+    // then - the first increment read the same rows, the others none; the key count didn't change,
+    // but the start time is set while the batch has a single key
+    assertThat(queries).isEqualTo(5);
+    assertThat(counting.batches)
+        .containsExactlyInAnyOrder(
+            new Batch("CAM_RU_USAGE_METRIC", "UPDATE", 1),
+            new Batch("CAM_RU_JOB_METRIC", "UPDATE", 1),
+            new Batch("CAM_RU_PARTITION_STATE", "UPDATE", 2));
+  }
+
+  private void incrementMetrics() {
+    usageMetricState.recordRPIMetric(TENANT_ID);
+    jobMetricsState.incrementMetric(
+        new JobRecord().setType("type").setTenantId(TENANT_ID).setWorker("worker"),
+        JobMetricsExportState.CREATED);
   }
 
   @Test

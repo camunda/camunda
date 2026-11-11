@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the usage metric table of the relational engine state, see UsageMetricMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertUsageMetric); the other statements are queries of the mapper.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.UsageMetricMapper">
+
+  <resultMap id="usageMetricRow"
+    type="io.camunda.zeebe.engine.state.rdbms.UsageMetricMapper$UsageMetricRow">
+    <constructor>
+      <idArg column="metric_type" javaType="_short"/>
+      <idArg column="tenant_id" javaType="String"/>
+      <idArg column="assignee_hash" javaType="_long"/>
+      <arg column="metric_count" javaType="_long"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="usageMetricColumns">
+    metric_type, tenant_id, assignee_hash, metric_count
+  </sql>
+
+  <select id="selectUsageMetric" resultMap="usageMetricRow">
+    SELECT <include refid="usageMetricColumns"/>
+    FROM CAM_RU_USAGE_METRIC
+    WHERE partition_id = #{partitionId} AND metric_type = #{key.metricType}
+      AND tenant_id = #{key.tenantId} AND assignee_hash = #{key.assigneeHash}
+  </select>
+
+  <select id="selectUsageMetrics" resultMap="usageMetricRow">
+    SELECT <include refid="usageMetricColumns"/>
+    FROM CAM_RU_USAGE_METRIC
+    WHERE partition_id = #{partitionId}
+  </select>
+
+  <insert id="insertUsageMetric">
+    INSERT INTO CAM_RU_USAGE_METRIC (partition_id, metric_type, tenant_id, assignee_hash,
+      metric_count)
+    VALUES (#{partitionId}, #{row.metricType}, #{row.tenantId}, #{row.assigneeHash},
+      #{row.metricCount})
+  </insert>
+
+  <update id="updateUsageMetric">
+    UPDATE CAM_RU_USAGE_METRIC
+    SET metric_count = #{row.metricCount}
+    WHERE partition_id = #{partitionId} AND metric_type = #{row.metricType}
+      AND tenant_id = #{row.tenantId} AND assignee_hash = #{row.assigneeHash}
+  </update>
+
+  <delete id="deleteUsageMetric">
+    DELETE FROM CAM_RU_USAGE_METRIC
+    WHERE partition_id = #{partitionId} AND metric_type = #{key.metricType}
+      AND tenant_id = #{key.tenantId} AND assignee_hash = #{key.assigneeHash}
+  </delete>
+
+</mapper>

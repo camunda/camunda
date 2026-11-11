@@ -46,11 +46,16 @@ public final class RdbmsEngineStateSchema {
       List.of(
           "CAM_RU_PROCESS_DEFINITION", "CAM_RU_PROCESS_VERSION", "CAM_RU_PENDING_PROCESS_DELETION");
 
+  /** The tables of the usage and job metrics, which don't belong to a process instance. */
+  public static final List<String> METRIC_TABLES =
+      List.of("CAM_RU_USAGE_METRIC", "CAM_RU_JOB_METRIC");
+
   /** All engine state tables; each has a {@code partition_id} column. */
   public static final List<String> TABLES =
       Stream.of(
               PROCESS_INSTANCE_TABLES.stream(),
               PROCESS_DEFINITION_TABLES.stream(),
+              METRIC_TABLES.stream(),
               Stream.of("CAM_RU_PARTITION_STATE"))
           .flatMap(Function.identity())
           .toList();
