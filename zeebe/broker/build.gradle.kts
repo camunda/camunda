@@ -31,6 +31,7 @@ dependencies {
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-db-api"))
+  implementation(project(":zeebe-db-jdbc"))
   implementation(project(":zeebe-db-writebehind"))
   api(project(":zeebe-exporter-api"))
   implementation(project(":zeebe-exporter-config-support"))

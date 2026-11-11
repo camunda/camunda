@@ -7,6 +7,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-db-api"))
+  implementation(project(":zeebe-db-jdbc"))
   implementation(project(":zeebe-util"))
   implementation(libs.io.camunda.security.library.core)
   implementation(project(":zeebe-protocol"))

@@ -16,6 +16,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-db-api"))
+  implementation(project(":zeebe-db-jdbc"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-logstreams"))
   api(libs.com.fasterxml.jackson.core.jackson.annotations)
