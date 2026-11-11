@@ -93,9 +93,9 @@ Every run with the cache created more instances than every run without it, but t
 What the cache's metrics showed, for a run at the defaults:
 
 - **Writer groups:** at about 2 200 instances per second, groups close on `batchSize`, not on
-  `maxWriteDelay`. A backend transaction holds 40 committed transactions and 777 keys on average,
+  `maxWriteDelay`. A storage transaction holds 40 committed transactions and 777 keys on average,
   so `maxWriteDelay` only matters at lower load. With 10 ms, groups shrink to 26 transactions.
-- **Combining:** 3.75 M committed keys became 2.90 M backend writes (23% fewer): 1.80 M upserts
+- **Combining:** 3.75 M committed keys became 2.90 M storage writes (23% fewer): 1.80 M upserts
   and 1.10 M deletes.
 - **Reads:** 4.15 M cache gets and 2.69 M loads (a 65% miss rate), plus 0.75 M reads answered by
   unflushed versions. 0.2% of lock-free reads were retried.
