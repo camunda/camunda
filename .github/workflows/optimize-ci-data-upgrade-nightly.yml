@@ -76,7 +76,8 @@ jobs:
           compose_file: .github/actions/compose/docker-compose.${{ matrix.database }}.yml
           project_name: ${{ matrix.database }}
         env:
-          ELASTIC_VERSION: ${{ steps.db-versions.outputs.elasticsearch-9 }}
+          # Only main moved to ES 9; stable branches keep testing their ES 8 client against ES 8.
+          ELASTIC_VERSION: ${{ startsWith(matrix.branch, 'stable/') && steps.db-versions.outputs.elasticsearch-8 || steps.db-versions.outputs.elasticsearch-9 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
           OPENSEARCH_VERSION: ${{ steps.db-versions.outputs.opensearch-2 }}
