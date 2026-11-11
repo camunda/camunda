@@ -42,10 +42,7 @@ final class MergingCursor implements AutoCloseable {
    * @param prefix the prefix of the scan, which restricts the storage view if the cursor needs one
    */
   MergingCursor(
-      final NavigableMap<RawKey, Version> own,
-      final WriteBehindStore store,
-      final byte[] prefix,
-      final int prefixLength) {
+      final NavigableMap<RawKey, Version> own, final WriteBehindStore store, final byte[] prefix) {
     this.own = own;
     this.store = store;
     this.prefix = Arrays.copyOf(prefix, prefixLength);
@@ -92,15 +89,15 @@ final class MergingCursor implements AutoCloseable {
       Values.copy(value, target);
       return true;
     }
-    if (committed().readValue(target)) {
+    if (!isCommittedAt(key)) {
+      // an earlier failed read moved the source on to another key
+      return false;
+    }
+    if (committed().readValueUnlessStale(target)) {
       return true;
     }
     // the entry is current, so it stays when the view still has it
-    switchToView();
-    seekInDirection(key);
-    return committed().isValid() && Arrays.equals(committed().key(), key)
-        ? committed().readValue(target)
-        : false;
+    return restartFromView(key) && committed().readValueUnlessStale(target);
   }
 
   @Override
@@ -124,8 +121,7 @@ final class MergingCursor implements AutoCloseable {
     }
     seekInDirection(key);
     if (committed().isStale()) {
-      switchToView();
-      seekInDirection(key);
+      restartFromView(key);
     }
   }
 
@@ -137,11 +133,20 @@ final class MergingCursor implements AutoCloseable {
     }
   }
 
-  /** Replaces the stale index source with a view, which the caller seeks. */
-  private void switchToView() {
+  /**
+   * Replaces the stale index source with a view and seeks it to {@code key}. Returns whether it
+   * landed exactly on {@code key}.
+   */
+  private boolean restartFromView(final byte[] key) {
     committed().close();
     store.recordKeyIndexSwitch();
     committed = new ViewSource(store.openView(prefix, prefix.length));
+    seekInDirection(key);
+    return isCommittedAt(key);
+  }
+
+  private boolean isCommittedAt(final byte[] key) {
+    return committed().isValid() && Arrays.equals(committed().key(), key);
   }
 
   private CommittedSource committed() {
@@ -198,14 +203,10 @@ final class MergingCursor implements AutoCloseable {
   private void advancePast(final byte[] key) {
     final var rawKey = RawKey.copyOf(key);
     ownEntry = forward ? own.higherEntry(rawKey) : own.lowerEntry(rawKey);
-    if (committed().isValid() && Arrays.equals(committed().key(), key)) {
+    if (isCommittedAt(key)) {
       committed().advance();
-      if (committed().isStale()) {
-        switchToView();
-        seekInDirection(key);
-        if (committed().isValid() && Arrays.equals(committed().key(), key)) {
-          committed().advance();
-        }
+      if (committed().isStale() && restartFromView(key)) {
+        committed().advance();
       }
     }
   }

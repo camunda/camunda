@@ -33,7 +33,7 @@ interface CommittedSource extends AutoCloseable {
    * Copies or decodes the value of the current key into {@code target}. Returns false if the source
    * turned {@link #isStale() stale} instead.
    */
-  boolean readValue(DbValue target);
+  boolean readValueUnlessStale(DbValue target);
 
   /**
    * Whether the source can't continue and its position is lost. Only a source that doesn't read a

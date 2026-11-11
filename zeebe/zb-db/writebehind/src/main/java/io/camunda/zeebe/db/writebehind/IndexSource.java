@@ -12,8 +12,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Walks the keys of a loaded {@link KeyIndex} and reads values through the store, so a scan opens
- * no storage iterator. A value is read only when {@link #readValue} asks for it: dirty index, then
- * cache, then one storage read.
+ * no storage iterator. A value is read only when {@link #readValueUnlessStale} asks for it: dirty
+ * index, then cache, then one storage read.
  *
  * <p>The source reads the live key set and checks the index version after each key and each value
  * read, instead of working on a fixed copy. When the version changed, or after {@link
@@ -86,7 +86,7 @@ final class IndexSource implements CommittedSource {
   }
 
   @Override
-  public boolean readValue(final DbValue target) {
+  public boolean readValueUnlessStale(final DbValue target) {
     final var key = head;
     if (stale || key == null) {
       return false;

@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
  * iterator. On equal keys the unflushed version wins; a delete hides the key.
  *
  * <p>Values from memory are copied out of their objects; only values from the storage are decoded,
- * and only when {@link #readValue} asks for them.
+ * and only when {@link #readValueUnlessStale} asks for them.
  */
 final class ViewSource implements CommittedSource {
 
@@ -74,7 +74,7 @@ final class ViewSource implements CommittedSource {
   }
 
   @Override
-  public boolean readValue(final DbValue target) {
+  public boolean readValueUnlessStale(final DbValue target) {
     current();
     final var value = currentValue;
     if (value != null) {
