@@ -158,6 +158,23 @@ test('should score passes and failures and group errors', () => {
   assert.deepEqual(result.failingShards, ['flaky-baseline-e2e-v2-s1']);
 });
 
+test('should group the same error across runs whose ids differ', () => {
+  // given
+  const notFound = (key) => failed(`HTTPError: 404 - no process instance with key '${key}'`);
+  const dir = shardDir([
+    {cell: 'e2e-v2', tests: [notFound('2251799813693602')]},
+    {cell: 'e2e-v2', tests: [notFound('2251799813693589')]},
+  ]);
+
+  // when
+  const result = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(result.topErrors, [
+    {cell: 'e2e-v2', count: 2, message: "HTTPError: 404 - no process instance with key '<n>'"},
+  ]);
+});
+
 test('should not count interrupted runs or a sibling test with another title', () => {
   // given
   const dir = shardDir([
