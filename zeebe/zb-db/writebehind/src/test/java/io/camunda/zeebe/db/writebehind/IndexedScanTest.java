@@ -10,12 +10,9 @@ package io.camunda.zeebe.db.writebehind;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.RawAccessibleDb;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +22,6 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -34,9 +30,6 @@ final class IndexedScanTest {
   private static final long INDEXED = 7;
   private static final long NOT_INDEXED = 11;
 
-  @TempDir Path directory;
-
-  private RawAccessibleDb<DefaultColumnFamily> db;
   private CountingRawDbAccess access;
   private WriteBehindStore store;
   private WriteBehindTransaction transaction;
@@ -49,12 +42,10 @@ final class IndexedScanTest {
   @AfterEach
   void tearDown() throws Exception {
     store.close();
-    db.close();
   }
 
   private void open(final WriteBehindConfiguration config) {
-    db = RocksDbSupport.open(directory);
-    access = new CountingRawDbAccess(db.rawAccess());
+    access = new CountingRawDbAccess(new InMemoryRawDbAccess());
     store = new WriteBehindStore(access, config);
     transaction = new WriteBehindTransaction(store);
     transaction.resetTransaction();

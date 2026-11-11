@@ -10,12 +10,9 @@ package io.camunda.zeebe.db.writebehind;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.RawAccessibleDb;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -25,7 +22,6 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -35,9 +31,6 @@ final class KeyIndexTest {
   private static final long OTHER = 9;
   private static final long NOT_INDEXED = 11;
 
-  @TempDir Path directory;
-
-  private RawAccessibleDb<DefaultColumnFamily> db;
   private WriteBehindStore store;
 
   @BeforeEach
@@ -48,12 +41,10 @@ final class KeyIndexTest {
   @AfterEach
   void tearDown() throws Exception {
     store.close();
-    db.close();
   }
 
   private void open(final WriteBehindConfiguration config) {
-    db = RocksDbSupport.open(directory);
-    store = new WriteBehindStore(db.rawAccess(), config);
+    store = new WriteBehindStore(new InMemoryRawDbAccess(), config);
   }
 
   private void reopen(final WriteBehindConfiguration config) throws Exception {
