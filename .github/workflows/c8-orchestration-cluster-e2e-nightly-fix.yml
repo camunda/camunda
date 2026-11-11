@@ -716,28 +716,51 @@ jobs:
           fi
 
           # The orchestration-cluster suite runs automatically as a non-blocking
-          # PR check (team-test-automation#188) on every branch that carries the
-          # PR check workflow. Where it does, that check validates the fix and a
-          # manually triggered on-demand run is redundant. Where it does not
-          # (e.g. stable/8.7), keep dispatching the on-demand run as the only
-          # automatic suite signal.
+          # PR check (team-test-automation#188) on branches that carry the PR
+          # check workflow, but only for PRs that change a non-Markdown suite
+          # file (its paths filter). Where both hold, that check validates the
+          # fix and a manually triggered on-demand run is redundant. Otherwise
+          # (e.g. stable/8.7, or a fix that only touches a workflow), keep
+          # dispatching the on-demand run as the fix's automatic suite signal.
           if gh api "repos/${REPO}/contents/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml?ref=${TARGET_REF}" \
                --silent >/dev/null 2>&1; then
-            has_auto_check=true
-            echo "${TARGET_REF} has the automatic suite PR check — skipping the on-demand dispatch."
+            branch_has_check=true
+            echo "${TARGET_REF} has the automatic suite PR check."
           else
-            has_auto_check=false
+            branch_has_check=false
             echo "${TARGET_REF} has no automatic suite PR check — dispatching the on-demand run."
           fi
+
+          # Whether the PR check runs for this PR: it changes a non-Markdown
+          # file under the suite. Retried, and "no" when the file list cannot
+          # be read, so an API failure never leaves a fix unverified.
+          pr_runs_suite_check() {
+            local files attempt
+            for attempt in 1 2 3 4; do
+              if files=$(gh pr view "$1" --repo "$REPO" --json files --jq '.files[].path'); then
+                awk '/^qa\/c8-orchestration-cluster-e2e-test-suite\// && !/\.md$/ {found = 1} END {exit !found}' <<<"$files"
+                return
+              fi
+              sleep $((2 ** attempt))
+            done
+            echo "::warning::Could not list the files of PR #$1 — dispatching the on-demand run."
+            return 1
+          }
 
           jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_number=$(echo "$pr_obj" | jq -r '.number')
             branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
             on_demand_run_url=""
 
-            # On a branch without the automatic check, dispatch the on-demand run
-            # as the fix's only automatic suite signal (fire-and-forget: we resolve
-            # the run URL for the PR body but do not wait for it to finish).
+            has_auto_check=false
+            if [ "$branch_has_check" = "true" ] && pr_runs_suite_check "$pr_number"; then
+              has_auto_check=true
+              echo "PR #${pr_number} runs the automatic suite PR check — skipping the on-demand dispatch."
+            fi
+
+            # Without the automatic check, dispatch the on-demand run as the
+            # fix's only automatic suite signal (fire-and-forget: we resolve the
+            # run URL for the PR body but do not wait for it to finish).
             if [ "$has_auto_check" != "true" ]; then
               if [ -z "$branch" ] || [ "$branch" = "null" ]; then
                 echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
