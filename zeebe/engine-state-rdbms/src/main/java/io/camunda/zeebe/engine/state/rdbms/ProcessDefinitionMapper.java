@@ -141,5 +141,14 @@ interface ProcessDefinitionMapper {
   }
 
   /** A partition that still owes a drain report for a process definition; its own key. */
-  record PendingProcessDeletionRow(long processDefinitionKey, int pendingPartitionId) {}
+  record PendingProcessDeletionRow(long processDefinitionKey, int pendingPartitionId)
+      implements Comparable<PendingProcessDeletionRow> {
+
+    @Override
+    public int compareTo(final PendingProcessDeletionRow other) {
+      return Comparator.comparingLong(PendingProcessDeletionRow::processDefinitionKey)
+          .thenComparingInt(PendingProcessDeletionRow::pendingPartitionId)
+          .compare(this, other);
+    }
+  }
 }

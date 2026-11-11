@@ -144,17 +144,31 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
    * after the copy is in the storage when the read starts, and one that is flushed before is in the
    * copy, so the two together hold every committed write.
    */
-  public NavigableMap<K, @Nullable V> unflushedSnapshot() {
+  public Unflushed<K, V> unflushedSnapshot() {
     ensureUsable();
     final var copy = new TreeMap<K, @Nullable V>();
     final long stamp = publishLock.readLock();
     try {
       dirty.forEach((key, version) -> copy.put(key, version.value()));
+      return new Unflushed<>(lastSeq, copy);
     } finally {
       publishLock.unlockRead(stamp);
     }
-    return copy;
   }
+
+  /** The sequence of the last commit. A snapshot of the unflushed writes is valid until it changes. */
+  public long committedSeq() {
+    return committedSeq;
+  }
+
+  /**
+   * The unflushed writes as of the commit with the given sequence. It stays correct for reads of
+   * the storage until the next commit: the flush only moves the same rows from these writes to the
+   * storage.
+   *
+   * @param writes the latest value per key, or null for a delete
+   */
+  public record Unflushed<K, V>(long seq, NavigableMap<K, @Nullable V> writes) {}
 
   /** The unflushed version of a key, or else the cached one; null if the store has neither. */
   @Nullable Version<V> lookupInMemory(final K key) {

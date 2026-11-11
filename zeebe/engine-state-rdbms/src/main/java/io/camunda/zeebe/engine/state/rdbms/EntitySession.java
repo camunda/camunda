@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -108,11 +107,13 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final Map<EntityType<?, ?>, Map<Object, List<Object>>> loadedGroups = new HashMap<>();
 
   /**
-   * The writes that the store hasn't flushed yet, as of the first database access of the
-   * transaction, see {@link WriteBehindStore#unflushedSnapshot}. The database doesn't hold them, so
-   * every row that is read from it is merged with them, like with the staged writes.
+   * The writes that the store hasn't flushed yet, see {@link WriteBehindStore#unflushedSnapshot}.
+   * The database doesn't hold them, so every row that is read from it is merged with them, like
+   * with the staged writes. The snapshot is kept until the next commit, not only for the
+   * transaction: a read that is made of several calls, outside of a transaction, then merges one
+   * snapshot with its query, whichever flush happens in between.
    */
-  private @Nullable NavigableMap<EntityKey, @Nullable Object> unflushed;
+  private WriteBehindStore.@Nullable Unflushed<EntityKey, Object> unflushed;
 
   /** The unflushed writes of {@link #unflushed} per type and key; a null row is a delete. */
   private final Map<EntityType<?, ?>, Map<Object, @Nullable Object>> unflushedByType =
@@ -704,8 +705,6 @@ final class EntitySession implements JdbcTransactionParticipant {
   private void clearLoaded() {
     loaded.clear();
     loadedGroups.clear();
-    unflushed = null;
-    unflushedByType.clear();
   }
 
   /** Whether the session knows the current row of the key, or that there is none. */
@@ -777,19 +776,32 @@ final class EntitySession implements JdbcTransactionParticipant {
     if (store == null) {
       return Map.of();
     }
+    final var snapshot = currentUnflushed(store);
     var ofType = unflushedByType.get(type);
     if (ofType == null) {
-      if (unflushed == null) {
-        unflushed = store.unflushedSnapshot();
-      }
       ofType = new LinkedHashMap<>();
       for (final var write :
-          unflushed.subMap(EntityKey.first(type), true, EntityKey.after(type), true).entrySet()) {
+          snapshot
+              .writes()
+              .subMap(EntityKey.first(type), true, EntityKey.after(type), true)
+              .entrySet()) {
         ofType.put(write.getKey().key(), write.getValue());
       }
       unflushedByType.put(type, ofType);
     }
     return ofType;
+  }
+
+  /** The snapshot of the unflushed writes of the last commit; takes a new one after a commit. */
+  private WriteBehindStore.Unflushed<EntityKey, Object> currentUnflushed(
+      final WriteBehindStore<EntityKey, Object> source) {
+    var snapshot = unflushed;
+    if (snapshot == null || snapshot.seq() != source.committedSeq()) {
+      snapshot = source.unflushedSnapshot();
+      unflushed = snapshot;
+      unflushedByType.clear();
+    }
+    return snapshot;
   }
 
   /**
@@ -834,9 +846,9 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private SqlSession session() {
     if (session == null) {
-      if (store != null && unflushed == null) {
+      if (store != null) {
         // taken before the first read, see WriteBehindStore#unflushedSnapshot
-        unflushed = store.unflushedSnapshot();
+        currentUnflushed(store);
       }
       session =
           sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);

@@ -109,4 +109,10 @@
     WHERE partition_id = #{partitionId}
   </update>
 
+  <!-- Not used by the session, which updates the batch row, but a write-behind flush overwrites a row by deleting and inserting it. -->
+  <delete id="deleteJobMetricBatch">
+    DELETE FROM CAM_RU_JOB_METRIC_BATCH
+    WHERE partition_id = #{partitionId}
+  </delete>
+
 </mapper>
