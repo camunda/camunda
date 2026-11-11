@@ -69,6 +69,25 @@ final class RdbmsLastProcessedPositionTest {
   }
 
   @Test
+  void shouldNotStoreThePositionOfACommandWithoutChanges() throws Exception {
+    // given
+    final var context = new JdbcTransactionContext(readLastProcessedPosition());
+    final var session = database.entitySession(context, partitionId);
+    applyCommand(context, session, "a", 5);
+
+    // when - a command that only reads
+    final var transaction = context.getCurrentTransaction();
+    session.get(RdbmsProcessStore.PARTITION_STATE, "change-a");
+    context.markAsProcessed(6);
+    transaction.commit();
+
+    // then - the position stays, until a command with changes writes its own
+    assertThat(readLastProcessedPosition()).isEqualTo(5);
+    applyCommand(context, session, "b", 7);
+    assertThat(readLastProcessedPosition()).isEqualTo(7);
+  }
+
+  @Test
   void shouldConvergeWhenTheDatabaseIsACommandAheadAfterACrash() throws Exception {
     // given - the database committed position 5, but RocksDB didn't before the crash
     final var beforeCrash = new JdbcTransactionContext(readLastProcessedPosition());
