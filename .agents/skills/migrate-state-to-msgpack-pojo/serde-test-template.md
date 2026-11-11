@@ -4,6 +4,15 @@ Copy into `<module>/src/test/java/<package path>/<Name>SerdeTest.java`. Replace 
 fill the `TODO`s. Keep the structure and the `// given // when // then` comments. The real example is
 `zeebe/engine/src/test/java/io/camunda/zeebe/engine/state/instance/ElementInstanceSerdeTest.java`.
 
+Adjust the tests to the class:
+
+- Drop the "no aliasing of the read buffer" test when the class has only numbers, booleans and
+  enums (nothing to alias).
+- Properties without a default cannot be written by the old class while unset: set them on both
+  the old and the new object, also in the "defaults" tests.
+- Variable-size values (more than 15 entries or 31 bytes) change the msgpack header size. Add one
+  test with a long string or binary when the class has any.
+
 ```java
 package <package>;
 

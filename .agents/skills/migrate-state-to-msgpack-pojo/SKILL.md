@@ -57,7 +57,10 @@ you mention that in the commit body.
 Properties WITHOUT a default (`new BooleanProperty("k")`, `new LongProperty("k")`) throw when
 written before being set. Use the Java default (`false`, `0L`) as the initializer; the stored
 bytes are identical for everything the old class could write. In the serde tests set such a
-value explicitly on both the old and the new object, and say so in the commit body.
+value explicitly on both the old and the new object, also in the "defaults" tests (the old class
+cannot write while unset, so those tests set it on both sides), and say so in the commit body.
+An enum without default is the same: the new class throws `IllegalStateException` instead of
+`MsgpackPropertyException` when written unset; mention it in the commit body.
 
 ## Step 1: write down the stored layout
 
