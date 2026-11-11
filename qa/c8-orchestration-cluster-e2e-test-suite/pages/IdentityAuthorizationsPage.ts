@@ -33,7 +33,6 @@ export class IdentityAuthorizationsPage {
   readonly resourceTypeComboBox: Locator;
   readonly getAuthorizationCell: (ownerId: string) => Locator;
   readonly resourceTypeOption: (resourceType: string) => Locator;
-  readonly ownerIdSearchInput: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -99,9 +98,6 @@ export class IdentityAuthorizationsPage {
     );
     this.resourceTypeComboBox = page.getByRole('combobox', {
       name: 'Resource type',
-    });
-    this.ownerIdSearchInput = page.getByLabel('Search by owner ID', {
-      exact: true,
     });
     this.getAuthorizationCell = (ownerId) =>
       this.authorizationsList.getByRole('cell', {

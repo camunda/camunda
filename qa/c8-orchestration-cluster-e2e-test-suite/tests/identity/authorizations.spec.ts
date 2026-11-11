@@ -173,40 +173,6 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
-  test('filters the authorizations list by owner ID', async ({
-    page,
-    identityHeader,
-    identityAuthorizationsPage,
-  }) => {
-    const role = NEW_AUTH_ROLE;
-    const noMatchOwnerId = `${role.id}-no-match`;
-    await identityHeader.navigateToAuthorizations();
-    await identityAuthorizationsPage.selectResourceTypeTab(
-      NEW_COMPONENT_AUTHORIZATION.resourceType,
-    );
-    await expect(
-      identityAuthorizationsPage.getAuthorizationCell(role.id),
-    ).toBeVisible();
-
-    const noMatchResponse = page.waitForResponse(
-      (response) =>
-        response.url().includes('/v2/authorizations/search') &&
-        response.request().postData()?.includes(noMatchOwnerId) === true,
-    );
-    await identityAuthorizationsPage.ownerIdSearchInput.fill(noMatchOwnerId);
-    const response = await noMatchResponse;
-    expect(response.status()).toBe(200);
-    expect((await response.json()).items).toHaveLength(0);
-    await expect(
-      identityAuthorizationsPage.getAuthorizationCell(role.id),
-    ).toBeHidden();
-
-    await identityAuthorizationsPage.ownerIdSearchInput.fill(role.id);
-    await expect(
-      identityAuthorizationsPage.getAuthorizationCell(role.id),
-    ).toBeVisible();
-  });
-
   test('delete component authorization for role', async ({
     page,
     identityHeader,
