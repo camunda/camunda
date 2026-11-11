@@ -58,7 +58,9 @@ test.describe('Admin global task listeners', () => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
 				successResponse: HttpResponse.json(
-					createQueryGlobalTaskListenersResponse({items: [createGlobalTaskListener()]}),
+					createQueryGlobalTaskListenersResponse({
+						items: [createGlobalTaskListener({id: 'existing-listener', type: 'existing-type'})],
+					}),
 				),
 			}),
 		);
