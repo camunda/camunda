@@ -254,6 +254,10 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final ActivatedJob job, final String errorMessage, final String partitionGroup) {
     final BrokerFailJobRequest brokerFailJobRequest =
         new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
+    final var leaseToken = job.jobLeaseToken();
+    if (leaseToken != null && !leaseToken.isEmpty()) {
+      brokerFailJobRequest.setJobLeaseToken(leaseToken);
+    }
     brokerFailJobRequest.setAuthorization(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     brokerFailJobRequest.setPartitionGroup(partitionGroup);
     return brokerFailJobRequest;
