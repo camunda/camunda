@@ -20,6 +20,8 @@ import java.util.Map;
 import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.jdbc.DatabaseDriver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,6 +44,15 @@ public class RdbmsEngineStateConfiguration {
    * load cannot delay a lease renewal until the leader gives up a partition it could still lead.
    */
   private static final int MAILBOX_POOL_SIZE = 8;
+
+  /**
+   * Brokers that start at the same time on an empty database race to create the Liquibase tracking
+   * tables, before its lock can order them, and all but one fail. On the next attempt the tables
+   * exist and the lock lets one broker migrate at a time.
+   */
+  private static final int MIGRATION_ATTEMPTS = 3;
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsEngineStateConfiguration.class);
 
   @Bean(destroyMethod = "close")
   public RdbmsEngineStatePool rdbmsEngineStatePool(
@@ -139,7 +150,22 @@ public class RdbmsEngineStateConfiguration {
     liquibase.setChangeLogParameters(parameters);
     liquibase.setDatabaseChangeLogTable(RdbmsEngineStateSchema.DATABASE_CHANGELOG_TABLE);
     liquibase.setDatabaseChangeLogLockTable(RdbmsEngineStateSchema.DATABASE_CHANGELOG_LOCK_TABLE);
-    liquibase.afterPropertiesSet();
+    for (int attempt = 1; ; attempt++) {
+      try {
+        liquibase.afterPropertiesSet();
+        return;
+      } catch (final LiquibaseException e) {
+        if (attempt == MIGRATION_ATTEMPTS) {
+          throw e;
+        }
+        LOG.warn(
+            "Failed to migrate {} (attempt {} of {}), retrying",
+            changelog,
+            attempt,
+            MIGRATION_ATTEMPTS,
+            e);
+      }
+    }
   }
 
   /** Holds what is built once per broker, or null if the RDBMS engine state is disabled. */
