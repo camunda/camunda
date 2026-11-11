@@ -60,7 +60,8 @@ public record WriteBehindConfiguration(
               ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
               ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
               ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST,
-              ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST));
+              ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST,
+              ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, KeyIndexPolicy.KEEP_HIGHEST));
 
   private static final Map<Long, KeyIndexPolicy> DEFAULT_KEY_INDEX_POLICIES =
       toIds(HOTSPOT_POLICIES);
