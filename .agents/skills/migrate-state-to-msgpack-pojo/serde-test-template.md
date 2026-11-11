@@ -6,6 +6,10 @@ fill the `TODO`s. Keep the structure and the `// given // when // then` comments
 
 Adjust the tests to the class:
 
+- Derive expected defaults from a fresh instance (`new NameV1()`), never from memory: nested
+  records have defaults such as `-1`, and some require fields (a checksum) before they can be written.
+- Nested records: set every field the class under test actually stores, to a non-default value, in
+  test 1. Include one value large enough to change the msgpack header (e.g. 400 bytes).
 - Drop the "no aliasing of the read buffer" test when the class has only numbers, booleans and
   enums (nothing to alias).
 - Properties without a default cannot be written by the old class while unset: set them on both

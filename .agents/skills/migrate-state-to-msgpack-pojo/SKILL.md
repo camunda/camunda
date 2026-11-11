@@ -82,7 +82,8 @@ sed -i -E 's/\b(Name|NestedName)\b/\1V1/g' <module>/src/test/java/<same package 
 Do this BEFORE you edit the class (do not use `git show`, some environments block it).
 
 Replace `Name`/`NestedName` with the real class names (one alternation entry per frozen class).
-Insert this Javadoc directly above `public final class` in each V1 file:
+Insert this Javadoc directly above the class declaration in each V1 file (if the original is
+`public class`, make the V1 copy `public final class` too):
 
 ```java
 /**
@@ -137,6 +138,9 @@ Edit the class in place:
      override them, the new one loses value equality (it uses identity). Search for equality use
      (`assertThat(x).isEqualTo(`, `equals(`, sets or map keys of the class). If any exists, STOP-
      report; if none, say in the commit body that value equality is gone.
+   - The one-argument `wrap(DirectBuffer)` inherited from `UnpackedObject` does not exist on
+     `MsgpackBufferValue`; callers use `wrap(buffer, 0, buffer.capacity())`. `grep` for callers of the
+     one-argument form on the class and rewrite them; if the call is outside the engine, STOP-report.
    - Test helpers typed on `UnpackedObject` (for example `serialize(UnpackedObject)`) no longer
      accept the class. `grep -rn "UnpackedObject" <module>/src/test` and widen such parameters to
      `io.camunda.zeebe.util.buffer.BufferWriter`.
@@ -188,7 +192,8 @@ Every property from step 1 must be set to a non-default value in test 1. Use a c
 
 Then run the tests of everything that uses the class (search with
 `grep -rln "Name" <module>/src/test`), and for the engine the state tests:
-`--tests 'io.camunda.zeebe.engine.state.*'`. All must pass. Gradle `-q` prints nothing on success. To confirm tests ran, sum the XML files, because nested
+`--tests 'io.camunda.zeebe.engine.state.*'`. All must pass. Run Gradle with `LC_ALL=C.UTF-8 LANG=C.UTF-8`, otherwise reports of tests with non-ASCII names
+fail with "Malformed input" and the XML files stay stale. Gradle `-q` prints nothing on success. To confirm tests ran, sum the XML files, because nested
 test classes get mangled file names:
 `grep -ho 'tests="[0-9]*"' <module>/build/test-results/test/*.xml | grep -o '[0-9]*' | paste -sd+ | bc`.
 A failure means behavior changed:
