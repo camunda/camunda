@@ -167,6 +167,9 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(PolicyUpdateIntent.class, PolicyUpdateIntent::from));
     result.addAll(
         buildParameterSets(
+            ProcessDefinitionSuspensionIntent.class, ProcessDefinitionSuspensionIntent::from));
+    result.addAll(
+        buildParameterSets(
             ProcessDefinitionRestoreIntent.class, ProcessDefinitionRestoreIntent::from));
     result.addAll(buildParameterSets(RoleIntent.class, RoleIntent::from));
     result.addAll(
