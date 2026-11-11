@@ -21,10 +21,12 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +40,8 @@ import org.jspecify.annotations.Nullable;
  * and reverse scans, and transactions that run their operations directly. It is safe to use from
  * several threads.
  *
+ * <p>It records the writes of each transaction, in {@link #transactionLog()}.
+ *
  * <p>Transactions can be paused, which stalls the cache's writer: it is the only caller of {@code
  * runInTransaction}, since reads go straight to the column families.
  *
@@ -49,6 +53,8 @@ final class InMemoryBackend {
   private final Map<TestColumnFamily, NavigableMap<byte[], byte[]>> data =
       new ConcurrentHashMap<>();
   private final AtomicInteger transactions = new AtomicInteger();
+  private final List<List<String>> transactionLog = new CopyOnWriteArrayList<>();
+  private final ThreadLocal<List<String>> currentTransaction = new ThreadLocal<>();
   private final Semaphore pausedTransactions = new Semaphore(0);
   private volatile CountDownLatch resumed = new CountDownLatch(0);
   private final Semaphore pausedScans = new Semaphore(0);
@@ -74,6 +80,14 @@ final class InMemoryBackend {
 
   int transactions() {
     return transactions.get();
+  }
+
+  /**
+   * Returns the writes of each finished transaction, in order: {@code "FIRST [1]=[10]"} for an
+   * upsert, {@code "FIRST [1] deleted"} for a delete.
+   */
+  List<List<String>> transactionLog() {
+    return transactionLog;
   }
 
   /** Makes every transaction that starts from now on wait until {@link #resumeTransactions()}. */
@@ -131,7 +145,14 @@ final class InMemoryBackend {
                 resumed.await();
               }
               transactions.incrementAndGet();
-              invocation.<TransactionOperation>getArgument(0).run();
+              final List<String> writes = new ArrayList<>();
+              currentTransaction.set(writes);
+              try {
+                invocation.<TransactionOperation>getArgument(0).run();
+              } finally {
+                currentTransaction.remove();
+              }
+              transactionLog.add(writes);
               return null;
             })
         .when(context)
@@ -155,17 +176,19 @@ final class InMemoryBackend {
             });
     doAnswer(
             invocation -> {
-              put(
-                  columnFamily,
-                  invocation.<RawKey>getArgument(0).bytes(),
-                  invocation.<RawValue>getArgument(1).bytes());
+              final var key = invocation.<RawKey>getArgument(0).bytes();
+              final var value = invocation.<RawValue>getArgument(1).bytes();
+              record(columnFamily + " " + Arrays.toString(key) + "=" + Arrays.toString(value));
+              put(columnFamily, key, value);
               return null;
             })
         .when(passThrough)
         .upsert(any(), any());
     doAnswer(
             invocation -> {
-              rows(columnFamily).remove(invocation.<RawKey>getArgument(0).bytes());
+              final var key = invocation.<RawKey>getArgument(0).bytes();
+              record(columnFamily + " " + Arrays.toString(key) + " deleted");
+              rows(columnFamily).remove(key);
               return null;
             })
         .when(passThrough)
@@ -229,6 +252,13 @@ final class InMemoryBackend {
         .when(passThrough)
         .whileTrueReverse(any(RawKey.class), any(KeyVisitor.class));
     return passThrough;
+  }
+
+  private void record(final String write) {
+    final var writes = currentTransaction.get();
+    if (writes != null) {
+      writes.add(write);
+    }
   }
 
   private void scan(

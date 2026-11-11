@@ -29,11 +29,10 @@ final class DirtyIndexTest {
         .isSameAs(value);
     assertThat(dirtyIndex.get(new CacheKey(TestColumnFamily.SECOND, new byte[] {1}))).isNull();
     assertThat(dirtyIndex.isEmpty()).isFalse();
-    assertThat(dirtyIndex.bytes()).isEqualTo(3);
   }
 
   @Test
-  void shouldCountOnlyTheNewestVersionOfAKey() {
+  void shouldKeepOnlyTheNewestVersionOfAKey() {
     // given
     final var key = new CacheKey(TestColumnFamily.FIRST, new byte[] {1});
     dirtyIndex.put(key, new CachedValue(new byte[] {10, 11, 12}, 1));
@@ -43,7 +42,6 @@ final class DirtyIndexTest {
 
     // then
     assertThat(dirtyIndex.get(key)).usingRecursiveComparison().isEqualTo(new CachedValue(null, 2));
-    assertThat(dirtyIndex.bytes()).isEqualTo(1);
   }
 
   @Test
@@ -58,7 +56,6 @@ final class DirtyIndexTest {
     // then
     assertThat(dirtyIndex.get(key)).isNull();
     assertThat(dirtyIndex.isEmpty()).isTrue();
-    assertThat(dirtyIndex.bytes()).isZero();
   }
 
   @Test
@@ -74,7 +71,6 @@ final class DirtyIndexTest {
 
     // then
     assertThat(dirtyIndex.get(key)).isSameAs(newer);
-    assertThat(dirtyIndex.bytes()).isEqualTo(2);
   }
 
   @Test
@@ -84,6 +80,5 @@ final class DirtyIndexTest {
 
     // then
     assertThat(dirtyIndex.isEmpty()).isTrue();
-    assertThat(dirtyIndex.bytes()).isZero();
   }
 }

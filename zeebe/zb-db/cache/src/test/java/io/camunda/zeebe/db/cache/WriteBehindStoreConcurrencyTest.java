@@ -128,7 +128,7 @@ final class WriteBehindStoreConcurrencyTest {
   void shouldNotMakeAReadOnlyCommitWaitBehindABlockedCommitter() throws Exception {
     // given
     final var store =
-        store(new TestConfiguration().maxWriteDelay(QUICK).batchSize(1).queueSize(1), 3);
+        store(new TestConfiguration().maxWriteDelay(QUICK).batchSize(1).maxPendingBytes(0), 3);
     final var committer = blockedCommitter(store);
 
     // when
@@ -146,21 +146,21 @@ final class WriteBehindStoreConcurrencyTest {
     // given - no optimistic attempts, so every read takes the read lock and skips the cache
     backend.put(FIRST, bytes(9), bytes(90));
     final var store =
-        store(new TestConfiguration().maxWriteDelay(QUICK).batchSize(1).queueSize(1), 0);
+        store(new TestConfiguration().maxWriteDelay(QUICK).batchSize(1).maxPendingBytes(0), 0);
     final var reader = reader();
     final var committer = blockedCommitter(store);
 
     // when
     final var reads =
         CompletableFuture.supplyAsync(
-            () -> List.of(store.get(key(3), reader), store.get(key(9), reader)));
+            () -> List.of(store.get(key(1), reader), store.get(key(9), reader)));
 
     // then
     assertThat(reads)
         .succeedsWithin(Duration.ofSeconds(5))
         .satisfies(
             values -> {
-              assertThat(values.get(0)).containsExactly(3);
+              assertThat(values.get(0)).containsExactly(1);
               assertThat(values.get(1)).containsExactly(90);
             });
     backend.resumeTransactions();
@@ -168,9 +168,9 @@ final class WriteBehindStoreConcurrencyTest {
   }
 
   /**
-   * Starts a committer that ends up blocked in the cache: the writer is paused on the first batch,
-   * the second batch fills the queue, and the third commit waits for room in it while holding the
-   * commit lock.
+   * Starts a committer that ends up blocked on {@code maxPendingBytes}, which the store sets to 0:
+   * the writer is paused writing the first commit, and the second commit waits for the writer while
+   * holding the commit lock.
    */
   private Background blockedCommitter(final WriteBehindStore<TestColumnFamily> store)
       throws InterruptedException {
@@ -178,7 +178,7 @@ final class WriteBehindStoreConcurrencyTest {
     final var committer =
         inBackgroundThread(
             () -> {
-              for (int i = 1; i <= 3; i++) {
+              for (int i = 1; i <= 2; i++) {
                 store.commit(Map.of(key(i), new Op(bytes(i))));
               }
             });

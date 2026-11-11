@@ -17,7 +17,6 @@ final class TestConfiguration {
   private long maxPendingBytes = defaults.maxPendingBytes();
   private int batchSize = defaults.batchSize();
   private Duration maxWriteDelay = defaults.maxWriteDelay();
-  private int queueSize = defaults.queueSize();
 
   TestConfiguration cacheMaxBytes(final long cacheMaxBytes) {
     this.cacheMaxBytes = cacheMaxBytes;
@@ -39,22 +38,12 @@ final class TestConfiguration {
     return this;
   }
 
-  TestConfiguration queueSize(final int queueSize) {
-    this.queueSize = queueSize;
-    return this;
-  }
-
   WriteBehindConfiguration build() {
     return new WriteBehindConfiguration(
         cacheMaxBytes,
         maxPendingBytes,
         batchSize,
         maxWriteDelay,
-        queueSize,
-        defaults.concurrencyLevel(),
-        defaults.coalescing(),
-        defaults.writeThroughMaxKeys(),
-        defaults.writeThroughMaxBytes(),
-        defaults.drainTimeout());
+        defaults.snapshotCatchUpTimeout());
   }
 }

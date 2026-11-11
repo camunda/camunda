@@ -41,13 +41,13 @@ final class CachedColumnFamilyScanConcurrencyTest {
 
   @Test
   void shouldSeeOneTransactionPerScanWhileTheWriterFlushes() {
-    // given - batches that cut across transactions, and a budget of a few transactions
+    // given - groups of several whole transactions, coalesced, and a budget of a few transactions
     final long maxPendingBytes = 4L * KEYS * ENTRY_BYTES;
     final var store =
         store(
             new TestConfiguration()
                 .maxWriteDelay(Duration.ofMillis(1))
-                .batchSize(7)
+                .batchSize(100)
                 .maxPendingBytes(maxPendingBytes));
     final var committer = client(store);
     final var scanner = client(store);

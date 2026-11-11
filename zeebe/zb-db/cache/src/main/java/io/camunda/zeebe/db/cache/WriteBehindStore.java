@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
@@ -23,21 +22,20 @@ import org.ehcache.CacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
-import org.ehcache.config.builders.WriteBehindConfigurationBuilder;
 import org.ehcache.config.units.MemoryUnit;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Holds the committed state that the backend doesn't have yet, and hands it to EhCache's
- * write-behind queue.
+ * Holds the committed state that the backend doesn't have yet, and hands it to the writer.
  *
  * <p>A commit publishes all of its versions to the DirtyIndex under {@code publishLock}'s write
- * side, then enqueues them. Readers validate against {@code publishLock}, so they see all of a
- * transaction or none of it. {@code commitLock} serializes committers from start to finish, so the
- * enqueue order matches the publication order.
+ * side, queues the whole transaction for the writer, then puts its versions into the read cache.
+ * Readers validate against {@code publishLock}, so they see all of a transaction or none of it.
+ * {@code commitLock} serializes committers from start to finish, so the queue holds transactions in
+ * commit order, and the cache gets them in the same order.
  *
  * <p>Point reads check the DirtyIndex before the cache: it holds every unflushed version, while the
- * cache can briefly hold an older one or lose a pending op.
+ * cache can briefly hold an older one.
  */
 final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
@@ -51,12 +49,12 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final StampedLock publishLock = new StampedLock();
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
-  private final BackendLoaderWriter<ColumnFamilyNames> loaderWriter;
+  private final BackendLoader<ColumnFamilyNames> loader;
+  private final TransactionWriter<ColumnFamilyNames> writer;
   private final CacheManager cacheManager;
   private final Cache<CacheKey, CachedValue> cache;
 
   private long lastSeq; // guarded by commitLock
-  private volatile long lastPublishedSeq;
   private volatile @Nullable Throwable failure;
 
   WriteBehindStore(
@@ -74,35 +72,25 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final int optimisticReadAttempts) {
     this.configuration = configuration;
     this.optimisticReadAttempts = optimisticReadAttempts;
-    loaderWriter =
-        new BackendLoaderWriter<>(
-            backend, dirtyIndex, publishLock, () -> lastPublishedSeq, this::signalFlushed);
-
-    final var batching =
-        WriteBehindConfigurationBuilder.newBatchedWriteBehindConfiguration(
-                configuration.maxWriteDelay().toMillis(),
-                TimeUnit.MILLISECONDS,
-                configuration.batchSize())
-            .queueSize(configuration.queueSize())
-            .concurrencyLevel(configuration.concurrencyLevel());
-    final var writeBehind =
-        configuration.coalescing() ? batching.enableCoalescing() : batching.disableCoalescing();
+    loader = new BackendLoader<>(dirtyIndex);
+    writer =
+        new TransactionWriter<>(
+            backend, dirtyIndex, publishLock, configuration, this::signalFlushed, this::fail);
 
     cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build(true);
     cache =
         cacheManager.createCache(
-            "write-behind",
+            "state",
             CacheConfigurationBuilder.newCacheConfigurationBuilder(
                     CacheKey.class,
                     CachedValue.class,
                     ResourcePoolsBuilder.newResourcePoolsBuilder()
                         .heap(configuration.cacheMaxBytes(), MemoryUnit.B))
-                .withLoaderWriter(loaderWriter)
-                .withService(writeBehind.build()));
+                .withLoaderWriter(loader));
   }
 
   /**
-   * Publishes {@code writes} as one transaction and enqueues them for the backend. A transaction
+   * Publishes {@code writes} as one transaction and queues it for the backend. A transaction
    * without writes commits without taking a lock.
    *
    * <p>The caller must keep its writes until this returns, so that a retried commit applies them
@@ -126,15 +114,15 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final long stamp = publishLock.writeLock();
       try {
         versions.forEach(version -> dirtyIndex.put(version.getKey(), version.getValue()));
-        lastPublishedSeq = seq;
       } finally {
         publishLock.unlockWrite(stamp);
       }
 
       try {
+        writer.enqueue(CommittedTransaction.of(versions));
         versions.forEach(version -> cache.put(version.getKey(), version.getValue()));
       } catch (final RuntimeException e) {
-        // the published versions can no longer reach the backend
+        // the published versions may never reach the backend, or the cache may keep older ones
         fail(e);
         throw e;
       }
@@ -187,13 +175,14 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     }
   }
 
-  /** Returns the key and value bytes of the versions the backend doesn't have yet. */
+  /** Returns the key and value bytes of the transactions the backend doesn't have yet. */
   long pendingBytes() {
-    return dirtyIndex.bytes();
+    return writer.queuedBytes();
   }
 
   @Override
   public void close() {
+    writer.close();
     cacheManager.close();
   }
 
@@ -213,8 +202,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       }
     }
 
-    // Without the cache: a committer blocked on a full queue holds the key's map bin in the cache,
-    // and the writer needs the write side of publishLock before it can drain that queue.
+    // without the cache, so the lock isn't held while waiting on one of the cache's map bins
     final long stamp = publishLock.readLock();
     try {
       final var unflushed = dirtyIndex.get(key);
@@ -230,13 +218,13 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     if (unflushed != null) {
       return unflushed;
     }
-    return loaderWriter.readThrough(reader, () -> cache.get(key));
+    return loader.readThrough(reader, () -> cache.get(key));
   }
 
   private void awaitPendingBytesWithinLimit() {
     flushLock.lock();
     try {
-      while (dirtyIndex.bytes() > configuration.maxPendingBytes() && failure == null) {
+      while (writer.queuedBytes() > configuration.maxPendingBytes() && failure == null) {
         flushed.awaitUninterruptibly();
       }
     } finally {
