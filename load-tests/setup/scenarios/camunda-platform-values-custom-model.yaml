@@ -1,0 +1,39 @@
+# Camunda platform values for the `custom-model` scenario.
+#
+# The k6 `custom-model` test searches, assigns, and completes user tasks as the `orchestration`
+# client. With authorizations enabled, the default permissions of that client
+# (`main/values/camunda-platform-values-defaults.yaml`) do not cover user tasks: the user task
+# search returns no items, and the users never get a task to work on.
+#
+# Helm replaces a list instead of merging it. So this file repeats the full list of the defaults,
+# with four more permissions on the PROCESS_DEFINITION entry. Keep it in sync with the defaults.
+orchestration:
+  security:
+    initialization:
+      authorizations:
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: RESOURCE
+          resourceId: "*"
+          permissions:
+            - CREATE
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: PROCESS_DEFINITION
+          resourceId: "*"
+          permissions:
+            - CREATE_PROCESS_INSTANCE
+            - UPDATE_PROCESS_INSTANCE
+            - READ_PROCESS_INSTANCE
+            - READ_PROCESS_DEFINITION
+            # Added for the user task simulation:
+            - READ_USER_TASK
+            - UPDATE_USER_TASK
+            - CLAIM_USER_TASK
+            - COMPLETE_USER_TASK
+        - ownerType: CLIENT
+          ownerId: orchestration
+          resourceType: MESSAGE
+          resourceId: "*"
+          permissions:
+            - CREATE
