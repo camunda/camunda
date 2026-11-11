@@ -265,6 +265,7 @@
     <plugin.version.enforcer>3.7.0</plugin.version.enforcer>
     <plugin.version.exec>3.6.4</plugin.version.exec>
     <plugin.version.failsafe>3.6.1</plugin.version.failsafe>
+    <!-- tmp: A/B control for surefire 3.6.1 log stalls, do not merge -->
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.16</plugin.version.jacoco>
     <plugin.version.maven-jar>3.5.1</plugin.version.maven-jar>
