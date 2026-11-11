@@ -137,6 +137,7 @@ final class MsgpackPojoProcessorTest {
                     @MsgpackProperty(binary = true) DirectBuffer payload = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
                     @MsgpackProperty("theKind") Kind kind;
                     final List<DirectBuffer> ids = new ArrayList<>();
+                    final List<Long> versions = new ArrayList<>();
                     final Inner inner = new Inner();
                     @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
 
@@ -151,6 +152,7 @@ final class MsgpackPojoProcessorTest {
     set(source, "kind", result.load("sample.Kind").getEnumConstants()[1]);
     ((List<DirectBuffer>) get(source, "ids")).add(buffer("a"));
     ((List<DirectBuffer>) get(source, "ids")).add(buffer("b"));
+    ((List<Long>) get(source, "versions")).addAll(List.of(5L, 300L, 70_000L, 5_000_000_000L, -1L));
     set(get(source, "inner"), "value", 9);
 
     // when
@@ -175,6 +177,7 @@ final class MsgpackPojoProcessorTest {
         .containsSequence((byte) 0xc4, (byte) 3, (byte) 'b', (byte) 'i', (byte) 'n');
     assertThat(get(read, "kind")).isEqualTo(get(source, "kind"));
     assertThat(get(read, "ids")).isEqualTo(List.of(buffer("a"), buffer("b")));
+    assertThat(get(read, "versions")).isEqualTo(List.of(5L, 300L, 70_000L, 5_000_000_000L, -1L));
     assertThat(get(get(read, "inner"), "value")).isEqualTo(9);
   }
 

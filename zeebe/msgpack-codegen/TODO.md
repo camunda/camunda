@@ -24,7 +24,7 @@ below is open.
 - [ ] **`toString`/JSON for the POJOs.** `UnpackedObject` gave every class a readable
       `toString()`. Nothing in the engine needs it yet; add a generated one if logs or assertions do.
 - [ ] **Property types the generator rejects:** `DocumentProperty`,
-      `PackedProperty`, `ArrayProperty` of anything but strings (`LongValue`, nested objects), `PropertyGroup`, sanitized properties.
+      `PackedProperty`, `ArrayProperty` of anything but strings and longs (nested objects), `PropertyGroup`, sanitized properties.
       Extend the generator when a class to migrate needs one.
 - [ ] **Registry lookup.** `Codecs.of` finds `<Name>Codec` by naming convention. Consider a
       generated `ServiceLoader` registration if a missing codec should fail earlier.
@@ -69,7 +69,8 @@ Deferred, the generator lacks the property types (deployment time only, not on t
 
 - [ ] `deployment/PersistedProcess`: binary plus `ArrayProperty` of a nested object, and it
       implements `ProjectionOf<Tuple<ProcessRecord, Long>, PersistedProcess>`.
-- [ ] `deployment/VersionInfo`: `ArrayProperty<LongValue>`, a `List<Long>` field type.
+- [ ] `deployment/VersionInfo`: `ArrayProperty<LongValue>`; `List<Long>` is supported now, so it
+      can be migrated (its `removeKnownVersion` iterator removal becomes `list.remove(Long)`).
 
 ### Cost to measure in wave 1
 

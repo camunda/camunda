@@ -47,6 +47,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     BINARY,
     ENUM,
     STRING_LIST,
+    LONG_LIST,
     NESTED
   }
 
@@ -118,7 +119,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var mirror = field.asType();
       final var kind = typeOf(mirror, raw, binary, fieldName);
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
-      final var mutable = kind != Type.NESTED && kind != Type.STRING_LIST;
+      final var mutable = kind != Type.NESTED && kind != Type.STRING_LIST && kind != Type.LONG_LIST;
       if (isFinal && mutable) {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
@@ -146,10 +147,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         if (name.equals(DIRECT_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
         }
-        if (name.equals(LIST)
-            && declared.getTypeArguments().size() == 1
-            && declared.getTypeArguments().get(0).toString().equals(DIRECT_BUFFER)) {
-          return Type.STRING_LIST;
+        if (name.equals(LIST) && declared.getTypeArguments().size() == 1) {
+          final var argument = declared.getTypeArguments().get(0).toString();
+          if (argument.equals(DIRECT_BUFFER)) {
+            return Type.STRING_LIST;
+          }
+          if (argument.equals("java.lang.Long")) {
+            return Type.LONG_LIST;
+          }
         }
         if (element.getKind() == ElementKind.ENUM) {
           return Type.ENUM;
@@ -218,7 +223,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     for (final var p : m.properties()) {
       final var f = p.field();
       switch (p.type()) {
-        case STRING_LIST ->
+        case STRING_LIST, LONG_LIST ->
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
@@ -293,6 +298,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeString(%s.get(i));\n".formatted(get)
                     + "    }\n");
+        case LONG_LIST ->
+            s.append(
+                "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
+                    + "      n += w.writeInteger(%s.get(i));\n".formatted(get)
+                    + "    }\n");
         case NESTED -> s.append("    n += CODEC_%d.write(w, %s);\n".formatted(i, get));
       }
       i++;
@@ -335,6 +346,13 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += MsgPackWriter.getEncodedStringLength(%s.get(i).capacity());\n"
                         .formatted(get)
                     + "    }\n");
+        case LONG_LIST ->
+            s.append(
+                "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
+                    + "      n += MsgPackWriter.getEncodedLongValueLength(%s.get(i));\n"
+                        .formatted(get)
+                    + "    }\n");
         case NESTED -> s.append("    n += CODEC_%d.getLength(%s);\n".formatted(i, get));
       }
       i++;
@@ -371,6 +389,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "%s = Decoding.readEnum(r, ENUM_NAMES_%d, ENUM_VALUES_%d);".formatted(f, i, i);
             case STRING_LIST ->
                 "{\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %s.add(Decoding.readString(r));\n          }\n        }"
+                    .formatted(f);
+            case LONG_LIST ->
+                "{\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %s.add(r.readInteger());\n          }\n        }"
                     .formatted(f);
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
           };

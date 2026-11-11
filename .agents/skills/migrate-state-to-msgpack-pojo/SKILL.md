@@ -44,9 +44,10 @@ Open the class and every property it declares. Allowed property types:
 | `EnumProperty<E>(key, default)`               | `E field = default;`                                             |
 | `ObjectProperty<X>(key, new X())`             | `final X field = new X();` (X is a `@MsgpackPojo` or an `UnpackedObject`) |
 | `ArrayProperty<StringValue>(key, StringValue::new)` | `final List<DirectBuffer> field = new ArrayList<>();`      |
+| `ArrayProperty<LongValue>(key, LongValue::new)` | `final List<Long> field = new ArrayList<>();`                  |
 
 STOP if the class uses `DocumentProperty`, `PackedProperty`, `ArrayProperty` of
-anything but `StringValue`, `PropertyGroup`, a property with `.sanitized()`, or any property
+anything but `StringValue` or `LongValue`, `PropertyGroup`, a property with `.sanitized()`, or any property
 whose default is computed. Report which one. The generator does not support them yet.
 
 Also STOP if the class is a nested/inner class (not supported), or if anything extends it:
