@@ -82,6 +82,17 @@ public final class RdbmsProcessStore implements ProcessStore {
   static final String PROCESS_DEFINITION_RESTORE_KEY =
       DbProcessStore.PROCESS_DEFINITION_RESTORE_KEY_VALUE;
 
+  static final EntityType<Long, ProcessDefinitionRow> PROCESS =
+      new EntityType<>(
+          ProcessDefinitionMapper.class,
+          "ProcessDefinition",
+          "process",
+          ProcessDefinitionRow::processDefinitionKey);
+
+  static final EntityType<String, PartitionStateRow> PARTITION_STATE =
+      new EntityType<>(
+          PartitionStateMapper.class, "PartitionState", "partition state", PartitionStateRow::key);
+
   private static final String MARKER_VALUE = "true";
 
   /** How many processes {@link #forEachProcess} loads at once. */
@@ -92,12 +103,6 @@ public final class RdbmsProcessStore implements ProcessStore {
   private static final Comparator<ProcessDefinitionRow> BY_KEY =
       Comparator.comparingLong(ProcessDefinitionRow::processDefinitionKey);
 
-  static final EntityType<Long, ProcessDefinitionRow> PROCESS =
-      new EntityType<>(
-          ProcessDefinitionMapper.class,
-          "ProcessDefinition",
-          "process",
-          ProcessDefinitionRow::processDefinitionKey);
   private static final EntityType<ProcessIdKey, ProcessVersionRow> VERSION =
       new EntityType<>(
           ProcessDefinitionMapper.class,
@@ -111,9 +116,6 @@ public final class RdbmsProcessStore implements ProcessStore {
               "PendingProcessDeletion",
               "pending process deletion",
               Function.identity());
-  static final EntityType<String, PartitionStateRow> PARTITION_STATE =
-      new EntityType<>(
-          PartitionStateMapper.class, "PartitionState", "partition state", PartitionStateRow::key);
 
   private final EntitySession session;
   private final int partitionId;
