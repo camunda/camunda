@@ -4708,6 +4708,109 @@
           ],
           "title": "Process Instance Execution Time (avg)",
           "type": "timeseries"
+        },
+{
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Per listener, the highest per-partition average onRecovered duration in the current leader term. Resets on a leader change or broker restart.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "showValues": false,
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 1684
+          },
+          "id": 139,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "mean"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Max",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "all",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.2.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "max by (listener) (\n  sum by (listener, partition) (\n    zeebe_stream_processor_on_recovered_listener_duration_seconds_sum{\n      namespace=~\"$namespace\",\n      camunda_region=~\"$region\"\n    }\n  )\n  /\n  sum by (listener, partition) (\n    zeebe_stream_processor_on_recovered_listener_duration_seconds_count{\n      namespace=~\"$namespace\",\n      camunda_region=~\"$region\"\n    }\n  )\n)\n",
+              "instant": false,
+              "legendFormat": "{{listener}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Highest onRecovered Listener Duration",
+          "type": "timeseries"
         }
       ],
       "title": "Engine",
