@@ -48,7 +48,7 @@ public final class RdbmsEngineStateSchema {
 
   /** The tables of the usage and job metrics, which don't belong to a process instance. */
   public static final List<String> METRIC_TABLES =
-      List.of("CAM_RU_USAGE_METRIC", "CAM_RU_JOB_METRIC");
+      List.of("CAM_RU_USAGE_METRIC", "CAM_RU_JOB_METRIC", "CAM_RU_JOB_METRIC_BATCH");
 
   /** All engine state tables; each has a {@code partition_id} column. */
   public static final List<String> TABLES =

@@ -93,10 +93,7 @@ final class RdbmsJobMetricsStateTest extends AbstractJobMetricsStateContractTest
             tuple("type2", "tenant1", "worker1", 0, 0, 1));
     assertThat(state.getBatchStartTime()).isPositive();
     assertThat(state.getBatchEndTime()).isGreaterThanOrEqualTo(state.getBatchStartTime());
-    assertThat(
-            rows(
-                "SELECT value FROM CAM_RU_PARTITION_STATE WHERE state_key = 'job-metrics.key-count'"))
-        .containsExactly(tuple("2"));
+    assertThat(rows("SELECT key_count FROM CAM_RU_JOB_METRIC_BATCH")).containsExactly(tuple(2));
   }
 
   @Test

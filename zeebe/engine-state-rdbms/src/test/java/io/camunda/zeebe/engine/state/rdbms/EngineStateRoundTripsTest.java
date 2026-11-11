@@ -125,22 +125,20 @@ final class EngineStateRoundTripsTest {
     incrementMetrics();
     incrementMetrics();
 
-    // then - only the first increment reads: the usage metric, the job metric, the key count, and
-    // the start and end time of the batch
-    assertThat(queriesOfFirstIncrement).isEqualTo(5);
+    // then - only the first increment reads: the usage metric, the job metric and the batch row
+    assertThat(queriesOfFirstIncrement).isEqualTo(3);
     assertThat(counting.otherStatements).isEqualTo(queriesOfFirstIncrement);
     counting.reset();
 
     // when
     transaction.commit();
 
-    // then - one insert per metric row, and one per value of the partition state: the key count,
-    // and the start and end time of the batch
+    // then - one insert per metric row, and one of the batch row
     assertThat(counting.batches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_USAGE_METRIC", "INSERT", 1),
             new Batch("CAM_RU_JOB_METRIC", "INSERT", 1),
-            new Batch("CAM_RU_PARTITION_STATE", "INSERT", 3));
+            new Batch("CAM_RU_JOB_METRIC_BATCH", "INSERT", 1));
     assertThat(counting.otherStatements).isZero();
   }
 
@@ -161,14 +159,14 @@ final class EngineStateRoundTripsTest {
     counting.reset();
     second.commit();
 
-    // then - the first increment read the same rows, the others none; the key count didn't change,
-    // but the start time is set while the batch has a single key
-    assertThat(queries).isEqualTo(5);
+    // then - the first increment read the same rows, the others none; the batch row is updated,
+    // as the start time is set while the batch has a single key
+    assertThat(queries).isEqualTo(3);
     assertThat(counting.batches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_USAGE_METRIC", "UPDATE", 1),
             new Batch("CAM_RU_JOB_METRIC", "UPDATE", 1),
-            new Batch("CAM_RU_PARTITION_STATE", "UPDATE", 2));
+            new Batch("CAM_RU_JOB_METRIC_BATCH", "UPDATE", 1));
   }
 
   private void incrementMetrics() {

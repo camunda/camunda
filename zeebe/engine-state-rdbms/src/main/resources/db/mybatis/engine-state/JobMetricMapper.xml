@@ -77,4 +77,36 @@
       AND tenant_id = #{key.tenantId} AND worker = #{key.workerName}
   </delete>
 
+  <!-- CAM_RU_JOB_METRIC_BATCH -->
+
+  <resultMap id="jobMetricBatchRow"
+    type="io.camunda.zeebe.engine.state.rdbms.JobMetricMapper$JobMetricBatchRow">
+    <constructor>
+      <arg column="key_count" javaType="_int"/>
+      <arg column="batch_start_time" javaType="_long"/>
+      <arg column="batch_end_time" javaType="_long"/>
+      <arg column="size_limit_exceeded" javaType="_boolean"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectJobMetricBatch" resultMap="jobMetricBatchRow">
+    SELECT key_count, batch_start_time, batch_end_time, size_limit_exceeded
+    FROM CAM_RU_JOB_METRIC_BATCH
+    WHERE partition_id = #{partitionId}
+  </select>
+
+  <insert id="insertJobMetricBatch">
+    INSERT INTO CAM_RU_JOB_METRIC_BATCH (partition_id, key_count, batch_start_time,
+      batch_end_time, size_limit_exceeded)
+    VALUES (#{partitionId}, #{row.keyCount}, #{row.startTime}, #{row.endTime},
+      #{row.sizeLimitExceeded})
+  </insert>
+
+  <update id="updateJobMetricBatch">
+    UPDATE CAM_RU_JOB_METRIC_BATCH
+    SET key_count = #{row.keyCount}, batch_start_time = #{row.startTime},
+      batch_end_time = #{row.endTime}, size_limit_exceeded = #{row.sizeLimitExceeded}
+    WHERE partition_id = #{partitionId}
+  </update>
+
 </mapper>
