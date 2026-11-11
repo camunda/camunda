@@ -17,6 +17,7 @@ final class TestConfiguration {
   private long maxPendingBytes = defaults.maxPendingBytes();
   private int batchSize = defaults.batchSize();
   private Duration maxWriteDelay = defaults.maxWriteDelay();
+  private Duration snapshotCatchUpTimeout = defaults.snapshotCatchUpTimeout();
 
   TestConfiguration cacheMaxBytes(final long cacheMaxBytes) {
     this.cacheMaxBytes = cacheMaxBytes;
@@ -38,12 +39,13 @@ final class TestConfiguration {
     return this;
   }
 
+  TestConfiguration snapshotCatchUpTimeout(final Duration snapshotCatchUpTimeout) {
+    this.snapshotCatchUpTimeout = snapshotCatchUpTimeout;
+    return this;
+  }
+
   WriteBehindConfiguration build() {
     return new WriteBehindConfiguration(
-        cacheMaxBytes,
-        maxPendingBytes,
-        batchSize,
-        maxWriteDelay,
-        defaults.snapshotCatchUpTimeout());
+        cacheMaxBytes, maxPendingBytes, batchSize, maxWriteDelay, snapshotCatchUpTimeout);
   }
 }

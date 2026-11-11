@@ -29,9 +29,10 @@ import org.jspecify.annotations.Nullable;
  * with its newest version, and never splits a transaction. Each group commits atomically and ends
  * on a transaction boundary, so the backend always holds a prefix of the committed transactions.
  *
- * <p>A group closes when the queued transactions have {@code batchSize} keys, or when the oldest of
- * them has waited {@code maxWriteDelay}. It takes whole transactions from the head of the queue
- * while it stays within {@code batchSize} distinct keys; a larger transaction is written alone.
+ * <p>A group closes when the queued transactions have {@code batchSize} keys, when the oldest of
+ * them has waited {@code maxWriteDelay}, or when {@link #flushUpTo} asked for it. It takes whole
+ * transactions from the head of the queue while it stays within {@code batchSize} distinct keys; a
+ * larger transaction is written alone.
  */
 final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
@@ -47,9 +48,12 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   private final Condition queueChanged = queueLock.newCondition();
   private final ArrayDeque<CommittedTransaction> queue = new ArrayDeque<>();
   private final AtomicLong queuedBytes = new AtomicLong();
+  private volatile long lastQueuedSeq;
+  private volatile long flushedSeq;
   private final Thread thread;
 
   private long queuedKeys; // guarded by queueLock
+  private long flushRequestedSeq; // guarded by queueLock
   private boolean closed; // guarded by queueLock
 
   /**
@@ -86,6 +90,31 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       queue.add(transaction);
       queuedKeys += transaction.versions().size();
       queuedBytes.addAndGet(transaction.bytes());
+      lastQueuedSeq = transaction.seq();
+      queueChanged.signal();
+    } finally {
+      queueLock.unlock();
+    }
+  }
+
+  /** Returns the seq of the last transaction queued, or 0 if there is none yet. */
+  long lastQueuedSeq() {
+    return lastQueuedSeq;
+  }
+
+  /** Returns the seq of the last transaction written to the backend, or 0 if there is none yet. */
+  long flushedSeq() {
+    return flushedSeq;
+  }
+
+  /**
+   * Writes the queued transactions up to {@code seq} without waiting out {@code maxWriteDelay}. The
+   * ones after it are grouped as usual.
+   */
+  void flushUpTo(final long seq) {
+    queueLock.lock();
+    try {
+      flushRequestedSeq = Math.max(flushRequestedSeq, seq);
       queueChanged.signal();
     } finally {
       queueLock.unlock();
@@ -147,7 +176,9 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
         }
 
         final long waitedNanos = System.nanoTime() - oldest.enqueuedNanos();
-        if (queuedKeys >= batchSize || waitedNanos >= maxWriteDelayNanos) {
+        if (queuedKeys >= batchSize
+            || waitedNanos >= maxWriteDelayNanos
+            || oldest.seq() <= flushRequestedSeq) {
           return takeGroup();
         }
         queueChanged.awaitNanos(maxWriteDelayNanos - waitedNanos);
@@ -214,6 +245,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       publishLock.unlockWrite(stamp);
     }
     queuedBytes.addAndGet(-bytes);
+    flushedSeq = group.getLast().seq();
     onFlushed.run();
   }
 }

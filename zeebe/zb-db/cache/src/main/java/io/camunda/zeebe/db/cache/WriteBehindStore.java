@@ -8,12 +8,14 @@
 package io.camunda.zeebe.db.cache;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
@@ -119,7 +121,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       }
 
       try {
-        writer.enqueue(CommittedTransaction.of(versions));
+        writer.enqueue(CommittedTransaction.of(seq, versions));
         versions.forEach(version -> cache.put(version.getKey(), version.getValue()));
       } catch (final RuntimeException e) {
         // the published versions may never reach the backend, or the cache may keep older ones
@@ -172,6 +174,43 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     } catch (final RuntimeException e) {
       publishLock.unlockRead(stamp);
       throw e;
+    }
+  }
+
+  /**
+   * Waits until the backend holds every transaction committed before this call. It doesn't hold
+   * commits back, and the writer writes those transactions at once instead of waiting out {@code
+   * maxWriteDelay}.
+   *
+   * @throws ZeebeDbException if the writer doesn't catch up within {@code snapshotCatchUpTimeout}
+   */
+  void catchUp() {
+    failIfFailed();
+    final long target = writer.lastQueuedSeq();
+    writer.flushUpTo(target);
+
+    final var timeout = configuration.snapshotCatchUpTimeout();
+    final long deadline = System.nanoTime() + timeout.toNanos();
+    flushLock.lock();
+    try {
+      long remaining = timeout.toNanos();
+      while (writer.flushedSeq() < target && failure == null && remaining > 0) {
+        flushed.awaitNanos(remaining);
+        remaining = deadline - System.nanoTime();
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new ZeebeDbException("Interrupted while waiting for the writer to catch up", e);
+    } finally {
+      flushLock.unlock();
+    }
+
+    failIfFailed();
+    if (writer.flushedSeq() < target) {
+      throw new ZeebeDbException(
+          "Expected the writer to write every committed transaction within %s, but it didn't"
+              .formatted(timeout),
+          new TimeoutException());
     }
   }
 

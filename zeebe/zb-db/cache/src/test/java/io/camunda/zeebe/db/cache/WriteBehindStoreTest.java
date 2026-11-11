@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
@@ -163,6 +164,55 @@ final class WriteBehindStoreTest {
 
       // then
       assertThat(backend.get(FIRST, bytes(1))).isEqualTo(largeValue);
+    }
+  }
+
+  @Test
+  void shouldCatchUpWithEveryCommitMadeBeforeIt() {
+    // given
+    backend.put(FIRST, bytes(2), bytes(20));
+
+    try (final var store = store(STALLED, UNLIMITED, UNLIMITED)) {
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+      store.commit(Map.of(key(2), new Op(null)));
+
+      // when
+      store.catchUp();
+
+      // then
+      assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
+      assertThat(backend.get(FIRST, bytes(2))).isNull();
+    }
+  }
+
+  @Test
+  void shouldGiveUpCatchingUpWithAStalledWriterWithoutHoldingCommitsBack() throws Exception {
+    // given
+    final var store =
+        new WriteBehindStore<>(
+            backend.db(),
+            new TestConfiguration()
+                .maxWriteDelay(QUICK)
+                .snapshotCatchUpTimeout(Duration.ofMillis(200))
+                .build());
+    try {
+      backend.pauseTransactions();
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+      backend.awaitPausedTransaction();
+
+      // when
+      final var catchingUp = CompletableFuture.runAsync(store::catchUp);
+      store.commit(Map.of(key(2), new Op(bytes(20))));
+
+      // then
+      assertThat(catchingUp)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingRootCause()
+          .isInstanceOf(TimeoutException.class);
+    } finally {
+      backend.resumeTransactions();
+      store.close();
     }
   }
 

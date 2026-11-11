@@ -98,6 +98,22 @@ final class TransactionWriterTest {
   }
 
   @Test
+  void shouldWriteUpToARequestedSeqWithoutWaitingOutMaxWriteDelay() {
+    // given
+    final var writer = writer(1_000, STALLED);
+    writer.enqueue(transaction(version(1, 10, 1)));
+    writer.enqueue(transaction(version(2, 20, 2)));
+
+    // when
+    writer.flushUpTo(2);
+
+    // then
+    await().untilAsserted(() -> assertThat(writer.flushedSeq()).isEqualTo(2));
+    assertThat(writer.lastQueuedSeq()).isEqualTo(2);
+    assertThat(backend.get(FIRST, bytes(2))).containsExactly(20);
+  }
+
+  @Test
   void shouldRemoveWrittenVersionsFromTheDirtyIndexButKeepNewerOnes() {
     // given - key 1 was overwritten by a transaction that isn't queued yet
     final var writer = writer(1, Duration.ofMillis(1));
@@ -148,7 +164,7 @@ final class TransactionWriterTest {
   @SafeVarargs
   private static CommittedTransaction transaction(
       final Map.Entry<CacheKey, CachedValue>... versions) {
-    return CommittedTransaction.of(List.of(versions));
+    return CommittedTransaction.of(versions[0].getValue().seq(), List.of(versions));
   }
 
   private static Map.Entry<CacheKey, CachedValue> version(

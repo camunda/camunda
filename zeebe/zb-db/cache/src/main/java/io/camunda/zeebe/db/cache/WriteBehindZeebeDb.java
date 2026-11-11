@@ -57,12 +57,15 @@ final class WriteBehindZeebeDb<
         consistencyChecksSettings);
   }
 
+  /**
+   * Waits until the backend holds every transaction committed so far, then snapshots the backend
+   * while the writer keeps writing. Each backend transaction is a group of whole transactions, so
+   * the snapshot holds whole transactions, at or past everything committed before this call.
+   */
   @Override
   public void createSnapshot(final File snapshotDir) {
-    throw new UnsupportedOperationException(
-        "Expected to take a snapshot in "
-            + snapshotDir
-            + ", but the write-behind cache can't drain its pending writes before a snapshot yet");
+    store.catchUp();
+    backend.createSnapshot(snapshotDir);
   }
 
   @Override
