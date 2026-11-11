@@ -31,6 +31,7 @@ final class KeyIndexTest {
   private static final long OTHER = 9;
   private static final long NOT_INDEXED = 11;
 
+  private CountingRawDbAccess access;
   private WriteBehindStore store;
 
   @BeforeEach
@@ -44,7 +45,8 @@ final class KeyIndexTest {
   }
 
   private void open(final WriteBehindConfiguration config) {
-    store = new WriteBehindStore(new InMemoryRawDbAccess(), config);
+    access = new CountingRawDbAccess(new InMemoryRawDbAccess());
+    store = new WriteBehindStore(access, config);
   }
 
   private void reopen(final WriteBehindConfiguration config) throws Exception {
@@ -190,7 +192,8 @@ final class KeyIndexTest {
     put(INDEXED, 1);
 
     // when
-    store.loadKeyIndexIfNeeded(INDEXED, () -> put(INDEXED, 2));
+    access.afterNextIteratorClosed(() -> put(INDEXED, 2));
+    store.loadKeyIndexIfNeeded(INDEXED);
 
     // then
     final var index = store.keyIndex(INDEXED);
@@ -208,7 +211,8 @@ final class KeyIndexTest {
     put(INDEXED, 1);
 
     // when
-    store.loadKeyIndexIfNeeded(INDEXED, () -> put(OTHER, 2));
+    access.afterNextIteratorClosed(() -> put(OTHER, 2));
+    store.loadKeyIndexIfNeeded(INDEXED);
 
     // then
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.LOADED);
@@ -222,7 +226,8 @@ final class KeyIndexTest {
     // when
     for (int i = 0; i < 3; i++) {
       final long key = 10 + i;
-      store.loadKeyIndexIfNeeded(INDEXED, () -> put(INDEXED, key));
+      access.afterNextIteratorClosed(() -> put(INDEXED, key));
+      store.loadKeyIndexIfNeeded(INDEXED);
     }
 
     // then

@@ -403,7 +403,7 @@ final class IndexedScanTest {
 
   private MergingCursor cursor(final long columnFamily) {
     transaction.prepareScan(columnFamily);
-    return transaction.newCursor(prefix(columnFamily), Long.BYTES);
+    return transaction.newCursor(prefix(columnFamily));
   }
 
   /** Reads the whole column family with values, in order. */

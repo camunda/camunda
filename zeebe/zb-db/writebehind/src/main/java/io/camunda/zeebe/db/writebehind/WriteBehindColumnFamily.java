@@ -365,7 +365,7 @@ final class WriteBehindColumnFamily<
           transaction.prepareScan(columnFamily.getValue());
           final var prefixKey = encode(prefix);
           final var seekTarget = encode(Objects.requireNonNullElse(startAt, prefix));
-          try (final var cursor = transaction.newCursor(prefixKey, prefixKey.length)) {
+          try (final var cursor = transaction.newCursor(prefixKey)) {
             if (reverse) {
               cursor.seekForPrev(seekTarget);
             } else {
@@ -435,7 +435,7 @@ final class WriteBehindColumnFamily<
 
   private static boolean prefixExists(
       final WriteBehindTransaction transaction, final byte[] prefix) {
-    try (final var cursor = transaction.newCursor(prefix, prefix.length)) {
+    try (final var cursor = transaction.newCursor(prefix)) {
       cursor.seek(prefix);
       if (!cursor.isValid()) {
         return false;

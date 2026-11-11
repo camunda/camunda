@@ -45,7 +45,7 @@ final class MergingCursor implements AutoCloseable {
       final NavigableMap<RawKey, Version> own, final WriteBehindStore store, final byte[] prefix) {
     this.own = own;
     this.store = store;
-    this.prefix = Arrays.copyOf(prefix, prefixLength);
+    this.prefix = prefix;
   }
 
   void seek(final byte[] key) {

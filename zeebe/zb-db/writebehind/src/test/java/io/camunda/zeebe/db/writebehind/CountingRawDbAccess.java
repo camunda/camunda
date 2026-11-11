@@ -12,12 +12,13 @@ import io.camunda.zeebe.db.RawDbAccess;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** Counts the reads that reach the storage. */
+/** Counts the reads that reach the storage, and can inject work when an iterator closes. */
 final class CountingRawDbAccess implements RawDbAccess {
 
   private final RawDbAccess delegate;
   private final AtomicLong gets = new AtomicLong();
   private final AtomicLong iterators = new AtomicLong();
+  private volatile Runnable afterIteratorClosed = () -> {};
 
   CountingRawDbAccess(final RawDbAccess delegate) {
     this.delegate = delegate;
@@ -29,6 +30,11 @@ final class CountingRawDbAccess implements RawDbAccess {
 
   long iterators() {
     return iterators.get();
+  }
+
+  /** Runs {@code action} once, when the next iterator that is opened is closed. */
+  void afterNextIteratorClosed(final Runnable action) {
+    afterIteratorClosed = action;
   }
 
   @Override
@@ -45,7 +51,10 @@ final class CountingRawDbAccess implements RawDbAccess {
   @Override
   public DbIterator newIterator() {
     iterators.incrementAndGet();
-    return delegate.newIterator();
+    final var iterator = delegate.newIterator();
+    final var action = afterIteratorClosed;
+    afterIteratorClosed = () -> {};
+    return new ClosingIterator(iterator, action);
   }
 
   @Override
@@ -56,5 +65,59 @@ final class CountingRawDbAccess implements RawDbAccess {
   @Override
   public void createCheckpoint(final File directory) {
     delegate.createCheckpoint(directory);
+  }
+
+  private record ClosingIterator(DbIterator delegate, Runnable afterClose) implements DbIterator {
+
+    @Override
+    public void seek(final byte[] key) {
+      delegate.seek(key);
+    }
+
+    @Override
+    public void seekForPrev(final byte[] key) {
+      delegate.seekForPrev(key);
+    }
+
+    @Override
+    public boolean isValid() {
+      return delegate.isValid();
+    }
+
+    @Override
+    public void next() {
+      delegate.next();
+    }
+
+    @Override
+    public void prev() {
+      delegate.prev();
+    }
+
+    @Override
+    public byte[] key() {
+      return delegate.key();
+    }
+
+    @Override
+    public byte[] value() {
+      return delegate.value();
+    }
+
+    @Override
+    public int key(final byte[] buffer) {
+      return delegate.key(buffer);
+    }
+
+    @Override
+    public int value(final byte[] buffer) {
+      return delegate.value(buffer);
+    }
+
+    @Override
+    public void close() {
+      delegate.close();
+      afterClose.run();
+    }
   }
 }

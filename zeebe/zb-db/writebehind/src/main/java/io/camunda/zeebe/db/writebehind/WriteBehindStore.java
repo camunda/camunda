@@ -240,9 +240,7 @@ final class WriteBehindStore implements AutoCloseable {
       return false;
     }
     final long version = index.version();
-    return index.isStable(version)
-        && !index.keys().contains(key)
-        && index.version() == version;
+    return index.isStable(version) && !index.keys().contains(key) && index.version() == version;
   }
 
   /**
@@ -269,13 +267,6 @@ final class WriteBehindStore implements AutoCloseable {
    * scan; it costs one map lookup when there is nothing to do.
    */
   void loadKeyIndexIfNeeded(final long columnFamily) {
-    loadKeyIndexIfNeeded(columnFamily, () -> {});
-  }
-
-  /**
-   * @param beforeInstall runs after the keys are collected, before they are installed
-   */
-  void loadKeyIndexIfNeeded(final long columnFamily, final Runnable beforeInstall) {
     final var index = keyIndexes.get(columnFamily);
     if (index == null || index.state() != KeyIndex.State.UNLOADED) {
       return;
@@ -299,7 +290,6 @@ final class WriteBehindStore implements AutoCloseable {
         source.advance();
       }
     }
-    beforeInstall.run();
 
     final long stamp = publishLock.writeLock();
     try {
