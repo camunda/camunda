@@ -57,7 +57,7 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
   }
 
   /** Whether every chunk of the update is buffered, so it can be applied. */
-  public boolean isComplete() {
+  public boolean hasAllChunksBuffered() {
     return getBufferedChunkCount() == getUpdate().getChunkCount();
   }
 }

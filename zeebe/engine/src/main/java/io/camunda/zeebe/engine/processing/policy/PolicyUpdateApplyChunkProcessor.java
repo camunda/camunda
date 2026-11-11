@@ -117,12 +117,18 @@ public final class PolicyUpdateApplyChunkProcessor
     }
   }
 
+  /**
+   * Rejects the command unless its update is the open update and all chunks of that update are
+   * buffered. Normally only the processor that buffers the last missing chunk writes the first
+   * {@code APPLY_CHUNK}, so this only rejects a command that was written some other way, for
+   * example before all chunks arrived or after the update was applied and removed.
+   */
   private Optional<Rejection> rejectUnlessComplete(final PolicyUpdateRecord update) {
     final var openUpdate =
         policyUpdateState
             .getOpenUpdate()
             .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
-    if (openUpdate.isEmpty() || !openUpdate.get().isComplete()) {
+    if (openUpdate.isEmpty() || !openUpdate.get().hasAllChunksBuffered()) {
       return Optional.of(
           new Rejection(
               RejectionType.INVALID_STATE,

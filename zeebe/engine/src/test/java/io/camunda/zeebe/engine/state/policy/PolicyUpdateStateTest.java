@@ -51,7 +51,7 @@ final class PolicyUpdateStateTest {
     // then
     final var openUpdate = state.getOpenUpdate().orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isOne();
-    assertThat(openUpdate.isComplete()).isFalse();
+    assertThat(openUpdate.hasAllChunksBuffered()).isFalse();
     final var update = openUpdate.getUpdate();
     assertThat(update.getPolicyId()).isEqualTo("policy-1");
     assertThat(update.getPolicyVersion()).isEqualTo(2L);
@@ -74,7 +74,7 @@ final class PolicyUpdateStateTest {
     // then
     final var openUpdate = state.getOpenUpdate().orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isEqualTo(3);
-    assertThat(openUpdate.isComplete()).isTrue();
+    assertThat(openUpdate.hasAllChunksBuffered()).isTrue();
   }
 
   @Test
