@@ -46,11 +46,12 @@ describe('<InstancesBar />', () => {
 		await expect.element(screen.getByTestId('active-instances-badge')).toHaveTextContent('5');
 	});
 
-	it('should hide the active instances count when it is undefined', async () => {
+	it('should render neither the active instances count nor the bar when the count is undefined', async () => {
 		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" />);
 
 		await expect.element(screen.getByTestId('incident-instances-badge')).toBeVisible();
 		await expect.element(screen.getByTestId('active-instances-badge')).not.toBeInTheDocument();
+		await expect.element(screen.getByTestId('instances-bar')).not.toBeInTheDocument();
 	});
 
 	it('should hide the active instances count when it is negative', async () => {
@@ -193,13 +194,6 @@ describe('<InstancesBar />', () => {
 		);
 
 		await expect.element(screen.getByTestId('instances-bar')).toBeVisible();
-	});
-
-	it('should not render the bar when activeInstancesCount is undefined', async () => {
-		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" />);
-
-		await expect.element(screen.getByTestId('incident-instances-badge')).toBeVisible();
-		await expect.element(screen.getByTestId('instances-bar')).not.toBeInTheDocument();
 	});
 
 	it('should size the incidents segment to its share of the total', async () => {
