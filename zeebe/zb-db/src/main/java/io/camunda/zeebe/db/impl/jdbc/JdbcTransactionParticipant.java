@@ -39,6 +39,13 @@ public interface JdbcTransactionParticipant {
    */
   void commitFailed();
 
+  /**
+   * Stages the position of the command whose changes the transaction holds, so that the commit
+   * writes it with them. On restart, it is read to tell which replayed changes the database already
+   * contains, see {@link JdbcTransactionContext#JdbcTransactionContext(long)}.
+   */
+  void markAsProcessed(long position);
+
   /** Drops all staged changes. Called after a successful commit and after a rollback. */
   void reset();
 }

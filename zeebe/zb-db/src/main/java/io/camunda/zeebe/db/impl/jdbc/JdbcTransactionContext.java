@@ -22,12 +22,34 @@ import org.jspecify.annotations.Nullable;
  * own database transaction. On commit, every participant commits; on rollback, every participant
  * rolls back.
  *
+ * <p>Unlike RocksDB, whose state is restored from a snapshot and rebuilt by replaying the log, the
+ * database keeps every committed change across restarts. So each transaction of the stream
+ * processor is {@link #markAsProcessed marked} with the position of its command: the participants
+ * store it with the changes, and a transaction whose position the database already contains is
+ * discarded on commit instead, as its changes were committed before.
+ *
  * <p>Like the RocksDB context, this is not thread-safe: it is used by the single stream processor
  * actor of a partition.
  */
 public final class JdbcTransactionContext implements TransactionContext {
 
-  private final JdbcTransaction transaction = new JdbcTransaction();
+  /** The position of a database that contains no processed command. */
+  public static final long NO_POSITION = -1L;
+
+  private final JdbcTransaction transaction;
+
+  /** A context whose transactions are all committed, as the database contains no command yet. */
+  public JdbcTransactionContext() {
+    this(NO_POSITION);
+  }
+
+  /**
+   * @param committedPosition the last processed position the database contains, read when the
+   *     stream processor starts; transactions marked with this or a lower position are discarded
+   */
+  public JdbcTransactionContext(final long committedPosition) {
+    transaction = new JdbcTransaction(committedPosition);
+  }
 
   public void register(final JdbcTransactionParticipant participant) {
     transaction.register(participant);
@@ -60,6 +82,20 @@ public final class JdbcTransactionContext implements TransactionContext {
     } catch (final Exception e) {
       throw JdbcTransaction.translate(e);
     }
+  }
+
+  /**
+   * Marks the current transaction as the one that applies the changes of the command at the given
+   * position, as the stream processor does when it processes the command or replays its events. If
+   * the database already contains this position, the transaction's changes are discarded on commit;
+   * otherwise the participants write the position with them.
+   */
+  public void markAsProcessed(final long position) {
+    call(
+        () -> {
+          transaction.markAsProcessed(position);
+          return null;
+        });
   }
 
   @Override

@@ -40,6 +40,15 @@ public final class RdbmsEngineStateResources implements AutoCloseable {
     return sessionFactory;
   }
 
+  /**
+   * Reads the position of the last command whose changes the database contains for the partition,
+   * or {@code -1} if there is none: replayed events up to this position must not be applied to the
+   * database again. Creates the partition's position row if it doesn't exist yet.
+   */
+  public long readLastProcessedPosition(final int partitionId) {
+    return EntitySession.readLastProcessedPosition(sessionFactory, partitionId);
+  }
+
   /** Closes the pool. */
   @Override
   public void close() throws Exception {

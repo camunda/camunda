@@ -32,7 +32,17 @@ final class JdbcTransaction implements ZeebeDbTransaction {
 
   private final List<JdbcTransactionParticipant> participants = new ArrayList<>();
   private final List<TransactionListener> listeners = new ArrayList<>();
+  private final long committedPosition;
+  private long processedPosition = JdbcTransactionContext.NO_POSITION;
   private boolean inCurrentTransaction;
+
+  /**
+   * @param committedPosition the last processed position the database contains, see {@link
+   *     JdbcTransactionContext#JdbcTransactionContext(long)}
+   */
+  JdbcTransaction(final long committedPosition) {
+    this.committedPosition = committedPosition;
+  }
 
   void register(final JdbcTransactionParticipant participant) {
     participants.add(participant);
@@ -50,6 +60,13 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     inCurrentTransaction = true;
   }
 
+  void markAsProcessed(final long position) {
+    processedPosition = position;
+    for (final var participant : participants) {
+      participant.markAsProcessed(position);
+    }
+  }
+
   @Override
   public void run(final TransactionOperation operations) throws Exception {
     operations.run();
@@ -58,9 +75,17 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   /**
    * Commits all participants. On failure they roll back but keep their staged writes, so the stream
    * processor can retry the commit with the same changes, on a new connection.
+   *
+   * <p>A transaction marked with a position the database already contains is rolled back instead:
+   * it re-applies changes that were committed before a restart.
    */
   @Override
   public void commit() throws Exception {
+    if (processedPosition != JdbcTransactionContext.NO_POSITION
+        && processedPosition <= committedPosition) {
+      rollback();
+      return;
+    }
     try {
       for (final var participant : participants) {
         participant.commit();
@@ -73,6 +98,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     }
     resetParticipants();
     inCurrentTransaction = false;
+    processedPosition = JdbcTransactionContext.NO_POSITION;
     for (final var listener : listeners) {
       listener.onCommit();
     }
@@ -87,6 +113,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     } finally {
       resetParticipants();
       inCurrentTransaction = false;
+      processedPosition = JdbcTransactionContext.NO_POSITION;
       for (final var listener : listeners) {
         listener.onRollback();
       }

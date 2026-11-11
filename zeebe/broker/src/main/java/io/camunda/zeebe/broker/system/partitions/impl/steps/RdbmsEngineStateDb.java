@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.sql.SQLException;
@@ -29,7 +30,9 @@ final class RdbmsEngineStateDb {
 
   /** The returned database owns no connection: relational stores borrow one per transaction. */
   static MixedZeebeDb<ZbColumnFamilies> open(
-      final ZeebeDb<ZbColumnFamilies> rocksDb, final DataSource dataSource, final int partitionId) {
+      final ZeebeDb<ZbColumnFamilies> rocksDb,
+      final RdbmsEngineStateResources engineState,
+      final int partitionId) {
     LOG.warn(
         "EXPERIMENTAL: partition {} stores element instances in a relational database (mixed "
             + "RocksDB/RDBMS engine state). All rows of this partition are deleted on every start. "
@@ -37,12 +40,13 @@ final class RdbmsEngineStateDb {
         partitionId);
 
     try {
-      deletePartitionRows(dataSource, partitionId);
+      deletePartitionRows(engineState.dataSource(), partitionId);
     } catch (final SQLException e) {
       throw new IllegalStateException(
           "Failed to prepare the engine state database for partition " + partitionId, e);
     }
-    return new MixedZeebeDb<>(rocksDb);
+    // after the wipe, this creates the row of the position, which every commit updates
+    return new MixedZeebeDb<>(rocksDb, engineState.readLastProcessedPosition(partitionId));
   }
 
   /**

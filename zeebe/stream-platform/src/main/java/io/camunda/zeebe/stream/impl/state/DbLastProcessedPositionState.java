@@ -11,9 +11,18 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
+import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Stores the position of the last processed command in RocksDB. With a {@link
+ * MixedTransactionContext}, the position also marks the JDBC side of the transaction, so the
+ * relational database stores it with the command's changes and discards changes it already contains
+ * when the events are replayed after a restart.
+ */
 public final class DbLastProcessedPositionState implements MutableLastProcessedPositionState {
 
   private static final String LAST_PROCESSED_EVENT_KEY = "LAST_PROCESSED_EVENT_KEY";
@@ -22,6 +31,7 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
   private final DbString positionKey;
   private final LastProcessedPosition position = new LastProcessedPosition();
   private final ColumnFamily<DbString, LastProcessedPosition> positionColumnFamily;
+  private final @Nullable JdbcTransactionContext jdbcContext;
 
   public DbLastProcessedPositionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -30,6 +40,8 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
     positionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEFAULT, transactionContext, positionKey, position);
+    jdbcContext =
+        transactionContext instanceof final MixedTransactionContext mixed ? mixed.jdbc() : null;
   }
 
   @Override
@@ -42,5 +54,8 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
   public void markAsProcessed(final long position) {
     this.position.set(position);
     positionColumnFamily.upsert(positionKey, this.position);
+    if (jdbcContext != null) {
+      jdbcContext.markAsProcessed(position);
+    }
   }
 }

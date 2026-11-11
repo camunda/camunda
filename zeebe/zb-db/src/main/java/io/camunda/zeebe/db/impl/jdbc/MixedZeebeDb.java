@@ -32,9 +32,15 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
     implements ZeebeDb<ColumnFamilyType> {
 
   private final ZeebeDb<ColumnFamilyType> rocksDb;
+  private final long committedPosition;
 
-  public MixedZeebeDb(final ZeebeDb<ColumnFamilyType> rocksDb) {
+  /**
+   * @param committedPosition the last processed position the relational database contains, see
+   *     {@link JdbcTransactionContext#JdbcTransactionContext(long)}
+   */
+  public MixedZeebeDb(final ZeebeDb<ColumnFamilyType> rocksDb, final long committedPosition) {
     this.rocksDb = rocksDb;
+    this.committedPosition = committedPosition;
   }
 
   @Override
@@ -59,7 +65,8 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
 
   @Override
   public TransactionContext createContext() {
-    return new MixedTransactionContext(rocksDb.createContext(), new JdbcTransactionContext());
+    return new MixedTransactionContext(
+        rocksDb.createContext(), new JdbcTransactionContext(committedPosition));
   }
 
   @Override

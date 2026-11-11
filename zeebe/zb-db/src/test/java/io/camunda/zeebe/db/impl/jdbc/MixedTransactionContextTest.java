@@ -56,7 +56,7 @@ final class MixedTransactionContextTest {
     }
 
     participant = new StagingParticipant(connection);
-    mixedDb = new MixedZeebeDb<>(rocksDb);
+    mixedDb = new MixedZeebeDb<>(rocksDb, JdbcTransactionContext.NO_POSITION);
     context = (MixedTransactionContext) mixedDb.createContext();
     context.jdbc().register(participant);
     rocksDbRows = mixedDb.createColumnFamily(DefaultColumnFamily.DEFAULT, context, key, value);
@@ -151,6 +151,39 @@ final class MixedTransactionContextTest {
     assertThat(committedJdbcRows()).isEmpty();
   }
 
+  @Test
+  void shouldConvergeAfterACrashBetweenTheCommits() throws Exception {
+    // given - the JDBC part of position 5 is committed, the RocksDB part is lost in a crash
+    context.getCurrentTransaction().run(() -> write(1, 10));
+    context.jdbc().markAsProcessed(5);
+    context.jdbc().getCurrentTransaction().commit();
+    context.rocksDb().getCurrentTransaction().rollback();
+    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(1L, 10L));
+    assertThat(isCommittedInRocksDb(1)).isFalse();
+
+    // when - after the restart, the replay applies the events of position 5 again, then position 6
+    // is processed
+    final var restartedDb = new MixedZeebeDb<>(rocksDb, 5);
+    final var restarted = (MixedTransactionContext) restartedDb.createContext();
+    restarted.jdbc().register(participant);
+    rocksDbRows =
+        restartedDb.createColumnFamily(DefaultColumnFamily.DEFAULT, restarted, key, value);
+    final var replay = restarted.getCurrentTransaction();
+    replay.run(() -> write(1, 10));
+    restarted.jdbc().markAsProcessed(5);
+    replay.commit();
+    final var processing = restarted.getCurrentTransaction();
+    processing.run(() -> write(2, 20));
+    restarted.jdbc().markAsProcessed(6);
+    processing.commit();
+
+    // then - RocksDB caught up, and the database applied position 5 once
+    assertThat(isCommittedInRocksDb(1)).isTrue();
+    assertThat(isCommittedInRocksDb(2)).isTrue();
+    assertThat(committedJdbcRows()).containsExactlyEntriesOf(Map.of(1L, 10L, 2L, 20L));
+    assertThat(participant.marked).containsExactly(5L, 5L, 6L);
+  }
+
   private void write(final long id, final long val) {
     key.wrapLong(id);
     value.wrapLong(val);
@@ -183,6 +216,7 @@ final class MixedTransactionContextTest {
 
     private final Connection connection;
     private final Map<Long, Long> staged = new LinkedHashMap<>();
+    private final List<Long> marked = new ArrayList<>();
     private FlushHook onFlush = () -> {};
 
     private StagingParticipant(final Connection connection) {
@@ -220,6 +254,11 @@ final class MixedTransactionContextTest {
       } catch (final SQLException ignored) {
         // nothing to roll back on a broken connection
       }
+    }
+
+    @Override
+    public void markAsProcessed(final long position) {
+      marked.add(position);
     }
 
     @Override
