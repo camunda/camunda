@@ -2762,7 +2762,9 @@ jobs:
     name: "Shell / Script Tests"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 12
     permissions: {}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
