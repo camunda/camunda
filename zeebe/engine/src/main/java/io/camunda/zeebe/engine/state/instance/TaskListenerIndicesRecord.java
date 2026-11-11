@@ -13,12 +13,14 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Plain data; the msgpack (de)serializers are generated, see {@link MsgpackPojo}. The field names
- * and their order are the stored format.
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
  */
 @MsgpackPojo
 public final class TaskListenerIndicesRecord implements DbValue {
@@ -31,8 +33,9 @@ public final class TaskListenerIndicesRecord implements DbValue {
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  @MsgpackIgnore private TaskListenerIndicesRecordSerializer serializer;
-  @MsgpackIgnore private TaskListenerIndicesRecordDeserializer deserializer;
+  // TODO: only needed while the column families require DbValue to read and write itself
+  @MsgpackIgnore private MsgPackWriter writer;
+  @MsgpackIgnore private MsgPackReader reader;
 
   TaskListenerIndicesRecord() {}
 
@@ -66,20 +69,23 @@ public final class TaskListenerIndicesRecord implements DbValue {
   // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
   @Override
   public int getLength() {
-    return serializer().getLength(this);
+    return TaskListenerIndicesRecordCodec.INSTANCE.getLength(this);
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return serializer().serialize(this, buffer, offset);
+    if (writer == null) {
+      writer = new MsgPackWriter();
+    }
+    return TaskListenerIndicesRecordCodec.INSTANCE.write(writer.wrap(buffer, offset), this);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    if (deserializer == null) {
-      deserializer = new TaskListenerIndicesRecordDeserializer();
+    if (reader == null) {
+      reader = new MsgPackReader();
     }
-    deserializer.deserialize(buffer, offset, length, this);
+    TaskListenerIndicesRecordCodec.INSTANCE.decode(reader.wrap(buffer, offset, length), this);
   }
 
   private void setTaskListenerIndex(final ZeebeTaskListenerEventType eventType, final int value) {
@@ -91,13 +97,6 @@ public final class TaskListenerIndicesRecord implements DbValue {
       case canceling -> cancelingTaskListenerIndex = value;
       default -> throw unsupported(eventType);
     }
-  }
-
-  private TaskListenerIndicesRecordSerializer serializer() {
-    if (serializer == null) {
-      serializer = new TaskListenerIndicesRecordSerializer();
-    }
-    return serializer;
   }
 
   private static IllegalArgumentException unsupported(final ZeebeTaskListenerEventType eventType) {

@@ -3,6 +3,7 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   api(libs.org.agrona.agrona)
   api(project(":zeebe-msgpack-core"))
+  api(project(":zeebe-msgpack-value"))
   implementation(libs.org.jspecify.jspecify)
 }
 

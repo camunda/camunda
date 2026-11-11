@@ -15,6 +15,8 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
+import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,8 +27,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Plain data; the msgpack (de)serializers are generated, see {@link MsgpackPojo}. The field names
- * and their order are the stored format.
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field names and their
+ * order are the stored format.
  */
 @MsgpackPojo
 public final class ElementInstance implements DbValue {
@@ -69,8 +71,9 @@ public final class ElementInstance implements DbValue {
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  @MsgpackIgnore private ElementInstanceSerializer serializer;
-  @MsgpackIgnore private ElementInstanceDeserializer deserializer;
+  // TODO: only needed while the column families require DbValue to read and write itself
+  @MsgpackIgnore private MsgPackWriter writer;
+  @MsgpackIgnore private MsgPackReader reader;
 
   public ElementInstance() {}
 
@@ -348,26 +351,22 @@ public final class ElementInstance implements DbValue {
   // TODO: the DbValue contract below is kept as is until the column families stop requiring it.
   @Override
   public int getLength() {
-    return serializer().getLength(this);
+    return ElementInstanceCodec.INSTANCE.getLength(this);
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return serializer().serialize(this, buffer, offset);
+    if (writer == null) {
+      writer = new MsgPackWriter();
+    }
+    return ElementInstanceCodec.INSTANCE.write(writer.wrap(buffer, offset), this);
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    if (deserializer == null) {
-      deserializer = new ElementInstanceDeserializer();
+    if (reader == null) {
+      reader = new MsgPackReader();
     }
-    deserializer.deserialize(buffer, offset, length, this);
-  }
-
-  private ElementInstanceSerializer serializer() {
-    if (serializer == null) {
-      serializer = new ElementInstanceSerializer();
-    }
-    return serializer;
+    ElementInstanceCodec.INSTANCE.decode(reader.wrap(buffer, offset, length), this);
   }
 }
