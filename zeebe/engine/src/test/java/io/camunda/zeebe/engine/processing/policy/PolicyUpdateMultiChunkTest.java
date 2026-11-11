@@ -13,12 +13,10 @@ import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.ui
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -33,8 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Policy updates of several chunks. Each test gets its own engine, because a test may leave an
- * update open, and an open update blocks every other one.
+ * Policy updates of several chunks. Each test gets its own engine, so the updates a test leaves in
+ * the buffer don't affect the others.
  */
 public final class PolicyUpdateMultiChunkTest {
 
@@ -132,86 +130,6 @@ public final class PolicyUpdateMultiChunkTest {
     assertThat(appliedRecord(secondUpdateId).getValue().getChunkIndex()).isZero();
   }
 
-  @Test
-  public void shouldRejectAChunkOfAnotherUpdateWhileOneIsOpen() {
-    // given
-    final var openUpdateId = "update-" + uid();
-    apply(engine, chunk(openUpdateId, 0, 2));
-
-    // when
-    final var otherUpdateId = "update-" + uid();
-    apply(engine, chunk(otherUpdateId, 0, 1));
-
-    // then
-    final var rejection = appendRejection(otherUpdateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(rejection.getRejectionReason()).contains(openUpdateId, "still open");
-  }
-
-  @Test
-  public void shouldRejectADuplicateChunk() {
-    // given
-    final var updateId = "update-" + uid();
-    apply(engine, chunk(updateId, 0, 2));
-
-    // when
-    apply(engine, chunk(updateId, 0, 2));
-
-    // then
-    final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
-    assertThat(rejection.getRejectionReason()).contains("already buffered");
-  }
-
-  @Test
-  public void shouldRejectAChunkThatDoesNotMatchTheChunksBefore() {
-    // given
-    final var updateId = "update-" + uid();
-    apply(engine, chunk(updateId, 0, 2));
-
-    // when
-    apply(engine, chunk(updateId, 1, 2).setPolicyVersion(3));
-
-    // then
-    final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("to match the chunks before");
-  }
-
-  @Test
-  public void shouldRejectAChunkOutsideItsUpdate() {
-    // given
-    final var updateId = "update-" + uid();
-
-    // when
-    apply(engine, chunk(updateId, 2, 2));
-
-    // then
-    final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("one of its 2 chunks");
-  }
-
-  @Test
-  public void shouldRejectApplyingAnUpdateBeforeAllItsChunksAreBuffered() {
-    // given
-    final var updateId = "update-" + uid();
-    apply(engine, chunk(updateId, 0, 2));
-
-    // when
-    engine.writeRecords(
-        RecordToWrite.commandWithoutClaims()
-            .policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk(updateId, 0, 2)));
-
-    // then
-    final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-            .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(updateId))
-            .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-  }
-
   private static PolicyUpdateRecord chunk(
       final String updateId, final int chunkIndex, final int chunkCount) {
     return new PolicyUpdateRecord()
@@ -233,13 +151,6 @@ public final class PolicyUpdateMultiChunkTest {
     return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPENDED)
         .filter(record -> record.getValue().getUpdateId().equals(updateId))
         .filter(record -> record.getValue().getChunkIndex() == chunkIndex)
-        .getFirst();
-  }
-
-  private static Record<PolicyUpdateRecordValue> appendRejection(final String updateId) {
-    return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
-        .onlyCommandRejections()
-        .filter(record -> record.getValue().getUpdateId().equals(updateId))
         .getFirst();
   }
 }

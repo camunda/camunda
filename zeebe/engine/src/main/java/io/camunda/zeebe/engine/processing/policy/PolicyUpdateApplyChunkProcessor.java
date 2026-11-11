@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.policy;
 import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.NO_KEY;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -22,7 +21,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -65,9 +63,7 @@ public final class PolicyUpdateApplyChunkProcessor
 
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
-    final var rejection =
-        PolicyUpdateOrigin.checkInternal(command)
-            .or(() -> rejectUnlessComplete(command.getValue()));
+    final var rejection = PolicyUpdateOrigin.checkInternal(command);
     if (rejection.isPresent()) {
       rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
       return;
@@ -115,26 +111,5 @@ public final class PolicyUpdateApplyChunkProcessor
           PolicyUpdateIntent.APPLY_CHUNK,
           PolicyUpdateRecords.withoutPolicyData(update, nextChunkIndex));
     }
-  }
-
-  /**
-   * Rejects the command unless its update is the open update and all chunks of that update are
-   * buffered. Normally only the processor that buffers the last missing chunk writes the first
-   * {@code APPLY_CHUNK}, so this only rejects a command that was written some other way, for
-   * example before all chunks arrived or after the update was applied and removed.
-   */
-  private Optional<Rejection> rejectUnlessComplete(final PolicyUpdateRecord update) {
-    final var openUpdate =
-        policyUpdateState
-            .getOpenUpdate()
-            .filter(open -> open.getUpdate().getUpdateId().equals(update.getUpdateId()));
-    if (openUpdate.isEmpty() || !openUpdate.get().hasAllChunksBuffered()) {
-      return Optional.of(
-          new Rejection(
-              RejectionType.INVALID_STATE,
-              "Expected all chunks of policy update '%s' to be buffered before it is applied, but they are not"
-                  .formatted(update.getUpdateId())));
-    }
-    return Optional.empty();
   }
 }

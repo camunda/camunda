@@ -32,9 +32,9 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
-  void shouldHaveNoOpenUpdateInitially() {
+  void shouldHaveNoUpdateBeforeItsFirstChunk() {
     // when
-    final var openUpdate = state.getOpenUpdate();
+    final var openUpdate = state.getUpdate("update-1");
 
     // then
     assertThat(openUpdate).isEmpty();
@@ -49,7 +49,7 @@ final class PolicyUpdateStateTest {
     state.bufferChunk(chunk);
 
     // then
-    final var openUpdate = state.getOpenUpdate().orElseThrow();
+    final var openUpdate = state.getUpdate("update-1").orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isOne();
     assertThat(openUpdate.hasAllChunksBuffered()).isFalse();
     final var update = openUpdate.getUpdate();
@@ -72,9 +72,26 @@ final class PolicyUpdateStateTest {
     state.bufferChunk(chunk("update-1", 1, 3));
 
     // then
-    final var openUpdate = state.getOpenUpdate().orElseThrow();
+    final var openUpdate = state.getUpdate("update-1").orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isEqualTo(3);
     assertThat(openUpdate.hasAllChunksBuffered()).isTrue();
+  }
+
+  @Test
+  void shouldReplaceAChunkThatIsBufferedAgainWithoutCountingItTwice() {
+    // given
+    state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-a"))));
+
+    // when
+    state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-b"))));
+
+    // then
+    final var openUpdate = state.getUpdate("update-1").orElseThrow();
+    assertThat(openUpdate.getBufferedChunkCount()).isOne();
+    assertThat(openUpdate.hasAllChunksBuffered()).isFalse();
+    assertThat(state.getChunk("update-1", 0).orElseThrow().getRoles())
+        .extracting(RoleRecordValue::getRoleId)
+        .containsExactly("role-b");
   }
 
   @Test
@@ -116,7 +133,7 @@ final class PolicyUpdateStateTest {
     state.removeUpdate("update-1");
 
     // then
-    assertThat(state.getOpenUpdate()).isEmpty();
+    assertThat(state.getUpdate("update-1")).isEmpty();
     assertThat(state.getChunk("update-1", 0)).isEmpty();
     assertThat(state.getChunk("update-1", 1)).isEmpty();
   }
@@ -132,9 +149,7 @@ final class PolicyUpdateStateTest {
 
     // then
     assertThat(state.getChunk("update-10", 0)).isPresent();
-    assertThat(state.getOpenUpdate())
-        .hasValueSatisfying(
-            update -> assertThat(update.getUpdate().getUpdateId()).isEqualTo("update-10"));
+    assertThat(state.getUpdate("update-10")).isPresent();
   }
 
   private static PolicyUpdateRecord chunk(

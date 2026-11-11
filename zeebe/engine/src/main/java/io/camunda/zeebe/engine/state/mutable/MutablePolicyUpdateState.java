@@ -14,7 +14,10 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public interface MutablePolicyUpdateState extends PolicyUpdateState {
 
-  /** Buffers the chunk, and opens its update with the chunk's identifiers if it isn't open yet. */
+  /**
+   * Buffers the chunk, and opens its update with the chunk's identifiers if it isn't open yet. A
+   * chunk that is already buffered is replaced and not counted again.
+   */
   void bufferChunk(PolicyUpdateRecord chunk);
 
   /** Removes the update and all its buffered chunks. */
