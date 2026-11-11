@@ -8,7 +8,7 @@
 //
 //   node decide.mjs --mode final --baseline b.json [--iter1 i1.json]
 //                   [--iter2 i2.json] [--min-rate 80] [--min-improvement 10]
-//     -> {"action": "open_pr" | "delete_branch" | "verified_green" | "blocked",
+//     -> {"action": "open_pr" | "delete_branch" | "not_reproduced" | "blocked",
 //         "best": "iter1" | "iter2" | null, "reason": "..."}
 //
 // Each input is the JSON written by score.mjs. A missing or unreadable file
@@ -42,9 +42,9 @@ export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10
   }
   if (baseline.verdict === 'green') {
     return {
-      action: 'verified_green',
+      action: 'not_reproduced',
       best: null,
-      reason: `baseline passed all ${baseline.pooled.passed} runs`,
+      reason: `baseline passed all ${baseline.pooled.passed} runs; the nightly flake did not reproduce`,
     };
   }
 

@@ -90,7 +90,7 @@ test('should leave a test that never passed to the nightly fix agent', () => {
   assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
 });
 
-test('should skip a test under cooldown and ignore hits before verified_at', () => {
+test('should skip a test under cooldown and keep hits a green baseline did not reproduce', () => {
   // given
   const runs = [
     {version: '8.10', cell: 'api-profiles', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [flaky]},
@@ -105,15 +105,16 @@ test('should skip a test under cooldown and ignore hits before verified_at', () 
     ledger: {[fp]: {cooldown_until: '2026-11-20T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
-  const verified = pick({
+  const cooledDown = pick({
     reportsDir: dir,
-    ledger: {[fp]: {verified_at: '2026-11-01T12:00:00Z'}},
+    ledger: {[fp]: {cooldown_until: '2026-11-05T00:00:00Z', verified_at: '2026-11-03T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
 
   // then
   assert.deepEqual(cooling, []);
-  assert.deepEqual(verified, [], 'one hit after verification is below min score');
+  assert.equal(cooledDown.length, 1, 'a stale verified_at no longer discounts nightly hits');
+  assert.equal(cooledDown[0].score, 2);
 });
 
 test('should not count an interrupted nightly run as a failure', () => {
@@ -266,7 +267,7 @@ test('should prefer an iteration that clears every gate over a higher pooled rat
 
 test('should not judge the test when the baseline did not score or was green', () => {
   assert.equal(final({baseline: pass(0, 'blocked')}).action, 'blocked');
-  assert.equal(final({baseline: pass(100, 'green')}).action, 'verified_green');
+  assert.equal(final({baseline: pass(100, 'green')}).action, 'not_reproduced');
   assert.equal(final({baseline: pass(60)}).action, 'delete_branch');
   assert.equal(final({baseline: pass(60), iter1: pass(0, 'blocked')}).action, 'blocked');
 });

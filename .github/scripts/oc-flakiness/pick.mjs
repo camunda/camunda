@@ -41,8 +41,6 @@ function listDirs(dir) {
   }
 }
 
-// ledger[fp].verified_at: hits from runs created before it were already
-// disproved by a 100% baseline, so they no longer count.
 // ledger[fp].cooldown_until: a recent attempt failed; leave the test alone.
 export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
   const nowMs = Date.parse(now ?? new Date().toISOString());
@@ -52,14 +50,11 @@ export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
     for (const cell of listDirs(join(reportsDir, version))) {
       for (const runId of listDirs(join(reportsDir, version, cell))) {
         const runDir = join(reportsDir, version, cell, runId);
-        const createdAt = readJson(join(runDir, 'meta.json'), {}).created_at;
         for (const resultsFile of findFiles(runDir, 'results.json')) {
           const report = readJson(resultsFile, null);
           if (!report) continue;
           for (const {spec, titlePath} of walkSpecs(report)) {
             const fp = fingerprint(version, spec.file, spec.title);
-            const verifiedAt = ledger[fp]?.verified_at;
-            if (verifiedAt && createdAt && createdAt <= verifiedAt) continue;
 
             const key = `${version}\u0000${spec.file}\u0000${titlePath.join('\u0000')}`;
             if (!byTest.has(key)) {

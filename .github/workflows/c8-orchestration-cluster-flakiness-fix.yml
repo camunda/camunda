@@ -663,8 +663,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # The ledger keeps the pick job from spending a slot on the same test
-      # every day: a cooldown after a failed or pending attempt, and a
-      # verified_at that discounts the nightly hits a 100% baseline disproved.
+      # every day: a cooldown after every attempt. A baseline that did not
+      # reproduce the flake gets a short one and keeps the nightly hits: the
+      # flake may depend on conditions the shards do not recreate.
       - name: Record the outcome in the ledger
         env:
           TOKEN: ${{ steps.github-token.outputs.token }}
@@ -682,6 +683,7 @@ jobs:
           case "$ACTION" in
             open_pr)        cooldown=$(date -u -d '14 days' +%Y-%m-%dT%H:%M:%SZ) ;;
             delete_branch)  cooldown=$(date -u -d '7 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
+            not_reproduced) cooldown=$(date -u -d '3 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
             blocked)        cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
             *)              cooldown="" ;;
           esac
@@ -710,7 +712,7 @@ jobs:
                 last_action: $action, last_reason: $reason, last_run: $run, updated_at: $now
               })
               | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
-              | if $action == "verified_green" then .[$fp].verified_at = $now else . end
+              | del(.[$fp].verified_at)
               | if $pr != "" then .[$fp].pr = $pr else . end
             ' "$state/ledger.json" > "$state/ledger.tmp"
             mv "$state/ledger.tmp" "$state/ledger.json"
