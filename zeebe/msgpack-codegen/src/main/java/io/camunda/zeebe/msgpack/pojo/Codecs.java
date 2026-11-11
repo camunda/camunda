@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.BaseValue;
@@ -44,7 +45,7 @@ public final class Codecs {
   private Codecs() {}
 
   @SuppressWarnings("unchecked")
-  public static <T> MsgpackCodec<T> of(final Class<T> type) {
+  public static <T extends Recyclable> MsgpackCodec<T> of(final Class<T> type) {
     return (MsgpackCodec<T>) CODECS.get(type);
   }
 
@@ -59,11 +60,6 @@ public final class Codecs {
     @Override
     public int getLength(final BaseValue value) {
       return value.getEncodedLength();
-    }
-
-    @Override
-    public void reset(final BaseValue target) {
-      target.reset();
     }
 
     @Override

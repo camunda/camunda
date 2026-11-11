@@ -31,7 +31,9 @@ public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskList
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  TaskListenerIndicesRecord() {}
+  TaskListenerIndicesRecord() {
+    reset();
+  }
 
   public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
     return switch (eventType) {
@@ -52,12 +54,15 @@ public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskList
     setTaskListenerIndex(eventType, 0);
   }
 
+  /** The only place with the default of every property. */
+  @Override
   public void reset() {
     creatingTaskListenerIndex = 0;
     assigningTaskListenerIndex = 0;
     updatingTaskListenerIndex = 0;
     completingTaskListenerIndex = 0;
     cancelingTaskListenerIndex = 0;
+    unknownProperties.clear();
   }
 
   @Override

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
@@ -17,13 +18,16 @@ import org.agrona.MutableDirectBuffer;
  * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
  * MsgpackScratch}.
  *
+ * <p>The concrete class implements {@link #reset()}, which must restore the default of every
+ * property, drop unknown properties and reset nested objects. It is called before every read.
+ *
  * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
  * scratch state.
  *
  * @param <T> the concrete POJO type
  */
 public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
-    implements BufferReader, BufferWriter {
+    implements BufferReader, BufferWriter, Recyclable {
 
   /** The generated codec of the concrete type. */
   protected abstract MsgpackCodec<T> codec();
@@ -40,7 +44,8 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    codec().decode(MsgpackScratch.reader(buffer, offset, length), self());
+    reset();
+    codec().read(MsgpackScratch.reader(buffer, offset, length), self());
   }
 
   @SuppressWarnings("unchecked")

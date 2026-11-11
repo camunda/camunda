@@ -32,14 +32,14 @@ Open the class and every property it declares. Allowed property types:
 
 | Old property                                  | New field                                                        |
 | --------------------------------------------- | ---------------------------------------------------------------- |
-| `LongProperty(key, default)`                  | `long field = default;`                                          |
-| `IntegerProperty(key, default)`               | `int field = default;`                                           |
-| `BooleanProperty(key, default)`               | `boolean field = default;`                                       |
-| `StringProperty(key, default)`                | `DirectBuffer field = Decoding.EMPTY;` (see step 3 for non-empty) |
-| `EnumProperty<E>(key)` without default        | `E field;` (null until set, writing null fails like before)      |
-| `EnumProperty<E>(key, default)`               | `E field = default;`                                             |
-| `ObjectProperty<X>(key, new X())`             | `final X field = new X();` (X is a `@MsgpackPojo` or an `UnpackedObject`) |
-| `ArrayProperty<StringValue>(key, StringValue::new)` | `final List<DirectBuffer> field = new ArrayList<>();`      |
+| `LongProperty(key, default)`                  | `long field;` and `field = default;` in `reset()`                |
+| `IntegerProperty(key, default)`               | `int field;` and `field = default;` in `reset()`                 |
+| `BooleanProperty(key, default)`               | `boolean field;` and `field = default;` in `reset()`             |
+| `StringProperty(key, default)`                | `DirectBuffer field;` and `field = Decoding.EMPTY;` in `reset()` (non-empty default: see step 3) |
+| `EnumProperty<E>(key)` without default        | `E field;` and `field = null;` in `reset()` (writing null fails like before) |
+| `EnumProperty<E>(key, default)`               | `E field;` and `field = default;` in `reset()`                   |
+| `ObjectProperty<X>(key, new X())`             | `final X field = new X();` and `field.reset();` in `reset()` (X is a `@MsgpackPojo` or an `UnpackedObject`) |
+| `ArrayProperty<StringValue>(key, StringValue::new)` | `final List<DirectBuffer> field = new ArrayList<>();` and `field.clear();` in `reset()` |
 
 STOP if the class uses `BinaryProperty`, `DocumentProperty`, `PackedProperty`, `ArrayProperty` of
 anything but `StringValue`, `PropertyGroup`, a property with `.sanitized()`, or any property
@@ -52,7 +52,7 @@ has subclasses.
 
 From the constructor, list `declareProperty(...)` calls IN THE ORDER OF THOSE CALLS. This order,
 not the order of the field declarations, is the stored order. For each: key string, type, default.
-Keep this list, you need it in steps 3 and 6.
+Keep this list, you need it in steps 3 and 6. The defaults you write down become the body of `reset()`.
 
 ## Step 2: freeze the old class as `<Name>V1`
 
@@ -83,17 +83,25 @@ Edit the class in place:
    `public final class Name extends MsgpackBufferValue<Name> implements DbValue` (drop
    `extends UnpackedObject`; keep `implements DbValue` if it had it; if it did not implement
    `DbValue`, drop `MsgpackBufferValue` too and STOP-report, this skill does not cover it).
+   `MsgpackBufferValue` makes the class `Recyclable`, which the generator requires: without it
+   compilation fails with "must implement io.camunda.zeebe.msgpack.Recyclable".
 2. Replace each `XxxProperty` field by a plain package-private field from the table in step 0.
    Rules the generator enforces: fields must NOT be `private`; scalar, string, enum fields must
-   NOT be `final`; nested objects and lists MUST be `final` and initialized inline. Declare the
-   fields in the stored order from step 1. Field name = key string. If the key differs from the
-   Java name you want, keep the key as field name anyway, or add
-   `@MsgpackProperty("theKey")` on the field.
-3. Non-empty string default: `DirectBuffer field = new UnsafeBuffer("x".getBytes(StandardCharsets.UTF_8));`.
-4. Add exactly one field `@MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();`
+   NOT be `final` and get NO initializer (the default lives in `reset()`); nested objects and
+   lists MUST be `final` and initialized inline. Declare the fields in the stored order from
+   step 1. Field name = key string. If the key differs from the Java name you want, keep the key as
+   field name anyway, or add `@MsgpackProperty("theKey")` on the field.
+3. Add exactly one field `@MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();`
    (it keeps keys written by newer versions). A field that must not be stored gets `@MsgpackIgnore`.
-5. Delete the `declareProperty` constructor body. Keep the constructors, minus `super(n)`. A no-arg
-   constructor must remain, reachable from the same package.
+4. Delete the `declareProperty` constructor body and `super(n)`. Keep all constructors; the no-arg
+   constructor must remain, reachable from the same package, and every constructor must start
+   with `reset()` (or `this()`, if it chains to the no-arg one that calls it).
+5. Implement `reset()`, the ONLY place with the defaults (the old class had a public `reset()`
+   from `UnpackedObject`, so keep it `public`). It must, in the stored order: assign the
+   default of every scalar, string and enum field, `list.clear()` every list, call `reset()` on
+   every nested object, and end with `unknownProperties.clear()`. A non-empty string default is
+   `field = new UnsafeBuffer("x".getBytes(StandardCharsets.UTF_8));`. Forgetting a field here is the
+   most likely mistake; the dirty-target test in step 5 catches it.
 6. Add:
    ```java
    @Override
@@ -146,7 +154,8 @@ of the same package and fill it in. The test must contain, for the new class vs 
 
 1. same bytes when every property is set to a non-default value,
 2. same bytes with only the constructor-required values set (defaults everywhere else),
-3. reads the bytes written by `NameV1`,
+3. reads the bytes written by `NameV1` into a target in which EVERY property was first set to a
+   non-default value (proves `reset()` restores every default),
 4. is read by `NameV1`,
 5. unknown properties of a newer version survive read, modify, write,
 6. a decoded value does not reference the buffer it was read from (only if it has string/array

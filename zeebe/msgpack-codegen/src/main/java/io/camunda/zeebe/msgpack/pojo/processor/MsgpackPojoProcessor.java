@@ -64,6 +64,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         continue;
       }
       try {
+        requireRecyclable((TypeElement) element);
         final var model = buildModel((TypeElement) element);
         write(model.pkg(), model.name() + "Codec", codec(model), element);
       } catch (final IllegalArgumentException e) {
@@ -71,6 +72,17 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
     }
     return true;
+  }
+
+  private void requireRecyclable(final TypeElement type) {
+    final var recyclable =
+        processingEnv.getElementUtils().getTypeElement("io.camunda.zeebe.msgpack.Recyclable");
+    if (recyclable == null
+        || !processingEnv.getTypeUtils().isAssignable(type.asType(), recyclable.asType())) {
+      throw new IllegalArgumentException(
+          "@MsgpackPojo class must implement io.camunda.zeebe.msgpack.Recyclable, whose reset() "
+              + "restores the default of every property (extend MsgpackBufferValue)");
+    }
   }
 
   private Model buildModel(final TypeElement type) {
@@ -200,7 +212,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("public final class %sCodec implements MsgpackCodec<%s> {\n".formatted(pojo, pojo));
     s.append("  public static final %sCodec INSTANCE = new %sCodec();\n\n".formatted(pojo, pojo));
     constants(s, m);
-    s.append("  private static final %s DEFAULTS = new %s();\n".formatted(pojo, pojo));
     s.append("\n  private %sCodec() {}\n\n".formatted(pojo));
 
     final var unknown = m.unknownField();
@@ -277,25 +288,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("    n += v.%s.length();\n".formatted(unknown));
     }
     s.append("    return n;\n  }\n\n");
-
-    // reset
-    s.append("  @Override\n  public void reset(final %s target) {\n".formatted(pojo));
-    i = 0;
-    for (final var p : m.properties()) {
-      final var f = p.field();
-      switch (p.type()) {
-        case STRING_LIST ->
-            s.append(
-                "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
-        case NESTED -> s.append("    CODEC_%d.reset(target.%s);\n".formatted(i, f));
-        default -> s.append("    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
-      }
-      i++;
-    }
-    if (unknown != null) {
-      s.append("    target.%s.clear();\n".formatted(unknown));
-    }
-    s.append("  }\n\n");
 
     // read
     s.append(

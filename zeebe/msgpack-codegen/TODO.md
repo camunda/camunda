@@ -34,8 +34,6 @@ below is open.
 - [ ] **Maven build.** The Maven wiring (`msgpack-codegen/pom.xml`, `parent/pom.xml`,
       `zeebe/pom.xml`, `zeebe/engine/pom.xml` `annotationProcessorPaths`) was written but never run,
       because the snapshot modules could not be resolved offline. Build `zeebe/engine -am` once.
-- [ ] **Processor tests.** The processor has no tests of its own (error cases: private field, final
-      scalar, unsupported type, nested type without a codec).
 - [ ] **Nullness.** Add `@NullMarked`/`@Nullable` to the new module in a separate `refactor:` commit.
 - [ ] **Formatting.** Gradle has no `spotlessApply`; the new files were formatted with
       google-java-format directly. Run `./mvnw license:format spotless:apply` on them.

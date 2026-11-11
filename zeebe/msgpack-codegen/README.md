@@ -6,11 +6,25 @@ Generates msgpack codecs for plain data classes, so that state values do not hav
 ```java
 @MsgpackPojo
 public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
-  long key = -1L;                         // default = field initializer
-  DirectBuffer name = Decoding.EMPTY;     // msgpack string
+  long key;
+  DirectBuffer name;                      // msgpack string
   final List<DirectBuffer> ids = new ArrayList<>();
   final Bar bar = new Bar();              // another @MsgpackPojo, or a BaseValue
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public Foo() {
+    reset();
+  }
+
+  /** The only place with the defaults. Called before every read. */
+  @Override
+  public void reset() {
+    key = -1L;
+    name = Decoding.EMPTY;
+    ids.clear();
+    bar.reset();
+    unknownProperties.clear();
+  }
 
   @Override
   protected MsgpackCodec<Foo> codec() {
@@ -22,8 +36,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 ## How it works
 
 - The annotation processor generates a stateless `<Name>Codec implements MsgpackCodec<Name>` per
-  `@MsgpackPojo` (`write`, `getLength`, `reset`, `read`, `decode`). The caller owns the
-  `MsgPackWriter`/`MsgPackReader`.
+  `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
+- Resetting is the job of the class: it must be `Recyclable`, its `reset()` restores the default of
+  every property and is called before every read, so properties missing in the input keep their
+  default. `MsgpackCodec<T extends Recyclable>` and the processor make a class that is not
+  `Recyclable` fail compilation.
 - Every non-static field is stored under its field name, in declaration order, unless it is
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.

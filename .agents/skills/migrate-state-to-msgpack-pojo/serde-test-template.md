@@ -64,7 +64,8 @@ final class NameSerdeTest {
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new Name();
-    // TODO: dirty the target (set a property, add a list element) to prove it is reset
+    // TODO: dirty EVERY property of the target (all setters, add a list element, ...), so that a
+    // property missing from reset() makes this test fail
 
     // when
     current.wrap(bytes, 0, length);

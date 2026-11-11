@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 
@@ -15,9 +16,10 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
  * reader, typically one of each per thread, so a codec can be shared freely.
  *
  * <p>Values are filled in place: strings and raw values are copied out of the source buffer, nested
- * objects are owned by their parent and filled in place as well.
+ * objects are owned by their parent and filled in place as well. Resetting is the job of the value,
+ * see {@link Recyclable}.
  */
-public interface MsgpackCodec<T> {
+public interface MsgpackCodec<T extends Recyclable> {
 
   /** Writes the value and returns the number of bytes written. */
   int write(MsgPackWriter writer, T value);
@@ -25,19 +27,9 @@ public interface MsgpackCodec<T> {
   /** The number of bytes {@link #write} produces for the value. */
   int getLength(T value);
 
-  /** Sets every property of {@code target} to its default and drops unknown properties. */
-  void reset(T target);
-
   /**
    * Reads the properties present in the input into {@code target}. Properties missing in the input
-   * keep their current value, so the target is expected to be {@link #reset} first; see {@link
-   * #decode}.
+   * keep their current value, so call {@link Recyclable#reset()} on the target first.
    */
   void read(MsgPackReader reader, T target);
-
-  /** Resets {@code target} and reads the value the reader is positioned at into it. */
-  default void decode(final MsgPackReader reader, final T target) {
-    reset(target);
-    read(reader, target);
-  }
 }
