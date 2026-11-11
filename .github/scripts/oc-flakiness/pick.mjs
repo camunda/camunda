@@ -25,6 +25,8 @@ import {
   walkSpecs,
 } from './report.mjs';
 import {readdirSync} from 'node:fs';
+
+const ATTEMPT_FAILED = new Set(['failed', 'timedOut']);
 import {join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
@@ -78,9 +80,15 @@ export function pick({reportsDir, ledger = {}, max = 3, minScore = 2, now}) {
                 failed: 0,
                 passed: 0,
               });
+              // `unexpected` also covers interrupted runs (a cancelled
+              // nightly); only an attempt that actually failed counts.
+              const attemptFailed = (test.results ?? []).some((r) =>
+                ATTEMPT_FAILED.has(r.status),
+              );
               if (test.status === 'flaky') counts.flaky += 1;
-              else if (test.status === 'unexpected') counts.failed += 1;
-              else if (test.status === 'expected') counts.passed += 1;
+              else if (test.status === 'unexpected' && attemptFailed) {
+                counts.failed += 1;
+              } else if (test.status === 'expected') counts.passed += 1;
               else continue;
               entry.projects[test.projectName] =
                 (entry.projects[test.projectName] ?? 0) + 1;

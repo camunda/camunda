@@ -15,8 +15,9 @@
 //
 // A run counts when it reached a verdict (passed or failed). Skipped,
 // interrupted and never-started repeats do not, so a pass that ran out of
-// clock cannot score as 100%. A cell with fewer than half of its planned runs
-// scored is `blocked`: the harness, not the test, decided that pass.
+// clock cannot score as 100%. A cell is `blocked` (the harness, not the test,
+// decided that pass) when it has no failure and fewer passes than planned, or
+// a failure but fewer than half of its planned runs scored.
 
 import {
   errorKey,
@@ -81,7 +82,13 @@ export function score({dir, file, titlePath, cells, planned}) {
   let blocked = false;
   for (const counts of Object.values(perCell)) {
     counts.rate = rate(counts.passed, counts.failed);
-    counts.blocked = counts.passed + counts.failed < planned / 2;
+    // A cell that reproduced a failure has shown the test is flaky, so half
+    // of the planned runs is enough to measure how flaky. A failure-free cell
+    // claims the test is stable, which only every planned run can show.
+    counts.blocked =
+      counts.failed === 0
+        ? counts.passed < planned
+        : counts.passed + counts.failed < planned / 2;
     blocked ||= counts.blocked;
     pooledPassed += counts.passed;
     pooledFailed += counts.failed;

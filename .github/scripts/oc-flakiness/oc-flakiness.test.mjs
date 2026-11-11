@@ -116,6 +116,18 @@ test('should skip a test under cooldown and ignore hits before verified_at', () 
   assert.deepEqual(verified, [], 'one hit after verification is below min score');
 });
 
+test('should not count an interrupted nightly run as a failure', () => {
+  // given
+  const dir = nightlyDir([
+    {version: 'main', cell: 'e2e', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [passed]},
+    {version: 'main', cell: 'e2e', runId: '2', createdAt: '2026-11-02T00:00:00Z', tests: [interrupted]},
+    {version: 'main', cell: 'e2e', runId: '3', createdAt: '2026-11-03T00:00:00Z', tests: [interrupted]},
+  ]);
+
+  // when / then
+  assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
+});
+
 function shardDir(shards, opts) {
   const dir = mkdtempSync(join(tmpdir(), 'oc-flaky-score-'));
   shards.forEach(({cell, stackOk = true, tests}, i) => {
@@ -160,6 +172,25 @@ test('should not count interrupted runs or a sibling test with another title', (
   assert.equal(result.cells['e2e-v2'].notRun, 1);
   assert.equal(result.cells['e2e-v2'].shardsOk, 1);
   assert.equal(sibling.pooled.passed, 0);
+});
+
+test('should block a failure-free cell that did not run every planned repeat', () => {
+  // given
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, passed, interrupted, interrupted]}]);
+
+  // when
+  const result = score({dir, ...scoreArgs});
+
+  // then
+  assert.equal(result.verdict, 'blocked', 'two passes do not show stability');
+});
+
+test('should score a cell with a failure from half of its planned runs', () => {
+  // given
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, failed(), interrupted, interrupted]}]);
+
+  // when / then
+  assert.equal(score({dir, ...scoreArgs}).verdict, 'scored');
 });
 
 test('should report green when every scored run passed', () => {

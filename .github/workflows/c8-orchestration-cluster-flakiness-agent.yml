@@ -345,9 +345,14 @@ jobs:
           allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
           mapfile -t files < <(git apply --numstat "$patch" | cut -f3)
           # Renames show as "old => new"; both sides must be allowed.
+          # Tool configuration is looked up per directory (a tests/.prettierrc.cjs
+          # or tests/package.json would be executed by the lint step below), so
+          # no dotfile, package.json, *.config.* or JavaScript file is accepted
+          # anywhere, even inside the allowed directories.
+          tool_config='(^|/)(\.[^/]*|package\.json|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
           for entry in "${files[@]}"; do
             for f in ${entry//=>/ }; do
-              if ! [[ "$f" =~ $allowed ]]; then
+              if ! [[ "$f" =~ $allowed ]] || [[ "$f" =~ $tool_config ]]; then
                 echo "::error::the patch touches $f, which the agent may not change"
                 exit 1
               fi
@@ -389,8 +394,10 @@ jobs:
           npm ci
           mapfile -t ts_files < "$RUNNER_TEMP/ts-files.txt"
           if [[ "${#ts_files[@]}" -gt 0 ]]; then
-            npx prettier --write "${ts_files[@]}"
-            npx eslint "${ts_files[@]}"
+            # Pinned to the suite-root configs from the starting commit, so no
+            # config lookup can reach a file the patch added.
+            npx prettier --config .prettierrc --no-editorconfig --write "${ts_files[@]}"
+            npx eslint --config eslint.config.js "${ts_files[@]}"
           fi
           npx tsc --noEmit
 
