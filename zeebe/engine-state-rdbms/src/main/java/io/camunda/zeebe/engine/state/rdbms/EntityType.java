@@ -83,6 +83,19 @@ final class EntityType<K, E> {
     return groupOf == null ? null : groupOf.apply(key);
   }
 
+  /**
+   * The engine key a row belongs to: its key, or else its group, if that is a {@code long}, e.g.
+   * the element instance of an event scope or the scope of a variable; otherwise -1. While that key
+   * is new in a transaction, the database has no row of it, see {@link
+   * EntitySession#isGeneratedInTransaction}.
+   */
+  long engineKeyOf(final K key) {
+    if (key instanceof final Long engineKey) {
+      return engineKey;
+    }
+    return groupOf(key) instanceof final Long engineKey ? engineKey : -1L;
+  }
+
   /** A key of this type, as staged by the session. */
   @SuppressWarnings("unchecked")
   K castKey(final Object key) {

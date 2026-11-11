@@ -75,6 +75,11 @@ public final class RdbmsStateStores extends RocksDbStateStores {
   }
 
   @Override
+  public void onKeyGenerated(final long key) {
+    entitySession.keyGenerated(key);
+  }
+
+  @Override
   public MutableVariableState variableState() {
     return new ReplaySkippingVariableState(
         new VariableStateImpl(new RdbmsVariableStore(entitySession)), mixedContext.jdbc());
