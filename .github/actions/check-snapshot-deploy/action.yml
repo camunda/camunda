@@ -68,10 +68,11 @@ runs:
           echo "::warning::Could not determine creation time of run ${GITHUB_RUN_ID}; skipping the stale re-run check."
           exit 0
         fi
-        age_hours=$(( ($(date -u +%s) - $(date -u -d "${created_at}" +%s)) / 3600 ))
-        if (( age_hours <= MAX_AGE_HOURS )); then
+        age_seconds=$(( $(date -u +%s) - $(date -u -d "${created_at}" +%s) ))
+        if (( age_seconds <= MAX_AGE_HOURS * 3600 )); then
           exit 0
         fi
+        age_hours=$(( age_seconds / 3600 ))
 
         echo "deploy=false" >> "$GITHUB_OUTPUT"
         echo "stale=true" >> "$GITHUB_OUTPUT"
