@@ -259,11 +259,20 @@ final class RdbmsLogStorageTest {
   }
 
   @Test
-  void shouldNotLingerWithoutOrWithInvalidEnvironmentValue() {
+  void shouldUseDefaultCommitLingerWithoutOrWithInvalidEnvironmentValue() {
     // when / then
-    assertThat(Config.fromEnvironment(Map.of()).commitLinger()).isZero();
+    assertThat(Config.fromEnvironment(Map.of()).commitLinger()).isEqualTo(Duration.ofMillis(10));
     assertThat(Config.fromEnvironment(Map.of(Config.COMMIT_LINGER_ENV, "soon")).commitLinger())
-        .isZero();
+        .isEqualTo(Duration.ofMillis(10));
+  }
+
+  @Test
+  void shouldTurnCommitLingerOffWithZero() {
+    // when
+    final var config = Config.fromEnvironment(Map.of(Config.COMMIT_LINGER_ENV, "0"));
+
+    // then
+    assertThat(config.commitLinger()).isZero();
   }
 
   @Test

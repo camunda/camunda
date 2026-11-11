@@ -344,9 +344,14 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
             Duration.ofSeconds(1),
             16 * 1024 * 1024,
             32,
-            Duration.ZERO);
+            // in load tests, 10 ms cut the transactions per partition substantially and brought
+            // throughput in line with Atomix, for 10 ms of latency per append
+            Duration.ofMillis(10));
 
-    /** The defaults, with the commit linger taken from {@link #COMMIT_LINGER_ENV} if set. */
+    /**
+     * The defaults, with the commit linger taken from {@link #COMMIT_LINGER_ENV} if set; zero turns
+     * the linger off.
+     */
     public static Config fromEnvironment(final Map<String, String> environment) {
       final var lingerMillis = environment.get(COMMIT_LINGER_ENV);
       if (lingerMillis == null || lingerMillis.isBlank()) {
@@ -356,7 +361,10 @@ public final class RdbmsLogStorage extends AbstractLogStorage implements AutoClo
         return DEFAULT.withCommitLinger(Duration.ofMillis(Long.parseLong(lingerMillis.trim())));
       } catch (final NumberFormatException e) {
         LOG.warn(
-            "Ignoring {}={}, expected a number of milliseconds", COMMIT_LINGER_ENV, lingerMillis);
+            "Ignoring {}={}, expected a number of milliseconds; using the default {}",
+            COMMIT_LINGER_ENV,
+            lingerMillis,
+            DEFAULT.commitLinger());
         return DEFAULT;
       }
     }
