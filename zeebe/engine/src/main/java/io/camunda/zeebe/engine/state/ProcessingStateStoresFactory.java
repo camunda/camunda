@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
@@ -21,6 +22,17 @@ public interface ProcessingStateStoresFactory {
 
   ProcessingStateStores create(
       int partitionId, ZeebeDb<ZbColumnFamilies> zeebeDb, TransactionContext transactionContext);
+
+  /**
+   * The job state of the scheduled tasks, on their own transaction context. They only read it: they
+   * write commands, not state.
+   */
+  default JobState scheduledTaskJobState(
+      final int partitionId,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext) {
+    return create(partitionId, zeebeDb, transactionContext).jobState();
+  }
 
   /** Stores all engine state in RocksDB. */
   static ProcessingStateStoresFactory rocksDb() {

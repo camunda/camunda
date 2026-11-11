@@ -123,6 +123,28 @@ final class EntitySessionTest {
   }
 
   @Test
+  void shouldReadWithoutDatabaseTransactionInReadOnlySession() throws Exception {
+    // given
+    commit(row("1", "a"));
+    final var readOnlyContext = new JdbcTransactionContext();
+    final var readOnly =
+        new EntitySession(readOnlyContext, partitionId, database.sessionFactory(), true);
+    readOnlyContext.register(readOnly);
+    connectionCalls.clear();
+
+    // when
+    final var transaction = readOnlyContext.getCurrentTransaction();
+    final var read = readOnly.get(ROW, "1");
+    transaction.commit();
+
+    // then - the connection stays in auto-commit mode, so nothing begins or ends a transaction
+    assertThat(read).isEqualTo(row("1", "a"));
+    assertThat(connectionCalls).containsExactly("close");
+    assertThatThrownBy(() -> readOnly.insert(ROW, row("2", "a")))
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
   void shouldNotDeleteRowKnownToBeMissing() throws Exception {
     // given
     commit(row("1", "a"));
@@ -706,6 +728,8 @@ final class EntitySessionTest {
             (proxy, method, args) -> {
               if (Set.of("commit", "rollback", "close").contains(method.getName())) {
                 connectionCalls.add(method.getName());
+              } else if (method.getName().equals("setAutoCommit")) {
+                connectionCalls.add("setAutoCommit(" + args[0] + ")");
               }
               final Object result = invoke(target, method, args);
               if (method.getName().equals("prepareStatement")

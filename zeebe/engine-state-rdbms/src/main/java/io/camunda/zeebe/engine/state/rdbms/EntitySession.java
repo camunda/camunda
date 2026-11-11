@@ -92,6 +92,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
+  private final boolean readOnly;
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
 
   /**
@@ -126,9 +127,23 @@ final class EntitySession implements JdbcTransactionParticipant {
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final SqlSessionFactory sessionFactory) {
+    this(transactionContext, partitionId, sessionFactory, false);
+  }
+
+  /**
+   * @param readOnly whether the session only reads, like the one of the scheduled tasks: it then
+   *     runs its queries without a database transaction, so a transaction costs no BEGIN and
+   *     COMMIT, and rejects writes
+   */
+  EntitySession(
+      final JdbcTransactionContext transactionContext,
+      final int partitionId,
+      final SqlSessionFactory sessionFactory,
+      final boolean readOnly) {
     this.transactionContext = transactionContext;
     this.partitionId = partitionId;
     this.sessionFactory = sessionFactory;
+    this.readOnly = readOnly;
   }
 
   int partitionId() {
@@ -177,6 +192,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   <K, E> void insert(final EntityType<K, E> type, final E row) {
+    requireWritable();
     transactionContext.call(
         () -> {
           final K key = type.keyOf(row);
@@ -197,6 +213,7 @@ final class EntitySession implements JdbcTransactionParticipant {
    * the class documentation for how it is written.
    */
   <K, E> void upsert(final EntityType<K, E> type, final E row) {
+    requireWritable();
     transactionContext.call(
         () -> {
           final K key = type.keyOf(row);
@@ -223,6 +240,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   }
 
   <K, E> void update(final EntityType<K, E> type, final E row) {
+    requireWritable();
     transactionContext.call(
         () -> {
           final K key = type.keyOf(row);
@@ -242,6 +260,7 @@ final class EntitySession implements JdbcTransactionParticipant {
    * session knows that the row doesn't exist, e.g. from an earlier read, nothing is staged.
    */
   <K, E> void delete(final EntityType<K, E> type, final K key) {
+    requireWritable();
     transactionContext.call(
         () -> {
           final var writes = staged(type);
@@ -681,9 +700,20 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private SqlSession session() {
     if (session == null) {
-      session = sessionFactory.openSession(ExecutorType.BATCH);
+      session =
+          readOnly
+              ? sessionFactory.openSession(ExecutorType.SIMPLE, true)
+              : sessionFactory.openSession(ExecutorType.BATCH);
     }
     return session;
+  }
+
+  private void requireWritable() {
+    if (readOnly) {
+      throw new UnsupportedOperationException(
+          "Expected to write engine state, but the session of partition %d only reads"
+              .formatted(partitionId));
+    }
   }
 
   /** The connection may be dead, so errors on closing are of no interest. */

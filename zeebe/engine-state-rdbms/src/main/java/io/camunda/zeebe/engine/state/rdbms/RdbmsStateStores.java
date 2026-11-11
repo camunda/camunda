@@ -7,13 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.rdbms;
 
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.state.ProcessingStateStores;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventScopeInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.JobStateImpl;
@@ -52,10 +55,22 @@ public final class RdbmsStateStores extends RocksDbStateStores {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final MixedTransactionContext mixedContext,
       final SqlSessionFactory sessionFactory) {
+    this(partitionId, zeebeDb, mixedContext, sessionFactory, false);
+  }
+
+  /**
+   * @param readOnly whether the stores only read, see {@link EntitySession}
+   */
+  private RdbmsStateStores(
+      final int partitionId,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final MixedTransactionContext mixedContext,
+      final SqlSessionFactory sessionFactory,
+      final boolean readOnly) {
     super(zeebeDb, mixedContext.rocksDb());
     this.zeebeDb = zeebeDb;
     this.mixedContext = mixedContext;
-    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory);
+    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory, readOnly);
     mixedContext.jdbc().register(entitySession);
   }
 
@@ -66,12 +81,34 @@ public final class RdbmsStateStores extends RocksDbStateStores {
    *     EngineStateMyBatis#createSqlSessionFactory}
    */
   public static ProcessingStateStoresFactory factory(final RdbmsEngineStateResources resources) {
-    return (partitionId, zeebeDb, transactionContext) ->
-        new RdbmsStateStores(
+    return new ProcessingStateStoresFactory() {
+      @Override
+      public ProcessingStateStores create(
+          final int partitionId,
+          final ZeebeDb<ZbColumnFamilies> zeebeDb,
+          final TransactionContext transactionContext) {
+        return new RdbmsStateStores(
             partitionId,
             zeebeDb,
             (MixedTransactionContext) transactionContext,
             resources.sessionFactory());
+      }
+
+      /** The scheduled tasks only read, so their job state needs no database transactions. */
+      @Override
+      public JobState scheduledTaskJobState(
+          final int partitionId,
+          final ZeebeDb<ZbColumnFamilies> zeebeDb,
+          final TransactionContext transactionContext) {
+        return new RdbmsStateStores(
+                partitionId,
+                zeebeDb,
+                (MixedTransactionContext) transactionContext,
+                resources.sessionFactory(),
+                true)
+            .jobState();
+      }
+    };
   }
 
   @Override
