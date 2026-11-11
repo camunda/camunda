@@ -26,6 +26,9 @@ copies and `ElementInstanceSerdeTest.java` under `src/test`. Background: `zeebe/
 - Commits: conventional commit, no scope, body explaining why, hard wrap at 72. Author is
   `Carlo Sana <1188147+entangled90@users.noreply.github.com>`, never add a Claude co-author line.
 
+Base branch: the skill and the finished examples live on `claude/lucid-mendel-oaaxtq`. Branch from
+it, not from `main`.
+
 ## Step 0: check the class can be migrated
 
 Open the class and every property it declares. Allowed property types:
@@ -46,8 +49,15 @@ STOP if the class uses `DocumentProperty`, `PackedProperty`, `ArrayProperty` of
 anything but `StringValue`, `PropertyGroup`, a property with `.sanitized()`, or any property
 whose default is computed. Report which one. The generator does not support them yet.
 
-Also STOP if the class is not final-top-level (nested/inner classes are not supported), or if it
-has subclasses.
+Also STOP if the class is a nested/inner class (not supported), or if anything extends it:
+`grep -rnE "extends Name\b" zeebe --include=*.java` must find nothing, and no test may mock or
+spy it. A class that is merely not `final` is fine: the migrated class is declared `final`, and
+you mention that in the commit body.
+
+Properties WITHOUT a default (`new BooleanProperty("k")`, `new LongProperty("k")`) throw when
+written before being set. Use the Java default (`false`, `0L`) as the initializer; the stored
+bytes are identical for everything the old class could write. In the serde tests set such a
+value explicitly on both the old and the new object, and say so in the commit body.
 
 ## Step 1: write down the stored layout
 
@@ -61,10 +71,11 @@ Copy the current class (and every other class you are migrating together with it
 ones that are state classes) into the test sources, same package, renamed:
 
 ```bash
-git show HEAD:<path to Name.java> \
-  | sed -E 's/\b(Name|NestedName)\b/\1V1/g' \
-  > <module>/src/test/java/<same package path>/NameV1.java
+cp <path to Name.java> <module>/src/test/java/<same package path>/NameV1.java
+sed -i -E 's/\b(Name|NestedName)\b/\1V1/g' <module>/src/test/java/<same package path>/NameV1.java
 ```
+
+Do this BEFORE you edit the class (do not use `git show`, some environments block it).
 
 Replace `Name`/`NestedName` with the real class names (one alternation entry per frozen class).
 Insert this Javadoc directly above `public final class` in each V1 file:
@@ -186,7 +197,7 @@ git commit            # type: perf, header: name the effect, body: why + what st
 git push
 ```
 
-Commit header example: `perf: replace UnpackedObject based Foo with a generated codec`. The body
+Commit header example: `refactor: replace UnpackedObject based Foo with a generated codec`. The body
 must say that the stored format is unchanged and that the V1 comparison tests prove it.
 
 ## When to STOP and report
