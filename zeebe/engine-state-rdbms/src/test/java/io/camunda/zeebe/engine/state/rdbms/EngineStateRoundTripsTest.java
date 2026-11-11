@@ -265,24 +265,23 @@ final class EngineStateRoundTripsTest {
   }
 
   @Test
-  void shouldActivateAndCompleteATaskWithItsEventScopeWithoutTriggerQueriesOnActivation()
-      throws Exception {
+  void shouldActivateAndCompleteATaskWithItsEventScope() throws Exception {
     // given - a committed process instance
     final var setup = transactionContext.getCurrentTransaction();
     elementInstanceState.newInstance(
         100, record(BpmnElementType.PROCESS, "process"), ProcessInstanceIntent.ELEMENT_ACTIVATED);
     setup.commit();
 
-    // when - the task is activated like the activating applier does it: the event scope first,
-    // then the element instance; the processor then looks for a trigger of the task
+    // when - the task is activated like the activating applier does it: the element instance
+    // first, then the event scope; the processor then looks for a trigger of the task
     final var activation = transactionContext.getCurrentTransaction();
     counting.reset();
-    eventScopeState.createInstance(101, List.of(), List.of());
     elementInstanceState.newInstance(
         elementInstanceState.getInstance(100),
         101,
         record(BpmnElementType.SERVICE_TASK, "task"),
         ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    eventScopeState.createInstance(101, List.of(), List.of());
     assertThat(eventScopeState.peekEventTrigger(101)).isNull();
     final int activationSelects = counting.otherStatements;
     activation.commit();
@@ -300,14 +299,14 @@ final class EngineStateRoundTripsTest {
     final int completionSelects = counting.otherStatements;
     completion.commit();
 
-    // then - the activation reads the process instance only (the parent of the task), no event
-    // scope or trigger. The completion reads the task, its triggers once (which tells that there
+    // then - the activation reads the process instance (the parent of the task) and the triggers
+    // of the task. The completion reads the task, its triggers once (which tells that there
     // are none, so the deletion of the event scope reads nothing), and for the removal of the
     // element instance its variables, its taken sequence flows and its parent
     System.out.printf(
         "ROUND TRIPS task activation: %d selects, %s; completion: %d selects, %s%n",
         activationSelects, activationBatches, completionSelects, counting);
-    assertThat(activationSelects).isOne();
+    assertThat(activationSelects).isEqualTo(2);
     assertThat(activationBatches)
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_ELEMENT_INSTANCE", "INSERT", 1),

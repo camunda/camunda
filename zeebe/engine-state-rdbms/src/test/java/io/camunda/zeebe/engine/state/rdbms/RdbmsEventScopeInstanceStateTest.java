@@ -103,10 +103,10 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
 
   @Test
   void shouldWriteRowsWithProcessInstanceOfElementInstanceOnCommit() throws Exception {
-    // given - like the activating applier: the scope first, then its element instance
+    // given - like the activating applier: the element instance first, then its scope
     final var transaction = transactionContext.getCurrentTransaction();
-    scopes.createInstance(101, Set.of(wrapString("boundary")), Set.of(wrapString("boundary")));
     newElementInstance(101);
+    scopes.createInstance(101, Set.of(wrapString("boundary")), Set.of(wrapString("boundary")));
     scopes.triggerEvent(
         101, 1, wrapString("boundary"), wrapString("variables"), PROCESS_INSTANCE_KEY);
     assertThat(rows("SELECT event_scope_key FROM CAM_RU_EVENT_SCOPE")).isEmpty();
@@ -165,13 +165,12 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
   }
 
   @Test
-  void shouldFailCommitOfScopeWithoutElementInstance() {
+  void shouldFailToCreateAScopeWithoutElementInstance() {
     // given
-    final var transaction = transactionContext.getCurrentTransaction();
-    scopes.createInstance(101, Set.of(), Set.of());
+    transactionContext.getCurrentTransaction();
 
     // when - then
-    assertThatThrownBy(transaction::commit)
+    assertThatThrownBy(() -> scopes.createInstance(101, Set.of(), Set.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
             "Expected event scope 101 to belong to an element instance, but it does not exist");
@@ -222,7 +221,7 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
   }
 
   @Test
-  void shouldReadTriggerPagesOnlyWhileTheVisitorContinues() throws Exception {
+  void shouldReadTheTriggersOfAScopeWithOneQuery() throws Exception {
     // given
     createCommittedScope(101);
     final var setup = transactionContext.getCurrentTransaction();
@@ -232,18 +231,14 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
     setup.commit();
     transactionContext.getCurrentTransaction();
 
-    // when - then: the first page of two
-    assertThat(queryCounter.queriesOf(() -> scopes.peekEventTrigger(101)))
-        .containsExactly("CAM_RU_EVENT_TRIGGER");
-    assertThat(queryCounter.queriesOf(() -> scopes.peekEventTrigger(101))).isEmpty();
-
-    // the remaining ones in pages of two, four and eight
+    // when - then
     final List<Long> visited = new ArrayList<>();
     assertThat(queryCounter.queriesOf(() -> visitedEventKeys(101, visited)))
-        .containsExactly("CAM_RU_EVENT_TRIGGER", "CAM_RU_EVENT_TRIGGER", "CAM_RU_EVENT_TRIGGER");
+        .containsExactly("CAM_RU_EVENT_TRIGGER");
     assertThat(visited).containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L);
 
     // all known now
+    assertThat(queryCounter.queriesOf(() -> scopes.peekEventTrigger(101))).isEmpty();
     assertThat(queryCounter.queriesOf(() -> scopes.deleteInstance(101))).isEmpty();
   }
 
@@ -291,12 +286,15 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
                 .map(EventTrigger::getEventKey))
         .contains(2L);
 
-    // the tenant of the process is remembered
+    // the process is read once per transaction
     transactionContext.getCurrentTransaction();
     assertThat(
             queryCounter.queriesOf(
-                () -> scopes.triggerStartEvent(900, 3, wrapString("start"), wrapString(""), 400)))
-        .isEmpty();
+                () -> {
+                  scopes.triggerStartEvent(900, 3, wrapString("start"), wrapString(""), 400);
+                  scopes.triggerStartEvent(900, 4, wrapString("start"), wrapString(""), 500);
+                }))
+        .containsExactly("CAM_RU_PROCESS_DEFINITION");
   }
 
   @Test
@@ -353,28 +351,6 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
   }
 
   @Test
-  void shouldNotQueryTheTriggersOfAScopeCreatedInTheTransaction() {
-    // given
-    transactionContext.getCurrentTransaction();
-    scopes.createInstance(101, Set.of(), Set.of());
-    newElementInstance(101);
-
-    // when
-    final var queries =
-        queryCounter.queriesOf(
-            () -> {
-              assertThat(scopes.peekEventTrigger(101)).isNull();
-              scopes.triggerEvent(
-                  101, 1, wrapString("event"), wrapString(""), PROCESS_INSTANCE_KEY);
-              assertThat(scopes.pollEventTrigger(101).getEventKey()).isOne();
-              scopes.deleteInstance(101);
-            });
-
-    // then
-    assertThat(queries).isEmpty();
-  }
-
-  @Test
   void shouldRememberThatAScopeHasNoTriggersInTheTransaction() throws Exception {
     // given
     createCommittedScope(101);
@@ -395,8 +371,8 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
 
   private void createCommittedScope(final long scopeKey) throws Exception {
     final var transaction = transactionContext.getCurrentTransaction();
-    scopes.createInstance(scopeKey, Set.of(), Set.of());
     newElementInstance(scopeKey);
+    scopes.createInstance(scopeKey, Set.of(), Set.of());
     transaction.commit();
   }
 
@@ -482,8 +458,8 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
   }
 
   /**
-   * Creates the element instance of a scope in the transaction that creates the scope, and the
-   * process of a start event before its trigger, as the engine has them.
+   * Creates the element instance of a scope before the scope, in its transaction, and the process
+   * of a start event before its trigger, as the engine has them.
    */
   private final class WithElementInstancesAndProcesses implements MutableEventScopeInstanceState {
 
@@ -500,8 +476,8 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
         final Collection<DirectBuffer> boundaryElementIds) {
       transactionContext.runInTransaction(
           () -> {
-            delegate.createInstance(eventScopeKey, interruptingElementIds, boundaryElementIds);
             newElementInstance(eventScopeKey);
+            delegate.createInstance(eventScopeKey, interruptingElementIds, boundaryElementIds);
           });
     }
 

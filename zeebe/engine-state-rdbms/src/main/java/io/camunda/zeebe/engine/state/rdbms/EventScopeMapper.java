@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
-import org.jspecify.annotations.Nullable;
 
 /**
  * MyBatis mapper of the event scope tables, see {@code
@@ -22,17 +21,9 @@ import org.jspecify.annotations.Nullable;
  */
 interface EventScopeMapper {
 
-  /**
-   * The committed triggers of a scope, by event key, after the given one.
-   *
-   * @param afterEventKey the event key the triggers follow, or null to start at the first
-   * @param limit how many triggers to select at most
-   */
+  /** The committed triggers of a scope, by event key. */
   List<EventTriggerRow> selectEventTriggersOfScope(
-      @Param("partitionId") int partitionId,
-      @Param("scopeKey") long scopeKey,
-      @Param("afterEventKey") @Nullable Long afterEventKey,
-      @Param("limit") int limit);
+      @Param("partitionId") int partitionId, @Param("scopeKey") long scopeKey);
 
   /** The event keys of the committed triggers of a scope. */
   List<Long> selectEventTriggerKeysOfScope(
@@ -40,8 +31,7 @@ interface EventScopeMapper {
 
   /**
    * An event scope: its msgpack {@code EventScopeInstance}, with its flags as columns, plus the
-   * process instance of its element instance. The tenant is null while the process instance isn't
-   * known yet, see {@link RdbmsEventScopeStore}; such a row is never written.
+   * process instance of its element instance.
    */
   record EventScopeRow(
       long scopeKey,
@@ -49,12 +39,8 @@ interface EventScopeMapper {
       boolean interrupted,
       long processInstanceKey,
       long rootProcessInstanceKey,
-      @Nullable String tenantId,
+      String tenantId,
       byte[] payload) {
-
-    boolean hasProcessInstance() {
-      return tenantId != null;
-    }
 
     EventScopeRow withInstance(
         final boolean newAccepting, final boolean newInterrupted, final byte[] newPayload) {
@@ -66,20 +52,6 @@ interface EventScopeMapper {
           rootProcessInstanceKey,
           tenantId,
           newPayload);
-    }
-
-    EventScopeRow withProcessInstance(
-        final long newProcessInstanceKey,
-        final long newRootProcessInstanceKey,
-        final String newTenantId) {
-      return new EventScopeRow(
-          scopeKey,
-          accepting,
-          interrupted,
-          newProcessInstanceKey,
-          newRootProcessInstanceKey,
-          newTenantId,
-          payload);
     }
   }
 
