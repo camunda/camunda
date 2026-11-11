@@ -349,9 +349,26 @@ jobs:
         with:
           ref: main
           persist-credentials: false
-          sparse-checkout: .github/scripts/oc-flakiness
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
 
+      # One signed-URL request per shard artifact; GitHub intermittently
+      # answers one of them with an HTML error page, failing the whole step.
       - name: Download the shard reports
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-${{ inputs.label }}-*
+          path: ${{ runner.temp }}/shards
+
+      - name: Wait before retrying the download
+        if: steps.download.outcome == 'failure'
+        run: sleep 60
+
+      - name: Download the shard reports (retry)
+        if: steps.download.outcome == 'failure'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: flaky-${{ inputs.label }}-*
@@ -392,3 +409,13 @@ jobs:
           name: flaky-score-${{ inputs.label }}
           path: ${{ runner.temp }}/score/score.json
           retention-days: 14
+
+      # The agent reads every shard report of a pass; one bundle per pass
+      # keeps it to a handful of artifact downloads instead of one per shard.
+      - name: Bundle the shard reports for the agent
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: flaky-evidence-${{ inputs.label }}
+          path: ${{ runner.temp }}/shards/
+          retention-days: "14"
+          retry-jitter-seconds: "0"
