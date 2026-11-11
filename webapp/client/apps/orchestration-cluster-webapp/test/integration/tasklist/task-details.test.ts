@@ -171,4 +171,69 @@ test.describe('Task details page', () => {
 		await expect(taskDetailPage.unassignButton).toBeDisabled();
 		await expect(taskDetailPage.completeTaskButton).toBeDisabled();
 	});
+
+	test('should update the open task when its process instance is suspended and resumed', async ({
+		network,
+		taskDetailPage,
+		page,
+	}) => {
+		await page.clock.install();
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username, isSuspended: false})),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281');
+
+		await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+		await expect(taskDetailPage.suspendedLabel).not.toBeVisible();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username, isSuspended: true})),
+			}),
+		);
+		await page.clock.fastForward(5000);
+
+		await expect(taskDetailPage.suspendedLabel).toBeVisible();
+		await expect(taskDetailPage.unassignButton).toBeDisabled();
+		await expect(taskDetailPage.completeTaskButton).toBeDisabled();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username, isSuspended: false})),
+			}),
+		);
+		await page.clock.fastForward(5000);
+
+		await expect(taskDetailPage.suspendedLabel).not.toBeVisible();
+		await expect(taskDetailPage.unassignButton).toBeEnabled();
+		await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+	});
+
+	test('should leave the open task when its process instance is cancelled', async ({network, taskDetailPage, page}) => {
+		await page.clock.install();
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username})),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281', '?filter=assigned-to-me');
+
+		await expect(taskDetailPage.completeTaskButton).toBeEnabled();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: currentUser.username, state: 'CANCELED'})),
+			}),
+		);
+		await page.clock.fastForward(5000);
+
+		await expect(page).toHaveURL('/tasklist?filter=assigned-to-me');
+		await expect(
+			taskDetailPage.header.notifications.getByNotificationTitle('Process instance cancelled'),
+		).toBeVisible();
+	});
 });
