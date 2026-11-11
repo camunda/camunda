@@ -7,62 +7,46 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.DbValue;
 import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Merges three sorted sources into one view, in priority order: the transaction's own writes, the
- * unflushed committed versions, and the storage. On equal keys the first source wins; a delete
- * hides the key.
+ * Merges a transaction's own writes with one {@link CommittedSource}. On equal keys the own writes
+ * win; a delete hides the key.
  *
  * <p>The own writes are read live, so that writes made while iterating are visible as they are with
- * RocksDB's indexed write batch. The other two sources are fixed when the cursor is created.
- *
- * <p>Values from memory are copied out of their objects; only values from the storage are decoded,
- * and only when {@link #readValue} asks for them.
+ * RocksDB's indexed write batch. The committed source is fixed when the cursor is created.
  */
 final class MergingCursor implements AutoCloseable {
 
   private final NavigableMap<RawKey, Version> own;
-  private final NavigableMap<RawKey, Version> dirty;
-  private final DbIterator stored;
+  private final CommittedSource committed;
 
   private boolean forward = true;
   private @Nullable Entry<RawKey, Version> ownEntry;
-  private @Nullable Entry<RawKey, Version> dirtyEntry;
-  private byte @Nullable [] storedKey;
   private byte @Nullable [] currentKey;
-  // null while the current entry comes from the storage
+  // null while the current entry comes from the committed source
   private @Nullable DbValue currentValue;
 
-  MergingCursor(final NavigableMap<RawKey, Version> own, final WriteBehindStore.View view) {
+  MergingCursor(final NavigableMap<RawKey, Version> own, final CommittedSource committed) {
     this.own = own;
-    dirty = view.dirty();
-    stored = view.storageIterator();
+    this.committed = committed;
   }
 
   void seek(final byte[] key) {
     forward = true;
-    final var target = RawKey.copyOf(key);
-    ownEntry = own.ceilingEntry(target);
-    dirtyEntry = dirty.ceilingEntry(target);
-    stored.seek(key);
-    storedKey = stored.isValid() ? stored.key() : null;
+    ownEntry = own.ceilingEntry(RawKey.copyOf(key));
+    committed.seek(key);
     settle();
   }
 
   void seekForPrev(final byte[] key) {
     forward = false;
-    final var target = RawKey.copyOf(key);
-    ownEntry = own.floorEntry(target);
-    dirtyEntry = dirty.floorEntry(target);
-    stored.seekForPrev(key);
-    storedKey = stored.isValid() ? stored.key() : null;
+    ownEntry = own.floorEntry(RawKey.copyOf(key));
+    committed.seekForPrev(key);
     settle();
   }
 
@@ -88,14 +72,13 @@ final class MergingCursor implements AutoCloseable {
     if (value != null) {
       Values.copy(value, target);
     } else {
-      final var bytes = stored.value();
-      target.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+      committed.readValue(target);
     }
   }
 
   @Override
   public void close() {
-    stored.close();
+    committed.close();
   }
 
   /** Moves to the first entry in iteration order that isn't deleted, or to the end. */
@@ -108,61 +91,45 @@ final class MergingCursor implements AutoCloseable {
         return;
       }
 
-      final @Nullable Version version;
       if (ownEntry != null && Arrays.equals(ownEntry.getKey().bytes(), key)) {
-        version = ownEntry.getValue();
-      } else if (dirtyEntry != null && Arrays.equals(dirtyEntry.getKey().bytes(), key)) {
-        version = dirtyEntry.getValue();
+        final var version = ownEntry.getValue();
+        if (!version.isTombstone()) {
+          currentKey = key;
+          currentValue = version.value();
+          return;
+        }
       } else {
-        version = null;
-      }
-
-      if (version == null || !version.isTombstone()) {
         currentKey = key;
-        currentValue = version == null ? null : version.value();
+        currentValue = null;
         return;
       }
       advancePast(key);
     }
   }
 
-  /** The smallest key across all sources in iteration order, or null if all are exhausted. */
+  /** The smallest key of both sources in iteration order, or null if both are exhausted. */
   private byte @Nullable [] firstKey() {
-    byte @Nullable [] first = null;
-    if (ownEntry != null) {
-      first = ownEntry.getKey().bytes();
+    final byte[] ownKey = ownEntry == null ? null : ownEntry.getKey().bytes();
+    if (!committed.isValid()) {
+      return ownKey;
     }
-    if (dirtyEntry != null && (first == null || before(dirtyEntry.getKey().bytes(), first))) {
-      first = dirtyEntry.getKey().bytes();
+    final byte[] committedKey = committed.key();
+    if (ownKey == null) {
+      return committedKey;
     }
-    if (storedKey != null && (first == null || before(storedKey, first))) {
-      first = storedKey;
-    }
-    return first;
+    final int comparison = Arrays.compareUnsigned(ownKey, committedKey);
+    return (forward ? comparison <= 0 : comparison >= 0) ? ownKey : committedKey;
   }
 
   /**
-   * Moves every source past {@code key}. The own writes are looked up again, as they may change.
+   * Moves both sources past {@code key}. The own writes are looked up again, as they may change.
    */
   private void advancePast(final byte[] key) {
     final var rawKey = RawKey.copyOf(key);
     ownEntry = forward ? own.higherEntry(rawKey) : own.lowerEntry(rawKey);
-    if (dirtyEntry != null && Arrays.equals(dirtyEntry.getKey().bytes(), key)) {
-      dirtyEntry = forward ? dirty.higherEntry(rawKey) : dirty.lowerEntry(rawKey);
+    if (committed.isValid() && Arrays.equals(committed.key(), key)) {
+      committed.advance();
     }
-    if (storedKey != null && Arrays.equals(storedKey, key)) {
-      if (forward) {
-        stored.next();
-      } else {
-        stored.prev();
-      }
-      storedKey = stored.isValid() ? stored.key() : null;
-    }
-  }
-
-  private boolean before(final byte[] a, final byte[] b) {
-    final int comparison = Arrays.compareUnsigned(a, b);
-    return forward ? comparison < 0 : comparison > 0;
   }
 
   private byte[] current() {
