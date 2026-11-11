@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.context.ApplicationEventPublisher;
@@ -140,6 +141,52 @@ class StarterTest {
     verify(queryClient, atLeastOnce()).newProcessInstanceSearchRequest();
     verify(queryClient, never()).newCreateInstanceCommand();
     verify(queryClient, never()).newDeployResourceCommand();
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldWaitForInFlightRequestsWhenClosingTheCreator() throws Exception {
+    // given
+    final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
+    final var pendingResponse = new CompletedFuture<ProcessInstanceEvent>();
+    when(loaderClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(anyString())
+            .latestVersion()
+            .variables(any(Map.class))
+            .send())
+        .thenReturn(pendingResponse);
+    final var starterProperties = new StarterProperties();
+    final var properties = new LoadTesterProperties();
+    properties.setStarter(starterProperties);
+    final var payloadReader = mock(PayloadReader.class);
+    when(payloadReader.readPayload(any())).thenReturn("{}");
+    final var registry = new SimpleMeterRegistry();
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient,
+            properties,
+            registry,
+            payloadReader,
+            mock(StarterLivenessIndicator.class));
+    creator.start();
+    await()
+        .until(
+            () -> {
+              final var gauge =
+                  registry.find(StarterMetricsDoc.PROCESS_INSTANCES_IN_FLIGHT.getName()).gauge();
+              return gauge != null && gauge.value() > 0;
+            });
+
+    // when
+    final var closed = CompletableFuture.runAsync(creator::close);
+
+    // then
+    assertThat(closed)
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(TimeoutException.class);
+    pendingResponse.complete(mock(ProcessInstanceEvent.class));
+    assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
   }
 
   private static final class CompletedFuture<T> extends CompletableFuture<T>

@@ -28,6 +28,7 @@ public class StarterProperties {
   private String msgName = "msg";
   private WorkloadModel workloadModel = WorkloadModel.OPEN;
   private Duration livenessMaxNoSuccessAge = Duration.ofMinutes(2);
+  private Duration pendingRequestsShutdownTimeout = Duration.ofSeconds(20);
 
   public String getProcessId() {
     return processId;
@@ -168,6 +169,14 @@ public class StarterProperties {
 
   public void setLivenessMaxNoSuccessAge(final Duration livenessMaxNoSuccessAge) {
     this.livenessMaxNoSuccessAge = livenessMaxNoSuccessAge;
+  }
+
+  public Duration getPendingRequestsShutdownTimeout() {
+    return pendingRequestsShutdownTimeout;
+  }
+
+  public void setPendingRequestsShutdownTimeout(final Duration pendingRequestsShutdownTimeout) {
+    this.pendingRequestsShutdownTimeout = pendingRequestsShutdownTimeout;
   }
 
   /**
