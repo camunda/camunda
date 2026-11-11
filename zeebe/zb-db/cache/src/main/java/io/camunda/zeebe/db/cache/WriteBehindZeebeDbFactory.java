@@ -49,8 +49,18 @@ public final class WriteBehindZeebeDbFactory<
 
   @Override
   public ZeebeDb<ColumnFamilyNames> createDb(final File pathName) {
-    return new WriteBehindZeebeDb<>(
-        storage.createDb(pathName), configuration, consistencyChecksSettings);
+    final var storageDb = storage.createDb(pathName);
+    try {
+      return new WriteBehindZeebeDb<>(storageDb, configuration, consistencyChecksSettings);
+    } catch (final RuntimeException e) {
+      // the caller only gets the exception, so nothing else would close the storage
+      try {
+        storageDb.close();
+      } catch (final Exception closeError) {
+        e.addSuppressed(closeError);
+      }
+      throw e;
+    }
   }
 
   @Override

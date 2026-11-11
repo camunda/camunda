@@ -88,31 +88,45 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     this.optimisticReadAttempts = optimisticReadAttempts;
     metrics = new WriteBehindMetrics(storage.getMeterRegistry());
     loader = new StorageLoader<>(dirtyIndex, metrics);
-    writer =
-        new TransactionWriter<>(
-            storage,
-            dirtyIndex,
-            publishLock,
-            configuration,
-            metrics,
-            this::signalFlushed,
-            this::fail);
 
     final var statistics = new DefaultStatisticsService();
     cacheManager = CacheManagerBuilder.newCacheManagerBuilder().using(statistics).build(true);
-    cache =
-        cacheManager.createCache(
-            "state",
-            CacheConfigurationBuilder.newCacheConfigurationBuilder(
-                    CacheKey.class,
-                    CachedValue.class,
-                    ResourcePoolsBuilder.newResourcePoolsBuilder()
-                        .heap(configuration.cacheMaxBytes(), MemoryUnit.B))
-                .withLoaderWriter(loader));
+    TransactionWriter<ColumnFamilyNames> startedWriter = null;
+    try {
+      cache =
+          cacheManager.createCache(
+              "state",
+              CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                      CacheKey.class,
+                      CachedValue.class,
+                      ResourcePoolsBuilder.newResourcePoolsBuilder()
+                          .heap(configuration.cacheMaxBytes(), MemoryUnit.B))
+                  .withLoaderWriter(loader));
+      metrics.registerReadCache(statistics.getCacheStatistics("state"));
 
-    metrics.registerReadCache(statistics.getCacheStatistics("state"));
-    metrics.registerPending(
-        dirtyIndex::size, () -> writer.lastQueuedSeq() - writer.flushedSeq(), writer::queuedBytes);
+      // started last: its thread would outlive a failed constructor
+      startedWriter =
+          new TransactionWriter<>(
+              storage,
+              dirtyIndex,
+              publishLock,
+              configuration,
+              metrics,
+              this::signalFlushed,
+              this::fail);
+      final var newWriter = startedWriter;
+      metrics.registerPending(
+          dirtyIndex::size,
+          () -> newWriter.lastQueuedSeq() - newWriter.flushedSeq(),
+          newWriter::queuedBytes);
+    } catch (final RuntimeException e) {
+      if (startedWriter != null) {
+        startedWriter.close();
+      }
+      cacheManager.close();
+      throw e;
+    }
+    writer = startedWriter;
   }
 
   /**
