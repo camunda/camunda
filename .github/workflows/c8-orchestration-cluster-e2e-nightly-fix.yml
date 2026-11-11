@@ -715,13 +715,13 @@ jobs:
             exit 0
           fi
 
-          # The orchestration-cluster suite runs automatically as a PR check
-          # (team-test-automation#188) on every branch that carries the reusable
-          # suite workflow. Where it does, that check validates the fix and a
+          # The orchestration-cluster suite runs automatically as a non-blocking
+          # PR check (team-test-automation#188) on every branch that carries the
+          # PR check workflow. Where it does, that check validates the fix and a
           # manually triggered on-demand run is redundant. Where it does not
           # (e.g. stable/8.7), keep dispatching the on-demand run as the only
           # automatic suite signal.
-          if gh api "repos/${REPO}/contents/.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml?ref=${TARGET_REF}" \
+          if gh api "repos/${REPO}/contents/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml?ref=${TARGET_REF}" \
                --silent >/dev/null 2>&1; then
             has_auto_check=true
             echo "${TARGET_REF} has the automatic suite PR check — skipping the on-demand dispatch."

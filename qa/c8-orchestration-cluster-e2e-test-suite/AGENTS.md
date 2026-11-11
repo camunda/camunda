@@ -242,6 +242,7 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 |---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+| `c8-orchestration-cluster-e2e-tests-pr.yml`             | PRs changing the suite (non-blocking, skipped for forks)     | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-pr.yml)        |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
 and failure handling are in [`docs/nightly-runbook.md`](docs/nightly-runbook.md).
@@ -276,7 +277,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **Wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -1235,10 +1236,11 @@ gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName
 - Any fixed test with `test_type: "api"` → `"has_api": true`
 - Both can be `true` when a PR covers mixed failures.
 
-These flags record the kinds of tests the PR fixed. The calling workflow
-triggers one on-demand verification run for every opened PR:
-`c8-orchestration-cluster-e2e-tests-on-demand.yml` (covers both E2E and API
-tests).
+These flags record the kinds of tests the PR fixed. The opened PR is validated
+by the non-blocking suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`,
+covers both E2E and API tests). On a branch that does not carry that workflow,
+the calling workflow triggers one on-demand verification run
+(`c8-orchestration-cluster-e2e-tests-on-demand.yml`) instead.
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
 
