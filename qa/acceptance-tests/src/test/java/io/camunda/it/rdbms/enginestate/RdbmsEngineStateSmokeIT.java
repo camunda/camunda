@@ -33,7 +33,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * Smoke test for the experimental mixed engine state: element instances, variables, jobs and
  * process definitions live in PostgreSQL, the rest of the engine state in RocksDB. It checks that a
  * deployed process is stored in the database, and that a process instance runs end to end and its
- * element instances, variables and job appear in and disappear from the database.
+ * element instances, variables and job appear in and disappear from the database, and that the
+ * partition log is stored in the same database.
  */
 @Tag("rdbms")
 @TestInstance(Lifecycle.PER_CLASS)
@@ -133,6 +134,20 @@ final class RdbmsEngineStateSmokeIT {
             () -> assertThat(countRows("process_instance_key", processInstanceKey)).isZero());
     assertThat(countVariableRows(processInstanceKey)).isZero();
     assertThat(jobRows(processInstanceKey)).isEmpty();
+
+    // then the records went to the log in PostgreSQL rather than to Atomix
+    assertThat(countLogBlocks()).isPositive();
+  }
+
+  private long countLogBlocks() throws SQLException {
+    try (final var connection =
+            DriverManager.getConnection(
+                postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        final var statement = connection.prepareStatement("SELECT COUNT(*) FROM CAM_RU_LOG_BLOCK");
+        final var result = statement.executeQuery()) {
+      result.next();
+      return result.getLong(1);
+    }
   }
 
   /** The job rows of the process instance, with their state and lookup columns. */
