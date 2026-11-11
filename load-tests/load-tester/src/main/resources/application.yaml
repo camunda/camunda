@@ -38,7 +38,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: connectionReady
+          include: readinessState,connectionReady
 
 # Camunda client configuration (auto-configured by camunda-spring-boot-starter)
 camunda:

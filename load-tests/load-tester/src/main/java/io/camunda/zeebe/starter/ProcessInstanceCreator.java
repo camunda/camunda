@@ -31,12 +31,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,12 +59,14 @@ public class ProcessInstanceCreator implements AutoCloseable {
           LoggerFactory.getLogger(ProcessInstanceCreator.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceCreator.class);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
+  private static final Duration PENDING_REQUESTS_SHUTDOWN_TIMEOUT = Duration.ofSeconds(20);
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final CamundaClient loaderClient;
   private final ScheduledThreadPoolExecutor executor;
+  private final Set<CompletionStage<?>> pendingRequests = ConcurrentHashMap.newKeySet();
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final PayloadReader payloadReader;
@@ -156,8 +163,10 @@ public class ProcessInstanceCreator implements AutoCloseable {
             return;
           }
 
+          pendingRequests.add(requestFuture);
           requestFuture.whenComplete(
               (noop, error) -> {
+                pendingRequests.remove(requestFuture);
                 inFlight.release();
                 livenessIndicator.recordResult(error);
                 final long durationNanos = System.nanoTime() - startTime;
@@ -243,9 +252,32 @@ public class ProcessInstanceCreator implements AutoCloseable {
       return;
     }
     executor.shutdown();
+    awaitPendingRequests();
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
         (long) processInstancesSubmittedCounter.count());
+  }
+
+  private void awaitPendingRequests() {
+    LOG.info("Waiting for {} pending process instance requests to complete", pendingRequests.size());
+    final var completions =
+        pendingRequests.stream()
+            .map(request -> request.handle((response, error) -> null).toCompletableFuture())
+            .toArray(CompletableFuture[]::new);
+    try {
+      CompletableFuture.allOf(completions)
+          .get(PENDING_REQUESTS_SHUTDOWN_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+      LOG.info("All pending process instance requests completed");
+    } catch (final TimeoutException e) {
+      LOG.warn(
+          "Stopping with {} process instance requests still pending after {}",
+          pendingRequests.size(),
+          PENDING_REQUESTS_SHUTDOWN_TIMEOUT);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (final ExecutionException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   @EventListener(ApplicationReadyEvent.class)
