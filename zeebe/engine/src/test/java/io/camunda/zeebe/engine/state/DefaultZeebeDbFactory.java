@@ -20,6 +20,8 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.RuntimeInfo;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates the RocksDB factory the engine tests use. With {@code
@@ -56,7 +58,28 @@ public final class DefaultZeebeDbFactory {
     if (!Boolean.getBoolean(WRITE_BEHIND_ENABLED)) {
       return rocksDbFactory;
     }
-    return new WriteBehindZeebeDbFactory<>(
-        rocksDbFactory, WriteBehindConfiguration.DEFAULT, consistencyChecks);
+    final var defaults = WriteBehindConfiguration.DEFAULT;
+    final var configuration =
+        new WriteBehindConfiguration(
+            defaults.cacheMaxBytes(),
+            defaults.maxPendingBytes(),
+            Integer.getInteger("zeebe.db.writeBehind.batchSize", defaults.batchSize()),
+            Duration.ofMillis(
+                Long.getLong(
+                    "zeebe.db.writeBehind.maxWriteDelayMs", defaults.maxWriteDelay().toMillis())),
+            defaults.snapshotCatchUpTimeout());
+    LoggerFactory.getLogger("WRITE_BEHIND_BENCH").info("write-behind {}", configuration);
+    final var smallerRocksDb = new RocksDbConfiguration();
+    smallerRocksDb.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    smallerRocksDb.setMemoryLimit(
+        memoryLimitBytes - configuration.cacheMaxBytes() - configuration.maxPendingBytes());
+    final var smallerRocksDbFactory =
+        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+            smallerRocksDb,
+            consistencyChecks,
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new,
+            RocksDbResources.of(smallerRocksDb, new RuntimeInfo(partitions)));
+    return new WriteBehindZeebeDbFactory<>(smallerRocksDbFactory, configuration, consistencyChecks);
   }
 }

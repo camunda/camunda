@@ -745,6 +745,10 @@ This has landed. Where the code settled differently:
 
 ### Phase 7: benchmark, tune, decide
 
+The local results and a recommendation are in
+[write-behind-cache-results.md](write-behind-cache-results.md). The realistic load test hasn't been
+run yet.
+
 - Run `EngineLargeStatePerformanceTest` (engine), `LargeStateControllerPerformanceTest` (broker) and
   a realistic load test twice: with write-behind off as the baseline, and on. With it on, lower
   RocksDB memory by the cache budget. Turn on `accessMetrics: FINE` and `enableStatistics` to get
