@@ -199,6 +199,11 @@ cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
+# Optional overlay, only referenced when a run passes `-f camunda-platform-values-standalone-gateway.yaml`
+# as platform-helm-values (not every version has it).
+if [[ -f "$VERSION_DIR/values/camunda-platform-values-standalone-gateway.yaml" ]]; then
+  cp -v "$VERSION_DIR/values/camunda-platform-values-standalone-gateway.yaml"    "$TARGET_DIRECTORY/"
+fi
 
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)

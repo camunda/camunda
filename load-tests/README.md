@@ -550,6 +550,20 @@ Use the following values directly in the workflow form:
      ```text
      --set elasticsearch.storage.requests=64Gi
      ```
+7. **Run through a standalone gateway instead of the embedded gateways** (`main` only, three gateway pods with 1 CPU each)
+   - `platform-helm-values`:
+
+     ```text
+     -f camunda-platform-values-standalone-gateway.yaml
+     ```
+   - `load-test-load`:
+
+     ```text
+     --set loadTest.client.oidc.zeebeGrpcAddress=http://camunda-sgw:26500 --set loadTest.client.oidc.zeebeRestAddress=http://camunda-sgw:8080
+     ```
+
+   The embedded gateways stay running but get no client traffic. The leader balancer follows the REST address.
+   See the header of `setup/main/values/camunda-platform-values-standalone-gateway.yaml` for what the overlay assumes.
 
 ##### Creating load test for old versions
 
