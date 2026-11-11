@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the event scope tables of the relational engine state, see EventScopeMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertEventScope); the other statements are queries of the mapper.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.EventScopeMapper">
+
+  <!-- CAM_RU_EVENT_SCOPE -->
+
+  <resultMap id="eventScopeRow"
+    type="io.camunda.zeebe.engine.state.rdbms.EventScopeMapper$EventScopeRow">
+    <constructor>
+      <idArg column="event_scope_key" javaType="_long"/>
+      <arg column="accepting" javaType="_boolean"/>
+      <arg column="interrupted" javaType="_boolean"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="tenant_id" javaType="String"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectEventScope" resultMap="eventScopeRow">
+    SELECT event_scope_key, accepting, interrupted, process_instance_key,
+      root_process_instance_key, tenant_id, payload
+    FROM CAM_RU_EVENT_SCOPE
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{key}
+  </select>
+
+  <insert id="insertEventScope">
+    INSERT INTO CAM_RU_EVENT_SCOPE (partition_id, event_scope_key, accepting, interrupted,
+      process_instance_key, root_process_instance_key, tenant_id, payload)
+    VALUES (#{partitionId}, #{row.scopeKey}, #{row.accepting}, #{row.interrupted},
+      #{row.processInstanceKey}, #{row.rootProcessInstanceKey}, #{row.tenantId}, #{row.payload})
+  </insert>
+
+  <update id="updateEventScope">
+    UPDATE CAM_RU_EVENT_SCOPE
+    SET accepting = #{row.accepting}, interrupted = #{row.interrupted}, payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{row.scopeKey}
+  </update>
+
+  <delete id="deleteEventScope">
+    DELETE FROM CAM_RU_EVENT_SCOPE
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{key}
+  </delete>
+
+  <!-- CAM_RU_EVENT_TRIGGER -->
+
+  <resultMap id="eventTriggerRow"
+    type="io.camunda.zeebe.engine.state.rdbms.EventScopeMapper$EventTriggerRow">
+    <constructor>
+      <idArg column="event_scope_key" javaType="_long"/>
+      <idArg column="event_key" javaType="_long"/>
+      <arg column="element_id" javaType="String"/>
+      <arg column="variables" javaType="_byte[]"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="tenant_id" javaType="String"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="eventTriggerColumns">
+    event_scope_key, event_key, element_id, variables, process_instance_key,
+    root_process_instance_key, tenant_id
+  </sql>
+
+  <select id="selectEventTrigger" resultMap="eventTriggerRow">
+    SELECT <include refid="eventTriggerColumns"/>
+    FROM CAM_RU_EVENT_TRIGGER
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{key.scopeKey}
+      AND event_key = #{key.eventKey}
+  </select>
+
+  <select id="selectEventTriggersOfScope" resultMap="eventTriggerRow">
+    SELECT <include refid="eventTriggerColumns"/>
+    FROM CAM_RU_EVENT_TRIGGER
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{scopeKey}
+    ORDER BY event_key
+  </select>
+
+  <select id="selectEventTriggerKeysOfScope" resultType="long">
+    SELECT event_key
+    FROM CAM_RU_EVENT_TRIGGER
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{scopeKey}
+  </select>
+
+  <insert id="insertEventTrigger">
+    INSERT INTO CAM_RU_EVENT_TRIGGER (partition_id, <include refid="eventTriggerColumns"/>)
+    VALUES (#{partitionId}, #{row.scopeKey}, #{row.eventKey}, #{row.elementId}, #{row.variables},
+      #{row.processInstanceKey}, #{row.rootProcessInstanceKey}, #{row.tenantId})
+  </insert>
+
+  <!-- Only a trigger deleted and inserted again in one transaction is updated. -->
+  <update id="updateEventTrigger">
+    UPDATE CAM_RU_EVENT_TRIGGER
+    SET element_id = #{row.elementId}, variables = #{row.variables},
+      process_instance_key = #{row.processInstanceKey},
+      root_process_instance_key = #{row.rootProcessInstanceKey}, tenant_id = #{row.tenantId}
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{row.scopeKey}
+      AND event_key = #{row.eventKey}
+  </update>
+
+  <delete id="deleteEventTrigger">
+    DELETE FROM CAM_RU_EVENT_TRIGGER
+    WHERE partition_id = #{partitionId} AND event_scope_key = #{key.scopeKey}
+      AND event_key = #{key.eventKey}
+  </delete>
+
+</mapper>

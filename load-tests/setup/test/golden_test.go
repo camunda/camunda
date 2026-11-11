@@ -119,6 +119,10 @@ var defaultScenarios = []scenario{
 	// to postgresql, unlike chaos-killer above, so this scaffolds with
 	// postgresql storage rather than an arbitrary one.
 	{Name: "rdbms-pooler", Storage: "postgresql", Optimize: false, SetupTarget: "template-load-test-setup", ExtraArgs: []string{"--use-pgbouncer"}},
+	// The experimental RDBMS primary storage is baked in at scaffold time via
+	// newLoadTest.sh --primary-storage rdbms. It is independent of the secondary storage, so this
+	// uses elasticsearch to cover that the PostgreSQL cluster is still deployed. Only main ships it.
+	{Name: "primary-storage-rdbms", Storage: "elasticsearch", Optimize: false, ExtraArgs: []string{"--primary-storage", "rdbms"}, OnlyVersions: []string{"main"}},
 	// physical_tenant_count=1 deploys a pt1 tenant alongside the default one, sharing the
 	// default tenant's secondary storage (table prefix for rdbms, index prefix for ES/OS,
 	// REST-routing/authorization only for none). One scenario per storage type; N>1 is

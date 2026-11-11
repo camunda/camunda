@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the variable tables of the relational engine state, see VariableMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertVariable); the other statements are queries of the mapper.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.VariableMapper">
+
+  <!-- CAM_RU_VARIABLE -->
+
+  <resultMap id="variableRow"
+    type="io.camunda.zeebe.engine.state.rdbms.VariableMapper$VariableRow">
+    <constructor>
+      <idArg column="scope_key" javaType="_long"/>
+      <idArg column="name" javaType="String"/>
+      <arg column="variable_key" javaType="_long"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="tenant_id" javaType="String"/>
+      <arg column="value" javaType="_byte[]"/>
+      <arg column="metadata" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="variableKey"
+    type="io.camunda.zeebe.engine.state.rdbms.VariableMapper$VariableKey">
+    <constructor>
+      <idArg column="scope_key" javaType="_long"/>
+      <idArg column="name" javaType="String"/>
+    </constructor>
+  </resultMap>
+
+  <sql id="variableColumns">
+    scope_key, name, variable_key, process_instance_key, root_process_instance_key, tenant_id,
+    value, metadata
+  </sql>
+
+  <select id="selectVariable" resultMap="variableRow">
+    SELECT <include refid="variableColumns"/>
+    FROM CAM_RU_VARIABLE
+    WHERE partition_id = #{partitionId} AND scope_key = #{key.scopeKey} AND name = #{key.name}
+  </select>
+
+  <!-- The chain of a scope is short (its depth in the process instance), so IN lists stay small. -->
+  <select id="selectVariablesOfScopes" resultMap="variableRow">
+    SELECT <include refid="variableColumns"/>
+    FROM CAM_RU_VARIABLE
+    WHERE partition_id = #{partitionId}
+      AND scope_key IN
+      <foreach collection="scopeKeys" item="scopeKey" open="(" separator="," close=")">
+        #{scopeKey}
+      </foreach>
+      <if test="names != null">
+        AND name IN
+        <foreach collection="names" item="name" open="(" separator="," close=")">
+          #{name}
+        </foreach>
+      </if>
+  </select>
+
+  <select id="selectVariableNames" resultType="String">
+    SELECT name
+    FROM CAM_RU_VARIABLE
+    WHERE partition_id = #{partitionId} AND scope_key = #{scopeKey}
+  </select>
+
+  <select id="selectAnyVariableKeys" resultMap="variableKey">
+    SELECT scope_key, name
+    FROM CAM_RU_VARIABLE
+    WHERE partition_id = #{partitionId}
+    LIMIT #{limit}
+  </select>
+
+  <insert id="insertVariable">
+    INSERT INTO CAM_RU_VARIABLE (partition_id, <include refid="variableColumns"/>)
+    VALUES (#{partitionId}, #{row.scopeKey}, #{row.name}, #{row.variableKey},
+      #{row.processInstanceKey}, #{row.rootProcessInstanceKey}, #{row.tenantId}, #{row.value},
+      #{row.metadata})
+  </insert>
+
+  <update id="updateVariable">
+    UPDATE CAM_RU_VARIABLE
+    SET variable_key = #{row.variableKey}, value = #{row.value}, metadata = #{row.metadata}
+    WHERE partition_id = #{partitionId} AND scope_key = #{row.scopeKey} AND name = #{row.name}
+  </update>
+
+  <delete id="deleteVariable">
+    DELETE FROM CAM_RU_VARIABLE
+    WHERE partition_id = #{partitionId} AND scope_key = #{key.scopeKey} AND name = #{key.name}
+  </delete>
+
+  <!-- CAM_RU_VARIABLE_DOCUMENT_STATE -->
+
+  <resultMap id="variableDocumentStateRow"
+    type="io.camunda.zeebe.engine.state.rdbms.VariableMapper$VariableDocumentStateRow">
+    <constructor>
+      <idArg column="scope_key" javaType="_long"/>
+      <arg column="process_instance_key" javaType="_long"/>
+      <arg column="root_process_instance_key" javaType="_long"/>
+      <arg column="tenant_id" javaType="String"/>
+      <arg column="payload" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectVariableDocumentState" resultMap="variableDocumentStateRow">
+    SELECT scope_key, process_instance_key, root_process_instance_key, tenant_id, payload
+    FROM CAM_RU_VARIABLE_DOCUMENT_STATE
+    WHERE partition_id = #{partitionId} AND scope_key = #{key}
+  </select>
+
+  <insert id="insertVariableDocumentState">
+    INSERT INTO CAM_RU_VARIABLE_DOCUMENT_STATE (partition_id, scope_key, process_instance_key,
+      root_process_instance_key, tenant_id, payload)
+    VALUES (#{partitionId}, #{row.scopeKey}, #{row.processInstanceKey},
+      #{row.rootProcessInstanceKey}, #{row.tenantId}, #{row.payload})
+  </insert>
+
+  <update id="updateVariableDocumentState">
+    UPDATE CAM_RU_VARIABLE_DOCUMENT_STATE
+    SET payload = #{row.payload}
+    WHERE partition_id = #{partitionId} AND scope_key = #{row.scopeKey}
+  </update>
+
+  <delete id="deleteVariableDocumentState">
+    DELETE FROM CAM_RU_VARIABLE_DOCUMENT_STATE
+    WHERE partition_id = #{partitionId} AND scope_key = #{key}
+  </delete>
+
+</mapper>

@@ -25,16 +25,19 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionT
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.storage.LogStorage.CommittedPositionListener;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
 
 class SnapshotDirectorPartitionTransitionStepTest {
 
@@ -161,6 +164,38 @@ class SnapshotDirectorPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getSnapshotDirector()).isNull();
+  }
+
+  @Test
+  void shouldFollowCommitsOfTheLogStreamAsLeader() {
+    // given
+    initializeContext(Role.FOLLOWER);
+    transitionTo(Role.LEADER);
+    final var listener = ArgumentCaptor.forClass(CommittedPositionListener.class);
+    verify(logStream).registerCommittedPositionListener(listener.capture());
+
+    // when
+    listener.getValue().onCommittedPosition(LAST_LOG_POSITION + 10);
+
+    // then
+    final ActorFuture<Long> commitPosition =
+        transitionContext.getSnapshotDirector().getCommitPosition();
+    schedulerExtension.workUntilDone();
+    assertThat(commitPosition.join()).isEqualTo(LAST_LOG_POSITION + 10);
+  }
+
+  @Test
+  void shouldStopFollowingCommitsOfTheLogStreamOnNextTransition() {
+    // given
+    initializeContext(Role.FOLLOWER);
+    transitionTo(Role.LEADER);
+    final var leaderDirector = transitionContext.getSnapshotDirector();
+
+    // when
+    transitionTo(Role.FOLLOWER);
+
+    // then
+    verify(logStream).removeCommittedPositionListener(leaderDirector);
   }
 
   private void initializeContext(final Role currentRole) {

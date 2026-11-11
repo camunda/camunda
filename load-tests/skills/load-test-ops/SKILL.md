@@ -135,6 +135,7 @@ Most useful inputs:
 | `ref`                    | Git ref to build the image from (defaults to `main`)          |
 | `scenario`               | `latency` / `realistic` / `typical` / `max` / `archiver`      |
 | `secondary-storage-type` | `elasticsearch` (default) / `opensearch` / `postgresql` / ... |
+| `primary-storage-type`   | `rocksdb` (default) / `rdbms` (experimental, main only)       |
 | `reuse-tag`              | Skip the build and reuse a previously built tag               |
 | `orchestration-tag`      | Use a released Docker Hub image instead of building           |
 | `platform-helm-values`   | Extra `--set` flags for the Camunda platform chart            |

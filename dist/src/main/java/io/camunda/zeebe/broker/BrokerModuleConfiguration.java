@@ -22,6 +22,7 @@ import io.camunda.security.spring.oidc.ScopedJwtDecoderFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.broker.RdbmsEngineStateConfiguration.RdbmsEngineStatePool;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -83,6 +84,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final SecretStoreRegistries secretStoreRegistries;
   private final ResolvedDataDirectory resolvedDataDirectory;
   private final ObjectProvider<SchemaInitializer> schemaInitializer;
+  private final RdbmsEngineStatePool rdbmsEngineStatePool;
 
   private Broker broker;
 
@@ -109,7 +111,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
       final ResolvedDataDirectory resolvedDataDirectory,
-      final ObjectProvider<SchemaInitializer> schemaInitializer) {
+      final ObjectProvider<SchemaInitializer> schemaInitializer,
+      // created first, so the engine state schema is migrated before any partition starts
+      final RdbmsEngineStatePool rdbmsEngineStatePool) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -130,6 +134,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.secretStoreRegistries = secretStoreRegistries;
     this.resolvedDataDirectory = resolvedDataDirectory;
     this.schemaInitializer = schemaInitializer;
+    this.rdbmsEngineStatePool = rdbmsEngineStatePool;
   }
 
   @Bean(destroyMethod = "close")
@@ -166,6 +171,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
+    if (rdbmsEngineStatePool.resources() != null) {
+      springBrokerBridge.registerEngineState(rdbmsEngineStatePool.resources());
+    }
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 
     // already initiate starting the broker

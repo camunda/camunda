@@ -19,10 +19,13 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.MyBatisLogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ConsistencyCheckCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -56,6 +59,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -65,6 +69,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -86,6 +91,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +124,11 @@ public final class ZeebePartitionFactory {
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
 
+  private final @Nullable RdbmsEngineStateResources engineState;
+
+  /** Null unless the primary storage is the RDBMS, in which case the logs are stored there too. */
+  private final @Nullable SqlSessionFactory logSessionFactory;
+
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -136,7 +148,8 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final @Nullable RdbmsEngineStateResources engineState) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -156,6 +169,12 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
+    this.engineState = engineState;
+    logSessionFactory =
+        engineState != null
+            ? MyBatisLogBlockRepository.createSessionFactory(
+                engineState.dataSource(), RdbmsLogStorageSchema.TABLE_PREFIX)
+            : null;
   }
 
   public ZeebePartition constructPartition(
@@ -175,10 +194,11 @@ public final class ZeebePartitionFactory {
     final var partitionId = raftPartition.id();
     final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
+    final var consistencyChecksSettings = consistencyCheckSettings(consistencyChecks);
     final var zeebeFactory =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
             rocksDbConfiguration,
-            consistencyChecks.getSettings(),
+            consistencyChecksSettings,
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
@@ -220,11 +240,34 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry);
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
+    if (logSessionFactory != null) {
+      context.setLogBlockRepository(
+          new MyBatisLogBlockRepository(logSessionFactory, partitionId.number()));
+    }
+    context.setEngineState(engineState);
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
+  }
+
+  /**
+   * With the relational engine state, entities such as element instances live in the database, so
+   * RocksDB's foreign key checks would reject references to them (e.g. a timer's element instance).
+   * They are switched off in that mode.
+   */
+  private ConsistencyChecksSettings consistencyCheckSettings(
+      final ConsistencyCheckCfg consistencyChecks) {
+    final var settings = consistencyChecks.getSettings();
+    if (!brokerCfg.getData().getRdbmsEngineState().isEnabled()
+        || !settings.enableForeignKeyChecks()) {
+      return settings;
+    }
+    LOGGER.warn(
+        "Foreign key checks are disabled because the engine state is stored in a relational "
+            + "database; RocksDB cannot check references to entities stored there.");
+    return new ConsistencyChecksSettings(settings.enablePreconditions(), false);
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps() {

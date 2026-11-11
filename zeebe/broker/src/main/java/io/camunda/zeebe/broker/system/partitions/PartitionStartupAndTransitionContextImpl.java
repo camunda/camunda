@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -43,7 +43,9 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -60,6 +62,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Class encapsulating all the information about a partition that are needed during bootstrap and
@@ -96,8 +99,10 @@ public class PartitionStartupAndTransitionContextImpl
   private ZeebeDb zeebeDb;
   private ActorControl actorControl;
   private ScheduledTimer metricsTimer;
+  private @Nullable RdbmsEngineStateResources engineState;
   private ExporterDirector exporterDirector;
-  private AtomixLogStorage logStorage;
+  private LogStorage logStorage;
+  private @Nullable LogBlockRepository logBlockRepository;
   private QueryService queryService;
   private long currentTerm;
   private Role currentRole;
@@ -306,13 +311,23 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public AtomixLogStorage getLogStorage() {
+  public LogStorage getLogStorage() {
     return logStorage;
   }
 
   @Override
-  public void setLogStorage(final AtomixLogStorage logStorage) {
+  public void setLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public @Nullable LogBlockRepository getLogBlockRepository() {
+    return logBlockRepository;
+  }
+
+  @Override
+  public void setLogBlockRepository(final @Nullable LogBlockRepository logBlockRepository) {
+    this.logBlockRepository = logBlockRepository;
   }
 
   @Override
@@ -328,6 +343,15 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
+  }
+
+  @Override
+  public @Nullable RdbmsEngineStateResources getEngineState() {
+    return engineState;
+  }
+
+  public void setEngineState(final @Nullable RdbmsEngineStateResources engineState) {
+    this.engineState = engineState;
   }
 
   @Override

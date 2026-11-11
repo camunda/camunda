@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -41,7 +41,9 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -58,6 +60,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -75,7 +78,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ZeebeDb zeebeDB;
   private StateController stateController;
   private ExporterRepository exporterRepository;
-  private AtomixLogStorage logStorage;
+  private LogStorage logStorage;
+  private @Nullable LogBlockRepository logBlockRepository;
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
@@ -293,13 +297,23 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public AtomixLogStorage getLogStorage() {
+  public LogStorage getLogStorage() {
     return logStorage;
   }
 
   @Override
-  public void setLogStorage(final AtomixLogStorage logStorage) {
+  public void setLogStorage(final LogStorage logStorage) {
     this.logStorage = logStorage;
+  }
+
+  @Override
+  public @Nullable LogBlockRepository getLogBlockRepository() {
+    return logBlockRepository;
+  }
+
+  @Override
+  public void setLogBlockRepository(final @Nullable LogBlockRepository logBlockRepository) {
+    this.logBlockRepository = logBlockRepository;
   }
 
   @Override
@@ -315,6 +329,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public EngineSecurityConfig getSecurityConfig() {
     return securityConfig;
+  }
+
+  @Override
+  public RdbmsEngineStateResources getEngineState() {
+    return null;
   }
 
   @Override

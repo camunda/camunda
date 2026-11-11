@@ -1,0 +1,15 @@
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+# Experimental RDBMS primary storage: the engine state and partition log live in the
+# PostgreSQL cluster deployed by the load-test-setup chart (postgresql.primaryStorage.enabled).
+orchestration:
+  # The RDBMS engine state refuses replicated partitions, as every replica would write into
+  # the one database.
+  replicationFactor: "1"
+  # The load-test-setup chart renders this Secret with the CAMUNDA_DATA_PRIMARYSTORAGE_* variables
+  # (type, JDBC URL, username, password). envFrom, rather than env or extraConfiguration, because
+  # no other values file sets it, so it can't replace (or be replaced by) another file's list.
+  envFrom:
+    - secretRef:
+        name: camunda-primary-storage-rdbms

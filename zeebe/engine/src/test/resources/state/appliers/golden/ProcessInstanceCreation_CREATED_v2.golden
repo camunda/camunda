@@ -60,7 +60,7 @@ final class ProcessInstanceCreationCreatedV2Applier
     }
     if (!value.getRuntimeInstructions().isEmpty()) {
       elementInstanceState.addRuntimeInstructions(
-          value.getProcessInstanceKey(), value.getRuntimeInstructions());
+          value.getProcessInstanceKey(), value.getTenantId(), value.getRuntimeInstructions());
     }
 
     incrementUsageMetric(value);

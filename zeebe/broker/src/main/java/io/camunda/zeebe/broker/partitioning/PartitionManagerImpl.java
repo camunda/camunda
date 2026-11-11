@@ -44,6 +44,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -65,6 +66,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +118,8 @@ public final class PartitionManagerImpl
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final FeatureFlags featureFlags,
       final SecretStoreRegistry secretStoreRegistry,
-      final TopologyManagerImpl topologyManager) {
+      final TopologyManagerImpl topologyManager,
+      final @Nullable RdbmsEngineStateResources engineState) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -159,7 +162,8 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
-            secretStoreRegistry);
+            secretStoreRegistry,
+            engineState);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

@@ -364,6 +364,30 @@ Pass `--use-pgbouncer` to `newLoadTest.sh` when scaffolding the namespace:
 ./newLoadTest.sh <namespace> postgresql 1 true --use-pgbouncer
 ```
 
+#### Experimental RDBMS primary storage
+
+Camunda can keep its engine state and partition log in a relational database instead of RocksDB
+and the Raft log (`camunda.data.primary-storage.type=rdbms`, see
+`zeebe/docs/adr/0015-811-rdbms-log-storage-prototype.md`). Pass `--primary-storage rdbms` to
+`newLoadTest.sh` (main only) to:
+
+- deploy the CNPG PostgreSQL cluster of the `load-test-setup` chart, whatever the
+  `secondary_storage` (the primary storage tables are prefixed `CAM_RU_`, so they can share the
+  database with the PostgreSQL secondary storage);
+- render a `camunda-primary-storage-rdbms` Secret with the JDBC URL and credentials, which the
+  orchestration cluster loads through `orchestration.envFrom`, so there is nothing to configure
+  by hand;
+- set the replication factor to 1, as the RDBMS engine state refuses replicated partitions.
+
+It cannot be combined with physical tenants, as the primary storage rows are keyed by partition
+id only.
+
+```sh
+./newLoadTest.sh <namespace> elasticsearch 1 false --primary-storage rdbms
+```
+
+In the GitHub workflow, set the `primary-storage-type` input to `rdbms`.
+
 #### Optional physical tenants (pt1..ptN)
 
 A load test can exercise **N extra physical tenants** (`pt1`, `pt2`, ..., `ptN`) alongside the

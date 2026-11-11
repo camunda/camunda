@@ -231,7 +231,7 @@ public final class UpdateJobBatchExecutorTest extends AbstractBatchOperationTest
   // intentionally omitted: there is no clean engine-test-level mechanism to seed a job into the
   // pre-8.10 legacy JOB_ACTIVATABLE column family (no such helper exists in the job tests, and
   // jobs created via the engine are always written to JOB_ACTIVATABLE_BY_PRIORITY). The legacy-CF
-  // lazy migration on priority update is covered directly by M2-6's DbJobState.updateJobPriority
+  // lazy migration on priority update is covered directly by M2-6's JobStateImpl.updateJobPriority
   // unit tests; the batch path reuses that exact code path via the JOB:UPDATE command, so no
   // additional engine-level coverage is added here rather than fabricating internal state.
 

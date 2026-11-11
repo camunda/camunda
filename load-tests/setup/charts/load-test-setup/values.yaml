@@ -517,6 +517,16 @@ postgresql:
       parameters:
         max_client_conn: "1000"
 
+  # -- Experimental RDBMS primary storage: also use this PostgreSQL cluster for Camunda's engine
+  # state and partition log (`camunda.data.primary-storage.type=rdbms`), next to whatever the
+  # secondary storage is. Renders a Secret with the connection details, which the platform
+  # values in `camunda-platform-values-primary-storage-rdbms.yaml` load via `orchestration.envFrom`.
+  # Requires `postgresql.enabled=true`. The `--primary-storage rdbms` flag to
+  # `../../newLoadTest.sh` sets both for you at namespace scaffold time.
+  primaryStorage:
+    # -- Set to true to point Camunda's primary storage at this PostgreSQL cluster.
+    enabled: false
+
 k6:
   tests:
     default:

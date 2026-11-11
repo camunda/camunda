@@ -10,9 +10,12 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
 import io.camunda.zeebe.db.DbIterator;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeTransaction;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.LangUtil;
 import org.jspecify.annotations.Nullable;
 import org.rocksdb.ColumnFamilyHandle;
@@ -35,7 +38,17 @@ public class WriteBatchTransaction implements ZeebeTransaction, AutoCloseable {
   private final long readOptionsNativeHandle;
   private final ReadOptions prefixReadOptions;
 
+  private final List<TransactionListener> listeners = new ArrayList<>();
+
   private boolean inCurrentTransaction;
+
+  /**
+   * Whether the listeners still have to be told how the current transaction ended. Unlike {@link
+   * #inCurrentTransaction}, it stays set when a commit fails, so the rollback that follows is
+   * reported; and it is cleared by a commit, so the rollback that {@link DefaultTransactionContext}
+   * runs after every commit is not.
+   */
+  private boolean outcomePending;
 
   public WriteBatchTransaction(
       final RocksDB db,
@@ -117,6 +130,7 @@ public class WriteBatchTransaction implements ZeebeTransaction, AutoCloseable {
   public void resetTransaction() {
     writeBatch.clear();
     inCurrentTransaction = true;
+    outcomePending = true;
   }
 
   @Override
@@ -168,12 +182,28 @@ public class WriteBatchTransaction implements ZeebeTransaction, AutoCloseable {
     inCurrentTransaction = false;
     db.write(writeOptions, writeBatch);
     writeBatch.clear();
+    if (outcomePending) {
+      outcomePending = false;
+      for (final var listener : listeners) {
+        listener.onCommit();
+      }
+    }
   }
 
   @Override
   public void rollbackInternal() throws RocksDBException {
     inCurrentTransaction = false;
     writeBatch.clear();
+    if (outcomePending) {
+      outcomePending = false;
+      for (final var listener : listeners) {
+        listener.onRollback();
+      }
+    }
+  }
+
+  void addListener(final TransactionListener listener) {
+    listeners.add(listener);
   }
 
   @Override

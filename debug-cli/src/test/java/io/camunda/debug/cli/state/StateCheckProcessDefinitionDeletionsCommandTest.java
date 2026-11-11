@@ -18,7 +18,8 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.RocksDbStateStores;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -233,7 +234,7 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
 
   /** Test helper that writes the various column families the command reads. */
   private static final class Seeding {
-    private final DbProcessState processState;
+    private final MutableProcessState processState;
     private final DbRoutingState routingState;
     private final DbLong definitionKey = new DbLong();
     private final DbLong instanceKey = new DbLong();
@@ -241,7 +242,9 @@ class StateCheckProcessDefinitionDeletionsCommandTest {
         instancesByDefinition;
 
     Seeding(final ZeebeDb<ZbColumnFamilies> db, final TransactionContext context) {
-      processState = new DbProcessState(db, context, new EngineConfiguration(), transformer());
+      processState =
+          new RocksDbStateStores(db, context)
+              .processState(new EngineConfiguration(), transformer());
       routingState = new DbRoutingState(db, context);
       instancesByDefinition =
           db.createColumnFamily(

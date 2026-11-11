@@ -12,6 +12,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import io.camunda.configuration.data.primarystorage.Disk;
 import io.camunda.configuration.data.primarystorage.LogStream;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageRdbms;
 import io.camunda.configuration.data.primarystorage.RocksDb;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -57,6 +58,17 @@ public class PrimaryStorage {
    */
   private int versionedDirectoryRetentionCount = 2;
 
+  /**
+   * Determines where the engine state is stored. 'rocksdb' keeps all engine state in RocksDB.
+   * 'rdbms' is an experimental PoC that keeps element instances in the relational database
+   * configured under 'rdbms', and the rest in RocksDB; it only supports a single broker with
+   * replication factor 1, and deletes the partition's rows on every start.
+   */
+  private PrimaryStorageType type = PrimaryStorageType.rocksdb;
+
+  /** Stores the RDBMS configuration, when type is set to 'rdbms'. */
+  @NestedConfigurationProperty private PrimaryStorageRdbms rdbms = new PrimaryStorageRdbms();
+
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
@@ -86,6 +98,22 @@ public class PrimaryStorage {
 
   public void setRuntimeDirectory(final String runtimeDirectory) {
     this.runtimeDirectory = runtimeDirectory;
+  }
+
+  public PrimaryStorageType getType() {
+    return type;
+  }
+
+  public void setType(final PrimaryStorageType type) {
+    this.type = type;
+  }
+
+  public PrimaryStorageRdbms getRdbms() {
+    return rdbms;
+  }
+
+  public void setRdbms(final PrimaryStorageRdbms rdbms) {
+    this.rdbms = rdbms;
   }
 
   public Disk getDisk() {
@@ -134,5 +162,10 @@ public class PrimaryStorage {
 
   public void setVersionedDirectoryRetentionCount(final int versionedDirectoryRetentionCount) {
     this.versionedDirectoryRetentionCount = versionedDirectoryRetentionCount;
+  }
+
+  public enum PrimaryStorageType {
+    rocksdb,
+    rdbms
   }
 }

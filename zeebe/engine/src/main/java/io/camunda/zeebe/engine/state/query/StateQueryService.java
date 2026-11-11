@@ -12,6 +12,7 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.RocksDbStateStores;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -83,7 +84,7 @@ public final class StateQueryService implements QueryService {
           new ProcessingDbState(
               Protocol.DEPLOYMENT_PARTITION,
               zeebeDb,
-              zeebeDb.createContext(),
+              new RocksDbStateStores(zeebeDb, zeebeDb.createContext()),
               KeyGenerator.immutable(Protocol.DEPLOYMENT_PARTITION),
               new TransientPendingSubscriptionState(),
               new TransientPendingSubscriptionState(),

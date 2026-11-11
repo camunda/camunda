@@ -22,7 +22,8 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.RocksDbStateStores;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -66,18 +67,19 @@ public class SnapshotUtil {
   }
 
   /**
-   * Builds a {@link DbProcessState} over an opened snapshot db. The transformer is only needed to
-   * satisfy the constructor; reading persisted process state does not use it, so a fixed clock and
-   * no-op metrics are fine.
+   * Builds the process state over an opened snapshot db. The transformer is only needed to satisfy
+   * the constructor; reading persisted process state does not use it, so a fixed clock and no-op
+   * metrics are fine.
    */
-  public static DbProcessState openProcessState(
+  public static MutableProcessState openProcessState(
       final ZeebeDb<ZbColumnFamilies> db, final TransactionContext context) {
     final var stateTransformer =
         BpmnFactory.createTransformer(
             InstantSource.fixed(Instant.EPOCH),
             ExpressionLanguageMetrics.noop(),
             Integer.MAX_VALUE);
-    return new DbProcessState(db, context, new EngineConfiguration(), stateTransformer);
+    return new RocksDbStateStores(db, context)
+        .processState(new EngineConfiguration(), stateTransformer);
   }
 
   public PersistedSnapshot takeSnapshot(

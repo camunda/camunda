@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.RECOVERABLE_ERROR_CODES;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
@@ -54,6 +55,11 @@ public final class DefaultTransactionContext implements TransactionContext {
       transaction.resetTransaction();
     }
     return transaction;
+  }
+
+  @Override
+  public void addTransactionListener(final TransactionListener listener) {
+    transaction.addListener(listener);
   }
 
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {

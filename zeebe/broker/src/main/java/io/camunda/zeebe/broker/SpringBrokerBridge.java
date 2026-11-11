@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Collection;
 import java.util.Optional;
@@ -38,6 +39,7 @@ public class SpringBrokerBridge {
   private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
   private Function<String, Runnable> tenantSchemaInitializer;
+  private RdbmsEngineStateResources engineState;
 
   private BiConsumer<Integer, String> shutdownHelper;
 
@@ -126,6 +128,15 @@ public class SpringBrokerBridge {
   public Optional<Runnable> getSchemaInitializer(final String physicalTenantId) {
     return Optional.ofNullable(tenantSchemaInitializer)
         .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
+  }
+
+  /** Experimental: registers the connection pool of the RDBMS engine state. */
+  public void registerEngineState(final RdbmsEngineStateResources engineState) {
+    this.engineState = engineState;
+  }
+
+  public Optional<RdbmsEngineStateResources> getEngineState() {
+    return Optional.ofNullable(engineState);
   }
 
   /**

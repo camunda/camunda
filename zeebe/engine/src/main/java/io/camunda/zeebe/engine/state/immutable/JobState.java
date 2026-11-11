@@ -43,6 +43,16 @@ public interface JobState {
       final List<String> tenantIds,
       BiFunction<Long, JobRecord, Boolean> callback);
 
+  /**
+   * Like {@link #forEachActivatableJobs(DirectBuffer, List, BiFunction)}, telling the state how
+   * many jobs the callback accepts at most, which the state may use to read ahead. The callback is
+   * still called until it returns false or no job is left, as it may reject jobs.
+   *
+   * @param limitHint the maximum number of jobs the callback accepts
+   */
+  void forEachActivatableJobs(
+      DirectBuffer type, List<String> tenantIds, int limitHint, ActivatableJobVisitor callback);
+
   JobRecord getJob(long key);
 
   JobRecord getJob(final long key, final TenantAccess authorizedTenantIds);
@@ -63,6 +73,22 @@ public interface JobState {
    */
   void forEachJobsByProcessInstance(
       long processInstanceKey, long startAtJobKey, LongPredicate visitor);
+
+  /**
+   * Visits activatable jobs, see {@link #forEachActivatableJobs(DirectBuffer, List, int,
+   * ActivatableJobVisitor)}: returns whether to continue with the next job.
+   */
+  @FunctionalInterface
+  interface ActivatableJobVisitor extends BiFunction<Long, JobRecord, Boolean> {
+
+    /**
+     * Called by a state that reads the activatable jobs ahead, with the keys of the jobs it read,
+     * in the order it visits them next, so the visitor can prefetch what it needs for them in one
+     * go. The visitor may still stop before it has visited all of them. A state that doesn't read
+     * ahead, like the RocksDB one, never calls it.
+     */
+    default void readAhead(final long[] jobKeys) {}
+  }
 
   /** Index to point to a specific position in the jobs with deadline column family. */
   record DeadlineIndex(long deadline, long key) {}
@@ -86,10 +112,40 @@ public interface JobState {
      */
     SUSPENDED((byte) 6);
 
+    private static final State[] BY_VALUE;
+
+    static {
+      int highestValue = 0;
+      for (final State state : values()) {
+        highestValue = Math.max(highestValue, state.value);
+      }
+      BY_VALUE = new State[highestValue + 1];
+      for (final State state : values()) {
+        BY_VALUE[state.value] = state;
+      }
+    }
+
     byte value;
 
     State(final byte value) {
       this.value = value;
+    }
+
+    /**
+     * A stable code of the state, which stores may persist; unlike the ordinal, it never changes.
+     */
+    public byte value() {
+      return value;
+    }
+
+    /**
+     * @throws IllegalArgumentException if no state has the code
+     */
+    public static State fromValue(final byte value) {
+      if (value < 0 || value >= BY_VALUE.length || BY_VALUE[value] == null) {
+        throw new IllegalArgumentException("Expected a job state code, but got " + value);
+      }
+      return BY_VALUE[value];
     }
   }
 }

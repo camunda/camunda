@@ -16,12 +16,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbElementInstanceStore;
+import io.camunda.zeebe.engine.state.instance.ElementInstanceStateImpl;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariableMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.variable.DbVariableState;
+import io.camunda.zeebe.engine.state.variable.DbVariableStore;
+import io.camunda.zeebe.engine.state.variable.VariableStateImpl;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -103,8 +105,8 @@ public class TemporaryVariableMigrationTest {
     private MutableProcessingState processingState;
     private TransactionContext transactionContext;
     private LegacyDbTemporaryVariablesState legacyTemporaryVariablesState;
-    private DbVariableState variableState;
-    private DbElementInstanceState elementInstanceState;
+    private VariableStateImpl variableState;
+    private ElementInstanceStateImpl elementInstanceState;
 
     @BeforeEach
     public void setUp() {
@@ -112,8 +114,10 @@ public class TemporaryVariableMigrationTest {
       legacyTemporaryVariablesState =
           new LegacyDbTemporaryVariablesState(zeebeDb, transactionContext);
       legacyTemporaryVariablesState.put(EVENT_SCOPE_KEY, VARIABLES);
-      variableState = new DbVariableState(zeebeDb, transactionContext);
-      elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
+      variableState = new VariableStateImpl(new DbVariableStore(zeebeDb, transactionContext));
+      elementInstanceState =
+          new ElementInstanceStateImpl(
+              new DbElementInstanceStore(zeebeDb, transactionContext), variableState);
     }
 
     @Test

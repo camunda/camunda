@@ -23,13 +23,15 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.deployment.DbProcessStore;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.deployment.ProcessStateImpl;
 import io.camunda.zeebe.engine.state.deployment.VersionInfo;
-import io.camunda.zeebe.engine.state.instance.DbJobState;
+import io.camunda.zeebe.engine.state.instance.DbJobStore;
+import io.camunda.zeebe.engine.state.instance.JobStateImpl;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
@@ -89,18 +91,19 @@ public class MultiTenancyMigrationTest {
     private TransactionContext transactionContext;
 
     private LegacyProcessState legacyState;
-    private DbProcessState processState;
+    private ProcessStateImpl processState;
 
     @BeforeEach
     void setup() {
       legacyState = new LegacyProcessState(zeebeDb, transactionContext, InstantSource.system());
       processState =
-          new DbProcessState(
-              zeebeDb,
-              transactionContext,
+          new ProcessStateImpl(
+              new DbProcessStore(zeebeDb, transactionContext),
               new EngineConfiguration(),
               BpmnFactory.createTransformer(
-                  InstantSource.fixed(Instant.EPOCH), ExpressionLanguageMetrics.noop()));
+                  InstantSource.fixed(Instant.EPOCH), ExpressionLanguageMetrics.noop()),
+              transactionContext,
+              zeebeDb.getMeterRegistry());
     }
 
     @Test
@@ -877,12 +880,12 @@ public class MultiTenancyMigrationTest {
     private TransactionContext transactionContext;
 
     private LegacyJobState legacyState;
-    private DbJobState jobState;
+    private JobStateImpl jobState;
 
     @BeforeEach
     void setup() {
       legacyState = new LegacyJobState(zeebeDb, transactionContext);
-      jobState = new DbJobState(zeebeDb, transactionContext);
+      jobState = new JobStateImpl(new DbJobStore(zeebeDb, transactionContext));
     }
 
     @Test

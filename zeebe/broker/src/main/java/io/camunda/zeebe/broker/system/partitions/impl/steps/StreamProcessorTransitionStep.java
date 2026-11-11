@@ -13,6 +13,8 @@ import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedC
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsStateStores;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
@@ -135,9 +138,23 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var experimentalCfg = context.getBrokerCfg().getExperimental();
     final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
 
+    final var rdbmsEngineStateCfg = context.getBrokerCfg().getData().getRdbmsEngineState();
+    final var rdbmsEngineState =
+        rdbmsEngineStateCfg.isEnabled()
+            ? Objects.requireNonNull(
+                context.getEngineState(),
+                "Expected the engine state database, since the RDBMS engine state is enabled")
+            : null;
+    final ProcessingStateStoresFactory stateStoresFactory =
+        rdbmsEngineState != null
+            ? RdbmsStateStores.factory(rdbmsEngineState)
+            : ProcessingStateStoresFactory.rocksDb();
     final var engine =
         new Engine(
-            context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
+            context.getTypedRecordProcessorFactory(),
+            engineCfg,
+            context.getSecurityConfig(),
+            stateStoresFactory);
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
 
@@ -162,12 +179,24 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var processingFilter =
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
-    return StreamProcessor.builder()
+    final var builder = StreamProcessor.builder();
+    if (rdbmsEngineState != null) {
+      final var mixedDb =
+          RdbmsEngineStateDb.open(
+              context.getZeebeDb(),
+              rdbmsEngineState,
+              context.getPartitionId(),
+              context.getBrokerCfg().getCluster().getReplicationFactor());
+      builder.zeebeDb(mixedDb);
+    } else {
+      builder.zeebeDb(context.getZeebeDb());
+    }
+
+    return builder
         .meterRegistry(context.getPartitionTransitionMeterRegistry())
         .logStream(context.getLogStream())
         .partitionId(context.partitionId())
         .actorSchedulingService(context.getActorSchedulingService())
-        .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
         .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())

@@ -137,6 +137,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
@@ -184,6 +189,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-engine-state-rdbms</artifactId>
     </dependency>
 
     <dependency>
@@ -508,6 +518,16 @@
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

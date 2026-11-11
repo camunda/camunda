@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.zeebe.broker.logstreams.rdbms.LogBlockMapper">
+
+  <resultMap id="logBlockResultMap" type="io.camunda.zeebe.broker.logstreams.rdbms.LogBlock">
+    <constructor>
+      <arg column="LOW_POSITION" javaType="_long"/>
+      <arg column="HIGH_POSITION" javaType="_long"/>
+      <arg column="TERM" javaType="_long"/>
+      <arg column="DATA" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <update id="raiseTerm">
+    UPDATE ${prefix}LOG_PARTITION
+    SET TERM = #{term}
+    WHERE PARTITION_ID = #{partitionId} AND TERM &lt; #{term}
+  </update>
+
+  <select id="selectTerm" resultType="java.lang.Long">
+    SELECT TERM FROM ${prefix}LOG_PARTITION WHERE PARTITION_ID = #{partitionId}
+  </select>
+
+  <select id="selectTermForUpdate" resultType="java.lang.Long">
+    SELECT TERM FROM ${prefix}LOG_PARTITION WHERE PARTITION_ID = #{partitionId} FOR UPDATE
+  </select>
+
+  <insert id="insertTerm">
+    INSERT INTO ${prefix}LOG_PARTITION (PARTITION_ID, TERM) VALUES (#{partitionId}, #{term})
+  </insert>
+
+  <insert id="insertBlock">
+    INSERT INTO ${prefix}LOG_BLOCK (PARTITION_ID, LOW_POSITION, HIGH_POSITION, TERM, DATA)
+    VALUES (#{partitionId}, #{lowPosition}, #{highPosition}, #{term}, #{data})
+  </insert>
+
+  <select id="selectBlocksAtOrBefore" resultMap="logBlockResultMap">
+    SELECT LOW_POSITION, HIGH_POSITION, TERM, DATA
+    FROM ${prefix}LOG_BLOCK
+    WHERE PARTITION_ID = #{partitionId} AND LOW_POSITION &lt;= #{position}
+    ORDER BY LOW_POSITION DESC
+    FETCH FIRST #{limit} ROWS ONLY
+  </select>
+
+  <select id="selectBlocksAfter" resultMap="logBlockResultMap">
+    SELECT LOW_POSITION, HIGH_POSITION, TERM, DATA
+    FROM ${prefix}LOG_BLOCK
+    WHERE PARTITION_ID = #{partitionId} AND LOW_POSITION &gt; #{lowPosition}
+    ORDER BY LOW_POSITION
+    FETCH FIRST #{limit} ROWS ONLY
+  </select>
+
+</mapper>

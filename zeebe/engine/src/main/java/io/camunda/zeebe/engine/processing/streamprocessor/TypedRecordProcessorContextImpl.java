@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
@@ -43,13 +44,16 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineSecurityConfig securityConfig;
   private final MeterRegistry meterRegistry;
   private final SuspensionMetrics suspensionMetrics;
+  private final ProcessingStateStoresFactory stateStoresFactory;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final ProcessingStateStoresFactory stateStoresFactory) {
     partitionId = context.getPartitionId();
+    this.stateStoresFactory = stateStoresFactory;
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
@@ -62,7 +66,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
         new ProcessingDbState(
             partitionId,
             zeebeDb,
-            context.getTransactionContext(),
+            stateStoresFactory.create(partitionId, zeebeDb, context.getTransactionContext()),
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
@@ -103,15 +107,18 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
 
   @Override
   public Supplier<ScheduledTaskState> getScheduledTaskStateFactory() {
-    return () ->
-        new ScheduledTaskDbState(
-            zeebeDb,
-            zeebeDb.createContext(),
-            partitionId,
-            transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState,
-            transientAskState,
-            clock);
+    return () -> {
+      final var transactionContext = zeebeDb.createContext();
+      return new ScheduledTaskDbState(
+          zeebeDb,
+          transactionContext,
+          stateStoresFactory.create(partitionId, zeebeDb, transactionContext).jobState(),
+          partitionId,
+          transientMessageSubscriptionState,
+          transientProcessMessageSubscriptionState,
+          transientAskState,
+          clock);
+    };
   }
 
   @Override

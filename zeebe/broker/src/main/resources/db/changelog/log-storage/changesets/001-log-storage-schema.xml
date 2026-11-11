@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    One row per block appended through LogStorage#append: the serialized batch of records with
+    positions LOW_POSITION..HIGH_POSITION. The primary key rejects a second write of the same
+    positions, and TERM records the leader term the block was written in.
+  -->
+  <changeSet id="create_log_block_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}LOG_BLOCK"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}LOG_BLOCK">
+      <column name="PARTITION_ID" type="INTEGER">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="LOW_POSITION" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="HIGH_POSITION" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <column name="TERM" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+      <!--
+        LONGBLOB, not BLOB: Liquibase maps BLOB to OID (a separate large object) on PostgreSQL and
+        to a 64 KB BLOB on MySQL/MariaDB, while a block can be as large as the log stream's max
+        fragment size (4 MB by default). LONGBLOB gives BYTEA, LONGBLOB, varbinary(MAX) and BLOB;
+        H2 is rewritten below because it rejects BLOB in MODE=PostgreSQL.
+      -->
+      <column name="DATA" type="LONGBLOB">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <modifySql dbms="h2">
+      <replace replace="DATA BLOB" with="DATA BYTEA"/>
+    </modifySql>
+  </changeSet>
+
+  <!--
+    The current leader term per partition. A leader claims its partition by raising TERM to its own
+    term, and appends only while TERM still equals it, so a deposed leader cannot keep writing.
+  -->
+  <changeSet id="create_log_partition_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}LOG_PARTITION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}LOG_PARTITION">
+      <column name="PARTITION_ID" type="INTEGER">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="TERM" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>

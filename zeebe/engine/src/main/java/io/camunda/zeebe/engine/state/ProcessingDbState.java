@@ -15,51 +15,18 @@ import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.camunda.zeebe.engine.state.agentdefinition.DbAgentDefinitionState;
-import io.camunda.zeebe.engine.state.agenthistory.DbAgentHistoryState;
-import io.camunda.zeebe.engine.state.agentinstance.DbAgentInstanceState;
-import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
-import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
-import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
-import io.camunda.zeebe.engine.state.authorization.DbRoleState;
-import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
-import io.camunda.zeebe.engine.state.clock.DbClockState;
-import io.camunda.zeebe.engine.state.clustervariable.DbClusterVariableState;
-import io.camunda.zeebe.engine.state.compensation.DbCompensationSubscriptionState;
-import io.camunda.zeebe.engine.state.conditional.DbConditionalSubscriptionState;
-import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
-import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
-import io.camunda.zeebe.engine.state.deployment.DbFormState;
-import io.camunda.zeebe.engine.state.deployment.DbProcessState;
-import io.camunda.zeebe.engine.state.deployment.DbResourceState;
-import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
-import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
-import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingSubscriptionRecovery;
-import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
-import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.instance.DbIncidentState;
-import io.camunda.zeebe.engine.state.instance.DbJobState;
-import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
-import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
-import io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState;
 import io.camunda.zeebe.engine.state.jobmetrics.NoopJobMetricsState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
-import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartProcessInstanceDedupState;
-import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
-import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
-import io.camunda.zeebe.engine.state.migration.DbMigrationState;
-import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentDefinitionState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentHistoryState;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
@@ -106,14 +73,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
-import io.camunda.zeebe.engine.state.routing.DbRoutingState;
-import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
-import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
-import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
-import io.camunda.zeebe.engine.state.tenant.DbTenantState;
-import io.camunda.zeebe.engine.state.user.DbUserState;
-import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -186,75 +145,94 @@ public class ProcessingDbState implements MutableProcessingState {
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    this(
+        partitionId,
+        zeebeDb,
+        new RocksDbStateStores(zeebeDb, transactionContext),
+        keyGenerator,
+        transientMessageSubscriptionState,
+        transientProcessMessageSubscriptionState,
+        transientAskState,
+        config,
+        clock,
+        expressionLanguageMetrics);
+  }
+
+  public ProcessingDbState(
+      final int partitionId,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final ProcessingStateStores stores,
+      final KeyGenerator keyGenerator,
+      final TransientPendingSubscriptionState transientMessageSubscriptionState,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final TransientPendingMessageStartProcessInstanceAskState transientAskState,
+      final EngineConfiguration config,
+      final InstantSource clock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     pendingSubscriptionRecoveryBatchLimit =
         config.getMessagesPendingSubscriptionRecoveryBatchLimit();
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
 
-    variableState = new DbVariableState(zeebeDb, transactionContext);
-    clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
-    agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
-    agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
-    agentDefinitionState = new DbAgentDefinitionState(zeebeDb, transactionContext);
+    variableState = stores.variableState();
+    clusterVariableState = stores.clusterVariableState();
+    agentHistoryState = stores.agentHistoryState();
+    agentInstanceState = stores.agentInstanceState();
+    agentDefinitionState = stores.agentDefinitionState();
     // Transformation only parses expressions — the clock is never consulted. A fixed epoch
     // clock satisfies the ExpressionLanguage constructor contract while keeping cache-miss
     // rebuilds deterministic during replay.
     final BpmnTransformer stateTransformer =
         BpmnFactory.createTransformer(
             InstantSource.fixed(Instant.EPOCH), expressionLanguageMetrics, Integer.MAX_VALUE);
-    processState = new DbProcessState(zeebeDb, transactionContext, config, stateTransformer);
-    timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
-    elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
-    eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
+    processState = stores.processState(config, stateTransformer);
+    timerInstanceState = stores.timerInstanceState();
+    elementInstanceState = stores.elementInstanceState(variableState);
+    eventScopeInstanceState = stores.eventScopeInstanceState();
 
-    deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
-    jobState = new DbJobState(zeebeDb, transactionContext);
-    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
+    deploymentState = stores.deploymentState();
+    jobState = stores.jobState();
+    messageState = stores.messageState(partitionId);
     messageSubscriptionState =
-        new DbMessageSubscriptionState(
-            zeebeDb, transactionContext, transientMessageSubscriptionState, clock);
-    messageStartEventSubscriptionState =
-        new DbMessageStartEventSubscriptionState(zeebeDb, transactionContext);
-    messageStartProcessInstanceDedupState =
-        new DbMessageStartProcessInstanceDedupState(zeebeDb, transactionContext);
+        stores.messageSubscriptionState(transientMessageSubscriptionState, clock);
+    messageStartEventSubscriptionState = stores.messageStartEventSubscriptionState();
+    messageStartProcessInstanceDedupState = stores.messageStartProcessInstanceDedupState();
     messageStartProcessInstanceAskState =
-        new DbMessageStartProcessInstanceAskState(zeebeDb, transactionContext, transientAskState);
+        stores.messageStartProcessInstanceAskState(transientAskState);
     processMessageSubscriptionState =
-        new DbProcessMessageSubscriptionState(
-            zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
-    messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
-    incidentState = new DbIncidentState(zeebeDb, transactionContext);
-    bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
-    suspensionState = new DbSuspensionState(zeebeDb, transactionContext);
-    decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
-    formState = new DbFormState(zeebeDb, transactionContext, config);
-    resourceState = new DbResourceState(zeebeDb, transactionContext, config);
-    signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
-    distributionState = new DbDistributionState(zeebeDb, transactionContext);
-    mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
-    userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
-    compensationSubscriptionState =
-        new DbCompensationSubscriptionState(zeebeDb, transactionContext);
-    userState = new DbUserState(zeebeDb, transactionContext);
-    clockState = new DbClockState(zeebeDb, transactionContext);
-    authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
-    routingState = new DbRoutingState(zeebeDb, transactionContext);
-    roleState = new DbRoleState(zeebeDb, transactionContext);
-    groupState = new DbGroupState(zeebeDb, transactionContext, config);
-    tenantState = new DbTenantState(zeebeDb, transactionContext);
-    mappingRuleState = new DbMappingRuleState(zeebeDb, transactionContext);
-    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
-    membershipState = new DbMembershipState(zeebeDb, transactionContext);
-    usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext);
-    multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
-    asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
-    conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
+        stores.processMessageSubscriptionState(transientProcessMessageSubscriptionState, clock);
+    messageCorrelationState = stores.messageCorrelationState();
+    incidentState = stores.incidentState();
+    bannedInstanceState = stores.bannedInstanceState();
+    suspensionState = stores.suspensionState();
+    decisionState = stores.decisionState(config);
+    formState = stores.formState(config);
+    resourceState = stores.resourceState(config);
+    signalSubscriptionState = stores.signalSubscriptionState();
+    distributionState = stores.distributionState();
+    mutableMigrationState = stores.migrationState();
+    userTaskState = stores.userTaskState();
+    compensationSubscriptionState = stores.compensationSubscriptionState();
+    userState = stores.userState();
+    clockState = stores.clockState();
+    authorizationState = stores.authorizationState();
+    routingState = stores.routingState();
+    roleState = stores.roleState();
+    groupState = stores.groupState(config);
+    tenantState = stores.tenantState();
+    mappingRuleState = stores.mappingRuleState();
+    batchOperationState = stores.batchOperationState();
+    membershipState = stores.membershipState();
+    usageMetricState = stores.usageMetricState();
+    multiInstanceState = stores.multiInstanceState();
+    asyncRequestState = stores.asyncRequestState();
+    conditionalSubscriptionState = stores.conditionalSubscriptionState();
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
-    globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
-    secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+    globalListenersState = stores.globalListenersState();
+    secretReferenceState = stores.secretReferenceState();
     if (config.isJobMetricsExportEnabled()) {
-      jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
+      jobMetricsState = stores.jobMetricsState(clock, config);
     } else {
       jobMetricsState = new NoopJobMetricsState();
     }

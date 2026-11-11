@@ -92,12 +92,19 @@ Options:
                                     to the Cluster's \`-rw\` Service. Requires
                                     secondary_storage=postgresql. See "Connection pooling
                                     (PgBouncer)" in charts/load-test-setup/README.md.
+  --primary-storage <rocksdb|rdbms>
+                                   Where the engine state and partition log live. Default:
+                                    rocksdb. \`rdbms\` (experimental, main only) deploys the
+                                    PostgreSQL cluster, points Camunda's primary storage at it,
+                                    and sets replication factor 1. Independent of
+                                    secondary_storage.
   -h, --help                       Show this help message.
 
 Examples:
   ./newLoadTest.sh ${prefix}demo
   ./newLoadTest.sh ${prefix}perf elasticsearch 3 true
   ./newLoadTest.sh ${prefix}perf postgresql 3 true --use-pgbouncer
+  ./newLoadTest.sh ${prefix}perf elasticsearch 1 false --primary-storage rdbms
 
 This script scaffolds the per-namespace folder (Makefile, values files). The
 cluster itself is unchanged by this script — the namespace and the
@@ -110,6 +117,7 @@ EOF
 }
 
 use_pgbouncer=false
+primary_storage=rocksdb
 remaining_args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -119,6 +127,10 @@ while [[ $# -gt 0 ]]; do
     --use-pgbouncer)
       use_pgbouncer=true
       shift
+      ;;
+    --primary-storage)
+      primary_storage="${2:-}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -167,6 +179,17 @@ enable_optimize="$(parse_bool "${remaining_args[3]:-true}")"
 
 if [[ "$use_pgbouncer" == "true" && "$secondary_storage" != "postgresql" ]]; then
   echo "Error: --use-pgbouncer requires secondary_storage=postgresql (got: $secondary_storage)." >&2
+  exit 1
+fi
+
+if ! contains "$primary_storage" rocksdb rdbms; then
+  echo "Error: --primary-storage must be one of: rocksdb rdbms (got: '$primary_storage')." >&2
+  exit 1
+fi
+
+# Only main ships the RDBMS primary storage (and its values file).
+if [[ "$primary_storage" == "rdbms" && "$target_version" != "main" ]]; then
+  echo "Error: --primary-storage rdbms is only supported for --target-version main (got: $target_version)." >&2
   exit 1
 fi
 
@@ -244,6 +267,12 @@ case "$secondary_storage" in
     ;;
 esac
 
+if [[ "$primary_storage" == "rdbms" ]]; then
+  # The RDBMS primary storage uses the PostgreSQL cluster of the load-test-setup chart, also when
+  # the secondary storage is something else (rows live in their own CAM_RU_ tables).
+  postgresqlEnabled=true
+  cp -v "$VERSION_DIR/values/camunda-platform-values-primary-storage-rdbms.yaml" "$TARGET_DIRECTORY/"
+fi
 
 if [[ "$enable_optimize" == "true" && "$secondary_storage" == "none" ]]; then
   echo "Optimize requires a secondary storage backend; forcefully disabling Optimize."
@@ -283,6 +312,7 @@ cd "$TARGET_DIRECTORY"
 sed_inplace "s/__NAMESPACE__/$namespace/"             Makefile
 sed_inplace "s/__STORAGE_TYPE__/$secondary_storage/"   Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
+sed_inplace "s/__PRIMARY_STORAGE__/$primary_storage/" Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
 sed_targets=(*.yaml)
@@ -392,6 +422,12 @@ EOF
   if [[ "$use_pgbouncer" == "true" ]]; then
     cat <<EOF
   pooler:
+    enabled: true
+EOF
+  fi
+  if [[ "$primary_storage" == "rdbms" ]]; then
+    cat <<EOF
+  primaryStorage:
     enabled: true
 EOF
   fi

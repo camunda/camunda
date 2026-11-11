@@ -605,7 +605,8 @@ public class RequestMapperTest {
       // when
       final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
 
-      // then — only two unique names, not three; prevents off-by-one in DbVariableState map header
+      // then — only two unique names, not three; prevents off-by-one in VariableStateImpl map
+      // header
       assertThat(properties.fetchVariables())
           .extracting(BufferUtil::bufferAsString)
           .containsExactlyInAnyOrder("var1", "var2");

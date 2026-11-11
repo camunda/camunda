@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  Statements of the partition state table of the relational engine state, see PartitionStateMapper.
+  The schema is created by the Liquibase changelog db/changelog/engine-state/changelog-master.xml.
+
+  The EntitySession runs the select, insert, update and delete statement of a row by id, named
+  after its EntityType (e.g. insertElementInstance); the other statements are queries of the mapper.
+
+  Statements without a databaseId are portable; a statement or fragment with the databaseId of
+  the connected database (see EngineStateMyBatis) replaces the portable one.
+-->
+<mapper namespace="io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper">
+
+  <!-- CAM_RU_PARTITION_STATE -->
+
+  <resultMap id="partitionStateRow"
+    type="io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper$PartitionStateRow">
+    <constructor>
+      <idArg column="state_key" javaType="String"/>
+      <arg column="value" javaType="String"/>
+    </constructor>
+  </resultMap>
+
+  <select id="selectPartitionState" resultMap="partitionStateRow">
+    SELECT state_key, value
+    FROM CAM_RU_PARTITION_STATE
+    WHERE partition_id = #{partitionId} AND state_key = #{key}
+  </select>
+
+  <insert id="insertPartitionState">
+    INSERT INTO CAM_RU_PARTITION_STATE (partition_id, state_key, value)
+    VALUES (#{partitionId}, #{row.key}, #{row.value,jdbcType=VARCHAR})
+  </insert>
+
+  <update id="updatePartitionState">
+    UPDATE CAM_RU_PARTITION_STATE
+    SET value = #{row.value,jdbcType=VARCHAR}
+    WHERE partition_id = #{partitionId} AND state_key = #{row.key}
+  </update>
+
+  <delete id="deletePartitionState">
+    DELETE FROM CAM_RU_PARTITION_STATE
+    WHERE partition_id = #{partitionId} AND state_key = #{key}
+  </delete>
+
+</mapper>

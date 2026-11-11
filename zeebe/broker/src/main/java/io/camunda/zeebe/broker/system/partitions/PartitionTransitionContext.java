@@ -18,7 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
-import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -32,7 +32,9 @@ import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
@@ -100,9 +102,16 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   Collection<ExporterDescriptor> getExportedDescriptors();
 
-  AtomixLogStorage getLogStorage();
+  LogStorage getLogStorage();
 
-  void setLogStorage(AtomixLogStorage logStorage);
+  void setLogStorage(LogStorage logStorage);
+
+  /**
+   * @return the repository to store the partition's log in, or null to store it with Atomix
+   */
+  @Nullable LogBlockRepository getLogBlockRepository();
+
+  void setLogBlockRepository(@Nullable LogBlockRepository logBlockRepository);
 
   int getMaxFragmentSize();
 
@@ -113,6 +122,9 @@ public interface PartitionTransitionContext extends PartitionContext {
   BrokerCfg getBrokerCfg();
 
   EngineSecurityConfig getSecurityConfig();
+
+  /** Experimental: the connection pool of the RDBMS engine state, or null if it is not enabled. */
+  @Nullable RdbmsEngineStateResources getEngineState();
 
   QueryService getQueryService();
 

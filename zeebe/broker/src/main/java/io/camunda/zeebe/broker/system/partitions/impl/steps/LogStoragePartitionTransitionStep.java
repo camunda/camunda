@@ -15,16 +15,38 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepository;
+import io.camunda.zeebe.broker.logstreams.rdbms.LogBlockRepositoryException;
+import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
+  private static final Logger LOG =
+      LoggerFactory.getLogger(LogStoragePartitionTransitionStep.class);
+  private static final Duration INITIAL_CLAIM_RETRY_BACKOFF = Duration.ofMillis(500);
+  private static final Duration MAX_CLAIM_RETRY_BACKOFF = Duration.ofSeconds(10);
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
+
+  /**
+   * Bumped whenever a new Raft role is announced, so that an RDBMS log storage installation still
+   * retrying its claim gives way to the transition that follows it.
+   */
+  private final AtomicLong roleAnnouncements = new AtomicLong();
+
+  @Override
+  public void onNewRaftRole(final PartitionTransitionContext context, final Role newRole) {
+    roleAnnouncements.incrementAndGet();
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -34,9 +56,13 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     if (logStorage != null
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
-      final var server = context.getRaftPartition().getServer();
-      server.removeCommitListener(logStorage);
-      server.removeCommittedEntryListener(logStorage.committedPositionNotifier());
+      if (logStorage instanceof final AtomixLogStorage atomixLogStorage) {
+        final var server = context.getRaftPartition().getServer();
+        server.removeCommitListener(atomixLogStorage);
+        server.removeCommittedEntryListener(atomixLogStorage.committedPositionNotifier());
+      } else if (logStorage instanceof final RdbmsLogStorage rdbmsLogStorage) {
+        rdbmsLogStorage.close();
+      }
       context.setLogStorage(null);
     }
     return CompletableActorFuture.completed(null);
@@ -48,6 +74,13 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
     if (shouldInstallOnTransition(targetRole, context.getCurrentRole())
         || (context.getLogStorage() == null && targetRole != Role.INACTIVE)) {
       final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
+
+      final var repository = context.getLogBlockRepository();
+      if (repository != null) {
+        new RdbmsLogStorageInstallation(context, repository, term, targetRole, openFuture)
+            .attempt();
+        return openFuture;
+      }
 
       final var logStorageOrException = buildAtomixLogStorage(context, term, targetRole);
 
@@ -132,6 +165,129 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           AtomixLogStorage.ofPartition(
               server::openReader, server::openUncommittedReader, logAppender);
       return right(logStorage);
+    }
+  }
+
+  /**
+   * A leader claims the partition in the database for its Raft term before it may append, so that a
+   * deposed leader's appends are rejected. Raft still elects the leader; the database only enforces
+   * that a newer term's claim wins.
+   */
+  private Either<Exception, RdbmsLogStorage> buildRdbmsLogStorage(
+      final PartitionTransitionContext context,
+      final LogBlockRepository repository,
+      final long targetTerm,
+      final Role targetRole) {
+    if (targetRole != Role.LEADER) {
+      return right(
+          RdbmsLogStorage.readOnly(
+              repository, RdbmsLogStorage.Config.fromEnvironment(System.getenv())));
+    }
+
+    final var raftPartition = context.getRaftPartition();
+    final var raftTerm = raftPartition.getServer().getTerm();
+    if (raftTerm != targetTerm) {
+      return left(
+          new NotLeaderException(
+              String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
+    }
+
+    try {
+      if (!repository.claimTerm(targetTerm)) {
+        return left(
+            new NotLeaderException(
+                "Expected to claim partition %d for term %d in the database, but a higher term already holds it. Failing installation of 'LogStoragePartitionStep'."
+                    .formatted(context.getPartitionId(), targetTerm)));
+      }
+    } catch (final LogBlockRepositoryException e) {
+      return left(e);
+    }
+
+    final var partitionId = context.getPartitionId();
+    return right(
+        RdbmsLogStorage.writable(
+            "rdbms-log-writer-" + partitionId,
+            repository,
+            targetTerm,
+            RdbmsLogStorage.Config.fromEnvironment(System.getenv()),
+            context.getPartitionTransitionMeterRegistry(),
+            error -> {
+              // Raft keeps this node leader while the database fails, so step down explicitly;
+              // unless a newer term has begun, which this failure says nothing about
+              if (raftPartition.term() == targetTerm) {
+                LOG.warn(
+                    "RDBMS log storage of partition {} failed in term {}, stepping down",
+                    partitionId,
+                    targetTerm);
+                raftPartition.stepDown();
+              }
+            }));
+  }
+
+  /**
+   * Installs the RDBMS log storage without blocking the partition: retries a leader's claim that
+   * failed on the database. Gives way once a newer transition is announced.
+   */
+  private final class RdbmsLogStorageInstallation {
+
+    private final PartitionTransitionContext context;
+    private final LogBlockRepository repository;
+    private final long term;
+    private final Role targetRole;
+    private final CompletableActorFuture<Void> future;
+    private final long roleAnnouncement = roleAnnouncements.get();
+    private Duration claimRetryBackoff = INITIAL_CLAIM_RETRY_BACKOFF;
+
+    private RdbmsLogStorageInstallation(
+        final PartitionTransitionContext context,
+        final LogBlockRepository repository,
+        final long term,
+        final Role targetRole,
+        final CompletableActorFuture<Void> future) {
+      this.context = context;
+      this.repository = repository;
+      this.term = term;
+      this.targetRole = targetRole;
+      this.future = future;
+    }
+
+    private void attempt() {
+      if (roleAnnouncements.get() != roleAnnouncement) {
+        future.completeExceptionally(
+            new TransitionSupersededException(
+                "Stopped installing the RDBMS log storage of partition %d for %s in term %d, a newer transition was announced"
+                    .formatted(context.getPartitionId(), targetRole, term)));
+        return;
+      }
+
+      final var logStorageOrException = buildRdbmsLogStorage(context, repository, term, targetRole);
+      if (logStorageOrException.isRight()) {
+        context.setLogStorage(logStorageOrException.get());
+        future.complete(null);
+      } else if (logStorageOrException.getLeft() instanceof final LogBlockRepositoryException e) {
+        LOG.warn(
+            "Failed to claim partition {} for term {} in the database, retrying in {}",
+            context.getPartitionId(),
+            term,
+            claimRetryBackoff,
+            e);
+        context.getConcurrencyControl().schedule(claimRetryBackoff, this::attempt);
+        claimRetryBackoff = min(claimRetryBackoff.multipliedBy(2), MAX_CLAIM_RETRY_BACKOFF);
+      } else {
+        future.completeExceptionally(logStorageOrException.getLeft());
+      }
+    }
+
+    private static Duration min(final Duration a, final Duration b) {
+      return a.compareTo(b) <= 0 ? a : b;
+    }
+  }
+
+  public static final class TransitionSupersededException
+      extends RecoverablePartitionTransitionException {
+
+    private TransitionSupersededException(final String message) {
+      super(message);
     }
   }
 
