@@ -15,15 +15,22 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ExporterDeleteRequestTransformer;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,8 +41,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 final class ConfigurationChangeCoordinatorImplTest {
@@ -68,6 +77,74 @@ final class ConfigurationChangeCoordinatorImplTest {
         .withCauseInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
         .withMessageContaining(
             "Expected to leave partition, but the local member does not exist in the cluster");
+  }
+
+  @Test
+  void shouldDeleteExporterThatIsOnlyPresentOnSomeMembers() {
+    // given - after the exporter was removed from the static config, only member 0 still lists it
+    final var memberWithExporter = MemberId.from("0");
+    final var memberWithoutExporter = MemberId.from("1");
+    clusterTopologyManager.setClusterTopology(
+        ClusterConfiguration.init()
+            .addMember(
+                memberWithExporter,
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1, PartitionState.active(1, exporterConfig(State.CONFIG_NOT_FOUND)),
+                        2, PartitionState.active(2, exporterConfig(State.CONFIG_NOT_FOUND)))))
+            .addMember(
+                memberWithoutExporter,
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1, PartitionState.active(2, partitionConfig),
+                        2, PartitionState.active(1, partitionConfig)))));
+
+    // when
+    final var applyFuture =
+        coordinator.applyOperations(new ExporterDeleteRequestTransformer("exporterA"));
+
+    // then
+    assertThat(applyFuture)
+        .succeedsWithin(Duration.ofMillis(100))
+        .extracting(ConfigurationChangeResult::operations)
+        .asInstanceOf(InstanceOfAssertFactories.LIST)
+        .containsExactlyInAnyOrder(
+            new PartitionDeleteExporterOperation(memberWithExporter, 1, "exporterA"),
+            new PartitionDeleteExporterOperation(memberWithExporter, 2, "exporterA"));
+  }
+
+  @Test
+  void shouldRejectDeletingExporterThatIsStillConfiguredOnSomeMembers() {
+    // given
+    clusterTopologyManager.setClusterTopology(
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("0"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, exporterConfig(State.CONFIG_NOT_FOUND)))))
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(2, exporterConfig(State.ENABLED))))));
+
+    // when
+    final var applyFuture =
+        coordinator.applyOperations(new ExporterDeleteRequestTransformer("exporterA"));
+
+    // then
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidRequest.class)
+        .withMessageContaining("is in state 'ENABLED'");
+    assertThat(clusterTopologyManager.getClusterConfiguration().join().pendingChanges()).isEmpty();
+  }
+
+  private static DynamicPartitionConfig exporterConfig(final State state) {
+    return new DynamicPartitionConfig(
+        new ExportingConfig(
+            ExportingState.EXPORTING,
+            Map.of("exporterA", new ExporterState(1, state, Optional.empty()))));
   }
 
   private ConfigurationChangeRequest getTransformer(
