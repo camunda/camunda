@@ -16,6 +16,7 @@
 package io.camunda.client.impl.worker;
 
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.worker.SneakyThrow.sneakyThrow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
@@ -1025,8 +1026,9 @@ final class JobWorkerImplTest {
     }
   }
 
-  @Test
-  void shouldKeepPollingWhenJobMetricsAlsoThrowWhileHandingAJobBack() {
+  @ParameterizedTest
+  @MethodSource("metricsFailures")
+  void shouldKeepPollingWhenJobMetricsAlsoThrowWhileHandingAJobBack(final Runnable failure) {
     // given metrics that throw for the first job the worker activates, and again when that job is
     // reported as refused, so that the failure escapes the worker's own handling of it
     final AtomicBoolean activationThrew = new AtomicBoolean();
@@ -1036,14 +1038,14 @@ final class JobWorkerImplTest {
           @Override
           public void jobActivated(final int count) {
             if (activationThrew.compareAndSet(false, true)) {
-              throw new IllegalStateException("simulated metrics failure on activation");
+              failure.run();
             }
           }
 
           @Override
           public void jobRefused(final int count) {
             if (refusalThrew.compareAndSet(false, true)) {
-              throw new IllegalStateException("simulated metrics failure on refusal");
+              failure.run();
             }
           }
         };
@@ -1482,7 +1484,10 @@ final class JobWorkerImplTest {
             "Error",
             () -> {
               throw new NoSuchMethodError("simulated metrics dependency version skew");
-            }));
+            }),
+        Named.of(
+            "undeclared checked exception",
+            () -> sneakyThrow(new IOException("simulated metrics backend failure"))));
   }
 
   /**
