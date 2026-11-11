@@ -103,6 +103,10 @@ test.describe('Suspended user tasks in Tasklist', () => {
       instancesToCancel,
       initialValues,
     );
+    const expectedTasks = [
+      {task: suspended, isSuspended: true},
+      {task: active, isSuspended: false},
+    ];
     await suspendAndExpectSuspended(request, suspended.processInstanceKey);
     await expectUserTaskSuspended(request, suspended.userTaskKey, true);
     await navigateToAppHome(page, 'tasklist');
@@ -110,19 +114,12 @@ test.describe('Suspended user tasks in Tasklist', () => {
     for (const view of ['All open tasks', 'Unassigned'] as const) {
       await test.step(`Check ${view}`, async () => {
         await taskPanelPage.filterBy(view);
-        await taskPanelPage.assertTaskCardVisible(
-          suspended.processDefinitionId,
-          {timeout: 60_000},
-        );
-        await taskPanelPage.assertTaskCardVisible(active.processDefinitionId, {
-          timeout: 60_000,
-        });
-        await taskPanelPage.assertTaskSuspended(suspended.processDefinitionId);
-        await taskPanelPage.assertTaskSuspended(
-          active.processDefinitionId,
-          false,
-        );
-        for (const task of [suspended, active]) {
+        for (const {task, isSuspended} of expectedTasks) {
+          await taskPanelPage.assertTaskSuspended(
+            task.processDefinitionId,
+            isSuspended,
+            {timeout: 60_000},
+          );
           await expect(
             taskPanelPage.taskLinkByName(task.processDefinitionId),
           ).toHaveAccessibleName(/^Unassigned task:/);
@@ -143,18 +140,12 @@ test.describe('Suspended user tasks in Tasklist', () => {
 
     await test.step('Check Assigned to me', async () => {
       await taskPanelPage.filterBy('Assigned to me');
-      await taskPanelPage.assertTaskCardVisible(suspended.processDefinitionId, {
-        timeout: 60_000,
-      });
-      await taskPanelPage.assertTaskCardVisible(active.processDefinitionId, {
-        timeout: 60_000,
-      });
-      await taskPanelPage.assertTaskSuspended(suspended.processDefinitionId);
-      await taskPanelPage.assertTaskSuspended(
-        active.processDefinitionId,
-        false,
-      );
-      for (const task of [suspended, active]) {
+      for (const {task, isSuspended} of expectedTasks) {
+        await taskPanelPage.assertTaskSuspended(
+          task.processDefinitionId,
+          isSuspended,
+          {timeout: 60_000},
+        );
         await expect(
           taskPanelPage.taskLinkByName(task.processDefinitionId),
         ).toHaveAccessibleName(/^Task assigned to me:/);

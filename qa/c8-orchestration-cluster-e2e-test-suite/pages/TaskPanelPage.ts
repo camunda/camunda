@@ -97,7 +97,16 @@ class TaskPanelPage {
     return this.taskCardByName(name).getByRole('link');
   }
 
-  async assertTaskSuspended(name: string, suspended = true): Promise<void> {
+  async assertTaskSuspended(
+    name: string,
+    suspended = true,
+    options: {timeout?: number} = {},
+  ): Promise<void> {
+    await this.scrollListToTop();
+    await this.walkListFor(
+      this.taskCardByName(name),
+      options.timeout ?? 15_000,
+    );
     const link = this.taskLinkByName(name);
     await expect(link).toBeVisible({timeout: 15_000});
     if (suspended) {
