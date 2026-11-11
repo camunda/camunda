@@ -1,0 +1,182 @@
+# Optional overlay: run the load test through a standalone gateway (3 replicas) instead of the
+# gateways embedded in the brokers.
+#
+# Why: the embedded gateway runs on the broker's actor threads and has no admission control, so under
+# load request handling competes with partition processing. A standalone gateway separates them and
+# lets the load test show whether that matters (INC-8994, INC-9128).
+#
+# Use it with two extra inputs of the load test workflow (the file is copied into the namespace folder by
+# newLoadTest.sh):
+#   platform-helm-values: -f camunda-platform-values-standalone-gateway.yaml
+#   load-test-load:       --set loadTest.client.oidc.zeebeGrpcAddress=http://camunda-sgw:26500
+#                         --set loadTest.client.oidc.zeebeRestAddress=http://camunda-sgw:8080
+#
+# The embedded gateways keep running but receive no client traffic. The gateway reuses the broker
+# ConfigMap (cluster name, contact points, OIDC) and the broker credentials secret, so it relies on the
+# release name `camunda` (fullnameOverride in camunda-platform-values-defaults.yaml).
+# Placement and the image follow the orchestration values, so a platform-helm-values override of the
+# node pool or image applies to the gateways too.
+global:
+  extraManifests:
+    - |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: camunda-sgw
+        labels:
+          # Matched by the existing camunda-gateway ServiceMonitor, so the gateway pods are scraped.
+          app: camunda-platform
+          app.kubernetes.io/component: zeebe-gateway
+      spec:
+        # Headless: the client round-robins over every resolved pod. A ClusterIP gives one virtual IP,
+        # one HTTP/2 connection and therefore one busy gateway.
+        clusterIP: None
+        selector:
+          app: camunda-sgw
+        ports:
+          - name: grpc
+            port: 26500
+            targetPort: 26500
+          - name: http
+            port: 8080
+            targetPort: 8080
+          - name: server
+            port: 9600
+            targetPort: 9600
+    - |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: camunda-sgw
+        labels:
+          app: camunda-sgw
+      spec:
+        replicas: 3
+        selector:
+          matchLabels:
+            app: camunda-sgw
+        template:
+          metadata:
+            labels:
+              app: camunda-sgw
+              camunda.io/purpose: load-test
+          spec:
+            imagePullSecrets:
+              - name: harbor-registry
+            serviceAccountName: camunda
+            nodeSelector:
+              {{- toYaml .Values.orchestration.nodeSelector | nindent 14 }}
+            tolerations:
+              {{- toYaml .Values.orchestration.tolerations | nindent 14 }}
+            securityContext:
+              fsGroup: 1001
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            containers:
+              - name: gateway
+                image: {{ .Values.orchestration.image.registry }}/{{ .Values.orchestration.image.repository }}:{{ .Values.orchestration.image.tag }}
+                imagePullPolicy: Always
+                command: ["/usr/local/camunda/bin/gateway"]
+                securityContext:
+                  runAsNonRoot: true
+                  runAsUser: 1000
+                  readOnlyRootFilesystem: true
+                env:
+                  - name: LC_ALL
+                    value: C.UTF-8
+                  - name: K8S_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: K8S_SERVICE_NAME
+                    value: camunda
+                  - name: K8S_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: VALUES_ORCHESTRATION_CLIENT_SECRET
+                    valueFrom:
+                      secretKeyRef:
+                        name: camunda-credentials
+                        key: orchestration-security-authentication-oidc-secret
+                  # The mounted broker application.yaml activates the broker profile and binds an empty node id to an int.
+                  - name: SPRING_PROFILES_ACTIVE
+                    value: consolidated-auth
+                  - name: VALUES_ORCHESTRATION_NODE_ID
+                    value: "100"
+                  - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: ZEEBE_GATEWAY_CLUSTER_HOST
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: JAVA_TOOL_OPTIONS
+                    value: "-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError"
+                  - name: ZEEBE_LOG_APPENDER
+                    value: Stackdriver
+                  - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+                    value: zeebe-gateway
+                  - name: ZEEBE_LOG_LEVEL
+                    value: INFO
+                  - name: ATOMIX_LOG_LEVEL
+                    value: INFO
+                  - name: SPRING_CONFIG_ADDITIONALLOCATION
+                    value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml
+                ports:
+                  - containerPort: 26500
+                    name: grpc
+                  - containerPort: 26502
+                    name: internal
+                  - containerPort: 8080
+                    name: http
+                  - containerPort: 9600
+                    name: server
+                readinessProbe:
+                  httpGet:
+                    path: /actuator/health/readiness
+                    port: 9600
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  failureThreshold: 6
+                  timeoutSeconds: 2
+                resources:
+                  requests:
+                    cpu: 1000m
+                    memory: 1Gi
+                  limits:
+                    cpu: 1000m
+                    memory: 1Gi
+                volumeMounts:
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application.yaml
+                    subPath: application.yaml
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application.yml
+                    subPath: application.yml
+                  - name: config
+                    mountPath: /usr/local/camunda/config/application-override.yml
+                    subPath: application-override.yml
+                  - name: tmp
+                    mountPath: /tmp
+                  - name: data
+                    mountPath: /usr/local/camunda/data
+                  - name: logs
+                    mountPath: /usr/local/camunda/logs
+            volumes:
+              - name: config
+                configMap:
+                  name: camunda-configuration
+                  defaultMode: 492
+              - name: tmp
+                emptyDir: {}
+              - name: data
+                emptyDir: {}
+              - name: logs
+                emptyDir: {}
