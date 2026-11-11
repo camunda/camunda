@@ -75,9 +75,17 @@ set through `CAMUNDA_EXPERIMENTAL_RDBMSLOGSTORAGE_COMMITLINGERMS` (0 turns it of
 
 - Enabled with `camunda.data.primary-storage.type=rdbms` (plus `primary-storage.rdbms.url` etc.),
   which always moves the engine state too; otherwise partitions keep the Atomix log storage.
-- The engine state prototype deletes a partition's state rows on every start, while the log
-  survives. A restarted partition replays only from its RocksDB snapshot, so restarts do not work
-  yet with both enabled.
+- Restarts work with log and engine state both in the RDBMS: the engine state keeps its rows and
+  the position of the last command they contain, and a restarted partition replays the RDBMS log
+  from its RocksDB snapshot without applying those changes to the database again.
+  `RdbmsEngineStateRestartIT` covers this.
+- A crash can still leave the two inconsistent. The stream processor reads log blocks before they
+  commit (D5), while the engine state commits in its own transaction, so the database may record
+  changes of commands whose log blocks never became durable. Committing a block and its state
+  changes in one transaction would close this gap.
+- The engine state refuses replicated partitions, as every replica would write into the one
+  database, so with both enabled only replication factor 1 runs; the notes on followers below
+  apply to the log storage on its own.
 - One pool per broker, with rows keyed by partition id only, so physical tenants sharing partition
   ids would collide.
 - Snapshots are taken, but with Raft index and term `0-0`, as the Raft log holds no records; a
@@ -85,7 +93,8 @@ set through `CAMUNDA_EXPERIMENTAL_RDBMSLOGSTORAGE_COMMITLINGERMS` (0 turns it of
   snapshots to followers. Deleting `LOG_BLOCK` rows below the snapshot and exported positions is
   therefore unsafe until state or snapshots are shared between nodes, e.g. once state is in the
   RDBMS too.
-- Zeebe backups do not contain the RDBMS log, so backup and restore do not work with the flag on.
+- Zeebe backups do not contain the RDBMS log, so backup and restore do not work with the RDBMS
+  primary storage.
 - Without a commit linger, the writer commits about once per transaction time (~4.7 ms in load
   tests), so Postgres ran 10-100x more transactions than with Atomix, at much higher CPU; command
   responses and flow control slots wait for those commits.
