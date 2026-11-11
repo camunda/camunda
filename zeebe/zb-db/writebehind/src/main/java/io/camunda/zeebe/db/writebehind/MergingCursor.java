@@ -21,9 +21,10 @@ import org.jspecify.annotations.Nullable;
  * RocksDB's indexed write batch.
  *
  * <p>Each seek picks the committed source: the {@link IndexSource} if the column family has a
- * loaded key index, which opens no storage iterator, else a {@link ViewSource}. An index source can
- * turn stale in the middle of a scan; the cursor then replaces it with a view that it seeks to the
- * current key, so that no key is returned twice or skipped.
+ * loaded key index whose window covers the seek key, which opens no storage iterator, else a {@link
+ * ViewSource}. A scan that runs out of a partial window continues with a view, see {@link
+ * HandoverSource}. An index source can turn stale in the middle of a scan; the cursor then replaces
+ * it with a view that it seeks to the current key, so that no key is returned twice or skipped.
  */
 final class MergingCursor implements AutoCloseable {
 
@@ -112,12 +113,21 @@ final class MergingCursor implements AutoCloseable {
     close();
     final var index = store.keyIndex(RawKey.columnFamilyOf(key));
     final long version = index == null ? 1 : index.version();
-    if (index != null && index.isStable(version)) {
+    final var bound = index == null ? null : index.bound();
+    if (index != null && index.isStable(version) && index.covers(bound, key)) {
       store.ensureUsable();
       store.metrics().indexedScans.increment();
-      committed = new IndexSource(store, index, version);
+      final var source = new IndexSource(store, index, version);
+      committed =
+          bound != null && index.handsOver(forward)
+              ? new HandoverSource(
+                  source,
+                  this::openView,
+                  bound.bytes(),
+                  store.metrics().keyIndexHandovers::increment)
+              : source;
     } else {
-      committed = new ViewSource(store.openView(prefix, prefix.length));
+      committed = openView();
     }
     seekInDirection(key);
     if (committed().isStale()) {
@@ -140,9 +150,13 @@ final class MergingCursor implements AutoCloseable {
   private boolean restartFromView(final byte[] key) {
     committed().close();
     store.metrics().keyIndexSwitches.increment();
-    committed = new ViewSource(store.openView(prefix, prefix.length));
+    committed = openView();
     seekInDirection(key);
     return isCommittedAt(key);
+  }
+
+  private ViewSource openView() {
+    return new ViewSource(store.openView(prefix, prefix.length));
   }
 
   private boolean isCommittedAt(final byte[] key) {

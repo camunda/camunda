@@ -128,7 +128,7 @@ final class IndexedScanTest {
     // given
     put(INDEXED, 1, 2);
     store.awaitFlushed();
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     final long gets = access.gets();
 
     // then
@@ -236,7 +236,7 @@ final class IndexedScanTest {
             .withKeyIndexColumnFamilies(Set.of(INDEXED)));
     put(INDEXED, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
     store.awaitFlushed();
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     final long gets = access.gets();
     final long iterators = access.iterators();
 

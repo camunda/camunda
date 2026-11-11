@@ -60,6 +60,7 @@ final class WriteBehindStore implements AutoCloseable {
   private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
   private static final int MAX_DISCARDED_LOADS = 3;
+  private static final int LAST_KEY_SUFFIX_LENGTH = 256;
 
   private final RawDbAccess storage;
   private final WriteBehindConfiguration config;
@@ -101,7 +102,7 @@ final class WriteBehindStore implements AutoCloseable {
                 .build()
             : null;
     for (final long columnFamily : config.keyIndexColumnFamilies()) {
-      keyIndexes.put(columnFamily, new KeyIndex(columnFamily));
+      keyIndexes.put(columnFamily, new KeyIndex(columnFamily, config.keyIndexPolicy(columnFamily)));
     }
     writer = new Thread(this::runWriter, "zb-db-write-behind");
     writer.setDaemon(true);
@@ -223,7 +224,7 @@ final class WriteBehindStore implements AutoCloseable {
    * dirty index and the key index in one critical section, so a reader that missed the dirty index
    * before a commit and then sees the new key set finds the key, and one that sees the old key set
    * gets the state from before the commit. A key in the index gives no answer, as it holds no
-   * values.
+   * values, and neither does a key outside the window.
    */
   private boolean absentFromKeyIndex(final RawKey key) {
     if (keyIndexes.isEmpty()) {
@@ -234,7 +235,11 @@ final class WriteBehindStore implements AutoCloseable {
       return false;
     }
     final long version = index.version();
-    return index.isStable(version) && !index.keys().contains(key) && index.version() == version;
+    final var bound = index.bound();
+    return index.isStable(version)
+        && index.covers(bound, key)
+        && !index.keys().contains(key)
+        && index.version() == version;
   }
 
   /**
@@ -257,32 +262,32 @@ final class WriteBehindStore implements AutoCloseable {
   }
 
   /**
-   * Loads the key index of a column family if it has one that isn't loaded yet. Call it before a
-   * scan; it costs one map lookup when there is nothing to do.
+   * Call it before a scan of a column family. Loads its key index if it has one that isn't loaded
+   * yet, and extends a windowed index that has drained. It costs one map lookup when there is
+   * nothing to do.
    */
-  void loadKeyIndexIfNeeded(final long columnFamily) {
+  void prepareKeyIndex(final long columnFamily) {
     final var index = keyIndexes.get(columnFamily);
-    if (index == null || index.state() != KeyIndex.State.UNLOADED) {
+    if (index == null) {
       return;
     }
+    if (index.state() == KeyIndex.State.UNLOADED) {
+      loadKeyIndex(index);
+    } else if (index.needsRefill(config.keyIndexMaxKeys())) {
+      refillKeyIndex(index);
+    }
+  }
 
-    final var prefix = new byte[Long.BYTES];
-    ByteBuffer.wrap(prefix).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER).putLong(columnFamily);
+  private void loadKeyIndex(final KeyIndex index) {
+    final var prefix = prefixOf(index);
     final int maxKeys = config.keyIndexMaxKeys();
+    final boolean keepLowest = index.policy() != KeyIndexPolicy.KEEP_HIGHEST;
     final var loaded = new ArrayList<RawKey>();
-    boolean overCap = false;
+    RawKey next = null;
     final var view = openView(prefix, prefix.length);
     try (final var source = new ViewSource(view)) {
-      source.seek(prefix);
-      while (source.isValid()
-          && Arrays.equals(prefix, 0, prefix.length, source.key(), 0, prefix.length)) {
-        if (loaded.size() >= maxKeys) {
-          overCap = true;
-          break;
-        }
-        loaded.add(RawKey.of(source.key()));
-        source.advance();
-      }
+      seekToCoveredEnd(source, prefix, keepLowest);
+      next = collect(source, prefix, maxKeys, loaded);
     }
 
     final long stamp = publishLock.writeLock();
@@ -290,7 +295,7 @@ final class WriteBehindStore implements AutoCloseable {
       if (index.state() != KeyIndex.State.UNLOADED) {
         return;
       }
-      if (overCap) {
+      if (next != null && index.policy() == KeyIndexPolicy.DISABLE) {
         disableKeyIndex(index, "it has more than %d keys".formatted(maxKeys));
       } else if (index.lastCommitSeq() > view.viewSeq()) {
         metrics.keyIndexDiscardedLoads.increment();
@@ -298,12 +303,93 @@ final class WriteBehindStore implements AutoCloseable {
           disableKeyIndex(index, "commits made %d loads obsolete".formatted(MAX_DISCARDED_LOADS));
         }
       } else {
-        index.install(loaded);
+        index.install(loaded, next);
         metrics.keyIndexLoads.increment();
       }
     } finally {
       publishLock.unlockWrite(stamp);
     }
+  }
+
+  /**
+   * Extends the window of a drained index by a chunk of keys beyond the bound, on the calling
+   * thread. A chunk is small, so a scan isn't held up for long.
+   */
+  private void refillKeyIndex(final KeyIndex index) {
+    final var bound = index.bound();
+    if (bound == null) {
+      return;
+    }
+    final var prefix = prefixOf(index);
+    // away from the covered end: forward for a window of the highest keys, else backward
+    final boolean forward = index.policy().keepsLowest();
+    final var more = new ArrayList<RawKey>();
+    RawKey next = null;
+    final var view = openView(prefix, prefix.length);
+    try (final var source = new ViewSource(view)) {
+      if (forward) {
+        source.seek(bound.bytes());
+      } else {
+        source.seekForPrev(bound.bytes());
+      }
+      next = collect(source, prefix, config.keyIndexMaxKeys() / 4, more);
+    }
+
+    final long stamp = publishLock.writeLock();
+    try {
+      if (index.state() != KeyIndex.State.LOADED || !bound.equals(index.bound())) {
+        // another thread extended or disabled it first
+        return;
+      }
+      if (index.lastCommitSeq() > view.viewSeq()) {
+        metrics.keyIndexDiscardedRefills.increment();
+        if (index.recordDiscardedLoad() >= MAX_DISCARDED_LOADS) {
+          disableKeyIndex(index, "commits made %d refills obsolete".formatted(MAX_DISCARDED_LOADS));
+        }
+      } else {
+        index.extend(more, next);
+        metrics.keyIndexRefills.increment();
+      }
+    } finally {
+      publishLock.unlockWrite(stamp);
+    }
+  }
+
+  private static byte[] prefixOf(final KeyIndex index) {
+    final var prefix = new byte[Long.BYTES];
+    ByteBuffer.wrap(prefix).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER).putLong(index.columnFamily());
+    return prefix;
+  }
+
+  /** Positions the source on the first key of the column family at the covered end. */
+  private static void seekToCoveredEnd(
+      final ViewSource source, final byte[] prefix, final boolean keepLowest) {
+    if (keepLowest) {
+      source.seek(prefix);
+      return;
+    }
+    // The storage iterators only see keys with the seek key's column family prefix, so the seek
+    // key must stay in the column family. No real key has this many 0xFF bytes after the prefix.
+    final var last = Arrays.copyOf(prefix, prefix.length + LAST_KEY_SUFFIX_LENGTH);
+    Arrays.fill(last, prefix.length, last.length, (byte) 0xFF);
+    source.seekForPrev(last);
+  }
+
+  /**
+   * Collects up to {@code max} keys of the column family from the source's position in its
+   * direction. Returns the first key it didn't collect, or null if the column family ended first.
+   */
+  private static @Nullable RawKey collect(
+      final ViewSource source, final byte[] prefix, final int max, final List<RawKey> into) {
+    while (source.isValid()
+        && Arrays.equals(prefix, 0, prefix.length, source.key(), 0, prefix.length)) {
+      if (into.size() >= max) {
+        return RawKey.copyOf(source.key());
+      }
+      into.add(RawKey.copyOf(source.key()));
+      source.advance();
+    }
+    return null;
   }
 
   /** The key index of a column family, or null if it has none. */
@@ -333,7 +419,7 @@ final class WriteBehindStore implements AutoCloseable {
       if (index != null) {
         index.recordCommit(seq);
         if (index.state() == KeyIndex.State.LOADED) {
-          index.apply(keys, values, from, to);
+          index.apply(keys, values, from, to, config.keyIndexMaxKeys());
           if (index.size() > config.keyIndexMaxKeys()) {
             disableKeyIndex(index, "it has more than %d keys".formatted(config.keyIndexMaxKeys()));
           }

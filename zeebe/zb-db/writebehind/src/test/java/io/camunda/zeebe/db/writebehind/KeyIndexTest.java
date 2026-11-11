@@ -70,7 +70,7 @@ final class KeyIndexTest {
     put(NOT_INDEXED, 100);
 
     // when
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // then
     assertThat(indexed(INDEXED)).containsExactly(1L, 3L, 4L);
@@ -81,7 +81,7 @@ final class KeyIndexTest {
   @Test
   void shouldNotCreateIndexForColumnFamilyThatIsNotConfigured() {
     // when
-    store.loadKeyIndexIfNeeded(NOT_INDEXED);
+    store.prepareKeyIndex(NOT_INDEXED);
 
     // then
     assertThat(store.keyIndex(NOT_INDEXED)).isNull();
@@ -92,7 +92,7 @@ final class KeyIndexTest {
   void shouldKeepLoadedIndexCurrentThroughCommits() {
     // given
     put(INDEXED, 1, 2);
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // when
     put(INDEXED, 3);
@@ -108,7 +108,7 @@ final class KeyIndexTest {
   void shouldNotChangeVersionWhenUpdatingExistingKey() {
     // given
     put(INDEXED, 1, 2);
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     final var index = store.keyIndex(INDEXED);
     final long before = index.version();
 
@@ -124,7 +124,7 @@ final class KeyIndexTest {
   @Test
   void shouldChangeVersionByTwoPerCommitThatChangesKeys() {
     // given
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     final var index = store.keyIndex(INDEXED);
     final long before = index.version();
 
@@ -142,7 +142,7 @@ final class KeyIndexTest {
     put(INDEXED, 1, 2, 3, 4);
 
     // when
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // then
     final var index = store.keyIndex(INDEXED);
@@ -158,7 +158,7 @@ final class KeyIndexTest {
     put(INDEXED, 1, 2, 3);
 
     // when
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // then
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.LOADED);
@@ -169,7 +169,7 @@ final class KeyIndexTest {
     // given
     reopen(config(3));
     put(INDEXED, 1, 2, 3);
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // when
     put(INDEXED, 4);
@@ -181,7 +181,7 @@ final class KeyIndexTest {
     assertThat(index.isChanging()).isFalse();
 
     // and stays disabled
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     assertThat(index.state()).isEqualTo(KeyIndex.State.DISABLED);
     assertThat(store.metrics().keyIndexLoads.sum()).isEqualTo(1);
   }
@@ -193,7 +193,7 @@ final class KeyIndexTest {
 
     // when
     access.afterNextIteratorClosed(() -> put(INDEXED, 2));
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // then
     final var index = store.keyIndex(INDEXED);
@@ -201,7 +201,7 @@ final class KeyIndexTest {
     assertThat(store.metrics().keyIndexDiscardedLoads.sum()).isEqualTo(1);
 
     // and the next load sees the new key
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
     assertThat(indexed(INDEXED)).containsExactly(1L, 2L);
   }
 
@@ -212,7 +212,7 @@ final class KeyIndexTest {
 
     // when
     access.afterNextIteratorClosed(() -> put(OTHER, 2));
-    store.loadKeyIndexIfNeeded(INDEXED);
+    store.prepareKeyIndex(INDEXED);
 
     // then
     assertThat(store.keyIndex(INDEXED).state()).isEqualTo(KeyIndex.State.LOADED);
@@ -227,7 +227,7 @@ final class KeyIndexTest {
     for (int i = 0; i < 3; i++) {
       final long key = 10 + i;
       access.afterNextIteratorClosed(() -> put(INDEXED, key));
-      store.loadKeyIndexIfNeeded(INDEXED);
+      store.prepareKeyIndex(INDEXED);
     }
 
     // then
@@ -248,8 +248,8 @@ final class KeyIndexTest {
     // when
     for (int step = 0; step < 300; step++) {
       switch (random.nextInt(10)) {
-        case 0 -> store.loadKeyIndexIfNeeded(INDEXED);
-        case 1 -> store.loadKeyIndexIfNeeded(OTHER);
+        case 0 -> store.prepareKeyIndex(INDEXED);
+        case 1 -> store.prepareKeyIndex(OTHER);
         case 2 -> store.awaitFlushed();
         default -> randomCommit(random, model);
       }

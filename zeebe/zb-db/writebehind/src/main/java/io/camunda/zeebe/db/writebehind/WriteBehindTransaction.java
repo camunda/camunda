@@ -69,7 +69,7 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
 
   /** Call before a scan of a column family: loads its key index if it has one that isn't loaded. */
   void prepareScan(final long columnFamily) {
-    store.loadKeyIndexIfNeeded(columnFamily);
+    store.prepareKeyIndex(columnFamily);
   }
 
   void resetTransaction() {

@@ -18,4 +18,7 @@ final class WriteBehindMetrics {
   final LongAdder keyIndexDisables = new LongAdder();
   final LongAdder indexedScans = new LongAdder();
   final LongAdder keyIndexSwitches = new LongAdder();
+  final LongAdder keyIndexHandovers = new LongAdder();
+  final LongAdder keyIndexRefills = new LongAdder();
+  final LongAdder keyIndexDiscardedRefills = new LongAdder();
 }

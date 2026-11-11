@@ -9,6 +9,9 @@ package io.camunda.zeebe.db.writebehind;
 
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.Duration;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -21,8 +24,10 @@ import java.util.Set;
  * @param flushTimeout how long a snapshot waits for the writer to flush what was committed before
  * @param keyIndexColumnFamilies IDs of the column families whose committed keys are kept in memory;
  *     empty disables the key index
- * @param keyIndexMaxKeys a column family with more keys than this loses its key index until the
- *     next restart
+ * @param keyIndexMaxKeys what happens to a column family with more keys than this depends on its
+ *     {@link KeyIndexPolicy}
+ * @param keyIndexPolicies the policy per column family ID; a column family without one has {@link
+ *     KeyIndexPolicy#DISABLE}. Fixed in code: the broker doesn't expose it.
  */
 public record WriteBehindConfiguration(
     long maxPendingBytes,
@@ -30,7 +35,8 @@ public record WriteBehindConfiguration(
     int maxWriteRetries,
     Duration flushTimeout,
     Set<Long> keyIndexColumnFamilies,
-    int keyIndexMaxKeys) {
+    int keyIndexMaxKeys,
+    Map<Long, KeyIndexPolicy> keyIndexPolicies) {
 
   public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 100_000;
 
@@ -43,8 +49,36 @@ public record WriteBehindConfiguration(
           (long) ZbColumnFamilies.JOB_BACKOFF.getValue(),
           (long) ZbColumnFamilies.MESSAGE_DEADLINES.getValue());
 
+  /**
+   * Column families whose scans always start at one end of the key space, so a window at that end
+   * serves them although they hold more keys than the cap.
+   */
+  private static final Map<ZbColumnFamilies, KeyIndexPolicy> HOTSPOT_POLICIES =
+      new EnumMap<>(
+          Map.of(
+              ZbColumnFamilies.TIMER_DUE_DATES, KeyIndexPolicy.KEEP_LOWEST,
+              ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
+              ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST,
+              ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST,
+              ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST));
+
+  private static final Map<Long, KeyIndexPolicy> DEFAULT_KEY_INDEX_POLICIES =
+      toIds(HOTSPOT_POLICIES);
+
   public WriteBehindConfiguration {
     keyIndexColumnFamilies = Set.copyOf(keyIndexColumnFamilies);
+    keyIndexPolicies = Map.copyOf(keyIndexPolicies);
+  }
+
+  private static Map<Long, KeyIndexPolicy> toIds(
+      final Map<ZbColumnFamilies, KeyIndexPolicy> byName) {
+    final var byId = new HashMap<Long, KeyIndexPolicy>();
+    byName.forEach((columnFamily, policy) -> byId.put((long) columnFamily.getValue(), policy));
+    return byId;
+  }
+
+  public KeyIndexPolicy keyIndexPolicy(final long columnFamily) {
+    return keyIndexPolicies.getOrDefault(columnFamily, KeyIndexPolicy.DISABLE);
   }
 
   public WriteBehindConfiguration(
@@ -58,7 +92,8 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         DEFAULT_KEY_INDEX_COLUMN_FAMILIES,
-        DEFAULT_KEY_INDEX_MAX_KEYS);
+        DEFAULT_KEY_INDEX_MAX_KEYS,
+        DEFAULT_KEY_INDEX_POLICIES);
   }
 
   public static WriteBehindConfiguration defaults() {
@@ -72,7 +107,8 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         keyIndexColumnFamilies,
-        keyIndexMaxKeys);
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withMaxPendingBytes(final long maxPendingBytes) {
@@ -82,7 +118,8 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         keyIndexColumnFamilies,
-        keyIndexMaxKeys);
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withKeyIndexColumnFamilies(final Set<Long> columnFamilies) {
@@ -92,7 +129,8 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         columnFamilies,
-        keyIndexMaxKeys);
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withKeyIndexMaxKeys(final int keyIndexMaxKeys) {
@@ -102,6 +140,19 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         keyIndexColumnFamilies,
-        keyIndexMaxKeys);
+        keyIndexMaxKeys,
+        keyIndexPolicies);
+  }
+
+  /** For tests: replaces the policies of the column families by ID. */
+  WriteBehindConfiguration withKeyIndexPolicies(final Map<Long, KeyIndexPolicy> policies) {
+    return new WriteBehindConfiguration(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        keyIndexColumnFamilies,
+        keyIndexMaxKeys,
+        policies);
   }
 }
