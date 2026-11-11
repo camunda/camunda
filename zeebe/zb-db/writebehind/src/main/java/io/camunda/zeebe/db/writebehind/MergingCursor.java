@@ -115,7 +115,7 @@ final class MergingCursor implements AutoCloseable {
     close();
     final var index = store.keyIndex(RawKey.columnFamilyOf(key));
     final long version = index == null ? 1 : index.version();
-    if (index != null && (version & 1) == 0 && index.state() == KeyIndex.State.LOADED) {
+    if (index != null && index.isStable(version)) {
       store.ensureUsable();
       store.recordIndexedScan();
       committed = new IndexSource(store, index, version);

@@ -116,7 +116,7 @@ final class KeyIndexTest {
 
     // then
     assertThat(index.version()).isEqualTo(before);
-    assertThat(index.version() % 2).isZero();
+    assertThat(index.isChanging()).isFalse();
   }
 
   @Test
@@ -176,7 +176,7 @@ final class KeyIndexTest {
     final var index = store.keyIndex(INDEXED);
     assertThat(index.state()).isEqualTo(KeyIndex.State.DISABLED);
     assertThat(index.keys()).isEmpty();
-    assertThat(index.version() % 2).isZero();
+    assertThat(index.isChanging()).isFalse();
 
     // and stays disabled
     store.loadKeyIndexIfNeeded(INDEXED);
@@ -252,7 +252,7 @@ final class KeyIndexTest {
       // then
       for (final long columnFamily : List.of(INDEXED, OTHER)) {
         final var index = store.keyIndex(columnFamily);
-        assertThat(index.version() % 2).isZero();
+        assertThat(index.isChanging()).isFalse();
         assertThat(committedKeys(columnFamily)).containsExactlyElementsOf(model.get(columnFamily));
         if (index.state() == KeyIndex.State.LOADED) {
           assertThat(indexed(columnFamily)).containsExactlyElementsOf(model.get(columnFamily));

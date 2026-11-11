@@ -240,8 +240,7 @@ final class WriteBehindStore implements AutoCloseable {
       return false;
     }
     final long version = index.version();
-    return (version & 1) == 0
-        && index.state() == KeyIndex.State.LOADED
+    return index.isStable(version)
         && !index.keys().contains(key)
         && index.version() == version;
   }
@@ -382,7 +381,6 @@ final class WriteBehindStore implements AutoCloseable {
           if (index.size() > config.keyIndexMaxKeys()) {
             disableKeyIndex(index, "it has more than %d keys".formatted(config.keyIndexMaxKeys()));
           }
-          index.endChange();
         }
       }
       from = to;

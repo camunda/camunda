@@ -62,6 +62,24 @@ final class KeyIndex {
     return version;
   }
 
+  /** Whether a change of the key set or the state is under way. */
+  boolean isChanging() {
+    return isChanging(version);
+  }
+
+  /**
+   * Whether the keys can be read for a reader that read {@code observedVersion} before it called
+   * this method: no change was under way then, and the index is loaded. The reader must still check
+   * that {@link #version()} is unchanged after it read the keys.
+   */
+  boolean isStable(final long observedVersion) {
+    return !isChanging(observedVersion) && state == State.LOADED;
+  }
+
+  private static boolean isChanging(final long version) {
+    return (version & 1) != 0;
+  }
+
   /** The keys in order. Only read it while the state is loaded and the version is unchanged. */
   NavigableSet<RawKey> keys() {
     return keys;
@@ -88,22 +106,26 @@ final class KeyIndex {
   /**
    * Applies the entries {@code from} (inclusive) to {@code to} (exclusive) of a commit that belong
    * to this column family: a value adds the key and a null value removes it. Opens a change window
-   * on the first real change; {@link #endChange()} closes it.
+   * on the first real change and closes it before it returns, also if a change fails.
    */
   void apply(final RawKey[] commitKeys, final @Nullable DbValue[] values, int from, final int to) {
-    for (; from < to; from++) {
-      final var key = commitKeys[from];
-      final boolean present = values[from] != null;
-      if (present != keys.contains(key)) {
-        beginChange();
-        if (present) {
-          keys.add(key);
-          size++;
-        } else {
-          keys.remove(key);
-          size--;
+    try {
+      for (; from < to; from++) {
+        final var key = commitKeys[from];
+        final boolean present = values[from] != null;
+        if (present != keys.contains(key)) {
+          beginChange();
+          if (present) {
+            keys.add(key);
+            size++;
+          } else {
+            keys.remove(key);
+            size--;
+          }
         }
       }
+    } finally {
+      endChange();
     }
   }
 
@@ -127,7 +149,7 @@ final class KeyIndex {
     endChange();
   }
 
-  void endChange() {
+  private void endChange() {
     if (changing) {
       version++;
       changing = false;
