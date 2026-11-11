@@ -215,10 +215,15 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
       batch.head();
     }
 
+    // the events of a batch share their source position, which the context needs before applying
+    final long sourcePosition = batch.next().getSourceEventPosition();
+    batch.head();
+
     zeebeDbTransaction = transactionContext.getCurrentTransaction();
     requireNonNull(zeebeDbTransaction)
         .run(
             () -> {
+              transactionContext.markAsReplaying(sourcePosition);
               batch.forEachRemaining(this::replayEvent);
 
               if (batchSourceEventPosition > snapshotPosition) {

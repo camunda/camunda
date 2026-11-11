@@ -52,6 +52,12 @@ public final class MixedTransactionContext implements TransactionContext {
     return new MixedTransaction(rocksDb.getCurrentTransaction(), jdbc.getCurrentTransaction());
   }
 
+  /** Only the JDBC side keeps its changes across restarts, see {@link JdbcTransactionContext}. */
+  @Override
+  public void markAsReplaying(final long sourcePosition) {
+    jdbc.markAsReplaying(sourcePosition);
+  }
+
   /**
    * Listens to the RocksDB transaction: it commits after the JDBC one and is always rolled back, so
    * its outcome is the outcome of the mixed transaction.

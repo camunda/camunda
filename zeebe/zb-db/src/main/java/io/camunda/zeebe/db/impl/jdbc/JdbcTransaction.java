@@ -34,6 +34,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
   private final List<TransactionListener> listeners = new ArrayList<>();
   private final long committedPosition;
   private long processedPosition = JdbcTransactionContext.NO_POSITION;
+  private long replayedPosition = JdbcTransactionContext.NO_POSITION;
   private boolean inCurrentTransaction;
 
   /**
@@ -65,6 +66,15 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     for (final var participant : participants) {
       participant.markAsProcessed(position);
     }
+  }
+
+  void markAsReplaying(final long sourcePosition) {
+    replayedPosition = sourcePosition;
+  }
+
+  boolean isReplayingCommittedChanges() {
+    return replayedPosition != JdbcTransactionContext.NO_POSITION
+        && replayedPosition <= committedPosition;
   }
 
   @Override
@@ -99,6 +109,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
     resetParticipants();
     inCurrentTransaction = false;
     processedPosition = JdbcTransactionContext.NO_POSITION;
+    replayedPosition = JdbcTransactionContext.NO_POSITION;
     for (final var listener : listeners) {
       listener.onCommit();
     }
@@ -114,6 +125,7 @@ final class JdbcTransaction implements ZeebeDbTransaction {
       resetParticipants();
       inCurrentTransaction = false;
       processedPosition = JdbcTransactionContext.NO_POSITION;
+      replayedPosition = JdbcTransactionContext.NO_POSITION;
       for (final var listener : listeners) {
         listener.onRollback();
       }
