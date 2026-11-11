@@ -8,24 +8,35 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class Digest extends UnpackedObject implements DbValue {
-  private final BinaryProperty digestProp = new BinaryProperty("digest");
+/**
+ * Plain data; the msgpack codec is generated, see {@link MsgpackPojo}. The field name is the stored
+ * format.
+ */
+@MsgpackPojo
+public final class Digest extends MsgpackBufferValue<Digest> implements DbValue {
 
-  public Digest() {
-    super(1);
-    declareProperty(digestProp);
-  }
+  @MsgpackProperty(binary = true)
+  DirectBuffer digest = Decoding.EMPTY;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  public Digest() {}
 
   public DirectBuffer get() {
-    return digestProp.getValue();
+    return digest;
   }
 
   public Digest set(final DirectBuffer digest) {
-    digestProp.setValue(digest);
+    this.digest = BufferUtil.cloneBuffer(digest);
     return this;
   }
 }
