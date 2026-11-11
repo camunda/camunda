@@ -27,6 +27,7 @@ dependencies {
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   testImplementation(project(":zeebe-logstreams"))
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
+  testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.net.jqwik.jqwik)
