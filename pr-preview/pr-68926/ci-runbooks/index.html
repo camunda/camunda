@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-68926/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-68926/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-68926/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68926/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68926/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-68926/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-68926/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-68926/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-68926/assets/js/runtime~main.ce689b8a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-68926/assets/js/main.34e8af3e.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68926/assets/js/runtime~main.df482181.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68926/assets/js/main.4039fe05.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -539,25 +539,25 @@ Incident Commander role as new information becomes available.</p>
 e.g. by eliminating bottlenecks, caching, or splitting it into multiple parallel jobs.</p>
 <hr>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="monorepo-docs-site-pages-build-failure">Monorepo Docs Site Pages Build Failure<a href="#monorepo-docs-site-pages-build-failure" class="hash-link" aria-label="Direct link to Monorepo Docs Site Pages Build Failure" title="Direct link to Monorepo Docs Site Pages Build Failure" translate="no">​</a></h3>
-<p>The <code>Docs Build and Deploy</code> workflow includes a <code>Verify Pages build</code> step that polls the GitHub
-Pages build API after pushing to <code>gh-pages</code>. If this step fails, the deploy commit landed but
-GitHub Pages was unable to publish it, leaving <a href="https://camunda.github.io/camunda/" target="_blank" rel="noopener noreferrer" class="">https://camunda.github.io/camunda/</a> stale or broken.
-The Pages build outcome is otherwise not surfaced anywhere in the Actions UI (legacy Pages mode),
-so without this step a failed build leaves no trace in CI. (For PR previews, <code>Docs PR Preview</code>
+<p>The <code>Docs Build and Deploy</code> workflow includes a <code>Verify Pages build</code> step that watches GitHub&#x27;s
+<code>pages-build-deployment</code> run for the commit it pushed to <code>gh-pages</code>. If this step fails, the deploy
+commit landed but GitHub Pages was unable to publish it, leaving <a href="https://camunda.github.io/camunda/" target="_blank" rel="noopener noreferrer" class="">https://camunda.github.io/camunda/</a>
+stale or broken. GitHub publishes the branch with that run (legacy Pages mode); it shows up in the
+Actions tab, not in our workflow, so without this step a failed deploy leaves no trace on the docs
+workflow. (For PR previews, <code>Docs PR Preview</code>
 relies on <code>rossjrw/pr-preview-action</code>&#x27;s built-in <code>wait-for-pages-deployment</code>, which provides the
 same guarantee.)</p>
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting-11">Troubleshooting<a href="#troubleshooting-11" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h4>
 <ol>
-<li class="">Check the failed step&#x27;s log — it prints the gh-pages commit SHA and the API status (<code>errored</code>
-or <code>building</code> timeout). The step already requests one Pages rebuild after an <code>errored</code> build
-and waits up to 600s per attempt, so a failure means two consecutive errored builds or a build
-that did not finish in time. Note: the API only exposes the generic <code>&quot;Page build failed.&quot;</code>
-message; the underlying reason is not surfaced through the API.
-If the log shows <code>status=building</code> until the deadline, the Pages build is most likely stuck on
-GitHub&#x27;s side; it can stay <code>building</code> for hours, and a new push to <code>gh-pages</code> replaces it.
-Re-run the failed job: the re-run pushes a new <code>gh-pages</code> commit, which replaces the stuck
-build.</li>
-<li class="">Inspect recent Pages build history</li>
+<li class="">Check the failed step&#x27;s log — it prints the gh-pages commit SHA, the link to GitHub&#x27;s
+<code>pages-build-deployment</code> run, and GitHub&#x27;s own error line, e.g. <code>Deployment failed, try again later.</code> or <code>Timeout reached, aborting!</code> (GitHub&#x27;s deploy step gives up after 10 minutes). The
+step already requests one Pages rebuild after a failed or cancelled run and waits up to 780s per
+attempt, so a failure means two failed runs, a run that didn&#x27;t finish in time, or GitHub not
+starting a run at all. Open the run link for the full log. Don&#x27;t rely on the Pages builds API
+(<code>pages/builds</code>) here: it has shown <code>building</code> for runs that had already failed, and <code>errored</code>
+for runs that succeeded. To retry, re-run the failed job: the re-run pushes a new <code>gh-pages</code>
+commit, which starts a new Pages run.</li>
+<li class="">Inspect recent runs: <code>gh run list --workflow pages-build-deployment -R camunda/camunda</code></li>
 <li class="">Verify the <code>gh-pages</code> branch only contains build artifacts. Each docs deploy replaces
 everything outside <code>pr-preview/</code>, so files from earlier builds (moved pages, old search
 indexes, old bundles) don&#x27;t accumulate.</li>
