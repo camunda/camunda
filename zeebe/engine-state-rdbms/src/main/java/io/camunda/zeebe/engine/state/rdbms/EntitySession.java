@@ -90,6 +90,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
   private final @Nullable WriteBehindStore<EntityKey, Object> store;
+  private final @Nullable GroupCache groupCache;
   private final Map<EntityType<?, ?>, Map<Object, Staged>> staged = new LinkedHashMap<>();
 
   /**
@@ -129,7 +130,7 @@ final class EntitySession implements JdbcTransactionParticipant {
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final SqlSessionFactory sessionFactory) {
-    this(transactionContext, partitionId, sessionFactory, null);
+    this(transactionContext, partitionId, sessionFactory, null, null);
   }
 
   /**
@@ -137,16 +138,20 @@ final class EntitySession implements JdbcTransactionParticipant {
    *     of writing them to the database, and reads of single rows go through it. The database
    *     doesn't hold the writes that the store hasn't flushed yet, so the rows that a read of many
    *     rows returns are merged with them.
+   * @param groupCache if not null, keeps the rows of the groups that queries load across
+   *     transactions, so that a group is selected from the database once
    */
   EntitySession(
       final JdbcTransactionContext transactionContext,
       final int partitionId,
       final SqlSessionFactory sessionFactory,
-      final @Nullable WriteBehindStore<EntityKey, Object> store) {
+      final @Nullable WriteBehindStore<EntityKey, Object> store,
+      final @Nullable GroupCache groupCache) {
     this.transactionContext = transactionContext;
     this.partitionId = partitionId;
     this.sessionFactory = sessionFactory;
     this.store = store;
+    this.groupCache = groupCache;
   }
 
   int partitionId() {
@@ -342,6 +347,9 @@ final class EntitySession implements JdbcTransactionParticipant {
               final Set<Object> requested = new LinkedHashSet<>(groups);
               final List<G> unknown = new ArrayList<>();
               for (final G group : groups) {
+                if (!keysByGroup.containsKey(group)) {
+                  importCachedGroup(type, group);
+                }
                 if (!keysByGroup.containsKey(group) && !unknown.contains(group)) {
                   unknown.add(group);
                 }
@@ -369,6 +377,7 @@ final class EntitySession implements JdbcTransactionParticipant {
                     keysOfGroup.add(key);
                   }
                 }
+                cacheGroups(type, unknown, keysByGroup, cached);
               }
 
               final var writes = staged(type);
@@ -402,6 +411,9 @@ final class EntitySession implements JdbcTransactionParticipant {
     return Objects.requireNonNull(
         transactionContext.call(
             () -> {
+              if (!loadedGroups(type).containsKey(group)) {
+                importCachedGroup(type, group);
+              }
               final var loadedKeys = loadedGroups(type).get(group);
               final Collection<?> committed =
                   loadedKeys != null
@@ -603,6 +615,11 @@ final class EntitySession implements JdbcTransactionParticipant {
       }
     }
     target.commit(keys.toArray(new EntityKey[0]), rows.toArray());
+    if (groupCache != null) {
+      for (int i = 0; i < keys.size(); i++) {
+        groupCache.apply(keys.get(i).type(), keys.get(i).key(), rows.get(i));
+      }
+    }
   }
 
   /** The committed row of the key: from the store if there is one, else from the database. */
@@ -710,7 +727,46 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private <K, E> boolean isInLoadedGroup(final EntityType<K, E> type, final K key) {
     final Object group = type.groupOf(key);
-    return group != null && loadedGroups(type).containsKey(group);
+    if (group == null) {
+      return false;
+    }
+    return loadedGroups(type).containsKey(group) || importCachedGroup(type, group);
+  }
+
+  /**
+   * Makes the cached rows of the group the loaded rows of this transaction, so that the group needs
+   * no query. Returns whether the group was cached.
+   */
+  private boolean importCachedGroup(final EntityType<?, ?> type, final Object group) {
+    if (groupCache == null) {
+      return false;
+    }
+    final var rows = groupCache.get(type, group);
+    if (rows == null) {
+      return false;
+    }
+    final var cached = loaded(type);
+    rows.forEach(cached::putIfAbsent);
+    loadedGroups(type).put(group, new ArrayList<>(rows.keySet()));
+    return true;
+  }
+
+  /** Caches the groups that a query loaded: their committed rows, without the staged writes. */
+  private void cacheGroups(
+      final EntityType<?, ?> type,
+      final Collection<?> groups,
+      final Map<Object, List<Object>> keysByGroup,
+      final Map<Object, Object> cached) {
+    if (groupCache == null) {
+      return;
+    }
+    for (final Object group : groups) {
+      final Map<Object, Object> rows = new HashMap<>();
+      for (final Object key : keysByGroup.get(group)) {
+        rows.put(key, cached.get(key));
+      }
+      groupCache.put(type, group, rows);
+    }
   }
 
   /**

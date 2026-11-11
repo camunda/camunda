@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +36,15 @@ final class EntitySessionWriteBehindTest {
   private static final EntityType<String, PartitionStateRow> ROW =
       new EntityType<>(
           PartitionStateMapper.class, "PartitionState", "test row", PartitionStateRow::key);
+
+  /** Rows whose group is the first character of the key. */
+  private static final EntityType<String, PartitionStateRow> GROUPED =
+      new EntityType<>(
+          PartitionStateMapper.class,
+          "PartitionState",
+          "grouped row",
+          PartitionStateRow::key,
+          key -> key.substring(0, 1));
 
   private static final Comparator<PartitionStateRow> BY_KEY =
       Comparator.comparing(PartitionStateRow::key);
@@ -66,7 +76,9 @@ final class EntitySessionWriteBehindTest {
                 .withKeyIndexColumnFamilies(Set.of())
                 .withFlushDelay(Duration.ofHours(1)));
     context = new JdbcTransactionContext();
-    session = new EntitySession(context, partitionId, database.sessionFactory(), store);
+    session =
+        new EntitySession(
+            context, partitionId, database.sessionFactory(), store, new GroupCache(100));
     context.register(session);
   }
 
@@ -222,6 +234,89 @@ final class EntitySessionWriteBehindTest {
     assertThat(session.get(ROW, "1")).isNull();
     store.awaitFlushed();
     assertThat(committedRows()).isEmpty();
+  }
+
+  @Test
+  void shouldSelectAGroupOnceAcrossTransactions() throws Exception {
+    // given a group in the database
+    commitGrouped(row("a1", "x"), row("a2", "x"), row("b1", "x"));
+    store.awaitFlushed();
+    final var selects = new AtomicInteger();
+
+    // when the group is read in several transactions
+    final var first = readGroup("a", selects);
+    context.getCurrentTransaction().rollback();
+    final var second = readGroup("a", selects);
+
+    // then the database was asked once
+    assertThat(first).containsExactlyInAnyOrder(row("a1", "x"), row("a2", "x"));
+    assertThat(second).containsExactlyInAnyOrder(row("a1", "x"), row("a2", "x"));
+    assertThat(selects).hasValue(1);
+  }
+
+  @Test
+  void shouldApplyCommitsToACachedGroup() throws Exception {
+    // given a cached group
+    commitGrouped(row("a1", "x"), row("a2", "x"));
+    store.awaitFlushed();
+    final var selects = new AtomicInteger();
+    readGroup("a", selects);
+    context.getCurrentTransaction().rollback();
+
+    // when rows of the group change, without a flush
+    final var transaction = context.getCurrentTransaction();
+    session.insert(GROUPED, row("a3", "x"));
+    session.delete(GROUPED, "a1");
+    session.update(GROUPED, row("a2", "y"));
+    transaction.commit();
+
+    // then the group has the changes and the database was not asked again
+    assertThat(readGroup("a", selects)).containsExactlyInAnyOrder(row("a2", "y"), row("a3", "x"));
+    assertThat(selects).hasValue(1);
+  }
+
+  @Test
+  void shouldNotChangeACachedGroupOnRollback() throws Exception {
+    // given a cached group
+    commitGrouped(row("a1", "x"));
+    store.awaitFlushed();
+    final var selects = new AtomicInteger();
+    readGroup("a", selects);
+    context.getCurrentTransaction().rollback();
+
+    // when a transaction changes it and rolls back
+    final var transaction = context.getCurrentTransaction();
+    session.insert(GROUPED, row("a2", "x"));
+    transaction.rollback();
+
+    // then
+    assertThat(readGroup("a", selects)).containsExactly(row("a1", "x"));
+    assertThat(selects).hasValue(1);
+  }
+
+  private List<PartitionStateRow> readGroup(final String group, final AtomicInteger selects) {
+    return session.queryGroups(
+        GROUPED,
+        List.of(group),
+        PartitionStateMapper.class,
+        (mapper, groups) -> {
+          selects.incrementAndGet();
+          try {
+            return committedRows().stream()
+                .filter(row -> groups.contains(row.key().substring(0, 1)))
+                .toList();
+          } catch (final SQLException e) {
+            throw new IllegalStateException(e);
+          }
+        });
+  }
+
+  private void commitGrouped(final PartitionStateRow... rows) throws Exception {
+    final var transaction = context.getCurrentTransaction();
+    for (final var row : rows) {
+      session.insert(GROUPED, row);
+    }
+    transaction.commit();
   }
 
   private void commit(final PartitionStateRow... rows) throws Exception {

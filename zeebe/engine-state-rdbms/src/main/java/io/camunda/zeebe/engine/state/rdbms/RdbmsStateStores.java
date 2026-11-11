@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.rdbms;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.jdbc.MixedTransactionContext;
-import io.camunda.zeebe.db.writebehind.WriteBehindStore;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
@@ -62,11 +61,19 @@ public final class RdbmsStateStores extends RocksDbStateStores {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final MixedTransactionContext mixedContext,
       final SqlSessionFactory sessionFactory,
-      final @Nullable WriteBehindStore<EntityKey, Object> store) {
+      final @Nullable PartitionWriteBehind writeBehind) {
     super(zeebeDb, mixedContext.rocksDb());
     this.zeebeDb = zeebeDb;
     this.mixedContext = mixedContext;
-    entitySession = new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory, store);
+    entitySession =
+        writeBehind == null
+            ? new EntitySession(mixedContext.jdbc(), partitionId, sessionFactory)
+            : new EntitySession(
+                mixedContext.jdbc(),
+                partitionId,
+                sessionFactory,
+                writeBehind.store(),
+                writeBehind.groups());
     mixedContext.jdbc().register(entitySession);
   }
 
@@ -83,7 +90,7 @@ public final class RdbmsStateStores extends RocksDbStateStores {
             zeebeDb,
             (MixedTransactionContext) transactionContext,
             resources.sessionFactory(),
-            resources.writeBehindStore(partitionId));
+            resources.writeBehind(partitionId));
   }
 
   @Override

@@ -24,11 +24,12 @@ import org.jspecify.annotations.Nullable;
  */
 public final class RdbmsEngineStateResources implements AutoCloseable {
 
+  private static final int MAX_CACHED_GROUPS = 10_000;
+
   private final DataSource dataSource;
   private final SqlSessionFactory sessionFactory;
   private final @Nullable WriteBehindConfiguration writeBehind;
-  private final Map<Integer, WriteBehindStore<EntityKey, Object>> stores =
-      new ConcurrentHashMap<>();
+  private final Map<Integer, PartitionWriteBehind> stores = new ConcurrentHashMap<>();
 
   private RdbmsEngineStateResources(
       final DataSource dataSource,
@@ -83,12 +84,13 @@ public final class RdbmsEngineStateResources implements AutoCloseable {
         new WriteBehindStore<>(
             new JdbcBackend(partitionId, sessionFactory),
             writeBehind.withKeyIndexColumnFamilies(Set.of()));
-    stores.put(partitionId, store);
-    return new PartitionState(partitionId, store);
+    final var partition = new PartitionWriteBehind(store, new GroupCache(MAX_CACHED_GROUPS));
+    stores.put(partitionId, partition);
+    return new PartitionState(partitionId, partition);
   }
 
-  /** The partition's open write-behind store, or null if it has none. */
-  @Nullable WriteBehindStore<EntityKey, Object> writeBehindStore(final int partitionId) {
+  /** The partition's open write-behind store and caches, or null if it has none. */
+  @Nullable PartitionWriteBehind writeBehind(final int partitionId) {
     return stores.get(partitionId);
   }
 
@@ -112,22 +114,22 @@ public final class RdbmsEngineStateResources implements AutoCloseable {
   private final class PartitionState implements RelationalState {
 
     private final int partitionId;
-    private final WriteBehindStore<EntityKey, Object> store;
+    private final PartitionWriteBehind partition;
 
-    private PartitionState(final int partitionId, final WriteBehindStore<EntityKey, Object> store) {
+    private PartitionState(final int partitionId, final PartitionWriteBehind partition) {
       this.partitionId = partitionId;
-      this.store = store;
+      this.partition = partition;
     }
 
     @Override
     public void awaitFlushed() {
-      store.awaitFlushed();
+      partition.store().awaitFlushed();
     }
 
     @Override
     public void close() {
-      stores.remove(partitionId, store);
-      store.close();
+      stores.remove(partitionId, partition);
+      partition.store().close();
     }
   }
 
