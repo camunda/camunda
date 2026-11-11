@@ -21,8 +21,11 @@ import org.junit.jupiter.api.BeforeAll;
  * Runs the job metrics size limits contract against PostgreSQL. All tests share one {@link
  * EngineStateDatabase}; each test writes to its own partition.
  */
-final class RdbmsJobMetricsStateSizeLimitsTest
+abstract class AbstractRdbmsJobMetricsStateSizeLimitsTest
     extends AbstractJobMetricsStateSizeLimitsContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static EngineStateDatabase database;
 
@@ -41,7 +44,8 @@ final class RdbmsJobMetricsStateSizeLimitsTest
   @Override
   protected MutableJobMetricsState createJobMetricsState(final EngineConfiguration config) {
     transactionContext = new JdbcTransactionContext();
-    final var session = database.entitySession(transactionContext, database.nextPartitionId());
+    final var session =
+        database.entitySession(mode(), transactionContext, database.nextPartitionId());
     return new JobMetricsStateImpl(
         new RdbmsJobMetricsStore(session), InstantSource.system(), config);
   }

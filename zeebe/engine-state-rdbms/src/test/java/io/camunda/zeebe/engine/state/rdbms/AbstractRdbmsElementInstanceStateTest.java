@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterAll;
@@ -55,7 +56,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.postgresql.ds.PGSimpleDataSource;
 
 /**
  * Runs the element instance state contract against PostgreSQL, plus the tests for what is specific
@@ -69,7 +69,11 @@ import org.postgresql.ds.PGSimpleDataSource;
  * decoded payload (see {@link ElementInstanceTableDump}).
  */
 @ExtendWith(ProcessingStateExtension.class)
-final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateContractTest {
+abstract class AbstractRdbmsElementInstanceStateTest
+    extends AbstractElementInstanceStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   /**
    * Records every row-level write that reaches the table, so tests can tell how many statements a
@@ -105,7 +109,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
   private static final String TREE_TENANT_ID = "tree-tenant";
 
   private static EngineStateDatabase database;
-  private static PGSimpleDataSource dataSource;
+  private static DataSource dataSource;
 
   private MutableProcessingState processingState;
   private final ConnectionSpy connectionSpy = new ConnectionSpy();
@@ -138,7 +142,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
     database.observed().decorate(connectionSpy::proxy);
     transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
-    final var session = database.entitySession(transactionContext, partitionId);
+    final var session = database.entitySession(mode(), transactionContext, partitionId);
     variableState = new VariableStateImpl(new RdbmsVariableStore(session));
     jobState = new JobStateImpl(new RdbmsJobStore(session));
     eventScopeState = new EventScopeInstanceStateImpl(new RdbmsEventScopeStore(session));
@@ -303,6 +307,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Test
   void shouldCollapseRepeatedUpdatesIntoOneStatement() throws Exception {
+    mode().assumeSynchronous("counts the statements of the commit");
     // given
     elementInstanceState.newInstance(
         100, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
@@ -373,6 +378,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Test
   void shouldRejectUpdateOfMissingInstanceOnCommit() {
+    mode().assumeSynchronous("the commit writes to the database");
     // given
     final var neverCreated =
         new ElementInstance(
@@ -437,6 +443,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Test
   void shouldWriteAllTablesExactlyOnceWhenCommitIsRetried() throws Exception {
+    mode().assumeSynchronous("retries a failed commit of the database");
     // given
     final var transaction = transactionContext.getCurrentTransaction();
     elementInstanceState.newInstance(
@@ -481,6 +488,7 @@ final class RdbmsElementInstanceStateTest extends AbstractElementInstanceStateCo
 
   @Test
   void shouldCommitThroughTheSessionAndReturnTheConnectionToThePool() throws Exception {
+    mode().assumeSynchronous("counts the connections of the commit");
     // given
     final var transaction = transactionContext.getCurrentTransaction();
 

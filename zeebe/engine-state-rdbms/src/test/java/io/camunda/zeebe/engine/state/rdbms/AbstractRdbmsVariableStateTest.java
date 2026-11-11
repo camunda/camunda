@@ -49,7 +49,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition.
  */
-final class RdbmsVariableStateTest extends AbstractVariableStateContractTest {
+abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static final String TENANT_ID = "variable-tenant";
 
@@ -76,7 +79,7 @@ final class RdbmsVariableStateTest extends AbstractVariableStateContractTest {
     database.observed().decorate(this::countingQueries);
     transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
-    final var session = database.entitySession(transactionContext, partitionId);
+    final var session = database.entitySession(mode(), transactionContext, partitionId);
     createdVariableState = new VariableStateImpl(new RdbmsVariableStore(session));
     return new ElementInstanceStateImpl(
         new RdbmsElementInstanceStore(session), createdVariableState);

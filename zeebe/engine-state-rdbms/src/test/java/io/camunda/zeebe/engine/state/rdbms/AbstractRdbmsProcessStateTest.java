@@ -39,7 +39,10 @@ import org.junit.jupiter.api.Test;
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition to stay
  * isolated.
  */
-final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
+abstract class AbstractRdbmsProcessStateTest extends AbstractProcessStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static EngineStateDatabase database;
 
@@ -354,7 +357,7 @@ final class RdbmsProcessStateTest extends AbstractProcessStateContractTest {
 
   private ProcessStateImpl newProcessState(final JdbcTransactionContext context) {
     return new ProcessStateImpl(
-        new RdbmsProcessStore(database.entitySession(context, partitionId), context),
+        new RdbmsProcessStore(database.entitySession(mode(), context, partitionId), context),
         new EngineConfiguration(),
         newTransformer(),
         context,

@@ -39,7 +39,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition.
  */
-final class RdbmsJobStateTest extends AbstractJobStateContractTest {
+abstract class AbstractRdbmsJobStateTest extends AbstractJobStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static final String TENANT_ID = "job-tenant";
   private static final String OTHER_TENANT_ID = "other-job-tenant";
@@ -67,7 +70,7 @@ final class RdbmsJobStateTest extends AbstractJobStateContractTest {
     transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
     return new JobStateImpl(
-        new RdbmsJobStore(database.entitySession(transactionContext, partitionId)));
+        new RdbmsJobStore(database.entitySession(mode(), transactionContext, partitionId)));
   }
 
   @AfterEach
@@ -233,6 +236,7 @@ final class RdbmsJobStateTest extends AbstractJobStateContractTest {
 
   @Test
   void shouldReadActivatableJobsInPagesOnlyWhileTheVisitorContinues() throws Exception {
+    mode().assumeSynchronous("counts the queries of a read");
     // given - more jobs than the first page of 16 holds
     final var transaction = transactionContext.getCurrentTransaction();
     for (int key = 1; key <= 40; key++) {

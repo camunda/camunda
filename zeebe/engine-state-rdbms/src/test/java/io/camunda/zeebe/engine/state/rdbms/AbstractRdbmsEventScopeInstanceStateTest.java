@@ -53,7 +53,11 @@ import org.junit.jupiter.api.Test;
  *
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition.
  */
-final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceStateContractTest {
+abstract class AbstractRdbmsEventScopeInstanceStateTest
+    extends AbstractEventScopeInstanceStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static final String TENANT_ID = "event-scope-tenant";
   private static final long PROCESS_INSTANCE_KEY = 100;
@@ -85,7 +89,7 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
     database.observed().decorate(queryCounter::wrap);
     transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
-    session = database.entitySession(transactionContext, partitionId);
+    session = database.entitySession(mode(), transactionContext, partitionId);
     elementInstanceState =
         new ElementInstanceStateImpl(
             new RdbmsElementInstanceStore(session),
@@ -141,6 +145,7 @@ final class RdbmsEventScopeInstanceStateTest extends AbstractEventScopeInstanceS
 
   @Test
   void shouldTakeProcessInstanceOfCommittedScopeForItsTriggers() throws Exception {
+    mode().assumeSynchronous("counts the queries of a read");
     // given
     createCommittedScope(101);
 

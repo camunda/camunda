@@ -36,7 +36,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>All tests share one {@link EngineStateDatabase}; each test writes to its own partition.
  */
-final class RdbmsJobMetricsStateTest extends AbstractJobMetricsStateContractTest {
+abstract class AbstractRdbmsJobMetricsStateTest extends AbstractJobMetricsStateContractTest {
+
+  /** How the session under test writes: directly, or behind the commit. */
+  abstract StateMode mode();
 
   private static EngineStateDatabase database;
 
@@ -62,7 +65,7 @@ final class RdbmsJobMetricsStateTest extends AbstractJobMetricsStateContractTest
   private MutableJobMetricsState createJobMetricsState(final EngineConfiguration config) {
     transactionContext = new JdbcTransactionContext();
     partitionId = database.nextPartitionId();
-    final var session = database.entitySession(transactionContext, partitionId);
+    final var session = database.entitySession(mode(), transactionContext, partitionId);
     state =
         new JobMetricsStateImpl(new RdbmsJobMetricsStore(session), InstantSource.system(), config);
     return state;
