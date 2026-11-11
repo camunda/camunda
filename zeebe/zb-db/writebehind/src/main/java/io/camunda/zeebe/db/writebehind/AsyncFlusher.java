@@ -67,6 +67,7 @@ final class AsyncFlusher {
 
   private final RawDbAccess storage;
   private final WriteBehindConfiguration config;
+  private final WriteBehindMetrics metrics;
   private final Runnable ensureUsable;
   private final Consumer<List<Map.Entry<RawKey, Version>>> onFlushed;
   private final long flushThresholdBytes;
@@ -99,10 +100,12 @@ final class AsyncFlusher {
   AsyncFlusher(
       final RawDbAccess storage,
       final WriteBehindConfiguration config,
+      final WriteBehindMetrics metrics,
       final Runnable ensureUsable,
       final Consumer<List<Map.Entry<RawKey, Version>>> onFlushed) {
     this.storage = storage;
     this.config = config;
+    this.metrics = metrics;
     this.ensureUsable = ensureUsable;
     this.onFlushed = onFlushed;
     flushThresholdBytes = Math.min(config.flushThresholdBytes(), config.maxPendingBytes());
@@ -327,12 +330,17 @@ final class AsyncFlusher {
       for (final var entry : latest.entrySet()) {
         final var key = entry.getKey().bytes();
         final var value = entry.getValue().value();
+        final var counters = metrics.of(entry.getKey().columnFamily());
         if (value != null) {
           batch.put(key, Values.encode(value, encodeBuffer));
+          counters.flushedPuts.increment();
         } else if (storage.keyMayExist(key, key.length)) {
           // a key that the storage never had needs no delete; this keeps short-lived state out of
           // it
           batch.delete(key);
+          counters.flushedDeletes.increment();
+        } else {
+          counters.skippedDeletes.increment();
         }
       }
       batch.write();

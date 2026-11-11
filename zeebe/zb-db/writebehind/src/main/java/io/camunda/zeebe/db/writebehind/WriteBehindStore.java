@@ -83,7 +83,7 @@ final class WriteBehindStore implements AutoCloseable {
     for (final long columnFamily : config.keyIndexColumnFamilies()) {
       keyIndexes.put(columnFamily, new KeyIndex(columnFamily, config.keyIndexPolicy(columnFamily)));
     }
-    flusher = new AsyncFlusher(storage, config, this::ensureUsable, this::removeFlushed);
+    flusher = new AsyncFlusher(storage, config, metrics, this::ensureUsable, this::removeFlushed);
     flusher.start();
   }
 
@@ -107,6 +107,8 @@ final class WriteBehindStore implements AutoCloseable {
       for (int i = 0; i < keys.length; i++) {
         final var version = new Version(values[i], seq);
         versions[i] = version;
+        final var counters = metrics.of(keys[i].columnFamily());
+        (values[i] == null ? counters.committedDeletes : counters.committedPuts).increment();
         bytes += version.weigh(keys[i]);
         dirty.put(keys[i], version);
         if (cache != null) {
@@ -134,6 +136,7 @@ final class WriteBehindStore implements AutoCloseable {
       return inMemory.value();
     }
     if (absentFromKeyIndex(key)) {
+      metrics.of(key.columnFamily()).keyIndexAbsent.increment();
       return null;
     }
     return readStorage(key, prototype);
@@ -143,9 +146,14 @@ final class WriteBehindStore implements AutoCloseable {
   @Nullable Version lookupInMemory(final RawKey key) {
     final var unflushed = dirty.get(key);
     if (unflushed != null) {
+      metrics.of(key.columnFamily()).dirtyHits.increment();
       return unflushed;
     }
-    return cache == null ? null : cache.getIfPresent(key);
+    final var cached = cache == null ? null : cache.getIfPresent(key);
+    if (cached != null) {
+      metrics.of(key.columnFamily()).cacheHits.increment();
+    }
+    return cached;
   }
 
   /**
@@ -164,6 +172,7 @@ final class WriteBehindStore implements AutoCloseable {
         return latest.value();
       }
       final var bytes = storage.get(key.bytes(), key.bytes().length);
+      countStorageGet(key, bytes != null);
       final var value = bytes == null ? null : Values.decode(bytes, prototype);
       if (cache != null) {
         cache.put(key, new Version(value, 0));
@@ -182,6 +191,7 @@ final class WriteBehindStore implements AutoCloseable {
       return !inMemory.isTombstone();
     }
     if (absentFromKeyIndex(key)) {
+      metrics.of(key.columnFamily()).keyIndexAbsent.increment();
       return false;
     }
     final long stamp = publishLock.readLock();
@@ -190,9 +200,19 @@ final class WriteBehindStore implements AutoCloseable {
       if (latest != null) {
         return !latest.isTombstone();
       }
-      return storage.get(key.bytes(), key.bytes().length) != null;
+      final var found = storage.get(key.bytes(), key.bytes().length) != null;
+      countStorageGet(key, found);
+      return found;
     } finally {
       publishLock.unlockRead(stamp);
+    }
+  }
+
+  private void countStorageGet(final RawKey key, final boolean found) {
+    final var counters = metrics.of(key.columnFamily());
+    counters.storageGets.increment();
+    if (found) {
+      counters.storageGetsFound.increment();
     }
   }
 
@@ -231,6 +251,7 @@ final class WriteBehindStore implements AutoCloseable {
     try {
       final var storageIterator = storage.newIterator();
       metrics.iteratorsOpened.increment();
+      metrics.of(from.columnFamily()).iterators.increment();
       final var range = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
       return new View(storageIterator, new TreeMap<>(range), lastSeq);
     } finally {
@@ -372,6 +393,11 @@ final class WriteBehindStore implements AutoCloseable {
   /** The key index of a column family, or null if it has none. */
   @Nullable KeyIndex keyIndex(final long columnFamily) {
     return keyIndexes.get(columnFamily);
+  }
+
+  /** Registers the counters per column family as gauges in the registry. */
+  void exportMetrics(final io.micrometer.core.instrument.MeterRegistry registry) {
+    metrics.export(registry);
   }
 
   WriteBehindMetrics metrics() {
