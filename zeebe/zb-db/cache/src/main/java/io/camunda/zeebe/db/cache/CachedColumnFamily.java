@@ -113,7 +113,8 @@ final class CachedColumnFamily<
   @Override
   public @Nullable ValueType get(final KeyType key) {
     final var bytes = read(key);
-    if (bytes == null) {
+    // like RocksDB's, which reads an empty value as missing here but not in get with a supplier
+    if (bytes == null || bytes.length == 0) {
       return null;
     }
     valueInstance.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
@@ -270,7 +271,8 @@ final class CachedColumnFamily<
   @Override
   public boolean exists(final KeyType key) {
     final var exists = new MutableBoolean();
-    inOpenTransaction(transaction -> exists.set(exists(transaction, cacheKey(key))));
+    // like RocksDB's, which reads an empty value as missing here but not in its consistency checks
+    inOpenTransaction(transaction -> exists.set(valueLength(transaction, cacheKey(key)) > 0));
     return exists.get();
   }
 
@@ -325,8 +327,16 @@ final class CachedColumnFamily<
   }
 
   private boolean exists(final CachedTransaction transaction, final CacheKey key) {
+    return valueLength(transaction, key) != WriteBehindStore.NO_VALUE;
+  }
+
+  private int valueLength(final CachedTransaction transaction, final CacheKey key) {
     final var own = transaction.get(key);
-    return own != null ? own.bytes() != null : store.exists(key, context.reader());
+    if (own == null) {
+      return store.valueLength(key, context.reader());
+    }
+    final var bytes = own.bytes();
+    return bytes == null ? WriteBehindStore.NO_VALUE : bytes.length;
   }
 
   private void assertKeyDoesNotExist(final CachedTransaction transaction, final CacheKey key) {

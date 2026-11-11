@@ -48,6 +48,9 @@ import org.slf4j.LoggerFactory;
 final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
 
+  /** What {@link #valueLength} returns for a key without a committed value. */
+  static final int NO_VALUE = -1;
+
   private static final Logger LOG = LoggerFactory.getLogger(WriteBehindStore.class);
   private static final int OPTIMISTIC_READ_ATTEMPTS = 3;
 
@@ -170,9 +173,13 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     return value == null ? null : value.clone();
   }
 
-  /** Like {@link #get}, without copying the value. */
-  boolean exists(final CacheKey key, final StorageColumnFamilies<ColumnFamilyNames> reader) {
-    return committedValue(key, reader) != null;
+  /**
+   * Returns the length of the committed value of {@code key}, or {@link #NO_VALUE} if there is
+   * none, without copying the value.
+   */
+  int valueLength(final CacheKey key, final StorageColumnFamilies<ColumnFamilyNames> reader) {
+    final var value = committedValue(key, reader);
+    return value == null ? NO_VALUE : value.length;
   }
 
   /**

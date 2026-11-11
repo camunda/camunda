@@ -37,11 +37,17 @@ final class StorageColumnFamilies<ColumnFamilyNames extends Enum<? extends EnumV
     return context;
   }
 
-  /** Returns the storage's value of {@code key}, or {@code null} if the storage doesn't have it. */
+  /**
+   * Returns the storage's value of {@code key}, or {@code null} if the storage doesn't have it. An
+   * empty value is returned as an empty array.
+   */
   byte @Nullable [] get(final CacheKey key) {
     final var storageColumnFamily = columnFamily(key.columnFamily());
     storageColumnFamily.key.set(key.key());
-    final var value = storageColumnFamily.columnFamily.get(storageColumnFamily.key);
+    // not get(key), which RocksDB answers with null for an empty value
+    final var value =
+        storageColumnFamily.columnFamily.get(
+            storageColumnFamily.key, () -> storageColumnFamily.value);
     return value == null ? null : value.bytes();
   }
 

@@ -50,6 +50,19 @@ final class StorageLoaderTest {
   }
 
   @Test
+  void shouldLoadEmptyStorageValueAsEmptyValue() {
+    // given
+    storage.put(FIRST, bytes(1), bytes());
+
+    // when
+    final var loaded = loader.readThrough(reader, () -> loader.load(new CacheKey(FIRST, bytes(1))));
+
+    // then
+    assertThat(loaded.isTombstone()).isFalse();
+    assertThat(loaded.bytes()).isEmpty();
+  }
+
+  @Test
   void shouldLoadKeyMissingFromStorageAsTombstone() {
     // when
     final var loaded = loader.readThrough(reader, () -> loader.load(new CacheKey(FIRST, bytes(1))));

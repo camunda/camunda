@@ -190,15 +190,27 @@ final class InMemoryStorage {
   private ColumnFamily<RawKey, RawValue> createColumnFamily(
       final TestColumnFamily columnFamily, final RawKey keyInstance, final RawValue valueInstance) {
     final ColumnFamily<RawKey, RawValue> storageColumnFamily = mock(ColumnFamily.class);
+    // like RocksDB: get(key) reads an empty value as missing, get(key, supplier) doesn't
     when(storageColumnFamily.get(any()))
+        .thenAnswer(
+            invocation -> {
+              final var value = get(columnFamily, invocation.<RawKey>getArgument(0).bytes());
+              if (value == null || value.length == 0) {
+                return null;
+              }
+              valueInstance.wrap(new UnsafeBuffer(value), 0, value.length);
+              return valueInstance;
+            });
+    when(storageColumnFamily.get(any(), any()))
         .thenAnswer(
             invocation -> {
               final var value = get(columnFamily, invocation.<RawKey>getArgument(0).bytes());
               if (value == null) {
                 return null;
               }
-              valueInstance.wrap(new UnsafeBuffer(value), 0, value.length);
-              return valueInstance;
+              final var instance = invocation.<Supplier<RawValue>>getArgument(1).get();
+              instance.wrap(new UnsafeBuffer(value), 0, value.length);
+              return instance;
             });
     doAnswer(
             invocation -> {
