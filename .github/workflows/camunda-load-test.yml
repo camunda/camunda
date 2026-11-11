@@ -52,6 +52,13 @@ on:
         - oracle
         - none
         default: elasticsearch
+      primary-storage-type:
+        description: 'Primary storage for engine state and log. rdbms (experimental, main only) uses a PostgreSQL cluster and replication factor 1.'
+        type: choice
+        options:
+        - rocksdb
+        - rdbms
+        default: rocksdb
       reuse-tag:
         description: 'Pre-built image tag from the internal registry (registry.camunda.cloud). Skips the build step. ⚠ Cannot be used with orchestration-tag.'
         type: string
@@ -221,6 +228,12 @@ on:
         type: string
         required: false
         default: elasticsearch
+      primary-storage-type:
+        description: 'Specifies where the engine state and partition log are stored, can be "rocksdb" or "rdbms". "rdbms" is experimental and main only: it deploys a PostgreSQL cluster for the primary storage (independent of the secondary storage), configures Camunda to use it, and sets the replication factor to 1.'
+        # type choice is invalid here
+        type: string
+        required: false
+        default: rocksdb
       target-version:
         description: 'Setup version subfolder to use (main, stable-89, stable-88, stable-87). Default: main.'
         type: string
@@ -272,6 +285,7 @@ env:
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
   PHYSICAL_TENANT_COUNT: ${{ inputs.physical-tenant-count }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
+  PRIMARY_STORAGE_TYPE: ${{ inputs.primary-storage-type }}
   REF: ${{ inputs.ref }}
   REUSE_TAG: ${{ inputs.reuse-tag}}
   SCENARIO: ${{ inputs.scenario }}
@@ -306,6 +320,7 @@ jobs:
           | Target version | \`${TARGET_VERSION}\` |
           | Scenario | \`${SCENARIO}\` |
           | Secondary storage | \`${SECONDARY_STORAGE_TYPE}\` |
+          | Primary storage | \`${PRIMARY_STORAGE_TYPE}\` |
           | Reuse tag | \`${REUSE_TAG:-—}\` |
           | Orchestration tag | \`${ORCHESTRATION_TAG:-—}\` |
           | Load test load | \`${LOAD_TEST_LOAD:-—}\` |
@@ -596,7 +611,8 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}"
+          ./newLoadTest.sh --target-version "${TARGET_VERSION}" "${NAMESPACE}" "${SECONDARY_STORAGE_TYPE}" "${TTL}" "${ENABLE_OPTIMIZE}" \
+            --primary-storage "${PRIMARY_STORAGE_TYPE}"
 
       - name: Install latest Camunda Platform
         shell: bash --noprofile --norc -exo pipefail {0}

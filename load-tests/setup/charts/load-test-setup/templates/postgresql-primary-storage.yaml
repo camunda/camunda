@@ -1,0 +1,26 @@
+{{- if .Values.postgresql.primaryStorage.enabled -}}
+{{- if not .Values.postgresql.enabled -}}
+{{- fail "postgresql.primaryStorage.enabled requires postgresql.enabled=true" -}}
+{{- end -}}
+---
+# Configure Camunda's experimental RDBMS primary storage (engine state and partition log) to use
+# the PostgreSQL cluster above. The orchestration cluster loads these entries as environment
+# variables via `orchestration.envFrom` (see camunda-platform-values-primary-storage-rdbms.yaml).
+#
+# Always the Cluster's `-rw` Service, never the PgBouncer Pooler: each partition holds its
+# connection for as long as its stream processor runs, so pooling gains nothing.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "load-test-setup.postgresql.primary-storage-secret-name" . }}
+  annotations:
+    description: |
+      Contains the environment variables that point Camunda's RDBMS primary
+      storage at the PostgreSQL cluster deployed by this chart.
+type: Opaque
+stringData:
+  CAMUNDA_DATA_PRIMARYSTORAGE_TYPE: rdbms
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_URL: "jdbc:postgresql://{{ .Values.postgresql.clusterName }}-rw:5432/{{ .Values.postgresql.database.name }}"
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_USERNAME: {{ .Values.postgresql.database.user | quote }}
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_PASSWORD: {{ .Values.postgresql.database.password | quote }}
+{{- end -}}

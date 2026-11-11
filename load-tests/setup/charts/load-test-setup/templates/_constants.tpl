@@ -25,4 +25,12 @@ The name of the Kubernetes Secret used by the CNPG Operator to keep the credenti
 postgresql-camunda-user
 {{- end -}}
 
+{{/*
+The name of the Kubernetes Secret holding the environment variables that point Camunda's RDBMS primary
+storage at the PostgreSQL cluster. Referenced by name from camunda-platform-values-primary-storage-rdbms.yaml.
+*/}}
+{{- define "load-test-setup.postgresql.primary-storage-secret-name" -}}
+camunda-primary-storage-rdbms
+{{- end -}}
+
 {{/* vim: set filetype=gotmpl: */}}

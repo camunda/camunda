@@ -1,0 +1,22 @@
+---
+# Source: load-test-setup/templates/postgresql-primary-storage.yaml
+# Configure Camunda's experimental RDBMS primary storage (engine state and partition log) to use
+# the PostgreSQL cluster above. The orchestration cluster loads these entries as environment
+# variables via `orchestration.envFrom` (see camunda-platform-values-primary-storage-rdbms.yaml).
+#
+# Always the Cluster's `-rw` Service, never the PgBouncer Pooler: each partition holds its
+# connection for as long as its stream processor runs, so pooling gains nothing.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: camunda-primary-storage-rdbms
+  annotations:
+    description: |
+      Contains the environment variables that point Camunda's RDBMS primary
+      storage at the PostgreSQL cluster deployed by this chart.
+type: Opaque
+stringData:
+  CAMUNDA_DATA_PRIMARYSTORAGE_TYPE: rdbms
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_URL: "jdbc:postgresql://postgresql-rw:5432/camunda"
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_USERNAME: "camunda"
+  CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_PASSWORD: "camunda"

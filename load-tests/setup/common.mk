@@ -41,6 +41,10 @@
 # - cluster_rebalance_supported
 #   Set to `false` for versions without the `/cluster/v2/rebalance` endpoint (before 8.10),
 #   so the `leader-balancer` CronJob falls back to the deprecated actuator endpoint.
+#
+# - primary_storage
+#   `rocksdb` (default) or `rdbms`, baked by newLoadTest.sh --primary-storage. Only main
+#   supports `rdbms`, so other versions leave it at the default.
 
 rdbms_storages ?= postgresql mysql mariadb mssql oracle
 optimize_self_sufficient_storages ?= elasticsearch opensearch
@@ -50,6 +54,7 @@ physical_tenants_supported ?= true
 prefer_rest ?= true
 cluster_rebalance_supported ?= true
 k6_data_read_supported ?= true
+primary_storage ?= rocksdb
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -160,6 +165,16 @@ else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set k6.tests.data-read.enabled=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
+
+# The experimental RDBMS primary storage keeps the engine state and log in the PostgreSQL
+# cluster deployed by the load-test-setup chart, configured by newLoadTest.sh --primary-storage.
+ifeq ($(primary_storage),rdbms)
+platform_values += -f camunda-platform-values-primary-storage-rdbms.yaml
+# Its rows are keyed by partition id only, so physical tenants sharing partition ids would collide.
+ifneq ($(physical_tenant_count),0)
+$(error physical_tenant_count > 0 is not supported with primary_storage=rdbms)
+endif
+endif
 
 # Layer the pt1..ptN physical-tenant overlay on top, generated at install/template time
 # (not scaffold time) so re-running `make install` with a different physical_tenant_count
