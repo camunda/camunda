@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
+import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import org.jspecify.annotations.Nullable;
 
@@ -15,6 +18,9 @@ import org.jspecify.annotations.Nullable;
  * RocksDB's default comparator, so the in-memory maps iterate in the same order as the storage.
  */
 final class RawKey implements Comparable<RawKey> {
+
+  private static final VarHandle LONG_VIEW =
+      MethodHandles.byteArrayViewVarHandle(long[].class, ZeebeDbConstants.ZB_DB_BYTE_ORDER);
 
   private final byte[] bytes;
   private final int hash;
@@ -51,6 +57,11 @@ final class RawKey implements Comparable<RawKey> {
       }
     }
     return null;
+  }
+
+  /** The column family: the 8-byte prefix as a long. Every key of a column family has one. */
+  long columnFamily() {
+    return (long) LONG_VIEW.get(bytes, 0);
   }
 
   /** The key bytes. Shared: callers must not change them, and must copy before handing them out. */

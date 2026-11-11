@@ -362,6 +362,7 @@ final class WriteBehindColumnFamily<
       final Predicate<MergingCursor> visitor) {
     inTransaction(
         transaction -> {
+          transaction.prepareScan(columnFamily.getValue());
           final var prefixKey = encode(prefix);
           final var seekTarget = encode(Objects.requireNonNullElse(startAt, prefix));
           try (final var cursor = transaction.newCursor(prefixKey, prefixKey.length)) {

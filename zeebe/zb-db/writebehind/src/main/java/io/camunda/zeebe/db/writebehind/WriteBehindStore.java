@@ -13,7 +13,10 @@ import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +26,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.StampedLock;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +60,7 @@ final class WriteBehindStore implements AutoCloseable {
       new PendingTransaction(Long.MAX_VALUE, new RawKey[0], new Version[0], 0);
   private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
+  private static final int MAX_DISCARDED_LOADS = 3;
 
   private final RawDbAccess storage;
   private final WriteBehindConfiguration config;
@@ -66,6 +72,14 @@ final class WriteBehindStore implements AutoCloseable {
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
   private final Thread writer;
+
+  // built in the constructor and never changed, so readers need no lock
+  private final Long2ObjectHashMap<KeyIndex> keyIndexes = new Long2ObjectHashMap<>();
+
+  private final LongAdder iteratorsOpened = new LongAdder();
+  private final LongAdder keyIndexLoads = new LongAdder();
+  private final LongAdder keyIndexDiscardedLoads = new LongAdder();
+  private final LongAdder keyIndexDisables = new LongAdder();
 
   // only used by the writer thread
   private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
@@ -90,6 +104,9 @@ final class WriteBehindStore implements AutoCloseable {
                 .<RawKey, Version>weigher((key, version) -> version.weigh(key))
                 .build()
             : null;
+    for (final long columnFamily : config.keyIndexColumnFamilies()) {
+      keyIndexes.put(columnFamily, new KeyIndex(columnFamily));
+    }
     writer = new Thread(this::runWriter, "zb-db-write-behind");
     writer.setDaemon(true);
     writer.start();
@@ -121,6 +138,7 @@ final class WriteBehindStore implements AutoCloseable {
           cache.invalidate(keys[i]);
         }
       }
+      updateKeyIndexes(keys, values, seq);
       pendingBytes.addAndGet(bytes);
       queue.add(new PendingTransaction(seq, keys, versions, bytes));
       committedSeq = seq;
@@ -204,11 +222,129 @@ final class WriteBehindStore implements AutoCloseable {
     final long stamp = publishLock.readLock();
     try {
       final var storageIterator = storage.newIterator();
+      iteratorsOpened.increment();
       final var range = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
-      return new View(storageIterator, new TreeMap<>(range));
+      return new View(storageIterator, new TreeMap<>(range), lastSeq);
     } finally {
       publishLock.unlockRead(stamp);
     }
+  }
+
+  /**
+   * Loads the key index of a column family if it has one that isn't loaded yet. Call it before a
+   * scan; it costs one map lookup when there is nothing to do.
+   */
+  void loadKeyIndexIfNeeded(final long columnFamily) {
+    loadKeyIndexIfNeeded(columnFamily, () -> {});
+  }
+
+  /**
+   * @param beforeInstall runs after the keys are collected, before they are installed
+   */
+  void loadKeyIndexIfNeeded(final long columnFamily, final Runnable beforeInstall) {
+    final var index = keyIndexes.get(columnFamily);
+    if (index == null || index.state() != KeyIndex.State.UNLOADED) {
+      return;
+    }
+
+    final var prefix = new byte[Long.BYTES];
+    ByteBuffer.wrap(prefix).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER).putLong(columnFamily);
+    final int maxKeys = config.keyIndexMaxKeys();
+    final var loaded = new ArrayList<RawKey>();
+    boolean overCap = false;
+    final var view = openView(prefix, prefix.length);
+    try (final var source = new ViewSource(view)) {
+      source.seek(prefix);
+      while (source.isValid()
+          && Arrays.equals(prefix, 0, prefix.length, source.key(), 0, prefix.length)) {
+        if (loaded.size() >= maxKeys) {
+          overCap = true;
+          break;
+        }
+        loaded.add(RawKey.of(source.key()));
+        source.advance();
+      }
+    }
+    beforeInstall.run();
+
+    final long stamp = publishLock.writeLock();
+    try {
+      if (index.state() != KeyIndex.State.UNLOADED) {
+        return;
+      }
+      if (overCap) {
+        disableKeyIndex(index, "it has more than %d keys".formatted(maxKeys));
+      } else if (index.lastCommitSeq() > view.viewSeq()) {
+        keyIndexDiscardedLoads.increment();
+        if (index.recordDiscardedLoad() >= MAX_DISCARDED_LOADS) {
+          disableKeyIndex(index, "commits made %d loads obsolete".formatted(MAX_DISCARDED_LOADS));
+        }
+      } else {
+        index.install(loaded);
+        keyIndexLoads.increment();
+      }
+    } finally {
+      publishLock.unlockWrite(stamp);
+    }
+  }
+
+  /** The key index of a column family, or null if it has none. */
+  @Nullable KeyIndex keyIndex(final long columnFamily) {
+    return keyIndexes.get(columnFamily);
+  }
+
+  long iteratorsOpened() {
+    return iteratorsOpened.sum();
+  }
+
+  long keyIndexLoads() {
+    return keyIndexLoads.sum();
+  }
+
+  long keyIndexDiscardedLoads() {
+    return keyIndexDiscardedLoads.sum();
+  }
+
+  long keyIndexDisables() {
+    return keyIndexDisables.sum();
+  }
+
+  /** Under the write lock: applies a commit's keys to the indexes of the column families. */
+  private void updateKeyIndexes(
+      final RawKey[] keys, final @Nullable DbValue[] values, final long seq) {
+    if (keyIndexes.isEmpty()) {
+      return;
+    }
+    // the keys are sorted, so the keys of a column family are consecutive
+    int from = 0;
+    while (from < keys.length) {
+      final long columnFamily = keys[from].columnFamily();
+      int to = from + 1;
+      while (to < keys.length && keys[to].columnFamily() == columnFamily) {
+        to++;
+      }
+      final var index = keyIndexes.get(columnFamily);
+      if (index != null) {
+        index.recordCommit(seq);
+        if (index.state() == KeyIndex.State.LOADED) {
+          index.apply(keys, values, from, to);
+          if (index.size() > config.keyIndexMaxKeys()) {
+            disableKeyIndex(index, "it has more than %d keys".formatted(config.keyIndexMaxKeys()));
+          }
+          index.endChange();
+        }
+      }
+      from = to;
+    }
+  }
+
+  private void disableKeyIndex(final KeyIndex index, final String reason) {
+    index.disable();
+    keyIndexDisables.increment();
+    LOG.info(
+        "Disabled the key index of column family {} until the next restart, because {}",
+        index.columnFamily(),
+        reason);
   }
 
   /**
@@ -400,8 +536,12 @@ final class WriteBehindStore implements AutoCloseable {
     }
   }
 
-  /** A storage iterator plus the dirty entries of the same instant, restricted to a prefix. */
-  record View(DbIterator storageIterator, NavigableMap<RawKey, Version> dirty) {}
+  /**
+   * A storage iterator plus the dirty entries of the same instant, restricted to a prefix.
+   *
+   * @param viewSeq the sequence of the last commit that the view includes
+   */
+  record View(DbIterator storageIterator, NavigableMap<RawKey, Version> dirty, long viewSeq) {}
 
   private record PendingTransaction(long seq, RawKey[] keys, Version[] versions, long bytes) {}
 }

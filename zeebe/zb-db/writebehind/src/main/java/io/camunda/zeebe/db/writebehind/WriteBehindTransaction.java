@@ -67,6 +67,11 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
     return new MergingCursor(writes, new ViewSource(store.openView(prefix, prefixLength)));
   }
 
+  /** Call before a scan of a column family: loads its key index if it has one that isn't loaded. */
+  void prepareScan(final long columnFamily) {
+    store.loadKeyIndexIfNeeded(columnFamily);
+  }
+
   void resetTransaction() {
     writes.clear();
     inCurrentTransaction = true;
