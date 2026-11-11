@@ -262,18 +262,18 @@ public final class ZeebePartitionFactory {
   }
 
   /**
-   * Returns the factory for a partition's runtime state: {@code backend} itself, or {@code backend}
-   * behind the write-behind cache when that's enabled. Snapshot copies keep using {@code backend}.
+   * Returns the factory for a partition's runtime state: {@code storage} itself, or {@code storage}
+   * behind the write-behind cache when that's enabled. Snapshot copies keep using {@code storage}.
    */
   @VisibleForTesting
   static ZeebeDbFactory<ZbColumnFamilies> stateDbFactory(
-      final BrokerCfg brokerCfg, final ZeebeDbFactory<ZbColumnFamilies> backend) {
+      final BrokerCfg brokerCfg, final ZeebeDbFactory<ZbColumnFamilies> storage) {
     final var writeBehindCache = brokerCfg.getData().getWriteBehindCache();
     if (!writeBehindCache.isEnabled()) {
-      return backend;
+      return storage;
     }
     return new WriteBehindZeebeDbFactory<>(
-        backend,
+        storage,
         writeBehindCache.createConfiguration(),
         brokerCfg.getExperimental().getConsistencyChecks().getSettings());
   }

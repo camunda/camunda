@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Scans over three levels: the backend holds 1, 3 and 5; another context has committed, but not yet
+ * Scans over three levels: the storage holds 1, 3 and 5; another context has committed, but not yet
  * flushed, 2, a delete of 3 and 55 for 5; the scanning transaction writes 4, deletes 1 and writes
  * 6. The merged view is 2, 4, 5 = 55, 6.
  */
@@ -33,22 +33,22 @@ final class CachedColumnFamilyScanTest {
   private static final ConsistencyChecksSettings CHECKS_ON =
       new ConsistencyChecksSettings(true, true);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final WriteBehindStore<TestColumnFamily> store =
       new WriteBehindStore<>(
-          backend.db(), new TestConfiguration().maxWriteDelay(Duration.ofHours(1)).build());
+          storage.db(), new TestConfiguration().maxWriteDelay(Duration.ofHours(1)).build());
   private final CachedTransactionContext<TestColumnFamily> context =
-      new CachedTransactionContext<>(store, backend.db());
+      new CachedTransactionContext<>(store, storage.db());
   private final CachedColumnFamily<TestColumnFamily, DbLong, DbLong> columnFamily =
       new CachedColumnFamily<>(store, context, FIRST, new DbLong(), new DbLong(), CHECKS_ON);
 
   @BeforeEach
-  void setUpBackendAndUnflushedCommits() {
-    backend.put(FIRST, serialize(dbLong(1)), serialize(dbLong(10)));
-    backend.put(FIRST, serialize(dbLong(3)), serialize(dbLong(30)));
-    backend.put(FIRST, serialize(dbLong(5)), serialize(dbLong(50)));
+  void setUpStorageAndUnflushedCommits() {
+    storage.put(FIRST, serialize(dbLong(1)), serialize(dbLong(10)));
+    storage.put(FIRST, serialize(dbLong(3)), serialize(dbLong(30)));
+    storage.put(FIRST, serialize(dbLong(5)), serialize(dbLong(50)));
 
-    final var otherContext = new CachedTransactionContext<>(store, backend.db());
+    final var otherContext = new CachedTransactionContext<>(store, storage.db());
     final var other =
         new CachedColumnFamily<>(store, otherContext, FIRST, new DbLong(), new DbLong(), CHECKS_ON);
     otherContext.runInTransaction(
@@ -179,8 +179,8 @@ final class CachedColumnFamilyScanTest {
     final var composite =
         new CachedColumnFamily<>(
             store, context, TestColumnFamily.SECOND, compositeKey, new DbLong(), CHECKS_ON);
-    backend.put(TestColumnFamily.SECOND, serialize(compositeKey("a", 1)), serialize(dbLong(1)));
-    backend.put(TestColumnFamily.SECOND, serialize(compositeKey("b", 1)), serialize(dbLong(3)));
+    storage.put(TestColumnFamily.SECOND, serialize(compositeKey("a", 1)), serialize(dbLong(1)));
+    storage.put(TestColumnFamily.SECOND, serialize(compositeKey("b", 1)), serialize(dbLong(3)));
 
     // when
     final var secondParts = new ArrayList<Long>();

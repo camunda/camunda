@@ -23,6 +23,6 @@ public final class WriteBehindStringColumnFamilyTest extends DbStringColumnFamil
   @Test
   @Ignore(
       "Expects RocksDB's limit of two nested prefix scans, which the cache only reaches while the"
-          + " backend's own scans are still open")
+          + " storage's own scans are still open")
   public void shouldThrowExceptionOnMultipleNestedWhileEqualPrefix() {}
 }

@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Holds the committed state that the backend doesn't have yet, and hands it to the writer.
+ * Holds the committed state that the storage doesn't have yet, and hands it to the writer.
  *
  * <p>A commit publishes all of its versions to the DirtyIndex under {@code publishLock}'s write
  * side, puts them into the read cache, then queues the whole transaction for the writer. Readers
@@ -59,7 +59,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
   private final WriteBehindMetrics metrics;
-  private final BackendLoader<ColumnFamilyNames> loader;
+  private final StorageLoader<ColumnFamilyNames> loader;
   private final TransactionWriter<ColumnFamilyNames> writer;
   private final CacheManager cacheManager;
   private final Cache<CacheKey, CachedValue> cache;
@@ -69,8 +69,8 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final List<Consumer<Throwable>> failureListeners = new CopyOnWriteArrayList<>();
 
   WriteBehindStore(
-      final ZeebeDb<ColumnFamilyNames> backend, final WriteBehindConfiguration configuration) {
-    this(backend, configuration, OPTIMISTIC_READ_ATTEMPTS);
+      final ZeebeDb<ColumnFamilyNames> storage, final WriteBehindConfiguration configuration) {
+    this(storage, configuration, OPTIMISTIC_READ_ATTEMPTS);
   }
 
   /**
@@ -78,16 +78,16 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    *     {@code publishLock}'s read side
    */
   WriteBehindStore(
-      final ZeebeDb<ColumnFamilyNames> backend,
+      final ZeebeDb<ColumnFamilyNames> storage,
       final WriteBehindConfiguration configuration,
       final int optimisticReadAttempts) {
     this.configuration = configuration;
     this.optimisticReadAttempts = optimisticReadAttempts;
-    metrics = new WriteBehindMetrics(backend.getMeterRegistry());
-    loader = new BackendLoader<>(dirtyIndex, metrics);
+    metrics = new WriteBehindMetrics(storage.getMeterRegistry());
+    loader = new StorageLoader<>(dirtyIndex, metrics);
     writer =
         new TransactionWriter<>(
-            backend,
+            storage,
             dirtyIndex,
             publishLock,
             configuration,
@@ -113,7 +113,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   }
 
   /**
-   * Publishes {@code writes} as one transaction and queues it for the backend. A transaction
+   * Publishes {@code writes} as one transaction and queues it for the storage. A transaction
    * without writes commits without taking a lock.
    *
    * <p>The caller must keep its writes until this returns, so that a retried commit applies them
@@ -148,7 +148,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
         versions.forEach(version -> cache.put(version.getKey(), version.getValue()));
         writer.enqueue(CommittedTransaction.of(seq, versions));
       } catch (final RuntimeException e) {
-        // the published versions may never reach the backend, or the cache may keep older ones
+        // the published versions may never reach the storage, or the cache may keep older ones
         fail(e);
         throw e;
       }
@@ -161,29 +161,28 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
   /**
    * Returns a copy of the committed value of {@code key}, or {@code null} if there is none. A cache
-   * miss loads from the backend through {@code reader}, the caller's own column families.
+   * miss loads from the storage through {@code reader}, the caller's own column families.
    *
    * <p>The cache may keep {@code key}, so it must not change afterwards.
    */
-  byte @Nullable [] get(
-      final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
+  byte @Nullable [] get(final CacheKey key, final StorageColumnFamilies<ColumnFamilyNames> reader) {
     final var value = committedValue(key, reader);
     return value == null ? null : value.clone();
   }
 
   /** Like {@link #get}, without copying the value. */
-  boolean exists(final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
+  boolean exists(final CacheKey key, final StorageColumnFamilies<ColumnFamilyNames> reader) {
     return committedValue(key, reader) != null;
   }
 
   /**
    * Copies the unflushed versions of a key range for a scan, under {@code publishLock}'s read side.
-   * The returned overlay keeps holding it, so nothing is published or cleaned up until the backend
-   * has fixed its view of the same range. Release it at the backend's first callback, or when the
-   * backend scan returns without one.
+   * The returned overlay keeps holding it, so nothing is published or cleaned up until the storage
+   * has fixed its view of the same range. Release it at the storage's first callback, or when the
+   * storage scan returns without one.
    *
    * <p>Every unflushed version is then in the copy, and every version cleaned up before it is in
-   * the backend's view, so the two together show the committed state at one instant.
+   * the storage's view, so the two together show the committed state at one instant.
    */
   ScanOverlay beginScan(
       final EnumValue columnFamily,
@@ -202,7 +201,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   }
 
   /**
-   * Waits until the backend holds every transaction committed before this call. It doesn't hold
+   * Waits until the storage holds every transaction committed before this call. It doesn't hold
    * commits back, and the writer writes those transactions at once instead of waiting out {@code
    * maxWriteDelay}.
    *
@@ -254,7 +253,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     return metrics;
   }
 
-  /** Returns the key and value bytes of the transactions the backend doesn't have yet. */
+  /** Returns the key and value bytes of the transactions the storage doesn't have yet. */
   long pendingBytes() {
     return writer.queuedBytes();
   }
@@ -266,7 +265,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   }
 
   private byte @Nullable [] committedValue(
-      final CacheKey key, final PassThroughColumnFamilies<ColumnFamilyNames> reader) {
+      final CacheKey key, final StorageColumnFamilies<ColumnFamilyNames> reader) {
     for (int attempt = 0; attempt < optimisticReadAttempts; attempt++) {
       final long stamp = publishLock.tryOptimisticRead();
       if (stamp != 0) {
@@ -328,7 +327,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
   /**
    * Fails the store, once: commits and snapshots fail fast from then on, and everything waiting on
-   * the writer aborts. Reads keep working, since the DirtyIndex and the backend still hold the
+   * the writer aborts. Reads keep working, since the DirtyIndex and the storage still hold the
    * exact committed state.
    */
   private void fail(final Throwable cause) {

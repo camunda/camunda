@@ -38,9 +38,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A backend that keeps each column family in a sorted map. It supports only what the pass-through
- * column families use: {@code get}, {@code upsert}, {@code deleteIfExists}, forward prefix scans
- * and reverse scans, and transactions that run their operations directly. It is safe to use from
+ * A storage that keeps each column family in a sorted map. It supports only what the storage column
+ * families use: {@code get}, {@code upsert}, {@code deleteIfExists}, forward prefix scans and
+ * reverse scans, and transactions that run their operations directly. It is safe to use from
  * several threads.
  *
  * <p>It records the writes of each transaction, in {@link #transactionLog()}. Transactions can be
@@ -54,7 +54,7 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Its meter registry is a {@link SimpleMeterRegistry}, in {@link #meterRegistry()}.
  */
-final class InMemoryBackend {
+final class InMemoryStorage {
 
   private final Map<TestColumnFamily, NavigableMap<byte[], byte[]>> data =
       new ConcurrentHashMap<>();
@@ -71,7 +71,7 @@ final class InMemoryBackend {
   private final ZeebeDb<TestColumnFamily> db;
 
   @SuppressWarnings("unchecked")
-  InMemoryBackend() {
+  InMemoryStorage() {
     db = mock(ZeebeDb.class);
     when(db.getMeterRegistry()).thenReturn(meterRegistry);
     when(db.createContext()).thenAnswer(invocation -> createContext());
@@ -189,8 +189,8 @@ final class InMemoryBackend {
   @SuppressWarnings("unchecked")
   private ColumnFamily<RawKey, RawValue> createColumnFamily(
       final TestColumnFamily columnFamily, final RawKey keyInstance, final RawValue valueInstance) {
-    final ColumnFamily<RawKey, RawValue> passThrough = mock(ColumnFamily.class);
-    when(passThrough.get(any()))
+    final ColumnFamily<RawKey, RawValue> storageColumnFamily = mock(ColumnFamily.class);
+    when(storageColumnFamily.get(any()))
         .thenAnswer(
             invocation -> {
               final var value = get(columnFamily, invocation.<RawKey>getArgument(0).bytes());
@@ -208,7 +208,7 @@ final class InMemoryBackend {
               put(columnFamily, key, value);
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .upsert(any(), any());
     doAnswer(
             invocation -> {
@@ -217,7 +217,7 @@ final class InMemoryBackend {
               rows(columnFamily).remove(key);
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .deleteIfExists(any());
     doAnswer(
             invocation -> {
@@ -231,7 +231,7 @@ final class InMemoryBackend {
                   visitor);
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .whileEqualPrefix(any(DbKey.class), any(RawKey.class), any(KeyValuePairVisitor.class));
     doAnswer(
             invocation -> {
@@ -245,7 +245,7 @@ final class InMemoryBackend {
                   (key, value) -> visitor.visit(key));
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .whileEqualPrefix(any(DbKey.class), any(RawKey.class), any(KeyVisitor.class));
     doAnswer(
             invocation -> {
@@ -260,7 +260,7 @@ final class InMemoryBackend {
                   visitor);
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .whileTrueReverse(any(RawKey.class), any(KeyValuePairVisitor.class));
     doAnswer(
             invocation -> {
@@ -275,9 +275,9 @@ final class InMemoryBackend {
                   (key, value) -> visitor.visit(key));
               return null;
             })
-        .when(passThrough)
+        .when(storageColumnFamily)
         .whileTrueReverse(any(RawKey.class), any(KeyVisitor.class));
-    return passThrough;
+    return storageColumnFamily;
   }
 
   private void record(final String write) {

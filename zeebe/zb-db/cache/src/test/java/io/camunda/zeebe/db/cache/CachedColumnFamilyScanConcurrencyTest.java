@@ -29,13 +29,13 @@ final class CachedColumnFamilyScanConcurrencyTest {
   private static final ConsistencyChecksSettings CHECKS_ON =
       new ConsistencyChecksSettings(true, true);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final List<WriteBehindStore<TestColumnFamily>> stores = new ArrayList<>();
 
   @AfterEach
   void closeStores() {
-    backend.resumeScans();
-    backend.resumeTransactions();
+    storage.resumeScans();
+    storage.resumeTransactions();
     stores.forEach(WriteBehindStore::close);
   }
 
@@ -98,26 +98,26 @@ final class CachedColumnFamilyScanConcurrencyTest {
     final var values = new TreeSet<Long>();
     scanner.columnFamily().forEach((key, value) -> values.add(value.getValue()));
     assertThat(values).containsExactly(transactions);
-    assertThat(backend.get(FIRST, serialize(dbLong(0)))).isEqualTo(serialize(dbLong(transactions)));
+    assertThat(storage.get(FIRST, serialize(dbLong(0)))).isEqualTo(serialize(dbLong(transactions)));
   }
 
   @Test
   void shouldHoldPublicationsBackUntilTheScansFirstEntry() throws Exception {
     // given
     for (long key = 0; key < 5; key++) {
-      backend.put(FIRST, serialize(dbLong(key)), serialize(dbLong(0)));
+      storage.put(FIRST, serialize(dbLong(key)), serialize(dbLong(0)));
     }
     final var store = store(new TestConfiguration().maxWriteDelay(Duration.ofHours(1)));
     final var committer = client(store);
     final var scanner = client(store);
-    backend.pauseScans();
+    storage.pauseScans();
     final var scanned = new ArrayList<Long>();
     final var scanning =
         inBackgroundThread(
             () -> scanner.columnFamily().forEach((key, value) -> scanned.add(value.getValue())));
-    backend.awaitPausedScan();
+    storage.awaitPausedScan();
 
-    // when - another context commits while the backend has fixed its view, before its first entry
+    // when - another context commits while the storage has fixed its view, before its first entry
     final var committing =
         inBackgroundThread(
             () ->
@@ -131,7 +131,7 @@ final class CachedColumnFamilyScanConcurrencyTest {
                         }));
     await().until(() -> committing.thread().getState() == Thread.State.WAITING);
     assertThat(committing.done()).isNotDone();
-    backend.resumeScans();
+    storage.resumeScans();
 
     // then - the scan sees none of the transaction, which publishes once the scan got going
     assertThat(scanning.done()).succeedsWithin(Duration.ofSeconds(5));
@@ -143,13 +143,13 @@ final class CachedColumnFamilyScanConcurrencyTest {
   }
 
   private WriteBehindStore<TestColumnFamily> store(final TestConfiguration configuration) {
-    final var store = new WriteBehindStore<>(backend.db(), configuration.build());
+    final var store = new WriteBehindStore<>(storage.db(), configuration.build());
     stores.add(store);
     return store;
   }
 
   private Client client(final WriteBehindStore<TestColumnFamily> store) {
-    final var context = new CachedTransactionContext<>(store, backend.db());
+    final var context = new CachedTransactionContext<>(store, storage.db());
     return new Client(
         context,
         new CachedColumnFamily<>(store, context, FIRST, new DbLong(), new DbLong(), CHECKS_ON));

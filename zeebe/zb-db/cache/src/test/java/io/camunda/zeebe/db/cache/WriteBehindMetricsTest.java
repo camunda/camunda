@@ -50,10 +50,10 @@ final class WriteBehindMetricsTest {
   private static final Duration STALLED = Duration.ofHours(1);
   private static final Duration QUICK = Duration.ofMillis(10);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
-  private final MeterRegistry registry = backend.meterRegistry();
-  private final PassThroughColumnFamilies<TestColumnFamily> reader =
-      new PassThroughColumnFamilies<>(backend.db(), backend.db().createContext());
+  private final InMemoryStorage storage = new InMemoryStorage();
+  private final MeterRegistry registry = storage.meterRegistry();
+  private final StorageColumnFamilies<TestColumnFamily> reader =
+      new StorageColumnFamilies<>(storage.db(), storage.db().createContext());
 
   @Test
   void shouldCountReadsByWhereTheyAreAnswered() {
@@ -80,7 +80,7 @@ final class WriteBehindMetricsTest {
   void shouldCountReadsThatTakeTheReadLock() {
     // given - a store that reads under the lock right away
     try (final var store =
-        new WriteBehindStore<>(backend.db(), new TestConfiguration().build(), 0)) {
+        new WriteBehindStore<>(storage.db(), new TestConfiguration().build(), 0)) {
       // when
       store.get(key(1), reader);
 
@@ -110,7 +110,7 @@ final class WriteBehindMetricsTest {
   }
 
   @Test
-  void shouldShowWhatTheBackendDoesNotHaveYet() {
+  void shouldShowWhatTheStorageDoesNotHaveYet() {
     try (final var store = store(new TestConfiguration().maxWriteDelay(STALLED))) {
       // when
       store.commit(Map.of(key(1), new Op(bytes(10)), key(2), new Op(bytes(20))));
@@ -134,7 +134,7 @@ final class WriteBehindMetricsTest {
   @Test
   void shouldShowHowManyWritesTheWriterCombined() {
     // given
-    backend.put(FIRST, bytes(2), bytes(20));
+    storage.put(FIRST, bytes(2), bytes(20));
     try (final var store = store(new TestConfiguration().maxWriteDelay(STALLED))) {
       store.commit(Map.of(key(1), new Op(bytes(10))));
       store.commit(Map.of(key(1), new Op(bytes(11))));
@@ -143,7 +143,7 @@ final class WriteBehindMetricsTest {
       // when
       store.catchUp();
 
-      // then - four committed keys became one backend transaction with one upsert and one delete
+      // then - four committed keys became one storage transaction with one upsert and one delete
       assertThat(counter(COMMITTED_KEYS)).isEqualTo(4);
       assertThat(writtenKeys("upsert")).isOne();
       assertThat(writtenKeys("delete")).isOne();
@@ -189,7 +189,7 @@ final class WriteBehindMetricsTest {
   void shouldCountRetriedWrites() {
     try (final var store = store(new TestConfiguration().maxWriteDelay(QUICK))) {
       // given
-      backend.failTransactions(1, () -> new RecoverableException("expected"));
+      storage.failTransactions(1, () -> new RecoverableException("expected"));
 
       // when
       store.commit(Map.of(key(1), new Op(bytes(10))));
@@ -205,7 +205,7 @@ final class WriteBehindMetricsTest {
   void shouldCountFailures() {
     try (final var store = store(new TestConfiguration().maxWriteDelay(QUICK))) {
       // given
-      backend.failTransactions(1, () -> new IllegalStateException("expected"));
+      storage.failTransactions(1, () -> new IllegalStateException("expected"));
 
       // when
       store.commit(Map.of(key(1), new Op(bytes(10))));
@@ -219,7 +219,7 @@ final class WriteBehindMetricsTest {
   void shouldTimeSnapshots() throws Exception {
     try (final var db =
         new WriteBehindZeebeDb<>(
-            backend.db(),
+            storage.db(),
             new TestConfiguration().maxWriteDelay(STALLED).build(),
             new ConsistencyChecksSettings(false, false))) {
       // when
@@ -232,7 +232,7 @@ final class WriteBehindMetricsTest {
   }
 
   private WriteBehindStore<TestColumnFamily> store(final TestConfiguration configuration) {
-    return new WriteBehindStore<>(backend.db(), configuration.build());
+    return new WriteBehindStore<>(storage.db(), configuration.build());
   }
 
   private double counter(final WriteBehindMetricsDoc documentation) {

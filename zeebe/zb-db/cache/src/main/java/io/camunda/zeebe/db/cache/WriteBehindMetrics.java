@@ -44,8 +44,8 @@ import org.ehcache.core.statistics.CacheStatistics;
 import org.ehcache.core.statistics.TierStatistics;
 
 /**
- * The write-behind cache's meters. They're registered on the backend's meter registry, which
- * carries the partition's tags and goes away when the backend closes.
+ * The write-behind cache's meters. They're registered on the storage's meter registry, which
+ * carries the partition's tags and goes away when the storage closes.
  */
 final class WriteBehindMetrics {
 

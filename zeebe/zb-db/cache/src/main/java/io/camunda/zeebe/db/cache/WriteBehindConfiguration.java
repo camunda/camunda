@@ -15,7 +15,7 @@ import java.time.Duration;
  *
  * @param cacheMaxBytes the size of the read cache, EhCache's heap tier
  * @param maxPendingBytes the key and value bytes of queued transactions above which commits wait
- * @param batchSize the most distinct keys the writer applies in one backend transaction; a larger
+ * @param batchSize the most distinct keys the writer applies in one storage transaction; a larger
  *     transaction is written alone
  * @param maxWriteDelay how long the oldest queued transaction waits for its group to fill
  * @param snapshotCatchUpTimeout how long a snapshot waits for the writer to catch up

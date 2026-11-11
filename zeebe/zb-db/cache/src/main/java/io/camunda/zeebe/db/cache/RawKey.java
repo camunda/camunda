@@ -12,10 +12,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * The key type of the backend's pass-through column families. It writes its bytes unchanged, so the
- * backend stores exactly what the caller's key serialized to.
+ * The key type of the storage column families. It writes its bytes unchanged, so the storage keeps
+ * exactly what the caller's key serialized to.
  *
- * <p>{@link #wrap} copies what the backend reads into a new array, because the backend reuses its
+ * <p>{@link #wrap} copies what the storage reads into a new array, because the storage reuses its
  * buffers.
  */
 final class RawKey implements DbKey {

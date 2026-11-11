@@ -9,19 +9,19 @@ package io.camunda.zeebe.db.cache;
 
 import static java.util.Objects.requireNonNull;
 
-import io.camunda.zeebe.db.cache.PassThroughColumnFamilies.ScanVisitor;
+import io.camunda.zeebe.db.cache.StorageColumnFamilies.ScanVisitor;
 import io.camunda.zeebe.protocol.EnumValue;
 import java.util.Arrays;
 import java.util.NavigableMap;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Merges a backend scan with the versions the backend doesn't have: the transaction's own writes,
+ * Merges a storage scan with the versions the storage doesn't have: the transaction's own writes,
  * read live so that writes made during the scan count, and a copy of the unflushed versions taken
  * when the scan began. On equal keys, the transaction wins over the copy, which wins over the
- * backend. A tombstone hides its key.
+ * storage. A tombstone hides its key.
  *
- * <p>The backend pushes its entries through {@link #onBackendEntry}; before each one, the merge
+ * <p>The storage pushes its entries through {@link #onStorageEntry}; before each one, the merge
  * emits the overlay entries that come first. {@link #finish} emits the rest. Like RocksDB, the
  * merge stops at the first visible key outside the prefix.
  */
@@ -63,8 +63,8 @@ final class OverlayMerge {
     cursor = new CacheKey(columnFamily, startAt);
   }
 
-  /** Merges in the backend's next entry. Returns whether the backend scan should go on. */
-  boolean onBackendEntry(final byte[] key, final byte @Nullable [] value) {
+  /** Merges in the storage's next entry. Returns whether the storage scan should go on. */
+  boolean onStorageEntry(final byte[] key, final byte @Nullable [] value) {
     final var cacheKey = new CacheKey(columnFamily, key);
     emitOverlayBefore(cacheKey);
     if (stopped) {
@@ -86,7 +86,7 @@ final class OverlayMerge {
     return !stopped;
   }
 
-  /** Emits the overlay entries after the backend's last one. */
+  /** Emits the overlay entries after the storage's last one. */
   void finish() {
     emitOverlayBefore(null);
   }

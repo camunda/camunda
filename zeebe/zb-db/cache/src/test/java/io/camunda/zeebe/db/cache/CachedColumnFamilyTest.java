@@ -27,12 +27,12 @@ final class CachedColumnFamilyTest {
   private static final ConsistencyChecksSettings CHECKS_ON =
       new ConsistencyChecksSettings(true, true);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final WriteBehindStore<TestColumnFamily> store = stalledStore();
   private final CachedTransactionContext<TestColumnFamily> context =
-      new CachedTransactionContext<>(store, backend.db());
+      new CachedTransactionContext<>(store, storage.db());
   private final CachedTransactionContext<TestColumnFamily> otherContext =
-      new CachedTransactionContext<>(store, backend.db());
+      new CachedTransactionContext<>(store, storage.db());
 
   @AfterEach
   void closeStore() {
@@ -72,7 +72,7 @@ final class CachedColumnFamilyTest {
     // then
     assertThat(otherColumnFamily.get(dbLong(1))).extracting(DbLong::getValue).isEqualTo(10L);
     assertThat(otherColumnFamily.get(dbLong(2))).extracting(DbLong::getValue).isEqualTo(20L);
-    assertThat(backend.get(FIRST, serialize(dbLong(1)))).isNull();
+    assertThat(storage.get(FIRST, serialize(dbLong(1)))).isNull();
   }
 
   @Test
@@ -134,7 +134,7 @@ final class CachedColumnFamilyTest {
   }
 
   @Test
-  void shouldCheckPreconditionsAgainstCommitsTheBackendDoesNotHaveYet() {
+  void shouldCheckPreconditionsAgainstCommitsTheStorageDoesNotHaveYet() {
     // given
     longColumnFamily(context, FIRST, CHECKS_ON).insert(dbLong(1), dbLong(10));
     final var otherColumnFamily = longColumnFamily(otherContext, FIRST, CHECKS_ON);
@@ -168,7 +168,7 @@ final class CachedColumnFamilyTest {
   }
 
   @Test
-  void shouldCheckForeignKeysAgainstCommitsTheBackendDoesNotHaveYet() {
+  void shouldCheckForeignKeysAgainstCommitsTheStorageDoesNotHaveYet() {
     // given
     final var referencing =
         new CachedColumnFamily<>(
@@ -188,7 +188,7 @@ final class CachedColumnFamilyTest {
   }
 
   @Test
-  void shouldCheckPrefixForeignKeysAgainstCommitsTheBackendDoesNotHaveYet() {
+  void shouldCheckPrefixForeignKeysAgainstCommitsTheStorageDoesNotHaveYet() {
     // given
     final var referencing =
         new CachedColumnFamily<>(
@@ -223,7 +223,7 @@ final class CachedColumnFamilyTest {
 
   private WriteBehindStore<TestColumnFamily> stalledStore() {
     return new WriteBehindStore<>(
-        backend.db(), new TestConfiguration().maxWriteDelay(Duration.ofHours(1)).build());
+        storage.db(), new TestConfiguration().maxWriteDelay(Duration.ofHours(1)).build());
   }
 
   private static DbForeignKey<DbLong> foreignKey(final long value) {

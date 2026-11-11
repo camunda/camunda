@@ -13,19 +13,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-final class BackendLoaderTest {
+final class StorageLoaderTest {
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final DirtyIndex dirtyIndex = new DirtyIndex();
-  private final BackendLoader<TestColumnFamily> loader =
-      new BackendLoader<>(dirtyIndex, new WriteBehindMetrics(backend.meterRegistry()));
-  private final PassThroughColumnFamilies<TestColumnFamily> reader =
-      new PassThroughColumnFamilies<>(backend.db(), backend.db().createContext());
+  private final StorageLoader<TestColumnFamily> loader =
+      new StorageLoader<>(dirtyIndex, new WriteBehindMetrics(storage.meterRegistry()));
+  private final StorageColumnFamilies<TestColumnFamily> reader =
+      new StorageColumnFamilies<>(storage.db(), storage.db().createContext());
 
   @Test
-  void shouldLoadUnflushedVersionInsteadOfTheBackendValue() {
+  void shouldLoadUnflushedVersionInsteadOfTheStorageValue() {
     // given
-    backend.put(FIRST, bytes(1), bytes(10));
+    storage.put(FIRST, bytes(1), bytes(10));
     final var key = new CacheKey(FIRST, bytes(1));
     final var unflushed = new CachedValue(bytes(20), 3);
     dirtyIndex.put(key, unflushed);
@@ -38,9 +38,9 @@ final class BackendLoaderTest {
   }
 
   @Test
-  void shouldLoadBackendValue() {
+  void shouldLoadStorageValue() {
     // given
-    backend.put(FIRST, bytes(1), bytes(10));
+    storage.put(FIRST, bytes(1), bytes(10));
 
     // when
     final var loaded = loader.readThrough(reader, () -> loader.load(new CacheKey(FIRST, bytes(1))));
@@ -50,7 +50,7 @@ final class BackendLoaderTest {
   }
 
   @Test
-  void shouldLoadKeyMissingFromBackendAsTombstone() {
+  void shouldLoadKeyMissingFromStorageAsTombstone() {
     // when
     final var loaded = loader.readThrough(reader, () -> loader.load(new CacheKey(FIRST, bytes(1))));
 
@@ -70,13 +70,13 @@ final class BackendLoaderTest {
   }
 
   @Test
-  void shouldNotWriteToTheBackend() {
+  void shouldNotWriteToTheStorage() {
     // when
     loader.write(new CacheKey(FIRST, bytes(1)), new CachedValue(bytes(10), 1));
 
     // then
-    assertThat(backend.get(FIRST, bytes(1))).isNull();
-    assertThat(backend.transactions()).isZero();
+    assertThat(storage.get(FIRST, bytes(1))).isNull();
+    assertThat(storage.transactions()).isZero();
   }
 
   private static byte[] bytes(final int... values) {

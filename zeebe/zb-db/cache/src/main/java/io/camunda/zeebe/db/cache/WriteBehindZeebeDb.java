@@ -28,27 +28,27 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A {@link ZeebeDb} that keeps committed state in a write-behind cache and writes it to the backend
- * it wraps in the background. It only uses the backend through the {@link ZeebeDb} API, so it works
- * with any backend.
+ * A {@link ZeebeDb} that keeps committed state in a write-behind cache and writes it to the storage
+ * it wraps in the background. It only uses the storage through the {@link ZeebeDb} API, so it works
+ * with any storage.
  */
 final class WriteBehindZeebeDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDb<ColumnFamilyNames>, HealthMonitorable {
 
-  private final ZeebeDb<ColumnFamilyNames> backend;
+  private final ZeebeDb<ColumnFamilyNames> storage;
   private final WriteBehindStore<ColumnFamilyNames> store;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private volatile @Nullable Instant failedAt;
 
   WriteBehindZeebeDb(
-      final ZeebeDb<ColumnFamilyNames> backend,
+      final ZeebeDb<ColumnFamilyNames> storage,
       final WriteBehindConfiguration configuration,
       final ConsistencyChecksSettings consistencyChecksSettings) {
-    this.backend = backend;
+    this.storage = storage;
     this.consistencyChecksSettings = consistencyChecksSettings;
-    store = new WriteBehindStore<>(backend, configuration);
+    store = new WriteBehindStore<>(storage, configuration);
     store.addFailureListener(this::reportFailure);
   }
 
@@ -69,24 +69,24 @@ final class WriteBehindZeebeDb<
   }
 
   /**
-   * Waits until the backend holds every transaction committed so far, then snapshots the backend
-   * while the writer keeps writing. Each backend transaction is a group of whole transactions, so
+   * Waits until the storage holds every transaction committed so far, then snapshots the storage
+   * while the writer keeps writing. Each storage transaction is a group of whole transactions, so
    * the snapshot holds whole transactions, at or past everything committed before this call.
    */
   @Override
   public void createSnapshot(final File snapshotDir) {
     store.catchUp();
-    store.metrics().timeSnapshotCheckpoint(() -> backend.createSnapshot(snapshotDir));
+    store.metrics().timeSnapshotCheckpoint(() -> storage.createSnapshot(snapshotDir));
   }
 
   @Override
   public Optional<String> getProperty(final String propertyName) {
-    return backend.getProperty(propertyName);
+    return storage.getProperty(propertyName);
   }
 
   @Override
   public TransactionContext createContext() {
-    return new CachedTransactionContext<>(store, backend);
+    return new CachedTransactionContext<>(store, storage);
   }
 
   @Override
@@ -122,21 +122,21 @@ final class WriteBehindZeebeDb<
 
   @Override
   public MeterRegistry getMeterRegistry() {
-    return backend.getMeterRegistry();
+    return storage.getMeterRegistry();
   }
 
   @Override
   public void exportMetrics() {
-    backend.exportMetrics();
+    storage.exportMetrics();
   }
 
-  /** Closes the cache first, so that its writer doesn't touch the backend once it is closed. */
+  /** Closes the cache first, so that its writer doesn't touch the storage once it is closed. */
   @Override
   public void close() throws Exception {
     try {
       store.close();
     } finally {
-      backend.close();
+      storage.close();
     }
   }
 

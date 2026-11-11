@@ -27,12 +27,12 @@ final class WriteBehindStoreConcurrencyTest {
   private static final int COMMITS = 2_000;
   private static final Duration QUICK = Duration.ofMillis(1);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final List<WriteBehindStore<TestColumnFamily>> stores = new ArrayList<>();
 
   @AfterEach
   void closeStores() {
-    backend.resumeTransactions();
+    storage.resumeTransactions();
     stores.forEach(WriteBehindStore::close);
   }
 
@@ -97,7 +97,7 @@ final class WriteBehindStoreConcurrencyTest {
     assertThat(committer).succeedsWithin(Duration.ofSeconds(30));
     assertThat(backwardReads).isEmpty();
     await()
-        .untilAsserted(() -> assertThat(intValue(backend.get(FIRST, bytes(1)))).isEqualTo(COMMITS));
+        .untilAsserted(() -> assertThat(intValue(storage.get(FIRST, bytes(1)))).isEqualTo(COMMITS));
     assertThat(intValue(store.get(key(1), reader))).isEqualTo(COMMITS);
   }
 
@@ -107,20 +107,20 @@ final class WriteBehindStoreConcurrencyTest {
     final var store =
         store(new TestConfiguration().cacheMaxBytes(2 * 1024).maxWriteDelay(QUICK).batchSize(1), 3);
     final var reader = reader();
-    backend.pauseTransactions();
+    storage.pauseTransactions();
     store.commit(Map.of(key(1), new Op(bytes(1))));
-    backend.awaitPausedTransaction();
+    storage.awaitPausedTransaction();
 
     // when - overwrite while the writer holds the older version, then evict it from the cache
     store.commit(Map.of(key(1), new Op(bytes(2))));
     for (int i = 0; i < 50; i++) {
       store.commit(Map.of(key(100 + i), new Op(new byte[200])));
     }
-    backend.resumeTransactions();
+    storage.resumeTransactions();
 
     // then
     assertThat(store.get(key(1), reader)).containsExactly(2);
-    await().untilAsserted(() -> assertThat(backend.get(FIRST, bytes(1))).containsExactly(2));
+    await().untilAsserted(() -> assertThat(storage.get(FIRST, bytes(1))).containsExactly(2));
     assertThat(store.get(key(1), reader)).containsExactly(2);
   }
 
@@ -137,14 +137,14 @@ final class WriteBehindStoreConcurrencyTest {
     // then
     assertThat(readOnly).succeedsWithin(Duration.ofSeconds(5));
     assertThat(committer.done()).isNotDone();
-    backend.resumeTransactions();
+    storage.resumeTransactions();
     assertThat(committer.done()).succeedsWithin(Duration.ofSeconds(10));
   }
 
   @Test
   void shouldReadUnderTheLockWhileACommitterIsBlocked() throws Exception {
     // given - no optimistic attempts, so every read takes the read lock and skips the cache
-    backend.put(FIRST, bytes(9), bytes(90));
+    storage.put(FIRST, bytes(9), bytes(90));
     final var store =
         store(new TestConfiguration().maxWriteDelay(QUICK).batchSize(1).maxPendingBytes(0), 0);
     final var reader = reader();
@@ -163,7 +163,7 @@ final class WriteBehindStoreConcurrencyTest {
               assertThat(values.get(0)).containsExactly(1);
               assertThat(values.get(1)).containsExactly(90);
             });
-    backend.resumeTransactions();
+    storage.resumeTransactions();
     assertThat(committer.done()).succeedsWithin(Duration.ofSeconds(10));
   }
 
@@ -174,7 +174,7 @@ final class WriteBehindStoreConcurrencyTest {
    */
   private Background blockedCommitter(final WriteBehindStore<TestColumnFamily> store)
       throws InterruptedException {
-    backend.pauseTransactions();
+    storage.pauseTransactions();
     final var committer =
         inBackgroundThread(
             () -> {
@@ -182,7 +182,7 @@ final class WriteBehindStoreConcurrencyTest {
                 store.commit(Map.of(key(i), new Op(bytes(i))));
               }
             });
-    backend.awaitPausedTransaction();
+    storage.awaitPausedTransaction();
     await()
         .until(
             () ->
@@ -194,13 +194,13 @@ final class WriteBehindStoreConcurrencyTest {
   private WriteBehindStore<TestColumnFamily> store(
       final TestConfiguration configuration, final int optimisticReadAttempts) {
     final var store =
-        new WriteBehindStore<>(backend.db(), configuration.build(), optimisticReadAttempts);
+        new WriteBehindStore<>(storage.db(), configuration.build(), optimisticReadAttempts);
     stores.add(store);
     return store;
   }
 
-  private PassThroughColumnFamilies<TestColumnFamily> reader() {
-    return new PassThroughColumnFamilies<>(backend.db(), backend.db().createContext());
+  private StorageColumnFamilies<TestColumnFamily> reader() {
+    return new StorageColumnFamilies<>(storage.db(), storage.db().createContext());
   }
 
   private static CompletableFuture<Void> inBackground(final Runnable runnable) {

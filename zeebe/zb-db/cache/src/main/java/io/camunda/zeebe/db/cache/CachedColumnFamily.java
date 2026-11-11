@@ -17,7 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.db.cache.PassThroughColumnFamilies.ScanVisitor;
+import io.camunda.zeebe.db.cache.StorageColumnFamilies.ScanVisitor;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -38,9 +38,9 @@ import org.jspecify.annotations.Nullable;
  * A column family of the write-behind cache. Writes go to the context's transaction; reads see that
  * transaction's own writes first, then the store.
  *
- * <p>Scans merge the backend's scan with the same view; see {@link #scan}.
+ * <p>Scans merge the storage's scan with the same view; see {@link #scan}.
  *
- * <p>The consistency checks run here, against that same view: the backend lags behind the cache, so
+ * <p>The consistency checks run here, against that same view: the storage lags behind the cache, so
  * its own checks would give wrong answers. A failed check throws the same {@link
  * ZeebeDbInconsistentException} as RocksDB.
  */
@@ -462,9 +462,9 @@ final class CachedColumnFamily<
 
   /**
    * Scans {@code scanned} forward within {@code prefix}, or in reverse over the whole column
-   * family, from {@code startAt} or else from the prefix. It merges the backend's scan with this
-   * transaction's writes and with the unflushed versions, copied at the instant the backend fixes
-   * its view: the copy holds off publication and cleanup until the backend's first callback.
+   * family, from {@code startAt} or else from the prefix. It merges the storage's scan with this
+   * transaction's writes and with the unflushed versions, copied at the instant the storage fixes
+   * its view: the copy holds off publication and cleanup until the storage's first callback.
    */
   private void scan(
       final EnumValue scanned,
@@ -478,7 +478,7 @@ final class CachedColumnFamily<
           final var start = startAt != null ? startAt : prefix;
           // RocksDB stops at the first key after the start that isn't in the prefix. If the start
           // lies outside the prefix, only a scan of the whole column family shows that key.
-          final var backendPrefix = OverlayMerge.startsWith(start, prefix) ? prefix : NO_PREFIX;
+          final var storagePrefix = OverlayMerge.startsWith(start, prefix) ? prefix : NO_PREFIX;
           final var overlay =
               reverse
                   ? store.beginScan(scanned, null, false, new CacheKey(scanned, start), true)
@@ -486,7 +486,7 @@ final class CachedColumnFamily<
                       scanned,
                       new CacheKey(scanned, start),
                       true,
-                      prefixEnd(scanned, backendPrefix),
+                      prefixEnd(scanned, storagePrefix),
                       false);
           try {
             final var merge =
@@ -503,13 +503,13 @@ final class CachedColumnFamily<
                 .reader()
                 .scan(
                     scanned,
-                    backendPrefix,
+                    storagePrefix,
                     start,
                     reverse,
                     keysOnly,
                     (key, value) -> {
                       overlay.release();
-                      return merge.onBackendEntry(key, value);
+                      return merge.onStorageEntry(key, value);
                     });
             overlay.release();
             merge.finish();

@@ -28,11 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Writes committed transactions to the backend in commit order, on a thread of its own.
+ * Writes committed transactions to the storage in commit order, on a thread of its own.
  *
- * <p>It groups consecutive whole transactions into one backend transaction, writing each key once
+ * <p>It groups consecutive whole transactions into one storage transaction, writing each key once
  * with its newest version, and never splits a transaction. Each group commits atomically and ends
- * on a transaction boundary, so the backend always holds a prefix of the committed transactions.
+ * on a transaction boundary, so the storage always holds a prefix of the committed transactions.
  *
  * <p>A group closes when the queued transactions have {@code batchSize} keys, when the oldest of
  * them has waited {@code maxWriteDelay}, or when {@link #flushUpTo} asked for it. It takes whole
@@ -46,7 +46,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   private static final int MAX_WRITE_ATTEMPTS = 5;
   private static final Duration INITIAL_BACKOFF = Duration.ofMillis(10);
 
-  private final PassThroughColumnFamilies<ColumnFamilyNames> backendColumnFamilies;
+  private final StorageColumnFamilies<ColumnFamilyNames> storageColumnFamilies;
   private final DirtyIndex dirtyIndex;
   private final StampedLock publishLock;
   private final int batchSize;
@@ -71,14 +71,14 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
    * @param onFailure called when a group can't be written; the writer then stops
    */
   TransactionWriter(
-      final ZeebeDb<ColumnFamilyNames> backend,
+      final ZeebeDb<ColumnFamilyNames> storage,
       final DirtyIndex dirtyIndex,
       final StampedLock publishLock,
       final WriteBehindConfiguration configuration,
       final WriteBehindMetrics metrics,
       final Runnable onFlushed,
       final Consumer<Throwable> onFailure) {
-    backendColumnFamilies = new PassThroughColumnFamilies<>(backend, backend.createContext());
+    storageColumnFamilies = new StorageColumnFamilies<>(storage, storage.createContext());
     this.dirtyIndex = dirtyIndex;
     this.publishLock = publishLock;
     batchSize = configuration.batchSize();
@@ -97,7 +97,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     try {
       if (closed) {
         throw new IllegalStateException(
-            "Expected to queue a transaction for the backend, but the writer is closed");
+            "Expected to queue a transaction for the storage, but the writer is closed");
       }
       queue.add(transaction);
       queuedKeys += transaction.versions().size();
@@ -114,7 +114,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     return lastQueuedSeq;
   }
 
-  /** Returns the seq of the last transaction written to the backend, or 0 if there is none yet. */
+  /** Returns the seq of the last transaction written to the storage, or 0 if there is none yet. */
   long flushedSeq() {
     return flushedSeq;
   }
@@ -133,7 +133,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     }
   }
 
-  /** Returns the key and value bytes of the transactions the backend doesn't have yet. */
+  /** Returns the key and value bytes of the transactions the storage doesn't have yet. */
   long queuedBytes() {
     return queuedBytes.get();
   }
@@ -166,17 +166,17 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   }
 
   /**
-   * Writes {@code newest} as one backend transaction. A recoverable error is retried with backoff,
+   * Writes {@code newest} as one storage transaction. A recoverable error is retried with backoff,
    * since the group rewrites exactly the same versions; anything else, or running out of attempts,
    * is thrown.
    *
    * @return {@code false} if the writer was closed while waiting to retry
    */
-  private boolean writeToBackend(final TreeMap<CacheKey, CachedValue> newest)
+  private boolean writeToStorage(final TreeMap<CacheKey, CachedValue> newest)
       throws InterruptedException {
     for (int attempt = 1; ; attempt++) {
       try {
-        backendColumnFamilies
+        storageColumnFamilies
             .context()
             .runInTransaction(
                 () ->
@@ -184,9 +184,9 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
                         (key, version) -> {
                           final var value = version.bytes();
                           if (value == null) {
-                            backendColumnFamilies.deleteIfExists(key);
+                            storageColumnFamilies.deleteIfExists(key);
                           } else {
-                            backendColumnFamilies.upsert(key, value);
+                            storageColumnFamilies.upsert(key, value);
                           }
                         }));
         return true;
@@ -197,7 +197,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
         metrics.observeWriteRetry();
         final long backoffNanos = INITIAL_BACKOFF.toNanos() << (attempt - 1);
         LOG.warn(
-            "Failed to write {} keys to the backend (attempt {} of {}), retrying in {} ms",
+            "Failed to write {} keys to the storage (attempt {} of {}), retrying in {} ms",
             newest.size(),
             attempt,
             MAX_WRITE_ATTEMPTS,
@@ -296,7 +296,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     }
 
     final long writeStart = System.nanoTime();
-    if (!writeToBackend(newest)) {
+    if (!writeToStorage(newest)) {
       return;
     }
     final int deletes = (int) newest.values().stream().filter(v -> v.bytes() == null).count();

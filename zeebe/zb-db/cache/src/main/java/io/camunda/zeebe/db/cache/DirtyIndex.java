@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The versions that are committed but not yet written to the backend, with one sorted map per
+ * The versions that are committed but not yet written to the storage, with one sorted map per
  * column family so that a scan copies from a single map.
  *
  * <p>Only publication and the cleanup after a flush change it, and both hold the store's publish

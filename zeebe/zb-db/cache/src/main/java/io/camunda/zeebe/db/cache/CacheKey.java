@@ -15,7 +15,7 @@ import java.util.Arrays;
  * io.camunda.zeebe.db.DbKey#write}.
  *
  * <p>Keys sort by column family, then by the unsigned byte order of the key, which is the order the
- * backend iterates in. The key array is shared with the cache and the DirtyIndex, so it must never
+ * storage iterates in. The key array is shared with the cache and the DirtyIndex, so it must never
  * be mutated or handed out.
  */
 final class CacheKey implements Comparable<CacheKey> {

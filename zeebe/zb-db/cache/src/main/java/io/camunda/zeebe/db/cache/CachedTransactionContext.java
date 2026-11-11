@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.EnumValue;
  * RocksDB's: nested {@link #runInTransaction} calls share one transaction, the outermost call
  * commits, and an error rolls back.
  *
- * <p>It also holds a backend context of its own, through which its column families load what the
+ * <p>It also holds a storage context of its own, through which its column families load what the
  * cache doesn't have.
  */
 final class CachedTransactionContext<
@@ -26,12 +26,12 @@ final class CachedTransactionContext<
     implements TransactionContext {
 
   private final CachedTransaction transaction;
-  private final PassThroughColumnFamilies<ColumnFamilyNames> reader;
+  private final StorageColumnFamilies<ColumnFamilyNames> reader;
 
   CachedTransactionContext(
-      final WriteBehindStore<ColumnFamilyNames> store, final ZeebeDb<ColumnFamilyNames> backend) {
+      final WriteBehindStore<ColumnFamilyNames> store, final ZeebeDb<ColumnFamilyNames> storage) {
     transaction = new CachedTransaction(store);
-    reader = new PassThroughColumnFamilies<>(backend, backend.createContext());
+    reader = new StorageColumnFamilies<>(storage, storage.createContext());
   }
 
   @Override
@@ -62,7 +62,7 @@ final class CachedTransactionContext<
     return transaction;
   }
 
-  PassThroughColumnFamilies<ColumnFamilyNames> reader() {
+  StorageColumnFamilies<ColumnFamilyNames> reader() {
     return reader;
   }
 

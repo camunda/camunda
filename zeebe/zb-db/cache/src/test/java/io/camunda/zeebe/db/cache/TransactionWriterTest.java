@@ -27,7 +27,7 @@ final class TransactionWriterTest {
 
   private static final Duration STALLED = Duration.ofHours(1);
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
   private final DirtyIndex dirtyIndex = new DirtyIndex();
   private final AtomicInteger flushes = new AtomicInteger();
   private final List<Throwable> failures = new CopyOnWriteArrayList<>();
@@ -40,19 +40,19 @@ final class TransactionWriterTest {
   }
 
   @Test
-  void shouldWriteATransactionInOneBackendTransaction() {
+  void shouldWriteATransactionInOneStorageTransaction() {
     // given
-    backend.put(FIRST, bytes(2), bytes(20));
+    storage.put(FIRST, bytes(2), bytes(20));
     final var writer = writer(1_000, Duration.ofMillis(1));
 
     // when
     writer.enqueue(transaction(version(1, 10, 1), version(2, null, 1)));
 
     // then
-    await().untilAsserted(() -> assertThat(backend.transactionLog()).hasSize(1));
-    assertThat(backend.transactionLog().getFirst())
+    await().untilAsserted(() -> assertThat(storage.transactionLog()).hasSize(1));
+    assertThat(storage.transactionLog().getFirst())
         .containsExactly("FIRST [1]=[10]", "FIRST [2] deleted");
-    assertThat(backend.get(FIRST, bytes(2))).isNull();
+    assertThat(storage.get(FIRST, bytes(2))).isNull();
   }
 
   @Test
@@ -72,10 +72,10 @@ final class TransactionWriterTest {
             version(5, 53, 3)));
 
     // then
-    await().untilAsserted(() -> assertThat(backend.transactionLog()).hasSize(2));
-    assertThat(backend.transactionLog().get(0))
+    await().untilAsserted(() -> assertThat(storage.transactionLog()).hasSize(2));
+    assertThat(storage.transactionLog().get(0))
         .containsExactly("FIRST [1]=[11]", "FIRST [2]=[22]", "FIRST [3]=[32]");
-    assertThat(backend.transactionLog().get(1))
+    assertThat(storage.transactionLog().get(1))
         .containsExactly(
             "FIRST [1]=[13]",
             "FIRST [2]=[23]",
@@ -94,7 +94,7 @@ final class TransactionWriterTest {
     writer.enqueue(transaction(version(1, 10, 1)));
 
     // then
-    await().untilAsserted(() -> assertThat(backend.get(FIRST, bytes(1))).containsExactly(10));
+    await().untilAsserted(() -> assertThat(storage.get(FIRST, bytes(1))).containsExactly(10));
   }
 
   @Test
@@ -110,7 +110,7 @@ final class TransactionWriterTest {
     // then
     await().untilAsserted(() -> assertThat(writer.flushedSeq()).isEqualTo(2));
     assertThat(writer.lastQueuedSeq()).isEqualTo(2);
-    assertThat(backend.get(FIRST, bytes(2))).containsExactly(20);
+    assertThat(storage.get(FIRST, bytes(2))).containsExactly(20);
   }
 
   @Test
@@ -142,7 +142,7 @@ final class TransactionWriterTest {
     writer.close();
 
     // then
-    assertThat(backend.transactionLog()).isEmpty();
+    assertThat(storage.transactionLog()).isEmpty();
     assertThatThrownBy(() -> writer.enqueue(transaction(version(2, 20, 2))))
         .isInstanceOf(IllegalStateException.class);
   }
@@ -151,11 +151,11 @@ final class TransactionWriterTest {
       final int batchSize, final Duration maxWriteDelay) {
     final var writer =
         new TransactionWriter<>(
-            backend.db(),
+            storage.db(),
             dirtyIndex,
             new StampedLock(),
             new TestConfiguration().batchSize(batchSize).maxWriteDelay(maxWriteDelay).build(),
-            new WriteBehindMetrics(backend.meterRegistry()),
+            new WriteBehindMetrics(storage.meterRegistry()),
             flushes::incrementAndGet,
             failures::add);
     writers.add(writer);

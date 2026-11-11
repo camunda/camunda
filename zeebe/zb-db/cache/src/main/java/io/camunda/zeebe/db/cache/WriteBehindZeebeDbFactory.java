@@ -25,36 +25,36 @@ public final class WriteBehindZeebeDbFactory<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDbFactory<ColumnFamilyNames> {
 
-  private final ZeebeDbFactory<ColumnFamilyNames> backend;
+  private final ZeebeDbFactory<ColumnFamilyNames> storage;
   private final WriteBehindConfiguration configuration;
   private final ConsistencyChecksSettings consistencyChecksSettings;
 
   /**
    * @param consistencyChecksSettings the checks the cache runs; pass the same settings as to the
-   *     backend, whose own checks can't see the writes the cache hasn't written yet
+   *     storage, whose own checks can't see the writes the cache hasn't written yet
    */
   public WriteBehindZeebeDbFactory(
-      final ZeebeDbFactory<ColumnFamilyNames> backend,
+      final ZeebeDbFactory<ColumnFamilyNames> storage,
       final WriteBehindConfiguration configuration,
       final ConsistencyChecksSettings consistencyChecksSettings) {
-    this.backend = backend;
+    this.storage = storage;
     this.configuration = configuration;
     this.consistencyChecksSettings = consistencyChecksSettings;
   }
 
   @Override
   public ZeebeDb<ColumnFamilyNames> createDb(final File pathName, final boolean avoidFlush) {
-    return backend.createDb(pathName, avoidFlush);
+    return storage.createDb(pathName, avoidFlush);
   }
 
   @Override
   public ZeebeDb<ColumnFamilyNames> createDb(final File pathName) {
     return new WriteBehindZeebeDb<>(
-        backend.createDb(pathName), configuration, consistencyChecksSettings);
+        storage.createDb(pathName), configuration, consistencyChecksSettings);
   }
 
   @Override
   public ZeebeDb<ColumnFamilyNames> openSnapshotOnlyDb(final File path) {
-    return backend.openSnapshotOnlyDb(path);
+    return storage.openSnapshotOnlyDb(path);
   }
 }

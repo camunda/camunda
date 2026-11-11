@@ -29,26 +29,26 @@ final class WriteBehindStoreTest {
   private static final Duration QUICK = Duration.ofMillis(10);
   private static final long UNLIMITED = Long.MAX_VALUE;
 
-  private final InMemoryBackend backend = new InMemoryBackend();
-  private final PassThroughColumnFamilies<TestColumnFamily> reader =
-      new PassThroughColumnFamilies<>(backend.db(), backend.db().createContext());
+  private final InMemoryStorage storage = new InMemoryStorage();
+  private final StorageColumnFamilies<TestColumnFamily> reader =
+      new StorageColumnFamilies<>(storage.db(), storage.db().createContext());
 
   @Test
-  void shouldReadCommittedValueBeforeTheBackendHasIt() {
+  void shouldReadCommittedValueBeforeTheStorageHasIt() {
     try (final var store = store(STALLED, UNLIMITED, UNLIMITED)) {
       // when
       store.commit(Map.of(key(1), new Op(bytes(10))));
 
       // then
       assertThat(store.get(key(1), reader)).containsExactly(10);
-      assertThat(backend.get(FIRST, bytes(1))).isNull();
+      assertThat(storage.get(FIRST, bytes(1))).isNull();
     }
   }
 
   @Test
-  void shouldReadCommittedDeleteBeforeTheBackendHasIt() {
+  void shouldReadCommittedDeleteBeforeTheStorageHasIt() {
     // given
-    backend.put(FIRST, bytes(1), bytes(10));
+    storage.put(FIRST, bytes(1), bytes(10));
 
     try (final var store = store(STALLED, UNLIMITED, UNLIMITED)) {
       // when
@@ -56,14 +56,14 @@ final class WriteBehindStoreTest {
 
       // then
       assertThat(store.get(key(1), reader)).isNull();
-      assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
+      assertThat(storage.get(FIRST, bytes(1))).containsExactly(10);
     }
   }
 
   @Test
-  void shouldReadValueThatOnlyTheBackendHas() {
+  void shouldReadValueThatOnlyTheStorageHas() {
     // given
-    backend.put(FIRST, bytes(1), bytes(10));
+    storage.put(FIRST, bytes(1), bytes(10));
 
     try (final var store = store(STALLED, UNLIMITED, UNLIMITED)) {
       // when
@@ -75,9 +75,9 @@ final class WriteBehindStoreTest {
   }
 
   @Test
-  void shouldWriteCommittedPutsAndDeletesToTheBackend() {
+  void shouldWriteCommittedPutsAndDeletesToTheStorage() {
     // given
-    backend.put(FIRST, bytes(2), bytes(20));
+    storage.put(FIRST, bytes(2), bytes(20));
 
     try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
       // when
@@ -87,8 +87,8 @@ final class WriteBehindStoreTest {
       await()
           .untilAsserted(
               () -> {
-                assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
-                assertThat(backend.get(FIRST, bytes(2))).isNull();
+                assertThat(storage.get(FIRST, bytes(1))).containsExactly(10);
+                assertThat(storage.get(FIRST, bytes(2))).isNull();
               });
     }
   }
@@ -97,7 +97,7 @@ final class WriteBehindStoreTest {
   void shouldReadPendingWritesAfterTheyAreEvicted() {
     // given
     final var keys = IntStream.range(0, 100).boxed().toList();
-    keys.forEach(i -> backend.put(FIRST, bytes(i), new byte[100]));
+    keys.forEach(i -> storage.put(FIRST, bytes(i), new byte[100]));
     final var newValue = new byte[100];
     Arrays.fill(newValue, (byte) 1);
 
@@ -122,12 +122,12 @@ final class WriteBehindStoreTest {
 
       // then
       assertThat(store.get(key(1), reader)).containsExactly(10, 11);
-      await().untilAsserted(() -> assertThat(backend.get(FIRST, bytes(1))).containsExactly(10, 11));
+      await().untilAsserted(() -> assertThat(storage.get(FIRST, bytes(1))).containsExactly(10, 11));
     }
   }
 
   @Test
-  void shouldAgreeWithTheBackendAfterConcurrentCommitsOfTheSameKey() throws Exception {
+  void shouldAgreeWithTheStorageAfterConcurrentCommitsOfTheSameKey() throws Exception {
     try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
       // when
       final var committers =
@@ -148,7 +148,7 @@ final class WriteBehindStoreTest {
       // then
       final var lastCommitted = store.get(key(1), reader);
       await()
-          .untilAsserted(() -> assertThat(backend.get(FIRST, bytes(1))).isEqualTo(lastCommitted));
+          .untilAsserted(() -> assertThat(storage.get(FIRST, bytes(1))).isEqualTo(lastCommitted));
     }
   }
 
@@ -164,14 +164,14 @@ final class WriteBehindStoreTest {
       store.commit(Map.of(key(2), new Op(largeValue)));
 
       // then
-      assertThat(backend.get(FIRST, bytes(1))).isEqualTo(largeValue);
+      assertThat(storage.get(FIRST, bytes(1))).isEqualTo(largeValue);
     }
   }
 
   @Test
   void shouldCatchUpWithEveryCommitMadeBeforeIt() {
     // given
-    backend.put(FIRST, bytes(2), bytes(20));
+    storage.put(FIRST, bytes(2), bytes(20));
 
     try (final var store = store(STALLED, UNLIMITED, UNLIMITED)) {
       store.commit(Map.of(key(1), new Op(bytes(10))));
@@ -181,8 +181,8 @@ final class WriteBehindStoreTest {
       store.catchUp();
 
       // then
-      assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
-      assertThat(backend.get(FIRST, bytes(2))).isNull();
+      assertThat(storage.get(FIRST, bytes(1))).containsExactly(10);
+      assertThat(storage.get(FIRST, bytes(2))).isNull();
     }
   }
 
@@ -191,15 +191,15 @@ final class WriteBehindStoreTest {
     // given
     final var store =
         new WriteBehindStore<>(
-            backend.db(),
+            storage.db(),
             new TestConfiguration()
                 .maxWriteDelay(QUICK)
                 .snapshotCatchUpTimeout(Duration.ofMillis(200))
                 .build());
     try {
-      backend.pauseTransactions();
+      storage.pauseTransactions();
       store.commit(Map.of(key(1), new Op(bytes(10))));
-      backend.awaitPausedTransaction();
+      storage.awaitPausedTransaction();
 
       // when
       final var catchingUp = CompletableFuture.runAsync(store::catchUp);
@@ -212,7 +212,7 @@ final class WriteBehindStoreTest {
           .havingRootCause()
           .isInstanceOf(TimeoutException.class);
     } finally {
-      backend.resumeTransactions();
+      storage.resumeTransactions();
       store.close();
     }
   }
@@ -235,9 +235,9 @@ final class WriteBehindStoreTest {
   }
 
   @Test
-  void shouldRetryARecoverableBackendError() {
+  void shouldRetryARecoverableStorageError() {
     // given
-    backend.failTransactions(2, () -> new ZeebeDbException("expected", new RuntimeException()));
+    storage.failTransactions(2, () -> new ZeebeDbException("expected", new RuntimeException()));
 
     try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
       // when
@@ -245,7 +245,7 @@ final class WriteBehindStoreTest {
       store.catchUp();
 
       // then
-      assertThat(backend.get(FIRST, bytes(1))).containsExactly(10);
+      assertThat(storage.get(FIRST, bytes(1))).containsExactly(10);
       assertThat(store.failure()).isNull();
     }
   }
@@ -253,7 +253,7 @@ final class WriteBehindStoreTest {
   @Test
   void shouldFailOnceRetriesRunOut() {
     // given
-    backend.failTransactions(
+    storage.failTransactions(
         Integer.MAX_VALUE, () -> new ZeebeDbException("expected", new RuntimeException()));
 
     try (final var store = store(QUICK, UNLIMITED, UNLIMITED)) {
@@ -268,28 +268,28 @@ final class WriteBehindStoreTest {
   }
 
   @Test
-  void shouldAbortWaitersButKeepReadingOnceTheBackendFailsForGood() throws Exception {
+  void shouldAbortWaitersButKeepReadingOnceTheStorageFailsForGood() throws Exception {
     // given - the writer is paused on the first commit; the second commit and a snapshot's catch-up
     // wait for it, and neither would give up within the test
     final var store =
         new WriteBehindStore<>(
-            backend.db(),
+            storage.db(),
             new TestConfiguration()
                 .maxWriteDelay(QUICK)
                 .maxPendingBytes(0)
                 .snapshotCatchUpTimeout(Duration.ofMinutes(5))
                 .build());
     try {
-      backend.pauseTransactions();
+      storage.pauseTransactions();
       store.commit(Map.of(key(1), new Op(bytes(10))));
-      backend.awaitPausedTransaction();
+      storage.awaitPausedTransaction();
       final var catchingUp = CompletableFuture.runAsync(store::catchUp);
       final var committing =
           CompletableFuture.runAsync(() -> store.commit(Map.of(key(2), new Op(bytes(20)))));
 
       // when
-      backend.failTransactions(1, () -> new IllegalStateException("expected"));
-      backend.resumeTransactions();
+      storage.failTransactions(1, () -> new IllegalStateException("expected"));
+      storage.resumeTransactions();
 
       // then
       assertThat(catchingUp)
@@ -308,7 +308,7 @@ final class WriteBehindStoreTest {
           .isInstanceOf(UnrecoverableException.class);
       assertThatThrownBy(store::catchUp).isInstanceOf(UnrecoverableException.class);
     } finally {
-      backend.resumeTransactions();
+      storage.resumeTransactions();
       store.close();
     }
   }
@@ -316,7 +316,7 @@ final class WriteBehindStoreTest {
   private WriteBehindStore<TestColumnFamily> store(
       final Duration maxWriteDelay, final long cacheMaxBytes, final long maxPendingBytes) {
     return new WriteBehindStore<>(
-        backend.db(),
+        storage.db(),
         new TestConfiguration()
             .maxWriteDelay(maxWriteDelay)
             .cacheMaxBytes(cacheMaxBytes)

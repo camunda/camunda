@@ -121,17 +121,17 @@ class ZeebePartitionFactoryTest {
   }
 
   @Test
-  void shouldKeepTheStateInTheBackendWhenTheWriteBehindCacheIsDisabled() {
+  void shouldKeepTheStateInTheStorageWhenTheWriteBehindCacheIsDisabled() {
     // given
     final var brokerCfg = new BrokerCfg();
     @SuppressWarnings("unchecked")
-    final ZeebeDbFactory<ZbColumnFamilies> backend = mock(ZeebeDbFactory.class);
+    final ZeebeDbFactory<ZbColumnFamilies> storage = mock(ZeebeDbFactory.class);
 
     // when
-    final var factory = ZeebePartitionFactory.stateDbFactory(brokerCfg, backend);
+    final var factory = ZeebePartitionFactory.stateDbFactory(brokerCfg, storage);
 
     // then
-    assertThat(factory).isSameAs(backend);
+    assertThat(factory).isSameAs(storage);
   }
 
   @Test

@@ -36,7 +36,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Point reads the read cache didn't hold, so it loaded them from the backend */
+  /** Point reads the read cache didn't hold, so it loaded them from the storage */
   CACHE_LOADS {
     @Override
     public String getName() {
@@ -50,7 +50,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Point reads the read cache didn't hold, so it loaded them from the backend. Divided"
+      return "Point reads the read cache didn't hold, so it loaded them from the storage. Divided"
           + " by the cache gets, it's the miss rate";
     }
   },
@@ -96,7 +96,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Point reads answered by versions the backend doesn't have yet */
+  /** Point reads answered by versions the storage doesn't have yet */
   UNFLUSHED_READS {
     @Override
     public String getName() {
@@ -110,7 +110,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Point reads answered by versions the backend doesn't have yet";
+      return "Point reads answered by versions the storage doesn't have yet";
     }
   },
 
@@ -211,7 +211,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Keys with a version the backend doesn't have yet */
+  /** Keys with a version the storage doesn't have yet */
   UNFLUSHED_KEYS {
     @Override
     public String getName() {
@@ -225,11 +225,11 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Keys with a version the backend doesn't have yet";
+      return "Keys with a version the storage doesn't have yet";
     }
   },
 
-  /** Committed transactions the backend doesn't have yet */
+  /** Committed transactions the storage doesn't have yet */
   PENDING_TRANSACTIONS {
     @Override
     public String getName() {
@@ -243,11 +243,11 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Committed transactions the backend doesn't have yet";
+      return "Committed transactions the storage doesn't have yet";
     }
   },
 
-  /** Key and value bytes of the committed transactions the backend doesn't have yet */
+  /** Key and value bytes of the committed transactions the storage doesn't have yet */
   PENDING_BYTES {
     @Override
     public String getName() {
@@ -266,11 +266,11 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Key and value bytes of the committed transactions the backend doesn't have yet";
+      return "Key and value bytes of the committed transactions the storage doesn't have yet";
     }
   },
 
-  /** Keys the writer wrote to the backend, by operation */
+  /** Keys the writer wrote to the storage, by operation */
   WRITTEN_KEYS {
     @Override
     public String getName() {
@@ -284,7 +284,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Keys the writer wrote to the backend, by operation (upsert or delete)";
+      return "Keys the writer wrote to the storage, by operation (upsert or delete)";
     }
 
     @Override
@@ -293,7 +293,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Committed transactions per backend transaction */
+  /** Committed transactions per storage transaction */
   WRITE_TRANSACTIONS {
     private static final double[] BUCKETS = {1, 2, 5, 10, 25, 50, 100, 250, 500, 1000};
 
@@ -309,7 +309,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Committed transactions per backend transaction";
+      return "Committed transactions per storage transaction";
     }
 
     @Override
@@ -318,7 +318,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Distinct keys per backend transaction */
+  /** Distinct keys per storage transaction */
   WRITE_KEYS {
     private static final double[] BUCKETS = {1, 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000};
 
@@ -334,7 +334,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Distinct keys per backend transaction";
+      return "Distinct keys per storage transaction";
     }
 
     @Override
@@ -343,7 +343,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Time to write one backend transaction, including retries */
+  /** Time to write one storage transaction, including retries */
   WRITE_LATENCY {
     @Override
     public String getName() {
@@ -357,7 +357,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Time to write one backend transaction, including retries";
+      return "Time to write one storage transaction, including retries";
     }
 
     @Override
@@ -366,7 +366,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Backend transactions the writer retried after a recoverable error */
+  /** Storage transactions the writer retried after a recoverable error */
   WRITE_RETRIES {
     @Override
     public String getName() {
@@ -380,7 +380,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Backend transactions the writer retried after a recoverable error";
+      return "Storage transactions the writer retried after a recoverable error";
     }
   },
 
@@ -402,7 +402,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Time a scan held publications back, until the backend fixed its view */
+  /** Time a scan held publications back, until the storage fixed its view */
   SCAN_HOLD {
     @Override
     public String getName() {
@@ -417,7 +417,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Time a scan held commits and cleanup back, from copying the unflushed versions until"
-          + " the backend's first callback";
+          + " the storage's first callback";
     }
 
     @Override
@@ -444,7 +444,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
-  /** Time the backend took to take a snapshot, after the writer caught up */
+  /** Time the storage took to take a snapshot, after the writer caught up */
   SNAPSHOT_CHECKPOINT {
     @Override
     public String getName() {
@@ -458,7 +458,7 @@ public enum WriteBehindMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Time the backend took to take a snapshot, after the writer caught up";
+      return "Time the storage took to take a snapshot, after the writer caught up";
     }
   };
 

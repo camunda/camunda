@@ -16,21 +16,20 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The backend column families of one backend {@link TransactionContext}, created on first use. They
- * use {@link RawKey} and {@link RawValue}, so the backend stores the cache's bytes unchanged.
+ * The storage's column families for one of its {@link TransactionContext}s, created on first use.
+ * They use {@link RawKey} and {@link RawValue}, so the storage keeps the cache's bytes unchanged.
  *
  * <p>Like the context, an instance must only be used by one thread at a time.
  */
-final class PassThroughColumnFamilies<
-    ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> {
+final class StorageColumnFamilies<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue> {
 
-  private final ZeebeDb<ColumnFamilyNames> backend;
+  private final ZeebeDb<ColumnFamilyNames> storage;
   private final TransactionContext context;
-  private final Map<EnumValue, PassThrough> columnFamilies = new HashMap<>();
+  private final Map<EnumValue, StorageColumnFamily> columnFamilies = new HashMap<>();
 
-  PassThroughColumnFamilies(
-      final ZeebeDb<ColumnFamilyNames> backend, final TransactionContext context) {
-    this.backend = backend;
+  StorageColumnFamilies(
+      final ZeebeDb<ColumnFamilyNames> storage, final TransactionContext context) {
+    this.storage = storage;
     this.context = context;
   }
 
@@ -38,29 +37,29 @@ final class PassThroughColumnFamilies<
     return context;
   }
 
-  /** Returns the backend's value of {@code key}, or {@code null} if the backend doesn't have it. */
+  /** Returns the storage's value of {@code key}, or {@code null} if the storage doesn't have it. */
   byte @Nullable [] get(final CacheKey key) {
-    final var passThrough = columnFamily(key.columnFamily());
-    passThrough.key.set(key.key());
-    final var value = passThrough.columnFamily.get(passThrough.key);
+    final var storageColumnFamily = columnFamily(key.columnFamily());
+    storageColumnFamily.key.set(key.key());
+    final var value = storageColumnFamily.columnFamily.get(storageColumnFamily.key);
     return value == null ? null : value.bytes();
   }
 
   void upsert(final CacheKey key, final byte[] value) {
-    final var passThrough = columnFamily(key.columnFamily());
-    passThrough.key.set(key.key());
-    passThrough.value.set(value);
-    passThrough.columnFamily.upsert(passThrough.key, passThrough.value);
+    final var storageColumnFamily = columnFamily(key.columnFamily());
+    storageColumnFamily.key.set(key.key());
+    storageColumnFamily.value.set(value);
+    storageColumnFamily.columnFamily.upsert(storageColumnFamily.key, storageColumnFamily.value);
   }
 
   void deleteIfExists(final CacheKey key) {
-    final var passThrough = columnFamily(key.columnFamily());
-    passThrough.key.set(key.key());
-    passThrough.columnFamily.deleteIfExists(passThrough.key);
+    final var storageColumnFamily = columnFamily(key.columnFamily());
+    storageColumnFamily.key.set(key.key());
+    storageColumnFamily.columnFamily.deleteIfExists(storageColumnFamily.key);
   }
 
   /**
-   * Scans the backend from {@code startAt}: forward within {@code prefix}, or in reverse over the
+   * Scans the storage from {@code startAt}: forward within {@code prefix}, or in reverse over the
    * whole column family. A key-only scan doesn't read values and passes {@code null} for them.
    * Stops when {@code visitor} returns {@code false}.
    */
@@ -71,44 +70,44 @@ final class PassThroughColumnFamilies<
       final boolean reverse,
       final boolean keysOnly,
       final ScanVisitor visitor) {
-    final var backendColumnFamily = columnFamily(columnFamily).columnFamily;
+    final var storageColumnFamily = columnFamily(columnFamily).columnFamily;
     final var start = new RawKey();
     start.set(startAt);
     if (reverse) {
       if (keysOnly) {
-        backendColumnFamily.whileTrueReverse(start, key -> visitor.visit(key.bytes(), null));
+        storageColumnFamily.whileTrueReverse(start, key -> visitor.visit(key.bytes(), null));
       } else {
-        backendColumnFamily.whileTrueReverse(
+        storageColumnFamily.whileTrueReverse(
             start, (key, value) -> visitor.visit(key.bytes(), value.bytes()));
       }
     } else {
       final var prefixKey = new RawKey();
       prefixKey.set(prefix);
       if (keysOnly) {
-        backendColumnFamily.whileEqualPrefix(
+        storageColumnFamily.whileEqualPrefix(
             prefixKey, start, key -> visitor.visit(key.bytes(), null));
       } else {
-        backendColumnFamily.whileEqualPrefix(
+        storageColumnFamily.whileEqualPrefix(
             prefixKey, start, (key, value) -> visitor.visit(key.bytes(), value.bytes()));
       }
     }
   }
 
-  private PassThrough columnFamily(final EnumValue columnFamily) {
+  private StorageColumnFamily columnFamily(final EnumValue columnFamily) {
     return columnFamilies.computeIfAbsent(columnFamily, this::createColumnFamily);
   }
 
   @SuppressWarnings("unchecked") // every CacheKey of this DB holds one of its column families
-  private PassThrough createColumnFamily(final EnumValue columnFamily) {
+  private StorageColumnFamily createColumnFamily(final EnumValue columnFamily) {
     final var key = new RawKey();
     final var value = new RawValue();
-    return new PassThrough(
-        backend.createColumnFamily((ColumnFamilyNames) columnFamily, context, key, value),
+    return new StorageColumnFamily(
+        storage.createColumnFamily((ColumnFamilyNames) columnFamily, context, key, value),
         key,
         value);
   }
 
-  private record PassThrough(
+  private record StorageColumnFamily(
       ColumnFamily<RawKey, RawValue> columnFamily, RawKey key, RawValue value) {}
 
   /** Receives the entries of a scan: copies the caller may keep. */

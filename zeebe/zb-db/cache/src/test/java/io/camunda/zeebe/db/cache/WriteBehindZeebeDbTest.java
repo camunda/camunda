@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 final class WriteBehindZeebeDbTest {
 
-  private final InMemoryBackend backend = new InMemoryBackend();
+  private final InMemoryStorage storage = new InMemoryStorage();
 
   @Test
   void shouldReportTheStoreFailingAsDead() throws Exception {
@@ -30,7 +30,7 @@ final class WriteBehindZeebeDbTest {
     final var listener = new RecordingFailureListener();
     try (final var db =
         new WriteBehindZeebeDb<>(
-            backend.db(),
+            storage.db(),
             new TestConfiguration().maxWriteDelay(Duration.ofMillis(1)).build(),
             new ConsistencyChecksSettings(true, true))) {
       db.addFailureListener(listener);
@@ -39,7 +39,7 @@ final class WriteBehindZeebeDbTest {
           db.createColumnFamily(FIRST, db.createContext(), new DbLong(), new DbLong());
 
       // when
-      backend.failTransactions(1, () -> new IllegalStateException("expected"));
+      storage.failTransactions(1, () -> new IllegalStateException("expected"));
       columnFamily.insert(dbLong(1), dbLong(10));
 
       // then

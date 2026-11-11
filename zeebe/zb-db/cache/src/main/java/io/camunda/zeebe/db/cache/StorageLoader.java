@@ -12,16 +12,16 @@ import java.util.function.Supplier;
 import org.ehcache.spi.loaderwriter.CacheLoaderWriter;
 
 /**
- * Loads cache misses from the backend. It writes nothing: the store's writer persists every
+ * Loads cache misses from the storage. It writes nothing: the store's writer persists every
  * version, and EhCache only holds them.
  *
- * <p>A load checks the DirtyIndex before the backend. It runs inside EhCache's per-key compute, so
+ * <p>A load checks the DirtyIndex before the storage. It runs inside EhCache's per-key compute, so
  * it installs either the newest committed version or a value that the committing thread's {@code
- * cache.put} overwrites; never an old backend value after a newer version was put and evicted.
- * EhCache runs the loader on the thread that reads the cache, so the reader passes its own
- * pass-through column families through {@link #readThrough}.
+ * cache.put} overwrites; never an old storage value after a newer version was put and evicted.
+ * EhCache runs the loader on the thread that reads the cache, so the reader passes its own storage
+ * column families through {@link #readThrough}.
  */
-final class BackendLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
+final class StorageLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements CacheLoaderWriter<CacheKey, CachedValue> {
 
   /** Only the DirtyIndex and the queue use a version's seq; a loaded value needs none. */
@@ -29,10 +29,9 @@ final class BackendLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & 
 
   private final DirtyIndex dirtyIndex;
   private final WriteBehindMetrics metrics;
-  private final ThreadLocal<PassThroughColumnFamilies<ColumnFamilyNames>> readers =
-      new ThreadLocal<>();
+  private final ThreadLocal<StorageColumnFamilies<ColumnFamilyNames>> readers = new ThreadLocal<>();
 
-  BackendLoader(final DirtyIndex dirtyIndex, final WriteBehindMetrics metrics) {
+  StorageLoader(final DirtyIndex dirtyIndex, final WriteBehindMetrics metrics) {
     this.dirtyIndex = dirtyIndex;
     this.metrics = metrics;
   }
@@ -42,7 +41,7 @@ final class BackendLoader<ColumnFamilyNames extends Enum<? extends EnumValue> & 
    * this thread.
    */
   <T> T readThrough(
-      final PassThroughColumnFamilies<ColumnFamilyNames> columnFamilies, final Supplier<T> read) {
+      final StorageColumnFamilies<ColumnFamilyNames> columnFamilies, final Supplier<T> read) {
     readers.set(columnFamilies);
     try {
       return read.get();
