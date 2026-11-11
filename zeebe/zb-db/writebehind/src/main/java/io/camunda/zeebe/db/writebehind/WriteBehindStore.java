@@ -9,13 +9,7 @@ package io.camunda.zeebe.db.writebehind;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.camunda.zeebe.db.DbIterator;
-import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.RawDbAccess;
-import io.camunda.zeebe.db.impl.ZeebeDbConstants;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -40,25 +34,24 @@ import org.slf4j.LoggerFactory;
  * invalidates the keys it writes. Only the writer thread encodes values.
  *
  * <p>{@link #publishLock} makes three things atomic: publishing a transaction, removing a flushed
- * group from the dirty index, and taking a read view (a storage iterator plus a copy of the dirty
+ * group from the dirty index, and taking a read view (a storage cursor plus a copy of the dirty
  * index). Nothing that holds it blocks on anything else.
  */
-final class WriteBehindStore implements AutoCloseable {
+final class WriteBehindStore<K extends Comparable<K>, V> implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
   private static final int MAX_DISCARDED_LOADS = 3;
-  private static final int LAST_KEY_SUFFIX_LENGTH = 256;
 
-  private final RawDbAccess storage;
+  private final Backend<K, V> backend;
   private final WriteBehindConfiguration config;
-  private final ConcurrentSkipListMap<RawKey, Version> dirty = new ConcurrentSkipListMap<>();
-  private final @Nullable Cache<RawKey, Version> cache;
+  private final ConcurrentSkipListMap<K, Version<V>> dirty = new ConcurrentSkipListMap<>();
+  private final @Nullable Cache<K, Version<V>> cache;
   private final StampedLock publishLock = new StampedLock();
 
   // built in the constructor and never changed, so readers need no lock
-  private final Long2ObjectHashMap<KeyIndex> keyIndexes = new Long2ObjectHashMap<>();
+  private final Long2ObjectHashMap<KeyIndex<K>> keyIndexes = new Long2ObjectHashMap<>();
 
-  private final AsyncFlusher flusher;
+  private final AsyncFlusher<K, V> flusher;
 
   private final WriteBehindMetrics metrics = new WriteBehindMetrics();
 
@@ -70,20 +63,21 @@ final class WriteBehindStore implements AutoCloseable {
 
   private volatile long committedSeq;
 
-  WriteBehindStore(final RawDbAccess storage, final WriteBehindConfiguration config) {
-    this.storage = storage;
+  WriteBehindStore(final Backend<K, V> backend, final WriteBehindConfiguration config) {
+    this.backend = backend;
     this.config = config;
     cache =
         config.cacheMaxBytes() > 0
             ? Caffeine.newBuilder()
                 .maximumWeight(config.cacheMaxBytes())
-                .<RawKey, Version>weigher((key, version) -> version.weigh(key))
+                .<K, Version<V>>weigher((key, version) -> backend.weigh(key, version.value()))
                 .build()
             : null;
     for (final long columnFamily : config.keyIndexColumnFamilies()) {
-      keyIndexes.put(columnFamily, new KeyIndex(columnFamily, config.keyIndexPolicy(columnFamily)));
+      keyIndexes.put(
+          columnFamily, new KeyIndex<>(columnFamily, config.keyIndexPolicy(columnFamily)));
     }
-    flusher = new AsyncFlusher(storage, config, metrics, this::ensureUsable, this::removeFlushed);
+    flusher = new AsyncFlusher<>(backend, config, metrics, this::ensureUsable, this::removeFlushed);
     flusher.start();
   }
 
@@ -94,22 +88,23 @@ final class WriteBehindStore implements AutoCloseable {
    * @param values the new value per key, or null for a delete; the store takes ownership and nobody
    *     may change them afterwards
    */
-  void commit(final RawKey[] keys, final @Nullable DbValue[] values) {
+  void commit(final K[] keys, final @Nullable V[] values) {
     ensureUsable();
     flusher.awaitCapacity();
 
-    final var versions = new Version[keys.length];
+    @SuppressWarnings("unchecked")
+    final Version<V>[] versions = new Version[keys.length];
     final long stamp = publishLock.writeLock();
     try {
       ensureUsable();
       final long seq = ++lastSeq;
       long bytes = 0;
       for (int i = 0; i < keys.length; i++) {
-        final var version = new Version(values[i], seq);
+        final var version = new Version<>(values[i], seq);
         versions[i] = version;
-        final var counters = metrics.of(keys[i].columnFamily());
+        final var counters = metrics.of(backend.groupOf(keys[i]));
         (values[i] == null ? counters.committedDeletes : counters.committedPuts).increment();
-        bytes += version.weigh(keys[i]);
+        bytes += backend.weigh(keys[i], values[i]);
         dirty.put(keys[i], version);
         if (cache != null) {
           cache.invalidate(keys[i]);
@@ -129,29 +124,29 @@ final class WriteBehindStore implements AutoCloseable {
    *
    * <p>The result is shared with the store: callers must copy it before handing it out.
    */
-  @Nullable DbValue get(final RawKey key, final DbValue prototype) {
+  @Nullable V get(final K key, final V prototype) {
     ensureUsable();
     final var inMemory = lookupInMemory(key);
     if (inMemory != null) {
       return inMemory.value();
     }
     if (absentFromKeyIndex(key)) {
-      metrics.of(key.columnFamily()).keyIndexAbsent.increment();
+      metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
       return null;
     }
     return readStorage(key, prototype);
   }
 
   /** The unflushed version of a key, or else the cached one; null if the store has neither. */
-  @Nullable Version lookupInMemory(final RawKey key) {
+  @Nullable Version<V> lookupInMemory(final K key) {
     final var unflushed = dirty.get(key);
     if (unflushed != null) {
-      metrics.of(key.columnFamily()).dirtyHits.increment();
+      metrics.of(backend.groupOf(key)).dirtyHits.increment();
       return unflushed;
     }
     final var cached = cache == null ? null : cache.getIfPresent(key);
     if (cached != null) {
-      metrics.of(key.columnFamily()).cacheHits.increment();
+      metrics.of(backend.groupOf(key)).cacheHits.increment();
     }
     return cached;
   }
@@ -161,7 +156,7 @@ final class WriteBehindStore implements AutoCloseable {
    * newer version is unflushed. A value read from the storage is decoded into a new instance of
    * {@code prototype}'s class and cached.
    */
-  @Nullable DbValue readStorage(final RawKey key, final DbValue prototype) {
+  @Nullable V readStorage(final K key, final V prototype) {
     // Under the read lock no commit can publish this key and no flush can remove it, so if it isn't
     // in the dirty index now, the storage has its latest value and nothing can make the cached copy
     // stale before a later commit invalidates it.
@@ -171,11 +166,10 @@ final class WriteBehindStore implements AutoCloseable {
       if (latest != null) {
         return latest.value();
       }
-      final var bytes = storage.get(key.bytes(), key.bytes().length);
-      countStorageGet(key, bytes != null);
-      final var value = bytes == null ? null : Values.decode(bytes, prototype);
+      final var value = backend.get(key, prototype);
+      countStorageGet(key, value != null);
       if (cache != null) {
-        cache.put(key, new Version(value, 0));
+        cache.put(key, new Version<>(value, 0));
       }
       return value;
     } finally {
@@ -184,14 +178,14 @@ final class WriteBehindStore implements AutoCloseable {
   }
 
   /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
-  boolean exists(final RawKey key) {
+  boolean exists(final K key) {
     ensureUsable();
     final var inMemory = lookupInMemory(key);
     if (inMemory != null) {
       return !inMemory.isTombstone();
     }
     if (absentFromKeyIndex(key)) {
-      metrics.of(key.columnFamily()).keyIndexAbsent.increment();
+      metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
       return false;
     }
     final long stamp = publishLock.readLock();
@@ -200,7 +194,7 @@ final class WriteBehindStore implements AutoCloseable {
       if (latest != null) {
         return !latest.isTombstone();
       }
-      final var found = storage.get(key.bytes(), key.bytes().length) != null;
+      final var found = backend.exists(key);
       countStorageGet(key, found);
       return found;
     } finally {
@@ -208,8 +202,8 @@ final class WriteBehindStore implements AutoCloseable {
     }
   }
 
-  private void countStorageGet(final RawKey key, final boolean found) {
-    final var counters = metrics.of(key.columnFamily());
+  private void countStorageGet(final K key, final boolean found) {
+    final var counters = metrics.of(backend.groupOf(key));
     counters.storageGets.increment();
     if (found) {
       counters.storageGetsFound.increment();
@@ -223,11 +217,11 @@ final class WriteBehindStore implements AutoCloseable {
    * gets the state from before the commit. A key in the index gives no answer, as it holds no
    * values, and neither does a key outside the window.
    */
-  private boolean absentFromKeyIndex(final RawKey key) {
+  private boolean absentFromKeyIndex(final K key) {
     if (keyIndexes.isEmpty()) {
       return false;
     }
-    final var index = keyIndexes.get(key.columnFamily());
+    final var index = keyIndexes.get(backend.groupOf(key));
     if (index == null) {
       return false;
     }
@@ -245,19 +239,19 @@ final class WriteBehindStore implements AutoCloseable {
 
   /**
    * Takes a point-in-time view of the committed state for keys that start with the given prefix: a
-   * storage iterator and a copy of the matching dirty entries, taken together.
+   * storage cursor and a copy of the matching dirty entries, taken together.
    */
-  View openView(final byte[] prefix, final int prefixLength) {
+  View<K, V> openView(final KeyRange<K> range) {
     ensureUsable();
-    final var from = RawKey.copyOf(prefix, prefixLength);
-    final var to = RawKey.prefixEnd(prefix, prefixLength);
+    final var from = range.from();
+    final var to = range.to();
     final long stamp = publishLock.readLock();
     try {
-      final var storageIterator = storage.newIterator();
+      final var storageCursor = backend.newCursor();
       metrics.iteratorsOpened.increment();
-      metrics.of(from.columnFamily()).iterators.increment();
-      final var range = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
-      return new View(storageIterator, new TreeMap<>(range), lastSeq);
+      metrics.of(backend.groupOf(from)).iterators.increment();
+      final var dirtyRange = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
+      return new View<>(storageCursor, new TreeMap<>(dirtyRange), lastSeq);
     } finally {
       publishLock.unlockRead(stamp);
     }
@@ -280,16 +274,16 @@ final class WriteBehindStore implements AutoCloseable {
     }
   }
 
-  private void loadKeyIndex(final KeyIndex index) {
-    final var prefix = prefixOf(index);
+  private void loadKeyIndex(final KeyIndex<K> index) {
+    final long group = index.group();
     final int maxKeys = config.keyIndexMaxKeys();
     final boolean keepLowest = index.policy() != KeyIndexPolicy.KEEP_HIGHEST;
-    final var loaded = new ArrayList<RawKey>();
-    RawKey next = null;
-    final var view = openView(prefix, prefix.length);
-    try (final var source = new ViewSource(view)) {
-      seekToCoveredEnd(source, prefix, keepLowest);
-      next = collect(source, prefix, maxKeys, loaded);
+    final var loaded = new ArrayList<K>();
+    K next = null;
+    final var view = openView(backend.groupRange(group));
+    try (final var source = new ViewSource<>(backend, view)) {
+      seekToCoveredEnd(source, group, keepLowest);
+      next = collect(source, group, maxKeys, loaded);
     }
 
     final long stamp = publishLock.writeLock();
@@ -317,24 +311,24 @@ final class WriteBehindStore implements AutoCloseable {
    * Extends the window of a drained index by a chunk of keys beyond the bound, on the calling
    * thread. A chunk is small, so a scan isn't held up for long.
    */
-  private void refillKeyIndex(final KeyIndex index) {
+  private void refillKeyIndex(final KeyIndex<K> index) {
     final var bound = index.bound();
     if (bound == null) {
       return;
     }
-    final var prefix = prefixOf(index);
+    final long group = index.group();
     // away from the covered end: forward for a window of the highest keys, else backward
     final boolean forward = index.policy().keepsLowest();
-    final var more = new ArrayList<RawKey>();
-    RawKey next = null;
-    final var view = openView(prefix, prefix.length);
-    try (final var source = new ViewSource(view)) {
+    final var more = new ArrayList<K>();
+    K next = null;
+    final var view = openView(backend.groupRange(group));
+    try (final var source = new ViewSource<>(backend, view)) {
       if (forward) {
-        source.seek(bound.bytes());
+        source.seek(bound);
       } else {
-        source.seekForPrev(bound.bytes());
+        source.seekForPrev(bound);
       }
-      next = collect(source, prefix, config.keyIndexMaxKeys() / 4, more);
+      next = collect(source, group, config.keyIndexMaxKeys() / 4, more);
     }
 
     final long stamp = publishLock.writeLock();
@@ -357,45 +351,34 @@ final class WriteBehindStore implements AutoCloseable {
     }
   }
 
-  private static byte[] prefixOf(final KeyIndex index) {
-    final var prefix = new byte[Long.BYTES];
-    ByteBuffer.wrap(prefix).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER).putLong(index.columnFamily());
-    return prefix;
-  }
-
-  /** Positions the source on the first key of the column family at the covered end. */
-  private static void seekToCoveredEnd(
-      final ViewSource source, final byte[] prefix, final boolean keepLowest) {
+  /** Positions the source on the first key of the group at the covered end. */
+  private void seekToCoveredEnd(
+      final ViewSource<K, V> source, final long group, final boolean keepLowest) {
     if (keepLowest) {
-      source.seek(prefix);
-      return;
+      source.seek(backend.groupRange(group).from());
+    } else {
+      source.seekForPrev(backend.groupLastSeekKey(group));
     }
-    // The storage iterators only see keys with the seek key's column family prefix, so the seek
-    // key must stay in the column family. No real key has this many 0xFF bytes after the prefix.
-    final var last = Arrays.copyOf(prefix, prefix.length + LAST_KEY_SUFFIX_LENGTH);
-    Arrays.fill(last, prefix.length, last.length, (byte) 0xFF);
-    source.seekForPrev(last);
   }
 
   /**
-   * Collects up to {@code max} keys of the column family from the source's position in its
-   * direction. Returns the first key it didn't collect, or null if the column family ended first.
+   * Collects up to {@code max} keys of the group from the source's position in its direction.
+   * Returns the first key it didn't collect, or null if the group ended first.
    */
-  private static @Nullable RawKey collect(
-      final ViewSource source, final byte[] prefix, final int max, final List<RawKey> into) {
-    while (source.isValid()
-        && Arrays.equals(prefix, 0, prefix.length, source.key(), 0, prefix.length)) {
+  private @Nullable K collect(
+      final ViewSource<K, V> source, final long group, final int max, final List<K> into) {
+    while (source.isValid() && backend.groupOf(source.key()) == group) {
       if (into.size() >= max) {
-        return RawKey.copyOf(source.key());
+        return source.key();
       }
-      into.add(RawKey.copyOf(source.key()));
+      into.add(source.key());
       source.advance();
     }
     return null;
   }
 
   /** The key index of a column family, or null if it has none. */
-  @Nullable KeyIndex keyIndex(final long columnFamily) {
+  @Nullable KeyIndex<K> keyIndex(final long columnFamily) {
     return keyIndexes.get(columnFamily);
   }
 
@@ -404,22 +387,25 @@ final class WriteBehindStore implements AutoCloseable {
     metrics.export(registry);
   }
 
+  Backend<K, V> backend() {
+    return backend;
+  }
+
   WriteBehindMetrics metrics() {
     return metrics;
   }
 
   /** Under the write lock: applies a commit's keys to the indexes of the column families. */
-  private void updateKeyIndexes(
-      final RawKey[] keys, final @Nullable DbValue[] values, final long seq) {
+  private void updateKeyIndexes(final K[] keys, final @Nullable V[] values, final long seq) {
     if (keyIndexes.isEmpty()) {
       return;
     }
     // the keys are sorted, so the keys of a column family are consecutive
     int from = 0;
     while (from < keys.length) {
-      final long columnFamily = keys[from].columnFamily();
+      final long columnFamily = backend.groupOf(keys[from]);
       int to = from + 1;
-      while (to < keys.length && keys[to].columnFamily() == columnFamily) {
+      while (to < keys.length && backend.groupOf(keys[to]) == columnFamily) {
         to++;
       }
       final var index = keyIndexes.get(columnFamily);
@@ -436,12 +422,12 @@ final class WriteBehindStore implements AutoCloseable {
     }
   }
 
-  private void disableKeyIndex(final KeyIndex index, final String reason) {
+  private void disableKeyIndex(final KeyIndex<K> index, final String reason) {
     index.disable();
     metrics.keyIndexDisables.increment();
     LOG.info(
         "Disabled the key index of column family {} until the next restart, because {}",
-        index.columnFamily(),
+        index.group(),
         reason);
   }
 
@@ -483,7 +469,7 @@ final class WriteBehindStore implements AutoCloseable {
   }
 
   /** Called by the writer after the storage holds these versions. */
-  private void removeFlushed(final List<Map.Entry<RawKey, Version>> flushed) {
+  private void removeFlushed(final List<Map.Entry<K, Version<V>>> flushed) {
     final long stamp = publishLock.writeLock();
     try {
       for (final var entry : flushed) {
@@ -499,5 +485,6 @@ final class WriteBehindStore implements AutoCloseable {
    *
    * @param viewSeq the sequence of the last commit that the view includes
    */
-  record View(DbIterator storageIterator, NavigableMap<RawKey, Version> dirty, long viewSeq) {}
+  record View<K, V>(
+      Backend.Cursor<K, V> storageCursor, NavigableMap<K, Version<V>> dirty, long viewSeq) {}
 }

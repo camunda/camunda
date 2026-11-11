@@ -311,7 +311,7 @@ final class WriteBehindColumnFamily<
         prefix,
         reverse,
         cursor -> {
-          wrapKey(cursor.key());
+          wrapKey(cursor.key().bytes());
           // false if a concurrent commit deleted the entry; it is no longer there to visit
           return !cursor.readValue(valueInstance) || visitor.visit(keyInstance, valueInstance);
         });
@@ -327,7 +327,7 @@ final class WriteBehindColumnFamily<
         prefix,
         reverse,
         cursor -> {
-          wrapKey(cursor.key());
+          wrapKey(cursor.key().bytes());
           return visitor.visit(keyInstance);
         });
   }
@@ -340,7 +340,7 @@ final class WriteBehindColumnFamily<
       final @Nullable DbKey startAt,
       final DbKey prefix,
       final boolean reverse,
-      final Predicate<MergingCursor> visitor) {
+      final Predicate<MergingCursor<RawKey, DbValue>> visitor) {
     // RocksDB's column family supports two nested iterations only; failing the same way keeps
     // engine code from relying on deeper nesting that works only here
     if (openIterations >= MAX_NESTED_ITERATIONS) {
@@ -359,7 +359,7 @@ final class WriteBehindColumnFamily<
       final @Nullable DbKey startAt,
       final DbKey prefix,
       final boolean reverse,
-      final Predicate<MergingCursor> visitor) {
+      final Predicate<MergingCursor<RawKey, DbValue>> visitor) {
     inTransaction(
         transaction -> {
           transaction.prepareScan(columnFamily.getValue());
@@ -367,12 +367,12 @@ final class WriteBehindColumnFamily<
           final var seekTarget = encode(Objects.requireNonNullElse(startAt, prefix));
           try (final var cursor = transaction.newCursor(prefixKey)) {
             if (reverse) {
-              cursor.seekForPrev(seekTarget);
+              cursor.seekForPrev(RawKey.of(seekTarget));
             } else {
-              cursor.seek(seekTarget);
+              cursor.seek(RawKey.of(seekTarget));
             }
             while (cursor.isValid()) {
-              final var key = cursor.key();
+              final var key = cursor.key().bytes();
               if (!startsWith(prefixKey, 0, prefixKey.length, key, 0, key.length)
                   || !visitor.test(cursor)) {
                 return;
@@ -436,11 +436,11 @@ final class WriteBehindColumnFamily<
   private static boolean prefixExists(
       final WriteBehindTransaction transaction, final byte[] prefix) {
     try (final var cursor = transaction.newCursor(prefix)) {
-      cursor.seek(prefix);
+      cursor.seek(RawKey.copyOf(prefix));
       if (!cursor.isValid()) {
         return false;
       }
-      final var key = cursor.key();
+      final var key = cursor.key().bytes();
       return startsWith(prefix, 0, prefix.length, key, 0, key.length);
     }
   }

@@ -25,10 +25,11 @@ import org.jspecify.annotations.Nullable;
  */
 final class WriteBehindTransaction implements ZeebeDbTransaction {
 
-  private static final Version DELETED = new Version(null, 0);
+  private static final Version<DbValue> DELETED = new Version<>(null, 0);
 
-  private final WriteBehindStore store;
-  private final ConcurrentSkipListMap<RawKey, Version> writes = new ConcurrentSkipListMap<>();
+  private final WriteBehindStore<RawKey, DbValue> store;
+  private final ConcurrentSkipListMap<RawKey, Version<DbValue>> writes =
+      new ConcurrentSkipListMap<>();
   private final List<TransactionListener> listeners = new ArrayList<>();
   private boolean inCurrentTransaction;
 
@@ -39,13 +40,13 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
    */
   private boolean outcomePending;
 
-  WriteBehindTransaction(final WriteBehindStore store) {
+  WriteBehindTransaction(final WriteBehindStore<RawKey, DbValue> store) {
     this.store = store;
   }
 
   /** Buffers a write; the transaction takes ownership of {@code value}. */
   void put(final RawKey key, final DbValue value) {
-    writes.put(key, new Version(value, 0));
+    writes.put(key, new Version<>(value, 0));
   }
 
   void delete(final RawKey key) {
@@ -74,8 +75,8 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
   }
 
   /** A cursor over every key that starts with the prefix, including this transaction's writes. */
-  MergingCursor newCursor(final byte[] prefix) {
-    return new MergingCursor(writes, store, prefix);
+  MergingCursor<RawKey, DbValue> newCursor(final byte[] prefix) {
+    return new MergingCursor<>(writes, store, RawBackend.prefixRange(prefix, prefix.length));
   }
 
   /** Call before a scan of a column family: loads its key index if it has one that isn't loaded. */

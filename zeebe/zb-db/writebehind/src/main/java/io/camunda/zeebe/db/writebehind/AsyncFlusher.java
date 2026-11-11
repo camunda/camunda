@@ -8,7 +8,6 @@
 package io.camunda.zeebe.db.writebehind;
 
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,7 +20,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import org.agrona.ExpandableArrayBuffer;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +45,11 @@ import org.slf4j.LoggerFactory;
  *       any longer). Nobody does I/O or takes another lock while holding it.
  *   <li>{@link #flushedSeq}, {@link #failure} and {@link #stopping} are volatile: one writer, any
  *       number of readers.
- *   <li>{@link #encodeBuffer} belongs to the writer thread alone.
  * </ul>
  */
-final class AsyncFlusher {
+final class AsyncFlusher<K extends Comparable<K>, V> {
 
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
-  private static final PendingTransaction STOP =
-      new PendingTransaction(Long.MAX_VALUE, new RawKey[0], new Version[0], 0, 0);
   private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
 
@@ -65,15 +60,19 @@ final class AsyncFlusher {
    */
   private static final int REMOVAL_CHUNK_SIZE = 512;
 
-  private final RawDbAccess storage;
+  private final Backend<K, V> backend;
   private final WriteBehindConfiguration config;
   private final WriteBehindMetrics metrics;
   private final Runnable ensureUsable;
-  private final Consumer<List<Map.Entry<RawKey, Version>>> onFlushed;
+  private final Consumer<List<Map.Entry<K, Version<V>>>> onFlushed;
   private final long flushThresholdBytes;
   private final Thread writer;
 
-  private final LinkedBlockingQueue<PendingTransaction> queue = new LinkedBlockingQueue<>();
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final PendingTransaction<K, V> stop =
+      new PendingTransaction<>(Long.MAX_VALUE, (K[]) new Comparable[0], new Version[0], 0, 0);
+
+  private final LinkedBlockingQueue<PendingTransaction<K, V>> queue = new LinkedBlockingQueue<>();
   private final AtomicLong pendingBytes = new AtomicLong();
 
   private final ReentrantLock flushLock = new ReentrantLock();
@@ -88,9 +87,6 @@ final class AsyncFlusher {
   private volatile @Nullable Throwable failure;
   private volatile boolean stopping;
 
-  // only used by the writer thread
-  private final ExpandableArrayBuffer encodeBuffer = new ExpandableArrayBuffer();
-
   /**
    * @param ensureUsable throws if the store can't be used any more; called while waiting, so that
    *     waiters fail fast
@@ -98,12 +94,12 @@ final class AsyncFlusher {
    *     store removes them from its dirty index if they are still the latest
    */
   AsyncFlusher(
-      final RawDbAccess storage,
+      final Backend<K, V> backend,
       final WriteBehindConfiguration config,
       final WriteBehindMetrics metrics,
       final Runnable ensureUsable,
-      final Consumer<List<Map.Entry<RawKey, Version>>> onFlushed) {
-    this.storage = storage;
+      final Consumer<List<Map.Entry<K, Version<V>>>> onFlushed) {
+    this.backend = backend;
     this.config = config;
     this.metrics = metrics;
     this.ensureUsable = ensureUsable;
@@ -127,8 +123,8 @@ final class AsyncFlusher {
    * the commit order. Never blocks: the only thing it can do beyond a queue insert is to wake the
    * writer once, when the unflushed bytes cross the early-flush threshold.
    */
-  void enqueue(final long seq, final RawKey[] keys, final Version[] versions, final long bytes) {
-    queue.add(new PendingTransaction(seq, keys, versions, bytes, System.nanoTime()));
+  void enqueue(final long seq, final K[] keys, final Version<V>[] versions, final long bytes) {
+    queue.add(new PendingTransaction<>(seq, keys, versions, bytes, System.nanoTime()));
     final long after = pendingBytes.addAndGet(bytes);
     if (after >= flushThresholdBytes && after - bytes < flushThresholdBytes) {
       wakeWriter();
@@ -193,7 +189,7 @@ final class AsyncFlusher {
    */
   void requestStop() {
     stopping = true;
-    queue.add(STOP);
+    queue.add(stop);
   }
 
   /** Wakes the writer and waits for it to finish; interrupts it after the flush timeout. */
@@ -214,24 +210,24 @@ final class AsyncFlusher {
   }
 
   private void runWriter() {
-    final var group = new ArrayList<PendingTransaction>();
+    final var group = new ArrayList<PendingTransaction<K, V>>();
     try {
       while (true) {
         final var oldest = queue.take();
         group.add(oldest);
-        if (oldest != STOP) {
+        if (oldest != stop) {
           awaitFlushDue(oldest);
         }
         queue.drainTo(group);
-        final boolean stop = group.getLast() == STOP;
-        if (stop) {
+        final boolean stopAfter = group.getLast() == stop;
+        if (stopAfter) {
           group.removeLast();
         }
         if (!group.isEmpty() && !flush(group)) {
           return;
         }
         group.clear();
-        if (stop) {
+        if (stopAfter) {
           return;
         }
       }
@@ -249,7 +245,7 @@ final class AsyncFlusher {
    * <p>The writer then takes everything that is queued, so a key that changed several times in the
    * delay is written once, and one that a commit deleted is not written at all.
    */
-  private void awaitFlushDue(final PendingTransaction oldest) throws InterruptedException {
+  private void awaitFlushDue(final PendingTransaction<K, V> oldest) throws InterruptedException {
     final long delay = config.flushDelay().toNanos();
     if (delay <= 0) {
       return;
@@ -273,8 +269,8 @@ final class AsyncFlusher {
   }
 
   /** Writes a group of consecutive transactions atomically; returns false if the store failed. */
-  private boolean flush(final List<PendingTransaction> group) {
-    final var latest = new HashMap<RawKey, Version>();
+  private boolean flush(final List<PendingTransaction<K, V>> group) {
+    final var latest = new HashMap<K, Version<V>>();
     long bytes = 0;
     for (final var transaction : group) {
       for (int i = 0; i < transaction.keys().length; i++) {
@@ -287,7 +283,7 @@ final class AsyncFlusher {
       return false;
     }
 
-    final var chunk = new ArrayList<Map.Entry<RawKey, Version>>(REMOVAL_CHUNK_SIZE);
+    final var chunk = new ArrayList<Map.Entry<K, Version<V>>>(REMOVAL_CHUNK_SIZE);
     for (final var entry : latest.entrySet()) {
       chunk.add(entry);
       if (chunk.size() == REMOVAL_CHUNK_SIZE) {
@@ -304,7 +300,7 @@ final class AsyncFlusher {
     return true;
   }
 
-  private boolean writeWithRetries(final Map<RawKey, Version> latest) {
+  private boolean writeWithRetries(final Map<K, Version<V>> latest) {
     long delay = INITIAL_RETRY_DELAY_NANOS;
     for (int attempt = 0; ; attempt++) {
       try {
@@ -325,16 +321,16 @@ final class AsyncFlusher {
     }
   }
 
-  private void write(final Map<RawKey, Version> latest) {
-    try (final var batch = storage.newBatch()) {
+  private void write(final Map<K, Version<V>> latest) {
+    try (final var batch = backend.newBatch()) {
       for (final var entry : latest.entrySet()) {
-        final var key = entry.getKey().bytes();
+        final var key = entry.getKey();
         final var value = entry.getValue().value();
-        final var counters = metrics.of(entry.getKey().columnFamily());
+        final var counters = metrics.of(backend.groupOf(key));
         if (value != null) {
-          batch.put(key, Values.encode(value, encodeBuffer));
+          batch.put(key, value);
           counters.flushedPuts.increment();
-        } else if (storage.keyMayExist(key, key.length)) {
+        } else if (backend.mayExist(key)) {
           // a key that the storage never had needs no delete; this keeps short-lived state out of
           // it
           batch.delete(key);
@@ -373,6 +369,6 @@ final class AsyncFlusher {
     }
   }
 
-  private record PendingTransaction(
-      long seq, RawKey[] keys, Version[] versions, long bytes, long committedAtNanos) {}
+  private record PendingTransaction<K, V>(
+      long seq, K[] keys, Version<V>[] versions, long bytes, long committedAtNanos) {}
 }

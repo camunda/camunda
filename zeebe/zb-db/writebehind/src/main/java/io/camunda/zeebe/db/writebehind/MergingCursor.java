@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbValue;
-import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import org.jspecify.annotations.Nullable;
@@ -26,39 +24,41 @@ import org.jspecify.annotations.Nullable;
  * HandoverSource}. An index source can turn stale in the middle of a scan; the cursor then replaces
  * it with a view that it seeks to the current key, so that no key is returned twice or skipped.
  */
-final class MergingCursor implements AutoCloseable {
+final class MergingCursor<K extends Comparable<K>, V> implements AutoCloseable {
 
-  private final NavigableMap<RawKey, Version> own;
-  private final WriteBehindStore store;
-  private final byte[] prefix;
-  private @Nullable CommittedSource committed;
+  private final NavigableMap<K, Version<V>> own;
+  private final WriteBehindStore<K, V> store;
+  private final KeyRange<K> range;
+  private @Nullable CommittedSource<K, V> committed;
 
   private boolean forward = true;
-  private @Nullable Entry<RawKey, Version> ownEntry;
-  private byte @Nullable [] currentKey;
+  private @Nullable Entry<K, Version<V>> ownEntry;
+  private @Nullable K currentKey;
   // null while the current entry comes from the committed source
-  private @Nullable DbValue currentValue;
+  private @Nullable V currentValue;
 
   /**
-   * @param prefix the prefix of the scan, which restricts the storage view if the cursor needs one
+   * @param range the range of the scan, which restricts the storage view if the cursor needs one
    */
   MergingCursor(
-      final NavigableMap<RawKey, Version> own, final WriteBehindStore store, final byte[] prefix) {
+      final NavigableMap<K, Version<V>> own,
+      final WriteBehindStore<K, V> store,
+      final KeyRange<K> range) {
     this.own = own;
     this.store = store;
-    this.prefix = prefix;
+    this.range = range;
   }
 
-  void seek(final byte[] key) {
+  void seek(final K key) {
     forward = true;
-    ownEntry = own.ceilingEntry(RawKey.copyOf(key));
+    ownEntry = own.ceilingEntry(key);
     seekCommitted(key);
     settle();
   }
 
-  void seekForPrev(final byte[] key) {
+  void seekForPrev(final K key) {
     forward = false;
-    ownEntry = own.floorEntry(RawKey.copyOf(key));
+    ownEntry = own.floorEntry(key);
     seekCommitted(key);
     settle();
   }
@@ -73,8 +73,8 @@ final class MergingCursor implements AutoCloseable {
     settle();
   }
 
-  /** The current raw key. Shared: callers must not change it. */
-  byte[] key() {
+  /** The current key. Shared: callers must not change it. */
+  K key() {
     return current();
   }
 
@@ -83,11 +83,11 @@ final class MergingCursor implements AutoCloseable {
    * commit deleted it while the cursor read from the key index. The cursor then stays at the key
    * and {@link #advance()} moves on.
    */
-  boolean readValue(final DbValue target) {
+  boolean readValue(final V target) {
     final var key = current();
     final var value = currentValue;
     if (value != null) {
-      Values.copy(value, target);
+      store.backend().copy(value, target);
       return true;
     }
     if (!isCommittedAt(key)) {
@@ -109,22 +109,19 @@ final class MergingCursor implements AutoCloseable {
     }
   }
 
-  private void seekCommitted(final byte[] key) {
+  private void seekCommitted(final K key) {
     close();
-    final var index = store.keyIndex(RawKey.columnFamilyOf(key));
+    final var index = store.keyIndex(store.backend().groupOf(key));
     final long version = index == null ? 1 : index.version();
     final var bound = index == null ? null : index.bound();
     if (index != null && index.isStable(version) && index.covers(bound, key)) {
       store.ensureUsable();
       store.metrics().indexedScans.increment();
-      final var source = new IndexSource(store, index, version);
+      final var source = new IndexSource<>(store, index, version);
       committed =
           bound != null && index.handsOver(forward)
-              ? new HandoverSource(
-                  source,
-                  this::openView,
-                  bound.bytes(),
-                  store.metrics().keyIndexHandovers::increment)
+              ? new HandoverSource<>(
+                  source, this::openView, bound, store.metrics().keyIndexHandovers::increment)
               : source;
     } else {
       committed = openView();
@@ -135,7 +132,7 @@ final class MergingCursor implements AutoCloseable {
     }
   }
 
-  private void seekInDirection(final byte[] key) {
+  private void seekInDirection(final K key) {
     if (forward) {
       committed().seek(key);
     } else {
@@ -147,7 +144,7 @@ final class MergingCursor implements AutoCloseable {
    * Replaces the stale index source with a view and seeks it to {@code key}. Returns whether it
    * landed exactly on {@code key}.
    */
-  private boolean restartFromView(final byte[] key) {
+  private boolean restartFromView(final K key) {
     committed().close();
     store.metrics().keyIndexSwitches.increment();
     committed = openView();
@@ -155,15 +152,15 @@ final class MergingCursor implements AutoCloseable {
     return isCommittedAt(key);
   }
 
-  private ViewSource openView() {
-    return new ViewSource(store.openView(prefix, prefix.length));
+  private ViewSource<K, V> openView() {
+    return new ViewSource<>(store.backend(), store.openView(range));
   }
 
-  private boolean isCommittedAt(final byte[] key) {
-    return committed().isValid() && Arrays.equals(committed().key(), key);
+  private boolean isCommittedAt(final K key) {
+    return committed().isValid() && committed().key().equals(key);
   }
 
-  private CommittedSource committed() {
+  private CommittedSource<K, V> committed() {
     final var source = committed;
     if (source == null) {
       throw new IllegalStateException("Expected the cursor to be positioned, but it is not");
@@ -174,14 +171,14 @@ final class MergingCursor implements AutoCloseable {
   /** Moves to the first entry in iteration order that isn't deleted, or to the end. */
   private void settle() {
     while (true) {
-      final byte @Nullable [] key = firstKey();
+      final @Nullable K key = firstKey();
       if (key == null) {
         currentKey = null;
         currentValue = null;
         return;
       }
 
-      if (ownEntry != null && Arrays.equals(ownEntry.getKey().bytes(), key)) {
+      if (ownEntry != null && ownEntry.getKey().equals(key)) {
         final var version = ownEntry.getValue();
         if (!version.isTombstone()) {
           currentKey = key;
@@ -198,25 +195,24 @@ final class MergingCursor implements AutoCloseable {
   }
 
   /** The smallest key of both sources in iteration order, or null if both are exhausted. */
-  private byte @Nullable [] firstKey() {
-    final byte[] ownKey = ownEntry == null ? null : ownEntry.getKey().bytes();
+  private @Nullable K firstKey() {
+    final K ownKey = ownEntry == null ? null : ownEntry.getKey();
     if (!committed().isValid()) {
       return ownKey;
     }
-    final byte[] committedKey = committed().key();
+    final K committedKey = committed().key();
     if (ownKey == null) {
       return committedKey;
     }
-    final int comparison = Arrays.compareUnsigned(ownKey, committedKey);
+    final int comparison = ownKey.compareTo(committedKey);
     return (forward ? comparison <= 0 : comparison >= 0) ? ownKey : committedKey;
   }
 
   /**
    * Moves both sources past {@code key}. The own writes are looked up again, as they may change.
    */
-  private void advancePast(final byte[] key) {
-    final var rawKey = RawKey.copyOf(key);
-    ownEntry = forward ? own.higherEntry(rawKey) : own.lowerEntry(rawKey);
+  private void advancePast(final K key) {
+    ownEntry = forward ? own.higherEntry(key) : own.lowerEntry(key);
     if (isCommittedAt(key)) {
       committed().advance();
       if (committed().isStale() && restartFromView(key)) {
@@ -225,7 +221,7 @@ final class MergingCursor implements AutoCloseable {
     }
   }
 
-  private byte[] current() {
+  private K current() {
     final var key = currentKey;
     if (key == null) {
       throw new IllegalStateException("Expected the cursor to be valid, but it is not");

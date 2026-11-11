@@ -33,7 +33,7 @@ final class KeyIndexTest {
   private static final long NOT_INDEXED = 11;
 
   private CountingRawDbAccess access;
-  private WriteBehindStore store;
+  private WriteBehindStore<RawKey, DbValue> store;
 
   @BeforeEach
   void setUp() {
@@ -47,7 +47,7 @@ final class KeyIndexTest {
 
   private void open(final WriteBehindConfiguration config) {
     access = new CountingRawDbAccess(new InMemoryRawDbAccess());
-    store = new WriteBehindStore(access, config);
+    store = new WriteBehindStore<>(new RawBackend(access), config);
   }
 
   private void reopen(final WriteBehindConfiguration config) throws Exception {
@@ -338,10 +338,12 @@ final class KeyIndexTest {
   private List<Long> committedKeys(final long columnFamily) {
     final var prefix = key(columnFamily, 0).bytes().clone();
     final var ids = new ArrayList<Long>();
-    try (final var source = new ViewSource(store.openView(prefix, Long.BYTES))) {
-      source.seek(prefix);
-      while (source.isValid() && ByteBuffer.wrap(source.key()).getLong() == columnFamily) {
-        ids.add(ByteBuffer.wrap(source.key()).getLong(Long.BYTES));
+    try (final var source =
+        new ViewSource<>(
+            store.backend(), store.openView(RawBackend.prefixRange(prefix, Long.BYTES)))) {
+      source.seek(RawKey.of(prefix));
+      while (source.isValid() && ByteBuffer.wrap(source.key().bytes()).getLong() == columnFamily) {
+        ids.add(ByteBuffer.wrap(source.key().bytes()).getLong(Long.BYTES));
         source.advance();
       }
     }

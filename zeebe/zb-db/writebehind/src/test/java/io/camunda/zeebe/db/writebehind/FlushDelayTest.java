@@ -23,7 +23,7 @@ final class FlushDelayTest {
   private static final Duration LONG_DELAY = Duration.ofHours(1);
 
   private final InMemoryRawDbAccess storage = new InMemoryRawDbAccess();
-  private WriteBehindStore store;
+  private WriteBehindStore<RawKey, DbValue> store;
 
   @AfterEach
   void tearDown() {
@@ -33,7 +33,7 @@ final class FlushDelayTest {
   }
 
   private void open(final WriteBehindConfiguration config) {
-    store = new WriteBehindStore(storage, config);
+    store = new WriteBehindStore<>(new RawBackend(storage), config);
   }
 
   private static WriteBehindConfiguration config(final Duration delay) {

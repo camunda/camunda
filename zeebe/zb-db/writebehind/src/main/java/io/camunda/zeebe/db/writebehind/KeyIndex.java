@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbValue;
-import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.jspecify.annotations.Nullable;
@@ -32,7 +30,7 @@ import org.jspecify.annotations.Nullable;
  * {@link #version}, and check it again after each read. A change of an existing key's value doesn't
  * change the key set, so it doesn't bump the version.
  */
-final class KeyIndex {
+final class KeyIndex<K extends Comparable<K>> {
 
   enum State {
     UNLOADED,
@@ -40,12 +38,12 @@ final class KeyIndex {
     DISABLED
   }
 
-  private final long columnFamily;
+  private final long group;
   private final KeyIndexPolicy policy;
-  private final ConcurrentSkipListSet<RawKey> keys = new ConcurrentSkipListSet<>();
+  private final ConcurrentSkipListSet<K> keys = new ConcurrentSkipListSet<>();
   private volatile State state = State.UNLOADED;
   private volatile long version;
-  private volatile @Nullable RawKey bound;
+  private volatile @Nullable K bound;
 
   // the fields below are guarded by the publish lock's write side
   // ConcurrentSkipListSet#size is O(n); volatile so that a scan can read it without the lock
@@ -54,8 +52,8 @@ final class KeyIndex {
   private long lastCommitSeq;
   private int discardedLoads;
 
-  KeyIndex(final long columnFamily, final KeyIndexPolicy policy) {
-    this.columnFamily = columnFamily;
+  KeyIndex(final long group, final KeyIndexPolicy policy) {
+    this.group = group;
     this.policy = policy;
   }
 
@@ -67,20 +65,16 @@ final class KeyIndex {
    * The first key that the window doesn't cover, or null if it covers the column family. Read it
    * after {@link #version()} and check the version again afterwards.
    */
-  @Nullable RawKey bound() {
+  @Nullable K bound() {
     return bound;
   }
 
   /** Whether the window around {@code bound} covers the key. */
-  boolean covers(final @Nullable RawKey bound, final RawKey key) {
-    return covers(bound, key.bytes());
-  }
-
-  boolean covers(final @Nullable RawKey bound, final byte[] key) {
+  boolean covers(final @Nullable K bound, final K key) {
     if (bound == null) {
       return true;
     }
-    final int comparison = Arrays.compareUnsigned(key, bound.bytes());
+    final int comparison = key.compareTo(bound);
     return policy.keepsLowest() ? comparison < 0 : comparison > 0;
   }
 
@@ -97,8 +91,8 @@ final class KeyIndex {
     return state == State.LOADED && bound != null && size < maxKeys / 4;
   }
 
-  long columnFamily() {
-    return columnFamily;
+  long group() {
+    return group;
   }
 
   State state() {
@@ -128,7 +122,7 @@ final class KeyIndex {
   }
 
   /** The keys in order. Only read it while the state is loaded and the version is unchanged. */
-  NavigableSet<RawKey> keys() {
+  NavigableSet<K> keys() {
     return keys;
   }
 
@@ -158,8 +152,8 @@ final class KeyIndex {
    * while there are more than {@code maxKeys}, and moves the bound to the last one evicted.
    */
   void apply(
-      final RawKey[] commitKeys,
-      final @Nullable DbValue[] values,
+      final K[] commitKeys,
+      final @Nullable Object[] values,
       int from,
       final int to,
       final int maxKeys) {
@@ -199,7 +193,7 @@ final class KeyIndex {
    * Makes the loaded keys visible and the index usable. The window covers the keys up to {@code
    * bound}; null if the load reached the end of the column family.
    */
-  void install(final Iterable<RawKey> loaded, final @Nullable RawKey bound) {
+  void install(final Iterable<K> loaded, final @Nullable K bound) {
     beginChange();
     this.bound = bound;
     for (final var key : loaded) {
@@ -214,7 +208,7 @@ final class KeyIndex {
    * Adds keys beyond the bound, away from the covered end, and moves the bound to {@code newBound};
    * null if they reach the end of the column family.
    */
-  void extend(final Iterable<RawKey> more, final @Nullable RawKey newBound) {
+  void extend(final Iterable<K> more, final @Nullable K newBound) {
     beginChange();
     bound = newBound;
     for (final var key : more) {

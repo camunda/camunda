@@ -33,7 +33,7 @@ public final class WriteBehindZeebeDb<
 
   private final RawAccessibleDb<ColumnFamilyType> delegate;
   private final ConsistencyChecksSettings consistencyChecks;
-  private final WriteBehindStore store;
+  private final WriteBehindStore<RawKey, DbValue> store;
 
   WriteBehindZeebeDb(
       final RawAccessibleDb<ColumnFamilyType> delegate,
@@ -41,7 +41,7 @@ public final class WriteBehindZeebeDb<
       final ConsistencyChecksSettings consistencyChecks) {
     this.delegate = delegate;
     this.consistencyChecks = consistencyChecks;
-    store = new WriteBehindStore(delegate.rawAccess(), config);
+    store = new WriteBehindStore<>(new RawBackend(delegate.rawAccess()), config);
   }
 
   @Override

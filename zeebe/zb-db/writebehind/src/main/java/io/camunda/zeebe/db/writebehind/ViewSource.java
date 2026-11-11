@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbIterator;
-import io.camunda.zeebe.db.DbValue;
-import java.util.Arrays;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -22,36 +18,38 @@ import org.jspecify.annotations.Nullable;
  * <p>Values from memory are copied out of their objects; only values from the storage are decoded,
  * and only when {@link #readValueUnlessStale} asks for them.
  */
-final class ViewSource implements CommittedSource {
+final class ViewSource<K extends Comparable<K>, V> implements CommittedSource<K, V> {
 
-  private final NavigableMap<RawKey, Version> dirty;
-  private final DbIterator stored;
+  private final Backend<K, V> backend;
+  private final NavigableMap<K, Version<V>> dirty;
+  private final Backend.Cursor<K, V> stored;
 
   private boolean forward = true;
-  private @Nullable Entry<RawKey, Version> dirtyEntry;
-  private byte @Nullable [] storedKey;
-  private byte @Nullable [] currentKey;
+  private @Nullable Entry<K, Version<V>> dirtyEntry;
+  private @Nullable K storedKey;
+  private @Nullable K currentKey;
   // null while the current entry comes from the storage
-  private @Nullable DbValue currentValue;
+  private @Nullable V currentValue;
 
-  ViewSource(final WriteBehindStore.View view) {
+  ViewSource(final Backend<K, V> backend, final WriteBehindStore.View<K, V> view) {
+    this.backend = backend;
     dirty = view.dirty();
-    stored = view.storageIterator();
+    stored = view.storageCursor();
   }
 
   @Override
-  public void seek(final byte[] key) {
+  public void seek(final K key) {
     forward = true;
-    dirtyEntry = dirty.ceilingEntry(RawKey.copyOf(key));
+    dirtyEntry = dirty.ceilingEntry(key);
     stored.seek(key);
     storedKey = stored.isValid() ? stored.key() : null;
     settle();
   }
 
   @Override
-  public void seekForPrev(final byte[] key) {
+  public void seekForPrev(final K key) {
     forward = false;
-    dirtyEntry = dirty.floorEntry(RawKey.copyOf(key));
+    dirtyEntry = dirty.floorEntry(key);
     stored.seekForPrev(key);
     storedKey = stored.isValid() ? stored.key() : null;
     settle();
@@ -63,7 +61,7 @@ final class ViewSource implements CommittedSource {
   }
 
   @Override
-  public byte[] key() {
+  public K key() {
     return current();
   }
 
@@ -74,14 +72,13 @@ final class ViewSource implements CommittedSource {
   }
 
   @Override
-  public boolean readValueUnlessStale(final DbValue target) {
+  public boolean readValueUnlessStale(final V target) {
     current();
     final var value = currentValue;
     if (value != null) {
-      Values.copy(value, target);
+      backend.copy(value, target);
     } else {
-      final var bytes = stored.value();
-      target.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+      stored.readValue(target);
     }
     return true;
   }
@@ -94,17 +91,15 @@ final class ViewSource implements CommittedSource {
   /** Moves to the first entry in iteration order that isn't deleted, or to the end. */
   private void settle() {
     while (true) {
-      final byte @Nullable [] key = firstKey();
+      final @Nullable K key = firstKey();
       if (key == null) {
         currentKey = null;
         currentValue = null;
         return;
       }
 
-      final @Nullable Version version =
-          dirtyEntry != null && Arrays.equals(dirtyEntry.getKey().bytes(), key)
-              ? dirtyEntry.getValue()
-              : null;
+      final @Nullable Version<V> version =
+          dirtyEntry != null && dirtyEntry.getKey().equals(key) ? dirtyEntry.getValue() : null;
       if (version == null || !version.isTombstone()) {
         currentKey = key;
         currentValue = version == null ? null : version.value();
@@ -114,24 +109,23 @@ final class ViewSource implements CommittedSource {
     }
   }
 
-  private byte @Nullable [] firstKey() {
-    final byte[] dirtyKey = dirtyEntry == null ? null : dirtyEntry.getKey().bytes();
+  private @Nullable K firstKey() {
+    final K dirtyKey = dirtyEntry == null ? null : dirtyEntry.getKey();
     if (dirtyKey == null) {
       return storedKey;
     }
     if (storedKey == null) {
       return dirtyKey;
     }
-    final int comparison = Arrays.compareUnsigned(dirtyKey, storedKey);
+    final int comparison = dirtyKey.compareTo(storedKey);
     return (forward ? comparison <= 0 : comparison >= 0) ? dirtyKey : storedKey;
   }
 
-  private void advancePast(final byte[] key) {
-    if (dirtyEntry != null && Arrays.equals(dirtyEntry.getKey().bytes(), key)) {
-      final var rawKey = RawKey.copyOf(key);
-      dirtyEntry = forward ? dirty.higherEntry(rawKey) : dirty.lowerEntry(rawKey);
+  private void advancePast(final K key) {
+    if (dirtyEntry != null && dirtyEntry.getKey().equals(key)) {
+      dirtyEntry = forward ? dirty.higherEntry(key) : dirty.lowerEntry(key);
     }
-    if (storedKey != null && Arrays.equals(storedKey, key)) {
+    if (storedKey != null && storedKey.equals(key)) {
       if (forward) {
         stored.next();
       } else {
@@ -141,7 +135,7 @@ final class ViewSource implements CommittedSource {
     }
   }
 
-  private byte[] current() {
+  private K current() {
     final var key = currentKey;
     if (key == null) {
       throw new IllegalStateException("Expected the source to be valid, but it is not");

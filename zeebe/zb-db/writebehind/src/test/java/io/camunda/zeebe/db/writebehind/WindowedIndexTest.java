@@ -32,7 +32,7 @@ final class WindowedIndexTest {
   private static final int CAP = 10;
 
   private CountingRawDbAccess access;
-  private WriteBehindStore store;
+  private WriteBehindStore<RawKey, DbValue> store;
   private WriteBehindTransaction transaction;
 
   @AfterEach
@@ -43,8 +43,8 @@ final class WindowedIndexTest {
   private void open(final KeyIndexPolicy policy) {
     access = new CountingRawDbAccess(new InMemoryRawDbAccess());
     store =
-        new WriteBehindStore(
-            access,
+        new WriteBehindStore<>(
+            new RawBackend(access),
             WriteBehindConfiguration.defaults()
                 .withCacheMaxBytes(0)
                 .withKeyIndexColumnFamilies(Set.of(CF))
@@ -317,12 +317,12 @@ final class WindowedIndexTest {
     final var ids = new ArrayList<Long>();
     try (final var cursor = transaction.newCursor(prefix())) {
       if (forward) {
-        cursor.seek(from == 0 ? prefix() : key(from).bytes());
+        cursor.seek(from == 0 ? RawKey.of(prefix()) : key(from));
       } else {
-        cursor.seekForPrev(key(from).bytes());
+        cursor.seekForPrev(key(from));
       }
       while (cursor.isValid()) {
-        ids.add(ByteBuffer.wrap(cursor.key()).getLong(Long.BYTES));
+        ids.add(ByteBuffer.wrap(cursor.key().bytes()).getLong(Long.BYTES));
         cursor.advance();
       }
     }

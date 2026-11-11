@@ -31,7 +31,7 @@ final class IndexedScanTest {
   private static final long NOT_INDEXED = 11;
 
   private CountingRawDbAccess access;
-  private WriteBehindStore store;
+  private WriteBehindStore<RawKey, DbValue> store;
   private WriteBehindTransaction transaction;
 
   @BeforeEach
@@ -49,7 +49,7 @@ final class IndexedScanTest {
 
   private void open(final WriteBehindConfiguration config) {
     access = new CountingRawDbAccess(new InMemoryRawDbAccess());
-    store = new WriteBehindStore(access, config);
+    store = new WriteBehindStore<>(new RawBackend(access), config);
     transaction = new WriteBehindTransaction(store);
     transaction.resetTransaction();
   }
@@ -113,7 +113,7 @@ final class IndexedScanTest {
     put(INDEXED, 1, 2, 3);
     final var index = store.keyIndex(INDEXED);
     final var cursor = cursor(INDEXED);
-    cursor.seek(prefix(INDEXED));
+    cursor.seek(RawKey.of(prefix(INDEXED)));
     final long version = index.version();
 
     // when
@@ -166,7 +166,7 @@ final class IndexedScanTest {
     // given
     put(INDEXED, 10, 20, 30, 40, 50);
     final var cursor = cursor(INDEXED);
-    cursor.seek(prefix(INDEXED));
+    cursor.seek(RawKey.of(prefix(INDEXED)));
     final var seen = new ArrayList<Long>();
     seen.add(id(cursor));
 
@@ -192,7 +192,7 @@ final class IndexedScanTest {
     // given
     put(INDEXED, 10, 20, 30);
     final var cursor = cursor(INDEXED);
-    cursor.seek(prefix(INDEXED));
+    cursor.seek(RawKey.of(prefix(INDEXED)));
     cursor.advance();
     assertThat(id(cursor)).isEqualTo(20);
 
@@ -218,7 +218,7 @@ final class IndexedScanTest {
     put(INDEXED, 1, 2, 3);
     store.awaitFlushed();
     final var cursor = cursor(INDEXED);
-    cursor.seek(prefix(INDEXED));
+    cursor.seek(RawKey.of(prefix(INDEXED)));
     final var target = new DbLong();
 
     // when
@@ -267,7 +267,7 @@ final class IndexedScanTest {
     final var cursor = cursor(INDEXED);
 
     // when
-    cursor.seekForPrev(key(INDEXED, 3).bytes());
+    cursor.seekForPrev(key(INDEXED, 3));
     final var seen = new ArrayList<Long>();
     while (cursor.isValid()) {
       seen.add(id(cursor));
@@ -296,7 +296,7 @@ final class IndexedScanTest {
     final var cursor = cursor(INDEXED);
 
     // when
-    cursor.seek(prefix(INDEXED));
+    cursor.seek(RawKey.of(prefix(INDEXED)));
     final var seen = new ArrayList<Long>();
     while (cursor.isValid()) {
       final long id = id(cursor);
@@ -378,9 +378,9 @@ final class IndexedScanTest {
     for (final boolean forward : new boolean[] {true, false}) {
       final var cursor = cursor(INDEXED);
       if (forward) {
-        cursor.seek(prefix(INDEXED));
+        cursor.seek(RawKey.of(prefix(INDEXED)));
       } else {
-        cursor.seekForPrev(key(INDEXED, 100).bytes());
+        cursor.seekForPrev(key(INDEXED, 100));
       }
 
       // when
@@ -414,7 +414,7 @@ final class IndexedScanTest {
     }
   }
 
-  private MergingCursor cursor(final long columnFamily) {
+  private MergingCursor<RawKey, DbValue> cursor(final long columnFamily) {
     transaction.prepareScan(columnFamily);
     return transaction.newCursor(prefix(columnFamily));
   }
@@ -422,11 +422,11 @@ final class IndexedScanTest {
   /** Reads the whole column family with values, in order. */
   private Map<Long, Long> scan(final long columnFamily) {
     final var cursor = cursor(columnFamily);
-    cursor.seek(prefix(columnFamily));
+    cursor.seek(RawKey.of(prefix(columnFamily)));
     return drain(cursor);
   }
 
-  private Map<Long, Long> drain(final MergingCursor cursor) {
+  private Map<Long, Long> drain(final MergingCursor<RawKey, DbValue> cursor) {
     final var result = new LinkedHashMap<Long, Long>();
     try (cursor) {
       while (cursor.isValid()) {
@@ -440,8 +440,8 @@ final class IndexedScanTest {
     return result;
   }
 
-  private static long id(final MergingCursor cursor) {
-    return ByteBuffer.wrap(cursor.key()).getLong(Long.BYTES);
+  private static long id(final MergingCursor<RawKey, DbValue> cursor) {
+    return ByteBuffer.wrap(cursor.key().bytes()).getLong(Long.BYTES);
   }
 
   private static byte[] prefix(final long columnFamily) {

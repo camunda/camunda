@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbValue;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -27,37 +26,37 @@ import org.jspecify.annotations.Nullable;
  * doesn't commit during its own scans, and transactions already see commits that were made after
  * they started.
  */
-final class IndexSource implements CommittedSource {
+final class IndexSource<K extends Comparable<K>, V> implements CommittedSource<K, V> {
 
   /** More storage reads than this in one scan are slower than one storage iterator. */
   static final int MAX_STORAGE_READS = 4;
 
-  private final WriteBehindStore store;
-  private final KeyIndex index;
+  private final WriteBehindStore<K, V> store;
+  private final KeyIndex<K> index;
   private final long version;
 
   private boolean forward = true;
-  private @Nullable RawKey head;
+  private @Nullable K head;
   private boolean stale;
   private int storageReads;
 
-  IndexSource(final WriteBehindStore store, final KeyIndex index, final long version) {
+  IndexSource(final WriteBehindStore<K, V> store, final KeyIndex<K> index, final long version) {
     this.store = store;
     this.index = index;
     this.version = version;
   }
 
   @Override
-  public void seek(final byte[] key) {
+  public void seek(final K key) {
     forward = true;
-    head = index.keys().ceiling(RawKey.copyOf(key));
+    head = index.keys().ceiling(key);
     verify();
   }
 
   @Override
-  public void seekForPrev(final byte[] key) {
+  public void seekForPrev(final K key) {
     forward = false;
-    head = index.keys().floor(RawKey.copyOf(key));
+    head = index.keys().floor(key);
     verify();
   }
 
@@ -67,12 +66,12 @@ final class IndexSource implements CommittedSource {
   }
 
   @Override
-  public byte[] key() {
+  public K key() {
     final var current = head;
     if (stale || current == null) {
       throw new IllegalStateException("Expected the source to be valid, but it is not");
     }
-    return current.bytes();
+    return current;
   }
 
   @Override
@@ -86,14 +85,14 @@ final class IndexSource implements CommittedSource {
   }
 
   @Override
-  public boolean readValueUnlessStale(final DbValue target) {
+  public boolean readValueUnlessStale(final V target) {
     final var key = head;
     if (stale || key == null) {
       return false;
     }
 
     final var unflushed = store.lookupInMemory(key);
-    final @Nullable DbValue value;
+    final @Nullable V value;
     if (unflushed != null) {
       value = unflushed.value();
     } else if (storageReads >= MAX_STORAGE_READS) {
@@ -110,7 +109,7 @@ final class IndexSource implements CommittedSource {
       stale = true;
       return false;
     }
-    Values.copy(value, target);
+    store.backend().copy(value, target);
     return true;
   }
 

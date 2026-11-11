@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbValue;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
@@ -20,24 +19,24 @@ import org.jspecify.annotations.Nullable;
  * the index source is the active one. The view is a fixed instant, so the source can't turn stale
  * after the hand-over.
  */
-final class HandoverSource implements CommittedSource {
+final class HandoverSource<K extends Comparable<K>, V> implements CommittedSource<K, V> {
 
-  private final IndexSource index;
-  private final Supplier<CommittedSource> viewOpener;
-  private final byte[] bound;
+  private final IndexSource<K, V> index;
+  private final Supplier<CommittedSource<K, V>> viewOpener;
+  private final K bound;
   private final Runnable onHandover;
 
   private boolean forward = true;
-  private @Nullable CommittedSource view;
+  private @Nullable CommittedSource<K, V> view;
 
   /**
    * @param viewOpener opens a view of the scan's prefix
    * @param bound the first key that the window doesn't cover
    */
   HandoverSource(
-      final IndexSource index,
-      final Supplier<CommittedSource> viewOpener,
-      final byte[] bound,
+      final IndexSource<K, V> index,
+      final Supplier<CommittedSource<K, V>> viewOpener,
+      final K bound,
       final Runnable onHandover) {
     this.index = index;
     this.viewOpener = viewOpener;
@@ -46,7 +45,7 @@ final class HandoverSource implements CommittedSource {
   }
 
   @Override
-  public void seek(final byte[] key) {
+  public void seek(final K key) {
     forward = true;
     closeView();
     index.seek(key);
@@ -54,7 +53,7 @@ final class HandoverSource implements CommittedSource {
   }
 
   @Override
-  public void seekForPrev(final byte[] key) {
+  public void seekForPrev(final K key) {
     forward = false;
     closeView();
     index.seekForPrev(key);
@@ -67,7 +66,7 @@ final class HandoverSource implements CommittedSource {
   }
 
   @Override
-  public byte[] key() {
+  public K key() {
     return active().key();
   }
 
@@ -78,7 +77,7 @@ final class HandoverSource implements CommittedSource {
   }
 
   @Override
-  public boolean readValueUnlessStale(final DbValue target) {
+  public boolean readValueUnlessStale(final V target) {
     return active().readValueUnlessStale(target);
   }
 
@@ -93,7 +92,7 @@ final class HandoverSource implements CommittedSource {
     index.close();
   }
 
-  private CommittedSource active() {
+  private CommittedSource<K, V> active() {
     final var opened = view;
     return opened != null ? opened : index;
   }
