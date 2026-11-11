@@ -146,7 +146,7 @@ public final class JobPollerImpl implements JobPoller {
             activateJobsResponse -> {
               final List<ActivatedJob> jobs = activateJobsResponse.getJobs();
               activatedJobs += jobs.size();
-              jobs.forEach(jobConsumer);
+              jobs.forEach(this::dispatch);
               if (activatedJobs > 0) {
                 LOG.debug(
                     "Activated {} jobs for worker {} and job type {}",
@@ -159,6 +159,24 @@ public final class JobPollerImpl implements JobPoller {
               doneCallback.accept(activatedJobs);
               return null;
             });
+  }
+
+  /**
+   * Hands one job to the consumer. Never throws: this runs in a stage nobody observes, so a failure
+   * let out of here would go unseen, skip the rest of the response, and keep the done callback from
+   * ever running, which leaves the worker without a poller for good.
+   */
+  private void dispatch(final ActivatedJob job) {
+    try {
+      jobConsumer.accept(job);
+    } catch (final RuntimeException | Error e) {
+      LOG.warn(
+          "Failed to dispatch activated job with key {} for worker {} and job type {}",
+          job.getKey(),
+          workerName,
+          jobType,
+          e);
+    }
   }
 
   private void logFailure(final Throwable throwable) {

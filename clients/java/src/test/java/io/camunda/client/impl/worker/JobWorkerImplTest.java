@@ -994,6 +994,47 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldKeepPollingWhenJobMetricsAlsoThrowWhileHandingAJobBack() {
+    // given metrics that throw for the first job the worker activates, and again when that job is
+    // reported as refused, so that the failure escapes the worker's own handling of it
+    final AtomicBoolean activationThrew = new AtomicBoolean();
+    final AtomicBoolean refusalThrew = new AtomicBoolean();
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void jobActivated(final int count) {
+            if (activationThrew.compareAndSet(false, true)) {
+              throw new IllegalStateException("simulated metrics failure on activation");
+            }
+          }
+
+          @Override
+          public void jobRefused(final int count) {
+            if (refusalThrew.compareAndSet(false, true)) {
+              throw new IllegalStateException("simulated metrics failure on refusal");
+            }
+          }
+        };
+    final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
+    respondWithJobsAfterAFailingOne();
+
+    // when
+    try (final JobWorker ignored =
+        client
+            .newWorker()
+            .jobType("test")
+            .handler((c, job) -> handledJobKeys.add(job.getKey()))
+            .maxJobsActive(MAX_JOBS_ACTIVE)
+            .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+            .metrics(metrics)
+            .open()) {
+
+      // then
+      assertWorkerGetsPastTheFailingJob(handledJobKeys);
+    }
+  }
+
+  @Test
   void shouldRunAJobThatIsStillWithinItsActivation() {
     // given a worker whose handler threads are free, so that a job starts as soon as it arrives
     final RecordingJobPoller poller = new RecordingJobPoller();
