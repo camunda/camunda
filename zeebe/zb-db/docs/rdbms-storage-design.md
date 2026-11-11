@@ -91,9 +91,15 @@ The changelog follows `db/rdbms-schema`: `${prefix}` in names, types defined per
 
 ## 5. Schema migration
 
-`StateSchemaManager` runs the changelog with Liquibase's core API (`CommandScope` for `update`), not
-through Spring. Its tracking tables are `${prefix}ZEEBE_STATE_DATABASECHANGELOG` and
-`${prefix}ZEEBE_STATE_DATABASECHANGELOGLOCK`, so they never mix with the history schema's.
+`StateSchemaManager` runs the changelog with Liquibase's `Liquibase` class, the same way
+`SpringLiquibase` does, but without Spring. Its tracking tables are
+`${prefix}ZEEBE_STATE_DATABASECHANGELOG` and `${prefix}ZEEBE_STATE_DATABASECHANGELOGLOCK`, so they
+never mix with the history schema's.
+
+Like the history, it sets a Liquibase context per prefix. Liquibase remembers for the whole JVM
+which changelogs are up to date per database URL, but not per table, so without it a prefix that's
+behind could be skipped. It also turns off Liquibase's usage analytics, which otherwise loads its
+settings from Liquibase's servers.
 
 `RdbmsStorage` runs it once, when it's created. One `RdbmsStorage` exists per data source and is
 shared by all partitions of a broker.

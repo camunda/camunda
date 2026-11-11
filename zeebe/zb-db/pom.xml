@@ -19,6 +19,7 @@
     <module>api</module>
     <module>rocksdb</module>
     <module>cache</module>
+    <module>rdbms</module>
     <module>tests</module>
   </modules>
 </project>

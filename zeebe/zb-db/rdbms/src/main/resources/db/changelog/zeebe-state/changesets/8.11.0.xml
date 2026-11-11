@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!--suppress LiquibaseXmlUnresolvedProperty -->
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <!--
+    Keys and values are compared byte by byte as unsigned numbers by both types, which gives the
+    same key order as RocksDB. Avoid BLOB types: H2 stores them out of the row, and Liquibase maps
+    them to OID on PostgreSQL.
+  -->
+  <property name="binaryType" value="VARBINARY" dbms="h2"/>
+  <property name="binaryType" value="BYTEA" dbms="postgresql"/>
+
+  <changeSet id="create_zeebe_state_partition_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}ZEEBE_STATE_PARTITION"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}ZEEBE_STATE_PARTITION">
+      <column name="STATE_ID" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE_PARTITION"/>
+      </column>
+      <column name="PARTITION_GROUP" type="VARCHAR(255)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="PARTITION_ID" type="INTEGER">
+        <constraints nullable="false"/>
+      </column>
+      <column name="OWNER_TERM" type="BIGINT">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addUniqueConstraint tableName="${prefix}ZEEBE_STATE_PARTITION"
+      columnNames="PARTITION_GROUP, PARTITION_ID"
+      constraintName="${prefix}UQ_ZEEBE_STATE_PARTITION"/>
+  </changeSet>
+
+  <changeSet id="create_zeebe_state_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}ZEEBE_STATE"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}ZEEBE_STATE">
+      <column name="STATE_ID" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE"/>
+      </column>
+      <column name="COLUMN_FAMILY" type="INTEGER">
+        <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE"/>
+      </column>
+      <column name="STATE_KEY" type="${binaryType}">
+        <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE"/>
+      </column>
+      <column name="STATE_VALUE" type="${binaryType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+  </changeSet>
+
+</databaseChangeLog>
