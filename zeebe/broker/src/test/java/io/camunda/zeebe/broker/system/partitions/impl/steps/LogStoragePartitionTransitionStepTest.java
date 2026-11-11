@@ -37,6 +37,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionT
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.broker.system.partitions.leadership.PartitionLeadership;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -182,12 +184,15 @@ class LogStoragePartitionTransitionStepTest {
   class WithRdbmsLogStorage {
 
     private final LogBlockRepository repository = mock(LogBlockRepository.class);
+    private final PartitionLeadership leadership = mock(PartitionLeadership.class);
 
     @BeforeEach
     void setup() {
       transitionContext.setLogBlockRepository(repository);
+      transitionContext.setLeadership(leadership);
       when(repository.claimTerm(anyLong())).thenReturn(true);
-      when(raftPartition.term()).thenReturn(1L);
+      when(leadership.term()).thenReturn(1L);
+      when(leadership.stepDown()).thenReturn(CompletableFuture.completedFuture(null));
     }
 
     @AfterEach
@@ -209,6 +214,8 @@ class LogStoragePartitionTransitionStepTest {
       verify(repository).claimTerm(1);
       assertThat(transitionContext.getLogStorage()).isInstanceOf(RdbmsLogStorage.class);
       verify(raftServer, never()).addCommitListener(any());
+      verify(raftServer, never()).getTerm();
+      verify(raftPartition, never()).term();
     }
 
     @Test
@@ -224,10 +231,10 @@ class LogStoragePartitionTransitionStepTest {
     }
 
     @Test
-    void shouldNotClaimTermWhenRaftTermChanged() {
+    void shouldNotClaimTermWhenTheTermOfTheLeadershipChanged() {
       // given
       initializeContext(Role.FOLLOWER);
-      when(raftServer.getTerm()).thenReturn(2L);
+      when(leadership.term()).thenReturn(2L);
       step.prepareTransition(transitionContext, 1, Role.LEADER).join();
 
       // when + then
@@ -277,7 +284,8 @@ class LogStoragePartitionTransitionStepTest {
       append(transitionContext.getLogStorage());
 
       // then
-      verify(raftPartition, timeout(5_000)).stepDown();
+      verify(leadership, timeout(5_000)).stepDown();
+      verify(raftPartition, never()).stepDown();
     }
 
     @Test
@@ -286,7 +294,7 @@ class LogStoragePartitionTransitionStepTest {
       initializeContext(Role.FOLLOWER);
       transitionTo(Role.LEADER);
       doThrow(new TermMismatchException(1, 1)).when(repository).append(anyLong(), any());
-      when(raftPartition.term()).thenReturn(2L);
+      when(leadership.term()).thenReturn(2L);
 
       // when
       append(transitionContext.getLogStorage());
@@ -297,7 +305,7 @@ class LogStoragePartitionTransitionStepTest {
               () ->
                   mockingDetails(repository).getInvocations().stream()
                       .anyMatch(invocation -> invocation.getMethod().getName().equals("append")));
-      verify(raftPartition, after(200).never()).stepDown();
+      verify(leadership, after(200).never()).stepDown();
     }
 
     @Test

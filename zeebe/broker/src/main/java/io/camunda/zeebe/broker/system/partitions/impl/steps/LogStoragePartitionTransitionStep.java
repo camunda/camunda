@@ -36,6 +36,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   private static final Duration MAX_CLAIM_RETRY_BACKOFF = Duration.ofSeconds(10);
   private static final String WRONG_TERM_ERROR_MSG =
       "Expected that current term '%d' is same as raft term '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
+  private static final String WRONG_LEADER_TERM_ERROR_MSG =
+      "Expected that current term '%d' is same as the term of the leadership '%d', but was not. Failing installation of 'LogStoragePartitionStep' on partition %d.";
 
   /**
    * Bumped whenever a new Raft role is announced, so that an RDBMS log storage installation still
@@ -169,9 +171,9 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   }
 
   /**
-   * A leader claims the partition in the database for its Raft term before it may append, so that a
-   * deposed leader's appends are rejected. Raft still elects the leader; the database only enforces
-   * that a newer term's claim wins.
+   * A leader claims the partition in the database for its term before it may append, so that a
+   * deposed leader's appends are rejected. The term is the one of the lease that made this node the
+   * leader: with the log in the database, Raft holds no records and does not decide who leads.
    */
   private Either<Exception, RdbmsLogStorage> buildRdbmsLogStorage(
       final PartitionTransitionContext context,
@@ -184,12 +186,13 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
               repository, RdbmsLogStorage.Config.fromEnvironment(System.getenv())));
     }
 
-    final var raftPartition = context.getRaftPartition();
-    final var raftTerm = raftPartition.getServer().getTerm();
-    if (raftTerm != targetTerm) {
+    final var leadership = context.getLeadership();
+    final var leaderTerm = leadership.term();
+    if (leaderTerm != targetTerm) {
       return left(
           new NotLeaderException(
-              String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
+              String.format(
+                  WRONG_LEADER_TERM_ERROR_MSG, targetTerm, leaderTerm, context.getPartitionId())));
     }
 
     try {
@@ -212,14 +215,14 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
             RdbmsLogStorage.Config.fromEnvironment(System.getenv()),
             context.getPartitionTransitionMeterRegistry(),
             error -> {
-              // Raft keeps this node leader while the database fails, so step down explicitly;
-              // unless a newer term has begun, which this failure says nothing about
-              if (raftPartition.term() == targetTerm) {
+              // the leadership keeps this node leader while the database fails, so step down
+              // explicitly; unless a newer term has begun, which this failure says nothing about
+              if (leadership.term() == targetTerm) {
                 LOG.warn(
                     "RDBMS log storage of partition {} failed in term {}, stepping down",
                     partitionId,
                     targetTerm);
-                raftPartition.stepDown();
+                leadership.stepDown();
               }
             }));
   }

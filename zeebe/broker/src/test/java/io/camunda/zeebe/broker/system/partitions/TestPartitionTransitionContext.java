@@ -82,6 +82,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ExporterRepository exporterRepository;
   private LogStorage logStorage;
   private @Nullable LogBlockRepository logBlockRepository;
+  private @Nullable PartitionLeadership leadership;
   private BrokerCfg brokerCfg;
   private AsyncSnapshotDirector snapshotDirector;
   private QueryService queryService;
@@ -132,7 +133,12 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public PartitionLeadership getLeadership() {
-    return new RaftPartitionLeadership(raftPartition);
+    return leadership != null ? leadership : new RaftPartitionLeadership(raftPartition);
+  }
+
+  /** Replaces the default leadership, which follows the Raft partition. */
+  public void setLeadership(final PartitionLeadership leadership) {
+    this.leadership = leadership;
   }
 
   @Override
