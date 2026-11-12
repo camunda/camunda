@@ -396,7 +396,7 @@ postgresql:
     repository: dockerhub/postgres
     tag: "18.4"
 
-  # -- Create the indexes (A), (B) and (D) of camunda/camunda#67171 on `USER_TASK` and
+  # -- Create the indexes (A), (B), (C) and (D) of camunda/camunda#67171 on `USER_TASK` and
   # `VARIABLE`, as soon as Camunda creates the tables. Only for the user task search
   # experiment: assumes no table prefix, `public` schema and the `custom-model` scenario.
   userTaskIndexes:

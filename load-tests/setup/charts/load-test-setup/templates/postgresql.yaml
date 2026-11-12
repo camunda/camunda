@@ -73,7 +73,7 @@ spec:
       secret:
         name: {{ include "load-test-setup.postgresql.cnpg-secret-name" . }}
       {{- if .Values.postgresql.userTaskIndexes.enabled }}
-      # Experiment for camunda/camunda#67171: indexes (A), (B) and (D) of the issue.
+      # Experiment for camunda/camunda#67171: indexes (A), (B), (C) and (D) of the issue.
       # Liquibase creates the tables when Camunda starts, after this bootstrap. So we
       # install an event trigger that creates the indexes the moment the tables exist,
       # before any row is written.
@@ -89,6 +89,9 @@ spec:
                 CREATE INDEX IF NOT EXISTS idx_user_task_tenant_assignee_state_date
                   ON public.user_task (tenant_id, assignee, state, creation_date DESC NULLS LAST, user_task_key ASC)
                   WHERE assignee IS NOT NULL;
+                CREATE INDEX IF NOT EXISTS idx_user_task_unassigned_open
+                  ON public.user_task (tenant_id, state, creation_date DESC NULLS LAST, user_task_key)
+                  WHERE assignee IS NULL;
               ELSIF r.object_identity = 'public.variable' THEN
                 CREATE INDEX IF NOT EXISTS idx_variable_scope_key ON public.variable (scope_key, var_key);
               END IF;
