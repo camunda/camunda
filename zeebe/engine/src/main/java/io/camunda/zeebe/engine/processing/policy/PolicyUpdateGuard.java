@@ -22,9 +22,9 @@ import org.jspecify.annotations.NullMarked;
  * another partition.
  */
 @NullMarked
-final class PolicyUpdateOrigin {
+final class PolicyUpdateGuard {
 
-  private PolicyUpdateOrigin() {}
+  private PolicyUpdateGuard() {}
 
   /** Rejects a command that came from a client request or that was written to another partition. */
   static Optional<Rejection> checkInternal(final TypedRecord<PolicyUpdateRecord> command) {

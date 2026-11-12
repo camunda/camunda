@@ -34,7 +34,7 @@ import org.jspecify.annotations.NullMarked;
  * after those of this chunk, so the chunks are applied in order. After the last chunk, the update
  * and its chunks are removed from the buffer.
  *
- * <p>The processor checks no user authorization; see {@link PolicyUpdateOrigin}.
+ * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -63,7 +63,7 @@ public final class PolicyUpdateApplyChunkProcessor
 
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
-    final var rejection = PolicyUpdateOrigin.checkInternal(command);
+    final var rejection = PolicyUpdateGuard.checkInternal(command);
     if (rejection.isPresent()) {
       rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
       return;

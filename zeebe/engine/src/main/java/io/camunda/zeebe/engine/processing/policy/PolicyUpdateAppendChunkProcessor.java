@@ -28,7 +28,7 @@ import org.jspecify.annotations.NullMarked;
  * <p>The processor does not validate the chunks: it assumes that the broker sends every chunk of an
  * update with the update's identifiers, and one update at a time. A chunk that is sent again
  * replaces the buffered one. The processor checks no user authorization; see {@link
- * PolicyUpdateOrigin}.
+ * PolicyUpdateGuard}.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -54,7 +54,7 @@ public final class PolicyUpdateAppendChunkProcessor
 
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
-    final var rejection = PolicyUpdateOrigin.checkInternal(command);
+    final var rejection = PolicyUpdateGuard.checkInternal(command);
     if (rejection.isPresent()) {
       rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
       return;
