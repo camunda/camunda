@@ -129,5 +129,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43224011939",
     "updated_at": "2026-11-12T13:08:57Z",
     "cooldown_until": "2026-11-13T13:08:57Z"
+  },
+  "61c7eb54": {
+    "version": "8.9",
+    "file": "tests/api/v2/decision-instance/decision-instance-delete-api.spec.ts",
+    "titlePath": [
+      "Delete Decision Instances API Tests",
+      "Delete Decision Instance - Success"
+    ],
+    "last_action": "delete_branch",
+    "last_reason": "the agent produced no fix",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43224981555",
+    "updated_at": "2026-11-12T13:34:25Z",
+    "cooldown_until": "2026-11-19T13:34:25Z"
   }
 }
