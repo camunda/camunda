@@ -12,18 +12,23 @@ import java.util.NavigableMap;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Merges a transaction's own writes with a {@link ViewSource} of the committed state. On equal keys
- * the own writes win; a delete hides the key.
+ * Merges a transaction's own writes with one {@link CommittedSource}. On equal keys the own writes
+ * win; a delete hides the key.
  *
  * <p>The own writes are read live, so that writes made while iterating are visible as they are with
- * RocksDB's indexed write batch. Each seek opens a new view of the committed state.
+ * RocksDB's indexed write batch.
+ *
+ * <p>Each seek picks the committed source: the {@link IndexSource} if the column family has a
+ * loaded key index whose window covers the seek key, which opens no storage iterator, else a {@link
+ * ViewSource}. An index source can turn stale in the middle of a scan; the cursor then replaces it
+ * with a view that it seeks to the current key, so that no key is returned twice or skipped.
  */
 final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseable {
 
   private final NavigableMap<K, Version<V>> own;
   private final WriteBehindStore<K, V, T> store;
   private final KeyRange<K> range;
-  private @Nullable ViewSource<K, V, T> committed;
+  private @Nullable CommittedSource<K, V, T> committed;
 
   private boolean forward = true;
   private @Nullable Entry<K, Version<V>> ownEntry;
@@ -32,7 +37,7 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
   private @Nullable V currentValue;
 
   /**
-   * @param range the range of the scan, which restricts the storage view
+   * @param range the range of the scan, which restricts the storage view if the cursor needs one
    */
   MergingCursor(
       final NavigableMap<K, Version<V>> own,
@@ -72,15 +77,27 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
     return current();
   }
 
-  /** Copies or decodes the current value into {@code target}. */
-  void readValue(final T target) {
-    current();
+  /**
+   * Copies or decodes the current value into {@code target}. Returns false if the entry is gone: a
+   * commit deleted it while the cursor read from the key index. The cursor then stays at the key
+   * and {@link #advance()} moves on.
+   */
+  boolean readValue(final T target) {
+    final var key = current();
     final var value = currentValue;
     if (value != null) {
       store.backend().copy(value, target);
-    } else {
-      committed().readValue(target);
+      return true;
     }
+    if (!isCommittedAt(key)) {
+      // an earlier failed read moved the source on to another key
+      return false;
+    }
+    if (committed().readValueUnlessStale(target)) {
+      return true;
+    }
+    // the entry is current, so it stays when the view still has it
+    return restartFromView(key) && committed().readValueUnlessStale(target);
   }
 
   @Override
@@ -93,7 +110,39 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
 
   private void seekCommitted(final K key) {
     close();
-    committed = new ViewSource<>(store.backend(), store.openView(range));
+    final var index = store.keyIndex(store.backend().groupOf(key));
+    if (index != null && useIndex(index, key)) {
+      return;
+    }
+    committed = openView();
+    seekInDirection(key);
+  }
+
+  /**
+   * Positions an index source at {@code key} if the index may serve this scan. A scan that would
+   * run out of a partial window into the keys beyond it can't use the index.
+   */
+  private boolean useIndex(final KeyIndex<K> index, final K key) {
+    // the sequence before the version, see KeyIndex#isStableAsOf
+    final long seq = store.committedSeq();
+    final long version = index.version();
+    final var bound = index.bound();
+    if (!index.isStableAsOf(version, seq)
+        || !index.covers(bound, key)
+        || (bound != null && index.handsOver(forward))) {
+      return false;
+    }
+    store.ensureUsable();
+    store.metrics().indexedScans.increment();
+    committed = new IndexSource<>(store, index, version);
+    seekInDirection(key);
+    if (committed().isStale()) {
+      restartFromView(key);
+    }
+    return true;
+  }
+
+  private void seekInDirection(final K key) {
     if (forward) {
       committed().seek(key);
     } else {
@@ -101,11 +150,27 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
     }
   }
 
+  /**
+   * Replaces the stale index source with a view and seeks it to {@code key}. Returns whether it
+   * landed exactly on {@code key}.
+   */
+  private boolean restartFromView(final K key) {
+    committed().close();
+    store.metrics().keyIndexSwitches.increment();
+    committed = openView();
+    seekInDirection(key);
+    return isCommittedAt(key);
+  }
+
+  private ViewSource<K, V, T> openView() {
+    return new ViewSource<>(store.backend(), store.openView(range));
+  }
+
   private boolean isCommittedAt(final K key) {
     return committed().isValid() && committed().key().equals(key);
   }
 
-  private ViewSource<K, V, T> committed() {
+  private CommittedSource<K, V, T> committed() {
     final var source = committed;
     if (source == null) {
       throw new IllegalStateException("Expected the cursor to be positioned, but it is not");
@@ -160,6 +225,9 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
     ownEntry = forward ? own.higherEntry(key) : own.lowerEntry(key);
     if (isCommittedAt(key)) {
       committed().advance();
+      if (committed().isStale() && restartFromView(key)) {
+        committed().advance();
+      }
     }
   }
 
