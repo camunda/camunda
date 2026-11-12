@@ -2,9 +2,8 @@
 
 **DRI**: Mathias Vandaele
 
-**Status**: Accepted for the core in `camunda/camunda` (specification validated on 2026-11-10),
-implementation in progress. The connector runtime part (specification section 5.2, and the
-connector part of D58) stays proposed until it is agreed with Connectors.
+**Status**: Accepted (specification validated on 2026-11-10; the connector runtime part, specification
+section 5.2, agreed with Connectors on 2026-11-12), implementation in progress
 
 **Purpose**: Record why Camunda gets a dedicated probe primitive, what it decides at the level of
 the architecture, and where it is known to fall short. Every detail (records, endpoints, states,
@@ -168,14 +167,11 @@ must fix:
 - The audit log gives `TIMED_OUT` and `CANCELED` the default result `SUCCESS`; it must be `FAIL`
   (D70).
 
-## Open points
+## Open question
 
 - **OQ30: which roles get `PROBE:CREATE` by default?** Owners: Security and Product management.
   Proposal: users who manage connections get `PROBE:CREATE` on `*` and `SECRET:READ`, and Admin
   gets all (specification section 8).
-- **The connector runtime design (specification section 5.2)** is to agree with Connectors before
-  that part is built in `camunda/connectors` (D58). The core in `camunda/camunda` does not depend
-  on it.
 
 ## Source
 
