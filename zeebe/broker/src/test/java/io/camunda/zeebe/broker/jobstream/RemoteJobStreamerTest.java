@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.jobstream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,5 +52,19 @@ final class RemoteJobStreamerTest {
     // then
     verify(eventService).broadcast(eq("default-jobsAvailable"), eq(JOB_TYPE));
     verify(eventService).broadcast(eq("jobsAvailable"), eq(JOB_TYPE));
+  }
+
+  @Test
+  void shouldBroadcastPartitionHintBeforeNotificationForPartitionStreamer() {
+    // given
+    final var streamer = new RemoteJobStreamer(delegate, eventService, "tenanta").forPartition(3);
+
+    // when
+    streamer.notifyWorkAvailable(JOB_TYPE);
+
+    // then
+    final var inOrder = inOrder(eventService);
+    inOrder.verify(eventService).broadcast(eq("tenanta-jobsAvailable-partition"), eq("3:foo"));
+    inOrder.verify(eventService).broadcast(eq("tenanta-jobsAvailable"), eq(JOB_TYPE));
   }
 }

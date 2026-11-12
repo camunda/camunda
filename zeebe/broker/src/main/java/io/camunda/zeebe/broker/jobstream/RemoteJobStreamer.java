@@ -40,8 +40,34 @@ public final class RemoteJobStreamer implements JobStreamer {
     legacyBroadcastIfDefaultTenant(jobType);
   }
 
+  /**
+   * Returns a streamer that also tells gateways which partition has the work available. Gateways
+   * only use this to ask that partition first, so it is sent in addition to, and before, the
+   * notification that wakes them up; old gateways ignore it.
+   */
+  @Override
+  public JobStreamer forPartition(final int partitionId) {
+    return new JobStreamer() {
+      @Override
+      public void notifyWorkAvailable(final String jobType) {
+        eventService.broadcast(partitionHintTopic(physicalTenantId), partitionId + ":" + jobType);
+        RemoteJobStreamer.this.notifyWorkAvailable(jobType);
+      }
+
+      @Override
+      public Optional<JobStream> streamFor(
+          final DirectBuffer jobType, final Predicate<JobActivationProperties> filter) {
+        return RemoteJobStreamer.this.streamFor(jobType, filter);
+      }
+    };
+  }
+
   private static String topic(final String physicalTenantId) {
     return physicalTenantId + "-" + JOBS_AVAILABLE_TOPIC;
+  }
+
+  private static String partitionHintTopic(final String physicalTenantId) {
+    return topic(physicalTenantId) + "-partition";
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */

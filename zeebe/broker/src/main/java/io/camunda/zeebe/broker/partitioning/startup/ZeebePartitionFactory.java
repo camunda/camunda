@@ -299,7 +299,7 @@ public final class ZeebePartitionFactory {
           subscriptionCommandSender,
           partitionCommandSender,
           featureFlags,
-          jobStreamer,
+          jobStreamer.forPartition(recordProcessorContext.getPartitionId()),
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
           secretStoreRegistry);

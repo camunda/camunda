@@ -38,6 +38,14 @@ public interface JobStreamer {
   default void notifyWorkAvailable(final String jobType) {}
 
   /**
+   * Returns a streamer for use by the given partition, which can tell listeners which partition has
+   * work available. The default is for streamers that do not care about the partition.
+   */
+  default JobStreamer forPartition(final int partitionId) {
+    return this;
+  }
+
+  /**
    * Returns a job stream for the job type, or {@link Optional#empty()} if there is none.
    *
    * <p>The predicate should return false to exclude job streams from the list of possible streams.
