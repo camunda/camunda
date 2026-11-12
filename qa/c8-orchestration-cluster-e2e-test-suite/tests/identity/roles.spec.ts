@@ -9,11 +9,16 @@
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
+import {
+  LOGIN_CREDENTIALS,
+  createTestData,
+  uniquePrefixedId,
+} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
 import {waitForItemInList} from '../../utils/waitForItemInList';
 import {cleanupRoles} from 'utils/rolesCleanup';
+import {buildUrl, jsonHeaders} from 'utils/http';
 
 const createdRoleIds: string[] = [];
 
@@ -351,5 +356,84 @@ test.describe('Roles functionalities', () => {
         emptyStateLocator: identityRolesPage.emptyStateLocator,
       });
     });
+  });
+});
+
+test.describe.serial('roles list sorting', () => {
+  const DEFAULT_PAGE_SIZE = 10;
+  const sortRoleIds: string[] = [];
+
+  test.beforeAll(async ({request}) => {
+    const prefix = uniquePrefixedId('sortrole');
+    const roleIds = Array.from(
+      {length: DEFAULT_PAGE_SIZE + 1},
+      (_, i) => `${prefix}-${i}`,
+    );
+    sortRoleIds.push(...roleIds);
+    const responses = await Promise.all(
+      roleIds.map((roleId) =>
+        request.post(buildUrl('/roles', undefined), {
+          headers: jsonHeaders(),
+          data: {roleId, name: roleId},
+        }),
+      ),
+    );
+    expect(responses.map((response) => response.status())).toEqual(
+      roleIds.map(() => 201),
+    );
+
+    await expect
+      .poll(
+        async () => {
+          const searches = await Promise.all(
+            roleIds.map((roleId) =>
+              request.post(buildUrl('/roles/search', undefined), {
+                headers: jsonHeaders(),
+                data: {filter: {roleId}},
+              }),
+            ),
+          );
+          const bodies = await Promise.all(
+            searches.map((search) => search.json()),
+          );
+          return bodies.map((body) => body.items.length);
+        },
+        {timeout: 30000},
+      )
+      .toEqual(roleIds.map(() => 1));
+  });
+
+  test.beforeEach(async ({page, loginPage, identityHeader}) => {
+    await navigateToApp(page, 'admin');
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await identityHeader.navigateToRoles();
+    await expect(page).toHaveURL(relativizePath(Paths.roles()));
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, sortRoleIds);
+  });
+
+  test('sorting a multi-page list returns to the first page', async ({
+    page,
+  }) => {
+    await page.getByRole('button', {name: 'Next'}).click();
+    await expect(page.getByText(/^Page 2 of/)).toBeVisible();
+
+    await page
+      .getByRole('columnheader', {name: 'Role ID'})
+      .getByRole('button')
+      .click();
+
+    await expect(page.getByText(/^Page 1 of/)).toBeVisible();
+    await expect(page.getByRole('table').getByRole('row')).not.toHaveCount(1);
   });
 });
