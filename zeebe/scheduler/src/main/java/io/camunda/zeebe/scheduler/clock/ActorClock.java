@@ -17,10 +17,6 @@ public interface ActorClock extends InstantSource {
 
   long getTimeMillis();
 
-  long getNanosSinceLastMillisecond();
-
-  long getNanoTime();
-
   static @Nullable ActorClock current() {
     final ActorThread current = ActorThread.current();
     return current != null ? current.getClock() : null;

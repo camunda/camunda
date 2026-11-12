@@ -68,15 +68,5 @@ final class TimerPollingTest {
     public long getTimeMillis() {
       return time.get();
     }
-
-    @Override
-    public long getNanosSinceLastMillisecond() {
-      return 0;
-    }
-
-    @Override
-    public long getNanoTime() {
-      return time.get() * 1_000_000;
-    }
   }
 }

@@ -70,16 +70,6 @@ public final class ControlledActorClock implements ActorClock {
     return updatedTime.get();
   }
 
-  @Override
-  public long getNanosSinceLastMillisecond() {
-    return 0;
-  }
-
-  @Override
-  public long getNanoTime() {
-    return 0;
-  }
-
   public long getCurrentTimeInMillis() {
     return getTimeMillis();
   }
