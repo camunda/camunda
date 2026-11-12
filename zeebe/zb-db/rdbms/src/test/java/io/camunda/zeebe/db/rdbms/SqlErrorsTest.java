@@ -60,6 +60,21 @@ final class SqlErrorsTest {
   }
 
   @Test
+  void shouldFindAUniqueViolationBehindMyBatisErrors() {
+    // given
+    final var error =
+        new PersistenceException(
+            new SQLIntegrityConstraintViolationException("duplicate", "23505"));
+
+    // when / then
+    assertThat(SqlErrors.isUniqueViolation(error)).isTrue();
+    assertThat(
+            SqlErrors.isUniqueViolation(new PersistenceException(new SQLException("x", "23503"))))
+        .describedAs("a foreign key violation")
+        .isFalse();
+  }
+
+  @Test
   void shouldTreatOtherErrorsAsUnexpected() {
     // given
     final var errors =

@@ -48,6 +48,15 @@ public final class TestH2Database implements AutoCloseable {
     }
   }
 
+  public long queryLong(final String sql) throws SQLException {
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement();
+        final var result = statement.executeQuery(sql)) {
+      result.next();
+      return result.getLong(1);
+    }
+  }
+
   public List<String> tableNames() throws SQLException {
     final var tableNames = new ArrayList<String>();
     try (final var connection = dataSource.getConnection();

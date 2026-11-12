@@ -11,20 +11,21 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.rdbms.RdbmsStorage;
 import io.camunda.zeebe.db.rdbms.RdbmsZeebeDbFactory;
+import io.camunda.zeebe.db.rdbms.StateIdentity;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.h2.jdbcx.JdbcDataSource;
 
 /**
  * The relational storage on one in-memory H2 database, with the consistency checks on. Every
- * factory gets a state of its own, so tests never see each other's rows, as with RocksDB's
- * directories.
+ * factory gets a partition and so a state of its own, so tests never see each other's rows, as with
+ * RocksDB's directories.
  */
 final class RdbmsTestFactory {
 
-  private static final AtomicLong NEXT_STATE_ID = new AtomicLong();
+  private static final AtomicInteger NEXT_PARTITION_ID = new AtomicInteger();
   private static final RdbmsStorage STORAGE = openStorage();
 
   private RdbmsTestFactory() {}
@@ -33,7 +34,8 @@ final class RdbmsTestFactory {
       ZeebeDbFactory<ColumnFamilyType> create() {
     return new RdbmsZeebeDbFactory<>(
         STORAGE,
-        NEXT_STATE_ID.incrementAndGet(),
+        new StateIdentity("contract-tests", NEXT_PARTITION_ID.incrementAndGet()),
+        () -> 1,
         new ConsistencyChecksSettings(true, true),
         SimpleMeterRegistry::new);
   }

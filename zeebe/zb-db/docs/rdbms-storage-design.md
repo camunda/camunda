@@ -128,7 +128,9 @@ Statements in `StateMapper.xml`:
 | `delete` (batched)               | `DELETE … WHERE` primary key                                         |
 | `scan`, `scanReverse`            | key range, `ORDER BY STATE_KEY [DESC]`, streamed with a fetch size   |
 | `count`, `countRange`, `isEmpty` | `COUNT(*)` / `FETCH FIRST 1 ROWS ONLY` on the column family or range |
-| state rows                       | find, create (§7.1), claim and check the owner term (§7.5)           |
+| `findStateId`, `maxStateId`      | the partition's state id; `COALESCE(MAX(STATE_ID), 0)` (§7.1)        |
+| `createState`                    | `INSERT` of a state row with the claiming term (§7.1)                |
+| `claim`, `lockOwnerTerm`         | claim the state, and read and lock the owner term (§7.5)             |
 
 Plain JDBC would mean fewer layers on the hot path, but we would rebuild the per-vendor statement
 selection that MyBatis gives us, as the history RDBMS uses. We'll compare in the benchmark.
@@ -138,18 +140,26 @@ selection that MyBatis gives us, as the history RDBMS uses. We'll compare in the
 ### 7.1 Factory and attaching to a state
 
 `RdbmsZeebeDbFactory` is created per partition with the shared `RdbmsStorage`, the partition's
-`StateIdentity` (group, partition id), a term supplier and a meter registry.
+`StateIdentity` (group, partition id), a term supplier (`LongSupplier`), the consistency check
+settings and a meter registry supplier.
 
-- `createDb(dir)` finds or creates the state row and claims it with the current term (§7.5). The
-  directory is only used for the marker: if `dir` contains one, it must name the same state.
-- A new state id is `MAX(STATE_ID) + 1`, inserted with a retry if another broker took the same id at
-  the same time. This works the same on every database, unlike sequences.
-- `openSnapshotOnlyDb(dir)` reads the marker and opens the state read-only. Writing through it
-  fails. Its `createSnapshot` copies the marker, so `StateControllerImpl`'s recovery (open snapshot,
-  copy it to the runtime directory, open the runtime DB) keeps working.
+- `createDb(dir)` reads the term once, then attaches in one short transaction of its own: it finds
+  or creates the partition's state row and claims it with the term (§7.5). The directory is only
+  used for the marker (§7.6):
+  - **Without a marker** (a partition that starts without a snapshot), it uses the partition's
+    state, or creates one.
+  - **With a marker**, the marker must name this partition, and the database must hold the state it
+    names as the partition's state. It never creates a state then: the log was compacted up to the
+    snapshot, so an empty state could not be rebuilt from it.
+- A new state id is `MAX(STATE_ID) + 1`. If another partition takes the same id at the same time,
+  the insert fails on the primary key and the attach starts over, up to 1,000 times. Every failure
+  means another partition created its state, so the number of partitions bounds the attempts. This
+  works the same on every database, unlike sequences.
+- `openSnapshotOnlyDb(dir)` reads the marker and checks that it names this partition. It doesn't
+  touch the database: its `createSnapshot` copies the marker and everything else throws
+  `UnsupportedOperationException`. That's all `StateControllerImpl`'s recovery needs (open snapshot,
+  copy it to the runtime directory, open the runtime DB).
 - `createDb(dir, avoidFlush)` is the same as `createDb(dir)`: flushing is a RocksDB setting.
-- Until step 4 adds the state rows, the factory takes the state id directly, and `createSnapshot`
-  and `openSnapshotOnlyDb` throw `UnsupportedOperationException`.
 
 ### 7.2 Transactions
 
@@ -198,19 +208,27 @@ nothing in production.
 ### 7.5 Fencing
 
 - Claim, when attaching: `UPDATE … SET OWNER_TERM = :term WHERE STATE_ID = :id AND OWNER_TERM <=
-  :term`. No row updated means a newer leader owns the state: attaching fails.
-- Check, at the first write of every transaction: `UPDATE … SET OWNER_TERM = OWNER_TERM WHERE
-  STATE_ID = :id AND OWNER_TERM = :term`. This locks the row until the transaction ends, so a claim
-  waits for a write in progress. No row updated throws `StateFencedException`, which is not
+  :term`. No row updated means a newer leader owns the state: attaching throws
+  `StateFencedException`.
+- Check, before the first writes of every transaction reach the database: `SELECT OWNER_TERM …
+  WHERE STATE_ID = :id FOR UPDATE`. This locks the row until the transaction ends, so a claim waits
+  for a write in progress. A missing row or another term throws `StateFencedException`, which is not
   recoverable: the cache's writer doesn't retry it.
+  - It's a `SELECT` instead of an `UPDATE` because writes are sent as a JDBC batch, and MyBatis'
+    batch executor doesn't report update counts. The select takes the same row lock and returns the
+    owner term, which also makes the error message clearer.
+  - Every write transaction of a partition locks its partition row, so they run one after the
+    other. That's fine: the cache has a single writer.
 - Read-only transactions don't check. A fenced leader can still read, but can't write.
 - The equal term in the claim lets a partition reopen its DB within the same term, for example after
   a failed transition. Within one broker the old DB is always closed before the new one opens.
 
 ### 7.6 Snapshots
 
-`createSnapshot(dir)` writes `zeebe-state.properties` with a format version, the state id, the
-group and the partition id. It reads nothing from the state and takes no lock. Behind the cache,
+`createSnapshot(dir)` creates `dir` and writes `zeebe-state.properties` in it, with the keys
+`version` (now `1`), `stateId`, `partitionGroup` and `partitionId`. Reading a marker with a missing
+key, a value that isn't a number or another version fails. It reads nothing from the state and
+takes no lock. Behind the cache,
 `WriteBehindZeebeDb#createSnapshot` first waits until the writer has caught up, so the marker is only
 written once the state contains everything the snapshot stands for.
 
@@ -268,7 +286,9 @@ the new leader replays the rest from the log.
 
 - **`zeebe-db-rdbms` unit tests (H2):** the migration runs once and is repeatable; `next(prefix)`
   edge cases; reading and writing the marker; state ids allocated concurrently; fencing with two
-  factories on one state (claim, fenced write, claim waiting for a write in progress).
+  factories on one state (claim, fenced write, claim waiting for a write in progress). Waiting for
+  a row lock is tested with a short H2 `LOCK_TIMEOUT`: the waiting side fails with
+  `ZeebeDbException`, so the tests need no threads.
 - **Contract suites in `zeebe/zb-db/tests`:** an `RdbmsTestFactory` creating a fresh state per DB
   in one shared in-memory H2 database, and `Rdbms*Test` subclasses of every contract suite, the same
   way `RocksDb*Test` and `WriteBehind*Test` do. Then `WriteBehindOverRdbms*Test` and

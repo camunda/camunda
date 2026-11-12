@@ -26,24 +26,29 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The state of one partition, kept in the state table under its own state id. The table is shared
  * by all partitions, which never see each other's rows.
+ *
+ * <p>It writes with the term it was opened with, until a newer leader claims the state.
  */
 final class RdbmsZeebeDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements ZeebeDb<ColumnFamilyNames> {
 
   private final RdbmsStorage storage;
-  private final long stateId;
+  private final StateMarker marker;
+  private final long term;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final MeterRegistry meterRegistry;
   private final Set<RdbmsTransaction> transactions = ConcurrentHashMap.newKeySet();
 
   RdbmsZeebeDb(
       final RdbmsStorage storage,
-      final long stateId,
+      final StateMarker marker,
+      final long term,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final MeterRegistry meterRegistry) {
     this.storage = storage;
-    this.stateId = stateId;
+    this.marker = marker;
+    this.term = term;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.meterRegistry = meterRegistry;
   }
@@ -59,10 +64,13 @@ final class RdbmsZeebeDb<
         rdbmsContext(context), columnFamily, keyInstance, valueInstance, consistencyChecksSettings);
   }
 
+  /**
+   * Writes the marker that names this state. It reads nothing from the state: behind the cache, the
+   * cache first waits until the state holds everything the snapshot stands for.
+   */
   @Override
   public void createSnapshot(final File snapshotDir) {
-    throw new UnsupportedOperationException(
-        "Expected to take a snapshot of the partition state, but the relational storage can't yet");
+    marker.writeTo(snapshotDir.toPath());
   }
 
   @Override
@@ -72,7 +80,7 @@ final class RdbmsZeebeDb<
 
   @Override
   public TransactionContext createContext() {
-    final var transaction = new RdbmsTransaction(storage, stateId);
+    final var transaction = new RdbmsTransaction(storage, marker.stateId(), term);
     transactions.add(transaction);
     return new RdbmsTransactionContext(transaction);
   }

@@ -8,6 +8,8 @@
 package io.camunda.zeebe.db.rdbms;
 
 import io.camunda.zeebe.db.rdbms.schema.StateSchemaManager;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -19,6 +21,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 import org.apache.ibatis.type.JdbcType;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The relational database that holds the partition state. One instance exists per data source and
@@ -66,8 +69,25 @@ public final class RdbmsStorage {
     return sqlSessionFactory.getConfiguration().getDatabaseId();
   }
 
-  DataSource dataSource() {
-    return dataSource;
+  /**
+   * Borrows a connection with auto-commit off. The caller commits or rolls back, then closes it.
+   */
+  Connection borrowConnection() {
+    @Nullable Connection borrowed = null;
+    try {
+      borrowed = dataSource.getConnection();
+      borrowed.setAutoCommit(false);
+      return borrowed;
+    } catch (final SQLException e) {
+      if (borrowed != null) {
+        try {
+          borrowed.close();
+        } catch (final SQLException closeError) {
+          e.addSuppressed(closeError);
+        }
+      }
+      throw SqlErrors.translate(e);
+    }
   }
 
   SqlSessionFactory sqlSessionFactory() {
