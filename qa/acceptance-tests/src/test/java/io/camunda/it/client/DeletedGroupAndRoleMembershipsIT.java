@@ -20,6 +20,7 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * A deleted group is removed from the roles and tenants it was a member of, and a deleted role from
@@ -35,7 +36,9 @@ public class DeletedGroupAndRoleMembershipsIT {
 
   private static CamundaClient camundaClient;
 
+  // On 8.8, RDBMS has no role or tenant member search, which this test reads from.
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldRemoveDeletedGroupFromItsRoleAndTenant() {
     // given a group that is a member of a role and of a tenant
     final var roleId = Strings.newRandomValidIdentityId();
