@@ -291,8 +291,14 @@ the new leader replays the rest from the log.
   `ZeebeDbException`, so the tests need no threads.
 - **Contract suites in `zeebe/zb-db/tests`:** an `RdbmsTestFactory` creating a fresh state per DB
   in one shared in-memory H2 database, and `Rdbms*Test` subclasses of every contract suite, the same
-  way `RocksDb*Test` and `WriteBehind*Test` do. Then `WriteBehindOverRdbms*Test` and
-  `RdbmsVsRocksDbDifferentialTest`.
+  way `RocksDb*Test` and `WriteBehind*Test` do, plus `RdbmsVsRocksDbDifferentialTest`.
+- **The cache over the database:** `WriteBehindOverRdbms*Test` runs every contract suite through
+  the write-behind cache on top of the shared H2 state, and
+  `WriteBehindOverRdbmsVsRocksDbDifferentialTest` compares it with RocksDB.
+  `WriteBehindOverRdbmsFailoverTest` holds writes in the cache and checks a failover: a new leader
+  recovering from a snapshot sees every transaction committed before it, and once it claims the
+  state, the old leader's snapshot and commits fail with `StateFencedException` and none of its
+  writes reach the state.
 - **PostgreSQL:** the same suites as `*IT` against Testcontainers.
 - **Cache:** the writer holds back transactions until their position is committed, `createSnapshot`
   waits for the commit, and close gives up when the DB closes.
@@ -330,7 +336,8 @@ H2.
 differential test against RocksDB on H2. One step, because the point and transaction suites
 already need scans, `count` and `isEmpty`.
 4. **feat:** state rows, fencing by term, marker snapshots and the snapshot-only DB.
-5. **test:** the write-behind cache over the RDBMS: contract suites and differential test.
+5. **test:** the write-behind cache over the RDBMS: contract suites, differential test and a
+failover test.
 6. **feat:** the commit gate in the cache's writer.
 7. **test:** all suites on PostgreSQL with Testcontainers.
 

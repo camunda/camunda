@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongSupplier;
 import org.h2.jdbcx.JdbcDataSource;
 
 /**
@@ -32,12 +33,24 @@ final class RdbmsTestFactory {
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create() {
+    return create(nextPartition(), () -> 1);
+  }
+
+  /** A factory for a partition that other factories may share, for example after a failover. */
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> create(
+          final StateIdentity partition, final LongSupplier term) {
     return new RdbmsZeebeDbFactory<>(
         STORAGE,
-        new StateIdentity("contract-tests", NEXT_PARTITION_ID.incrementAndGet()),
-        () -> 1,
+        partition,
+        term,
         new ConsistencyChecksSettings(true, true),
         SimpleMeterRegistry::new);
+  }
+
+  /** Returns a partition that no other factory has used yet. */
+  static StateIdentity nextPartition() {
+    return new StateIdentity("contract-tests", NEXT_PARTITION_ID.incrementAndGet());
   }
 
   private static RdbmsStorage openStorage() {
