@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -92,13 +93,15 @@ class RuntimeIndexTargetingIT {
             .join()
             .getProcessInstanceKey();
 
-    Awaitility.await("until the process instance and its user task are exported")
+    Awaitility.await(
+            "until the instance, its created user task and its active element are exported")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               assertThat(countProcessInstances(null)).isOne();
-              assertThat(countUserTasks(null)).isOne();
+              assertThat(countUserTasks(UserTaskState.CREATED)).isOne();
+              assertThat(activeUserTaskElementInstances(null)).isOne();
             });
 
     copyToArchiveIndex(ListViewTemplate.class, ListViewTemplate.PROCESS_INSTANCE_KEY);
@@ -195,8 +198,8 @@ class RuntimeIndexTargetingIT {
   }
 
   /**
-   * Copies the documents of the process instance into a dated archive index. The index template
-   * gives the new index the mappings and the alias of the runtime index.
+   * Copies the documents of the process instance from the runtime indices into a dated archive
+   * index. The index template gives the new index the mappings and the alias of the runtime index.
    */
   private static void copyToArchiveIndex(
       final Class<? extends IndexTemplateDescriptor> templateClass, final String keyField)
@@ -208,6 +211,9 @@ class RuntimeIndexTargetingIT {
             .get(templateClass)
             .getFullQualifiedName();
     final var archiveIndex = runtimeIndex + ARCHIVE_DATE_SUFFIX;
+    // in archiverless mode, the exporter writes to an ordinal index next to the main index
+    final var runtimeIndices =
+        List.of(runtimeIndex, runtimeIndex + IndexTemplateDescriptor.ORDINAL_SUFFIX_START + "*");
     final var key = String.valueOf(processInstanceKey);
 
     final long copied;
@@ -219,7 +225,7 @@ class RuntimeIndexTargetingIT {
                   r ->
                       r.source(
                               s ->
-                                  s.index(runtimeIndex)
+                                  s.index(runtimeIndices)
                                       .query(q -> q.term(t -> t.field(keyField).value(key))))
                           .dest(d -> d.index(archiveIndex))
                           .refresh(true))
@@ -232,7 +238,7 @@ class RuntimeIndexTargetingIT {
                   r ->
                       r.source(
                               s ->
-                                  s.index(runtimeIndex)
+                                  s.index(runtimeIndices)
                                       .query(
                                           q ->
                                               q.term(
