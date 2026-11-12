@@ -22,10 +22,12 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -223,6 +225,45 @@ class ZeebeDbPartitionTransitionStepTest {
     // then
     assertThat(transitionContext.getZeebeDb()).isEqualTo(zeebeDb);
     assertThat(termWhenOpening).hasValue(5);
+  }
+
+  @Test
+  void shouldKeepAnUnrecoverableRecoveryFailureUnrecoverable() {
+    // given
+    when(stateController.recover())
+        .thenReturn(
+            TestActorFuture.failedFuture(new UnrecoverableException("state is behind the log")));
+
+    // when
+    final var transition = step.transitionTo(transitionContext, 1, Role.LEADER);
+
+    // then
+    assertThat(transition)
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(UnrecoverableException.class)
+        .havingRootCause()
+        .withMessage("state is behind the log");
+  }
+
+  @Test
+  void shouldReportOtherRecoveryFailuresAsRecoverable() {
+    // given
+    when(stateController.recover())
+        .thenReturn(TestActorFuture.failedFuture(new IOException("disk is gone")));
+
+    // when
+    final var transition = step.transitionTo(transitionContext, 1, Role.LEADER);
+
+    // then
+    assertThat(transition)
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isNotInstanceOf(UnrecoverableException.class)
+        .havingRootCause()
+        .withMessage("disk is gone");
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {

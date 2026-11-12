@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
@@ -25,6 +26,8 @@ import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class StateControllerImplTest {
 
@@ -79,30 +84,7 @@ final class StateControllerImplTest {
     actorScheduler.submitActor(store).join();
 
     runtimeDirectory = tempDir.resolve("runtime");
-    snapshotController =
-        new StateControllerImpl(
-            DefaultZeebeDbFactory.defaultFactory(),
-            store,
-            runtimeDirectory,
-            l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
-            db ->
-                new StatePositionSupplier() {
-                  @Override
-                  public long getLowestExportedPosition() {
-                    return exporterPosition.get();
-                  }
-
-                  @Override
-                  public long getHighestExportedPosition() {
-                    return 0L;
-                  }
-
-                  @Override
-                  public long getHighestBackupPosition() {
-                    return backupPosition.get();
-                  }
-                },
-            store);
+    snapshotController = createController(false);
   }
 
   @AfterEach
@@ -601,6 +583,101 @@ final class StateControllerImplTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Snapshot can be taken at processed position 0 only if forced");
+  }
+
+  @Test
+  void shouldFailToRecoverWhenTheSharedStateIsOlderThanTheSnapshot() {
+    // given - a snapshot that names a state processed further than the state is now
+    useSharedState();
+    markAsProcessed(snapshotController.recover().join(), 5);
+    takeSnapshot(10);
+    snapshotController.closeDb().join();
+
+    // when
+    final var recovery = snapshotController.recover();
+
+    // then
+    assertThat(recovery)
+        .failsWithin(Duration.ofMinutes(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(UnrecoverableException.class)
+        .withMessageContaining("processed up to at least position 10")
+        .withMessageContaining("processed only up to position 5");
+    assertThat(snapshotController.isDbOpened()).isFalse();
+  }
+
+  @ParameterizedTest
+  @ValueSource(longs = {10, 12})
+  void shouldRecoverWhenTheSharedStateIsNotOlderThanTheSnapshot(final long processedPosition) {
+    // given
+    useSharedState();
+    markAsProcessed(snapshotController.recover().join(), processedPosition);
+    takeSnapshot(10);
+    snapshotController.closeDb().join();
+
+    // when
+    final var recovered = snapshotController.recover().join();
+
+    // then
+    assertThat(processedPosition(recovered)).isEqualTo(processedPosition);
+  }
+
+  @Test
+  void shouldNotCheckTheStateWhenTheSnapshotHoldsIt() {
+    // given - the snapshot names a processed position that the stream processor passed later
+    markAsProcessed(snapshotController.recover().join(), 5);
+    takeSnapshot(10);
+    snapshotController.closeDb().join();
+
+    // when
+    final var recovered = snapshotController.recover().join();
+
+    // then
+    assertThat(processedPosition(recovered)).isEqualTo(5);
+  }
+
+  private void useSharedState() {
+    snapshotController.closeDb().join();
+    snapshotController = createController(true);
+  }
+
+  private StateControllerImpl createController(final boolean sharedState) {
+    return new StateControllerImpl(
+        DefaultZeebeDbFactory.defaultFactory(),
+        store,
+        runtimeDirectory,
+        l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
+        db ->
+            new StatePositionSupplier() {
+              @Override
+              public long getLowestExportedPosition() {
+                return exporterPosition.get();
+              }
+
+              @Override
+              public long getHighestExportedPosition() {
+                return 0L;
+              }
+
+              @Override
+              public long getHighestBackupPosition() {
+                return backupPosition.get();
+              }
+            },
+        store,
+        sharedState);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void markAsProcessed(final ZeebeDb db, final long position) {
+    new DbLastProcessedPositionState(db, db.createContext()).markAsProcessed(position);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static long processedPosition(final ZeebeDb db) {
+    return new DbLastProcessedPositionState(db, db.createContext())
+        .getLastSuccessfulProcessedRecordPosition();
   }
 
   private File takeSnapshot(final long position) {
