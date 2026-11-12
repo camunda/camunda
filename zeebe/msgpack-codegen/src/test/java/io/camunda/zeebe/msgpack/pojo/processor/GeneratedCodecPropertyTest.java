@@ -10,10 +10,23 @@ package io.camunda.zeebe.msgpack.pojo.processor;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.compile;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BaseProperty;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.property.PackedProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -41,6 +54,9 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Generates random POJO shapes (any mix of the supported field types, custom keys, with and without
  * an unknown-properties field), compiles them with the processor and checks the generated codec
  * against an independent model of the msgpack format.
+ *
+ * <p>Shapes whose lists start empty are also checked against an equivalent {@link UnpackedObject},
+ * the implementation the codec replaces.
  *
  * <p>The model writes the bytes with the {@link MsgPackWriter} and reads fields back with
  * reflection, so it shares no code with the generator. Messages are written in random key order,
@@ -95,6 +111,9 @@ final class GeneratedCodecPropertyTest {
       throws Exception {
     assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(scenario);
     assertWritesTheMsgpackFormatAndReadsItBack(scenario);
+    if (scenario.schema().emptyLists()) {
+      assertMatchesAnUnpackedObject(scenario);
+    }
   }
 
   private static void assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(final Scenario scenario)
@@ -106,20 +125,7 @@ final class GeneratedCodecPropertyTest {
     wrap(instance, previous, scenario.offset());
 
     // and a message in random key order, without some keys and with unknown keys in between
-    final var random = new Random(scenario.orderSeed());
-    final var entries = new ArrayList<Entry>();
-    for (final var field : scenario.schema().fields()) {
-      if (scenario.present().get(field.index())) {
-        final var value = scenario.values().get(field.index());
-        entries.add(entry(field.key(), encodeValue(field, value, random, false)));
-      }
-    }
-    for (int i = 0; i < scenario.unknowns().size(); i++) {
-      entries.add(
-          entry(unknownKey(i, scenario.unknowns().get(i)), scenario.unknowns().get(i).value()));
-    }
-    Collections.shuffle(entries, random);
-    final var message = message(entries);
+    final var message = randomOrderMessage(scenario, false);
 
     // when
     wrap(instance, message, scenario.offset());
@@ -164,6 +170,86 @@ final class GeneratedCodecPropertyTest {
             .as("the unknown key of the nested value survives")
             .isEqualTo(nested.withUnknown());
       }
+    }
+  }
+
+  /**
+   * Keys in random order, some of them missing, with unknown entries in between.
+   *
+   * @param nestedRequired write the nested values even when the scenario leaves them out, because
+   *     an UnpackedObject has no default for an object property and rejects a message without it
+   */
+  private static byte[] randomOrderMessage(final Scenario scenario, final boolean nestedRequired) {
+    final var random = new Random(scenario.orderSeed());
+    final var entries = new ArrayList<Entry>();
+    for (final var field : scenario.schema().fields()) {
+      final boolean present =
+          scenario.present().get(field.index()) || (nestedRequired && field.type() == Type.NESTED);
+      if (present) {
+        final var value = scenario.values().get(field.index());
+        entries.add(entry(field.key(), encodeValue(field, value, random, false)));
+      }
+    }
+    for (int i = 0; i < scenario.unknowns().size(); i++) {
+      entries.add(
+          entry(unknownKey(i, scenario.unknowns().get(i)), scenario.unknowns().get(i).value()));
+    }
+    Collections.shuffle(entries, random);
+    return message(entries);
+  }
+
+  /**
+   * An UnpackedObject with the same keys, types and defaults is the implementation the generated
+   * codec replaces, so it is the reference for what is stored: the bytes both write must be the
+   * same, and each must read what the other wrote. Both keep unknown keys and write them after the
+   * declared ones.
+   */
+  private static void assertMatchesAnUnpackedObject(final Scenario scenario) throws Exception {
+    final var schema = scenario.schema();
+    final var compiled = compiled(schema);
+
+    // given both read a message in random key order with unknown keys
+    final var message = randomOrderMessage(scenario, true);
+    final var generated = compiled.newInstance();
+    wrap(generated, message, scenario.offset());
+    final var twin = new Twin(schema);
+    twin.wrap(new UnsafeBuffer(message), 0, message.length);
+
+    // then they hold the same fields
+    for (final var field : schema.fields()) {
+      assertThat(twin.actual(field))
+          .as("%s (%s) read by the UnpackedObject%n%s", field.name(), field.type(), schema.source())
+          .isEqualTo(actual(compiled, generated, field));
+    }
+
+    // and write the same bytes, which also holds for what they write after being read back
+    final var generatedOut = new ExpandableArrayBuffer();
+    final int generatedLength = write(generated, generatedOut, scenario.offset());
+    final var generatedBytes =
+        Arrays.copyOfRange(
+            generatedOut.byteArray(), scenario.offset(), scenario.offset() + generatedLength);
+    final var twinBytes = new byte[twin.getLength()];
+    twin.write(new UnsafeBuffer(twinBytes), 0);
+    if (schema.keepsUnknown()) {
+      assertThat(generatedBytes).as(schema.source()).isEqualTo(twinBytes);
+    }
+
+    // and each reads what the other wrote, as a rolled back version does
+    final var readTwinBytes = compiled.newInstance();
+    wrap(readTwinBytes, twinBytes, scenario.offset());
+    final var readGeneratedBytes = new Twin(schema);
+    readGeneratedBytes.wrap(new UnsafeBuffer(generatedBytes), 0, generatedBytes.length);
+    for (final var field : schema.fields()) {
+      assertThat(actual(compiled, readTwinBytes, field))
+          .as(
+              "%s (%s) read from bytes of the UnpackedObject%n%s",
+              field.name(), field.type(), schema.source())
+          .isEqualTo(twin.actual(field));
+      assertThat(readGeneratedBytes.actual(field))
+          .as(
+              "%s (%s) of the UnpackedObject read from bytes of the codec%n%s",
+              field.name(), field.type(), schema.source())
+          .isEqualTo(actual(compiled, generated, field));
     }
   }
 
@@ -245,7 +331,10 @@ final class GeneratedCodecPropertyTest {
               return Combinators.combine(fields)
                   .as(list -> list)
                   .flatMap(
-                      list -> Arbitraries.of(true, false).map(keeps -> new Schema(list, keeps)));
+                      list ->
+                          Combinators.combine(
+                                  Arbitraries.of(true, false), Arbitraries.of(true, false))
+                              .as((keeps, empty) -> new Schema(list, keeps, empty)));
             });
   }
 
@@ -336,7 +425,7 @@ final class GeneratedCodecPropertyTest {
   }
 
   /** What a field holds when its key is missing: the initializer in {@link FieldSpec}. */
-  private static Object defaultValue(final Type type) {
+  private static Object defaultValue(final Type type, final boolean emptyLists) {
     return switch (type) {
       case LONG -> -7L;
       case INT -> 5;
@@ -344,8 +433,8 @@ final class GeneratedCodecPropertyTest {
       case STRING, BINARY -> new byte[] {'d', 1};
       case RAW -> new byte[] {(byte) 0xc0};
       case ENUM -> DEFAULT_KIND;
-      case STRING_LIST -> List.of(new byte[] {'x'});
-      case LONG_LIST -> List.of(9L);
+      case STRING_LIST -> emptyLists ? List.of() : List.of(new byte[] {'x'});
+      case LONG_LIST -> emptyLists ? List.of() : List.of(9L);
       case NESTED -> new NestedValue(null, null, false);
     };
   }
@@ -518,7 +607,9 @@ final class GeneratedCodecPropertyTest {
       final Object value)
       throws ReflectiveOperationException {
     final var expected =
-        comparable(field.type(), value == null ? defaultValue(field.type()) : value);
+        comparable(
+            field.type(),
+            value == null ? defaultValue(field.type(), scenario.schema().emptyLists()) : value);
     assertThat(actual(compiled, instance, field))
         .as(
             "%s (%s, %s)%n%s",
@@ -697,7 +788,7 @@ final class GeneratedCodecPropertyTest {
       return keySuffix == null ? name() : "k" + index + keySuffix;
     }
 
-    String declaration() {
+    String declaration(final boolean emptyLists) {
       final var attributes = new ArrayList<String>();
       if (keySuffix != null) {
         attributes.add("value = \"" + key() + "\"");
@@ -722,20 +813,31 @@ final class GeneratedCodecPropertyTest {
             case STRING_LIST ->
                 "final List<DirectBuffer> "
                     + name()
-                    + " = new ArrayList<>(List.of(new UnsafeBuffer(new byte[] {'x'})));";
-            case LONG_LIST -> "final List<Long> " + name() + " = new ArrayList<>(List.of(9L));";
+                    + " = new ArrayList<>("
+                    + (emptyLists ? "" : "List.of(new UnsafeBuffer(new byte[] {'x'}))")
+                    + ");";
+            case LONG_LIST ->
+                "final List<Long> "
+                    + name()
+                    + " = new ArrayList<>("
+                    + (emptyLists ? "" : "List.of(9L)")
+                    + ");";
             case NESTED -> "final Inner " + name() + " = new Inner();";
           };
     }
   }
 
-  private record Schema(List<FieldSpec> fields, boolean keepsUnknown) {
+  /**
+   * @param keepsUnknown whether the class has an unknown properties field
+   * @param emptyLists whether list fields start empty, as an UnpackedObject's ArrayProperty does
+   */
+  private record Schema(List<FieldSpec> fields, boolean keepsUnknown, boolean emptyLists) {
 
     String source() {
       final var s = new StringBuilder(IMPORTS);
       s.append("@MsgpackPojo public final class Sample extends MsgpackBufferValue<Sample> {\n");
       for (final var field : fields) {
-        s.append("  ").append(field.declaration()).append('\n');
+        s.append("  ").append(field.declaration(emptyLists)).append('\n');
       }
       if (keepsUnknown) {
         s.append(
@@ -771,5 +873,76 @@ final class GeneratedCodecPropertyTest {
     Object newInstance() throws ReflectiveOperationException {
       return sample.getConstructor().newInstance();
     }
+  }
+
+  /** The UnpackedObject equivalent of a generated shape. */
+  private static final class Twin extends UnpackedObject {
+    private final Map<String, BaseProperty<?>> properties = new LinkedHashMap<>();
+
+    Twin(final Schema schema) {
+      super(schema.fields().size());
+      for (final var field : schema.fields()) {
+        final var key = field.key();
+        final BaseProperty<?> property =
+            switch (field.type()) {
+              case LONG -> new LongProperty(key, -7L);
+              case INT -> new IntegerProperty(key, 5);
+              case BOOLEAN -> new BooleanProperty(key, true);
+              case STRING -> new StringProperty(key, "d\u0001");
+              case BINARY -> new BinaryProperty(key, new UnsafeBuffer(new byte[] {'d', 1}));
+              case RAW -> new PackedProperty(key, new UnsafeBuffer(new byte[] {(byte) 0xc0}));
+              case ENUM -> new EnumProperty<>(key, TwinKind.class, TwinKind.TWO);
+              case STRING_LIST -> new ArrayProperty<>(key, StringValue::new);
+              case LONG_LIST -> new ArrayProperty<>(key, LongValue::new);
+              case NESTED -> new ObjectProperty<>(key, new TwinInner());
+            };
+        properties.put(field.name(), property);
+        declareProperty(property);
+      }
+    }
+
+    /** The field in the form of {@link #comparable}. */
+    Object actual(final FieldSpec field) {
+      final var property = properties.get(field.name());
+      return switch (field.type()) {
+        case LONG -> ((LongProperty) property).getValue();
+        case INT -> ((IntegerProperty) property).getValue();
+        case BOOLEAN -> ((BooleanProperty) property).getValue();
+        case STRING -> bytes(((StringProperty) property).getValue());
+        case BINARY -> bytes(((BinaryProperty) property).getValue());
+        case RAW -> bytes(((PackedProperty) property).getValue());
+        case ENUM -> ((EnumProperty<?>) property).getValue().toString();
+        case STRING_LIST -> {
+          final var values = new ArrayList<ByteBuffer>();
+          ((ArrayProperty<StringValue>) property).forEach(v -> values.add(bytes(v.getValue())));
+          yield values;
+        }
+        case LONG_LIST -> {
+          final var values = new ArrayList<Long>();
+          ((ArrayProperty<LongValue>) property).forEach(v -> values.add(v.getValue()));
+          yield values;
+        }
+        case NESTED -> {
+          final var inner = ((ObjectProperty<TwinInner>) property).getValue();
+          yield List.of(inner.value.getValue(), bytes(inner.text.getValue()));
+        }
+      };
+    }
+  }
+
+  private static final class TwinInner extends UnpackedObject {
+    private final IntegerProperty value = new IntegerProperty("value", DEFAULT_NESTED_VALUE);
+    private final StringProperty text = new StringProperty("text", "");
+
+    TwinInner() {
+      super(2);
+      declareProperty(value).declareProperty(text);
+    }
+  }
+
+  private enum TwinKind {
+    ONE,
+    TWO,
+    THREE
   }
 }
