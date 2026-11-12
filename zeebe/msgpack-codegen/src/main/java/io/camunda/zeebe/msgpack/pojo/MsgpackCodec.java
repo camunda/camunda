@@ -15,9 +15,9 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
  * Stateless (de)serializer of {@code T} to and from msgpack. The caller owns the writer and the
  * reader, typically one of each per thread, so a codec can be shared freely.
  *
- * <p>Values are filled in place: strings and raw values are copied out of the source buffer, nested
- * objects are owned by their parent and filled in place as well. Resetting is the job of the value,
- * see {@link Recyclable}.
+ * <p>Values are filled in place. Strings, binaries and raw values are not copied: they are views on
+ * the source buffer, only valid while it is not reused. Nested objects are owned by their parent
+ * and filled in place as well. Resetting is the job of the value, see {@link Recyclable}.
  */
 public interface MsgpackCodec<T extends Recyclable> {
 

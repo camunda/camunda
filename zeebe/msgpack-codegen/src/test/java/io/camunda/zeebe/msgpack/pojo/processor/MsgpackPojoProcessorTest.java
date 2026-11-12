@@ -11,6 +11,7 @@ import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.compile;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.get;
 import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.set;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.pojo.Codecs;
@@ -19,11 +20,14 @@ import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /** Compiles small classes in memory with the processor and checks what it accepts and rejects. */
 final class MsgpackPojoProcessorTest {
@@ -211,7 +215,196 @@ final class MsgpackPojoProcessorTest {
     assertThat(get(get(sample, "inner"), "value")).isEqualTo(3);
   }
 
+  @Test
+  void shouldRejectAPojoThatIsNotTopLevel() {
+    // given
+    final var source =
+        new Source(
+            "sample.Outer",
+            IMPORTS
+                + """
+                public class Outer {
+                  @MsgpackPojo
+                  public static final class Sample extends MsgpackBufferValue<Sample> {
+                    long key;
+                  }
+                }
+                """);
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("top-level"));
+  }
+
+  @Test
+  void shouldRejectTwoFieldsWithTheSameKey() {
+    // given
+    final var source = pojo(valid("long key; @MsgpackProperty(\"key\") long other;"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("other") && e.contains("'key'"));
+  }
+
+  @Test
+  void shouldRejectAFieldOfASuperclassThatIsNotStored() {
+    // given
+    final var source = superclassField("long inherited;");
+
+    // when
+    final var result = compile(source.base(), source.pojo());
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("inherited") && e.contains("would not be stored"));
+  }
+
+  @Test
+  void shouldAcceptAnIgnoredFieldOfASuperclass() {
+    // given
+    final var source = superclassField("@MsgpackIgnore long inherited;");
+
+    // when
+    final var result = compile(source.base(), source.pojo());
+
+    // then
+    assertThat(result.errors()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectAnIntegerOutOfTheIntRange() throws Exception {
+    // given
+    final var result = compile(pojo(valid("int count;")));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var bytes = new ExpandableArrayBuffer();
+    final var writer = new MsgPackWriter().wrap(bytes, 0);
+    writer.writeMapHeader(1);
+    writer.writeString(new UnsafeBuffer("count".getBytes(StandardCharsets.UTF_8)));
+    writer.writeInteger((1L << 32) + 5);
+    final int length = writer.getOffset();
+    final var target = (Recyclable) sampleClass.getConstructor().newInstance();
+
+    // when
+    final ThrowingCallable read =
+        () -> codec.read(new MsgPackReader().wrap(bytes, 0, length), target);
+
+    // then
+    assertThatThrownBy(read).isInstanceOf(IllegalStateException.class).hasMessageContaining("int");
+  }
+
+  @Test
+  void shouldWrapAFinalUnsafeBufferInPlace() throws Exception {
+    // given
+    final var result =
+        compile(
+            pojo(
+                valid(
+                    "final org.agrona.concurrent.UnsafeBuffer name = new org.agrona.concurrent.UnsafeBuffer(0, 0);")));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var source = (Recyclable) sampleClass.getConstructor().newInstance();
+    ((UnsafeBuffer) get(source, "name")).wrap(buffer("zeebe"));
+    final var bytes = new ExpandableArrayBuffer();
+    final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), source);
+    final var read = (Recyclable) sampleClass.getConstructor().newInstance();
+    final var field = get(read, "name");
+
+    // when
+    codec.read(new MsgPackReader().wrap(bytes, 0, length), read);
+
+    // then
+    assertThat(get(read, "name")).isSameAs(field).isEqualTo(buffer("zeebe"));
+
+    // when
+    read.reset();
+
+    // then
+    assertThat(get(read, "name")).isSameAs(field);
+    assertThat(((DirectBuffer) get(read, "name")).capacity()).isZero();
+  }
+
+  @Test
+  void shouldAcceptAListOfTypeAnnotatedBuffers() throws Exception {
+    // given
+    final var result =
+        compile(
+            pojo(
+                valid(
+                    "final List<@org.jspecify.annotations.Nullable DirectBuffer> ids = new ArrayList<>();")));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var source = (Recyclable) sampleClass.getConstructor().newInstance();
+    ((List<DirectBuffer>) get(source, "ids")).add(buffer("a"));
+    ((List<DirectBuffer>) get(source, "ids")).add(buffer("b"));
+    final var bytes = new ExpandableArrayBuffer();
+    final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), source);
+    final var read = (Recyclable) sampleClass.getConstructor().newInstance();
+
+    // when
+    codec.read(new MsgPackReader().wrap(bytes, 0, length), read);
+
+    // then
+    assertThat(get(read, "ids")).isEqualTo(List.of(buffer("a"), buffer("b")));
+  }
+
+  @Test
+  void shouldFailToInitializeABufferFieldWithoutDefault() throws Exception {
+    // given
+    final var result = compile(pojo(valid("DirectBuffer name;")));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+
+    // when
+    final ThrowingCallable instantiate = () -> sampleClass.getConstructor().newInstance();
+
+    // then
+    assertThatThrownBy(instantiate)
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("has no default");
+  }
+
+  @Test
+  void shouldAcceptANestedPojoCompiledSeparately(@TempDir final Path classes) throws Exception {
+    // given the nested pojo is only available as a class file, like one from another module
+    final var previous = compile(inner());
+    assertThat(previous.errors()).isEmpty();
+    previous.writeTo(classes);
+    final var source = pojo(valid("final Inner inner = new Inner();"));
+
+    // when
+    final var result = compile(classes, source);
+
+    // then
+    assertThat(result.errors()).isEmpty();
+  }
+
   // ---------------------------------------------------------------- helpers
+
+  private static SuperclassSources superclassField(final String field) {
+    return new SuperclassSources(
+        new Source(
+            "sample.Base",
+            IMPORTS
+                + "public abstract class Base extends MsgpackBufferValue<Sample> { %s }"
+                    .formatted(field)),
+        new Source(
+            "sample.Sample",
+            IMPORTS + "@MsgpackPojo public final class Sample extends Base { long key; }"));
+  }
 
   private static String valid(final String body) {
     return """
@@ -248,4 +441,6 @@ final class MsgpackPojoProcessorTest {
   private static DirectBuffer buffer(final String s) {
     return new UnsafeBuffer(s.getBytes(StandardCharsets.UTF_8));
   }
+
+  private record SuperclassSources(Source base, Source pojo) {}
 }

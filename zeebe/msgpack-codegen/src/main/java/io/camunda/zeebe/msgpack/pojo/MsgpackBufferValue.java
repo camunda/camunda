@@ -29,26 +29,30 @@ import org.agrona.MutableDirectBuffer;
 public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     implements BufferReader, BufferWriter, Recyclable {
 
+  // resolved once per instance, so that reads and writes do not look them up
+  private final MsgpackCodec<T> codec = Codecs.of(type());
+  private final MsgpackResetter<T> resetter = Codecs.resetterOf(type());
+
   @Override
   public int getLength() {
-    return Codecs.of(type()).getLength(self());
+    return codec.getLength(self());
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return Codecs.of(type()).write(MsgpackScratch.writer(buffer, offset), self());
+    return codec.write(MsgpackScratch.writer(buffer, offset), self());
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
-    Codecs.of(type()).read(MsgpackScratch.reader(buffer, offset, length), self());
+    codec.read(MsgpackScratch.reader(buffer, offset, length), self());
   }
 
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {
-    Codecs.resetterOf(type()).reset(self());
+    resetter.reset(self());
   }
 
   @SuppressWarnings("unchecked")

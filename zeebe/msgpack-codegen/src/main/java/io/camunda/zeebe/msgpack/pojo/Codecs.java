@@ -15,8 +15,9 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
 /**
  * Finds the {@link MsgpackCodec} of a class: the generated {@code <Name>Codec} of a {@link
  * MsgpackPojo}, or an adapter for a {@link BaseValue} (e.g. an {@code UnpackedObject}). Only exact
- * classes are supported. Generated code resolves the codecs of its nested objects once, when it is
- * initialized, so this is not on the hot path.
+ * classes are supported. Look-ups are not meant for the hot path: generated code resolves the
+ * codecs of its nested objects once, when it is initialized, and {@link MsgpackBufferValue} once
+ * per instance.
  */
 public final class Codecs {
 
@@ -61,7 +62,14 @@ public final class Codecs {
   private static <R> R generated(final Class<?> type, final String suffix, final Class<R> role) {
     try {
       final var generated = Class.forName(type.getName() + suffix, true, type.getClassLoader());
-      return role.cast(generated.getField("INSTANCE").get(null));
+      final var instance = generated.getField("INSTANCE").get(null);
+      if (instance == null) {
+        // ClassValue would cache null for good
+        throw new IllegalStateException(
+            "%s.INSTANCE is not initialized yet: is it resolved during its own class initialization?"
+                .formatted(generated.getName()));
+      }
+      return role.cast(instance);
     } catch (final ReflectiveOperationException e) {
       throw new IllegalArgumentException(
           "No msgpack %s for %s: it is neither a @MsgpackPojo nor a BaseValue"
