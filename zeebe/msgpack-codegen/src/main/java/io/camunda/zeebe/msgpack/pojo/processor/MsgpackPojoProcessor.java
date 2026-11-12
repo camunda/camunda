@@ -30,6 +30,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code
@@ -64,7 +65,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         write(model.pkg(), model.name() + "Codec", codec(model), element);
         write(model.pkg(), model.name() + "Resetter", resetter(model), element);
       } catch (final IllegalArgumentException e) {
-        error(element, e.getMessage());
+        error(element, String.valueOf(e.getMessage()));
       }
     }
     return true;
@@ -576,5 +577,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    */
   private record Property(String key, Type type, String field, String javaType, boolean inPlace) {}
 
-  private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
+  private record Model(
+      String pkg, String name, List<Property> properties, @Nullable String unknownField) {}
 }
