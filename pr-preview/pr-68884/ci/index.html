@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-68884/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-68884/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-68884/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68884/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68884/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-68884/ci"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-68884/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-68884/assets/js/runtime~main.ae46b583.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-68884/assets/js/main.a52b1969.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68884/assets/js/runtime~main.53eb7707.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68884/assets/js/main.87dbf88c.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -709,7 +709,11 @@ container logs, thread dumps, or structured test output on failure so the next o
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-is-my-ci-check-failing">Why is my CI check failing?<a href="#why-is-my-ci-check-failing" class="hash-link" aria-label="Direct link to Why is my CI check failing?" title="Direct link to Why is my CI check failing?" translate="no">​</a></h3>
 <p>There can be many factors influencing that and it is sometimes hard to find the root caues. Below list should provide guidance:</p>
 <ol>
-<li class="">Try to rerun the failing CI check(s) at least to overcome transient problems.</li>
+<li class="">Try to rerun the failing CI check(s) at least to overcome transient problems.<!-- -->
+<ul>
+<li class="">Only re-run recent runs (up to 2 days old). Older runs have lost their short-lived artifacts, and a re-run whose commit is no longer the branch head skips its snapshot deploys so it can&#x27;t roll the snapshot back. Start a new run instead (push or <code>workflow_dispatch</code>), see <a class="" href="/camunda/pr-preview/pr-68884/ci-runbooks/#re-run-of-an-old-workflow-run-in-the-deploy-jobs">this runbook entry</a>.</li>
+</ul>
+</li>
 <li class="">If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.</li>
 <li class="">Check if there is an <a href="#issue-tracking" class="">open issue</a> about that failing CI check, e.g. by searching for the error message.</li>
 <li class=""><a href="https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/" target="_blank" rel="noopener noreferrer" class="">Ask Copilot about the failure</a> using the <code>Explain error</code> button<!-- -->
