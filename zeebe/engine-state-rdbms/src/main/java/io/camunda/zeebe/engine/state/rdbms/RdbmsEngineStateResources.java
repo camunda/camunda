@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 import io.camunda.zeebe.db.impl.jdbc.RelationalState;
 import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.db.writebehind.WriteBehindStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,6 +125,11 @@ public final class RdbmsEngineStateResources implements AutoCloseable {
     @Override
     public void awaitFlushed() {
       partition.store().awaitFlushed();
+    }
+
+    @Override
+    public void exportMetrics(final MeterRegistry registry) {
+      partition.store().exportMetrics(registry, "rdbms");
     }
 
     @Override

@@ -100,6 +100,9 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
   @Override
   public void exportMetrics() {
     rocksDb.exportMetrics();
+    if (relationalState != null) {
+      relationalState.exportMetrics(rocksDb.getMeterRegistry());
+    }
   }
 
   @Override

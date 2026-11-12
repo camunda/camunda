@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.impl.jdbc;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 /**
  * State that the relational side of a {@link MixedZeebeDb} writes to the database after the
  * transaction committed. A snapshot of the RocksDB side must not be ahead of the database, so the
@@ -16,6 +18,11 @@ public interface RelationalState extends AutoCloseable {
 
   /** Waits until the database holds every transaction committed before this call. */
   void awaitFlushed();
+
+  /**
+   * Registers the state's meters in the registry; called periodically, so it must be idempotent.
+   */
+  default void exportMetrics(final MeterRegistry registry) {}
 
   /** Writes what is not written yet and releases the resources. */
   @Override
