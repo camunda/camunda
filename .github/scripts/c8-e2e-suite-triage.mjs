@@ -163,7 +163,9 @@ export function rerunPlan(report, baseSuiteDir, projects = []) {
 // its spec does not exist on the base, "teardown" when it ran in a project the
 // job did not select itself (see rerunPlan), or "not-run" when the spec exists
 // but the test is not in the reports (renamed, or not selected): no evidence.
-export function compareWithBase(report, baseReports, baseSuiteDir, projects = []) {
+// timedOut: a base run was killed by the deadline and its report dropped, so
+// a test missing from the reports is "timed-out" rather than "not-run".
+export function compareWithBase(report, baseReports, baseSuiteDir, projects = [], timedOut = false) {
   // Every base result of each test: one test can run in more than one base
   // run (a teardown project runs in each), so no result may overwrite another.
   const base = new Map();
@@ -181,7 +183,9 @@ export function compareWithBase(report, baseReports, baseSuiteDir, projects = []
         ? 'teardown'
         : statuses
           ? baseOutcome(statuses)
-          : 'not-run';
+          : timedOut
+            ? 'timed-out'
+            : 'not-run';
     return {file: t.file, title: t.title, project: t.project, base: outcome};
   });
 }
@@ -255,6 +259,7 @@ function whyNotVerified(rerun, outcome) {
   if (outcome === 'mixed') return 'mixed results with the base test code (passed in one base run, failed in another)';
   if (outcome === 'teardown')
     return "ran as the teardown of another project, after that project's tests; not re-run alone";
+  if (outcome === 'timed-out') return 'the base re-run ran out of time before this test finished';
   if (outcome === 'not-run') return 'not found in the base re-run (renamed or changed title?)';
   if (outcome === 'skipped') return 'skipped in the base re-run';
   if (!rerun) return 'no base re-run for this job';
@@ -524,7 +529,13 @@ function cli(argv) {
       ? {
           status: 'done',
           base: baseSha,
-          results: compareWithBase(readReport(reportPath), baseReports, baseSuiteDir, rerunProjects()),
+          results: compareWithBase(
+            readReport(reportPath),
+            baseReports,
+            baseSuiteDir,
+            rerunProjects(),
+            process.env.RERUN_TIMED_OUT === 'true',
+          ),
         }
       : {status: 'error', base: baseSha, reason: 'the base re-run produced no report'};
     fs.writeFileSync(outPath, JSON.stringify(out, null, 2));

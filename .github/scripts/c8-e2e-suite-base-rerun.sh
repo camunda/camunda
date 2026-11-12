@@ -124,15 +124,23 @@ if (( ${#files[@]} + ${#serial_files[@]} )); then
     fi
   fi
   run_base() { # out-file playwright-args...
-    local out_file="$1"
+    local out_file="$1" status=0
     shift
     need 60 "re-running the tests"
     (
       cd "$base_suite" &&
         PLAYWRIGHT_JSON_OUTPUT_FILE="$out_file" \
           timeout "$(left)s" npx playwright test "$@" --reporter=json >/dev/null
-    )
-    echo "Base re-run finished with exit code $?."
+    ) || status=$?
+    echo "Base re-run finished with exit code ${status}."
+    # Killed by the deadline (timeout's 124, or 137 if it had to SIGKILL):
+    # whatever report it left is partial, and a test interrupted mid-run
+    # would read as failed with the base code. Its tests count as not run.
+    if (( status == 124 || status == 137 )); then
+      echo "The base re-run ran out of time; its report is not used."
+      RERUN_TIMED_OUT=true
+      return
+    fi
     base_reports+=("$out_file")
   }
   echo "Re-running ${failed} failed test(s) with the base test code (${COMPARE_BASE_SHA:0:12})."
@@ -151,4 +159,9 @@ else
   base_reports+=("${RUNNER_TEMP}/c8-e2e-base-results.json")
 fi
 
+if [[ "${RERUN_TIMED_OUT:-}" == "true" && ${#base_reports[@]} -eq 0 ]]; then
+  record skipped "the base re-run ran out of time"
+  exit 0
+fi
+export RERUN_TIMED_OUT
 node "$triage" rerun-compare "$report" "$base_suite" "$COMPARE_BASE_SHA" "$out" "${base_reports[@]}"

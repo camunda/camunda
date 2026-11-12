@@ -328,3 +328,17 @@ test('a failed test in a teardown project is not re-run and is not verified', ()
   assert.equal(b.regression.length, 1);
   assert.match(b.unverified[0].notVerified[0], /teardown of another project/);
 });
+
+test('a test whose base run ran out of time is not verified, never "fails with the base"', () => {
+  const pr = repP(
+    ['api-tests', 'tests/a.spec.ts', 'g', 'kept', 'unexpected'],
+    ['api-tests', 'tests/a.spec.ts', 'g', 'killed', 'unexpected'],
+  );
+  // The report of the run that finished; the killed run's report was dropped.
+  const base = repP(['api-tests', 'tests/a.spec.ts', 'g', 'kept', 'unexpected']);
+  const results = compareWithBase(pr, [base], baseSuite(), ['api-tests'], true);
+  assert.deepEqual(results.map((r) => [r.title, r.base]), [['g › kept', 'failed'], ['g › killed', 'timed-out']]);
+  const b = classify([{leg: 'API', failures: failedTests(pr), rerun: done(...results)}]);
+  assert.equal(b.baseFails.length, 1);
+  assert.match(b.unverified[0].notVerified[0], /ran out of time/);
+});
