@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -21,6 +22,9 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigFetcher;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigStore;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
@@ -41,6 +45,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -97,17 +102,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
       final PhysicalTenantIds physicalTenantIds) {
     this.configuration = configuration;
     engineSecurityConfigsByPhysicalTenant =
-        physicalTenantResolver.mapValues(
-            camunda -> {
-              final var s = camunda.getSecurity();
-              return new EngineSecurityConfig(
-                  s.getAuthentication(),
-                  s.getAuthorizations().isEnabled(),
-                  s.getMultiTenancy().isChecksEnabled(),
-                  s.getInitialization(),
-                  s.getCompiledIdValidationPattern(),
-                  s.getCompiledGroupIdValidationPattern());
-            });
+        physicalTenantResolver.mapValues(GatewayPhysicalTenantFollower::engineSecurityConfigOf);
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;
@@ -168,6 +163,30 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     LOGGER.info("Standalone gateway is started!");
 
     return gateway;
+  }
+
+  /**
+   * Follows the physical tenants created, changed, disabled and removed on the brokers at runtime,
+   * as the cluster configuration this gateway receives by gossip describes them.
+   */
+  @Bean(destroyMethod = "close")
+  public GatewayPhysicalTenantFollower gatewayPhysicalTenantFollower(
+      final Gateway gateway,
+      final GatewayClusterConfigurationService clusterConfigurationService,
+      final DefaultPhysicalTenantRegistry registry,
+      final ConfigurableEnvironment environment,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final var follower =
+        new GatewayPhysicalTenantFollower(
+            gateway.physicalTenants(),
+            registry,
+            new PhysicalTenantConfigFetcher(
+                atomixCluster.getCommunicationService(), PhysicalTenantConfigStore.inMemory()),
+            environment,
+            physicalTenantResolver.known(),
+            atomixCluster.getMembershipService().getLocalMember().id());
+    clusterConfigurationService.addUpdateListener(follower);
+    return follower;
   }
 
   /**

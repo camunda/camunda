@@ -23,7 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
  * back. The names are sorted, so the same subtree always has the same bytes and hash.
  */
 @NullMarked
-final class PhysicalTenantConfigCodec {
+public final class PhysicalTenantConfigCodec {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
   private static final TypeReference<LinkedHashMap<String, String>> SUBTREE =
@@ -31,15 +31,15 @@ final class PhysicalTenantConfigCodec {
 
   private PhysicalTenantConfigCodec() {}
 
-  static byte[] encode(final Map<String, String> subtree) {
+  public static byte[] encode(final Map<String, String> subtree) {
     return JSON.writeValueAsString(new TreeMap<>(subtree)).getBytes(StandardCharsets.UTF_8);
   }
 
-  static Map<String, String> decode(final byte[] configuration) {
+  public static Map<String, String> decode(final byte[] configuration) {
     return JSON.readValue(configuration, SUBTREE);
   }
 
-  static String sha256(final byte[] configuration) {
+  public static String sha256(final byte[] configuration) {
     try {
       return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(configuration));
     } catch (final NoSuchAlgorithmException e) {
@@ -47,7 +47,7 @@ final class PhysicalTenantConfigCodec {
     }
   }
 
-  static Map<String, Object> asProperties(final Map<String, String> subtree) {
+  public static Map<String, Object> asProperties(final Map<String, String> subtree) {
     return new LinkedHashMap<>(subtree);
   }
 }
