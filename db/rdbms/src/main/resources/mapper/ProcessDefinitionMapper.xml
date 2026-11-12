@@ -398,6 +398,22 @@
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </update>
 
+  <update id="markSuspended" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@SUSPENDED"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
+
+  <update id="markActive" parameterType="java.lang.Long">
+    <bind name="state"
+      value="@io.camunda.search.entities.ProcessDefinitionEntity$ProcessDefinitionState@ACTIVE"/>
+    UPDATE ${prefix}PROCESS_DEFINITION
+    SET STATE = #{state}
+    WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
+  </update>
+
   <sql id="processInstanceStatisticsWhere">
     <where>
       pi.STATE = 'ACTIVE'
