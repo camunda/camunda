@@ -32,6 +32,7 @@ import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.ParameterMetaDataInterceptor;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -142,6 +143,7 @@ public class MyBatisConfiguration {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
+    configuration.addInterceptor(new ParameterMetaDataInterceptor());
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
