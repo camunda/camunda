@@ -210,7 +210,7 @@
     <version.picocli>4.7.7</version.picocli>
 
     <version.commons-io>2.22.0</version.commons-io>
-    <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
+    <version.thymeleaf>3.1.6.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.6</version.unboundid-ldapsdk>
     <version.parsson>1.1.9</version.parsson>
     <version.springdoc>3.2.0</version.springdoc>
