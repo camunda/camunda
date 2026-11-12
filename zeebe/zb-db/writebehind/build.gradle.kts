@@ -4,6 +4,9 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-db-api"))
   api(libs.org.agrona.agrona)
+  api(libs.io.micrometer.micrometer.core)
+  api(libs.com.github.ben.manes.caffeine.caffeine)
+  implementation(libs.org.slf4j.slf4j.api)
 }
 
 description = "Zeebe DB Write-Behind"
