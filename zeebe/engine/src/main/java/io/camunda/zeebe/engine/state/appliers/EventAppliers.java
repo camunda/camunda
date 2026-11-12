@@ -61,6 +61,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -185,6 +187,7 @@ public final class EventAppliers implements EventApplier {
     registerSecretReferenceEventAppliers(state);
     registerProcessDefinitionRestoreAppliers(state);
     registerPolicyUpdateAppliers(state);
+    registerProbeAppliers();
     return this;
   }
 
@@ -212,6 +215,16 @@ public final class EventAppliers implements EventApplier {
     register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
     register(PolicyUpdateIntent.VERSION_SWITCHED, NOOP_EVENT_APPLIER);
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProbeAppliers() {
+    // the engine does not process probes yet; their state comes with the probe processors
+    register(ProbeIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.YIELDED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.ANSWERED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.TIMED_OUT, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.CANCELED, NOOP_EVENT_APPLIER);
+    register(ProbeBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

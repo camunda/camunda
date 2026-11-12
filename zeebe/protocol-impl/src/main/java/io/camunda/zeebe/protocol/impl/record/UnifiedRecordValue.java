@@ -65,6 +65,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
@@ -201,6 +203,8 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.FORM -> new FormRecord();
       case ValueType.USER_TASK -> new UserTaskRecord();
       case ValueType.USER_TASK_LOOKUP -> new UserTaskLookupRecord();
+      case ValueType.PROBE -> new ProbeRecord();
+      case ValueType.PROBE_BATCH -> new ProbeBatchRecord();
       case ValueType.PROCESS_INSTANCE_MIGRATION -> new ProcessInstanceMigrationRecord();
       case ValueType.BATCH_OPERATION_EXECUTION -> new BatchOperationExecutionRecord();
       case ValueType.BATCH_OPERATION_CHUNK -> new BatchOperationChunkRecord();

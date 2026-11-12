@@ -46,6 +46,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -113,6 +115,8 @@ import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequest
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -511,6 +515,22 @@ public final class RecordingExporter implements Exporter {
   public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords(
       final ProcessDefinitionRestoreIntent intent) {
     return processDefinitionRestoreRecords().withIntent(intent);
+  }
+
+  public static ProbeRecordStream probeRecords() {
+    return new ProbeRecordStream(records(ValueType.PROBE, ProbeRecordValue.class));
+  }
+
+  public static ProbeRecordStream probeRecords(final ProbeIntent intent) {
+    return probeRecords().withIntent(intent);
+  }
+
+  public static ProbeBatchRecordStream probeBatchRecords() {
+    return new ProbeBatchRecordStream(records(ValueType.PROBE_BATCH, ProbeBatchRecordValue.class));
+  }
+
+  public static ProbeBatchRecordStream probeBatchRecords(final ProbeBatchIntent intent) {
+    return probeBatchRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {
