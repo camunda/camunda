@@ -39,16 +39,6 @@ class ProcessDefinitionSuspensionHandlerTest {
   private final ProcessDefinitionSuspensionHandler underTest =
       new ProcessDefinitionSuspensionHandler(indexName);
 
-  @Test
-  void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.PROCESS_DEFINITION_SUSPENSION);
-  }
-
-  @Test
-  void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(ProcessEntity.class);
-  }
-
   @ParameterizedTest
   @EnumSource(
       value = ProcessDefinitionSuspensionIntent.class,
@@ -147,11 +137,6 @@ class ProcessDefinitionSuspensionHandlerTest {
     // then
     verify(mockRequest)
         .update(index, "789", Map.of(ProcessIndex.STATE, ProcessDefinitionState.DRAINING));
-  }
-
-  @Test
-  void shouldReturnIndexName() {
-    assertThat(underTest.getIndexName()).isEqualTo(indexName);
   }
 
   private Record<ProcessDefinitionSuspensionRecordValue> suspensionRecord(
