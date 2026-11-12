@@ -45,8 +45,10 @@ import org.springframework.core.env.ConfigurableEnvironment;
  * #gatewaySubtree}), fetched from the brokers that hold it; a newer version of it replaces the
  * tenant's gateway module; a disabled or removed group is no longer served.
  *
- * <p>Tenants declared in the gateway's own configuration keep the configuration it started with.
- * Only a group's disabling or removal applies to them. The {@code default} tenant is never changed.
+ * <p>The cluster configuration wins for every tenant, {@code default} and the tenants the gateway's
+ * own configuration declares included: the gateway serves its own configuration of a tenant only
+ * until it sees the tenant's reference, and keeps its module then only if the cluster's
+ * configuration has the same gateway part.
  */
 @NullMarked
 public final class GatewayPhysicalTenantFollower
@@ -128,15 +130,13 @@ public final class GatewayPhysicalTenantFollower
     for (final var entry : configuration.partitionGroups().entrySet()) {
       final var physicalTenantId = entry.getKey();
       final var group = entry.getValue();
-      if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-        continue;
-      }
-      if (group.isDisabled()) {
+      if (group.isDisabled()
+          && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
         stopServing(physicalTenantId);
         continue;
       }
       final var reference = group.tenantConfig().orElse(null);
-      if (reference == null || staticTenants.contains(physicalTenantId)) {
+      if (reference == null) {
         continue;
       }
       final var current = followed.get(physicalTenantId);
@@ -172,31 +172,43 @@ public final class GatewayPhysicalTenantFollower
             .fetch(physicalTenantId, reference, peers)
             .get(FETCH_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
     final var subtree = gatewaySubtree(PhysicalTenantConfigCodec.decode(bytes));
-    final var camunda =
-        PhysicalTenantResolver.bindOne(
-            PhysicalTenantEnvironments.withTenants(
-                bootEnvironment,
-                Map.of(physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)),
-                Set.of()),
-            physicalTenantId);
-
-    gatewayTenants.put(physicalTenantId, engineSecurityConfigOf(camunda));
+    final var servedFromOwnConfiguration =
+        !followed.containsKey(physicalTenantId)
+            && staticTenants.contains(physicalTenantId)
+            && subtree.equals(
+                gatewaySubtree(
+                    PhysicalTenantEnvironments.subtreeOf(bootEnvironment, physicalTenantId)));
+    if (!servedFromOwnConfiguration) {
+      final var camunda =
+          PhysicalTenantResolver.bindOne(
+              PhysicalTenantEnvironments.withTenants(
+                  bootEnvironment,
+                  Map.of(physicalTenantId, PhysicalTenantConfigCodec.asProperties(subtree)),
+                  Set.of()),
+              physicalTenantId);
+      gatewayTenants.put(physicalTenantId, engineSecurityConfigOf(camunda));
+    }
+    final var current = registry.find(physicalTenantId);
     final var tenant =
         new PhysicalTenant(
-            physicalTenantId, subtree.get(NAME), UUID.fromString(reference.incarnationId()));
-    if (registry.find(physicalTenantId).isPresent()) {
+            physicalTenantId,
+            subtree.get(NAME),
+            current
+                .map(PhysicalTenant::incarnationId)
+                .orElseGet(() -> UUID.fromString(reference.incarnationId())));
+    if (current.isPresent()) {
       registry.replace(tenant);
-    } else if (!registry.isRemoved(physicalTenantId)) {
+    } else {
+      registry.release(physicalTenantId);
       registry.add(tenant);
     }
-    if (registry.find(physicalTenantId).isPresent()) {
-      registry.reportHealth(physicalTenantId, PhysicalTenantHealth.of(State.HEALTHY));
-    }
+    registry.reportHealth(physicalTenantId, PhysicalTenantHealth.of(State.HEALTHY));
     followed.put(physicalTenantId, new Followed(reference.version(), reference.sha256()));
     LOG.info(
-        "Serving physical tenant '{}' with version {} of its configuration",
+        "Serving physical tenant '{}' with version {} of the cluster's configuration{}",
         physicalTenantId,
-        reference.version());
+        reference.version(),
+        servedFromOwnConfiguration ? ", the same as this gateway's own" : "");
   }
 
   /**
