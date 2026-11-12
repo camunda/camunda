@@ -150,4 +150,15 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     read seq (deterministic interleaving test).
   - New test dep `junit-jupiter-params` in writebehind pom (Maven only failed; Gradle adds it).
   - Follow-ups: refill on processing thread (bounded maxKeys/4); IndexSource gives up after 4
-    storage reads; ~100-150 B/key. Engine factory configures no key-index policies yet.
+    storage reads; ~100-150 B/key.
+  - `810b71f8d25` test: let the engine load runner use the write-behind key index.
+    `ZEEBE_DB_KEY_INDEX` (unset/default = workshop 23-CF set, `none`, or `CF[:POLICY],...`),
+    `ZEEBE_DB_KEY_INDEX_MAX_KEYS`; Gradle `-PkeyIndex`/`-PkeyIndexMaxKeys`. Write-behind only.
+  - First run (4 CPU, 50k instances, inst/s): rocksdb 428/452, wb-none 467/520,
+    wb-default 612/657. Prefill+revisit: 412 / 420 / 483. Key index: storage iterators
+    1.6M -> ~620, 2.3M absent lookups answered from index, 0 disables/switches/handovers.
+    Write-behind cuts RocksDB bytes written ~6x.
+  - Open questions from the run: RocksDB get count inflated by flusher `keyMayExist` per
+    delete; PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY and CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN
+    still read storage; JOB_DEADLINES lookups above the low window; much higher block-cache
+    misses with write-behind under revisit (unverified hypothesis: cold reads only).
