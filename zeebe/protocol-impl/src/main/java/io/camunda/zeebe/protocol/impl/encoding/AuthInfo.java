@@ -75,8 +75,14 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
-  /** The claims map, once built, which is shared by all callers. See {@link #toClaimsMap()}. */
+  /**
+   * The claims map, once built, if it holds nothing but immutable values, so it can be shared by
+   * all callers. See {@link #toClaimsMap()}.
+   */
   private volatile @Nullable Map<String, Object> claimsMap;
+
+  /** The decoded token claims, once known to hold no mutable values, so they can be shared. */
+  private volatile @Nullable Map<String, Object> immutableTokenClaims;
 
   private AuthInfo(
       final AuthDataFormat format,
@@ -205,8 +211,9 @@ public final class AuthInfo implements BufferWriter {
    * token claims, which are by far the most expensive part, are only decoded when the {@link
    * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
    * the other claims, e.g. exporters, never pay for them. If the token claims contain binary
-   * values, which decode to mutable arrays, the map is shared only until they are read: later calls
-   * return a new map, so callers can't change what others see.
+   * values, which decode to mutable arrays, every call returns a new map with its own arrays, so
+   * callers can't change what others see. Otherwise, the map is shared once the token claims have
+   * been read.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -221,13 +228,20 @@ public final class AuthInfo implements BufferWriter {
     putIfPresent(claims, AUTHORIZED_CLIENT_ID, clientId);
     putIfPresent(claims, AUTHORIZED_TENANTS, tenants);
     putIfPresent(claims, USER_GROUPS_CLAIMS, groups);
-    putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims != null ? new LazyTokenClaims() : null);
+    final var sharedTokenClaims = immutableTokenClaims;
+    if (tokenClaims != null) {
+      // Whether the token claims are immutable, so that they can be shared, is only known once
+      // they are decoded, which is what the lazy view avoids. Until then, every caller gets a view
+      // of their own.
+      claims.put(
+          USER_TOKEN_CLAIMS, sharedTokenClaims != null ? sharedTokenClaims : new LazyTokenClaims());
+    }
     final var result = Collections.unmodifiableMap(claims);
 
-    // Cached before knowing whether the token claims are immutable, as that requires decoding
-    // them, which is what the lazy view avoids. The view un-caches the map if they turn out not
-    // to be. Racing threads build equivalent maps, so it doesn't matter which one wins.
-    claimsMap = result;
+    if (tokenClaims == null || sharedTokenClaims != null) {
+      // racing threads build equivalent maps, so it doesn't matter which one wins
+      claimsMap = result;
+    }
     return result;
   }
 
@@ -379,9 +393,9 @@ public final class AuthInfo implements BufferWriter {
    * A read-only view of the token claims that decodes them on first access, and keeps the decoded
    * claims, so the view is stable: lookups by key, value and entry agree, and so does its hash.
    *
-   * <p>If the decoded claims hold mutable values (binary values decode to arrays), the view is
-   * dropped from the cache of {@link #toClaimsMap()}: its callers share those arrays, but later
-   * calls get a new view, so they can't change what other callers, or this instance, see.
+   * <p>Every call of {@link #toClaimsMap()} that doesn't know the token claims to be immutable gets
+   * its own view, so if they hold mutable values (binary values decode to arrays), no one else sees
+   * changes to them. If they don't, the decoded claims are shared with later calls.
    */
   private final class LazyTokenClaims extends AbstractMap<String, Object> {
 
@@ -418,8 +432,8 @@ public final class AuthInfo implements BufferWriter {
       if (claims == null) {
         claims = Objects.requireNonNull(getTokenClaims());
         decoded = claims;
-        if (!isImmutableValue(claims)) {
-          claimsMap = null;
+        if (isImmutableValue(claims)) {
+          immutableTokenClaims = claims;
         }
       }
       return claims;

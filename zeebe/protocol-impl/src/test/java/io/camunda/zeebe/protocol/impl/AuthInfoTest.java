@@ -300,10 +300,9 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldReuseClaimsMapWithoutBinaryTokenClaims() {
+    void shouldReuseClaimsMapWithoutTokenClaims() {
       // given
-      final var authInfo =
-          decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
+      final var authInfo = AuthInfo.ofClaims(Map.of(AUTHORIZED_USERNAME, "user"));
 
       // when
       final var first = authInfo.toClaimsMap();
@@ -316,17 +315,21 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldKeepReusingClaimsMapAfterReadingTokenClaimsWithoutBinaryValues() {
+    void shouldReuseClaimsMapOnceTokenClaimsWithoutBinaryValuesAreRead() {
       // given
       final var authInfo =
           decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
-      final var first = authInfo.toClaimsMap();
 
       // when
-      first.get(USER_TOKEN_CLAIMS).hashCode();
+      authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS).hashCode();
+      final var second = authInfo.toClaimsMap();
+      final var third = authInfo.toClaimsMap();
 
       // then
-      assertThat(authInfo.toClaimsMap()).isSameAs(first);
+      assertThat(third).isSameAs(second);
+      assertThat(third.get(USER_TOKEN_CLAIMS)).isEqualTo(Map.of("sub", "a"));
+      assertThatThrownBy(() -> third.put(AUTHORIZED_USERNAME, "other"))
+          .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -373,6 +376,23 @@ final class AuthInfoTest {
       assertThat(tokenClaims.entrySet()).isSameAs(tokenClaims.entrySet());
       assertThat(tokenClaims.hashCode()).isEqualTo(tokenClaims.hashCode());
       assertThat(claims.hashCode()).isEqualTo(claims.hashCode());
+    }
+
+    @Test
+    void shouldNotShareBinaryTokenClaimsBetweenClaimsMapsObtainedBeforeReadingThem() {
+      // given
+      final var authInfo =
+          decode(
+              encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
+      final var first = authInfo.toClaimsMap();
+      final var second = authInfo.toClaimsMap();
+
+      // when
+      ((byte[]) ((Map<?, ?>) first.get(USER_TOKEN_CLAIMS)).get("key"))[0] = 2;
+
+      // then
+      assertThat(second).isNotSameAs(first);
+      assertThat(((Map<?, ?>) second.get(USER_TOKEN_CLAIMS)).get("key")).isEqualTo(new byte[] {1});
     }
 
     @Test
