@@ -7,29 +7,19 @@
  */
 package io.camunda.zeebe.msgpack.pojo.processor;
 
+import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.compile;
+import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.get;
+import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.pojo.Codecs;
 import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.FileObject;
-import javax.tools.ForwardingJavaFileManager;
-import javax.tools.JavaFileObject;
-import javax.tools.SimpleJavaFileObject;
-import javax.tools.ToolProvider;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -257,106 +247,5 @@ final class MsgpackPojoProcessorTest {
 
   private static DirectBuffer buffer(final String s) {
     return new UnsafeBuffer(s.getBytes(StandardCharsets.UTF_8));
-  }
-
-  private static void set(final Object target, final String field, final Object value)
-      throws ReflectiveOperationException {
-    final Field f = target.getClass().getDeclaredField(field);
-    f.setAccessible(true);
-    f.set(target, value);
-  }
-
-  private static Object get(final Object target, final String field)
-      throws ReflectiveOperationException {
-    final Field f = target.getClass().getDeclaredField(field);
-    f.setAccessible(true);
-    return f.get(target);
-  }
-
-  private static Result compile(final Source... sources) {
-    final var compiler = ToolProvider.getSystemJavaCompiler();
-    final var diagnostics = new DiagnosticCollector<JavaFileObject>();
-    final var output = new HashMap<String, ByteArrayOutputStream>();
-    final var fileManager =
-        new ForwardingJavaFileManager<>(compiler.getStandardFileManager(diagnostics, null, null)) {
-          @Override
-          public JavaFileObject getJavaFileForOutput(
-              final Location location,
-              final String className,
-              final JavaFileObject.Kind kind,
-              final FileObject sibling) {
-            return new SimpleJavaFileObject(
-                URI.create("mem:///" + className.replace('.', '/') + kind.extension), kind) {
-              @Override
-              public OutputStream openOutputStream() {
-                final var stream = new ByteArrayOutputStream();
-                output.put(className, stream);
-                return stream;
-              }
-
-              // javac reads the generated sources back
-              @Override
-              public CharSequence getCharContent(final boolean ignoreEncodingErrors) {
-                return output.get(className).toString(StandardCharsets.UTF_8);
-              }
-            };
-          }
-        };
-    final var units = new ArrayList<JavaFileObject>();
-    for (final var source : sources) {
-      units.add(
-          new SimpleJavaFileObject(
-              URI.create("mem:///" + source.name().replace('.', '/') + ".java"),
-              JavaFileObject.Kind.SOURCE) {
-            @Override
-            public CharSequence getCharContent(final boolean ignoreEncodingErrors) {
-              return source.code();
-            }
-          });
-    }
-    final var task =
-        compiler.getTask(
-            null,
-            fileManager,
-            diagnostics,
-            List.of("-classpath", System.getProperty("java.class.path")),
-            null,
-            units);
-    task.setProcessors(List.of(new MsgpackPojoProcessor()));
-    task.call();
-    final var errors = new ArrayList<String>();
-    for (final var d : diagnostics.getDiagnostics()) {
-      if (d.getKind() == Diagnostic.Kind.ERROR) {
-        errors.add(d.getMessage(null));
-      }
-    }
-    return new Result(errors, output);
-  }
-
-  private record Source(String name, String code) {}
-
-  private record Result(
-      List<String> errors, Map<String, ByteArrayOutputStream> output, ClassLoader loader) {
-    Result(final List<String> errors, final Map<String, ByteArrayOutputStream> output) {
-      this(errors, output, loader(output));
-    }
-
-    Class<?> load(final String className) throws ClassNotFoundException {
-      return Class.forName(className, true, loader);
-    }
-
-    private static ClassLoader loader(final Map<String, ByteArrayOutputStream> output) {
-      return new ClassLoader(MsgpackPojoProcessorTest.class.getClassLoader()) {
-        @Override
-        protected Class<?> findClass(final String name) throws ClassNotFoundException {
-          final var bytes = output.get(name);
-          if (bytes == null) {
-            throw new ClassNotFoundException(name);
-          }
-          final var data = bytes.toByteArray();
-          return defineClass(name, data, 0, data.length);
-        }
-      };
-    }
   }
 }
