@@ -12,8 +12,9 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.RawAccessibleDb;
+import io.camunda.zeebe.db.RawDbAccess;
 import io.camunda.zeebe.db.TransactionContext;
-import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbNullKey;
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 
 public class ZeebeTransactionDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames> {
+    implements RawAccessibleDb<ColumnFamilyNames> {
 
   private static final Logger LOG = Loggers.DB_LOGGER;
   private static final String ERROR_MESSAGE_CLOSE_RESOURCE =
@@ -65,6 +66,7 @@ public class ZeebeTransactionDb<
   private final AccessMetricsConfiguration accessMetricsConfiguration;
   private final MeterRegistry meterRegistry;
   private final RocksDBMetricExporter metricExporter;
+  private final RawDbAccess rawAccess;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -90,6 +92,15 @@ public class ZeebeTransactionDb<
     closables.add(defaultReadOptions);
     defaultWriteOptions = new WriteOptions().setDisableWAL(rocksDbConfiguration.isWalDisabled());
     closables.add(defaultWriteOptions);
+
+    rawAccess =
+        new RocksDbRawAccess(
+            rocksDB,
+            defaultHandle,
+            defaultReadOptions,
+            prefixReadOptions,
+            defaultWriteOptions,
+            this::createSnapshot);
   }
 
   public static <
@@ -156,6 +167,11 @@ public class ZeebeTransactionDb<
 
   protected long getDefaultNativeHandle() {
     return defaultNativeHandle;
+  }
+
+  @Override
+  public RawDbAccess rawAccess() {
+    return rawAccess;
   }
 
   @Override
