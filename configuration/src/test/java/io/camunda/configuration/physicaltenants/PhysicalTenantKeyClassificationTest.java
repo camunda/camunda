@@ -86,6 +86,34 @@ final class PhysicalTenantKeyClassificationTest {
   }
 
   @Test
+  void shouldAcceptAChangeOfTheBackupSchedule() {
+    // given
+    final var proposed = with("data.primary-storage.backup.schedule", "PT5M");
+    proposed.put("data.primary-storage.backup.checkpoint-interval", "1m");
+    proposed.put("data.primary-storage.backup.retention.window", "7d");
+
+    // when
+    final var violations = classification.validate(update(proposed));
+
+    // then
+    assertThat(violations).isEmpty();
+  }
+
+  @Test
+  void shouldRejectAChangeOfTheBackupStoreLocation() {
+    // when
+    final var violations =
+        classification.validate(
+            update(with("data.primary-storage.backup.filesystem.base-path", "/elsewhere")));
+
+    // then
+    assertThat(violations)
+        .singleElement()
+        .asString()
+        .contains("data.primary-storage.backup.filesystem.base-path", "storage-location");
+  }
+
+  @Test
   void shouldRejectAChangeOfTheExporterIds() {
     // given
     final var proposed = with("data.exporters.other.class-name", "io.camunda.Other");

@@ -2,7 +2,7 @@
 # property of overridable-properties.golden.txt (configuration test resources):
 #   <property> RESTART                  applied by a restart of the tenant's module
 #   <property> REJECT <reason>          rejected; reasons:
-#     storage-location  changing it splits the tenant's data
+#     storage-location  changing it splits the tenant's data (its secondary storage or backups)
 #     exporter-ids      changing the exporters a tenant runs strands their positions
 #     outside-module    read by a component that a tenant module restart does not rebuild
 #     security-chain    the HTTP security chain of a tenant cannot be rebuilt at runtime yet
@@ -33,41 +33,41 @@ data.history-deletion.dependent-row-limit REJECT outside-module
 data.history-deletion.max-delay-between-runs REJECT outside-module
 data.history-deletion.queue-batch-size REJECT outside-module
 data.primary-storage.backup.azure.account-key REJECT outside-module
-data.primary-storage.backup.azure.account-name REJECT outside-module
-data.primary-storage.backup.azure.base-path REJECT outside-module
-data.primary-storage.backup.azure.connection-string REJECT outside-module
+data.primary-storage.backup.azure.account-name REJECT storage-location
+data.primary-storage.backup.azure.base-path REJECT storage-location
+data.primary-storage.backup.azure.connection-string REJECT storage-location
 data.primary-storage.backup.azure.create-container REJECT outside-module
-data.primary-storage.backup.azure.endpoint REJECT outside-module
+data.primary-storage.backup.azure.endpoint REJECT storage-location
 data.primary-storage.backup.azure.sas-token.type REJECT outside-module
 data.primary-storage.backup.azure.sas-token.value REJECT outside-module
-data.primary-storage.backup.checkpoint-interval REJECT outside-module
+data.primary-storage.backup.checkpoint-interval RESTART
 data.primary-storage.backup.continuous REJECT outside-module
-data.primary-storage.backup.filesystem.base-path REJECT outside-module
+data.primary-storage.backup.filesystem.base-path REJECT storage-location
 data.primary-storage.backup.gcs.auth REJECT outside-module
-data.primary-storage.backup.gcs.base-path REJECT outside-module
-data.primary-storage.backup.gcs.bucket-name REJECT outside-module
+data.primary-storage.backup.gcs.base-path REJECT storage-location
+data.primary-storage.backup.gcs.bucket-name REJECT storage-location
 data.primary-storage.backup.gcs.buffer-size REJECT outside-module
-data.primary-storage.backup.gcs.host REJECT outside-module
+data.primary-storage.backup.gcs.host REJECT storage-location
 data.primary-storage.backup.gcs.max-concurrent-transfers REJECT outside-module
 data.primary-storage.backup.offset REJECT outside-module
 data.primary-storage.backup.read-timeout REJECT outside-module
 data.primary-storage.backup.required REJECT outside-module
-data.primary-storage.backup.retention.window REJECT outside-module
+data.primary-storage.backup.retention.window RESTART
 data.primary-storage.backup.s3.access-key REJECT outside-module
 data.primary-storage.backup.s3.api-call-timeout REJECT outside-module
-data.primary-storage.backup.s3.base-path REJECT outside-module
-data.primary-storage.backup.s3.bucket-name REJECT outside-module
+data.primary-storage.backup.s3.base-path REJECT storage-location
+data.primary-storage.backup.s3.bucket-name REJECT storage-location
 data.primary-storage.backup.s3.compression REJECT outside-module
 data.primary-storage.backup.s3.connection-acquisition-timeout REJECT outside-module
-data.primary-storage.backup.s3.endpoint REJECT outside-module
+data.primary-storage.backup.s3.endpoint REJECT storage-location
 data.primary-storage.backup.s3.force-path-style-access REJECT outside-module
 data.primary-storage.backup.s3.max-concurrent-connections REJECT outside-module
-data.primary-storage.backup.s3.region REJECT outside-module
+data.primary-storage.backup.s3.region REJECT storage-location
 data.primary-storage.backup.s3.secret-key REJECT outside-module
 data.primary-storage.backup.s3.ssec-key REJECT outside-module
 data.primary-storage.backup.s3.support-legacy-md5 REJECT outside-module
-data.primary-storage.backup.schedule REJECT outside-module
-data.primary-storage.backup.store REJECT outside-module
+data.primary-storage.backup.schedule RESTART
+data.primary-storage.backup.store REJECT storage-location
 data.primary-storage.backup.write-timeout REJECT outside-module
 data.primary-storage.disk.used-space.processing RESTART
 data.primary-storage.disk.used-space.replication RESTART
