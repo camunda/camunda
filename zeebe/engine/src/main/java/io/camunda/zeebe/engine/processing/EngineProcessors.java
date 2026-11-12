@@ -308,7 +308,8 @@ public final class EngineProcessors {
         authCheckBehavior,
         keyGenerator,
         writers,
-        commandDistributionBehavior);
+        commandDistributionBehavior,
+        securityConfig);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
