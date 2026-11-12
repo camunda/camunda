@@ -95,7 +95,9 @@ Insert this Javadoc directly above the class declaration in each V1 file (if the
 ```
 
 with `import io.camunda.zeebe.util.VisibleForTesting;` (the annotation goes on the class, after
-the Javadoc).
+the Javadoc). Leave the annotation off a V1 class that another V1 class uses as a field (e.g.
+`IndexedRecordV1` inside `ElementInstanceV1`): the ArchUnit `VisibleForTestingArchTest` only lets
+test code reference such classes, so the outer V1 class would fail it.
 
 ## Step 3: convert the class
 
