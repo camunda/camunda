@@ -13,9 +13,9 @@ import java.sql.SQLException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-final class RdbmsStorageTest {
+class RdbmsStorageTest {
 
-  private final TestH2Database database = new TestH2Database();
+  private final TestDatabase database = createDatabase();
 
   @AfterEach
   void tearDown() throws SQLException {
@@ -32,11 +32,16 @@ final class RdbmsStorageTest {
   }
 
   @Test
-  void shouldUseH2Statements() {
+  void shouldUseTheStatementsOfTheDatabase() {
     // when
     final var storage = RdbmsStorage.open(database.dataSource(), "A_");
 
     // then
-    assertThat(storage.databaseId()).isEqualTo("h2");
+    assertThat(storage.databaseId()).isEqualTo(database.databaseId());
+  }
+
+  /** Overridden to run the same tests on another database. */
+  TestDatabase createDatabase() {
+    return new TestH2Database();
   }
 }

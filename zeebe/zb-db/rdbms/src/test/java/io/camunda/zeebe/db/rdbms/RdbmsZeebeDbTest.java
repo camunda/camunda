@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
 import java.sql.SQLTransientConnectionException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class RdbmsZeebeDbTest {
 
   // short, so that a test waiting for a row lock fails fast
-  private final TestH2Database database = new TestH2Database(";LOCK_TIMEOUT=100");
+  private final TestH2Database database = new TestH2Database(Duration.ofMillis(100));
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;

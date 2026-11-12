@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.cache.WriteBehindConfiguration;
+import io.camunda.zeebe.db.contract.RdbmsTestFactory.Database;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.rdbms.StateFencedException;
@@ -33,7 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
  * the state, so a new leader recovers by opening that state, and a leader that lost its term can't
  * write to it anymore.
  */
-final class WriteBehindOverRdbmsFailoverTest {
+class WriteBehindOverRdbmsFailoverTest {
 
   private static final WriteBehindConfiguration STALLED_WRITER =
       new WriteBehindConfiguration(
@@ -97,9 +98,14 @@ final class WriteBehindOverRdbmsFailoverTest {
         .hasRootCauseInstanceOf(StateFencedException.class);
   }
 
+  /** Overridden to run the same tests on another database. */
+  Database database() {
+    return Database.H2;
+  }
+
   private ZeebeDbFactory<DefaultColumnFamily> factory(final long term) {
     return WriteBehindOverRdbmsTestFactory.create(
-        RdbmsTestFactory.create(partition, () -> term), STALLED_WRITER);
+        RdbmsTestFactory.create(database(), partition, () -> term), STALLED_WRITER);
   }
 
   private ZeebeDb<DefaultColumnFamily> createDb(final long term, final String runtime) {

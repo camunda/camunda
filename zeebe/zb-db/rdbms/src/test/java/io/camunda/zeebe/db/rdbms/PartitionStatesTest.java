@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -29,9 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /** Which state a partition gets when it opens a DB without a snapshot. */
-final class PartitionStatesTest {
+class PartitionStatesTest {
 
-  private final TestH2Database database = new TestH2Database(";LOCK_TIMEOUT=10000");
+  private final TestDatabase database = createDatabase(Duration.ofSeconds(10));
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = Collections.synchronizedList(new ArrayList<>());
   @TempDir private Path directory;
@@ -142,5 +143,10 @@ final class PartitionStatesTest {
     final var dbString = new DbString();
     dbString.wrapString(value);
     return dbString;
+  }
+
+  /** Overridden to run the same tests on another database. */
+  TestDatabase createDatabase(final Duration lockTimeout) {
+    return new TestH2Database(lockTimeout);
   }
 }

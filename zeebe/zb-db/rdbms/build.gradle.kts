@@ -12,6 +12,8 @@ dependencies {
   implementation(libs.org.mybatis.mybatis)
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(libs.com.h2database.h2)
+  testImplementation(libs.org.postgresql.postgresql)
+  testImplementation(libs.org.testcontainers.testcontainers.postgresql)
 }
 
 description = "Zeebe DB RDBMS"

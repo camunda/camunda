@@ -313,7 +313,14 @@ it delays the step-down; the benchmark decides (§11 risk 2, §12 step 13).
   recovering from a snapshot sees every transaction committed before it, and once it claims the
   state, the old leader's snapshot and commits fail with `StateFencedException` and none of its
   writes reach the state.
-- **PostgreSQL:** the same suites as `*IT` against Testcontainers.
+- **PostgreSQL:** `Postgres*IT` subclasses run the same tests against one Testcontainers
+  PostgreSQL server per JVM, started by the first test that needs it. In `zeebe-db-rdbms`, every
+  suite that talks to the database gets a fresh database through a `createDatabase` hook, and the
+  lock timeout becomes PostgreSQL's `lock_timeout`. `RdbmsZeebeDbTest` stays on H2, as it needs
+  H2's connection pool and a data source that fails on purpose. In `zeebe/zb-db/tests`, every
+  contract suite and the failover test run on PostgreSQL, directly and through the cache. The
+  randomized suites don't: they pass on PostgreSQL, but take minutes, and as `*IT` they would never
+  run, as Failsafe leaves out the `randomized` tag.
 - **Cache:** the writer holds back transactions until their position is committed, keeps their
   order, and counts only the released ones towards the batch size; the cache records the position
   when a transaction commits, and a snapshot waits for the commit.
@@ -321,7 +328,7 @@ it delays the step-down; the benchmark decides (§11 risk 2, §12 step 13).
 Builds: `./mvnw install -pl zeebe/zb-db/rdbms -am -Dquickly -T1C`, then
 `./mvnw verify -pl zeebe/zb-db/rdbms,zeebe/zb-db/tests -DskipTests=false -Dquickly`. The
 differential and property suites are tagged `randomized`; they only run with
-`-Pinclude-random-tests`.
+`-Pinclude-random-tests`. The `*IT` classes need Docker; `-DskipITs` leaves them out.
 
 ## 11. Risks
 
@@ -355,7 +362,7 @@ already need scans, `count` and `isEmpty`.
 5. **test:** the write-behind cache over the RDBMS: contract suites, differential test and a
 failover test.
 6. **feat:** the commit gate in the cache's writer.
-7. **test:** all suites on PostgreSQL with Testcontainers.
+7. **test:** the suites on PostgreSQL with Testcontainers (§10).
 
 **Part B: broker** (outline in §9)
 8. Configuration and wiring.

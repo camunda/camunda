@@ -11,11 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.cache.WriteBehindConfiguration;
+import io.camunda.zeebe.db.contract.RdbmsTestFactory.Database;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import org.junit.jupiter.api.Test;
 
-final class WriteBehindOverRdbmsEmptyValueTest extends EmptyValueContractTest {
+class WriteBehindOverRdbmsEmptyValueTest extends EmptyValueContractTest {
 
   private static final WriteBehindConfiguration NO_READ_CACHE =
       new WriteBehindConfiguration(
@@ -27,7 +28,12 @@ final class WriteBehindOverRdbmsEmptyValueTest extends EmptyValueContractTest {
 
   @Override
   protected ZeebeDbFactory<DefaultColumnFamily> createFactory() {
-    return WriteBehindOverRdbmsTestFactory.create(NO_READ_CACHE);
+    return WriteBehindOverRdbmsTestFactory.create(database(), NO_READ_CACHE);
+  }
+
+  /** Overridden to run the same tests on another database. */
+  Database database() {
+    return Database.H2;
   }
 
   @Test
