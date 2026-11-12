@@ -20,6 +20,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,7 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * The state of one partition, kept in the state table under its own state id. The table is shared
  * by all partitions, which never see each other's rows.
  *
- * <p>It writes with the term it was opened with, until a newer leader claims the state.
+ * <p>It writes with the term it was opened with, until a newer leader claims the state. Opened
+ * without a term, it only reads.
  */
 final class RdbmsZeebeDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
@@ -35,15 +37,18 @@ final class RdbmsZeebeDb<
 
   private final RdbmsStorage storage;
   private final StateMarker marker;
-  private final long term;
+  private final OptionalLong term;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final MeterRegistry meterRegistry;
   private final Set<RdbmsTransaction> transactions = ConcurrentHashMap.newKeySet();
 
+  /**
+   * @param term the term to write with, or empty to only read
+   */
   RdbmsZeebeDb(
       final RdbmsStorage storage,
       final StateMarker marker,
-      final long term,
+      final OptionalLong term,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final MeterRegistry meterRegistry) {
     this.storage = storage;

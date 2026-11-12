@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ibatis.exceptions.PersistenceException;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
  * <p>Before its first writes reach the database, it checks that its term still owns the state, and
  * locks the state row until it ends. A newer leader's claim waits for it, and once claimed, writes
  * of the older term throw {@link StateFencedException}. Transactions that only read never check.
+ * Without a term, it only reads: writing throws right away.
  *
  * <p>Like RocksDB's, it is used by one thread at a time and is reused for the next transaction.
  */
@@ -40,7 +42,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
 
   private final RdbmsStorage storage;
   private final long stateId;
-  private final long term;
+  private final OptionalLong term;
   private final WriteBuffer buffer = new WriteBuffer();
   private @Nullable Connection connection;
   private @Nullable SqlSession session;
@@ -48,7 +50,10 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   private boolean inCurrentTransaction;
   private boolean ownerChecked;
 
-  RdbmsTransaction(final RdbmsStorage storage, final long stateId, final long term) {
+  /**
+   * @param term the term to write with, or empty to only read
+   */
+  RdbmsTransaction(final RdbmsStorage storage, final long stateId, final OptionalLong term) {
     this.storage = storage;
     this.stateId = stateId;
     this.term = term;
@@ -70,10 +75,12 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   }
 
   void put(final int columnFamily, final byte[] key, final byte[] value) {
+    checkWritable();
     buffer.put(columnFamily, key, value);
   }
 
   void delete(final int columnFamily, final byte[] key) {
+    checkWritable();
     buffer.delete(columnFamily, key);
   }
 
@@ -185,14 +192,23 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     buffer.clear();
   }
 
+  private void checkWritable() {
+    if (term.isEmpty()) {
+      throw new UnsupportedOperationException(
+          "Expected to write to the partition state %d, but it was opened for reading only"
+              .formatted(stateId));
+    }
+  }
+
   private void checkOwner(final StateMapper state) {
+    final long writeTerm = term.orElseThrow();
     final var ownerTerm = state.lockOwnerTerm(stateId);
-    if (ownerTerm.isEmpty() || ownerTerm.get() != term) {
+    if (ownerTerm.isEmpty() || ownerTerm.get() != writeTerm) {
       throw new StateFencedException(
           "Expected to write to the partition state %d with term %d, but %s"
               .formatted(
                   stateId,
-                  term,
+                  writeTerm,
                   ownerTerm
                       .map(owner -> "a leader of term " + owner + " owns it")
                       .orElse("the state doesn't exist")));

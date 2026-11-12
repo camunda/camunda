@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -83,9 +85,32 @@ public final class RdbmsZeebeDbFactory<
     return new RdbmsZeebeDb<>(
         storage,
         new StateMarker(stateId, identity),
-        currentTerm,
+        OptionalLong.of(currentTerm),
         consistencyChecksSettings,
         meterRegistrySupplier.get());
+  }
+
+  /**
+   * Opens the partition's state for reading only, without claiming it, so the leader that owns it
+   * keeps writing. Reads see what the leader has committed so far. A snapshot of it names the
+   * state, like a snapshot of the leader's database.
+   *
+   * <p>Followers use it to take snapshots, which let them compact their log.
+   *
+   * @return the database, or empty if the partition has no state yet
+   */
+  public Optional<ZeebeDb<ColumnFamilyNames>> openReadOnlyDb() {
+    final var stateId = partitionStates.find(identity);
+    if (stateId.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        new RdbmsZeebeDb<>(
+            storage,
+            new StateMarker(stateId.getAsLong(), identity),
+            OptionalLong.empty(),
+            consistencyChecksSettings,
+            meterRegistrySupplier.get()));
   }
 
   /**
