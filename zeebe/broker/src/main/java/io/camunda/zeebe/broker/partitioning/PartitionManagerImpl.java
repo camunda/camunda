@@ -29,10 +29,12 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateStorage;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -65,6 +67,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +95,7 @@ public final class PartitionManagerImpl
   private final PartitionScalingChangeExecutor scalingExecutor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final ExporterHistoryPurger exporterHistoryPurger;
+  private final @Nullable RdbmsStateStorage rdbmsStateStorage;
 
   public PartitionManagerImpl(
       final String partitionGroup,
@@ -137,6 +141,10 @@ public final class PartitionManagerImpl
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
 
+    rdbmsStateStorage =
+        brokerCfg.getData().getPrimaryStorageType() == PrimaryStorageType.RDBMS
+            ? new RdbmsStateStorage(partitionGroup, brokerCfg.getData().getRdbms(), meterRegistry)
+            : null;
     zeebePartitionFactory =
         new ZeebePartitionFactory(
             actorSchedulingService,
@@ -159,6 +167,7 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
+            rdbmsStateStorage,
             secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
@@ -333,6 +342,7 @@ public final class PartitionManagerImpl
     concurrencyControl.runOnCompletion(
         stop,
         (ok, error) -> {
+          closeRdbmsStateStorage();
           if (error != null) {
             LOGGER.error("Failed to stop partitions", error);
             result.completeExceptionally(error);
@@ -344,12 +354,27 @@ public final class PartitionManagerImpl
     return result;
   }
 
+  private void closeRdbmsStateStorage() {
+    if (rdbmsStateStorage != null) {
+      rdbmsStateStorage.close();
+    }
+  }
+
   private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
     if (stopped) {
       LOGGER.info(
           "Not starting the partitions of partition group {}, the manager was stopped",
           partitionGroup);
       return CompletableActorFuture.completed();
+    }
+    if (rdbmsStateStorage != null) {
+      try {
+        rdbmsStateStorage.open();
+      } catch (final RuntimeException e) {
+        LOGGER.error(
+            "Failed to open the database for the state of partition group {}", partitionGroup, e);
+        return CompletableActorFuture.completedExceptionally(e);
+      }
     }
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions(configuration);

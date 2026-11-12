@@ -26,6 +26,7 @@ import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,6 +203,55 @@ class ZeebeDbPartitionTransitionStepTest {
     inOrder.verify(stateController).closeDb();
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      names = {"FOLLOWER", "CANDIDATE"})
+  void shouldOpenANewDbWithTheLeaderTermWhenThereIsADbPerLeaderTerm(final Role currentRole) {
+    // given
+    final var handedTerm = new AtomicLong(-1);
+    final var termWhenOpening = new AtomicLong(-1);
+    when(stateController.recover())
+        .thenAnswer(
+            invocation -> {
+              termWhenOpening.set(handedTerm.get());
+              return TestActorFuture.completedFuture(zeebeDb);
+            });
+    step = new ZeebeDbPartitionTransitionStep(handedTerm::set, true);
+    transitionContext.setCurrentRole(currentRole);
+    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+
+    // when
+    transitionTo(Role.LEADER, 5);
+
+    // then
+    verify(stateController).closeDb();
+    assertThat(transitionContext.getZeebeDb()).isEqualTo(zeebeDb);
+    assertThat(termWhenOpening).hasValue(5);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideTransitionsBetweenFollowerAndCandidate")
+  void shouldKeepTheDbBetweenFollowerAndCandidateWhenThereIsADbPerLeaderTerm(
+      final Role currentRole, final Role targetRole) {
+    // given
+    step = new ZeebeDbPartitionTransitionStep(term -> {}, true);
+    transitionContext.setCurrentRole(currentRole);
+    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+
+    // when
+    transitionTo(targetRole);
+
+    // then
+    assertThat(transitionContext.getZeebeDb()).isEqualTo(zeebeDbFromPrevRole);
+    verify(stateController, never()).closeDb();
+  }
+
+  private static Stream<Arguments> provideTransitionsBetweenFollowerAndCandidate() {
+    return Stream.of(
+        Arguments.of(Role.CANDIDATE, Role.FOLLOWER), Arguments.of(Role.FOLLOWER, Role.CANDIDATE));
+  }
+
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
     return Stream.of(
         Arguments.of(Role.CANDIDATE, Role.FOLLOWER),
@@ -233,9 +283,14 @@ class ZeebeDbPartitionTransitionStepTest {
   }
 
   private void transitionTo(final Role role) {
-    assertThat(step.prepareTransition(transitionContext, 1, role))
+    transitionTo(role, 1);
+  }
+
+  private void transitionTo(final Role role, final long term) {
+    assertThat(step.prepareTransition(transitionContext, term, role))
         .succeedsWithin(Duration.ofMinutes(1));
-    assertThat(step.transitionTo(transitionContext, 1, role)).succeedsWithin(Duration.ofMinutes(1));
+    assertThat(step.transitionTo(transitionContext, term, role))
+        .succeedsWithin(Duration.ofMinutes(1));
     transitionContext.setCurrentRole(role);
   }
 }

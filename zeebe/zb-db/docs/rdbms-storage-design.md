@@ -296,12 +296,14 @@ One replica comes first, so each step leaves a broker that works; followers come
 - `PartitionManagerImpl`, which exists once per partition group, builds one HikariCP pool from its
   `BrokerCfg`, with auto-commit off. Before its partitions start, it opens one `RdbmsStorage`,
   which runs the Liquibase changelog. It closes the pool after its partitions have stopped.
-- `ZeebePartitionFactory#stateDbFactory` creates one `RdbmsZeebeDbFactory` per partition, with
-  `StateIdentity(partitionGroup, partitionId)`, inside a `WriteBehindZeebeDbFactory` with the
-  commit gate (§9.4).
+- `ZeebePartitionFactory` creates one `RdbmsZeebeDbFactory` per partition, with
+  `StateIdentity(partitionGroup, partitionId)`, and `stateDbFactory` puts it inside a
+  `WriteBehindZeebeDbFactory` with the commit gate (§9.4).
 - `zeebe-broker` gets two new dependencies: `zeebe-db-rdbms` and `HikariCP`.
+- The snapshot store reads the checksums and sizes of a marker snapshot from its files, because
+  they aren't RocksDB files.
 - Partition scaling copies a RocksDB snapshot (`RocksDBSnapshotCopy`), so it's rejected in RDBMS
-  mode.
+  mode: the partition's snapshot copy throws.
 
 ### 9.3 Term and leader
 
@@ -310,6 +312,9 @@ One replica comes first, so each step leaves a broker that works; followers come
   term to a small holder that the factory's term supplier reads, before `StateController.recover()`
   opens the DB. The term must be the one this node leads in. The Raft server's current term may
   already be a later one, led by another node.
+- In RDBMS mode, the ZeebeDb and QueryService steps close and reopen on every move to leader, not
+  only when leaving it, so the DB always writes with the term the node leads in. The other steps
+  that use the DB are already rebuilt on every move to leader.
 - The leader claims the shared state and replays from the shared processed position, which
   `StreamProcessor` already reads from the state. Exporters read their positions from the shared
   state too.

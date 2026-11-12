@@ -12,10 +12,14 @@ import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 
@@ -39,7 +43,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             context.brokerConfig().getCluster().getNodeId(),
             context.partitionMetadata().id(),
             context.partitionDirectory(),
-            new RocksDBSnapshotFileInfoProvider(),
+            snapshotFileInfoProvider(context.brokerConfig()),
             context.partitionMeterRegistry());
 
     var result =
@@ -95,5 +99,16 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
     return closeHelper(context.snapshotTransfer())
         .andThen(ignore -> closeHelper(context.snapshotStore()), context.concurrencyControl())
         .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
+  }
+
+  /**
+   * Snapshots of the relational storage hold only a small marker file, not RocksDB files, so their
+   * checksums and sizes come from reading the files themselves.
+   */
+  private static SnapshotFileInfoProvider snapshotFileInfoProvider(final BrokerCfg brokerCfg) {
+    if (brokerCfg.getData().getPrimaryStorageType() == PrimaryStorageType.RDBMS) {
+      return snapshotPath -> SnapshotFilesInfo.none();
+    }
+    return new RocksDBSnapshotFileInfoProvider();
   }
 }
