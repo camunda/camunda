@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -38,8 +38,9 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     }
   }
 
-  public final ManyToManyConcurrentArrayQueue<Runnable> submittedCallbacks =
-      new ManyToManyConcurrentArrayQueue<>(1024 * 24);
+  // only drained by this thread
+  public final ManyToOneConcurrentArrayQueue<Runnable> submittedCallbacks =
+      new ManyToOneConcurrentArrayQueue<>(1024 * 24);
   protected final ActorTimerQueue timerJobQueue;
   protected ActorTaskRunnerIdleStrategy idleStrategy;
   ActorTask currentTask;
