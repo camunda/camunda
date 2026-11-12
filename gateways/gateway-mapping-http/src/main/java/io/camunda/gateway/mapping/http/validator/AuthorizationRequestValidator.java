@@ -43,10 +43,9 @@ public final class AuthorizationRequestValidator {
       Pattern.compile("\\*|camunda\\.secrets\\." + SECRET_NAME_PATTERN);
 
   /**
-   * Matches a PROBE resource id: the wildcard, or a probe ID of 1 to 256 characters without
-   * whitespace. A probe ID can never be {@code *}, so the wildcard always means every probe.
+   * The longest probe ID the engine accepts, counted in {@code char}s like the engine's own check.
    */
-  public static final Pattern PROBE_RESOURCE_ID_PATTERN = Pattern.compile("\\S{1,256}");
+  public static final int MAX_PROBE_ID_LENGTH = 256;
 
   private final AuthorizationValidator authorizationValidator;
 
@@ -95,9 +94,20 @@ public final class AuthorizationRequestValidator {
     if (resourceType == ResourceTypeEnum.PROBE
         && resourceId != null
         && !resourceId.isBlank()
-        && !PROBE_RESOURCE_ID_PATTERN.matcher(resourceId).matches()) {
+        && !isValidProbeResourceId(resourceId)) {
       violations.add(ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID.formatted(resourceId));
     }
+  }
+
+  /**
+   * The wildcard, or a probe ID the engine would accept when the probe is created: 1 to {@link
+   * #MAX_PROBE_ID_LENGTH} characters, none of them whitespace by {@link Character#isWhitespace}. A
+   * probe ID can never be {@code *}, so the wildcard always means every probe. The rule mirrors the
+   * engine's on purpose: a grant on an ID the engine rejects could never match a probe.
+   */
+  private static boolean isValidProbeResourceId(final String resourceId) {
+    return resourceId.length() <= MAX_PROBE_ID_LENGTH
+        && resourceId.chars().noneMatch(Character::isWhitespace);
   }
 
   /**

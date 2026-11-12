@@ -642,6 +642,28 @@ public class AuthorizationControllerTest extends RestControllerTest {
                 + "p".repeat(257)
                 + "' is not a valid probe ID. It must be '*' or 1 to 256 characters without "
                 + "whitespace."),
+        Arguments.of(
+            // PROBE resourceId with Unicode whitespace, which the engine rejects as a probe ID
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "validate\u2003configuration",
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId 'validate\u2003configuration' is not a valid probe ID. It must "
+                + "be '*' or 1 to 256 characters without whitespace."),
+        Arguments.of(
+            // PROBE resourceId of 256 code points but 512 chars, longer than the engine accepts
+            Map.of(
+                "ownerId", "ownerId",
+                "ownerType", "USER",
+                "resourceId", "\uD83D\uDE00".repeat(256),
+                "resourceType", "PROBE",
+                "permissionTypes", permissions),
+            "The provided resourceId '"
+                + "\uD83D\uDE00".repeat(256)
+                + "' is not a valid probe ID. It must be '*' or 1 to 256 characters without "
+                + "whitespace."),
         // AuthorizationPropertyBasedRequest tests
         Arguments.of(
             // missing ownerId
