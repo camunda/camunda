@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Architecture Decision Records | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/adr/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Architecture Decision Records | Camunda Platform"><meta data-rh="true" name="description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><meta data-rh="true" property="og:description" content="This directory contains ADRs for decisions that affect multiple modules across the monorepo."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/adr/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/adr/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/adr/" hreflang="x-default"><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.f6b5aea6.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.d813415d.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.df5c213f.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.56b1d0ca.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -94,12 +94,6 @@ detected at <code>CREATE</code> and injected at collection, <code>ANSWERED</code
 <code>data</code>, and the <code>PROBE</code> resource type with <code>CREATE</code> and <code>ANSWER</code>; the full
 specification (decisions and acceptance tests) is in <code>probes/probes-specification.md</code>
 (camunda/camunda#68861, camunda/product-hub#3433).</li>
-<li class=""><code>data-protection/001-variable-redaction.md</code> — how a process variable is declared
-sensitive through <code>variablesMetadata</code> protection modes, and how its value is
-redacted once in the <code>ExporterDirector</code> before the export fan-out, with primary
-storage keeping the plain value; delivered in milestones by variable-record
-category, with explicit guarantees and known limitations
-(camunda/camunda#64644).</li>
 <li class=""><code>orchestration-cluster/</code> — decisions spanning the broker, gateways, and
 auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
 provider selection, authorization routing, gRPC authentication, configuration
