@@ -52,6 +52,14 @@ final class RdbmsTransactionContext implements TransactionContext {
     return transaction;
   }
 
+  /**
+   * Returns the transaction without starting one, for a point read: it reads in the current
+   * transaction if there is one, or else alone.
+   */
+  RdbmsTransaction transaction() {
+    return transaction;
+  }
+
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {
     try {
       transaction.resetTransaction();

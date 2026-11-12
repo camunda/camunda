@@ -19,15 +19,19 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.sql.SQLTransientConnectionException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcConnectionPool;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -239,6 +243,31 @@ final class RdbmsZeebeDbTest {
   }
 
   @Test
+  void shouldReadOutsideATransactionWithoutCommitting() {
+    // given
+    final var commits = new AtomicInteger();
+    final var db =
+        createDb(RdbmsStorage.open(countingCommits(database.dataSource(), commits), ""), 1);
+    final var context = db.createContext();
+    final var columnFamily = columnFamily(db, context);
+    context.runInTransaction(() -> columnFamily.upsert(key(1), value("committed")));
+    commits.set(0);
+
+    // when
+    final var value = String.valueOf(columnFamily.get(key(1)));
+    final boolean exists = columnFamily.exists(key(1));
+    final long count = columnFamily.count();
+    final boolean empty = columnFamily.isEmpty();
+
+    // then each read was a single statement in auto-commit
+    assertThat(value).isEqualTo("committed");
+    assertThat(exists).isTrue();
+    assertThat(count).isOne();
+    assertThat(empty).isFalse();
+    assertThat(commits).hasValue(0);
+  }
+
+  @Test
   void shouldReturnTheConnectionsOfOpenTransactionsWhenClosed() throws Exception {
     // given a pool with one connection, which an open transaction holds
     final var pool = JdbcConnectionPool.create(database.url(), "", "");
@@ -311,5 +340,43 @@ final class RdbmsZeebeDbTest {
                 throw e.getCause();
               }
             });
+  }
+
+  /** Counts the commits sent on the connections of {@code dataSource}. */
+  private static DataSource countingCommits(
+      final DataSource dataSource, final AtomicInteger commits) {
+    return (DataSource)
+        Proxy.newProxyInstance(
+            DataSource.class.getClassLoader(),
+            new Class<?>[] {DataSource.class},
+            (proxy, method, args) -> {
+              final var result = invoke(method, dataSource, args);
+              return result instanceof final Connection connection
+                  ? countingCommits(connection, commits)
+                  : result;
+            });
+  }
+
+  private static Connection countingCommits(
+      final Connection connection, final AtomicInteger commits) {
+    return (Connection)
+        Proxy.newProxyInstance(
+            Connection.class.getClassLoader(),
+            new Class<?>[] {Connection.class},
+            (proxy, method, args) -> {
+              if (method.getName().equals("commit")) {
+                commits.incrementAndGet();
+              }
+              return invoke(method, connection, args);
+            });
+  }
+
+  private static @Nullable Object invoke(
+      final Method method, final Object target, final Object @Nullable [] args) throws Throwable {
+    try {
+      return method.invoke(target, args);
+    } catch (final InvocationTargetException e) {
+      throw e.getCause();
+    }
   }
 }

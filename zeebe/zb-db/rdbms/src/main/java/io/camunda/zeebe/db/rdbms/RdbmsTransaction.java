@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>It borrows a connection only when it first needs the database, so a transaction that only
  * writes holds none until it commits. Writes wait in a {@link WriteBuffer} and go to the database
- * as one batch before every scan and at commit. Point reads look at the buffer first.
+ * as one batch before every scan and at commit. Point reads look at the buffer first. Outside a
+ * transaction, a point read runs alone in auto-commit.
  *
  * <p>Before its first writes reach the database, it updates the state row only if its term still
  * owns the state, which locks the row until it ends. A newer leader's claim waits for it, and once
@@ -86,7 +87,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
       return value == null ? null : value.clone();
     }
     final var table = StateTables.of(columnFamily);
-    return query(state -> state.get(partitionId, table.name(), table.shared(), columnFamily, key))
+    return read(state -> state.get(partitionId, table.name(), table.shared(), columnFamily, key))
         .orElse(null);
   }
 
@@ -127,12 +128,12 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
 
   long count(final StateRange range) {
     flush();
-    return query(state -> state.count(range));
+    return read(state -> state.count(range));
   }
 
   boolean exists(final StateRange range) {
     flush();
-    return query(state -> state.exists(range));
+    return read(state -> state.exists(range));
   }
 
   boolean isInCurrentTransaction() {
@@ -294,6 +295,26 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
       }
     }
     return rows;
+  }
+
+  /**
+   * Runs a read of one statement. In a transaction, it sees the transaction's writes. Outside one,
+   * it runs alone in auto-commit on a connection of its own, which is one round trip, where a
+   * transaction would add a commit. A single statement sees the same committed rows either way.
+   */
+  private <T> T read(final Function<StateMapper, T> statement) {
+    if (inCurrentTransaction) {
+      return query(statement);
+    }
+    final var borrowed = storage.borrowAutoCommitConnection();
+    try (final var readSession =
+        storage.sqlSessionFactory().openSession(ExecutorType.SIMPLE, borrowed)) {
+      return statement.apply(readSession.getMapper(StateMapper.class));
+    } catch (final PersistenceException e) {
+      throw SqlErrors.translate(e);
+    } finally {
+      closeQuietly(borrowed);
+    }
   }
 
   /** Runs statements on this transaction's connection. */

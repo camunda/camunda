@@ -26,9 +26,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.collections.MutableBoolean;
-import org.agrona.collections.MutableLong;
-import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
@@ -36,7 +33,9 @@ import org.jspecify.annotations.Nullable;
  * A column family in its state table. It behaves like RocksDB's: the same results, the same scan
  * order, and the same consistency checks with the same exceptions.
  *
- * <p>Writes go to the context's transaction; reads see that transaction's own writes.
+ * <p>Writes go to the context's transaction; reads see that transaction's own writes. Outside a
+ * transaction, a point read ({@code get}, {@code exists}, {@code count}, {@code isEmpty}) runs
+ * alone in auto-commit, and a scan in a short transaction.
  */
 final class RdbmsColumnFamily<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily,
@@ -265,10 +264,8 @@ final class RdbmsColumnFamily<
 
   @Override
   public boolean isEmpty() {
-    final var empty = new MutableBoolean();
-    inOpenTransaction(
-        transaction -> empty.set(!transaction.exists(withPrefix(transaction, NO_PREFIX))));
-    return empty.get();
+    final var transaction = context.transaction();
+    return !transaction.exists(withPrefix(transaction, NO_PREFIX));
   }
 
   @Override
@@ -291,10 +288,7 @@ final class RdbmsColumnFamily<
   }
 
   private byte @Nullable [] read(final KeyType key) {
-    final var value = new MutableReference<byte[]>();
-    inOpenTransaction(
-        transaction -> value.set(transaction.get(columnFamily.getValue(), serialize(key))));
-    return value.get();
+    return context.transaction().get(columnFamily.getValue(), serialize(key));
   }
 
   private void assertKeyDoesNotExist(final RdbmsTransaction transaction, final byte[] key) {
@@ -406,9 +400,8 @@ final class RdbmsColumnFamily<
   }
 
   private long countKeys(final byte[] prefix) {
-    final var count = new MutableLong();
-    inOpenTransaction(transaction -> count.set(transaction.count(withPrefix(transaction, prefix))));
-    return count.get();
+    final var transaction = context.transaction();
+    return transaction.count(withPrefix(transaction, prefix));
   }
 
   /**

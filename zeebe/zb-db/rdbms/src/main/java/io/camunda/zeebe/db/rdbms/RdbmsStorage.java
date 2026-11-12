@@ -73,10 +73,25 @@ public final class RdbmsStorage {
    * Borrows a connection with auto-commit off. The caller commits or rolls back, then closes it.
    */
   Connection borrowConnection() {
+    return borrow(false);
+  }
+
+  /**
+   * Borrows a connection with auto-commit on, for a read of one statement. The caller closes it.
+   */
+  Connection borrowAutoCommitConnection() {
+    return borrow(true);
+  }
+
+  SqlSessionFactory sqlSessionFactory() {
+    return sqlSessionFactory;
+  }
+
+  private Connection borrow(final boolean autoCommit) {
     @Nullable Connection borrowed = null;
     try {
       borrowed = dataSource.getConnection();
-      borrowed.setAutoCommit(false);
+      borrowed.setAutoCommit(autoCommit);
       return borrowed;
     } catch (final SQLException e) {
       if (borrowed != null) {
@@ -88,10 +103,6 @@ public final class RdbmsStorage {
       }
       throw SqlErrors.translate(e);
     }
-  }
-
-  SqlSessionFactory sqlSessionFactory() {
-    return sqlSessionFactory;
   }
 
   /** Maps the database product name to the id that picks its statements, as the history does. */
