@@ -135,12 +135,13 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
 
 class ActorTaskQueueNode {
   private static final VarHandle NEXT;
+  private static final VarHandle PREV;
 
   static {
     try {
-      NEXT =
-          MethodHandles.lookup()
-              .findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+      final var lookup = MethodHandles.lookup();
+      NEXT = lookup.findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+      PREV = lookup.findVarHandle(ActorTaskQueueNode.class, "prev", ActorTaskQueueNode.class);
     } catch (final ReflectiveOperationException ex) {
       throw new ExceptionInInitializerError(ex);
     }
@@ -151,6 +152,9 @@ class ActorTaskQueueNode {
       justification = "Written using a VarHandle (see NEXT usage)")
   volatile ActorTaskQueueNode next;
 
+  @SuppressFBWarnings(
+      value = "UWF_UNWRITTEN_FIELD",
+      justification = "Written using a VarHandle (see PREV usage)")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
@@ -163,7 +167,9 @@ class ActorTaskQueueNode {
 
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    prev = t;
+    // as for next, a release store suffices: thieves read prev with a volatile load, and no later
+    // load in append or poll relies on this store being ordered before it
+    PREV.setRelease(this, t);
   }
 
   public void setTask(final ActorTask task) {
