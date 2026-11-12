@@ -260,7 +260,6 @@
 					"assignedMany": "{{count}} membres attribués",
 					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
-					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
 					"users": {
 						"tab": "Utilisateurs",

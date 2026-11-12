@@ -94,9 +94,31 @@ function getUnassignRequest(kind: MemberKind, roleId: string, id: string) {
 	return MEMBER_KIND_CONFIG[kind].unassign(roleId, id);
 }
 
+function getVisibleMemberKinds({isOidc, canManageMappingRules}: {isOidc: boolean; canManageMappingRules: boolean}) {
+	return MEMBER_KINDS.filter((kind) => {
+		if (kind === 'mappingRules') {
+			return canManageMappingRules;
+		}
+		return kind !== 'clients' || isOidc;
+	});
+}
+
+function getActiveMemberKind(visibleKinds: readonly MemberKind[], requested: MemberKind | undefined): MemberKind {
+	return requested !== undefined && visibleKinds.includes(requested) ? requested : 'users';
+}
+
 function getMembersQueryKeyPrefix(roleId: string, kind: MemberKind) {
 	return ['roleMembers', roleId, kind] as const;
 }
 
-export {MEMBER_KINDS, getAssignRequest, getMembersQuery, getMembersQueryKeyPrefix, getUnassignRequest, toMemberRow};
-export type {MemberKind, MemberRow, MembersResponse};
+export {
+	MEMBER_KINDS,
+	getActiveMemberKind,
+	getAssignRequest,
+	getMembersQuery,
+	getMembersQueryKeyPrefix,
+	getUnassignRequest,
+	getVisibleMemberKinds,
+	toMemberRow,
+};
+export type {MemberKind, MemberPage, MemberRow, MembersResponse};
