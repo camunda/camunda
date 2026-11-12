@@ -108,5 +108,5 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     commits nor rolls back, so a failed insert stays visible. Workshop branch had a fix + test
     `shouldRollBackFailedTransactionAfterCount`.
 - [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
-- [ ] PR 2
+- [ ] PR 2: subagent running on `cs/wb-2-write-behind-store` (based on PR 1, started 2026-11-12)
 - [ ] PR 3
