@@ -228,6 +228,28 @@ test('should count a repeat skipped after a serial prerequisite failed as a fail
   assert.match(scored.topErrors[0].message, /serial block/);
 });
 
+test('should count a first-attempt pass even when a serial retry reran the test', () => {
+  // given
+  const rerunFailed = {
+    projectName: 'chromium',
+    status: 'unexpected',
+    results: [result('passed'), result('failed', 'Error: later test broke the block')],
+  };
+  const rerunSkipped = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('passed'), result('skipped')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, rerunFailed, rerunSkipped]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 3});
+
+  // then
+  assert.equal(scored.verdict, 'green');
+  assert.deepEqual(scored.pooled, {passed: 3, failed: 0, rate: 100});
+});
+
 test('should count a serial skip as a failure even when the retry passed', () => {
   // given
   const skippedThenPassed = {

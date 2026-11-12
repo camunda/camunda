@@ -73,19 +73,19 @@ export function score({dir, file, titlePath, cells, planned}) {
       if (!report) continue;
       for (const {spec, titlePath: path} of walkSpecs(report)) {
         if (spec.file !== file || !sameTitlePath(path, titlePath)) continue;
+        // Judged by the first attempt only: the suite's retries can rerun a
+        // target that already passed (its serial block failed later), and
+        // that rerun's outcome says nothing about this run of the target.
         for (const test of spec.tests ?? []) {
-          const last = test.results?.at(-1);
+          const first = test.results?.[0]?.status;
           if (skippedBySerialFailure(test)) {
             counts.failed += 1;
             failingShards.add(basename(dirname(metaFile)));
             const key = `${meta.cell}\u0000${SERIAL_SKIP}`;
             errors.set(key, (errors.get(key) ?? 0) + 1);
-          } else if (test.status === 'expected' && last?.status === 'passed') {
+          } else if (first === 'passed') {
             counts.passed += 1;
-          } else if (
-            (test.status === 'unexpected' || test.status === 'flaky') &&
-            FAILED.has(test.results?.[0]?.status)
-          ) {
+          } else if (FAILED.has(first)) {
             counts.failed += 1;
             failingShards.add(basename(dirname(metaFile)));
             const key = `${meta.cell}\u0000${errorKey(test.results[0].error?.message)}`;
