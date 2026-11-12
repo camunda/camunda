@@ -984,3 +984,720 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ─── Copilot review round ─────────────────────────────────────────────────
+  # The fix PR is opened ready for review, so Copilot reviews it within a couple
+  # of minutes -- comfortably inside the run we are already paying for. This job
+  # answers that review in the same run, so a person opening the PR finds every
+  # Copilot thread already handled. One round only: the human reviewer's own
+  # review decides the next cycle, and the point is to make it cheap, not to
+  # replace it.
+  review:
+    name: Answer the Copilot review
+    needs: [prepare, decide]
+    if: always() && needs.decide.outputs.pr_url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      pr: ${{ steps.copilot_review.outputs.pr }}
+      threads: ${{ steps.copilot_review.outputs.thread_count }}
+      head: ${{ steps.copilot_review.outputs.head }}
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      # The contract the responder is held to lives in the suite's AGENTS.md,
+      # and is taken from THIS workflow's commit rather than from the PR branch:
+      # a stable/* branch carries an older copy, or none at all.
+      - name: Checkout the workflow's commit for the agent manual
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Checkout the PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
+          path: pr
+          persist-credentials: false
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Request and await the Copilot review
+        id: copilot_review
+        continue-on-error: true
+        # The poll loop stops itself at COPILOT_WAIT_SECONDS, but a single `gh`
+        # call has no timeout of its own, so a hung connection could otherwise
+        # sit here until the JOB times out -- which continue-on-error cannot
+        # survive, and which would take the summary step with it.
+        timeout-minutes: 20
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          COPILOT_WAIT_SECONDS: ${{ vars.COPILOT_REVIEW_WAIT_SECONDS || '900' }}
+        run: |
+          set -uo pipefail
+          # Matched EXACTLY, never as a prefix. A real user account called
+          # copilot-pull-request-reviewer-qa would satisfy a startswith() test,
+          # and its review would then drive the responder below -- arbitrary
+          # comments turning into commits and thread resolutions. REST reports
+          # the login as "<slug>[bot]"; GraphQL strips the suffix for a Bot
+          # author, so both spellings are accepted, and nothing else is.
+          COPILOT="copilot-pull-request-reviewer"
+          pr_num="${PR_URL##*/}"
+          thread_count=0
+          head_sha=""
+          finish() {
+            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; echo "head=${head_sha}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          [[ "$pr_num" =~ ^[0-9]+$ ]] || { echo "::warning::could not read a PR number from '${PR_URL}'."; pr_num=""; finish; }
+
+          # The PR is opened ready for review, but a draft here would skip the
+          # review in silence -- the whole failure mode this job exists to close.
+          if [ "$(gh pr view "$pr_num" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            echo "::warning::PR #${pr_num} is a draft; marking it ready so Copilot reviews it."
+            gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+          fi
+
+          head_sha=$(gh pr view "$pr_num" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+          [ -n "$head_sha" ] || { echo "::warning::could not read the head SHA of #${pr_num} -- skipping the round."; finish; }
+          echo "Waiting for a Copilot review of ${head_sha}."
+
+          # Keyed on the head COMMIT, not on a timestamp baseline taken here.
+          # Copilot can finish reviewing before this job even starts, and a
+          # baseline would then mark that review as the "before" state and wait
+          # out the full timeout for a second one that never comes -- discarding
+          # the very review this round exists to answer.
+          # `|| true` is load-bearing: a transient gh failure (502, secondary
+          # rate limit) would otherwise propagate out of the assignment and end
+          # the step, skipping the round over a blip.
+          copilot_review_of_head() {
+            gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+              --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
+              2>/dev/null | sort | tail -1 || true
+          }
+
+          latest=$(copilot_review_of_head)
+          if [ -n "$latest" ]; then
+            echo "A Copilot review of this commit had already landed at ${latest}."
+          else
+            # A freshly opened PR is auto-reviewed off the "opened" event, and
+            # GitHub then answers 422 for an already-requested reviewer, which is
+            # harmless. The accepted spelling has moved around, so try each and
+            # stop at the first that lands.
+            requested=false
+            for who in "${COPILOT}[bot]" "${COPILOT}" "Copilot"; do
+              if gh api -X POST "repos/${REPO}/pulls/${pr_num}/requested_reviewers" \
+                   -f "reviewers[]=${who}" >/dev/null 2>&1; then
+                echo "Requested a review from ${who}."
+                requested=true
+                break
+              fi
+            done
+            [ "$requested" = true ] \
+              || echo "Review request not accepted (already requested, or the auto-review is already running)."
+
+            deadline=$(( $(date +%s) + COPILOT_WAIT_SECONDS ))
+            while [ "$(date +%s)" -lt "$deadline" ]; do
+              sleep 30
+              latest=$(copilot_review_of_head)
+              [ -n "$latest" ] && break
+            done
+          fi
+
+          if [ -z "$latest" ]; then
+            echo "::warning::no Copilot review of ${head_sha} within ${COPILOT_WAIT_SECONDS}s -- leaving the PR for the human reviewer."
+            finish
+          fi
+          echo "Copilot reviewed #${pr_num} at ${latest}."
+
+          gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+            --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
+            > /tmp/copilot-review-summary.md 2>/dev/null || : > /tmp/copilot-review-summary.md
+
+          # Every Copilot review of THIS head, not just the newest: a re-request
+          # can produce more than one, and each owns its own threads. Ids kept as
+          # STRINGS on both sides of the match below -- a review id is already
+          # past 2^31, so anything that narrows one to a 32-bit int is a silent
+          # mismatch. Built step by step rather than as one pipeline with a
+          # trailing "|| echo '[]'": that fallback runs on the last stage's exit
+          # status only, so a stage that printed before failing would leave TWO
+          # JSON documents in the variable and the filter below would die.
+          review_ids='[]'
+          if raw_ids=$(gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+               --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
+               2>/dev/null); then
+            parsed_ids=$(printf '%s\n' "$raw_ids" | grep -E '^[0-9]+$' | sort -u | jq -R . | jq -sc '.' 2>/dev/null) || parsed_ids=""
+            [ -n "$parsed_ids" ] && review_ids="$parsed_ids"
+          fi
+          printf '%s' "$review_ids" | jq -e 'type == "array"' >/dev/null 2>&1 || review_ids='[]'
+          echo "Copilot review id(s) for this head: ${review_ids}"
+
+          # Paginated and slurped into one flat array: a single first:100 page
+          # could push this round's findings off the end behind resolved ones and
+          # leave thread_count at a false zero.
+          # shellcheck disable=SC2016 # $owner/$repo/$pr/$endCursor are GraphQL variables, bound by -F below
+          gh api graphql --paginate -f query='
+            query($owner:String!,$repo:String!,$pr:Int!,$endCursor:String){
+              repository(owner:$owner,name:$repo){
+                pullRequest(number:$pr){
+                  reviewThreads(first:100, after:$endCursor){
+                    pageInfo{hasNextPage endCursor}
+                    nodes{
+                      id isResolved isOutdated
+                      comments(first:20){nodes{
+                        author{login} path line body url
+                        pullRequestReview{fullDatabaseId}}}}}}}}' \
+            -F owner="${REPO%/*}" -F repo="${REPO#*/}" -F pr="$pr_num" 2>/dev/null \
+            | jq -s '[.[].data.repository.pullRequest.reviewThreads.nodes[]?]' \
+            > /tmp/copilot-threads-raw.json 2>/dev/null \
+            || echo '[]' > /tmp/copilot-threads-raw.json
+
+          # Only threads Copilot opened in THIS review, and nobody has touched.
+          #
+          # A thread carrying ANY non-Copilot comment is dropped outright, and
+          # only Copilot-authored bodies are forwarded even from the threads that
+          # survive. Everything in this file is interpolated into the prompt of
+          # an agent that runs with --dangerously-skip-permissions and push
+          # credentials, and anyone can reply inside a Copilot thread on a public
+          # repository -- so an unfiltered reply is an instruction channel into
+          # that agent. It also keeps a thread this round deliberately left open
+          # out of any later round, with the human's question intact.
+          #
+          # An empty id list means the lookup failed, and then every unresolved
+          # Copilot thread is in scope: answering one twice is a far smaller
+          # failure than skipping the round.
+          jq --arg bot "$COPILOT" --argjson ids "$review_ids" '
+            def is_copilot: . == $bot or . == $bot + "[bot]";
+            [
+            .[]?
+            | select(.isResolved == false)
+            | select(((.comments.nodes[0].author.login) // "") | is_copilot)
+            | select([.comments.nodes[] | (.author.login // "") | is_copilot] | all)
+            | ((.comments.nodes[0].pullRequestReview.fullDatabaseId // "") | tostring) as $rid
+            | select(($ids | length) == 0 or ($ids | index($rid)) != null)
+            | {id,
+               path: .comments.nodes[0].path,
+               line: .comments.nodes[0].line,
+               url: .comments.nodes[0].url,
+               outdated: .isOutdated,
+               comments: [.comments.nodes[]
+                          | select((.author.login // "") | is_copilot)
+                          | {author: (.author.login // "?"), body}]}
+          ]' /tmp/copilot-threads-raw.json > /tmp/copilot-threads.json 2>/dev/null \
+            || { echo "::warning::could not filter the review threads -- treating this round as having none."; \
+                 echo '[]' > /tmp/copilot-threads.json; }
+
+          thread_count=$(jq 'length' /tmp/copilot-threads.json 2>/dev/null || echo 0)
+          if [ "$thread_count" -eq 0 ]; then
+            echo "Copilot left no unresolved issue threads on #${pr_num} -- nothing to address."
+          else
+            echo "${thread_count} unresolved Copilot thread(s) on #${pr_num}:"
+            jq -r '.[] | "  - \(.path):\(.line // "?") \(.url)"' /tmp/copilot-threads.json
+          fi
+          finish
+
+      # Everything below only pays off when there is something to answer, so it
+      # is gated rather than run on every PR.
+      - name: Setup Node.js
+        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install suite dependencies for lint
+        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        working-directory: pr/${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      # The agent runs arbitrary commands, so nothing it can reach may grant
+      # write access -- the same boundary the fix agent draws before its own
+      # Claude invocation. Filtering the threads it is shown narrows what can
+      # reach the prompt; it cannot constrain what the model then runs.
+      - name: Assert the responder has no credentials
+        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        run: |
+          set -euo pipefail
+          rm -f "$HOME/.gitconfig"
+          git -C pr remote set-url origin https://github.com/${{ github.repository }}.git
+          if grep -rqs 'x-access-token' "$HOME/.gitconfig" pr/.git/config; then
+            echo "::error::a credential is still configured"
+            exit 1
+          fi
+
+      - name: Draft the answer to the Copilot review
+        id: review_response
+        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        continue-on-error: true
+        # A stalled agent must not eat the rest of the job budget: the export
+        # step runs after this one, and continue-on-error does not save it from
+        # a JOB-level timeout.
+        timeout-minutes: 20
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.copilot_review.outputs.pr }}
+          THREAD_COUNT: ${{ steps.copilot_review.outputs.thread_count }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+        run: |
+          set -uo pipefail
+          ws_dir="${GITHUB_WORKSPACE}/pr"
+          suite_dir="${ws_dir}/${SUITE_PATH}"
+
+          cp "${SUITE_PATH}"/AGENTS.md /tmp/flaky-agent-manual.md
+
+          threads=$(cat /tmp/copilot-threads.json)
+          review_summary=$(cat /tmp/copilot-review-summary.md 2>/dev/null || echo "")
+
+          prompt=$(cat <<EOF
+          You are the Camunda QA engineer who just opened PR #${PR_NUMBER} in ${REPO}: a fix for the
+          flaky test \`${SPEC}\` on ${VERSION}. Copilot has reviewed it. Answer that review now, in
+          this run -- this is the ONLY automated round, and the human reviewer sees the result next.
+
+          Read "## Review-Response Agent" in /tmp/flaky-agent-manual.md before you start. It is the
+          contract for this step, with two differences that OVERRIDE it here, because this workflow
+          keeps you credential-free:
+
+          - You have NO GitHub credentials and no \`gh\`. Do NOT commit, push, reply in a thread or
+            resolve one, and do not try: you write the answer, and a separate job publishes it.
+          - Ignore the paragraphs about Live Docker Verify and the Finalize PR verification status
+            step. This workflow has neither, and nothing here changes the PR's draft state.
+
+          The ${THREAD_COUNT} unresolved threads Copilot opened, as JSON (thread id, file, line,
+          url, whether the line has since moved, and the comment bodies):
+
+          ${threads}
+
+          Copilot's review overview:
+
+          ${review_summary}
+
+          How to work them:
+
+          1. ONE THREAD AT A TIME. Every thread in that list gets its own reply, written for that
+             thread alone -- never one answer covering several, never a thread left unanswered.
+          2. Judge each on its merits. A fair share of Copilot comments are wrong, already handled
+             elsewhere, or out of scope for this PR. Read the surrounding code before you decide --
+             never apply a suggestion just because it was made, and never dismiss one unread.
+          3. ACCEPTED: make the change in ${ws_dir} (already checked out on this PR's branch), keep
+             the diff minimal, and run lint on the changed files from ${suite_dir}:
+               npx prettier --write <changed files> && npx eslint <changed files>
+             Leave the change in the working tree -- do NOT commit it. Only these paths may change:
+             ${SUITE_PATH}/{tests,pages,utils,resources}/** and ${SUITE_PATH}/{fixtures,test-setup}.ts.
+             A change anywhere else is rejected by the publisher and costs the whole round, so if a
+             suggestion needs one, treat it as rule 5 instead.
+          4. REJECTED: the reply carries the concrete reason -- wrong, contradicts a repo
+             convention, already handled, or it would mask the very flake this PR exists to fix.
+             A silent dismissal is not acceptable.
+          5. TOO COMPLICATED, needs a maintainer's call, or valid but out of scope: say exactly
+             that and why in the reply. This is the right outcome whenever the change would be
+             larger than this PR, or you are not confident -- the human reviewer picks it up.
+          6. This PR's own constraints still bind you: never mask a failure, no continue-on-error,
+             no test.skip / test.fixme / .only, no Playwright retries, no refactors, no dependency
+             bumps, no unrelated edits. A suggestion that would breach one of those is a REJECT,
+             with that as the reason. In particular, making the test pass by weakening what it
+             asserts defeats the point of the fix.
+
+          When you are done, write /tmp/review-response.json. One entry per thread, and the counts
+          must add up to ${THREAD_COUNT}:
+
+            {"pr": ${PR_NUMBER}, "threads": ${THREAD_COUNT},
+             "accepted": 0, "rejected": 0, "left_open": 0,
+             "replies": [
+               {"id": "<thread id, copied EXACTLY from the list above>",
+                "verdict": "accepted" | "rejected" | "left_open",
+                "body": "<your reply, markdown>"}
+             ]}
+
+          Only the ids from that list are published; anything else is discarded, and a thread you
+          leave out gets a placeholder reply and stays open. A verdict that is not one of the three
+          is treated as "left_open". The publisher commits and pushes your accepted changes as ONE
+          follow-up commit, posts each body in its own thread, appends the pushed commit SHA to
+          every accepted reply, and resolves the accepted and rejected threads. If the push fails,
+          your accepted threads are told so and left open. Write nothing into a body that claims a
+          commit SHA, a push or a resolve yourself -- you cannot know them.
+          EOF
+          )
+
+          cd "$ws_dir"
+          # `shell: bash` means `bash -e`, which `set -uo pipefail` does not undo
+          # -- so an unguarded failing pipeline here would end the step and skip
+          # the export below, losing a round the agent may have completed.
+          claude_rc=0
+          claude -p "$prompt" --dangerously-skip-permissions 2>&1 \
+            | tee /tmp/claude-review-response.md || claude_rc=$?
+          [ "$claude_rc" -eq 0 ] \
+            || echo "::warning::the review-response agent exited ${claude_rc}; recovering whatever it left behind."
+
+      # Everything that crosses into the privileged job goes through this
+      # artifact: a patch, the agent's manifest, and the trusted thread list the
+      # await step produced. Nothing else the agent may have left on this runner
+      # -- a git hook, a tampered node_modules/.bin entry -- travels with it.
+      - name: Export the round for publication
+        id: export
+        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/round"
+          mkdir -p "$out"
+          # `git add` runs no hooks; `git commit` would, and is left to the
+          # clean runner.
+          git -C pr add -A 2>/dev/null || true
+          git -C pr diff --cached --binary > "$out/review.patch" 2>/dev/null || : > "$out/review.patch"
+          cp /tmp/copilot-threads.json "$out/threads.json" 2>/dev/null || echo '[]' > "$out/threads.json"
+          cp /tmp/review-response.json "$out/response.json" 2>/dev/null || echo '{}' > "$out/response.json"
+          cp /tmp/claude-review-response.md "$out/agent-log.md" 2>/dev/null || : > "$out/agent-log.md"
+          echo "patch bytes: $(wc -c < "$out/review.patch")"
+
+      - name: Upload the round
+        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flaky-review-round
+          path: ${{ runner.temp }}/round
+          retention-days: 7
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/review"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Publication is a job of its own, on a runner the responder never touched.
+  # The agent could otherwise leave something behind that runs here while a
+  # token is in the environment -- a .git/hooks/pre-commit, a rewritten
+  # node_modules/.bin/eslint -- neither of which would appear in the diff being
+  # validated. Only the patch, the agent's manifest and the trusted thread list
+  # cross over, as an artifact.
+  review-publish:
+    name: Publish the Copilot review round
+    needs: [prepare, decide, review]
+    if: always() && needs.review.outputs.threads != '' && needs.review.outputs.threads != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Checkout the PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
+          path: pr
+          persist-credentials: false
+
+      - name: Download the round
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flaky-review-round
+          path: ${{ runner.temp }}/round
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # Held to the fix agent's own allowlist and guards: a review suggestion is
+      # not a reason to admit a change the fix itself could not have made. Every
+      # path in the patch is judged, deletions and both sides of a rename
+      # included -- a deletion outside the suite is as much a write as an edit.
+      - name: Check and apply the patch
+        id: apply
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          patch="${RUNNER_TEMP}/round/review.patch"
+          if [ ! -s "$patch" ]; then
+            echo "The round changed no files."
+            echo "applied=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cd pr
+          allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
+          # Tool configuration is looked up per directory, so a dotfile,
+          # package.json, *.config.* or plain JavaScript file is refused even
+          # inside the allowed directories -- the lint below would execute it.
+          tool_config='(^|/)(\.[^/]*|package\.json|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
+          fail() { echo "::error::$1"; echo "applied=false" >> "$GITHUB_OUTPUT"; echo "error=$1" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          mapfile -t entries < <(git apply --numstat "$patch" | cut -f3)
+          [ "${#entries[@]}" -gt 0 ] || fail "the patch lists no files"
+          # Renames print as "old => new", sometimes with the differing
+          # segment in braces; both sides must be allowed, so split on the
+          # arrow and strip the braces before judging each path.
+          for entry in "${entries[@]}"; do
+            entry=${entry//\{/}; entry=${entry//\}/}
+            for f in ${entry//=>/ }; do
+              if ! [[ "$f" =~ $allowed ]] || [[ "$f" =~ $tool_config ]]; then
+                fail "the round touches ${f}, which it may not change"
+              fi
+            done
+          done
+          added=$(grep -E '^\+' "$patch" | grep -vE '^\+\+\+ ' || true)
+          # Any modifier chain: test.only, describe.parallel.skip, ...
+          if grep -qE '\b(test|it|describe)(\.[A-Za-z]+)*\.(skip|fixme|only)\b' <<< "$added"; then
+            fail "the round adds test.skip, test.fixme or .only"
+          fi
+          if grep -qE 'configure\([^)]*retries' <<< "$added" \
+             || { grep -qE 'configure\(' <<< "$added" && grep -qE '^\+\s*retries\s*:' <<< "$added"; }; then
+            fail "the round sets Playwright retries"
+          fi
+          if grep -qE '^(new file|new|old) mode 120000' "$patch"; then
+            fail "the round adds a symlink"
+          fi
+          git apply --index "$patch" || fail "the round's patch does not apply"
+          git diff --cached --name-only --diff-filter=d -- "$SUITE_PATH" \
+            | grep -E '\.ts$' | sed "s#^${SUITE_PATH}/##" > "${RUNNER_TEMP}/ts-files.txt" || true
+          echo "applied=true" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.apply.outputs.applied == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install suite dependencies for lint
+        if: steps.apply.outputs.applied == 'true'
+        working-directory: pr/${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Lint and push the change
+        id: push
+        if: steps.apply.outputs.applied == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          PR_NUMBER: ${{ needs.review.outputs.pr }}
+        run: |
+          set -uo pipefail
+          cd pr
+          mapfile -t ts < "${RUNNER_TEMP}/ts-files.txt"
+          if [ "${#ts[@]}" -gt 0 ]; then
+            if ! ( cd "$SUITE_PATH" && npx prettier --check "${ts[@]}" && npx eslint "${ts[@]}" ); then
+              echo "::error::the round's changes do not pass lint"
+              { echo "pushed="; echo "error=the change did not pass lint"; } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          git config user.name "qa-processes[bot]"
+          git config user.email "qa-processes[bot]@users.noreply.github.com"
+          # This checkout is clean, but a hook would run with the token present,
+          # so take it off the table explicitly.
+          git -c core.hooksPath=/dev/null commit -qm "test: address the Copilot review on #${PR_NUMBER}"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git push -q origin "HEAD:${BRANCH}"; then
+            sha=$(git rev-parse HEAD)
+            echo "Pushed ${sha} to ${BRANCH}."
+            { echo "pushed=${sha}"; echo "error="; } >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::the follow-up commit could not be pushed"
+            { echo "pushed="; echo "error=the commit could not be pushed"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      # Driven by the TRUSTED thread list, never by the agent's manifest: the
+      # ids come from the await step, so a manifest naming someone else's thread
+      # -- another PR, a human's -- reaches nothing. A thread the agent skipped
+      # still gets a reply and stays open, and any verdict outside the three is
+      # read as "left_open", so a malformed answer can never resolve anything.
+      - name: Reply in each thread
+        id: replies
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+          PUSH_ERROR: ${{ steps.push.outputs.error || steps.apply.outputs.error }}
+        run: |
+          set -uo pipefail
+          threads="${RUNNER_TEMP}/round/threads.json"
+          manifest="${RUNNER_TEMP}/round/response.json"
+          [ -s "$threads" ] || { echo "::warning::no trusted thread list; nothing to reply to."; exit 0; }
+          jq -e '.replies | type == "array"' "$manifest" >/dev/null 2>&1 || echo '{"replies":[]}' > "$manifest"
+
+          accepted=0; rejected=0; left_open=0; missing=0
+          total=$(jq 'length' "$threads")
+          for i in $(seq 0 $(( total - 1 ))); do
+            id=$(jq -r ".[$i].id" "$threads")
+            [ -n "$id" ] && [ "$id" != "null" ] || continue
+
+            # First entry naming this thread; a duplicate is ignored.
+            entry=$(jq -c --arg id "$id" '[.replies[] | select(.id == $id)] | first // empty' "$manifest")
+            [ -n "$entry" ] || entry='{}'
+            verdict=$(jq -r '.verdict // ""' <<< "$entry")
+            body=$(jq -r '.body // ""' <<< "$entry")
+
+            case "$verdict" in
+              accepted|rejected|left_open) ;;
+              *) verdict=left_open ;;
+            esac
+            if [ -z "$body" ] || [ "$body" = "null" ]; then
+              body="The review round finished without an answer for this thread. Leaving it open for a human reviewer."
+              verdict=left_open
+              missing=$(( missing + 1 ))
+            fi
+
+            resolve=true
+            case "$verdict" in
+              accepted)
+                if [ -n "$PUSHED" ]; then
+                  body="${body}"$'\n\n'"Applied in \`${PUSHED}\`."
+                  accepted=$(( accepted + 1 ))
+                else
+                  body="${body}"$'\n\n'"**Not applied:** ${PUSH_ERROR:-the change did not reach the PR}. Leaving this open."
+                  resolve=false
+                  left_open=$(( left_open + 1 ))
+                fi
+                ;;
+              rejected) rejected=$(( rejected + 1 )) ;;
+              left_open) resolve=false; left_open=$(( left_open + 1 )) ;;
+            esac
+            body="${body}"$'\n\n'"_🤖 Answered by the flakiness fix agent's review round._"
+
+            # shellcheck disable=SC2016 # $id/$body are GraphQL variables, bound by -F
+            if gh api graphql -f query='mutation($id:ID!,$body:String!){
+                 addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){clientMutationId}}' \
+                 -F id="$id" -F body="$body" >/dev/null 2>&1; then
+              if [ "$resolve" = true ]; then
+                # shellcheck disable=SC2016 # $id is a GraphQL variable, bound by -F
+                gh api graphql -f query='mutation($id:ID!){
+                  resolveReviewThread(input:{threadId:$id}){clientMutationId}}' -F id="$id" >/dev/null 2>&1 \
+                  || echo "::warning::replied in ${id} but could not resolve it"
+              fi
+            else
+              echo "::warning::could not reply in thread ${id}"
+            fi
+          done
+          [ "$missing" -eq 0 ] \
+            || echo "::warning::${missing} thread(s) had no answer from the agent and were left open"
+          { echo "accepted=${accepted}"; echo "rejected=${rejected}"; echo "left_open=${left_open}"; } >> "$GITHUB_OUTPUT"
+          echo "${accepted} applied, ${rejected} rejected, ${left_open} left open."
+
+      # The PR's table and its checklist describe the commit the thresholds were
+      # measured on. A follow-up commit moves the head past it and nothing
+      # re-measures here, so say so rather than leaving a pass-rate claim
+      # standing for code that was never run.
+      - name: Mark the follow-up commit unverified
+        if: steps.push.outputs.pushed != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.review.outputs.pr }}
+          MEASURED_SHA: ${{ needs.review.outputs.head }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+        run: |
+          set -uo pipefail
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq .body > "${RUNNER_TEMP}/pr-body.md"
+          # sed, not bash substitution: the search half of ${var//pat/rep} is a
+          # glob, where [x] matches the single character x and never the literal
+          # "[x]" this checklist is written with.
+          sed -i 's/^- \[x\] The changed test was re-run/- [ ] The changed test was re-run/' "${RUNNER_TEMP}/pr-body.md"
+          {
+            echo
+            echo "> **The Copilot review round pushed \`${PUSHED}\` after the measurement above.** The pass-rate table and the re-run checklist describe \`${MEASURED_SHA}\`; this round does not re-measure, so the follow-up commit is unverified."
+          } >> "${RUNNER_TEMP}/pr-body.md"
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file "${RUNNER_TEMP}/pr-body.md" >/dev/null \
+            || echo "::warning::could not note the unmeasured head on the PR"
+
+      - name: Summarize the round
+        if: always()
+        env:
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          THREADS: ${{ needs.review.outputs.threads }}
+          ACCEPTED: ${{ steps.replies.outputs.accepted }}
+          REJECTED: ${{ steps.replies.outputs.rejected }}
+          LEFT_OPEN: ${{ steps.replies.outputs.left_open }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+        run: |
+          set -uo pipefail
+          {
+            echo "### Copilot review round"
+            echo
+            echo "PR: ${PR_URL}"
+            echo
+            echo "${THREADS} thread(s) — ${ACCEPTED:-0} applied, ${REJECTED:-0} rejected, ${LEFT_OPEN:-0} left open for a person."
+            [ -z "$PUSHED" ] || echo ""
+            [ -z "$PUSHED" ] || echo "Follow-up commit: \`${PUSHED}\` (not re-measured)."
+            if [ -f "${RUNNER_TEMP}/round/agent-log.md" ]; then
+              echo
+              echo '```'
+              tail -c 20000 "${RUNNER_TEMP}/round/agent-log.md"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/review-publish"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
