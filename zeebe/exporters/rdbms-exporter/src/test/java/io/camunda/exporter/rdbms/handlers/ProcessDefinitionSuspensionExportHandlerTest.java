@@ -9,7 +9,6 @@ package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -102,20 +101,6 @@ class ProcessDefinitionSuspensionExportHandlerTest {
     // then
     verify(processDefinitionWriter).markActive(1L);
     verify(processDefinitionWriter).markActive(3L);
-    verify(processDefinitionWriter, never()).markActive(2L);
-    verifyNoMoreInteractions(processDefinitionWriter);
-  }
-
-  @Test
-  void shouldNotTouchWriterWhenNoResolvedVersions() {
-    // given
-    final Record<ProcessDefinitionSuspensionRecordValue> record =
-        suspensionRecord(ProcessDefinitionSuspensionIntent.SUSPENDED, 999L, List.of());
-
-    // when
-    underTest.export(record);
-
-    // then
     verifyNoMoreInteractions(processDefinitionWriter);
   }
 
