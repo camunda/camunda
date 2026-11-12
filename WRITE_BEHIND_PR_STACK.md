@@ -88,7 +88,25 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 ## Status
 
 - [x] Baseline: main CI green, `./mvnw install -Dquickly -T1C` green on `a0761b3ef` (2026-11-12)
-- [ ] PR 1: subagent running on `cs/wb-1-zb-db-api` (started 2026-11-12)
+- [x] PR 1 pushed: `cs/wb-1-zb-db-api` on main `a0761b3ef` (no PR opened yet)
+  - `4cc471f9543` refactor: split zeebe-db into an API module and the RocksDB implementation
+  - `8ba50341492` refactor: move DbNullKey to the API module
+  - `9c1e3f4d5fd` feat: expose the committed RocksDB state through a raw access SPI
+  - `b2121d1b6a0` test: run the ZeebeDb behavior tests as contracts in zeebe-db-tests
+  - Layout: `zeebe-db-parent` (pom), `zeebe-db-api`, `zeebe-db` (RocksDB, dir `rocksdb`, Gradle
+    `:zeebe-db`), `zeebe-db-tests`. TransactionListener NOT ported. DbKeyInstanceFactory ported
+    (unused yet, tested).
+  - Outside zb-db: parent/pom.xml dependencyManagement; settings.gradle.kts; ci.yml unit-test
+    module list (+`:zeebe-db-api`, `:zeebe-db-tests`); broker, debug-cli, microbenchmarks
+    declare zeebe-db-api; **engine, stream-platform, backup: zeebe-db -> test scope** (their main
+    code only uses API classes; dependency analysis demanded it). Consumers of the engine artifact
+    no longer get the RocksDB jar transitively. Mention in PR description.
+  - Validated: zb-db full verify without -Dquickly (462 + 111 tests), randomized profile, full repo
+    install -Dquickly, downstream dependency analysis, Gradle compile of zb-db projects.
+  - Found on main, NOT fixed (behavior change, separate fix PR?): `count()`/`countEqualPrefix()`
+    outside a transaction leaves the context's transaction open; a later runInTransaction neither
+    commits nor rolls back, so a failed insert stays visible. Workshop branch had a fix + test
+    `shouldRollBackFailedTransactionAfterCount`.
 - [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
 - [ ] PR 2
 - [ ] PR 3
