@@ -20,8 +20,8 @@ import org.immutables.value.Value;
 
 /** A process definition version that a suspension or resumption resolved to, and its outcome. */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableProcessDefinitionSuspensionEntryValue.Builder.class)
-public interface ProcessDefinitionSuspensionEntryValue {
+@ImmutableProtocol(builder = ImmutableProcessDefinitionSuspensionResolvedVersionValue.Builder.class)
+public interface ProcessDefinitionSuspensionResolvedVersionValue {
 
   /** The key of the process definition version. */
   long getProcessDefinitionKey();

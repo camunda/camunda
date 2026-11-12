@@ -12,16 +12,16 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionEntryValue;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 
 @JsonIgnoreProperties({
   /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
   "encodedLength",
   "empty"
 })
-public final class ProcessDefinitionSuspensionEntry extends ObjectValue
-    implements ProcessDefinitionSuspensionEntryValue {
+public final class ProcessDefinitionSuspensionResolvedVersion extends ObjectValue
+    implements ProcessDefinitionSuspensionResolvedVersionValue {
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1);
@@ -29,7 +29,7 @@ public final class ProcessDefinitionSuspensionEntry extends ObjectValue
   private final EnumProperty<ProcessDefinitionSuspensionOutcome> outcomeProp =
       new EnumProperty<>("outcome", ProcessDefinitionSuspensionOutcome.class);
 
-  public ProcessDefinitionSuspensionEntry() {
+  public ProcessDefinitionSuspensionResolvedVersion() {
     super(3);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(versionProp)
@@ -41,7 +41,8 @@ public final class ProcessDefinitionSuspensionEntry extends ObjectValue
     return processDefinitionKeyProp.getValue();
   }
 
-  public ProcessDefinitionSuspensionEntry setProcessDefinitionKey(final long processDefinitionKey) {
+  public ProcessDefinitionSuspensionResolvedVersion setProcessDefinitionKey(
+      final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
   }
@@ -51,7 +52,7 @@ public final class ProcessDefinitionSuspensionEntry extends ObjectValue
     return versionProp.getValue();
   }
 
-  public ProcessDefinitionSuspensionEntry setVersion(final int version) {
+  public ProcessDefinitionSuspensionResolvedVersion setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
@@ -61,7 +62,7 @@ public final class ProcessDefinitionSuspensionEntry extends ObjectValue
     return outcomeProp.getValue();
   }
 
-  public ProcessDefinitionSuspensionEntry setOutcome(
+  public ProcessDefinitionSuspensionResolvedVersion setOutcome(
       final ProcessDefinitionSuspensionOutcome outcome) {
     outcomeProp.setValue(outcome);
     return this;

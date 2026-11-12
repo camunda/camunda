@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionEntryValue;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -29,12 +29,12 @@ final class ProcessDefinitionSuspensionRecordTest {
             .setTenantId("tenant-a")
             .setCascade(true)
             .addResolvedVersion(
-                new ProcessDefinitionSuspensionEntry()
+                new ProcessDefinitionSuspensionResolvedVersion()
                     .setProcessDefinitionKey(1L)
                     .setVersion(3)
                     .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
             .addResolvedVersion(
-                new ProcessDefinitionSuspensionEntry()
+                new ProcessDefinitionSuspensionResolvedVersion()
                     .setProcessDefinitionKey(2L)
                     .setVersion(2)
                     .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED))
@@ -55,9 +55,9 @@ final class ProcessDefinitionSuspensionRecordTest {
     assertThat(copy.getBatchOperationKey()).isEqualTo(99L);
     assertThat(copy.getResolvedVersions())
         .extracting(
-            ProcessDefinitionSuspensionEntryValue::getProcessDefinitionKey,
-            ProcessDefinitionSuspensionEntryValue::getVersion,
-            ProcessDefinitionSuspensionEntryValue::getOutcome)
+            ProcessDefinitionSuspensionResolvedVersionValue::getProcessDefinitionKey,
+            ProcessDefinitionSuspensionResolvedVersionValue::getVersion,
+            ProcessDefinitionSuspensionResolvedVersionValue::getOutcome)
         .containsExactly(
             tuple(1L, 3, ProcessDefinitionSuspensionOutcome.SUSPENDED),
             tuple(2L, 2, ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED));
