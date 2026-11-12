@@ -93,6 +93,22 @@ class DatabaseImportJobTest {
         .isEqualTo(1);
   }
 
+  @Test
+  void shouldWaitAboutOneAndAHalfSecondsBeforeTheFirstRetry() {
+    // given
+    final var job =
+        new FailingImportJob(1, partitionId, new OptimizeRuntimeException("Request timed out"));
+    job.setEntitiesToImport(List.of(mock(OptimizeDto.class)));
+
+    // when
+    final long start = System.nanoTime();
+    job.run();
+    final long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
+
+    // then
+    assertThat(elapsedMillis).isGreaterThanOrEqualTo(1_400);
+  }
+
   private static final class FailingImportJob extends DatabaseImportJob<OptimizeDto> {
 
     private final RuntimeException failure;
