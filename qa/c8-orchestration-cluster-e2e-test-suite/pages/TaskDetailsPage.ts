@@ -520,6 +520,10 @@ class TaskDetailsPage {
   }
 
   async fillDynamicList(label: string, value: string) {
+    // Not a wait for the system: form-js re-renders the dynamic list after
+    // each change, and filling during that re-render can be lost. Nothing in
+    // the DOM signals when it has finished.
+    await sleep(500);
     const locator = this.page.getByLabel(label);
     await expect(locator.first()).toBeVisible();
     const elements = await locator.all();
