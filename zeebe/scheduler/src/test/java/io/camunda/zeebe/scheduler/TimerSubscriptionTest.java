@@ -45,7 +45,7 @@ final class TimerSubscriptionTest {
 
   private ActorJob mockJob() {
     final var job = mock(ActorJob.class);
-    when(job.getTask()).thenReturn(mock(ActorTask.class));
+    when(job.getTask()).thenReturn(new ActorTask(new Actor() {}));
     return job;
   }
 }
