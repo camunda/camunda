@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
-import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BaseProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
@@ -243,7 +242,7 @@ final class ImplRecordValuePopulator {
     if (genericType instanceof final ParameterizedType paramType) {
       final Type[] typeArgs = paramType.getActualTypeArguments();
       if (typeArgs.length > 0 && typeArgs[0] instanceof final Class<?> clazz) {
-        if (MsgpackRecordValue.class != typeArgs[0]) {
+        if (UnifiedRecordValue.class != typeArgs[0]) {
           final var objectProperty =
               new ObjectProperty<>(
                   ((ObjectProperty<?>) field.get(implInstance)).getKey(),
