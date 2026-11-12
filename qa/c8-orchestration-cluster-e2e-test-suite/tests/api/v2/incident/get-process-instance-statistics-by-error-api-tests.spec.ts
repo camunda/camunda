@@ -140,9 +140,8 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
     let processInstanceKeyToSearch: string;
 
     await test.step('Start a process instance that will have an incident', async () => {
-      const localState: Record<string, unknown> = {};
-      await createTwoDifferentIncidentsInOneProcess(localState, request);
-      processInstanceKeys.push(localState['processInstanceKey'] as string);
+      const created = await createTwoDifferentIncidentsInOneProcess(request);
+      processInstanceKeys.push(created.processInstanceKey);
 
       const instance1 = await createSingleInstance('singleIncidentProcess', 1);
       processInstanceKeyToSearch = instance1.processInstanceKey as string;

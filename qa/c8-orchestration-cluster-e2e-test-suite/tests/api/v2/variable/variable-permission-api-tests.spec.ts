@@ -64,12 +64,9 @@ test.describe('Variable Permission API - Forbidden', () => {
       './resources/Variable_Process.bpmn',
     ]);
 
-    const unauthorizedState: Record<string, unknown> = {};
-    await setupVariableTest(unauthorizedState, request);
-    unauthorizedProcessInstanceKey = unauthorizedState[
-      'processInstanceKey'
-    ] as string;
-    unauthorizedVariableKey = unauthorizedState['variableKey'] as string;
+    const unauthorizedSetup = await setupVariableTest(request);
+    unauthorizedProcessInstanceKey = unauthorizedSetup.processInstanceKey;
+    unauthorizedVariableKey = unauthorizedSetup.variableKey;
 
     readableProcessInstanceKey = (
       await createSingleInstance(READABLE_PROCESS_ID, 1, {

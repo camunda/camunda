@@ -94,27 +94,26 @@ export async function expectVariableValue(
 }
 
 export async function setupVariableTest(
-  localState: Record<string, unknown>,
   request: APIRequestContext,
-) {
-  await test.step('Create process instance', async () => {
-    const instances = await createInstances('process_with_variables', 1, 1);
-    localState['processInstanceKey'] = instances[0].processInstanceKey;
-  });
+): Promise<{processInstanceKey: string; variableKey: string}> {
+  const processInstanceKey =
+    await test.step('Create process instance', async () => {
+      const instances = await createInstances('process_with_variables', 1, 1);
+      return instances[0].processInstanceKey as string;
+    });
 
-  await test.step('Search variable to get variableKey', async () => {
-    // This is a post-create propagation poll: the variable has to be indexed in
-    // secondary storage before it can be found. On a loaded shared cluster the
-    // default 30s budget was too tight (seen on MySQL 8.4), so wait out the
-    // extended window here rather than fail the whole test in setup.
-    const variable = await searchVariableByNameAndProcessInstanceKey(
-      request,
-      {
-        processInstanceKey: localState['processInstanceKey'] as string,
-        name: 'customerId',
-      },
-      extendedAssertionOptions,
-    );
-    localState['variableKey'] = variable.variableKey;
-  });
+  const variableKey =
+    await test.step('Search variable to get variableKey', async () => {
+      // This is a post-create propagation poll: the variable has to be indexed in
+      // secondary storage before it can be found. On a loaded shared cluster the
+      // default 30s budget was too tight (seen on MySQL 8.4), so wait out the
+      // extended window here rather than fail the whole test in setup.
+      const variable = await searchVariableByNameAndProcessInstanceKey(
+        request,
+        {processInstanceKey, name: 'customerId'},
+        extendedAssertionOptions,
+      );
+      return variable.variableKey;
+    });
+  return {processInstanceKey, variableKey};
 }

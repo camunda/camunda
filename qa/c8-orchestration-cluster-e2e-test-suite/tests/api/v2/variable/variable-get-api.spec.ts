@@ -27,13 +27,12 @@ test.describe.parallel('Get Variable API Tests', () => {
   });
 
   test('Get Variable Success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-
-    await setupVariableTest(localState, request);
+    const variableSetup = await setupVariableTest(request);
 
     await test.step('Get Variable by key', async () => {
+      let json: {[key: string]: unknown} = {};
       await expect(async () => {
-        const variableKey = localState['variableKey'] as string;
+        const variableKey = variableSetup.variableKey;
         const res = await request.get(
           buildUrl('/variables/{variableKey}', {variableKey}),
           {
@@ -50,17 +49,16 @@ test.describe.parallel('Get Variable API Tests', () => {
           },
           res,
         );
-        localState['responseJson'] = await res.json();
+        json = await res.json();
       }).toPass(defaultAssertionOptions);
 
-      const json = localState['responseJson'] as {[key: string]: unknown};
-      expect(json.variableKey).toBe(localState.variableKey);
-      expect(json.processInstanceKey).toBe(localState.processInstanceKey);
+      expect(json.variableKey).toBe(variableSetup.variableKey);
+      expect(json.processInstanceKey).toBe(variableSetup.processInstanceKey);
       expect(json.name).toBe('customerId');
       expect(json.value).toBe('"CUST-123"');
     });
 
-    await cancelProcessInstance(localState['processInstanceKey'] as string);
+    await cancelProcessInstance(variableSetup.processInstanceKey);
   });
 
   test('Get Variable Not Found', async ({request}) => {
@@ -91,14 +89,12 @@ test.describe.parallel('Get Variable API Tests', () => {
   });
 
   test('Get Variable Unauthorized', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-
-    await setupVariableTest(localState, request);
+    const variableSetup = await setupVariableTest(request);
 
     await test.step('Get Variable without auth', async () => {
       const res = await request.get(
         buildUrl('/variables/{variableKey}', {
-          variableKey: localState['variableKey'] as string,
+          variableKey: variableSetup.variableKey,
         }),
         {
           headers: {
@@ -110,6 +106,6 @@ test.describe.parallel('Get Variable API Tests', () => {
       await assertUnauthorizedRequest(res);
     });
 
-    await cancelProcessInstance(localState['processInstanceKey'] as string);
+    await cancelProcessInstance(variableSetup.processInstanceKey);
   });
 });
