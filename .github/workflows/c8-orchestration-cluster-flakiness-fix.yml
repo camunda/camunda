@@ -992,12 +992,12 @@ jobs:
   # Copilot thread already handled. One round only: the human reviewer's own
   # review decides the next cycle, and the point is to make it cheap, not to
   # replace it.
-  flaky-review-agent:
-    name: Answer the Copilot review
+  flaky-review-fetch:
+    name: Collect the Copilot review
     needs: [prepare, decide]
     if: always() && needs.decide.outputs.pr_url != ''
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     outputs:
       pr: ${{ steps.copilot_review.outputs.pr }}
       threads: ${{ steps.copilot_review.outputs.thread_count }}
@@ -1005,38 +1005,15 @@ jobs:
     env:
       SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
     steps:
-      # The contract the responder is held to lives in the suite's AGENTS.md,
-      # and is taken from THIS workflow's commit rather than from the PR branch:
-      # a stable/* branch carries an older copy, or none at all.
-      - name: Checkout the workflow's commit for the agent manual
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
-            qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
             .github/scripts/oc-flakiness
             .github/actions
             .ci/scripts/ci/observe-build-status
-
-      - name: Checkout the PR branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.prepare.outputs.branch }}
-          path: pr
-          persist-credentials: false
-
-      - name: Import Vault secrets
-        id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
 
       - name: Generate GitHub App Token
         id: github-token
@@ -1185,19 +1162,86 @@ jobs:
 
       # Everything below only pays off when there is something to answer, so it
       # is gated rather than run on every PR.
+
+      - name: Upload what the review said
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: flaky-review-threads
+          path: |
+            /tmp/copilot-threads.json
+            /tmp/copilot-review-summary.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-fetch"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  flaky-review-agent:
+    name: Answer the Copilot review
+    needs: [prepare, decide, flaky-review-fetch]
+    if: >-
+      always() && needs.flaky-review-fetch.outputs.threads != ''
+      && needs.flaky-review-fetch.outputs.threads != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      # The contract the responder is held to lives in the suite's AGENTS.md,
+      # and is taken from THIS workflow's commit rather than from the PR branch:
+      # a stable/* branch carries an older copy, or none at all.
+      - name: Checkout the workflow's commit for the agent manual
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+
+      - name: Checkout the PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
+          path: pr
+          persist-credentials: false
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+
+      - name: Download what the review said
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flaky-review-threads
+          path: /tmp
+
       - name: Setup Node.js
-        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
 
       - name: Install suite dependencies for lint
-        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         working-directory: pr/${{ env.SUITE_PATH }}
         run: npm ci
 
       - name: Install Claude Code CLI
-        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         run: |
           npm install -g @anthropic-ai/claude-code@2.1.156
           claude --version
@@ -1207,7 +1251,6 @@ jobs:
       # Claude invocation. Filtering the threads it is shown narrows what can
       # reach the prompt; it cannot constrain what the model then runs.
       - name: Assert the responder has no credentials
-        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         run: |
           set -euo pipefail
           rm -f "$HOME/.gitconfig"
@@ -1219,7 +1262,6 @@ jobs:
 
       - name: Draft the answer to the Copilot review
         id: review_response
-        if: steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
         continue-on-error: true
         # A stalled agent must not eat the rest of the job budget: the export
         # step runs after this one, and continue-on-error does not save it from
@@ -1228,8 +1270,8 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.copilot_review.outputs.pr }}
-          THREAD_COUNT: ${{ steps.copilot_review.outputs.thread_count }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
+          THREAD_COUNT: ${{ needs.flaky-review-fetch.outputs.threads }}
           VERSION: ${{ inputs.version }}
           SPEC: ${{ inputs.spec }}
         run: |
@@ -1328,7 +1370,7 @@ jobs:
       # -- a git hook, a tampered node_modules/.bin entry -- travels with it.
       - name: Export the round for publication
         id: export
-        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        if: always()
         continue-on-error: true
         run: |
           set -uo pipefail
@@ -1343,7 +1385,7 @@ jobs:
           echo "patch bytes: $(wc -c < "$out/review.patch")"
 
       - name: Upload the round
-        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: flaky-review-round
@@ -1392,8 +1434,10 @@ jobs:
   # from a file the agent could rewrite.
   review-publish:
     name: Publish the Copilot review round
-    needs: [prepare, decide, flaky-review-agent]
-    if: always() && needs.flaky-review-agent.outputs.threads != '' && needs.flaky-review-agent.outputs.threads != '0'
+    needs: [prepare, decide, flaky-review-fetch, flaky-review-agent]
+    if: >-
+      always() && needs.flaky-review-fetch.outputs.threads != ''
+      && needs.flaky-review-fetch.outputs.threads != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -1416,7 +1460,12 @@ jobs:
           path: pr
           persist-credentials: false
 
+      # Tolerated: if the responder produced nothing -- it timed out, it
+      # crashed -- the threads still exist and still deserve an answer. The
+      # reply step then posts the placeholder in each and leaves them open,
+      # which is the outcome a person needs to see.
       - name: Download the round
+        continue-on-error: true
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: flaky-review-round
@@ -1509,7 +1558,7 @@ jobs:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ needs.prepare.outputs.branch }}
-          PR_NUMBER: ${{ needs.flaky-review-agent.outputs.pr }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
         run: |
           set -uo pipefail
           cd pr
@@ -1548,7 +1597,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
-          PR: ${{ needs.flaky-review-agent.outputs.pr }}
+          PR: ${{ needs.flaky-review-fetch.outputs.pr }}
         run: |
           set -uo pipefail
           out="${RUNNER_TEMP}/trusted-threads.json"
@@ -1577,7 +1626,7 @@ jobs:
           [ -s "$threads" ] || { echo "::warning::no eligible threads; nothing to reply to."; exit 0; }
           jq -e '.replies | type == "array"' "$manifest" >/dev/null 2>&1 || echo '{"replies":[]}' > "$manifest"
 
-          accepted=0; rejected=0; left_open=0; missing=0
+          accepted=0; rejected=0; left_open=0; missing=0; failed=0
           total=$(jq 'length' "$threads")
           for i in $(seq 0 $(( total - 1 ))); do
             id=$(jq -r ".[$i].id" "$threads")
@@ -1616,24 +1665,40 @@ jobs:
             esac
             body="${body}"$'\n\n'"_🤖 Answered by the flakiness fix agent's review round._"
 
-            # shellcheck disable=SC2016 # $id/$body are GraphQL variables, bound by -F
+            # A thread the mutation did not reach is still open, whatever the
+            # agent decided about it, so the counters -- and the summary a
+            # person reads to decide whether to look -- must say so.
+            handled=false
+            # shellcheck disable=SC2016 # $id/$body are GraphQL variables, bound by -F/-f
             if gh api graphql -f query='mutation($id:ID!,$body:String!){
                  addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){clientMutationId}}' \
-                 -F id="$id" -F body="$body" >/dev/null 2>&1; then
+                 -F id="$id" -f body="$body" >/dev/null 2>&1; then
+              handled=true
               if [ "$resolve" = true ]; then
                 # shellcheck disable=SC2016 # $id is a GraphQL variable, bound by -F
                 gh api graphql -f query='mutation($id:ID!){
                   resolveReviewThread(input:{threadId:$id}){clientMutationId}}' -F id="$id" >/dev/null 2>&1 \
-                  || echo "::warning::replied in ${id} but could not resolve it"
+                  || { echo "::warning::replied in ${id} but could not resolve it"; handled=false; }
               fi
             else
               echo "::warning::could not reply in thread ${id}"
             fi
+            if [ "$handled" = false ]; then
+              case "$verdict" in
+                accepted) [ -n "$PUSHED" ] && accepted=$(( accepted - 1 )) || left_open=$(( left_open - 1 )) ;;
+                rejected) rejected=$(( rejected - 1 )) ;;
+                left_open) left_open=$(( left_open - 1 )) ;;
+              esac
+              failed=$(( failed + 1 ))
+            fi
           done
           [ "$missing" -eq 0 ] \
             || echo "::warning::${missing} thread(s) had no answer from the agent and were left open"
-          { echo "accepted=${accepted}"; echo "rejected=${rejected}"; echo "left_open=${left_open}"; } >> "$GITHUB_OUTPUT"
-          echo "${accepted} applied, ${rejected} rejected, ${left_open} left open."
+          [ "$failed" -eq 0 ] \
+            || echo "::warning::${failed} thread(s) could not be answered or resolved and are still open"
+          { echo "accepted=${accepted}"; echo "rejected=${rejected}";
+            echo "left_open=${left_open}"; echo "failed=${failed}"; } >> "$GITHUB_OUTPUT"
+          echo "${accepted} applied, ${rejected} rejected, ${left_open} left open, ${failed} not reached."
 
       # The PR's table and its checklist describe the commit the thresholds were
       # measured on. A follow-up commit moves the head past it and nothing
@@ -1645,8 +1710,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ needs.flaky-review-agent.outputs.pr }}
-          MEASURED_SHA: ${{ needs.flaky-review-agent.outputs.head }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
+          MEASURED_SHA: ${{ needs.flaky-review-fetch.outputs.head }}
           PUSHED: ${{ steps.push.outputs.pushed }}
         run: |
           set -uo pipefail
@@ -1666,10 +1731,11 @@ jobs:
         if: always()
         env:
           PR_URL: ${{ needs.decide.outputs.pr_url }}
-          THREADS: ${{ needs.flaky-review-agent.outputs.threads }}
+          THREADS: ${{ needs.flaky-review-fetch.outputs.threads }}
           ACCEPTED: ${{ steps.replies.outputs.accepted }}
           REJECTED: ${{ steps.replies.outputs.rejected }}
           LEFT_OPEN: ${{ steps.replies.outputs.left_open }}
+          FAILED: ${{ steps.replies.outputs.failed }}
           PUSHED: ${{ steps.push.outputs.pushed }}
         run: |
           set -uo pipefail
@@ -1679,6 +1745,8 @@ jobs:
             echo "PR: ${PR_URL}"
             echo
             echo "${THREADS} thread(s) — ${ACCEPTED:-0} applied, ${REJECTED:-0} rejected, ${LEFT_OPEN:-0} left open for a person."
+            [ "${FAILED:-0}" -eq 0 ] \
+              || echo "**${FAILED} thread(s) could not be answered or resolved** and are still open — publication did not reach them."
             [ -z "$PUSHED" ] || echo ""
             [ -z "$PUSHED" ] || echo "Follow-up commit: \`${PUSHED}\` (not re-measured)."
             if [ -f "${RUNNER_TEMP}/round/agent-log.md" ]; then
