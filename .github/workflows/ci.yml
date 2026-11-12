@@ -2418,7 +2418,7 @@ jobs:
           github-token: ${{ github.token }}
           artifacts: |
             fe-operate-${{ github.run_id }}
-            fe-webapp-${{ github.run_id }}
+            fe-tasklist-${{ github.run_id }}
             fe-identity-${{ github.run_id }}
       - name: Import Nexus credentials
         if: steps.deploy-check.outputs.deploy == 'true'
@@ -2562,7 +2562,7 @@ jobs:
           github-token: ${{ github.token }}
           artifacts: |
             fe-operate-${{ github.run_id }}
-            fe-webapp-${{ github.run_id }}
+            fe-tasklist-${{ github.run_id }}
             fe-identity-${{ github.run_id }}
       - uses: ./.github/actions/setup-build
         if: steps.deploy-check.outputs.deploy == 'true'
