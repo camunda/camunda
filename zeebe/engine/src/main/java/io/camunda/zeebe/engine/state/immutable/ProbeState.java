@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import java.util.List;
 import java.util.function.BiPredicate;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -31,6 +33,13 @@ public interface ProbeState {
    * @return the deadline of the first probe not visited, or {@code -1} if no probe is left
    */
   long forEachTimedOutProbe(long timestamp, BiPredicate<Long, ProbeRecord> visitor);
+
+  /**
+   * Visits copies of the activatable probes of the probe ID that belong to one of the tenants,
+   * oldest first, until the visitor returns {@code false}.
+   */
+  void forEachActivatableProbe(
+      DirectBuffer probeId, List<String> tenantIds, BiPredicate<Long, ProbeRecord> visitor);
 
   enum State {
     /** Waiting for a poll of its probe ID to collect it. */

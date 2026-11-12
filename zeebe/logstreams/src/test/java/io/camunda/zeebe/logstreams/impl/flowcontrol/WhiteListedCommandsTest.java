@@ -45,6 +45,18 @@ final class WhiteListedCommandsTest {
   }
 
   @Test
+  void shouldWhitelistTheYieldOfAProbeAsOfAJob() {
+    // when - then
+    assertThat(WhiteListedCommands.isWhitelisted(ProbeIntent.YIELD)).isTrue();
+  }
+
+  @Test
+  void shouldNotWhitelistTheAnswerToAProbe() {
+    // when - then the worker gets 503 under backpressure (spec section 4.1)
+    assertThat(WhiteListedCommands.isWhitelisted(ProbeIntent.ANSWER)).isFalse();
+  }
+
+  @Test
   void shouldNotWhitelistTheCreationOfAProbe() {
     // when - then
     assertThat(WhiteListedCommands.isWhitelisted(ProbeIntent.CREATE)).isFalse();
