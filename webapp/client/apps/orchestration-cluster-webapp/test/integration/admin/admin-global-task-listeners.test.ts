@@ -180,13 +180,16 @@ test.describe('Admin global task listeners', () => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
 				successResponse: HttpResponse.json(
-					createQueryGlobalTaskListenersResponse({items: [createGlobalTaskListener()]}),
+					createQueryGlobalTaskListenersResponse({
+						items: [createGlobalTaskListener({id: 'existing-listener', type: 'existing-type'})],
+					}),
 				),
 			}),
 		);
 
 		await adminGlobalTaskListenersPage.goto();
 		await expect(adminGlobalTaskListenersPage.searchInput).toBeVisible();
+		await expect(adminGlobalTaskListenersPage.row('existing-listener')).toBeVisible();
 
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
@@ -201,5 +204,6 @@ test.describe('Admin global task listeners', () => {
 		await adminGlobalTaskListenersPage.searchInput.fill('my-listener');
 
 		await expect(adminGlobalTaskListenersPage.row('my-listener')).toBeVisible();
+		await expect(adminGlobalTaskListenersPage.row('existing-listener')).not.toBeVisible();
 	});
 });
