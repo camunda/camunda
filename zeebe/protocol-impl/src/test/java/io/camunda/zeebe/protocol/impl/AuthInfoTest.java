@@ -328,9 +328,32 @@ final class AuthInfoTest {
       ((byte[]) ((Map<?, ?>) first.get(USER_TOKEN_CLAIMS)).get("key"))[0] = 2;
 
       // then
-      assertThat(authInfo.toClaimsMap()).isNotSameAs(first);
       assertThat((Map<String, Object>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS))
           .containsEntry("key", new byte[] {1});
+    }
+
+    @Test
+    void shouldDecodeTokenClaimsOnceWithoutBinaryValues() {
+      // given
+      final var authInfo =
+          decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
+      final var tokenClaims = (Map<?, ?>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS);
+
+      // then
+      assertThat(tokenClaims).isEqualTo(Map.of("sub", "a"));
+      assertThat(tokenClaims.entrySet()).isSameAs(tokenClaims.entrySet());
+    }
+
+    @Test
+    void shouldDecodeTokenClaimsOnEveryAccessWithBinaryValues() {
+      // given
+      final var authInfo =
+          decode(
+              encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
+      final var tokenClaims = (Map<?, ?>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS);
+
+      // then
+      assertThat(tokenClaims.entrySet()).isNotSameAs(tokenClaims.entrySet());
     }
 
     @Test

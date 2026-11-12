@@ -21,6 +21,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -73,7 +75,7 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
-  /** The claims map, once built, unless it holds mutable values. See {@link #toClaimsMap()}. */
+  /** The claims map, once built. See {@link #toClaimsMap()}. */
   private volatile @Nullable Map<String, Object> claimsMap;
 
   private AuthInfo(
@@ -199,9 +201,11 @@ public final class AuthInfo implements BufferWriter {
    * i.e. {@link io.camunda.zeebe.protocol.record.Record#getAuthorizations()} and the security
    * library; use the typed accessors otherwise.
    *
-   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. Only if
-   * the token claims contain binary values, which decode to mutable arrays, every call returns a
-   * fresh map instead.
+   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. The
+   * token claims, which are by far the most expensive part, are only decoded when the {@link
+   * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
+   * the other claims, e.g. exporters, never pay for them. If the token claims contain binary
+   * values, which decode to mutable arrays, they are decoded on every access instead of once.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -210,22 +214,17 @@ public final class AuthInfo implements BufferWriter {
       return cached;
     }
 
-    final var tokenClaims = getTokenClaims();
     final var claims = new LinkedHashMap<String, Object>();
     putIfPresent(claims, AUTHORIZED_ANONYMOUS_USER, anonymous);
     putIfPresent(claims, AUTHORIZED_USERNAME, username);
     putIfPresent(claims, AUTHORIZED_CLIENT_ID, clientId);
     putIfPresent(claims, AUTHORIZED_TENANTS, tenants);
     putIfPresent(claims, USER_GROUPS_CLAIMS, groups);
-    putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims);
+    putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims != null ? new LazyTokenClaims() : null);
     final var result = Collections.unmodifiableMap(claims);
 
-    // binary values decode to mutable arrays, so a shared map would let callers change this
-    // instance
-    if (isImmutableValue(tokenClaims)) {
-      // racing threads build equal maps, so it doesn't matter which one wins
-      claimsMap = result;
-    }
+    // racing threads build equivalent maps, so it doesn't matter which one wins
+    claimsMap = result;
     return result;
   }
 
@@ -356,12 +355,65 @@ public final class AuthInfo implements BufferWriter {
         || value instanceof Number) {
       return true;
     } else if (value instanceof final Map<?, ?> map) {
-      return map.entrySet().stream()
-          .allMatch(e -> isImmutableValue(e.getKey()) && isImmutableValue(e.getValue()));
+      for (final var entry : map.entrySet()) {
+        if (!isImmutableValue(entry.getKey()) || !isImmutableValue(entry.getValue())) {
+          return false;
+        }
+      }
+      return true;
     } else if (value instanceof final List<?> list) {
-      return list.stream().allMatch(AuthInfo::isImmutableValue);
+      for (final var element : list) {
+        if (!isImmutableValue(element)) {
+          return false;
+        }
+      }
+      return true;
     }
     return false;
+  }
+
+  /**
+   * A read-only view of the token claims that decodes them on first access. The decoded claims are
+   * kept unless they hold mutable values (binary values decode to arrays), as sharing those would
+   * let callers change this instance.
+   */
+  private final class LazyTokenClaims extends AbstractMap<String, Object> {
+
+    private volatile @Nullable Map<String, Object> decoded;
+
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+      return delegate().entrySet();
+    }
+
+    @Override
+    public int size() {
+      return delegate().size();
+    }
+
+    @Override
+    public boolean containsKey(final Object key) {
+      return delegate().containsKey(key);
+    }
+
+    @Override
+    public @Nullable Object get(final Object key) {
+      return delegate().get(key);
+    }
+
+    private Map<String, Object> delegate() {
+      final var cached = decoded;
+      if (cached != null) {
+        return cached;
+      }
+
+      final var claims = Objects.requireNonNull(getTokenClaims());
+      if (isImmutableValue(claims)) {
+        // racing threads decode equal claims, so it doesn't matter which one wins
+        decoded = claims;
+      }
+      return claims;
+    }
   }
 
   public enum AuthDataFormat {
