@@ -20,8 +20,8 @@ public enum PolicyUpdateIntent implements Intent {
   CHUNK_APPENDED(1),
   APPLY_CHUNK(2),
   CHUNK_APPLIED(3),
-  SWITCH_VERSION(4),
-  VERSION_SWITCHED(5),
+  COMMIT_VERSION(4),
+  VERSION_COMMITTED(5),
   ABORT(6),
   ABORTED(7);
 
@@ -41,7 +41,7 @@ public enum PolicyUpdateIntent implements Intent {
     switch (this) {
       case CHUNK_APPENDED:
       case CHUNK_APPLIED:
-      case VERSION_SWITCHED:
+      case VERSION_COMMITTED:
       case ABORTED:
         return true;
       default:
@@ -60,9 +60,9 @@ public enum PolicyUpdateIntent implements Intent {
       case 3:
         return CHUNK_APPLIED;
       case 4:
-        return SWITCH_VERSION;
+        return COMMIT_VERSION;
       case 5:
-        return VERSION_SWITCHED;
+        return VERSION_COMMITTED;
       case 6:
         return ABORT;
       case 7:

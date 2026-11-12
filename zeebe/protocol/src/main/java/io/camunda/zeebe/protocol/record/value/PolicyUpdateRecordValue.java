@@ -36,7 +36,7 @@ public interface PolicyUpdateRecordValue extends RecordValue {
   /** The ID of the policy the update belongs to. */
   String getPolicyId();
 
-  /** The policy version the update establishes once it is switched in. */
+  /** The policy version the update establishes once it is committed. */
   long getPolicyVersion();
 
   /** The policy version the update is derived from. */
