@@ -63,7 +63,9 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
    Copy-out into the caller's instance is `target.wrap(bytes)` until #69223 brings a fast
    `copyTo` from the held object. Handing the held object out directly is unsafe because callers
    mutate their instance. Risks R2-R4 get fixed in PR 2, one commit each.
-7. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
+7. **Subagents:** use Sonnet for simpler tasks (mechanical ports, test moves, build fixes,
+   formatting); keep the default model for concurrency-sensitive store work and reviews.
+8. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
 ## Planned PR stack
