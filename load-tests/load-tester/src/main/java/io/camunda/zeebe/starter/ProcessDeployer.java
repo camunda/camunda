@@ -14,6 +14,7 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import jakarta.annotation.PostConstruct;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,10 +22,10 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
- * Waits for the cluster topology and deploys the benchmark process, both in the constructor. The
- * context therefore finishes starting only after the deployment succeeded, and components that
- * start on {@code ApplicationReadyEvent} can rely on the process existing. The web server and its
- * health endpoints are not available until the deployment succeeded.
+ * Waits for the cluster topology and deploys the benchmark process in a {@code @PostConstruct}
+ * method. The context therefore finishes starting only after the deployment succeeded, and
+ * components that start on {@code ApplicationReadyEvent} can rely on the process existing. The web
+ * server and its health endpoints are not available until the deployment succeeded.
  */
 @Component
 @Profile("starter")
@@ -36,7 +37,9 @@ public class ProcessDeployer {
 
   private final CamundaClient client;
   private final StarterProperties starterCfg;
-  private final long processDefinitionKey;
+  private final ConnectionMonitor connectionMonitor;
+  private final StarterLivenessIndicator livenessIndicator;
+  private long processDefinitionKey;
 
   public ProcessDeployer(
       final CamundaClient client,
@@ -45,6 +48,12 @@ public class ProcessDeployer {
       final StarterLivenessIndicator livenessIndicator) {
     this.client = client;
     starterCfg = properties.getStarter();
+    this.connectionMonitor = connectionMonitor;
+    this.livenessIndicator = livenessIndicator;
+  }
+
+  @PostConstruct
+  void deployProcess() {
     connectionMonitor.awaitAndPrintTopology();
     livenessIndicator.recordStarted();
     processDefinitionKey = deploy();
