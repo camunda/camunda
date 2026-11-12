@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.index;
 
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+
 public sealed interface TargetIndex permits MainIndex, OrdinalIndex {
-  String ORDINAL_SUFFIX_START = "ord";
+  String ORDINAL_SUFFIX_START = IndexTemplateDescriptor.ORDINAL_SUFFIX_START;
 
   String name();
 
