@@ -21,7 +21,7 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   protected final DatabaseClient databaseClient;
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
   private final Logger logger = LoggerFactory.getLogger(getClass());
-  private final BackoffCalculator backoffCalculator = new BackoffCalculator(1L, 30L);
+  private final BackoffCalculator backoffCalculator = new BackoffCalculator(30L, 1000L);
   private final Runnable importCompleteCallback;
 
   protected DatabaseImportJob(
@@ -62,6 +62,8 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
             Thread.sleep(sleepTime);
           } catch (final InterruptedException exception) {
             Thread.currentThread().interrupt();
+            logger.info("Import job interrupted, aborting import to database");
+            return;
           }
         }
       } while (!success);
