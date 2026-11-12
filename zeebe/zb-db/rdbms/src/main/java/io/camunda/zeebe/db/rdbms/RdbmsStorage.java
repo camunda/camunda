@@ -31,9 +31,11 @@ public final class RdbmsStorage {
 
   private static final String ENVIRONMENT_ID = "zeebe-state";
 
+  private final DataSource dataSource;
   private final SqlSessionFactory sqlSessionFactory;
 
-  private RdbmsStorage(final SqlSessionFactory sqlSessionFactory) {
+  private RdbmsStorage(final DataSource dataSource, final SqlSessionFactory sqlSessionFactory) {
+    this.dataSource = dataSource;
     this.sqlSessionFactory = sqlSessionFactory;
   }
 
@@ -53,6 +55,7 @@ public final class RdbmsStorage {
     final var databaseId = databaseId(dataSource);
     new StateSchemaManager(dataSource, prefix).migrate();
     return new RdbmsStorage(
+        dataSource,
         new SqlSessionFactoryBuilder().build(configuration(dataSource, prefix, databaseId)));
   }
 
@@ -61,6 +64,14 @@ public final class RdbmsStorage {
    */
   public String databaseId() {
     return sqlSessionFactory.getConfiguration().getDatabaseId();
+  }
+
+  DataSource dataSource() {
+    return dataSource;
+  }
+
+  SqlSessionFactory sqlSessionFactory() {
+    return sqlSessionFactory;
   }
 
   /** Maps the database product name to the id that picks its statements, as the history does. */
@@ -98,6 +109,8 @@ public final class RdbmsStorage {
     final var variables = new Properties();
     variables.put("prefix", prefix);
     configuration.setVariables(variables);
+    // loads StateMapper.xml from next to the interface; it needs the variables to resolve ${prefix}
+    configuration.addMapper(StateMapper.class);
     return configuration;
   }
 }

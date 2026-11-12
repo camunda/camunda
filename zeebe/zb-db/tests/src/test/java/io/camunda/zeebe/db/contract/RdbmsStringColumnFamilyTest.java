@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.contract;
+
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.DefaultColumnFamily;
+import org.junit.Ignore;
+import org.junit.Test;
+
+public final class RdbmsStringColumnFamilyTest extends DbStringColumnFamilyContractTest {
+
+  @Override
+  protected ZeebeDbFactory<DefaultColumnFamily> createFactory() {
+    return RdbmsTestFactory.create();
+  }
+
+  @Override
+  @Test
+  @Ignore("Expects RocksDB's limit of two nested prefix scans, which a database doesn't have")
+  public void shouldThrowExceptionOnMultipleNestedWhileEqualPrefix() {}
+}
