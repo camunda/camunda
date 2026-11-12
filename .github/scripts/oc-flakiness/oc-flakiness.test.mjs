@@ -430,7 +430,7 @@ test('should refuse a status it cannot render', () => {
 test('should say so when the pick found nothing to dispatch', () => {
   const text = render(initBoard({targets: [], date: '2026-11-12', runUrl: 'https://run'}));
   assert.match(text, /No test met the bar today/);
-  assert.match(text, /<https:\/\/run\|Pick run>/);
+  assert.match(text, /<https:\/\/run\|Pick run> :arrow_right:/);
 });
 
 test('should not let a test title inject Slack markup', () => {
@@ -527,4 +527,12 @@ test('the run link still reaches a row that is still dispatched', () => {
   });
   assert.equal(linked.rows[0].run, 'https://example.test/runs/1');
   assert.match(render(linked), /<https:\/\/example\.test\/runs\/1\|still running>/);
+});
+
+test('version groups are separated by a blank line', () => {
+  const board = initBoard({targets, date: '2026-11-12'});
+  const lines = render(board).split('\n');
+  const second = lines.findIndex((l) => l.startsWith('*8.9*'));
+  assert.ok(second > 0);
+  assert.equal(lines[second - 1], '');
 });
