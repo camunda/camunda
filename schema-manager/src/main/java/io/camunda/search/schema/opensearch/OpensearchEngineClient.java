@@ -77,6 +77,7 @@ import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplate
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
+
   public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
 
   private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
@@ -152,9 +153,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       if (create
           && client
-              .indices()
-              .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
-              .value()) {
+          .indices()
+          .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
+          .value()) {
         // Creation should only occur once during initialisation but multiple partitions with
         // their own exporter will create race conditions where multiple exporters try to
         // create the same template
@@ -459,12 +460,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       for (final String batch :
           SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var existing = getIndexNames(batch);
+        if (existing.isEmpty()) {
+          continue;
+        }
         final HealthResponse response =
             client
                 .cluster()
                 .health(
                     h ->
-                        h.index(List.of(batch.split(",")))
+                        h.index(List.copyOf(existing))
                             .waitForStatus(HealthStatus.Yellow)
                             .timeout(t -> t.time(timeout.toMillis() + "ms")));
         if (response.timedOut()) {
@@ -637,10 +642,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   /**
-   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and {@code
-   * last_updated_time} into every policy it returns, none of which our PUT ever specifies, so a
-   * whole-document comparison against the static template would never match. Comparing only the
-   * fields the PUT actually sends keeps the drift check meaningful.
+   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and
+   * {@code last_updated_time} into every policy it returns, none of which our PUT ever specifies,
+   * so a whole-document comparison against the static template would never match. Comparing only
+   * the fields the PUT actually sends keeps the drift check meaningful.
    */
   private static JsonNode normalizedPolicyDefinition(final JsonNode policyNode) {
     final var normalized = JsonNodeFactory.instance.objectNode();
