@@ -19,6 +19,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.ControllablePartitionDistributor;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
@@ -347,6 +348,7 @@ class ClusterConfigurationManagementIntegrationTest {
                 Duration.ofSeconds(1),
                 Duration.ofSeconds(5)),
             new NoopClusterChangeExecutor(),
+            ClusterConfigurationChangeValidator.ACCEPT_ALL,
             meterRegistry);
     return new TestNode(cluster, service);
   }

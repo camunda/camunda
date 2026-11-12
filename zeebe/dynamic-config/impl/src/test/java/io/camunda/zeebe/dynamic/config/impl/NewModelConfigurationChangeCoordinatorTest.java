@@ -11,8 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
@@ -47,11 +50,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -73,6 +78,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
   private ConfigurationChangeCoordinatorImpl coordinator;
 
   private void wire(final MemberId localMemberId, final CurrentClusterConfiguration seed) {
+    wire(localMemberId, seed, ClusterConfigurationChangeValidator.ACCEPT_ALL);
+  }
+
+  private void wire(
+      final MemberId localMemberId,
+      final CurrentClusterConfiguration seed,
+      final ClusterConfigurationChangeValidator changeValidator) {
     final var persisted =
         PersistedCurrentClusterConfiguration.ofFile(
             tmp.resolve("config-" + localMemberId.id() + ".meta"), new ProtoBufSerializer());
@@ -95,7 +107,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
             new NoopPartitionScalingChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
-    coordinator = new ConfigurationChangeCoordinatorImpl(manager, localMemberId, executor);
+    coordinator =
+        new ConfigurationChangeCoordinatorImpl(
+            manager,
+            localMemberId,
+            executor,
+            PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+            changeValidator);
     manager.updateMultiConfiguration(ignored -> seed).join();
   }
 
@@ -663,5 +681,145 @@ final class NewModelConfigurationChangeCoordinatorTest {
     // then — the request opted in, so it sees the disabled group too
     assertThat(seenByPhases[0].partitionGroups().keySet())
         .containsExactlyInAnyOrder(CurrentClusterConfiguration.DEFAULT_GROUP, "tenanta");
+  }
+
+  @Test
+  void shouldRejectChangeWhenValidatorRejectsPlannedChange() {
+    // given
+    final var seed = twoMemberCluster();
+    wire(MEMBER_0, seed, (configuration, phases) -> Optional.of("not enough memory"));
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.applyOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(InvalidState.class)
+        .withMessage("not enough memory");
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    assertThat(configuration().partitionGroups()).isEqualTo(seed.partitionGroups());
+  }
+
+  @Test
+  void shouldFailChangeWhenValidatorThrows() {
+    // given
+    final var seed = twoMemberCluster();
+    wire(
+        MEMBER_0,
+        seed,
+        (configuration, phases) -> {
+          throw new IllegalStateException("validator failed");
+        });
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.applyOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(InternalError.class)
+        .havingCause()
+        .isInstanceOf(IllegalStateException.class)
+        .withMessage("validator failed");
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    assertThat(configuration().partitionGroups()).isEqualTo(seed.partitionGroups());
+  }
+
+  @Test
+  void shouldRejectDryRunWhenValidatorRejectsPlannedChange() {
+    // given
+    wire(MEMBER_0, twoMemberCluster(), (configuration, phases) -> Optional.of("not enough memory"));
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.simulateOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidState.class);
+  }
+
+  @Test
+  void shouldValidatePlannedPhasesAgainstCurrentConfiguration() {
+    // given
+    final var seed = twoMemberCluster();
+    final List<CurrentClusterConfiguration> validatedConfigurations = new ArrayList<>();
+    final List<List<Phase>> validatedPhases = new ArrayList<>();
+    wire(
+        MEMBER_0,
+        seed,
+        (configuration, phases) -> {
+          validatedConfigurations.add(configuration);
+          validatedPhases.add(phases);
+          return Optional.empty();
+        });
+    final var plannedPhases =
+        CurrentClusterConfiguration.toPhases(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when
+    coordinator.applyOperations(current -> Either.right(plannedPhases)).join();
+
+    // then
+    assertThat(validatedConfigurations)
+        .isNotEmpty()
+        .allSatisfy(
+            configuration ->
+                assertThat(configuration.partitionGroups()).isEqualTo(seed.partitionGroups()));
+    assertThat(validatedPhases)
+        .isNotEmpty()
+        .allSatisfy(phases -> assertThat(phases).isEqualTo(plannedPhases));
+  }
+
+  @Test
+  void shouldRejectChangeWhenValidatorRejectsAtAdmission() {
+    // given
+    final var seed = twoMemberCluster();
+    final var validations = new AtomicInteger();
+    wire(
+        MEMBER_0,
+        seed,
+        (configuration, phases) ->
+            validations.incrementAndGet() == 1
+                ? Optional.empty()
+                : Optional.of("a concurrent change used up the memory"));
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.applyOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(InvalidState.class)
+        .withMessage("a concurrent change used up the memory");
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    assertThat(configuration().partitionGroups()).isEqualTo(seed.partitionGroups());
   }
 }
