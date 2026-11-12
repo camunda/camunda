@@ -32,13 +32,16 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.UserTaskLifecycleState;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -57,6 +60,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -114,7 +118,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldCompleteTaskWithoutActionAndVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     // when / then
     webClient
@@ -128,14 +132,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(2251799813685732L), eq(Map.of()), eq(""), any());
+        .completeUserTask(eq(2251799813685732L), eq(Map.of()), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithAction(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -157,14 +161,14 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of()), eq("customAction"), any());
+        .completeUserTask(eq(1L), eq(Map.of()), eq(Map.of()), eq("customAction"), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -189,14 +193,94 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(""), any());
+        .completeUserTask(
+            eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(Map.of()), eq(""), any());
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldCompleteTaskWithVariablesMetadata(final String baseUrl) {
+    // given
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
+        .thenReturn(BROKER_RESPONSE);
+    final var request =
+        """
+            {
+              "variables": {
+                "secret": "v",
+                "plain": "v"
+              },
+              "variablesMetadata": {
+                "secret": {
+                  "protectionModes": ["REDACT"]
+                }
+              }
+            }""";
+
+    // when
+    webClient
+        .post()
+        .uri(baseUrl + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    final ArgumentCaptor<Map<String, VariableMetadataValue>> variablesMetadataCaptor =
+        ArgumentCaptor.captor();
+    Mockito.verify(userTaskServices)
+        .completeUserTask(eq(1L), any(), variablesMetadataCaptor.capture(), eq(""), any());
+    assertThat(variablesMetadataCaptor.getValue())
+        .containsOnlyKeys("secret")
+        .extractingByKey("secret")
+        .extracting(VariableMetadataValue::getProtectionModes)
+        .isEqualTo(Set.of(ProtectionMode.REDACT));
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldRejectCompletionWithMalformedVariablesMetadata(final String baseUrl) {
+    // given
+    final var request =
+        """
+            {
+              "variables": {
+                "card": "1234"
+              },
+              "variablesMetadata": {
+                "card": null
+              }
+            }""";
+
+    // when
+    final var problem =
+        webClient
+            .post()
+            .uri(baseUrl + "/1/completion")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isBadRequest()
+            .expectBody(ProblemDetail.class)
+            .returnResult()
+            .getResponseBody();
+
+    // then
+    assertThat(problem).isNotNull();
+    assertThat(problem.getDetail()).contains("'card'");
+    Mockito.verifyNoInteractions(userTaskServices);
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldCompleteTaskWithActionAndVariables(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(BROKER_RESPONSE);
     final var request =
         """
@@ -222,7 +306,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .isEmpty();
 
     Mockito.verify(userTaskServices)
-        .completeUserTask(eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq("customAction"), any());
+        .completeUserTask(
+            eq(1L), eq(Map.of("foo", "bar", "baz", 1234)), eq(Map.of()), eq("customAction"), any());
   }
 
   @ParameterizedTest
@@ -814,7 +899,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldYieldNotFoundWhenTaskNotFound(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -846,14 +931,15 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices)
+        .completeUserTask(eq(1L), eq(Map.of()), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest
   @MethodSource("urls")
   void shouldReturnGatewayTimeoutWhenCompleteTaskTimesOut(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapError(new TimeoutException("Task listener blocked completion"))));
@@ -881,7 +967,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   @MethodSource("urls")
   void shouldYieldConflictWhenInvalidState(final String baseUrl) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -916,7 +1002,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices)
+        .completeUserTask(eq(1L), eq(Map.of()), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest
@@ -924,7 +1011,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   public void shouldYieldBadRequestWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -959,7 +1046,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices)
+        .completeUserTask(eq(1L), eq(Map.of()), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest
@@ -967,7 +1055,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   public void shouldYieldConflictWhenRejectionOfInput(
       final Pair<RejectionType, String> parameters) {
     // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString(), any()))
+    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), any(), anyString(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 ErrorMapper.mapBrokerRejection(
@@ -1002,7 +1090,8 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
 
-    Mockito.verify(userTaskServices).completeUserTask(eq(1L), eq(Map.of()), eq(""), any());
+    Mockito.verify(userTaskServices)
+        .completeUserTask(eq(1L), eq(Map.of()), eq(Map.of()), eq(""), any());
   }
 
   @ParameterizedTest

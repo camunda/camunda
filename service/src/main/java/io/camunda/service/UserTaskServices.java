@@ -44,6 +44,7 @@ import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -215,11 +216,13 @@ public final class UserTaskServices
   public CompletableFuture<UserTaskRecord> completeUserTask(
       final long userTaskKey,
       final Map<String, Object> variables,
+      final Map<String, VariableMetadataValue> variablesMetadata,
       final String action,
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUserTaskCompletionRequest(
-            userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength),
+                userTaskKey, getDocumentOrEmpty(variables), action, maxVariableNameLength)
+            .setVariablesMetadata(getMetadataOrEmpty(variablesMetadata)),
         authentication);
   }
 

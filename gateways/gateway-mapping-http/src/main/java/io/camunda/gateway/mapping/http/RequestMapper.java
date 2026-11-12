@@ -26,10 +26,13 @@ import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateSimpleVariablesMetadata;
 import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator.validateResourceDeletion;
 import static io.camunda.gateway.mapping.http.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateAssignmentRequest;
+import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
@@ -133,28 +136,47 @@ public class RequestMapper {
   public static final String MEDIA_TYPE_KEYS_STRING_VALUE =
       "application/" + VND_CAMUNDA_API_KEYS_STRING_JSON;
 
-  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final @Nullable UserTaskCompletionRequest completionRequest, final long userTaskKey) {
 
-    return new CompleteUserTaskRequest(
-        userTaskKey,
-        getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
-        getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction));
+    return getResult(
+        validateCompletionRequest(completionRequest),
+        () ->
+            new CompleteUserTaskRequest(
+                userTaskKey,
+                getMapOrEmpty(completionRequest, UserTaskCompletionRequest::getVariables),
+                toVariablesMetadata(
+                    completionRequest == null ? null : completionRequest.getVariablesMetadata()),
+                getStringOrEmpty(completionRequest, UserTaskCompletionRequest::getAction)));
   }
 
-  public static CompleteUserTaskRequest toUserTaskCompletionRequest(
+  public static Either<ProblemDetail, CompleteUserTaskRequest> toUserTaskCompletionRequest(
       final io.camunda.gateway.protocol.model.simple.@Nullable UserTaskCompletionRequest
           completionRequest,
       final long userTaskKey) {
 
-    return toUserTaskCompletionRequest(
-        completionRequest == null
-            ? null
-            : UserTaskCompletionRequest.Builder.create()
-                .variables(completionRequest.getVariables())
-                .action(completionRequest.getAction())
-                .build(),
-        userTaskKey);
+    if (completionRequest == null) {
+      return toUserTaskCompletionRequest((UserTaskCompletionRequest) null, userTaskKey);
+    }
+    final var validationError =
+        validate(
+            violations ->
+                validateSimpleVariablesMetadata(
+                    completionRequest.getVariablesMetadata(), violations));
+    if (validationError.isPresent()) {
+      return Either.left(validationError.get());
+    }
+    final var strictRequest =
+        UserTaskCompletionRequest.Builder.create()
+            .variables(completionRequest.getVariables())
+            .action(completionRequest.getAction())
+            .build();
+    final var variablesMetadata =
+        SimpleRequestMapper.mapVariablesMetadata(completionRequest.getVariablesMetadata());
+    if (variablesMetadata != null) {
+      strictRequest.setVariablesMetadata(variablesMetadata);
+    }
+    return toUserTaskCompletionRequest(strictRequest, userTaskKey);
   }
 
   public static LookupUserTaskRequest toUserTaskLookupRequest(
@@ -989,7 +1011,10 @@ public class RequestMapper {
   }
 
   public record CompleteUserTaskRequest(
-      long userTaskKey, Map<String, Object> variables, String action) {}
+      long userTaskKey,
+      Map<String, Object> variables,
+      Map<String, VariableMetadataValue> variablesMetadata,
+      String action) {}
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 

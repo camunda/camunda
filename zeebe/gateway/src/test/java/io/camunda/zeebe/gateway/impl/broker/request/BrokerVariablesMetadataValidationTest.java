@@ -67,6 +67,17 @@ final class BrokerVariablesMetadataValidationTest {
   }
 
   @Test
+  void shouldRejectUserTaskCompletionMetadataOfUnknownVariable() {
+    // when/then
+    assertThatThrownBy(
+            () ->
+                new BrokerUserTaskCompletionRequest(1L, asMsgPack("name", "x"), "complete")
+                    .setVariablesMetadata(METADATA))
+        .isInstanceOf(InvalidVariableRequestException.class)
+        .hasMessageContaining("'ssn'");
+  }
+
+  @Test
   void shouldRejectMetadataWhenVariablesAreEmpty() {
     // when/then
     assertThatThrownBy(

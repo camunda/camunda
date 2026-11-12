@@ -12,11 +12,13 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.isEmpty;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateVariablesMetadata;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.protocol.model.Changeset;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,16 @@ public final class UserTaskRequestValidator {
       return Optional.of(problemDetail);
     }
     return Optional.empty();
+  }
+
+  public static Optional<ProblemDetail> validateCompletionRequest(
+      final @Nullable UserTaskCompletionRequest completionRequest) {
+    return validate(
+        violations -> {
+          if (completionRequest != null) {
+            validateVariablesMetadata(completionRequest.getVariablesMetadata(), violations);
+          }
+        });
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(

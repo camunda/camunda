@@ -114,8 +114,12 @@ public class UserTaskTools {
               required = false)
           final UserTaskCompletionRequest completionOptions) {
     try {
-      final var completionRequest =
+      final var mappedRequest =
           RequestMapper.toUserTaskCompletionRequest(completionOptions, userTaskKey);
+      if (mappedRequest.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(mappedRequest.getLeft());
+      }
+      final var completionRequest = mappedRequest.get();
 
       return CallToolResultMapper.fromPrimitive(
           serviceRegistry
@@ -123,6 +127,7 @@ public class UserTaskTools {
               .completeUserTask(
                   completionRequest.userTaskKey(),
                   completionRequest.variables(),
+                  completionRequest.variablesMetadata(),
                   completionRequest.action(),
                   authenticationProvider.getCamundaAuthentication()),
           r -> "User task with key %s completed.".formatted(completionRequest.userTaskKey()));
