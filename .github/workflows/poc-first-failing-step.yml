@@ -1,0 +1,44 @@
+# POC: can a job's own if: always() step tell which step failed first?
+# Throwaway - do not merge.
+---
+name: POC First Failing Step
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/poc-first-failing-step.yml
+
+permissions: {}
+
+jobs:
+  poc:
+    name: POC first failing step
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+      - name: build
+        run: |
+          if (( RANDOM % 2 )); then
+            echo "build failed (coin flip)"
+            exit 1
+          fi
+          echo "build passed (coin flip)"
+
+      - name: test
+        run: exit 1
+
+      - name: observe
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          steps_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${{ job.check_run_id }}" --jq '.steps')"
+          echo "Steps as seen from inside the job:"
+          jq -r '.[] | "  #\(.number) \(.name): status=\(.status) conclusion=\(.conclusion)"' <<< "${steps_json}"
+          first_failed="$(jq -r '[.[] | select(.conclusion == "failure")][0].name // "<none>"' <<< "${steps_json}")"
+          echo "job.status=${JOB_STATUS}"
+          echo "First failing step: ${first_failed}"
+          echo "::notice title=First failing step::${first_failed}"
