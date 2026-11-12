@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.impl;
 
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
@@ -27,6 +30,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -287,9 +291,18 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
    */
   class SyncInitializer
       implements ClusterConfigurationInitializer<CurrentClusterConfiguration>,
-          ClusterConfigurationUpdateListener {
+          ClusterConfigurationUpdateListener,
+          ClusterMembershipEventListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
+
+    /**
+     * Members usually join the membership shortly before they serve sync requests, so the first
+     * query to a booting member often fails; retrying with a backoff that grows up to {@code
+     * syncDelay} avoids waiting a full {@code syncDelay} for it.
+     */
+    private static final Duration INITIAL_RETRY_DELAY = Duration.ofMillis(250);
+
     private final Duration syncDelay;
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<CurrentClusterConfiguration> initialized;
@@ -298,10 +311,13 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
     private final Set<MemberId> uninitializedMembers = new HashSet<>();
     private final Set<MemberId> requestsInFlight = new HashSet<>();
     private boolean retryScheduled;
+    private Duration nextRetryDelay;
+    private @Nullable ScheduledTimer retryTimer;
     private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester;
     private final CurrentClusterConfiguration uninitialized;
+    private final @Nullable ClusterMembershipService membershipService;
 
     SyncInitializer(
         final Duration syncDelay,
@@ -311,6 +327,30 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester,
         final Duration bootstrapTimeout,
         final CurrentClusterConfiguration uninitialized) {
+      this(
+          syncDelay,
+          clusterConfigurationUpdateNotifier,
+          knownMembersToSync,
+          executor,
+          syncRequester,
+          bootstrapTimeout,
+          uninitialized,
+          null);
+    }
+
+    /**
+     * @param membershipService when given, a member that joins is queried right away instead of on
+     *     the next {@code syncDelay} retry
+     */
+    SyncInitializer(
+        final Duration syncDelay,
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final Supplier<List<MemberId>> knownMembersToSync,
+        final ConcurrencyControl executor,
+        final Function<MemberId, ActorFuture<CurrentClusterConfiguration>> syncRequester,
+        final Duration bootstrapTimeout,
+        final CurrentClusterConfiguration uninitialized,
+        final @Nullable ClusterMembershipService membershipService) {
       this.syncDelay = syncDelay;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
@@ -318,6 +358,8 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
       this.syncRequester = syncRequester;
       this.bootstrapTimeout = bootstrapTimeout;
       this.uninitialized = uninitialized;
+      this.membershipService = membershipService;
+      nextRetryDelay = min(INITIAL_RETRY_DELAY, syncDelay);
       initialized = new CompletableActorFuture<>();
     }
 
@@ -330,9 +372,29 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
             "Querying members {} before initializing ClusterConfiguration",
             knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
+        if (membershipService != null) {
+          membershipService.addListener(this);
+        }
         refreshAndSync();
       }
       return initialized;
+    }
+
+    @Override
+    public boolean isRelevant(final ClusterMembershipEvent event) {
+      return event.type() == ClusterMembershipEvent.Type.MEMBER_ADDED;
+    }
+
+    @Override
+    public void event(final ClusterMembershipEvent event) {
+      final var memberId = event.subject().id();
+      executor.run(
+          () -> {
+            if (!initialized.isDone() && knownMembersToSync.get().contains(memberId)) {
+              restartRetryBackoff();
+              tryInitializeFrom(memberId);
+            }
+          });
     }
 
     private void refreshAndSync() {
@@ -398,12 +460,28 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
         return;
       }
       retryScheduled = true;
-      executor.schedule(
-          syncDelay,
-          () -> {
-            retryScheduled = false;
-            refreshAndSync();
-          });
+      final var delay = nextRetryDelay;
+      nextRetryDelay = min(nextRetryDelay.multipliedBy(2), syncDelay);
+      retryTimer =
+          executor.schedule(
+              delay,
+              () -> {
+                retryScheduled = false;
+                retryTimer = null;
+                refreshAndSync();
+              });
+    }
+
+    private void restartRetryBackoff() {
+      nextRetryDelay = min(INITIAL_RETRY_DELAY, syncDelay);
+      if (retryScheduled) {
+        if (retryTimer != null) {
+          retryTimer.cancel();
+          retryTimer = null;
+        }
+        retryScheduled = false;
+        scheduleRetry();
+      }
     }
 
     private void completeAsUninitialized(final String cause) {
@@ -414,7 +492,18 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
             cause);
         initialized.complete(uninitialized);
         cancelBootstrapTimeout();
-        clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+        removeListeners();
+      }
+    }
+
+    private static Duration min(final Duration a, final Duration b) {
+      return a.compareTo(b) <= 0 ? a : b;
+    }
+
+    private void removeListeners() {
+      clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+      if (membershipService != null) {
+        membershipService.removeListener(this);
       }
     }
 
@@ -453,7 +542,7 @@ public interface ClusterConfigurationInitializer<T extends InitializableClusterC
             if (!clusterConfiguration.isUninitialized()) {
               initialized.complete(clusterConfiguration);
               cancelBootstrapTimeout();
-              clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+              removeListeners();
             }
           });
     }

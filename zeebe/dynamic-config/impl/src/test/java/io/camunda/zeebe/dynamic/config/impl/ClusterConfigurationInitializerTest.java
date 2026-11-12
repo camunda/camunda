@@ -11,6 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEventListener;
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -28,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationInitializer.Sync
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -37,6 +42,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +58,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @Timeout(120)
@@ -242,6 +250,121 @@ final class ClusterConfigurationInitializerTest {
 
     // then
     assertThat(initializeFuture.join().isUninitialized()).isFalse();
+  }
+
+  @Test
+  void shouldBackOffRetriesUpToSyncDelay() {
+    // given - a member that is not reachable yet
+    final var scheduledDelays = new ArrayList<Long>();
+    final var concurrencyControl =
+        new TestConcurrencyControl(true) {
+          @Override
+          public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
+            scheduledDelays.add(delayMs);
+            return super.schedule(delayMs, runnable);
+          }
+        };
+    final var initializer =
+        new SyncInitializer(
+            Duration.ofSeconds(1),
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(MemberId.from("1")),
+            concurrencyControl,
+            ignored -> TestActorFuture.failedFuture(new RuntimeException("not reachable")),
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            CurrentClusterConfiguration.uninitialized());
+
+    // when
+    initializer.initialize();
+    for (int i = 0; i < 4; i++) {
+      concurrencyControl.runAll();
+    }
+
+    // then - the first retry is quick, later ones are capped at the configured sync delay
+    assertThat(scheduledDelays).containsExactly(250L, 500L, 1000L, 1000L, 1000L);
+  }
+
+  @Test
+  void shouldRestartBackoffWhenAMemberJoins() {
+    // given - retries have backed off to the configured sync delay
+    final var scheduledDelays = new ArrayList<Long>();
+    final var concurrencyControl =
+        new TestConcurrencyControl(true) {
+          @Override
+          public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
+            scheduledDelays.add(delayMs);
+            return super.schedule(delayMs, runnable);
+          }
+        };
+    final var membershipService = Mockito.mock(ClusterMembershipService.class);
+    final var initializer =
+        new SyncInitializer(
+            Duration.ofSeconds(1),
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(MemberId.from("1")),
+            concurrencyControl,
+            ignored -> TestActorFuture.failedFuture(new RuntimeException("not reachable")),
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            CurrentClusterConfiguration.uninitialized(),
+            membershipService);
+    final var listener = ArgumentCaptor.forClass(ClusterMembershipEventListener.class);
+    initializer.initialize();
+    verify(membershipService).addListener(listener.capture());
+    concurrencyControl.runAll();
+    concurrencyControl.runAll();
+    scheduledDelays.clear();
+
+    // when - the member joins but is not yet able to answer
+    listener
+        .getValue()
+        .event(
+            new ClusterMembershipEvent(
+                ClusterMembershipEvent.Type.MEMBER_ADDED, Member.member("1", "localhost:1")));
+
+    // then - the pending long retry is replaced by a quick one
+    assertThat(concurrencyControl.scheduledTasks()).isOne();
+    assertThat(scheduledDelays).containsExactly(250L);
+  }
+
+  @Test
+  void shouldQueryJoiningMemberWithoutWaitingForSyncDelay() {
+    // given - the only known member is not reachable yet, so the next retry is far away
+    final var joiningMember = MemberId.from("1");
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var membershipService = Mockito.mock(ClusterMembershipService.class);
+    final var responses = new ArrayDeque<TestActorFuture<CurrentClusterConfiguration>>();
+    final var initializer =
+        new SyncInitializer(
+            Duration.ofHours(1),
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(joiningMember),
+            concurrencyControl,
+            ignored -> {
+              final var response = new TestActorFuture<CurrentClusterConfiguration>();
+              responses.add(response);
+              return response;
+            },
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT,
+            CurrentClusterConfiguration.uninitialized(),
+            membershipService);
+    final var listener = ArgumentCaptor.forClass(ClusterMembershipEventListener.class);
+
+    final var initializeFuture = initializer.initialize();
+    verify(membershipService).addListener(listener.capture());
+    responses.poll().completeExceptionally(new RuntimeException("not reachable"));
+
+    // when - the member joins before the retry fires
+    listener
+        .getValue()
+        .event(
+            new ClusterMembershipEvent(
+                ClusterMembershipEvent.Type.MEMBER_ADDED, Member.member("1", "localhost:1")));
+
+    // then - it is queried right away and its configuration is used
+    assertThat(responses).hasSize(1);
+    responses.poll().complete(initialClusterConfiguration);
+    assertThat(initializeFuture.join().isUninitialized()).isFalse();
+    verify(membershipService).removeListener(listener.getValue());
   }
 
   @Test
