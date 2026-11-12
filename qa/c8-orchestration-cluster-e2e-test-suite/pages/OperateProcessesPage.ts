@@ -254,9 +254,20 @@ class OperateProcessesPage {
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        // Click only once the list has finished (re)loading, so the link
-        // belongs to the filtered results rather than the previous list.
-        await expect(this.page.getByTestId('data-table-loader')).toBeHidden();
+        // Click only once the list has settled, so the link belongs to the
+        // filtered results rather than the previous list. The loader alone is
+        // not enough: right after a filter change the search may not have
+        // started yet. Require the same target on two consecutive reads.
+        let previousHref: string | null | undefined;
+        await expect(async () => {
+          await expect(this.page.getByTestId('data-table-loader')).toBeHidden();
+          const href = await this.processInstanceLink.getAttribute('href', {
+            timeout: 5_000,
+          });
+          const settled = href !== null && href === previousHref;
+          previousHref = href;
+          expect(settled, 'instance list still changing').toBe(true);
+        }).toPass({intervals: [1_000], timeout: 30_000});
         await this.processInstanceLink.click();
         return;
       } catch {
