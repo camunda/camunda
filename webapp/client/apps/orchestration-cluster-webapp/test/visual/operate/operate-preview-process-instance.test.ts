@@ -39,6 +39,8 @@ test('should match the process instance diagram panel snapshot with a selected e
 	await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementId=task-1`);
 
 	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
+	await operatePreviewProcessInstancePage.diagramZoomResetButton.click();
+	await expect(operatePreviewProcessInstancePage.stateOverlay('Review invoice, Active: 1')).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.diagramPanel).toHaveScreenshot();
 });
 

@@ -80,6 +80,7 @@ test('should match the header snapshot with the breadcrumb of a called instance'
 	await expect(
 		operatePreviewProcessInstancePage.breadcrumb.getByRole('link', {name: 'View Process Parent Process - Instance 1'}),
 	).toBeVisible();
+	await operatePreviewProcessInstancePage.diagramZoomResetButton.click();
 	await expect(page).toHaveScreenshot();
 });
 
@@ -105,6 +106,8 @@ test('should match the header snapshot with the overflow menu of a deep breadcru
 	);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await expect(operatePreviewProcessInstancePage.breadcrumb.getByRole('button', {name: 'More'})).toBeVisible();
+	await operatePreviewProcessInstancePage.diagramZoomResetButton.click();
 	await operatePreviewProcessInstancePage.breadcrumb.getByRole('button', {name: 'More'}).click();
 
 	await expect(page.getByRole('menuitem', {name: 'Third Process'})).toBeVisible();
