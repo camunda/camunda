@@ -213,30 +213,6 @@ final class ProcessDrainingExportConsistencyIT {
         .isEqualTo(ProcessDefinitionState.DRAINING);
   }
 
-  /** Cannot come from the engine (#65624: suspension never targets a draining version). */
-  @TestTemplate
-  void shouldEndSuspendedWhenDrainingAndSuspendedAreExportedInOneBatchInReverseOrder(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    prepareConfig(config);
-    createSchemas(config);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
-    config.getBulk().setSize(100);
-
-    // when
-    exportOnPartition(
-        config,
-        DEPLOYMENT_PARTITION,
-        processRecord(ProcessIntent.DRAINING),
-        suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
-    clientAdapter.refresh(testPrefix);
-
-    // then
-    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
-        .isEqualTo(ProcessDefinitionState.SUSPENDED);
-  }
-
   @TestTemplate
   void shouldKeepSuspendedWhenAnotherPartitionExportsCreatedLater(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
