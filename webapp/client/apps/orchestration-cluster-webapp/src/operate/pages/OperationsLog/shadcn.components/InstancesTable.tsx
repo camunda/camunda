@@ -46,7 +46,6 @@ const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum)
 const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
-	'[&_[data-slot=table-head]]:whitespace-normal!',
 ].join(' ');
 
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
@@ -240,6 +239,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		<section className="flex h-full flex-col">
 			<PanelHeader
 				title={t('operate.operationsLog.title')}
+				className="bg-transparent"
 				count={status === 'success' && !isPlaceholderData ? totalCount : undefined}
 				hasMoreTotalItems={status === 'success' && !isPlaceholderData && hasMoreTotalItems}
 			/>
