@@ -11,30 +11,37 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 
 /**
  * The snapshot of a partition state: one small file that names the state, which itself stays in the
  * database. The snapshot store checksums and moves the file like any other snapshot file.
+ *
+ * @param partitionId the partition that owns the state
+ * @param stateId the random id the state got when it was created, so that a snapshot never names a
+ *     state that was deleted and created again
  */
-record StateMarker(long stateId, StateIdentity identity) {
+record StateMarker(int partitionId, String stateId) {
 
   static final String FILE_NAME = "zeebe-state.properties";
 
-  private static final String FORMAT_VERSION = "1";
+  private static final String FORMAT_VERSION = "2";
   private static final String VERSION = "version";
-  private static final String STATE_ID = "stateId";
-  private static final String PARTITION_GROUP = "partitionGroup";
   private static final String PARTITION_ID = "partitionId";
+  private static final String STATE_ID = "stateId";
+
+  StateMarker {
+    Objects.requireNonNull(stateId, "must specify a state id");
+  }
 
   /** Writes the marker into the directory, which is created if it doesn't exist yet. */
   void writeTo(final Path directory) {
     final var properties = new Properties();
     properties.setProperty(VERSION, FORMAT_VERSION);
-    properties.setProperty(STATE_ID, Long.toString(stateId));
-    properties.setProperty(PARTITION_GROUP, identity.partitionGroup());
-    properties.setProperty(PARTITION_ID, Integer.toString(identity.partitionId()));
+    properties.setProperty(PARTITION_ID, Integer.toString(partitionId));
+    properties.setProperty(STATE_ID, stateId);
     try {
       Files.createDirectories(directory);
       try (final var output = Files.newOutputStream(directory.resolve(FILE_NAME))) {
@@ -42,8 +49,8 @@ record StateMarker(long stateId, StateIdentity identity) {
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(
-          "Failed to write the marker of the partition state %d to '%s'"
-              .formatted(stateId, directory),
+          "Failed to write the marker of the state %s of partition %d to '%s'"
+              .formatted(stateId, partitionId, directory),
           e);
     }
   }
@@ -81,10 +88,8 @@ record StateMarker(long stateId, StateIdentity identity) {
     }
     try {
       return new StateMarker(
-          Long.parseLong(required(properties, STATE_ID, file)),
-          new StateIdentity(
-              required(properties, PARTITION_GROUP, file),
-              Integer.parseInt(required(properties, PARTITION_ID, file))));
+          Integer.parseInt(required(properties, PARTITION_ID, file)),
+          required(properties, STATE_ID, file));
     } catch (final NumberFormatException e) {
       throw new IllegalStateException(
           "Expected a valid snapshot marker, but '%s' has a value that is not a number"

@@ -41,7 +41,8 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsTransaction.class);
 
   private final RdbmsStorage storage;
-  private final long stateId;
+  private final int partitionId;
+  private final String stateId;
   private final OptionalLong term;
   private final WriteBuffer buffer = new WriteBuffer();
   private @Nullable Connection connection;
@@ -51,16 +52,22 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   private boolean ownerChecked;
 
   /**
+   * @param stateId the state the term must own to write
    * @param term the term to write with, or empty to only read
    */
-  RdbmsTransaction(final RdbmsStorage storage, final long stateId, final OptionalLong term) {
+  RdbmsTransaction(
+      final RdbmsStorage storage,
+      final int partitionId,
+      final String stateId,
+      final OptionalLong term) {
     this.storage = storage;
+    this.partitionId = partitionId;
     this.stateId = stateId;
     this.term = term;
   }
 
-  long stateId() {
-    return stateId;
+  int partitionId() {
+    return partitionId;
   }
 
   /** Returns the value of the key, or {@code null} if it doesn't exist. */
@@ -71,7 +78,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
       // the caller may wrap and change it, while the buffer still has to send the original
       return value == null ? null : value.clone();
     }
-    return query(state -> state.get(stateId, columnFamily, key)).orElse(null);
+    return query(state -> state.get(partitionId, columnFamily, key)).orElse(null);
   }
 
   void put(final int columnFamily, final byte[] key, final byte[] value) {
@@ -169,7 +176,8 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
       try {
         current.rollback();
       } catch (final SQLException e) {
-        LOG.warn("Failed to roll back the transaction on the partition state {}", stateId, e);
+        LOG.warn(
+            "Failed to roll back the transaction on the state of partition {}", partitionId, e);
       } finally {
         release();
       }
@@ -186,7 +194,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
             checkOwner(state);
             ownerChecked = true;
           }
-          buffer.sendTo(state, stateId);
+          buffer.sendTo(state, partitionId);
           session().flushStatements();
         });
     buffer.clear();
@@ -195,19 +203,20 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   private void checkWritable() {
     if (term.isEmpty()) {
       throw new UnsupportedOperationException(
-          "Expected to write to the partition state %d, but it was opened for reading only"
-              .formatted(stateId));
+          "Expected to write to the state of partition %d, but it was opened for reading only"
+              .formatted(partitionId));
     }
   }
 
   private void checkOwner(final StateMapper state) {
     final long writeTerm = term.orElseThrow();
-    final var ownerTerm = state.lockOwnerTerm(stateId);
+    final var ownerTerm = state.lockOwnerTerm(partitionId, stateId);
     if (ownerTerm.isEmpty() || ownerTerm.get() != writeTerm) {
       throw new StateFencedException(
-          "Expected to write to the partition state %d with term %d, but %s"
+          "Expected to write to the state %s of partition %d with term %d, but %s"
               .formatted(
                   stateId,
+                  partitionId,
                   writeTerm,
                   ownerTerm
                       .map(owner -> "a leader of term " + owner + " owns it")
@@ -275,7 +284,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     try {
       borrowed.close();
     } catch (final SQLException e) {
-      LOG.warn("Failed to return the connection of the partition state {}", stateId, e);
+      LOG.warn("Failed to return the connection of the state of partition {}", partitionId, e);
     }
   }
 

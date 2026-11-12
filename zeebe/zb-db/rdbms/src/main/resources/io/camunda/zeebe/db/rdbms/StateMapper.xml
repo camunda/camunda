@@ -17,39 +17,40 @@
     </constructor>
   </resultMap>
 
-  <select id="findStateId" resultType="long">
+  <select id="findStateId" resultType="string">
     SELECT STATE_ID
     FROM ${prefix}ZEEBE_STATE_PARTITION
-    WHERE PARTITION_GROUP = #{partitionGroup}
-      AND PARTITION_ID = #{partitionId}
-  </select>
-
-  <select id="maxStateId" resultType="_long">
-    SELECT COALESCE(MAX(STATE_ID), 0)
-    FROM ${prefix}ZEEBE_STATE_PARTITION
+    WHERE PARTITION_ID = #{partitionId}
   </select>
 
   <insert id="createState">
-    INSERT INTO ${prefix}ZEEBE_STATE_PARTITION (STATE_ID, PARTITION_GROUP, PARTITION_ID, OWNER_TERM)
-    VALUES (#{stateId}, #{partitionGroup}, #{partitionId}, #{term})
+    INSERT INTO ${prefix}ZEEBE_STATE_PARTITION (PARTITION_ID, STATE_ID, OWNER_TERM)
+    VALUES (#{partitionId}, #{stateId}, #{term})
   </insert>
+
+  <delete id="deleteRows">
+    DELETE FROM ${prefix}ZEEBE_STATE
+    WHERE PARTITION_ID = #{partitionId}
+  </delete>
 
   <update id="claim">
     UPDATE ${prefix}ZEEBE_STATE_PARTITION
     SET OWNER_TERM = #{term}
-    WHERE STATE_ID = #{stateId}
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
       AND OWNER_TERM &lt;= #{term}
   </update>
 
   <select id="lockOwnerTerm" resultType="long">
     SELECT OWNER_TERM
     FROM ${prefix}ZEEBE_STATE_PARTITION
-    WHERE STATE_ID = #{stateId}
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
     FOR UPDATE
   </select>
 
   <sql id="inRange">
-    WHERE STATE_ID = #{stateId}
+    WHERE PARTITION_ID = #{partitionId}
       AND COLUMN_FAMILY = #{columnFamily}
     <if test="from != null">
       AND STATE_KEY &gt;= #{from}
@@ -62,27 +63,27 @@
   <select id="get" resultType="_byte[]">
     SELECT STATE_VALUE
     FROM ${prefix}ZEEBE_STATE
-    WHERE STATE_ID = #{stateId}
+    WHERE PARTITION_ID = #{partitionId}
       AND COLUMN_FAMILY = #{columnFamily}
       AND STATE_KEY = #{key}
   </select>
 
   <update id="upsert" databaseId="h2">
-    MERGE INTO ${prefix}ZEEBE_STATE (STATE_ID, COLUMN_FAMILY, STATE_KEY, STATE_VALUE)
-    KEY (STATE_ID, COLUMN_FAMILY, STATE_KEY)
-    VALUES (#{stateId}, #{columnFamily}, #{key}, #{value})
+    MERGE INTO ${prefix}ZEEBE_STATE (PARTITION_ID, COLUMN_FAMILY, STATE_KEY, STATE_VALUE)
+    KEY (PARTITION_ID, COLUMN_FAMILY, STATE_KEY)
+    VALUES (#{partitionId}, #{columnFamily}, #{key}, #{value})
   </update>
 
   <update id="upsert" databaseId="postgresql">
-    INSERT INTO ${prefix}ZEEBE_STATE (STATE_ID, COLUMN_FAMILY, STATE_KEY, STATE_VALUE)
-    VALUES (#{stateId}, #{columnFamily}, #{key}, #{value})
-    ON CONFLICT (STATE_ID, COLUMN_FAMILY, STATE_KEY)
+    INSERT INTO ${prefix}ZEEBE_STATE (PARTITION_ID, COLUMN_FAMILY, STATE_KEY, STATE_VALUE)
+    VALUES (#{partitionId}, #{columnFamily}, #{key}, #{value})
+    ON CONFLICT (PARTITION_ID, COLUMN_FAMILY, STATE_KEY)
     DO UPDATE SET STATE_VALUE = EXCLUDED.STATE_VALUE
   </update>
 
   <delete id="delete">
     DELETE FROM ${prefix}ZEEBE_STATE
-    WHERE STATE_ID = #{stateId}
+    WHERE PARTITION_ID = #{partitionId}
       AND COLUMN_FAMILY = #{columnFamily}
       AND STATE_KEY = #{key}
   </delete>

@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.rdbms.RdbmsStorage;
 import io.camunda.zeebe.db.rdbms.RdbmsZeebeDbFactory;
-import io.camunda.zeebe.db.rdbms.StateIdentity;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -45,18 +44,18 @@ final class RdbmsTestFactory {
   /** A factory for a partition that other factories may share, for example after a failover. */
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create(
-          final Database database, final StateIdentity partition, final LongSupplier term) {
+          final Database database, final int partitionId, final LongSupplier term) {
     return new RdbmsZeebeDbFactory<>(
         database.storage(),
-        partition,
+        partitionId,
         term,
         new ConsistencyChecksSettings(true, true),
         SimpleMeterRegistry::new);
   }
 
   /** Returns a partition that no other factory has used yet. */
-  static StateIdentity nextPartition() {
-    return new StateIdentity("contract-tests", NEXT_PARTITION_ID.incrementAndGet());
+  static int nextPartition() {
+    return NEXT_PARTITION_ID.incrementAndGet();
   }
 
   enum Database {

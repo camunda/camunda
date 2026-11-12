@@ -344,7 +344,8 @@ final class RdbmsColumnFamily<
       }
       case Prefix -> {
         final var range =
-            KeyRanges.withPrefix(transaction.stateId(), foreignColumnFamily, serialize(foreignKey));
+            KeyRanges.withPrefix(
+                transaction.partitionId(), foreignColumnFamily, serialize(foreignKey));
         if (!transaction.exists(range)) {
           throw new ZeebeDbInconsistentException(
               "Foreign key "
@@ -367,7 +368,7 @@ final class RdbmsColumnFamily<
   }
 
   private StateRange withPrefix(final RdbmsTransaction transaction, final byte[] prefix) {
-    return KeyRanges.withPrefix(transaction.stateId(), columnFamily.getValue(), prefix);
+    return KeyRanges.withPrefix(transaction.partitionId(), columnFamily.getValue(), prefix);
   }
 
   private void scanEntries(
@@ -425,9 +426,10 @@ final class RdbmsColumnFamily<
           final var start = startAt != null ? serialize(startAt) : prefix;
           final var range =
               reverse
-                  ? KeyRanges.reverse(transaction.stateId(), columnFamily.getValue(), prefix, start)
+                  ? KeyRanges.reverse(
+                      transaction.partitionId(), columnFamily.getValue(), prefix, start)
                   : KeyRanges.forward(
-                      transaction.stateId(), columnFamily.getValue(), prefix, start);
+                      transaction.partitionId(), columnFamily.getValue(), prefix, start);
           transaction.scan(
               range,
               keysOnly,

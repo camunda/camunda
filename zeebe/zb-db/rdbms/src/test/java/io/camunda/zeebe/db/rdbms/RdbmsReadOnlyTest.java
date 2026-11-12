@@ -31,7 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class RdbmsReadOnlyTest {
 
-  private static final StateIdentity PARTITION = new StateIdentity("raft-partition", 1);
+  private static final int PARTITION = 1;
 
   private final TestDatabase database = createDatabase(Duration.ofMillis(100));
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");

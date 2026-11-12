@@ -14,41 +14,43 @@ import org.apache.ibatis.session.ResultHandler;
 /** The statements on the state tables; see {@code StateMapper.xml} next to this class. */
 interface StateMapper {
 
-  Optional<Long> findStateId(
-      @Param("partitionGroup") String partitionGroup, @Param("partitionId") int partitionId);
-
-  /** Returns the highest state id, or 0 if there's no state. */
-  long maxStateId();
+  Optional<String> findStateId(@Param("partitionId") int partitionId);
 
   void createState(
-      @Param("stateId") long stateId,
-      @Param("partitionGroup") String partitionGroup,
       @Param("partitionId") int partitionId,
+      @Param("stateId") String stateId,
       @Param("term") long term);
+
+  /** Deletes every row the partition has in the state tables. */
+  void deleteRows(@Param("partitionId") int partitionId);
 
   /**
    * Sets the owner term, unless a newer term owns the state.
    *
    * @return 1 if claimed, else 0; only correct on a session that doesn't batch
    */
-  int claim(@Param("stateId") long stateId, @Param("term") long term);
+  int claim(
+      @Param("partitionId") int partitionId,
+      @Param("stateId") String stateId,
+      @Param("term") long term);
 
   /** Returns the owner term and locks the state row until the transaction ends. */
-  Optional<Long> lockOwnerTerm(@Param("stateId") long stateId);
+  Optional<Long> lockOwnerTerm(
+      @Param("partitionId") int partitionId, @Param("stateId") String stateId);
 
   Optional<byte[]> get(
-      @Param("stateId") long stateId,
+      @Param("partitionId") int partitionId,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key);
 
   void upsert(
-      @Param("stateId") long stateId,
+      @Param("partitionId") int partitionId,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key,
       @Param("value") byte[] value);
 
   void delete(
-      @Param("stateId") long stateId,
+      @Param("partitionId") int partitionId,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key);
 

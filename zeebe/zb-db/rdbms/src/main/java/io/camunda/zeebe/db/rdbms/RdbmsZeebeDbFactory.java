@@ -30,26 +30,26 @@ public final class RdbmsZeebeDbFactory<
     implements ZeebeDbFactory<ColumnFamilyNames> {
 
   private final RdbmsStorage storage;
-  private final StateIdentity identity;
+  private final int partitionId;
   private final LongSupplier term;
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final Supplier<MeterRegistry> meterRegistrySupplier;
   private final PartitionStates partitionStates;
 
   /**
-   * @param identity the partition whose state every database opened by this factory reads and
+   * @param partitionId the partition whose state every database opened by this factory reads and
    *     writes
    * @param term the term of the partition's leader, read every time a database is opened; that
    *     database writes with it until a leader of a newer term claims the state
    */
   public RdbmsZeebeDbFactory(
       final RdbmsStorage storage,
-      final StateIdentity identity,
+      final int partitionId,
       final LongSupplier term,
       final ConsistencyChecksSettings consistencyChecksSettings,
       final Supplier<MeterRegistry> meterRegistrySupplier) {
     this.storage = Objects.requireNonNull(storage, "must specify a storage");
-    this.identity = Objects.requireNonNull(identity, "must specify the partition");
+    this.partitionId = partitionId;
     this.term = Objects.requireNonNull(term, "must specify a term supplier");
     this.consistencyChecksSettings =
         Objects.requireNonNull(consistencyChecksSettings, "must specify the consistency checks");
@@ -77,14 +77,11 @@ public final class RdbmsZeebeDbFactory<
     final long currentTerm = term.getAsLong();
     final var snapshotMarker = StateMarker.readIfPresent(pathName.toPath());
     snapshotMarker.ifPresent(this::checkPartition);
-    final long stateId =
-        partitionStates.attach(
-            identity,
-            snapshotMarker.stream().mapToLong(StateMarker::stateId).findFirst(),
-            currentTerm);
+    final var stateId =
+        partitionStates.attach(partitionId, snapshotMarker.map(StateMarker::stateId), currentTerm);
     return new RdbmsZeebeDb<>(
         storage,
-        new StateMarker(stateId, identity),
+        new StateMarker(partitionId, stateId),
         OptionalLong.of(currentTerm),
         consistencyChecksSettings,
         meterRegistrySupplier.get());
@@ -100,17 +97,16 @@ public final class RdbmsZeebeDbFactory<
    * @return the database, or empty if the partition has no state yet
    */
   public Optional<ZeebeDb<ColumnFamilyNames>> openReadOnlyDb() {
-    final var stateId = partitionStates.find(identity);
-    if (stateId.isEmpty()) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        new RdbmsZeebeDb<>(
-            storage,
-            new StateMarker(stateId.getAsLong(), identity),
-            OptionalLong.empty(),
-            consistencyChecksSettings,
-            meterRegistrySupplier.get()));
+    return partitionStates
+        .find(partitionId)
+        .map(
+            stateId ->
+                new RdbmsZeebeDb<>(
+                    storage,
+                    new StateMarker(partitionId, stateId),
+                    OptionalLong.empty(),
+                    consistencyChecksSettings,
+                    meterRegistrySupplier.get()));
   }
 
   /**
@@ -126,10 +122,10 @@ public final class RdbmsZeebeDbFactory<
   }
 
   private void checkPartition(final StateMarker snapshotMarker) {
-    if (!snapshotMarker.identity().equals(identity)) {
+    if (snapshotMarker.partitionId() != partitionId) {
       throw new IllegalStateException(
-          "Expected a snapshot of partition %s, but it names the state of partition %s"
-              .formatted(identity, snapshotMarker.identity()));
+          "Expected a snapshot of partition %d, but it names the state of partition %d"
+              .formatted(partitionId, snapshotMarker.partitionId()));
     }
   }
 }

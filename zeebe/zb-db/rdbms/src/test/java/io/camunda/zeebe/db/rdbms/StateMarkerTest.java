@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,8 +22,8 @@ final class StateMarkerTest {
 
   @Test
   void shouldReadWhatWasWritten() {
-    // given a group name with characters the file format must escape
-    final var marker = new StateMarker(42, new StateIdentity("group = #1: ü", 3));
+    // given
+    final var marker = new StateMarker(3, UUID.randomUUID().toString());
 
     // when
     marker.writeTo(directory.resolve("new"));
@@ -42,13 +43,12 @@ final class StateMarkerTest {
   @Test
   void shouldRejectAMarkerWithAMissingValue() throws Exception {
     // given
-    Files.writeString(
-        directory.resolve(StateMarker.FILE_NAME), "version=1\nstateId=1\npartitionId=1\n");
+    Files.writeString(directory.resolve(StateMarker.FILE_NAME), "version=2\npartitionId=1\n");
 
     // when / then
     assertThatThrownBy(() -> StateMarker.readFrom(directory))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("partitionGroup");
+        .hasMessageContaining("stateId");
   }
 
   @Test
@@ -56,7 +56,7 @@ final class StateMarkerTest {
     // given
     Files.writeString(
         directory.resolve(StateMarker.FILE_NAME),
-        "version=1\nstateId=one\npartitionGroup=raft-partition\npartitionId=1\n");
+        "version=2\npartitionId=one\nstateId=" + UUID.randomUUID() + "\n");
 
     // when / then
     assertThatThrownBy(() -> StateMarker.readFrom(directory))

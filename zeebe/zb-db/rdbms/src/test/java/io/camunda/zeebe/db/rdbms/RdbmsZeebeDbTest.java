@@ -268,7 +268,7 @@ final class RdbmsZeebeDbTest {
     final var db =
         new RdbmsZeebeDbFactory<TestColumnFamilies>(
                 storage,
-                new StateIdentity("raft-partition", partitionId),
+                partitionId,
                 () -> 1,
                 new ConsistencyChecksSettings(true, true),
                 SimpleMeterRegistry::new)

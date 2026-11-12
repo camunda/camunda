@@ -32,7 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
  */
 class RdbmsSnapshotTest {
 
-  private static final StateIdentity PARTITION = new StateIdentity("raft-partition", 1);
+  private static final int PARTITION = 1;
 
   private final TestDatabase database = createDatabase();
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
@@ -75,15 +75,15 @@ class RdbmsSnapshotTest {
     final var snapshot = directory.resolve("snapshot");
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
-    final var otherPartition = factory(storage, new StateIdentity("raft-partition", 2));
+    final var otherPartition = factory(storage, 2);
 
     // when / then
     assertThatThrownBy(() -> otherPartition.openSnapshotOnlyDb(snapshot.toFile()))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("raft-partition-2");
+        .hasMessageContaining("Expected a snapshot of partition 2");
     assertThatThrownBy(() -> otherPartition.createDb(snapshot.toFile()))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("raft-partition-2");
+        .hasMessageContaining("Expected a snapshot of partition 2");
   }
 
   @Test
@@ -107,7 +107,6 @@ class RdbmsSnapshotTest {
   void shouldRejectASnapshotOfAnotherStateOfThePartition() throws Exception {
     // given a snapshot of the partition's state in another database, where its state id differs
     final var snapshot = directory.resolve("snapshot");
-    createDb(factory(storage, new StateIdentity("raft-partition", 2)), directory.resolve("other"));
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
     try (final var otherDatabase = createDatabase()) {
@@ -118,7 +117,7 @@ class RdbmsSnapshotTest {
       // when / then
       assertThatThrownBy(() -> otherFactory.createDb(snapshot.toFile()))
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("holds the state 1");
+          .hasMessageContaining("but it holds the state ");
     }
   }
 
@@ -137,12 +136,12 @@ class RdbmsSnapshotTest {
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
     final var marker = snapshot.resolve(StateMarker.FILE_NAME);
-    Files.writeString(marker, Files.readString(marker).replace("version=1", "version=2"));
+    Files.writeString(marker, Files.readString(marker).replace("version=2", "version=3"));
 
     // when / then
     assertThatThrownBy(() -> factory(storage, PARTITION).openSnapshotOnlyDb(snapshot.toFile()))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("version 2");
+        .hasMessageContaining("version 3");
   }
 
   @Test
@@ -161,7 +160,7 @@ class RdbmsSnapshotTest {
   }
 
   private static RdbmsZeebeDbFactory<TestColumnFamilies> factory(
-      final RdbmsStorage storage, final StateIdentity partition) {
+      final RdbmsStorage storage, final int partition) {
     return new RdbmsZeebeDbFactory<>(
         storage,
         partition,

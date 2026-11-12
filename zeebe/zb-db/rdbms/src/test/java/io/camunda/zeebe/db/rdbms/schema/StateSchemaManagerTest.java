@@ -60,7 +60,7 @@ class StateSchemaManagerTest {
     // given
     final var schemaManager = new StateSchemaManager(database.dataSource(), "A_");
     schemaManager.migrate();
-    insertPartition("A_", 1, 1);
+    insertPartition("A_", 1, "state-1");
     insertState("A_", 1, new byte[] {1});
 
     // when
@@ -108,10 +108,10 @@ class StateSchemaManagerTest {
   void shouldRejectSecondStateForSamePartition() throws SQLException {
     // given
     new StateSchemaManager(database.dataSource(), "A_").migrate();
-    insertPartition("A_", 1, 1);
+    insertPartition("A_", 1, "state-1");
 
     // when - then
-    assertThatThrownBy(() -> insertPartition("A_", 2, 1))
+    assertThatThrownBy(() -> insertPartition("A_", 1, "state-2"))
         .isInstanceOfSatisfying(
             SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo(UNIQUE_VIOLATION));
   }
@@ -120,7 +120,7 @@ class StateSchemaManagerTest {
   void shouldSortKeysAsUnsignedBytesLikeRocksDb() throws SQLException {
     // given
     new StateSchemaManager(database.dataSource(), "A_").migrate();
-    insertPartition("A_", 1, 1);
+    insertPartition("A_", 1, "state-1");
     final var keys =
         List.of(
             new byte[] {(byte) 0xFF},
@@ -154,40 +154,39 @@ class StateSchemaManagerTest {
     }
   }
 
-  private void insertPartition(final String prefix, final long stateId, final int partitionId)
+  private void insertPartition(final String prefix, final int partitionId, final String stateId)
       throws SQLException {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "INSERT INTO %sZEEBE_STATE_PARTITION VALUES (?, 'raft-partition', ?, 0)"
-                    .formatted(prefix))) {
-      statement.setLong(1, stateId);
-      statement.setInt(2, partitionId);
+                "INSERT INTO %sZEEBE_STATE_PARTITION VALUES (?, ?, 0)".formatted(prefix))) {
+      statement.setInt(1, partitionId);
+      statement.setString(2, stateId);
       statement.executeUpdate();
     }
   }
 
-  private void insertState(final String prefix, final long stateId, final byte[] key)
+  private void insertState(final String prefix, final int partitionId, final byte[] key)
       throws SQLException {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
                 "INSERT INTO %sZEEBE_STATE VALUES (?, 1, ?, ?)".formatted(prefix))) {
-      statement.setLong(1, stateId);
+      statement.setInt(1, partitionId);
       statement.setBytes(2, key);
       statement.setBytes(3, new byte[0]);
       statement.executeUpdate();
     }
   }
 
-  private List<byte[]> stateKeys(final String prefix, final long stateId) throws SQLException {
+  private List<byte[]> stateKeys(final String prefix, final int partitionId) throws SQLException {
     final var keys = new ArrayList<byte[]>();
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "SELECT STATE_KEY FROM %sZEEBE_STATE WHERE STATE_ID = ? AND COLUMN_FAMILY = 1 ORDER BY STATE_KEY"
+                "SELECT STATE_KEY FROM %sZEEBE_STATE WHERE PARTITION_ID = ? AND COLUMN_FAMILY = 1 ORDER BY STATE_KEY"
                     .formatted(prefix))) {
-      statement.setLong(1, stateId);
+      statement.setInt(1, partitionId);
       try (final var rows = statement.executeQuery()) {
         while (rows.next()) {
           keys.add(rows.getBytes(1));

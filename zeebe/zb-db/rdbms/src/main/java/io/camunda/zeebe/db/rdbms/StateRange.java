@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
  * bound means the range doesn't stop on that side.
  */
 record StateRange(
-    long stateId,
+    int partitionId,
     int columnFamily,
     byte @Nullable [] from,
     byte @Nullable [] to,

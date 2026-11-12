@@ -68,7 +68,6 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.db.rdbms.RdbmsZeebeDbFactory;
-import io.camunda.zeebe.db.rdbms.StateIdentity;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -217,7 +216,7 @@ public final class ZeebePartitionFactory {
           new RdbmsZeebeDbFactory<ZbColumnFamilies>(
               Objects.requireNonNull(rdbmsStateStorage, "must have a database for the state")
                   .storage(),
-              new StateIdentity(partitionId.group(), partitionId.number()),
+              partitionId.number(),
               stateTerm::get,
               consistencyChecks.getSettings(),
               dbMeterRegistry);

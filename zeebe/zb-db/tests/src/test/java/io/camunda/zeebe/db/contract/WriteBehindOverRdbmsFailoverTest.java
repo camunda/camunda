@@ -18,7 +18,6 @@ import io.camunda.zeebe.db.contract.RdbmsTestFactory.Database;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
 import io.camunda.zeebe.db.rdbms.StateFencedException;
-import io.camunda.zeebe.db.rdbms.StateIdentity;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ class WriteBehindOverRdbmsFailoverTest {
           Duration.ofHours(1),
           WriteBehindConfiguration.DEFAULT.snapshotCatchUpTimeout());
 
-  private final StateIdentity partition = RdbmsTestFactory.nextPartition();
+  private final int partition = RdbmsTestFactory.nextPartition();
   private final List<ZeebeDb<DefaultColumnFamily>> dbs = new ArrayList<>();
   @TempDir private Path directory;
 

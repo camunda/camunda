@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 final class KeyRangesTest {
 
-  private static final long STATE_ID = 3;
+  private static final int PARTITION_ID = 3;
   private static final int COLUMN_FAMILY = 7;
 
   @Test
@@ -39,18 +39,20 @@ final class KeyRangesTest {
   @Test
   void shouldScanForwardFromTheStartToTheEndOfThePrefix() {
     // when
-    final var range = KeyRanges.forward(STATE_ID, COLUMN_FAMILY, bytes(0x01), bytes(0x01, 0x05));
+    final var range =
+        KeyRanges.forward(PARTITION_ID, COLUMN_FAMILY, bytes(0x01), bytes(0x01, 0x05));
 
     // then
     assertThat(range)
         .usingRecursiveComparison()
-        .isEqualTo(new StateRange(STATE_ID, COLUMN_FAMILY, bytes(0x01, 0x05), bytes(0x02), false));
+        .isEqualTo(
+            new StateRange(PARTITION_ID, COLUMN_FAMILY, bytes(0x01, 0x05), bytes(0x02), false));
   }
 
   @Test
   void shouldScanForwardFromAStartBeforeThePrefixToTheEndOfThePrefix() {
     // when
-    final var range = KeyRanges.forward(STATE_ID, COLUMN_FAMILY, bytes(0x02), bytes(0x01));
+    final var range = KeyRanges.forward(PARTITION_ID, COLUMN_FAMILY, bytes(0x02), bytes(0x01));
 
     // then
     assertThat(range.from()).containsExactly(bytes(0x01));
@@ -60,7 +62,7 @@ final class KeyRangesTest {
   @Test
   void shouldScanForwardOverEverythingWithoutPrefixAndStart() {
     // when
-    final var range = KeyRanges.forward(STATE_ID, COLUMN_FAMILY, new byte[0], new byte[0]);
+    final var range = KeyRanges.forward(PARTITION_ID, COLUMN_FAMILY, new byte[0], new byte[0]);
 
     // then
     assertThat(range.from()).isNull();
@@ -70,7 +72,8 @@ final class KeyRangesTest {
   @Test
   void shouldScanInReverseFromTheStartDownToThePrefix() {
     // when
-    final var range = KeyRanges.reverse(STATE_ID, COLUMN_FAMILY, bytes(0x01), bytes(0x01, 0x05));
+    final var range =
+        KeyRanges.reverse(PARTITION_ID, COLUMN_FAMILY, bytes(0x01), bytes(0x01, 0x05));
 
     // then
     assertThat(range.from()).containsExactly(bytes(0x01));
@@ -81,7 +84,7 @@ final class KeyRangesTest {
   @Test
   void shouldScanInReverseOverEverythingUpToTheStartWithoutPrefix() {
     // when
-    final var range = KeyRanges.reverse(STATE_ID, COLUMN_FAMILY, new byte[0], bytes(0x01));
+    final var range = KeyRanges.reverse(PARTITION_ID, COLUMN_FAMILY, new byte[0], bytes(0x01));
 
     // then
     assertThat(range.from()).isNull();
@@ -91,12 +94,13 @@ final class KeyRangesTest {
   @Test
   void shouldFindKeysWithPrefix() {
     // when
-    final var range = KeyRanges.withPrefix(STATE_ID, COLUMN_FAMILY, bytes(0x01, 0xFF));
+    final var range = KeyRanges.withPrefix(PARTITION_ID, COLUMN_FAMILY, bytes(0x01, 0xFF));
 
     // then
     assertThat(range)
         .usingRecursiveComparison()
-        .isEqualTo(new StateRange(STATE_ID, COLUMN_FAMILY, bytes(0x01, 0xFF), bytes(0x02), false));
+        .isEqualTo(
+            new StateRange(PARTITION_ID, COLUMN_FAMILY, bytes(0x01, 0xFF), bytes(0x02), false));
   }
 
   @Test

@@ -20,10 +20,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntUnaryOperator;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -48,70 +50,108 @@ class PartitionStatesTest {
   @Test
   void shouldReopenThePartitionsState() {
     // given
-    final var partition = new StateIdentity("raft-partition", 1);
-    final var first = createDb(partition);
+    final var first = createDb(1);
     columnFamily(first).upsert(key(1), value("first"));
 
     // when
-    final var second = createDb(partition);
+    final var second = createDb(1);
 
     // then
     assertThat(columnFamily(second).get(key(1))).hasToString("first");
   }
 
   @Test
-  void shouldKeepTheStatesOfPartitionGroupsApart() {
+  void shouldKeepTheStatesOfPartitionsApart() {
     // given
-    final var first = createDb(new StateIdentity("first-group", 1));
+    final var first = createDb(1);
     columnFamily(first).upsert(key(1), value("first"));
 
     // when
-    final var second = createDb(new StateIdentity("second-group", 1));
+    final var second = createDb(2);
 
     // then
     assertThat(columnFamily(second).isEmpty()).isTrue();
   }
 
   @Test
+  void shouldStartEmptyWhenThePartitionsStateWasDeleted() throws Exception {
+    // given a state whose row was deleted by hand, which leaves its rows behind
+    final var deleted = createDb(1);
+    columnFamily(deleted).upsert(key(1), value("deleted"));
+    final var deletedStateId = stateId(deleted);
+    database.execute("DELETE FROM ZEEBE_STATE_PARTITION");
+
+    // when
+    final var created = createDb(1);
+
+    // then
+    assertThat(stateId(created)).isNotEqualTo(deletedStateId);
+    assertThat(columnFamily(created).isEmpty()).isTrue();
+  }
+
+  @Test
   void shouldGiveEveryPartitionAStateOfItsOwnWhenTheyStartTogether() throws Exception {
     // given
     final int partitionCount = 8;
-    final var barrier = new CyclicBarrier(partitionCount);
-    final var executor = Executors.newFixedThreadPool(partitionCount);
+
+    // when
+    final var started = startTogether(partitionCount, partitionId -> partitionId);
+
+    // then
+    for (int partitionId = 1; partitionId <= partitionCount; partitionId++) {
+      final var db = started.get(partitionId - 1);
+      columnFamily(db).upsert(key(1), value("partition " + partitionId));
+    }
+    for (int partitionId = 1; partitionId <= partitionCount; partitionId++) {
+      final var columnFamily = columnFamily(started.get(partitionId - 1));
+      assertThat(columnFamily.count()).isOne();
+      assertThat(columnFamily.get(key(1))).hasToString("partition " + partitionId);
+    }
+  }
+
+  @Test
+  void shouldGiveReplicasOfAPartitionTheSameStateWhenTheyStartTogether() throws Exception {
+    // when
+    final var started = startTogether(4, replica -> 1);
+
+    // then
+    assertThat(started.stream().map(this::stateId).distinct()).hasSize(1);
+  }
+
+  private List<ZeebeDb<TestColumnFamilies>> startTogether(
+      final int count, final IntUnaryOperator partitionIdOfStarter) throws Exception {
+    final var barrier = new CyclicBarrier(count);
+    final var executor = Executors.newFixedThreadPool(count);
     try {
-      // when
       final var started =
-          IntStream.rangeClosed(1, partitionCount)
+          IntStream.rangeClosed(1, count)
               .mapToObj(
-                  partitionId ->
+                  starter ->
                       CompletableFuture.supplyAsync(
                           () -> {
                             awaitOthers(barrier);
-                            final var db =
-                                createDb(new StateIdentity("raft-partition", partitionId));
-                            columnFamily(db).upsert(key(1), value("partition " + partitionId));
-                            return db;
+                            return createDb(partitionIdOfStarter.applyAsInt(starter));
                           },
                           executor))
               .toList();
       CompletableFuture.allOf(started.toArray(CompletableFuture[]::new)).get(1, TimeUnit.MINUTES);
-
-      // then
-      for (int partitionId = 1; partitionId <= partitionCount; partitionId++) {
-        final var columnFamily = columnFamily(started.get(partitionId - 1).join());
-        assertThat(columnFamily.count()).isOne();
-        assertThat(columnFamily.get(key(1))).hasToString("partition " + partitionId);
-      }
+      return started.stream().map(CompletableFuture::join).toList();
     } finally {
       executor.shutdownNow();
     }
   }
 
-  private ZeebeDb<TestColumnFamilies> createDb(final StateIdentity partition) {
+  private String stateId(final ZeebeDb<?> db) {
+    final var snapshot = directory.resolve("snapshot-" + UUID.randomUUID());
+    db.createSnapshot(snapshot.toFile());
+    return StateMarker.readFrom(snapshot).stateId();
+  }
+
+  private ZeebeDb<TestColumnFamilies> createDb(final int partitionId) {
     final var db =
         new RdbmsZeebeDbFactory<TestColumnFamilies>(
                 storage,
-                partition,
+                partitionId,
                 () -> 1,
                 new ConsistencyChecksSettings(true, true),
                 SimpleMeterRegistry::new)

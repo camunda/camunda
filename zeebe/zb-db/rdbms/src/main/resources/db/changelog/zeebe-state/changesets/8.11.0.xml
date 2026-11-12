@@ -26,22 +26,16 @@
       </not>
     </preConditions>
     <createTable tableName="${prefix}ZEEBE_STATE_PARTITION">
-      <column name="STATE_ID" type="BIGINT">
+      <column name="PARTITION_ID" type="INTEGER">
         <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE_PARTITION"/>
       </column>
-      <column name="PARTITION_GROUP" type="VARCHAR(255)">
-        <constraints nullable="false"/>
-      </column>
-      <column name="PARTITION_ID" type="INTEGER">
+      <column name="STATE_ID" type="VARCHAR(36)">
         <constraints nullable="false"/>
       </column>
       <column name="OWNER_TERM" type="BIGINT">
         <constraints nullable="false"/>
       </column>
     </createTable>
-    <addUniqueConstraint tableName="${prefix}ZEEBE_STATE_PARTITION"
-      columnNames="PARTITION_GROUP, PARTITION_ID"
-      constraintName="${prefix}UQ_ZEEBE_STATE_PARTITION"/>
   </changeSet>
 
   <changeSet id="create_zeebe_state_table" author="camunda">
@@ -51,7 +45,7 @@
       </not>
     </preConditions>
     <createTable tableName="${prefix}ZEEBE_STATE">
-      <column name="STATE_ID" type="BIGINT">
+      <column name="PARTITION_ID" type="INTEGER">
         <constraints primaryKey="true" primaryKeyName="${prefix}PK_ZEEBE_STATE"/>
       </column>
       <column name="COLUMN_FAMILY" type="INTEGER">

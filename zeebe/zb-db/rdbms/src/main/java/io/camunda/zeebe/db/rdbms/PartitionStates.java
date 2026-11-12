@@ -9,7 +9,8 @@ package io.camunda.zeebe.db.rdbms;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.OptionalLong;
+import java.util.Optional;
+import java.util.UUID;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 import org.slf4j.Logger;
@@ -23,13 +24,6 @@ final class PartitionStates {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionStates.class);
 
-  /**
-   * Every failed attempt means that another partition created its state at the same time, so the
-   * number of partitions bounds the attempts. Reaching this many means something else keeps failing
-   * the insert.
-   */
-  private static final int MAX_ATTEMPTS = 1_000;
-
   private final RdbmsStorage storage;
 
   PartitionStates(final RdbmsStorage storage) {
@@ -41,15 +35,11 @@ final class PartitionStates {
    *
    * @return the id of the state, or empty if the partition has none yet
    */
-  OptionalLong find(final StateIdentity identity) {
+  Optional<String> find(final int partitionId) {
     final var connection = storage.borrowConnection();
     try (final var session =
         storage.sqlSessionFactory().openSession(ExecutorType.SIMPLE, connection)) {
-      return session
-          .getMapper(StateMapper.class)
-          .findStateId(identity.partitionGroup(), identity.partitionId())
-          .map(OptionalLong::of)
-          .orElseGet(OptionalLong::empty);
+      return session.getMapper(StateMapper.class).findStateId(partitionId);
     } catch (final PersistenceException e) {
       throw SqlErrors.translate(e);
     } finally {
@@ -70,29 +60,33 @@ final class PartitionStates {
    * @throws StateFencedException if a leader of a newer term owns the state
    * @throws IllegalStateException if the database doesn't hold the expected state
    */
-  long attach(final StateIdentity identity, final OptionalLong expectedStateId, final long term) {
-    for (int attempt = 1; ; attempt++) {
-      try {
-        return attachOnce(identity, expectedStateId, term);
-      } catch (final PersistenceException e) {
-        if (!SqlErrors.isUniqueViolation(e) || attempt >= MAX_ATTEMPTS) {
-          throw SqlErrors.translate(e);
-        }
+  String attach(final int partitionId, final Optional<String> expectedStateId, final long term) {
+    try {
+      return attachOnce(partitionId, expectedStateId, term);
+    } catch (final PersistenceException e) {
+      if (!SqlErrors.isUniqueViolation(e)) {
+        throw SqlErrors.translate(e);
       }
+    }
+    // another replica of the partition created the state at the same time, so it exists now
+    try {
+      return attachOnce(partitionId, expectedStateId, term);
+    } catch (final PersistenceException e) {
+      throw SqlErrors.translate(e);
     }
   }
 
-  private long attachOnce(
-      final StateIdentity identity, final OptionalLong expectedStateId, final long term) {
+  private String attachOnce(
+      final int partitionId, final Optional<String> expectedStateId, final long term) {
     final var connection = storage.borrowConnection();
     try (final var session =
         storage.sqlSessionFactory().openSession(ExecutorType.SIMPLE, connection)) {
       final var state = session.getMapper(StateMapper.class);
-      final long stateId = findOrCreate(state, identity, expectedStateId, term);
-      if (state.claim(stateId, term) == 0) {
+      final var stateId = findOrCreate(state, partitionId, expectedStateId, term);
+      if (state.claim(partitionId, stateId, term) == 0) {
         throw new StateFencedException(
-            "Expected to claim the state %d of partition %s with term %d, but a leader of a newer term owns it"
-                .formatted(stateId, identity, term));
+            "Expected to claim the state %s of partition %d with term %d, but a leader of a newer term owns it"
+                .formatted(stateId, partitionId, term));
       }
       connection.commit();
       return stateId;
@@ -103,27 +97,30 @@ final class PartitionStates {
     }
   }
 
-  private static long findOrCreate(
+  private static String findOrCreate(
       final StateMapper state,
-      final StateIdentity identity,
-      final OptionalLong expectedStateId,
+      final int partitionId,
+      final Optional<String> expectedStateId,
       final long term) {
-    final var found = state.findStateId(identity.partitionGroup(), identity.partitionId());
+    final var found = state.findStateId(partitionId);
     if (expectedStateId.isPresent()) {
-      final long expected = expectedStateId.getAsLong();
-      if (found.isEmpty() || found.get() != expected) {
+      final var expected = expectedStateId.get();
+      if (!found.equals(expectedStateId)) {
         // never start over with an empty state: the log was compacted up to the snapshot
         throw new IllegalStateException(
-            "Expected the database to hold the state %d of partition %s, named by the snapshot, but it holds %s"
-                .formatted(expected, identity, found.map(id -> "the state " + id).orElse("none")));
+            "Expected the database to hold the state %s of partition %d, named by the snapshot, but it holds %s"
+                .formatted(
+                    expected, partitionId, found.map(id -> "the state " + id).orElse("none")));
       }
       return expected;
     }
     if (found.isPresent()) {
       return found.get();
     }
-    final long stateId = state.maxStateId() + 1;
-    state.createState(stateId, identity.partitionGroup(), identity.partitionId(), term);
+    final var stateId = UUID.randomUUID().toString();
+    state.createState(partitionId, stateId, term);
+    // rows are kept by partition, so a state deleted by hand may have left some behind
+    state.deleteRows(partitionId);
     return stateId;
   }
 

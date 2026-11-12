@@ -85,7 +85,8 @@ final class RdbmsZeebeDb<
 
   @Override
   public TransactionContext createContext() {
-    final var transaction = new RdbmsTransaction(storage, marker.stateId(), term);
+    final var transaction =
+        new RdbmsTransaction(storage, marker.partitionId(), marker.stateId(), term);
     transactions.add(transaction);
     return new RdbmsTransactionContext(transaction);
   }

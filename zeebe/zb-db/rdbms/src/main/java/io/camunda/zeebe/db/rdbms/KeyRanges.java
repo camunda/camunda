@@ -41,21 +41,21 @@ final class KeyRanges {
    * RocksDB does.
    */
   static StateRange forward(
-      final long stateId, final int columnFamily, final byte[] prefix, final byte[] start) {
-    return new StateRange(stateId, columnFamily, emptyToNull(start), next(prefix), false);
+      final int partitionId, final int columnFamily, final byte[] prefix, final byte[] start) {
+    return new StateRange(partitionId, columnFamily, emptyToNull(start), next(prefix), false);
   }
 
   /** The keys a reverse scan reads: from {@code start} down to the start of the prefix. */
   static StateRange reverse(
-      final long stateId, final int columnFamily, final byte[] prefix, final byte[] start) {
+      final int partitionId, final int columnFamily, final byte[] prefix, final byte[] start) {
     // the range's end is exclusive, and start + 0x00 is the first key after start
     final var to = Arrays.copyOf(start, start.length + 1);
-    return new StateRange(stateId, columnFamily, emptyToNull(prefix), to, true);
+    return new StateRange(partitionId, columnFamily, emptyToNull(prefix), to, true);
   }
 
   /** All keys that start with {@code prefix}. */
-  static StateRange withPrefix(final long stateId, final int columnFamily, final byte[] prefix) {
-    return new StateRange(stateId, columnFamily, emptyToNull(prefix), next(prefix), false);
+  static StateRange withPrefix(final int partitionId, final int columnFamily, final byte[] prefix) {
+    return new StateRange(partitionId, columnFamily, emptyToNull(prefix), next(prefix), false);
   }
 
   private static byte @Nullable [] emptyToNull(final byte @Nullable [] bound) {

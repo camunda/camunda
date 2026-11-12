@@ -40,18 +40,18 @@ final class WriteBuffer {
   }
 
   /** Sends the deletes, then the upserts, so that each kind goes in one batch. */
-  void sendTo(final StateMapper mapper, final long stateId) {
+  void sendTo(final StateMapper mapper, final int partitionId) {
     for (final Map.Entry<BufferedKey, Write> entry : writes.entrySet()) {
       if (entry.getValue().isDelete()) {
         final var key = entry.getKey();
-        mapper.delete(stateId, key.columnFamily(), key.key());
+        mapper.delete(partitionId, key.columnFamily(), key.key());
       }
     }
     for (final Map.Entry<BufferedKey, Write> entry : writes.entrySet()) {
       final var value = entry.getValue().value();
       if (value != null) {
         final var key = entry.getKey();
-        mapper.upsert(stateId, key.columnFamily(), key.key(), value);
+        mapper.upsert(partitionId, key.columnFamily(), key.key(), value);
       }
     }
   }
