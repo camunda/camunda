@@ -162,4 +162,11 @@ public interface ProcessingStateStores {
 
   MutableJobMetricsState jobMetricsState(
       final InstantSource clock, final EngineConfiguration config);
+
+  /**
+   * Called with every key the engine generates while processing. Keys grow monotonically, so a
+   * store can tell from the first key of a transaction which keys the transaction created: no
+   * committed row can belong to them.
+   */
+  default void onKeyGenerated(final long key) {}
 }

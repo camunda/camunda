@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionContext;
 import io.camunda.zeebe.db.impl.jdbc.JdbcTransactionParticipant;
 import io.camunda.zeebe.db.writebehind.WriteBehindStore;
 import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRow;
+import io.camunda.zeebe.protocol.Protocol;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -85,6 +86,8 @@ final class EntitySession implements JdbcTransactionParticipant {
 
   private static final Object ABSENT = new Object();
 
+  private static final long NO_GENERATED_KEY = Long.MAX_VALUE;
+
   private final JdbcTransactionContext transactionContext;
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
@@ -118,6 +121,12 @@ final class EntitySession implements JdbcTransactionParticipant {
   /** The unflushed writes of {@link #unflushed} per type and key; a null row is a delete. */
   private final Map<EntityType<?, ?>, Map<Object, @Nullable Object>> unflushedByType =
       new HashMap<>();
+
+  /**
+   * The first key the engine generated in this transaction, or {@link #NO_GENERATED_KEY}. Keys grow
+   * monotonically, so the transaction created this key and all higher ones of the partition.
+   */
+  private long firstGeneratedKey = NO_GENERATED_KEY;
 
   /** The session of the current transaction, null until its first database access. */
   private @Nullable SqlSession session;
@@ -159,6 +168,22 @@ final class EntitySession implements JdbcTransactionParticipant {
     return partitionId;
   }
 
+  /** Called with every key the engine generates, see {@link #isGeneratedInTransaction}. */
+  void keyGenerated(final long key) {
+    if (firstGeneratedKey == NO_GENERATED_KEY) {
+      firstGeneratedKey = key;
+    }
+  }
+
+  /**
+   * Whether the engine generated the key in this transaction: then the database has no row that
+   * belongs to it, as the transaction's rows aren't written before the commit. Such reads need no
+   * query. Replay generates no keys, so it always reads the database.
+   */
+  boolean isGeneratedInTransaction(final long key) {
+    return key >= firstGeneratedKey && Protocol.decodePartitionId(key) == partitionId;
+  }
+
   /**
    * Returns the staged row, or null if its deletion is staged, or else the committed one. A
    * committed row is read once per transaction: the result, including a missing row, is remembered.
@@ -175,7 +200,7 @@ final class EntitySession implements JdbcTransactionParticipant {
           if (known != null) {
             return known == ABSENT ? null : type.cast(known);
           }
-          if (isInLoadedGroup(type, key)) {
+          if (isKnownAbsent(type, key)) {
             return null;
           }
           final E row = readCommitted(type, key);
@@ -216,7 +241,7 @@ final class EntitySession implements JdbcTransactionParticipant {
           } else {
             // a staged delete doesn't tell whether the row exists in the database
             Object committed = loaded(type).get(key);
-            if (committed == null && isInLoadedGroup(type, key)) {
+            if (committed == null && isKnownAbsent(type, key)) {
               committed = ABSENT;
             }
             if (committed == null) {
@@ -348,10 +373,15 @@ final class EntitySession implements JdbcTransactionParticipant {
               final Set<Object> requested = new LinkedHashSet<>(groups);
               final List<G> unknown = new ArrayList<>();
               for (final G group : groups) {
-                if (!keysByGroup.containsKey(group)) {
-                  importCachedGroup(type, group);
+                if (keysByGroup.containsKey(group) || unknown.contains(group)) {
+                  continue;
                 }
-                if (!keysByGroup.containsKey(group) && !unknown.contains(group)) {
+                if (importCachedGroup(type, group)) {
+                  continue;
+                }
+                if (isNewGroup(group)) {
+                  keysByGroup.put(group, new ArrayList<>());
+                } else {
                   unknown.add(group);
                 }
               }
@@ -416,11 +446,16 @@ final class EntitySession implements JdbcTransactionParticipant {
                 importCachedGroup(type, group);
               }
               final var loadedKeys = loadedGroups(type).get(group);
-              final Collection<?> committed =
-                  loadedKeys != null
-                      ? loadedKeys
-                      : withUnflushedKeys(
-                          type, group, unwrapped(() -> query.apply(mapper(mapperType))));
+              final Collection<?> committed;
+              if (loadedKeys != null) {
+                committed = loadedKeys;
+              } else if (isNewGroup(group)) {
+                committed = List.of();
+              } else {
+                committed =
+                    withUnflushedKeys(
+                        type, group, unwrapped(() -> query.apply(mapper(mapperType))));
+              }
               final var writes = staged(type);
               final List<K> result = new ArrayList<>();
               for (final Object key : committed) {
@@ -687,6 +722,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   /** Drops all staged writes and loaded rows and ends the transaction's session. */
   @Override
   public void reset() {
+    firstGeneratedKey = NO_GENERATED_KEY;
     staged.values().forEach(Map::clear);
     clearLoaded();
     closeSession();
@@ -711,7 +747,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   private <K, E> boolean isKnown(final EntityType<K, E> type, final K key) {
     return staged(type).containsKey(key)
         || loaded(type).containsKey(key)
-        || isInLoadedGroup(type, key);
+        || isKnownAbsent(type, key);
   }
 
   /** The current row of a {@link #isKnown known} key, or null if there is none. */
@@ -724,12 +760,15 @@ final class EntitySession implements JdbcTransactionParticipant {
     return committed == null || committed == ABSENT ? null : type.cast(committed);
   }
 
-  private <K, E> boolean isInLoadedGroup(final EntityType<K, E> type, final K key) {
+  /**
+   * Whether the database has no row of the key: its group was loaded without it, or the key belongs
+   * to an engine key generated in this transaction.
+   */
+  private <K, E> boolean isKnownAbsent(final EntityType<K, E> type, final K key) {
     final Object group = type.groupOf(key);
-    if (group == null) {
-      return false;
-    }
-    return loadedGroups(type).containsKey(group) || importCachedGroup(type, group);
+    return (group != null
+            && (loadedGroups(type).containsKey(group) || importCachedGroup(type, group)))
+        || isGeneratedInTransaction(type.engineKeyOf(key));
   }
 
   /**
@@ -842,6 +881,13 @@ final class EntitySession implements JdbcTransactionParticipant {
       }
     }
     return keys;
+  }
+
+  /**
+   * Whether the database has no row of the group, as it is an engine key new in this transaction.
+   */
+  private boolean isNewGroup(final Object group) {
+    return group instanceof final Long engineKey && isGeneratedInTransaction(engineKey);
   }
 
   private SqlSession session() {

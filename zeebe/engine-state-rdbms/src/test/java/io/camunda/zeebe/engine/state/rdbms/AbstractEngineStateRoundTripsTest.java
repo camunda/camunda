@@ -436,7 +436,6 @@ abstract class AbstractEngineStateRoundTripsTest {
         .containsExactlyInAnyOrder(
             new Batch("CAM_RU_ELEMENT_INSTANCE", "DELETE", 1),
             new Batch("CAM_RU_ELEMENT_INSTANCE", "UPDATE", 1),
-            new Batch("CAM_RU_AWAIT_PROCESS_INSTANCE_RESULT", "DELETE", 1),
             new Batch("CAM_RU_EVENT_SCOPE", "DELETE", 1));
   }
 
