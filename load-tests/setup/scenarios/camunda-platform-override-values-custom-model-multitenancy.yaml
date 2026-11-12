@@ -1,0 +1,11 @@
+# Injected as application-override.yml (loaded after application.yml) when scenario=custom-model-mt,
+# the `custom-model` scenario with multi-tenancy checks on. Same mechanism as the `max` scenario.
+#
+# With the checks on, a principal can only read the data of the tenants it belongs to. The
+# `orchestration` client (load tester and k6) is not a member of the `<default>` tenant: the
+# default tenant has only default roles as members, and `initialization.tenants` cannot configure
+# the reserved `<default>` tenant. So we add the client to the `connectors` default role, which is
+# a member of `<default>` and adds only READ on resources. The user task permissions of the client
+# stay in `camunda-platform-values-custom-model.yaml`.
+camunda.security.multi-tenancy.checks-enabled: "true"
+camunda.security.initialization.default-roles.connectors.clients[0]: orchestration

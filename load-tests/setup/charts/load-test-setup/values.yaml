@@ -401,6 +401,9 @@ postgresql:
   # experiment: assumes no table prefix, `public` schema and the `custom-model` scenario.
   userTaskIndexes:
     enabled: false
+    # -- `true`: the indexes start with TENANT_ID, as in the issue (multi-tenancy checks on).
+    # `false`: without TENANT_ID, for the queries without a tenant filter (checks off).
+    withTenant: true
 
   # -- The UID and GID used by the PostgreSQL container.
   # This should match the UID/GID in use by the specified Docker image.

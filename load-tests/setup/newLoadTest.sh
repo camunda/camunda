@@ -199,6 +199,7 @@ cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-custom-model.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/camunda-platform-values-custom-model.yaml"        "$TARGET_DIRECTORY/"
+cp -v  "$SCRIPT_DIR/scenarios/camunda-platform-override-values-custom-model-multitenancy.yaml" "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-defaults.yaml"              "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"   "$TARGET_DIRECTORY/"
 

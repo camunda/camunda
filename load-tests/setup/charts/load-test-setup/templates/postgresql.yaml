@@ -73,10 +73,12 @@ spec:
       secret:
         name: {{ include "load-test-setup.postgresql.cnpg-secret-name" . }}
       {{- if .Values.postgresql.userTaskIndexes.enabled }}
+      {{- $tenantColumn := ternary "tenant_id, " "" .Values.postgresql.userTaskIndexes.withTenant }}
       # Experiment for camunda/camunda#67171: indexes (A), (B), (C) and (D) of the issue.
       # Liquibase creates the tables when Camunda starts, after this bootstrap. So we
       # install an event trigger that creates the indexes the moment the tables exist,
-      # before any row is written.
+      # before any row is written. With `withTenant: false` the indexes do not start with TENANT_ID,
+      # for the runs without multi-tenancy checks, where the queries have no tenant filter.
       postInitApplicationSQL:
         - |
           CREATE OR REPLACE FUNCTION create_user_task_indexes() RETURNS event_trigger LANGUAGE plpgsql AS $fn$
@@ -85,12 +87,12 @@ spec:
             FOR r IN SELECT object_identity FROM pg_event_trigger_ddl_commands() WHERE command_tag = 'CREATE TABLE' LOOP
               IF r.object_identity = 'public.user_task' THEN
                 CREATE INDEX IF NOT EXISTS idx_user_task_tenant_state_date
-                  ON public.user_task (tenant_id, state, creation_date DESC NULLS LAST, user_task_key ASC);
+                  ON public.user_task ({{ $tenantColumn }}state, creation_date DESC NULLS LAST, user_task_key ASC);
                 CREATE INDEX IF NOT EXISTS idx_user_task_tenant_assignee_state_date
-                  ON public.user_task (tenant_id, assignee, state, creation_date DESC NULLS LAST, user_task_key ASC)
+                  ON public.user_task ({{ $tenantColumn }}assignee, state, creation_date DESC NULLS LAST, user_task_key ASC)
                   WHERE assignee IS NOT NULL;
                 CREATE INDEX IF NOT EXISTS idx_user_task_unassigned_open
-                  ON public.user_task (tenant_id, state, creation_date DESC NULLS LAST, user_task_key)
+                  ON public.user_task ({{ $tenantColumn }}state, creation_date DESC NULLS LAST, user_task_key)
                   WHERE assignee IS NULL;
               ELSIF r.object_identity = 'public.variable' THEN
                 CREATE INDEX IF NOT EXISTS idx_variable_scope_key ON public.variable (scope_key, var_key);
