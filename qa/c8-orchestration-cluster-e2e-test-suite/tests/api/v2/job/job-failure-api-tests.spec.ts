@@ -32,16 +32,9 @@ test.describe('Job Fail API Tests', () => {
     'job_api_process',
     'jobApiProcess',
   );
-  // Instances this spec deploys per test, torn down alongside the shared one.
-  const isolatedInstances: string[] = [];
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
-  test.afterEach(async () => {
-    for (const processInstanceKey of isolatedInstances.splice(0)) {
-      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
-    }
-  });
 
   test('Fail Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(
@@ -88,6 +81,21 @@ test.describe('Job Fail API Tests', () => {
       },
     });
     await assertBadRequest(failRes, '');
+  });
+});
+
+// 'Fail Job - 409' owns everything it touches: its own process definition,
+// job type and instance. It is deliberately outside the describe above so the
+// shared hooks do not also start a 'jobApiProcess' instance for it — the
+// parallel completion spec can finish that shared instance, and the shared
+// teardown then cancels an instance that no longer exists.
+test.describe('Job Fail API Tests', () => {
+  const isolatedInstances: string[] = [];
+
+  test.afterEach(async () => {
+    for (const processInstanceKey of isolatedInstances.splice(0)) {
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
+    }
   });
 
   test('Fail Job - 409', async ({request}) => {
