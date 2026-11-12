@@ -128,6 +128,38 @@ func ScrubTenantEnv(env []string) []string {
 	return out
 }
 
+// ScrubOtherTenantSecrets drops the secret variables of every tenant but own (default and the
+// given tenant IDs) from a connectors runtime environment in C8RUN_SECRETS_MODE=env, so a runtime
+// can't read another tenant's secrets. Matching ignores case, as Windows names do. An empty
+// prefix (other modes) keeps the environment as is.
+func ScrubOtherTenantSecrets(env []string, prefix string, tenantIDs []string, own string) []string {
+	if prefix == "" {
+		return env
+	}
+	var others []string
+	for _, id := range append([]string{DefaultID}, tenantIDs...) {
+		if id != own {
+			others = append(others, strings.ToUpper(SecretVariablePrefix(prefix, id)))
+		}
+	}
+	out := make([]string, 0, len(env))
+	for _, kv := range env {
+		if !hasAnyPrefix(strings.ToUpper(kv), others) {
+			out = append(out, kv)
+		}
+	}
+	return out
+}
+
+func hasAnyPrefix(s string, prefixes []string) bool {
+	for _, p := range prefixes {
+		if strings.HasPrefix(s, p) {
+			return true
+		}
+	}
+	return false
+}
+
 // GeneratedConfigPath is where the generated tenant config lives.
 func GeneratedConfigPath(baseDir string) string {
 	return filepath.Join(baseDir, "configuration", GeneratedConfigName)

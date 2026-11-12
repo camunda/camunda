@@ -71,6 +71,7 @@ func configureEnvSecretStores(settings *types.C8RunSettings) error {
 			"(camunda.physical-tenants.<id>.secrets.stores.*)",
 			localsecrets.ModeEnv, strings.Join(settings.PhysicalTenantsDeclaredIn, " and "), localsecrets.ModeEnv)
 	}
+	settings.SecretsEnvPrefix = prefix
 	if err := os.Setenv(defaultEnvSecretStorePrefixEnv, physicaltenants.SecretVariablePrefix(prefix, physicaltenants.DefaultID)); err != nil {
 		return fmt.Errorf("failed to configure Camunda secret store: %w", err)
 	}
