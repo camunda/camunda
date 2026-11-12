@@ -193,13 +193,18 @@ test.describe('Process Instance Modifications', () => {
         ),
       ).toBeVisible();
       await operateProcessInstancePage.clickDeleteVariableModification();
+      await operateProcessInstancePage.clickCancel();
 
       await expect(
-        operateProcessInstancePage.getDialogVariableModificationSummaryText(
-          'foo',
-          '2',
-        ),
-      ).toBeHidden();
+        operateProcessInstancePage
+          .getVariableTestId('foo')
+          .getByRole('group', {name: 'foo', exact: true}),
+      ).toContainText('"bar"');
+      await expect(
+        operateProcessInstancePage
+          .getVariableTestId('test')
+          .getByRole('group', {name: 'test', exact: true}),
+      ).toContainText('123');
     });
   });
 

@@ -91,7 +91,6 @@ class OperateProcessInstancePage {
   readonly incidentTypeFilter: Locator;
   readonly cancellationScheduledToast: Locator;
   readonly executionCountToggle: Locator;
-  readonly executionCountToggleLabel: Locator;
   readonly endDateField: Locator;
   readonly incidentsViewHeader: Locator;
   readonly modificationModeText: Locator;
@@ -174,9 +173,7 @@ class OperateProcessInstancePage {
     this.instanceHistory = page.getByRole('tree', {
       name: /instance history$/i,
     });
-    this.rootProcessNode = this.instanceHistory
-      .locator('[data-testid^="node-details-"]')
-      .first();
+    this.rootProcessNode = this.instanceHistory.getByRole('treeitem').first();
     this.incidentsTable = page.getByRole('table').filter({
       has: page.getByRole('columnheader', {
         name: 'Failing Element',
@@ -343,9 +340,6 @@ class OperateProcessInstancePage {
       name: 'Execution count',
       exact: true,
     });
-    this.executionCountToggleLabel = this.page.locator(
-      '#toggle-execution-count_label',
-    );
     this.variableRow = (name: string) => {
       const newVariableIndex = name.match(/^newVariables\[(\d+)\]$/)?.[1];
       const rows = this.variablesList.getByRole('row');
@@ -594,9 +588,11 @@ class OperateProcessInstancePage {
   }
 
   async navigateToRootScope() {
-    const rootNode = this.instanceHistory.getByRole('treeitem').first();
-    const rootNodeName = await rootNode.getAttribute('aria-label');
-    await rootNode.getByText(rootNodeName!, {exact: true}).first().click();
+    const rootNodeName = await this.rootProcessNode.getAttribute('aria-label');
+    await this.rootProcessNode
+      .getByText(rootNodeName!, {exact: true})
+      .first()
+      .click();
   }
 
   async addNewVariableModificationMode(
@@ -1132,32 +1128,6 @@ class OperateProcessInstancePage {
     if (await this.modifyDialogContinueButton.isVisible()) {
       await this.clickModifyDialogContinueButton();
     }
-  }
-
-  async getHistoryElementsDataByName(itemName: string) {
-    const allHistoryItemsLocators = await this.instanceHistory
-      .getByRole('treeitem')
-      .all();
-
-    var filteredElementsData = [];
-    for (const element of allHistoryItemsLocators) {
-      const testId = await element.getAttribute('data-testid');
-      const ariaLabel = await element.getAttribute('aria-label');
-      const iconLocator = element.getByTestId(/.*-icon$/).nth(1);
-      const iconTestId = await iconLocator.getAttribute('data-testid');
-
-      if (!ariaLabel?.includes(itemName)) {
-        continue;
-      }
-
-      filteredElementsData.push({
-        testId,
-        ariaLabel,
-        icon: iconTestId?.split('-')[0],
-      });
-    }
-
-    return filteredElementsData;
   }
 
   /**

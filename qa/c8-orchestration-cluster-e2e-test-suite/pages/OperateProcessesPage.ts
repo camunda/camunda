@@ -41,7 +41,6 @@ class OperateProcessesPage {
   readonly processNameSortButton: Locator;
   readonly processInstancesTable: Locator;
   readonly parentProcessInstanceKeyCell: Locator;
-  readonly endDateCell: Locator;
   readonly versionCell: Locator;
   readonly processInstanceKeyCell: Locator;
   readonly migrateBatchOperationButton: Locator;
@@ -131,7 +130,6 @@ class OperateProcessesPage {
       .getByRole('row')
       .first()
       .getByRole('link', {name: /^View parent instance \d+$/});
-    this.endDateCell = getDataList(page).getByTestId('cell-endDate').first();
     this.versionCell = page.getByTestId('cell-processVersion');
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',

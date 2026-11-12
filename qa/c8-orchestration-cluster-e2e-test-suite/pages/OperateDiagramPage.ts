@@ -8,7 +8,7 @@
 
 import {expect, type Locator, type Page} from '@playwright/test';
 
-const STATE_OVERLAY_LABELS: Record<string, string> = {
+const STATE_OVERLAY_LABELS = {
   active: 'Active',
   incidents: 'Incidents',
   canceled: 'Canceled',
@@ -244,7 +244,7 @@ export class OperateDiagramPage {
    */
   async getStateOverlayLocatorByElementNameAndState(
     elementName: string,
-    state: string,
+    state: keyof typeof STATE_OVERLAY_LABELS,
   ) {
     return this.page
       .locator(`[data-container-id=${elementName}]`)

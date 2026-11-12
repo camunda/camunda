@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
 import {deploy} from 'utils/zeebeClient';
 import {jsonHeaders} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -16,6 +16,7 @@ import {
   OperateDecisionsPage,
   type AdvancedStringFilterOperator,
 } from '@pages/OperateDecisionsPage';
+import {OperateProcessesPage} from '@pages/OperateProcessesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {extendedAssertionOptions, uniqueBusinessId} from 'utils/constants';
 
@@ -68,16 +69,21 @@ function businessIdRows(
 // more than one row. Assert at least one row is shown and that every matched
 // row reports the expected business ID (rather than assuming a single row).
 async function expectRowsForBusinessId(
+  page: Page,
   operateDecisionsPage: OperateDecisionsPage,
   businessId: string,
 ) {
   const rows = businessIdRows(operateDecisionsPage, businessId);
   await expect(rows.first()).toBeVisible();
-  const cells = rows.getByRole('cell', {name: businessId, exact: true});
-  const cellCount = await cells.count();
-  expect(cellCount).toBeGreaterThan(0);
-  for (let i = 0; i < cellCount; i++) {
-    await expect(cells.nth(i)).toHaveText(businessId);
+  const rowCount = await rows.count();
+  for (let i = 0; i < rowCount; i++) {
+    await expect(
+      await OperateProcessesPage.getCellInColumn(
+        page,
+        rows.nth(i),
+        'Business ID',
+      ),
+    ).toHaveText(businessId);
   }
 }
 
@@ -131,7 +137,11 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify only the matching decision instance is shown', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_A);
+          await expectRowsForBusinessId(
+            page,
+            operateDecisionsPage,
+            BUSINESS_ID_A,
+          );
           await expect(
             businessIdRows(operateDecisionsPage, BUSINESS_ID_B),
           ).toHaveCount(0);
@@ -155,8 +165,16 @@ test.describe('Decision Instances - Business ID', () => {
     await test.step('Verify both decision instances sharing the prefix are shown', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_A);
-          await expectRowsForBusinessId(operateDecisionsPage, BUSINESS_ID_B);
+          await expectRowsForBusinessId(
+            page,
+            operateDecisionsPage,
+            BUSINESS_ID_A,
+          );
+          await expectRowsForBusinessId(
+            page,
+            operateDecisionsPage,
+            BUSINESS_ID_B,
+          );
         },
         onFailure: async () => {
           await page.reload();
