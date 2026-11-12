@@ -91,6 +91,7 @@ public class RdbmsEngineStateConfiguration {
     }
     dataSource.setMaximumPoolSize(cfg.getPoolSize());
     dataSource.setAutoCommit(false);
+    dataSource.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
     dataSource.setMetricRegistry(meterRegistry);
     return dataSource;
   }

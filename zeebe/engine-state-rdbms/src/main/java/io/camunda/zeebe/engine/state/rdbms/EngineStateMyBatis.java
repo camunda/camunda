@@ -12,6 +12,7 @@ import java.io.UncheckedIOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import javax.sql.DataSource;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -27,6 +28,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Like the RDBMS exporter's, the sessions borrow a connection from the data source, run with
  * auto-commit disabled and commit, roll back and return the connection to the pool themselves. The
+ * pool must provide connections with auto-commit off and the isolation level read committed, as
+ * the sessions don't set them, to save a round trip each. The
  * first-level cache is limited to a statement, so a session never serves rows that a flush changed
  * since.
  */
@@ -66,8 +69,13 @@ public final class EngineStateMyBatis {
       throw new IllegalStateException("Failed to resolve the engine state database product", e);
     }
 
-    final var environment =
-        new Environment("engine-state", new JdbcTransactionFactory(), dataSource);
+    // the pool already runs with auto-commit off and returns connections in that state: don't let
+    // MyBatis switch auto-commit on when closing a session, which commits with a round trip
+    final var transactionFactory = new JdbcTransactionFactory();
+    final var properties = new Properties();
+    properties.setProperty("skipSetAutoCommitOnClose", "true");
+    transactionFactory.setProperties(properties);
+    final var environment = new Environment("engine-state", transactionFactory, dataSource);
     final var configuration = new Configuration(environment);
     configuration.setDatabaseId(databaseId(productName));
     configuration.setLocalCacheScope(LocalCacheScope.STATEMENT);

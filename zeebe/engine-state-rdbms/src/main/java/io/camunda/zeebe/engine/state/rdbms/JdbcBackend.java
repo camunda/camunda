@@ -17,7 +17,6 @@ import java.util.Map;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -68,7 +67,7 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
   @Override
   public @Nullable Object get(final EntityKey key, final Object prototype) {
     try (final var session =
-        sessionFactory.openSession(ExecutorType.SIMPLE, TransactionIsolationLevel.READ_COMMITTED)) {
+        sessionFactory.openSession(ExecutorType.SIMPLE)) {
       return session.selectOne(key.type().select, keyParameter(key.key()));
     } catch (final PersistenceException e) {
       throw new ZeebeDbException("Failed to read %s %s".formatted(key.type(), key.key()), e);
@@ -139,8 +138,7 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
         return;
       }
       try (final var session =
-          sessionFactory.openSession(
-              ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED)) {
+          sessionFactory.openSession(ExecutorType.BATCH)) {
         final List<EntityKey> toDelete = new ArrayList<>(deletes);
         puts.forEach(put -> toDelete.add(put.getKey()));
         // the batch executor reuses a statement while consecutive calls have the same SQL

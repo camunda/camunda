@@ -34,7 +34,6 @@ import org.apache.ibatis.exceptions.PersistenceException;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -949,7 +948,7 @@ final class EntitySession implements JdbcTransactionParticipant {
         currentUnflushed(store);
       }
       session =
-          sessionFactory.openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
+          sessionFactory.openSession(ExecutorType.BATCH);
     }
     return session;
   }
