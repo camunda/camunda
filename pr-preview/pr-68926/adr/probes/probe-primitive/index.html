@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-probes/probe-primitive" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Probes: a request from a client to a worker, answered in the same HTTP request, without a process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-68926/adr/probes/probe-primitive/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Probes: a request from a client to a worker, answered in the same HTTP request, without a process | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Mathias Vandaele"><meta data-rh="true" property="og:description" content="DRI: Mathias Vandaele"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-68926/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-68926/adr/probes/probe-primitive/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68926/adr/probes/probe-primitive/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-68926/adr/probes/probe-primitive/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-68926/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-68926/assets/js/runtime~main.32816b2d.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-68926/assets/js/main.f16db3ae.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-68926/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-68926/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-68926/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-68926/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Probes: a request from a client to a worker, answered in the same HTTP request, without a process</h1></header>
+<p><strong>DRI</strong>: Mathias Vandaele</p>
+<p><strong>Status</strong>: Accepted (specification validated on 2026-11-10; the connector runtime part, specification
+section 5.2, agreed with Connectors on 2026-11-12), implementation in progress</p>
+<p><strong>Purpose</strong>: Record why Camunda gets a dedicated probe primitive, what it decides at the level of
+the architecture, and where it is known to fall short. Every detail (records, endpoints, states,
+error codes, permissions) lives in the <a class="" href="/camunda/pr-preview/pr-68926/adr/probes/probes-specification/">probes specification</a>, which is the
+source of truth; this ADR cites its decision numbers (<code>Dn</code>) rather than repeating them.</p>
+<p><strong>Audience</strong>: Engineers implementing or reviewing probes in the engine, the gateway and REST layer,
+the Java client, the exporters, the audit log or Identity; client teams (Hub, Web Modeler, Desktop
+Modeler) and the connector runtime; AI agents asked why a probe is not a job.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>A user who configures a connector, for example an AWS credential in Hub or a task in a Modeler,
+wants to know whether the configuration works before a process runs: is this credential valid, can
+this runtime reach this database. Later uses need the same round trip: dropdown values and schemas
+for a Modeler field, and testing one task without deploying (specification section 11).</p>
+<p>Phase 1 answers validation with a direct call from the client to the connector runtime. That only
+works where the client can reach the runtime. It cannot reach a hybrid runtime or any runtime that
+only connects out to the cluster, which is the security design workers rely on: they connect out,
+and the cluster never connects to a worker. Desktop Modeler has no path to a runtime at all. And in
+a direct call the runtime resolves secrets itself, outside the central secret resolution that the
+cluster now owns (<a class="" href="/camunda/pr-preview/pr-68926/adr/secrets/central-secret-resolution-architecture/">secrets ADR 001</a>).</p>
+<p>The cluster already has a channel that every worker reaches by connecting out: job activation. What
+is missing is a way for a client to put a short request on that channel and wait for its answer in
+the same HTTP request, without creating a process instance.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="options-considered">Options considered<a href="#options-considered" class="hash-link" aria-label="Direct link to Options considered" title="Direct link to Options considered" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>A. A generic standalone job</strong> (<code>POST /v2/jobs/standalone</code>). Rejected: the result is a job
+without a process, which breaks the job API (see B). The exporters did not see it, so a request
+could run code with secrets and leave almost no trace. And the job goes to the worker&#x27;s job
+handler, so it can start a connector operation, for example a write to S3. The standalone job POC
+is not used (D8).</li>
+<li class=""><strong>B. A closed validation API on jobs without a process</strong>
+(<code>POST /v2/connectors/configurations/validation</code>, job kind <code>CONFIGURATION_VALIDATION</code> on a
+reserved job type). Rejected: every job must name its process, so such a job carries a fake
+<code>processInstanceKey</code> of -1 and every consumer must know that -1 means &quot;no process&quot;, while the job
+API must not change (D1). Every job consumer must change: exporters, job search and metrics all
+need special code. And the mechanism does not match the contract: it still needs a value type,
+intents, an authorization resource and expiry of its own.</li>
+<li class=""><strong>C. A direct call from the client to the runtime (phase 1).</strong> Kept for phase 1, not extended:
+it cannot reach hybrid or outbound-only runtimes, cannot serve Desktop Modeler, and resolves
+secrets in the runtime rather than in the cluster.</li>
+<li class=""><strong>D. A system process instance with a connector task.</strong> Rejected: each validation shows in
+Operate and counts as a process instance in the usage metrics. A failed validation creates an
+incident unless the process models the error. And draft configurations do not fit the rule that
+secret references are static at deployment.</li>
+<li class=""><strong>E. A dedicated probe primitive. Chosen.</strong> Its own value types, state and endpoints in the
+engine, borrowing the job activation model for transport, secrets and authorization, so that
+workers reach it the way they already reach jobs and the job API stays unchanged (D1).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p>A probe is its own engine primitive: not a job and not a process instance (D1). Where nothing below
+says otherwise, a probe behaves as a job does; every divergence from jobs is named in the
+specification.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="routing-on-an-opaque-probeid">Routing on an opaque <code>probeId</code><a href="#routing-on-an-opaque-probeid" class="hash-link" aria-label="Direct link to routing-on-an-opaque-probeid" title="Direct link to routing-on-an-opaque-probeid" translate="no">​</a></h3>
+<p>The client sends a probe to a <code>probeId</code>, an opaque string that a worker polls for, as a job worker
+polls for a job type (D46). The engine matches it by exact string equality and never interprets it.
+The convention for Camunda workers is <code>&lt;operation&gt;/&lt;template&gt;</code>, for example
+<code>validate-configuration/io.camunda:aws-credential:1</code>, documented but not enforced. There is no
+<code>operation</code> field and no closed enum: what the worker should do is part of the input, whose shape
+the worker of the <code>probeId</code> defines (D11, D37). The <code>probeId</code> is the <code>PROBE</code> resource ID and the
+audit description.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="transport-rest-long-polling-that-mirrors-job-activation">Transport: REST long polling that mirrors job activation<a href="#transport-rest-long-polling-that-mirrors-job-activation" class="hash-link" aria-label="Direct link to Transport: REST long polling that mirrors job activation" title="Direct link to Transport: REST long polling that mirrors job activation" translate="no">​</a></h3>
+<p>REST only: <code>POST /v2/probes</code> for the client, <code>POST /v2/probes/activation</code> and
+<code>POST /v2/probes/{probeKey}/answer</code> for the worker (D2, D31, D38, D45). No gRPC, no SSE, no stream.
+Activation mirrors job activation, with its own long polling handler and its own notification topic
+so that a probe never wakes a job poller (specification section 4.2).</p>
+<p>One divergence from jobs: one activation request carries a list of up to 100 <code>probeIds</code>, and one
+probe worker polls all of them (D50, D54). Probes are rare, so almost every poll returns empty; one
+poll per ID would make that empty traffic grow with the number of IDs a runtime answers.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="lifecycle-and-an-absolute-deadline">Lifecycle and an absolute deadline<a href="#lifecycle-and-an-absolute-deadline" class="hash-link" aria-label="Direct link to Lifecycle and an absolute deadline" title="Direct link to Lifecycle and an absolute deadline" translate="no">​</a></h3>
+<p><code>ACTIVATABLE</code> → (<code>WAITING_FOR_SECRET_RESOLUTION</code>) → <code>ACTIVATED</code> → <code>ANSWERED</code>, <code>TIMED_OUT</code> or
+<code>CANCELED</code> (D23, D39, specification section 6). The engine keeps the client request with the probe
+and answers it when the probe ends. A probe lives on one partition: <code>CREATE</code> goes round-robin, a
+poll goes to every partition, everything else goes to the owner by key, with no command
+distribution (D22).</p>
+<p>The gateway computes the deadline when it receives the request (<code>now + requestTimeout</code>, capped at
+30 s) and sends it as an absolute time; the engine never recomputes it (D18, D49). A probe that no
+poll collected by then ends with <code>404 NO_WORKER</code>, one that was collected but not answered with
+<code>504 WORKER_DID_NOT_ANSWER</code> (D40). A delivery the gateway could not complete is yielded back to
+<code>ACTIVATABLE</code> (D41).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="secrets-detected-at-create-injected-at-collection">Secrets: detected at <code>CREATE</code>, injected at collection<a href="#secrets-detected-at-create-injected-at-collection" class="hash-link" aria-label="Direct link to secrets-detected-at-create-injected-at-collection" title="Direct link to secrets-detected-at-create-injected-at-collection" translate="no">​</a></h3>
+<p>At <code>CREATE</code> the engine detects references in the input as it does for input mappings, and rejects
+imprecise ones (D28, D60). The records carry placeholders, never values. When a poll collects the
+probe, the engine reads the cache only, as <code>JobBatchCollector</code> does: all cached, the values go into
+the activation response only; one missing, the probe is parked and resolved through the existing
+resolution chain (D12, D39). The response also names the JSON pointers of the injected leaves, so
+the Java client can keep the values out of <code>toString()</code> and its <code>ERROR</code> messages (D73). A resolution failure ends the probe with
+<code>400 SECRET_RESOLUTION_ERROR</code> instead of raising an incident, since there is no process (D13).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="records-export-and-audit">Records, export and audit<a href="#records-export-and-audit" class="hash-link" aria-label="Direct link to Records, export and audit" title="Direct link to Records, export and audit" translate="no">​</a></h3>
+<p>Two value types, <code>PROBE</code> and <code>PROBE_BATCH</code>, as <code>JOB</code> and <code>JOB_BATCH</code> (D32, specification
+section 7). <code>ANSWERED</code> never carries <code>data</code>: the client&#x27;s response is written from the <code>ANSWER</code>
+command, which exporters skip, so a metadata answer never reaches exported records (D42). The
+Elasticsearch and OpenSearch templates are off by default (D56); the Camunda and RDBMS exporters
+write audit log entries only (D16), with the mapping in D70.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="authorization">Authorization<a href="#authorization" class="hash-link" aria-label="Direct link to Authorization" title="Direct link to Authorization" translate="no">​</a></h3>
+<p>A new resource type <code>PROBE</code>, with <code>CREATE</code> for the client and <code>ANSWER</code> for the worker, on the
+<code>probeId</code> or <code>*</code> (D14). The client also needs <code>SECRET:READ</code> on each referenced secret, direct or
+reached through a cluster variable, because the worker receives values without any secret
+permission (D67); no check per cluster variable (D68). <code>CREATE</code> checks permissions before it parses
+or evaluates (D66). A poll silently skips the <code>probeIds</code> the poller may not answer (D52). The
+Connectors role gets <code>PROBE:ANSWER</code> on <code>*</code> by default (D69).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences-and-known-limits">Consequences and known limits<a href="#consequences-and-known-limits" class="hash-link" aria-label="Direct link to Consequences and known limits" title="Direct link to Consequences and known limits" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>A probe may run more than once.</strong> A <code>CREATE</code> retried on another partition after a lost
+response, or a yield, can hand the same request to two workers, and there is no idempotency key.
+Probes are therefore read-only in phase 2; task testing must revisit this (D57, OQ33).</li>
+<li class=""><strong>First poll wins between a SaaS and a hybrid runtime.</strong> When both register the same <code>probeId</code>,
+the answer depends on which one polled first. A hybrid runtime that must answer alone registers
+its own <code>probeId</code>; a worker selector comes later (D47).</li>
+<li class=""><strong>Clock skew above about 400 ms between gateway and broker</strong> brings back a
+<code>504 DEADLINE_EXCEEDED</code> from the gateway before the engine&#x27;s own answer, and under heavy
+backpressure the engine can still miss the 500 ms margin (D49).</li>
+<li class=""><strong>No feature flag.</strong> Probes are available as soon as a release ships them, behind alpha
+endpoints. During a rolling update, a <code>CREATE</code> or a poll that reaches an old broker is rejected;
+workers back off (D43, D51). An old follower cannot replay the new probe events and stays
+unhealthy until it is updated, and if leadership moves back to an old broker that must replay a
+probe event or process a pending probe command, the partition stalls until that broker is
+updated. Worker backoff does not help there; the risk is accepted, as for any new record (D71).</li>
+<li class=""><strong>No worker means a full wait.</strong> <code>NO_WORKER</code> is decided at the deadline, so a client with no
+worker waits its whole <code>requestTimeout</code> (D40).</li>
+<li class=""><strong><code>PROBE:ANSWER</code> grants secrets.</strong> Since <code>probeId</code> is a free string, a worker with <code>ANSWER</code> on <code>*</code>
+receives every probe&#x27;s secrets. Grant it only to the runtimes that serve those IDs (specification
+section 8).</li>
+<li class=""><strong>Secret values can be up to the cache TTL stale</strong>, as for jobs (D12).</li>
+<li class=""><strong>A worker can still write a secret to the log through its answer.</strong> The cluster never writes a
+secret value to a record, but the <code>PROBE:ANSWER</code> command is logged as the worker sent it, and the
+engine does not check <code>data</code>. A worker must keep injected values out of its answer (D72).</li>
+<li class=""><strong>A raw secret typed into a literal field</strong> ends up in <code>CREATED</code>; the engine cannot detect it.
+Clients mitigate with the secret picker (specification section 7).</li>
+<li class=""><strong>The <code>PROBE</code> resource type comes from <code>camunda-security-library</code></strong>, which must be released before
+any step that checks a permission (specification section 12).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="known-poc-divergences">Known POC divergences<a href="#known-poc-divergences" class="hash-link" aria-label="Direct link to Known POC divergences" title="Direct link to Known POC divergences" translate="no">​</a></h2>
+<p>The POC (<a href="https://github.com/camunda/camunda/pull/68078" target="_blank" rel="noopener noreferrer" class="">camunda/camunda#68078</a>) is a reference, not
+a base. Where it differs from the specification, the specification wins. Code copied from the POC
+must fix:</p>
+<ul>
+<li class="">The <code>NO_WORKER</code> detail names only &quot;no worker polls this probe ID&quot;; it must also name a missing
+<code>PROBE:ANSWER</code> (D52).</li>
+<li class="">The audit log gives <code>TIMED_OUT</code> and <code>CANCELED</code> the default result <code>SUCCESS</code>; it must be <code>FAIL</code>
+(D70).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="open-question">Open question<a href="#open-question" class="hash-link" aria-label="Direct link to Open question" title="Direct link to Open question" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>OQ30: which roles get <code>PROBE:CREATE</code> by default?</strong> Owners: Security and Product management.
+Proposal: users who manage connections get <code>PROBE:CREATE</code> on <code>*</code> and <code>SECRET:READ</code>, and Admin
+gets all (specification section 8).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="source">Source<a href="#source" class="hash-link" aria-label="Direct link to Source" title="Direct link to Source" translate="no">​</a></h2>
+<ul>
+<li class=""><a class="" href="/camunda/pr-preview/pr-68926/adr/probes/probes-specification/">Probes specification</a>, the source of truth: decisions, open and
+discussed questions, acceptance tests AT1 to AT24 and success metrics (section 13).</li>
+<li class=""><a href="https://github.com/camunda/product-hub/issues/3433" target="_blank" rel="noopener noreferrer" class="">Epic: Connection Validation phase 2 (camunda/product-hub#3433)</a></li>
+<li class=""><a href="https://github.com/camunda/camunda/issues/68861" target="_blank" rel="noopener noreferrer" class="">Write the ADR for probes (camunda/camunda#68861)</a></li>
+<li class=""><a href="https://docs.google.com/document/d/1omtaMu3HWFpPakfCU4aDQtZSTGpjzbqQ-y7M9o71PDc/edit?tab=t.5y3t70xg24uo" target="_blank" rel="noopener noreferrer" class="">Probe specification tab of the Phase 2 doc (Google Doc)</a>,
+the shared summary of the specification.</li>
+<li class=""><a href="https://github.com/camunda/camunda/pull/68078" target="_blank" rel="noopener noreferrer" class="">POC: probes (camunda/camunda#68078)</a>, a reference
+only.</li>
+<li class=""><a class="" href="/camunda/pr-preview/pr-68926/adr/secrets/central-secret-resolution-architecture/">Central secret resolution (secrets ADR 001)</a></li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/probes/001-probe-primitive.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#options-considered" class="table-of-contents__link toc-highlight">Options considered</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#routing-on-an-opaque-probeid" class="table-of-contents__link toc-highlight">Routing on an opaque <code>probeId</code></a></li><li><a href="#transport-rest-long-polling-that-mirrors-job-activation" class="table-of-contents__link toc-highlight">Transport: REST long polling that mirrors job activation</a></li><li><a href="#lifecycle-and-an-absolute-deadline" class="table-of-contents__link toc-highlight">Lifecycle and an absolute deadline</a></li><li><a href="#secrets-detected-at-create-injected-at-collection" class="table-of-contents__link toc-highlight">Secrets: detected at <code>CREATE</code>, injected at collection</a></li><li><a href="#records-export-and-audit" class="table-of-contents__link toc-highlight">Records, export and audit</a></li><li><a href="#authorization" class="table-of-contents__link toc-highlight">Authorization</a></li></ul></li><li><a href="#consequences-and-known-limits" class="table-of-contents__link toc-highlight">Consequences and known limits</a></li><li><a href="#known-poc-divergences" class="table-of-contents__link toc-highlight">Known POC divergences</a></li><li><a href="#open-question" class="table-of-contents__link toc-highlight">Open question</a></li><li><a href="#source" class="table-of-contents__link toc-highlight">Source</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
