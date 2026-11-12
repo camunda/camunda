@@ -79,6 +79,12 @@ public class HttpClientFactory {
   /** The versioned base context path of the cluster-scoped REST API */
   public static final String CLUSTER_API_PATH = "/cluster/v2";
 
+  /**
+   * Maximum age of a pooled connection, however often it is used. Without it, a connection to a
+   * replaced server pod keeps timing out forever, as busy clients never let it go idle.
+   */
+  static final TimeValue DEFAULT_CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
+
   private static final String PHYSICAL_TENANT_PATH_SEGMENT = "/physical-tenants/";
 
   /**
@@ -97,16 +103,20 @@ public class HttpClientFactory {
 
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
+  private final TimeValue connectionTimeToLive;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
   }
 
-  /** Lets tests shorten the margin of the response deadline. */
+  /** Lets tests shorten the margin of the response deadline and the connection lifetime. */
   HttpClientFactory(
-      final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
+    this.connectionTimeToLive = connectionTimeToLive;
   }
 
   public HttpClient createClient() {
@@ -151,13 +161,15 @@ public class HttpClientFactory {
             // connection, which is only safe with one exchange per HTTP/2 connection. Pin it, as
             // newer httpclient5 versions default to multiplexing.
             .setMessageMultiplexing(false)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
+            .setDefaultConnectionConfig(
+                ConnectionConfig.custom().setTimeToLive(connectionTimeToLive).build());
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
-      // Use a short connection TTL to force frequent re-resolution of DNS. Without this,
-      // pooled connections are reused indefinitely, and the randomized DNS resolver would
-      // only take effect when a new connection is created — defeating load balancing.
+      // Use a much shorter connection TTL than the default to force frequent re-resolution of
+      // DNS. Otherwise the randomized DNS resolver only takes effect when a new connection is
+      // created, which would rarely happen and defeat load balancing.
       connectionManagerBuilder.setDefaultConnectionConfig(
           ConnectionConfig.custom().setTimeToLive(TimeValue.ofSeconds(1)).build());
     }
