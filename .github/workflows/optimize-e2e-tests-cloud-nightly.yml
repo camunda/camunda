@@ -145,7 +145,9 @@ jobs:
           project_name: elasticsearch
         env:
           # Only main moved to ES 9; stable branches keep testing their ES 8 client against ES 8.
-          ELASTIC_VERSION: ${{ startsWith(matrix.branch, 'stable/') && steps.db-versions.outputs.elasticsearch-8 || steps.db-versions.outputs.elasticsearch-9 }}
+          # The elasticsearch-8 output only exists in the read-db-versions action of the stable
+          # branches, so it is read through toJSON to keep actionlint from rejecting it on main.
+          ELASTIC_VERSION: ${{ startsWith(matrix.branch, 'stable/') && fromJSON(toJSON(steps.db-versions.outputs))['elasticsearch-8'] || steps.db-versions.outputs.elasticsearch-9 }}
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
