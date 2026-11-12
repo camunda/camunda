@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /** Plain data with a generated codec, stores the same bytes as {@link UnpackedVariable}. */
 @MsgpackPojo
@@ -23,7 +24,7 @@ public final class PojoVariable extends MsgpackBufferValue<PojoVariable> {
   long key;
 
   @MsgpackProperty(binary = true)
-  DirectBuffer value = Decoding.EMPTY;
+  final UnsafeBuffer value = new UnsafeBuffer(Decoding.EMPTY);
 
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
@@ -33,7 +34,7 @@ public final class PojoVariable extends MsgpackBufferValue<PojoVariable> {
   }
 
   public PojoVariable setValue(final DirectBuffer value) {
-    this.value = BufferUtil.cloneBuffer(value);
+    this.value.wrap(BufferUtil.cloneBuffer(value));
     return this;
   }
 }
