@@ -50,52 +50,55 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    // newest node kept in the prev chain, its prev as observed, and the number of stale nodes
-    // walked after it
-    ActorTaskQueueNode keep = null;
-    ActorTaskQueueNode keepPrev = null;
-    int skipped = 0;
-    final ActorTaskQueueNode start = tail;
-    ActorTaskQueueNode node = start;
+    final ActorTaskQueueNode newest = tail;
+    // A thief only ever rewrites the prev of the second-newest node: the tail may still be linked
+    // by its producer. Stale nodes walked below it are counted, and if there are enough, its prev
+    // is pointed at the node where the walk stops.
+    ActorTaskQueueNode anchor = null;
+    ActorTaskQueueNode anchorPrev = null;
+    int stale = 0;
 
+    ActorTaskQueueNode node = newest;
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
-        skipStaleNodes(keep, keepPrev, node, skipped);
+        skipStaleNodes(anchor, anchorPrev, node, stale);
         return task;
       }
 
       final ActorTaskQueueNode older = node.prev;
-      if (keep == null || keep == start || older == null) {
-        // the tail cannot be unlinked and is still written by producers, so the walk keeps the tail
-        // and the node after it; a node without prev is still being appended
-        skipStaleNodes(keep, keepPrev, node, skipped);
-        keep = node;
-        keepPrev = older;
-        skipped = 0;
-      } else {
-        skipped++;
+      if (older == null) {
+        // still being appended, or popped after the walk read the link to it: nothing older to
+        // steal
+        skipStaleNodes(anchor, anchorPrev, node, stale);
+        return null;
       }
 
+      if (anchor != null) {
+        stale++;
+      } else if (node != newest) {
+        anchor = node;
+        anchorPrev = older;
+      }
       node = older;
     }
 
-    skipStaleNodes(keep, keepPrev, node, skipped);
+    skipStaleNodes(anchor, anchorPrev, node, stale);
     return null;
   }
 
   /**
-   * Links {@code keep} to {@code next}, unless its prev changed since the walk read it: another
-   * thief may have unlinked further in the meantime, and overwriting that would bring back the
-   * stale nodes it skipped.
+   * Points {@code anchor} past {@code stale} claimed nodes to {@code next}, if that saves a long
+   * walk. Does nothing if its prev changed since the walk read it: another thief may have unlinked
+   * further in the meantime, and overwriting that would bring back the nodes it skipped.
    */
   static void skipStaleNodes(
-      final ActorTaskQueueNode keep,
-      final ActorTaskQueueNode observedPrev,
+      final ActorTaskQueueNode anchor,
+      final ActorTaskQueueNode anchorPrev,
       final ActorTaskQueueNode next,
-      final int skipped) {
-    if (skipped >= MIN_STALE_NODES_TO_SKIP && next != null) {
-      UnsafeApi.compareAndSetReference(keep, PREV_OFFSET, observedPrev, next);
+      final int stale) {
+    if (anchor != null && stale >= MIN_STALE_NODES_TO_SKIP && next != null) {
+      UnsafeApi.compareAndSetReference(anchor, PREV_OFFSET, anchorPrev, next);
     }
   }
 
