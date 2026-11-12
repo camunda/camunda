@@ -363,10 +363,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case ENUM ->
                 "%s = Decoding.readEnum(r, ENUM_NAMES_%d, ENUM_VALUES_%d);".formatted(f, i, i);
             case STRING_LIST ->
-                "{\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %s.add(Decoding.readString(r));\n          }\n        }"
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.add(Decoding.readString(r));\n          }\n        }"
                     .formatted(f);
             case LONG_LIST ->
-                "{\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %s.add(r.readInteger());\n          }\n        }"
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.add(r.readInteger());\n          }\n        }"
                     .formatted(f);
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
           };
