@@ -11,6 +11,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.RawBatchWriter;
+import io.camunda.zeebe.db.RawWrite;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -29,11 +32,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * shared by all partitions, which never see each other's rows.
  *
  * <p>It writes with the term it was opened with, until a newer leader claims the state. Opened
- * without a term, it only reads.
+ * without a term, it only reads. It takes the write-behind cache's batches with their positions.
  */
 final class RdbmsZeebeDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-    implements ZeebeDb<ColumnFamilyNames> {
+    implements ZeebeDb<ColumnFamilyNames>, RawBatchWriter {
 
   private final RdbmsStorage storage;
   private final StateMarker marker;
@@ -41,6 +44,7 @@ final class RdbmsZeebeDb<
   private final ConsistencyChecksSettings consistencyChecksSettings;
   private final MeterRegistry meterRegistry;
   private final Set<RdbmsTransaction> transactions = ConcurrentHashMap.newKeySet();
+  private final RdbmsTransaction batchTransaction;
 
   /**
    * @param term the term to write with, or empty to only read
@@ -56,6 +60,8 @@ final class RdbmsZeebeDb<
     this.term = term;
     this.consistencyChecksSettings = consistencyChecksSettings;
     this.meterRegistry = meterRegistry;
+    batchTransaction = new RdbmsTransaction(storage, marker.partitionId(), marker.stateId(), term);
+    transactions.add(batchTransaction);
   }
 
   @Override
@@ -89,6 +95,12 @@ final class RdbmsZeebeDb<
         new RdbmsTransaction(storage, marker.partitionId(), marker.stateId(), term);
     transactions.add(transaction);
     return new RdbmsTransactionContext(transaction);
+  }
+
+  /** Writes on a transaction of its own, apart from the transactions of the contexts. */
+  @Override
+  public void write(final List<RawWrite> writes, final long position) {
+    batchTransaction.writeBatch(writes, position);
   }
 
   @Override

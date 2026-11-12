@@ -37,15 +37,25 @@
   </update>
 
   <!--
-    Like any update, it locks the row until the transaction ends, so a newer leader's claim waits
-    for the write in progress. After the claim, it updates no row.
+    Like any update, they lock the row until the transaction ends, so a newer leader's claim waits
+    for the write in progress. After the claim, they update no row.
   -->
-  <update id="fence">
-    UPDATE ${prefix}ZS_PARTITION
-    SET OWNER_TERM = OWNER_TERM
+  <sql id="ownedByTerm">
     WHERE PARTITION_ID = #{partitionId}
       AND STATE_ID = #{stateId}
       AND OWNER_TERM = #{term}
+  </sql>
+
+  <update id="fence">
+    UPDATE ${prefix}ZS_PARTITION
+    SET OWNER_TERM = OWNER_TERM
+    <include refid="ownedByTerm"/>
+  </update>
+
+  <update id="fenceAndSetPosition">
+    UPDATE ${prefix}ZS_PARTITION
+    SET WRITTEN_POSITION = #{position}
+    <include refid="ownedByTerm"/>
   </update>
 
   <select id="findOwnerTerm" resultType="long">

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.rdbms;
 
+import io.camunda.zeebe.db.RawWrite;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
@@ -35,6 +36,10 @@ import org.slf4j.LoggerFactory;
  * owns the state, which locks the row until it ends. A newer leader's claim waits for it, and once
  * claimed, writes of the older term throw {@link StateFencedException}. Transactions that only read
  * never check. Without a term, it only reads: writing throws right away.
+ *
+ * <p>The write-behind cache's batches skip the buffer: {@link #writeBatch} writes each in a
+ * database transaction of its own, and sets the position the state tables stand at in the same
+ * statement that fences it.
  *
  * <p>Like RocksDB's, it is used by one thread at a time and is reused for the next transaction.
  */
@@ -169,6 +174,27 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
   }
 
   /**
+   * Writes a batch that's already merged, one write per key, and commits it.
+   *
+   * @param position the log position the state tables stand at once the batch is written
+   */
+  void writeBatch(final List<RawWrite> writes, final long position) {
+    checkWritable();
+    resetTransaction();
+    try {
+      execute(
+          state -> {
+            fence(state, OptionalLong.of(position));
+            sendTo(state, writes);
+            session().flushStatements();
+          });
+      commitInternal();
+    } finally {
+      rollbackInternal();
+    }
+  }
+
+  /**
    * Discards the writes and rolls the database transaction back. It doesn't throw: once the
    * connection is gone, the database rolls back by itself.
    */
@@ -195,7 +221,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     execute(
         state -> {
           if (!ownerChecked) {
-            checkOwner(state);
+            fence(state, OptionalLong.empty());
             ownerChecked = true;
           }
           buffer.sendTo(state, partitionId);
@@ -212,9 +238,14 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     }
   }
 
-  private void checkOwner(final StateMapper state) {
+  /** Locks the state row if the term owns the state, and sets the position if there is one. */
+  private void fence(final StateMapper state, final OptionalLong position) {
     final long writeTerm = term.orElseThrow();
-    state.fence(partitionId, stateId, writeTerm);
+    if (position.isPresent()) {
+      state.fenceAndSetPosition(partitionId, stateId, writeTerm, position.getAsLong());
+    } else {
+      state.fence(partitionId, stateId, writeTerm);
+    }
     if (updatedRows(session().flushStatements()) != 1) {
       final var ownerTerm = state.findOwnerTerm(partitionId, stateId);
       throw new StateFencedException(
@@ -226,6 +257,32 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
                   ownerTerm
                       .map(owner -> "a leader of term " + owner + " owns it")
                       .orElse("the state doesn't exist")));
+    }
+  }
+
+  /** Sends the deletes, then the upserts, so that each kind of write to a table is one batch. */
+  private void sendTo(final StateMapper state, final List<RawWrite> writes) {
+    for (final var write : writes) {
+      if (write.value() == null) {
+        final int columnFamily = write.columnFamily().getValue();
+        final var table = StateTables.of(columnFamily);
+        state.delete(partitionId, table.name(), table.shared(), columnFamily, write.key());
+      }
+    }
+    for (final var write : writes) {
+      final var value = write.value();
+      if (value != null) {
+        final int columnFamily = write.columnFamily().getValue();
+        final var table = StateTables.of(columnFamily);
+        state.upsert(
+            partitionId,
+            table.name(),
+            table.shared(),
+            columnFamily,
+            write.key(),
+            value,
+            write.position());
+      }
     }
   }
 

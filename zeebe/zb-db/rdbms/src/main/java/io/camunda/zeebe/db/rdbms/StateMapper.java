@@ -54,6 +54,13 @@ interface StateMapper {
       @Param("stateId") String stateId,
       @Param("term") long term);
 
+  /** Like {@link #fence}, and sets the position the state tables stand at. */
+  void fenceAndSetPosition(
+      @Param("partitionId") int partitionId,
+      @Param("stateId") String stateId,
+      @Param("term") long term,
+      @Param("position") long position);
+
   Optional<Long> findOwnerTerm(
       @Param("partitionId") int partitionId, @Param("stateId") String stateId);
 
