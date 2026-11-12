@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.impl.util.RequestValidatorRegistry;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -88,6 +90,7 @@ public final class ClusterConfigurationManagerServiceImpl
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
+      final ClusterConfigurationChangeValidator changeValidator,
       final MeterRegistry meterRegistry) {
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
@@ -126,7 +129,11 @@ public final class ClusterConfigurationManagerServiceImpl
             topologyMetrics);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
-            clusterConfigurationManager, localMemberId, managerActor);
+            clusterConfigurationManager,
+            localMemberId,
+            managerActor,
+            PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+            changeValidator);
     configurationRequestServer =
         new ClusterConfigurationRequestServer(
             communicationService,

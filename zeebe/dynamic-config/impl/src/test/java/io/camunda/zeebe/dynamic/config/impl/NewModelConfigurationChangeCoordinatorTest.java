@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
@@ -73,6 +75,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
   private ConfigurationChangeCoordinatorImpl coordinator;
 
   private void wire(final MemberId localMemberId, final CurrentClusterConfiguration seed) {
+    wire(localMemberId, seed, ClusterConfigurationChangeValidator.ACCEPT_ALL);
+  }
+
+  private void wire(
+      final MemberId localMemberId,
+      final CurrentClusterConfiguration seed,
+      final ClusterConfigurationChangeValidator changeValidator) {
     final var persisted =
         PersistedCurrentClusterConfiguration.ofFile(
             tmp.resolve("config-" + localMemberId.id() + ".meta"), new ProtoBufSerializer());
@@ -95,7 +104,13 @@ final class NewModelConfigurationChangeCoordinatorTest {
             new NoopPartitionScalingChangeExecutor(),
             new NoopModeChangeExecutor(),
             new NoopRestoreChangeExecutor()));
-    coordinator = new ConfigurationChangeCoordinatorImpl(manager, localMemberId, executor);
+    coordinator =
+        new ConfigurationChangeCoordinatorImpl(
+            manager,
+            localMemberId,
+            executor,
+            PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+            changeValidator);
     manager.updateMultiConfiguration(ignored -> seed).join();
   }
 
@@ -663,5 +678,81 @@ final class NewModelConfigurationChangeCoordinatorTest {
     // then — the request opted in, so it sees the disabled group too
     assertThat(seenByPhases[0].partitionGroups().keySet())
         .containsExactlyInAnyOrder(CurrentClusterConfiguration.DEFAULT_GROUP, "tenanta");
+  }
+
+  @Test
+  void shouldRejectChangeWhenValidatorRejectsResultingConfiguration() {
+    // given
+    final var seed = twoMemberCluster();
+    wire(MEMBER_0, seed, (current, proposed) -> Optional.of("not enough memory"));
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.applyOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(InvalidState.class)
+        .withMessage("not enough memory");
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    assertThat(configuration().partitionGroups()).isEqualTo(seed.partitionGroups());
+  }
+
+  @Test
+  void shouldRejectDryRunWhenValidatorRejectsResultingConfiguration() {
+    // given
+    wire(MEMBER_0, twoMemberCluster(), (current, proposed) -> Optional.of("not enough memory"));
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    final var result = coordinator.simulateOperations(request);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidState.class);
+  }
+
+  @Test
+  void shouldValidateConfigurationAfterTheChange() {
+    // given
+    final var seed = twoMemberCluster();
+    final CurrentClusterConfiguration[] validated = new CurrentClusterConfiguration[2];
+    wire(
+        MEMBER_0,
+        seed,
+        (current, proposed) -> {
+          validated[0] = current;
+          validated[1] = proposed;
+          return Optional.empty();
+        });
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                CurrentClusterConfiguration.toPhases(
+                    List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1))));
+
+    // when
+    coordinator.applyOperations(request).join();
+
+    // then
+    assertThat(validated[0].partitionGroups()).isEqualTo(seed.partitionGroups());
+    assertThat(
+            validated[1]
+                .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                .hasMember(MEMBER_0))
+        .isFalse();
   }
 }

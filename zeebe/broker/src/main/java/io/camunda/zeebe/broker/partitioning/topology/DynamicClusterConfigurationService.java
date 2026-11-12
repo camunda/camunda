@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -312,6 +313,7 @@ public class DynamicClusterConfigurationService
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
+        ClusterConfigurationChangeValidator.ACCEPT_ALL,
         brokerStartupContext.getMeterRegistry());
   }
 

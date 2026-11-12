@@ -9,9 +9,11 @@ package io.camunda.zeebe.dynamic.config.impl.changes;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.agrona.collections.MutableLong;
@@ -46,27 +49,36 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
   private final int completedChangeHistoryLimit;
+  private final ClusterConfigurationChangeValidator changeValidator;
 
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
       final ConcurrencyControl executor) {
-    this(clusterTopologyManager, localMemberId, executor, PhasedChangeState.DEFAULT_HISTORY_LIMIT);
+    this(
+        clusterTopologyManager,
+        localMemberId,
+        executor,
+        PhasedChangeState.DEFAULT_HISTORY_LIMIT,
+        ClusterConfigurationChangeValidator.ACCEPT_ALL);
   }
 
   /**
    * @param completedChangeHistoryLimit maximum number of completed changes retained in {@link
    *     io.camunda.zeebe.dynamic.config.state.PhasedChangeState#history()}, oldest evicted first
+   * @param changeValidator rejects a change based on the configuration it would produce
    */
   public ConfigurationChangeCoordinatorImpl(
       final ClusterConfigurationManager clusterTopologyManager,
       final MemberId localMemberId,
       final ConcurrencyControl executor,
-      final int completedChangeHistoryLimit) {
+      final int completedChangeHistoryLimit,
+      final ClusterConfigurationChangeValidator changeValidator) {
     this.clusterTopologyManager = clusterTopologyManager;
     this.executor = executor;
     this.localMemberId = localMemberId;
     this.completedChangeHistoryLimit = completedChangeHistoryLimit;
+    this.changeValidator = changeValidator;
   }
 
   @Override
@@ -246,6 +258,18 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
         (simulatedFinalConfiguration, validationError) -> {
           if (validationError != null) {
             failFuture(future, validationError);
+            return;
+          }
+
+          final Optional<String> rejection;
+          try {
+            rejection = changeValidator.validate(currentConfiguration, simulatedFinalConfiguration);
+          } catch (final Exception e) {
+            failFuture(future, e);
+            return;
+          }
+          if (rejection.isPresent()) {
+            failFuture(future, new InvalidState(rejection.get()));
             return;
           }
 
