@@ -55,6 +55,20 @@ public class RecordGoldenFilesTest {
           "private\\s+final\\s+([\\w<>,?\\s.\\[\\]@]+?)\\s+(\\w+)\\s*(=\\s*[^;]+)?;",
           Pattern.DOTALL);
 
+  // POJO_FIELD_PATTERN matches the members of a @MsgpackPojo class, which are not private and are
+  // declared at the indentation of a class member (the formatter guarantees two spaces), e.g.:
+  //     long time = 0;
+  //     @MsgpackProperty(binary = true) DirectBuffer payload = Decoding.EMPTY;
+  //     final List<DirectBuffer> ids = new ArrayList<>();
+  // Group 1 are the annotations, 2 the type, 3 the name and 4 the initializer.
+  private static final Pattern POJO_FIELD_PATTERN =
+      Pattern.compile(
+          "^ {2}((?:@\\w+(?:\\([^)]*\\))?\\s+)*)(?:final\\s+)?([\\w.]+(?:<[\\w.<>, ?@]+>)?)\\s+(\\w+)\\s*(=[^;]*)?;",
+          Pattern.MULTILINE);
+  private static final Pattern ANNOTATION_KEY_PATTERN =
+      Pattern.compile("@MsgpackProperty\\(\\s*(?:value\\s*=\\s*)?\"([^\"]*)\"");
+  private static final String POJO_TYPE_PREFIX = "pojo:";
+
   // PROPERTY_CTOR_PATTERN matches constructor expressions such as:
   //     new StringProperty("name")
   //     new LongProperty(initialValues, 0)
@@ -148,12 +162,12 @@ public class RecordGoldenFilesTest {
       final Map<String, Property> goldenProps, final Map<String, Property> sourceProps) {
 
     for (final var golden : goldenProps.values()) {
-      if (!sourceProps.containsKey(golden.name())) {
+      final var source = findSource(golden, sourceProps);
+      if (source == null) {
         warnAboutGoldenFileChanges();
         fail("Expected property %s from golden file to exist in source", golden.name());
       }
-      final var source = sourceProps.get(golden.name());
-      if (!source.type().equals(golden.type())) {
+      if (!sameType(golden, source)) {
         warnAboutGoldenFileChanges();
         fail(
             "Property %s type changed (golden: %s, source: %s)",
@@ -175,7 +189,7 @@ public class RecordGoldenFilesTest {
       final Path goldenFile) {
 
     for (final var source : sourceProps.values()) {
-      if (!goldenProps.containsKey(source.name())) {
+      if (!isInGolden(source, goldenProps)) {
         LOG.error("New property {} on {} detected.", source.name(), record.simpleName());
         warnAboutGoldenFileChanges();
         printGoldenFileCommand(record.sourcePath(), goldenFile);
@@ -190,6 +204,12 @@ public class RecordGoldenFilesTest {
                 .formatted(source.name(), record.simpleName(), goldenFile));
       }
     }
+  }
+
+  private static boolean isInGolden(final Property source, final Map<String, Property> golden) {
+    return golden.containsKey(source.name())
+        || (source.key() != null
+            && golden.values().stream().anyMatch(property -> source.key().equals(property.key())));
   }
 
   // --------------------------------------------------------------------------
@@ -207,6 +227,9 @@ public class RecordGoldenFilesTest {
     final var properties = new LinkedHashMap<String, Property>();
     properties.putAll(parseRecordComponents(javaSource, recordName));
     properties.putAll(parseFieldDeclarations(javaSource, properties, classSources));
+    if (javaSource.contains("@MsgpackPojo")) {
+      properties.putAll(parsePojoFields(javaSource));
+    }
     return Collections.unmodifiableMap(properties);
   }
 
@@ -265,6 +288,87 @@ public class RecordGoldenFilesTest {
               initializer != null ? extractKey(initializer, src, classSources) : null));
     }
     return props;
+  }
+
+  /**
+   * Reads the stored fields of a {@code @MsgpackPojo} class. Every field is stored under its name,
+   * unless {@code @MsgpackProperty} overrides the key, and has the type of the property it
+   * replaces, so that the golden file of the old implementation can be compared with it.
+   */
+  private static Map<String, Property> parsePojoFields(final String src) {
+    final var props = new LinkedHashMap<String, Property>();
+    final var matcher = POJO_FIELD_PATTERN.matcher(src);
+    while (matcher.find()) {
+      final var annotations = matcher.group(1);
+      if (annotations.contains("@MsgpackIgnore")
+          || annotations.contains("@MsgpackUnknownProperties")) {
+        continue;
+      }
+      final var name = matcher.group(3);
+      final var key = ANNOTATION_KEY_PATTERN.matcher(annotations);
+      props.put(
+          name,
+          new Property(
+              name,
+              pojoFieldType(matcher.group(2).replaceAll("\\s+", ""), annotations),
+              matcher.group(4) != null,
+              key.find() ? key.group(1) : name));
+    }
+    return props;
+  }
+
+  /**
+   * Maps the type of a {@code @MsgpackPojo} field to the property type it replaces. A type that is
+   * none of the known ones is an enum or a nested object, which cannot be told apart in the source:
+   * it is returned with a prefix and accepted for both by {@link #sameType}.
+   */
+  private static String pojoFieldType(final String type, final String annotations) {
+    return switch (type) {
+      case "long" -> "LongProperty";
+      case "int" -> "IntegerProperty";
+      case "boolean" -> "BooleanProperty";
+      case "DirectBuffer", "UnsafeBuffer" ->
+          annotations.matches("(?s).*raw\\s*=\\s*true.*")
+              ? "PackedProperty"
+              : annotations.matches("(?s).*binary\\s*=\\s*true.*")
+                  ? "BinaryProperty"
+                  : "StringProperty";
+      case "List<DirectBuffer>" -> "ArrayProperty<StringValue>";
+      case "List<Long>", "LongArrayList" -> "ArrayProperty<LongValue>";
+      case "IntArrayList" -> "ArrayProperty<IntegerValue>";
+      default -> POJO_TYPE_PREFIX + type;
+    };
+  }
+
+  /**
+   * Whether the source declares the type of a golden property. A property type of the old
+   * implementation is compared as is, except for fields of a {@code @MsgpackPojo}, whose enum and
+   * nested object types are the same name as the type argument of {@code EnumProperty} and {@code
+   * ObjectProperty}.
+   */
+  private static boolean sameType(final Property golden, final Property source) {
+    if (!source.type().startsWith(POJO_TYPE_PREFIX)) {
+      return source.type().equals(golden.type());
+    }
+    final var type = source.type().substring(POJO_TYPE_PREFIX.length());
+    final var goldenType = golden.type().replaceAll("\\s+", "");
+    return goldenType.equals("EnumProperty<" + type + ">")
+        || goldenType.equals("ObjectProperty<" + type + ">");
+  }
+
+  /**
+   * Finds the source property for a golden one: by name, or, if the field was renamed, by the
+   * serialized key, which is the stored format.
+   */
+  private static Property findSource(final Property golden, final Map<String, Property> source) {
+    final var byName = source.get(golden.name());
+    if (byName != null || golden.key() == null) {
+      return byName;
+    }
+    return source.values().stream()
+        .filter(property -> golden.key().equals(property.key()))
+        .findFirst()
+        .orElse(null);
   }
 
   /**
@@ -710,6 +814,204 @@ public class RecordGoldenFilesTest {
 
     // when - then
     assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+  }
+
+  // --------------------------------------------------------------------------
+  // Records generated from a @MsgpackPojo (the golden file is the property based original)
+  // --------------------------------------------------------------------------
+
+  @Test
+  void shouldAcceptPojoFieldsThatKeepKeysAndTypes() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        private final IntegerProperty countProp = new IntegerProperty("count", 1);
+        private final BooleanProperty flagProp = new BooleanProperty("flag", false);
+        private final StringProperty nameProp = new StringProperty("name", "");
+        private final BinaryProperty payloadProp = new BinaryProperty("payload");
+        private final EnumProperty<Kind> kindProp = new EnumProperty<>("kind", Kind.class, Kind.A);
+        private final ObjectProperty<Inner> innerProp = new ObjectProperty<>("inner", new Inner());
+        private final ArrayProperty<StringValue> idsProp = new ArrayProperty<>("ids", new StringValue());
+        private final ArrayProperty<IntegerValue> countsProp = new ArrayProperty<>("counts", new IntegerValue());
+        private final ArrayProperty<LongValue> keysProp = new ArrayProperty<>("keys", new LongValue());
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          long time = 0;
+          int count = 1;
+          boolean flag;
+          DirectBuffer name = Decoding.EMPTY;
+          @MsgpackProperty(binary = true) DirectBuffer payload = Decoding.EMPTY;
+          Kind kind = Kind.A;
+          final Inner inner = new Inner();
+          final List<DirectBuffer> ids = new ArrayList<>();
+          final IntArrayList counts = new IntArrayList();
+          final LongArrayList keys = new LongArrayList();
+          @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+          @MsgpackIgnore int cache;
+          private static final int LIMIT = 3;
+        }
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+    assertThatCode(() -> validateNew(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptPojoFieldWithKeyOverride() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @MsgpackProperty("time") long epochMillis = 0;
+        }
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+    assertThatCode(() -> validateNew(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldDetectPojoFieldWithChangedKey() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          long timestamp = 0;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage("Expected property timeProp from golden file to exist in source");
+  }
+
+  @Test
+  void shouldDetectPojoFieldWithChangedType() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          int time = 0;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage(
+            "Property timeProp type changed (golden: LongProperty, source: IntegerProperty)");
+  }
+
+  @Test
+  void shouldDetectPojoBinaryStoredAsString() {
+    // given
+    final var golden =
+        """
+        private final BinaryProperty payloadProp = new BinaryProperty("payload");
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          DirectBuffer payload = Decoding.EMPTY;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessage(
+            "Property payloadProp type changed (golden: BinaryProperty, source: StringProperty)");
+  }
+
+  @Test
+  void shouldDetectPojoEnumReplacedByAnotherType() {
+    // given
+    final var golden =
+        """
+        private final EnumProperty<Kind> kindProp = new EnumProperty<>("kind", Kind.class, Kind.A);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          OtherKind kind = OtherKind.A;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessageStartingWith("Property kindProp type changed");
+  }
+
+  @Test
+  void shouldDetectNewPojoFieldWithoutDefault() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          long time = 0;
+          Kind kind;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validateNew(golden, source))
+        .hasMessageStartingWith("New property kind on TestRecord does not have a default value");
+  }
+
+  @Test
+  void shouldDetectNewPojoFieldWithDefaultAsGoldenFileChange() {
+    // given
+    final var golden =
+        """
+        private final LongProperty timeProp = new LongProperty("time", 0);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          long time = 0;
+          long extra = -1;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validateNew(golden, source))
+        .hasMessageStartingWith("New property extra on TestRecord detected");
+  }
+
+  private static void validateNew(final String golden, final String source) {
+    final var record = new RegisteredRecord(Paths.get("TestRecord.java"), "TestRecord");
+    validateNewProperties(
+        record,
+        extractProperties(golden, "TestRecord", name -> null),
+        extractProperties(source, "TestRecord", name -> null),
+        Paths.get("TestRecord.golden"));
   }
 
   private static void validate(final String golden, final String source) {
