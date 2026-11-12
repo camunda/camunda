@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.engine.state.policy.PersistedPolicyUpdate;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -28,9 +29,10 @@ import org.jspecify.annotations.NullMarked;
  * with the identifiers and chunk count that are buffered with the update, which is the same count
  * that decides whether every chunk is buffered.
  *
- * <p>The processor does not validate the chunks: it assumes that the broker sends every chunk of an
- * update with the update's identifiers, and one update at a time. A chunk that is sent again
- * replaces the buffered one. The processor checks no user authorization; see {@link
+ * <p>A chunk that is already buffered makes the update invalid: the processor fails the update,
+ * which removes all its chunks, and rejects the chunk. Otherwise the processor does not validate
+ * the chunks yet: it assumes that the broker sends every chunk of an update with the update's
+ * identifiers, and one update at a time. The processor checks no user authorization; see {@link
  * PolicyUpdateGuard}.
  */
 @ExcludeAuthorizationCheck
@@ -64,6 +66,11 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     final var chunk = command.getValue();
+    if (policyUpdateState.hasChunk(chunk.getUpdateId(), chunk.getChunkIndex())) {
+      failUpdate(command, chunk);
+      return;
+    }
+
     final boolean wasComplete = completeUpdate(chunk.getUpdateId()).isPresent();
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, PolicyUpdateIntent.CHUNK_APPENDED, chunk);
@@ -78,6 +85,20 @@ public final class PolicyUpdateAppendChunkProcessor
                     key,
                     PolicyUpdateIntent.APPLY_CHUNK,
                     PolicyUpdateRecords.withoutPolicyData(update.getUpdate(), 0)));
+  }
+
+  private void failUpdate(
+      final TypedRecord<PolicyUpdateRecord> command, final PolicyUpdateRecord chunk) {
+    final var reason =
+        "Expected chunk %d of policy update '%s' to be received once, but it was received again"
+            .formatted(chunk.getChunkIndex(), chunk.getUpdateId());
+    final var update =
+        policyUpdateState.getUpdate(chunk.getUpdateId()).map(PersistedPolicyUpdate::getUpdate);
+    final var failed =
+        PolicyUpdateRecords.withoutPolicyData(update.orElse(chunk), chunk.getChunkIndex())
+            .setErrorMessage(reason);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
+    rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, reason);
   }
 
   /** The update, if every one of its chunks is buffered. */

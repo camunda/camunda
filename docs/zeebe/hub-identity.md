@@ -160,7 +160,8 @@ sequenceDiagram
 
 - **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
   applied before the last chunk arrives, so a partially received update never changes identity
-  data. Chunks may arrive in any order; a duplicate chunk is rejected without effect.
+  data. Chunks may arrive in any order. A chunk that is already buffered makes the update
+  invalid: the update ends with `FAILED`, which removes its chunks, and the chunk is rejected.
 - **One chunk per `APPLY_CHUNK`.** Each `APPLY_CHUNK` command applies exactly one chunk and then writes the next
   `APPLY_CHUNK`. This bounds the batch of the `APPLY_CHUNK` command itself. Each identity command it writes is
   processed in its own batch, which includes its cascades: deleting a role, for example, also

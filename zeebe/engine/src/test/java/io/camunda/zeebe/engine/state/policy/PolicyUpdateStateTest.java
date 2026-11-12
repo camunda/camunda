@@ -112,6 +112,20 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
+  void shouldKnowWhichChunksAreBuffered() {
+    // given
+    state.bufferChunk(chunk("update-1", 0, 2));
+
+    // when
+    final boolean hasChunk0 = state.hasChunk("update-1", 0);
+    final boolean hasChunk1 = state.hasChunk("update-1", 1);
+
+    // then
+    assertThat(hasChunk0).isTrue();
+    assertThat(hasChunk1).isFalse();
+  }
+
+  @Test
   void shouldNotReturnAChunkThatIsNotBuffered() {
     // given
     state.bufferChunk(chunk("update-1", 0, 2));

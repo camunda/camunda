@@ -22,6 +22,9 @@ public interface PolicyUpdateState {
   /** The buffered update, if at least one of its chunks is buffered. */
   Optional<PersistedPolicyUpdate> getUpdate(String updateId);
 
+  /** Whether the chunk of the update is buffered. */
+  boolean hasChunk(String updateId, int chunkIndex);
+
   /** The buffered chunk of the update, if it is there. */
   Optional<PolicyUpdateRecord> getChunk(String updateId, int chunkIndex);
 }
