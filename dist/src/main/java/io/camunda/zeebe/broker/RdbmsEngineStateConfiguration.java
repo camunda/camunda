@@ -11,9 +11,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.zeebe.broker.logstreams.rdbms.RdbmsLogStorageSchema;
 import io.camunda.zeebe.broker.system.configuration.RdbmsEngineStateCfg;
+import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateResources;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsEngineStateSchema;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.util.Map;
 import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
@@ -22,6 +24,7 @@ import org.springframework.boot.jdbc.DatabaseDriver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 
 /**
@@ -34,14 +37,25 @@ import org.springframework.core.io.ResourceLoader;
 @Profile("broker")
 public class RdbmsEngineStateConfiguration {
 
-  /** Experimental: set to true to write the engine state rows to the database after the commit. */
+  /**
+   * Experimental: set to true to write the engine state rows to the database after the commit.
+   * Resolved through the Spring environment, so the system property, the environment variable
+   * ZEEBE_ENGINE_RDBMS_WRITEBEHIND and the application properties all work.
+   */
   private static final String WRITE_BEHIND_PROPERTY = "zeebe.engine.rdbms.writeBehind";
+
+  /**
+   * How long the write-behind writer waits after the oldest unflushed commit, for example 30s.
+   * State that a later commit deletes in this time never reaches the database. Default: no delay.
+   */
+  private static final String FLUSH_DELAY_PROPERTY = "zeebe.engine.rdbms.writeBehind.flushDelay";
 
   @Bean(destroyMethod = "close")
   public RdbmsEngineStatePool rdbmsEngineStatePool(
       final BrokerBasedConfiguration configuration,
       final MeterRegistry meterRegistry,
-      final ResourceLoader resourceLoader)
+      final ResourceLoader resourceLoader,
+      final Environment environment)
       throws LiquibaseException {
     final var cfg = configuration.config().getData().getRdbmsEngineState();
     if (!cfg.isEnabled()) {
@@ -51,8 +65,13 @@ public class RdbmsEngineStateConfiguration {
     final var dataSource = createDataSource(cfg, meterRegistry);
     try {
       migrateSchema(dataSource, resourceLoader);
-      return new RdbmsEngineStatePool(
-          RdbmsEngineStateResources.create(dataSource, Boolean.getBoolean(WRITE_BEHIND_PROPERTY)));
+      final var writeBehind =
+          environment.getProperty(WRITE_BEHIND_PROPERTY, Boolean.class, false)
+              ? WriteBehindConfiguration.defaults()
+                  .withFlushDelay(
+                      environment.getProperty(FLUSH_DELAY_PROPERTY, Duration.class, Duration.ZERO))
+              : null;
+      return new RdbmsEngineStatePool(RdbmsEngineStateResources.create(dataSource, writeBehind));
     } catch (final LiquibaseException | RuntimeException e) {
       dataSource.close();
       throw e;
