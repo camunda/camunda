@@ -56,7 +56,12 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 5. Defaults (not objected): drop `markAsReplaying`, `jdbc` module, Bloom filter / RDBMS bits;
    `Backend#knownAbsent` stays as a default-false hook; metrics + contract/differential tests in
    PR 2; key index (KEEP_LOWEST/KEEP_HIGHEST/DISABLE) entirely in PR 3.
-6. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
+6. **R1 (2026-11-12): hold the encoded bytes.** At put time, encode once into a fresh immutable
+   `byte[]`. Copy-out = `target.wrap(bytes)`, flush writes the bytes as-is, weights use the real
+   length. With no `copyTo` yet, no path reads the object form, so PR 2 may hold only the bytes;
+   #69223 brings the object + fast copyTo back. Confirm with Carlo if keeping the object is wanted.
+   Risks R2-R4 get fixed in PR 2, one commit each.
+7. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
 ## Planned PR stack
@@ -75,6 +80,6 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 
 - [x] Baseline: main CI green, `./mvnw install -Dquickly -T1C` green on `a0761b3ef` (2026-11-12)
 - [ ] PR 1: subagent running on `cs/wb-1-zb-db-api` (started 2026-11-12)
-- [x] PR 2/3 cut plan done; open owner question: R1 value holding (a) bytes alongside object vs (b) synchronized
+- [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
 - [ ] PR 2
 - [ ] PR 3
