@@ -35,6 +35,7 @@ import io.camunda.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
+import io.camunda.zeebe.broker.system.partitions.impl.LeaderCommitGate;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionS
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.cache.CommitGate;
 import io.camunda.zeebe.db.cache.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -92,6 +94,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
@@ -198,10 +201,12 @@ public final class ZeebePartitionFactory {
     final Supplier<MeterRegistry> dbMeterRegistry =
         () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId));
 
-    // the ZeebeDb step sets it right before it opens the database, which writes with it
+    // the ZeebeDb step sets them right before it opens the database, which writes with them
     final var stateTerm = new AtomicLong();
+    final var commitGate = new AtomicReference<@Nullable LeaderCommitGate>();
     final ZeebeDbFactory<ZbColumnFamilies> storage;
     final SnapshotCopy snapshotCopy;
+    final @Nullable Supplier<CommitGate> commitGates;
     if (keepsStateInRdbms()) {
       storage =
           new RdbmsZeebeDbFactory<>(
@@ -212,6 +217,8 @@ public final class ZeebePartitionFactory {
               consistencyChecks.getSettings(),
               dbMeterRegistry);
       snapshotCopy = UNSUPPORTED_SNAPSHOT_COPY;
+      commitGates =
+          () -> Objects.requireNonNull(commitGate.get(), "must open a commit gate for the term");
     } else {
       final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
       final var rocksDbFactory =
@@ -223,10 +230,14 @@ public final class ZeebePartitionFactory {
               rocksDbResources);
       storage = rocksDbFactory;
       snapshotCopy = new RocksDBSnapshotCopy(rocksDbFactory);
+      commitGates = null;
     }
     final StateController stateController =
         createStateController(
-            raftPartition, stateDbFactory(brokerCfg, storage), snapshotStore, snapshotStore);
+            raftPartition,
+            stateDbFactory(brokerCfg, storage, commitGates),
+            snapshotStore,
+            snapshotStore);
 
     final var context =
         new PartitionStartupAndTransitionContextImpl(
@@ -257,19 +268,31 @@ public final class ZeebePartitionFactory {
     context.setDynamicPartitionConfig(initialPartitionConfig);
     context.setClusterConfigurationService(clusterConfigurationService);
 
+    final LongConsumer openingTerm =
+        term -> {
+          stateTerm.set(term);
+          if (commitGates != null) {
+            final var previous =
+                commitGate.getAndSet(
+                    new LeaderCommitGate(term, raftPartition.getServer(), context.getLogStream()));
+            if (previous != null) {
+              previous.close();
+            }
+          }
+        };
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps(stateTerm::set));
+        new PartitionTransitionImpl(generateTransitionSteps(openingTerm));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
-  private List<PartitionTransitionStep> generateTransitionSteps(final LongConsumer stateTerm) {
+  private List<PartitionTransitionStep> generateTransitionSteps(final LongConsumer openingTerm) {
     final var dbPerLeaderTerm = keepsStateInRdbms();
     return List.of(
         new MetricsStep(),
         new LogStoragePartitionTransitionStep(),
         new LogStreamPartitionTransitionStep(),
-        new ZeebeDbPartitionTransitionStep(stateTerm, dbPerLeaderTerm),
+        new ZeebeDbPartitionTransitionStep(openingTerm, dbPerLeaderTerm),
         new MigrationTransitionStep(),
         new QueryServicePartitionTransitionStep(dbPerLeaderTerm),
         new BackupStoreTransitionStep(),
@@ -310,18 +333,24 @@ public final class ZeebePartitionFactory {
   /**
    * Returns the factory for a partition's runtime state: {@code storage} itself, or {@code storage}
    * behind the write-behind cache when that's enabled. Snapshot copies keep using {@code storage}.
+   *
+   * @param commitGates gives each database the cache opens the gate that holds its writes back
+   *     until the log commits them, or {@code null} to write them straight away
    */
   @VisibleForTesting
   static ZeebeDbFactory<ZbColumnFamilies> stateDbFactory(
-      final BrokerCfg brokerCfg, final ZeebeDbFactory<ZbColumnFamilies> storage) {
+      final BrokerCfg brokerCfg,
+      final ZeebeDbFactory<ZbColumnFamilies> storage,
+      final @Nullable Supplier<? extends CommitGate> commitGates) {
     final var writeBehindCache = brokerCfg.getData().getWriteBehindCache();
     if (!writeBehindCache.isEnabled()) {
       return storage;
     }
-    return new WriteBehindZeebeDbFactory<>(
-        storage,
-        writeBehindCache.createConfiguration(),
-        brokerCfg.getExperimental().getConsistencyChecks().getSettings());
+    final var configuration = writeBehindCache.createConfiguration();
+    final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks().getSettings();
+    return commitGates == null
+        ? new WriteBehindZeebeDbFactory<>(storage, configuration, consistencyChecks)
+        : new WriteBehindZeebeDbFactory<>(storage, configuration, commitGates, consistencyChecks);
   }
 
   /**

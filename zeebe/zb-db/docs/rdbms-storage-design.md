@@ -329,15 +329,27 @@ One replica comes first, so each step leaves a broker that works; followers come
 
 ### 9.4 Commit gate
 
-- **Committed position:** a Raft committed-entry listener, as `AsyncSnapshotDirector` uses, starting
-  from the end of a committed log reader. `LogStream`'s committed-position listener isn't enough:
-  it only fires for records this node appended.
-- **Last written position:** a new `LogStream` method that returns the `Sequencer`'s position, which
-  is set as soon as a record is written. `FlowControl`'s last written position is only updated
-  after the journal write, so it can lag behind.
-- Only the leader feeds the gate. On step-down, the gate must release a commit waiting for
-  `maxPendingBytes` and a snapshot waiting for the log. The transition closes the stream processor
-  and the snapshot director before the DB, so closing the DB comes too late.
+- **One gate per term:** right before the ZeebeDb step opens a DB, the factory creates a
+  `LeaderCommitGate` for the transition's term and the partition's current `LogStream`, and closes
+  the previous term's gate. The cache's gate supplier hands that gate to the DB.
+- **Committed position:** the gate listens to Raft for roles and for committed entries, so every
+  change reaches it on Raft's thread, in order. Once Raft reports that this replica leads in the
+  gate's term, the gate starts where a committed log reader ends: Raft only reports a new leader
+  once everything before its term is committed. From then on, Raft reports each record of this
+  leader that the log commits. Raft and `LogStream`'s committed-position listener only report
+  records this leader wrote; starting from the end of the committed log covers the records before
+  them. Until the gate starts, the committed position doesn't move.
+- **Stop:** once Raft reports any other role or term, the gate stops for good and stops listening
+  to Raft. That releases a commit waiting for `maxPendingBytes` and fails a snapshot waiting for
+  the log. The transition closes the stream processor and the snapshot director before the DB, so
+  closing the DB would come too late. If the gate can't read the end of the committed log, it
+  logs a warning and waits for the next commit instead of failing Raft's listeners.
+- **Last written position:** a new `LogStream#getLastWrittenPosition` returns the `Sequencer`'s
+  position, which moves as soon as a record goes to the log storage. `FlowControl`'s last written
+  position is only updated after the journal write, so it can lag behind.
+- With one replica, the transient follower DB at startup gets a gate that stops straight away:
+  its replayed transactions stay held back and are dropped when it closes, which is fine until
+  followers have no DB (§9.5).
 
 ### 9.5 Followers and candidates
 
@@ -442,7 +454,7 @@ failover test.
 8. **feat:** configuration, connection pool, wiring and the term (§9.1–9.3), with one replica
 only; the one-replica broker test (§9.8). Until step 9, the writer doesn't wait for the commit, so a
 crash can leave the state ahead of the log.
-9. **feat:** the commit gate from the log stream (§9.4).
+9. **feat:** the commit gate fed by Raft and the log stream (§9.4).
 10. **feat:** followers without a `ZeebeDb`, with marker snapshots; more than one replica; the
 follower tests (§9.5, §9.8).
 11. **feat:** the recovery check and the RocksDB-only paths (§9.6).

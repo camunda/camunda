@@ -9,17 +9,24 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
+import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class LogStreamImplTest {
 
   private LogStreamImpl newLogStream() {
+    return newLogStream(new ListLogStorage());
+  }
+
+  private LogStreamImpl newLogStream(final ListLogStorage logStorage) {
     return (LogStreamImpl)
         new LogStreamBuilderImpl()
-            .withLogStorage(new ListLogStorage())
+            .withLogStorage(logStorage)
             .withClock(InstantSource.system())
             .withMeterRegistry(new SimpleMeterRegistry())
             .build();
@@ -68,5 +75,56 @@ final class LogStreamImplTest {
 
     // then - closing the still-open reader again is safe (already exercised by LogStream#close())
     stillOpen.close();
+  }
+
+  @Test
+  void shouldReportNothingWrittenOnAnEmptyLog() {
+    // given
+    final var logStream = newLogStream();
+
+    // when
+    final long lastWrittenPosition = logStream.getLastWrittenPosition();
+
+    // then
+    assertThat(lastWrittenPosition).isZero();
+  }
+
+  @Test
+  void shouldReportTheLastWrittenPositionBeforeTheLogCommitsIt() {
+    // given
+    final var logStorage = new ListLogStorage();
+    logStorage.deferCommits();
+    final var logStream = newLogStream(logStorage);
+
+    // when
+    final var written =
+        logStream
+            .newLogStreamWriter()
+            .tryWrite(
+                WriteContext.internal(), List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults()));
+
+    // then
+    assertThat(written.get()).isEqualTo(2);
+    assertThat(logStorage.pendingCommitCount()).isOne();
+    assertThat(logStream.getLastWrittenPosition()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldStartFromTheLastRecordAlreadyInTheLog() {
+    // given
+    final var logStorage = new ListLogStorage();
+    try (final var previous = newLogStream(logStorage)) {
+      previous
+          .newLogStreamWriter()
+          .tryWrite(
+              WriteContext.internal(),
+              List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults()));
+    }
+
+    // when
+    final var logStream = newLogStream(logStorage);
+
+    // then
+    assertThat(logStream.getLastWrittenPosition()).isEqualTo(3);
   }
 }

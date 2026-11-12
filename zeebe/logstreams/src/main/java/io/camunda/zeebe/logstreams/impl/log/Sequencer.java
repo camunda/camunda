@@ -61,6 +61,11 @@ final class Sequencer implements LogStreamWriter, Closeable {
     this.flowControl = flowControl;
   }
 
+  /** Returns the position before the next one this sequencer assigns. */
+  long getLastWrittenPosition() {
+    return position - 1;
+  }
+
   /** {@inheritDoc} */
   @Override
   public boolean canWriteEvents(final int eventCount, final int batchSize) {
