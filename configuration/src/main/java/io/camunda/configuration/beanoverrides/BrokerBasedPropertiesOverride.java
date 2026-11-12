@@ -48,6 +48,7 @@ import io.camunda.configuration.security.KeyStore;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
@@ -893,7 +894,36 @@ public class BrokerBasedPropertiesOverride {
     brokerWriteBehindCache.setMaxWriteDelay(writeBehindCache.getMaxWriteDelay());
     brokerWriteBehindCache.setSnapshotCatchUpTimeout(writeBehindCache.getSnapshotCatchUpTimeout());
 
+    populateFromPrimaryStorageRdbms(data, primaryStorage);
+
     populateBackupScheduler(override, primaryStorage.getBackup(), camunda);
+  }
+
+  private static void populateFromPrimaryStorageRdbms(
+      final DataCfg data, final PrimaryStorage primaryStorage) {
+    data.setPrimaryStorageType(
+        switch (primaryStorage.getType()) {
+          case rocksdb -> DataCfg.PrimaryStorageType.ROCKSDB;
+          case rdbms -> DataCfg.PrimaryStorageType.RDBMS;
+        });
+
+    final var rdbms = primaryStorage.getRdbms();
+    final var brokerRdbms = data.getRdbms();
+    brokerRdbms.setUrl(rdbms.getUrl());
+    brokerRdbms.setUsername(rdbms.getUsername());
+    brokerRdbms.setPassword(rdbms.getPassword());
+    brokerRdbms.setPrefix(rdbms.getPrefix());
+
+    final var pool = rdbms.getConnectionPool();
+    final var brokerPool = brokerRdbms.getConnectionPool();
+    brokerPool.setMaximumPoolSize(pool.getMaximumPoolSize());
+    brokerPool.setMinimumIdle(pool.getMinimumIdle());
+    brokerPool.setConnectionTimeout(pool.getConnectionTimeout());
+    brokerPool.setIdleTimeout(pool.getIdleTimeout());
+    brokerPool.setMaxLifetime(pool.getMaxLifetime());
+    brokerPool.setLeakDetectionThreshold(pool.getLeakDetectionThreshold());
+    brokerPool.setKeepaliveTime(pool.getKeepaliveTime());
+    brokerPool.setValidationTimeout(pool.getValidationTimeout());
   }
 
   private static void populateFromRocksDb(

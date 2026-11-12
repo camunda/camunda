@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
@@ -258,9 +259,52 @@ public final class SystemContext {
    * (snapshot period, backup, batch operations, listeners, fixed partition coverage) are validated.
    */
   private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
+    validatePrimaryStorageType(tenantId, tenantCfg);
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
     validatePerTenantExperimentalConfigs(
         tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
+  }
+
+  /**
+   * Keeping the state in a relational database works only with the parts that exist so far: the
+   * state is written through the write-behind cache, there are no backups of it yet, and only one
+   * replica can use it until followers stop writing to the shared state.
+   */
+  private void validatePrimaryStorageType(final String tenantId, final BrokerCfg tenantCfg) {
+    final var data = tenantCfg.getData();
+    if (data.getPrimaryStorageType() != PrimaryStorageType.RDBMS) {
+      return;
+    }
+
+    final var errors = new ArrayList<String>();
+    final var url = data.getRdbms().getUrl();
+    if (url == null || url.isBlank()) {
+      errors.add("camunda.data.primary-storage.rdbms.url must be set");
+    }
+    if (!data.getWriteBehindCache().isEnabled()) {
+      errors.add("camunda.data.primary-storage.write-behind-cache.enabled must be true");
+    }
+    if (data.getBackup().getStore() != BackupCfg.BackupStoreType.NONE) {
+      errors.add("camunda.data.primary-storage.backup.store must be NONE");
+    }
+    if (data.getBackup().isContinuous()) {
+      errors.add("camunda.data.primary-storage.backup.continuous must be false");
+    }
+    final var replicationFactor = tenantCfg.getCluster().getReplicationFactor();
+    if (replicationFactor != 1) {
+      errors.add(
+          "camunda.cluster.replication-factor must be 1, but was %d".formatted(replicationFactor));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidConfigurationException(
+          tenantScopedMessage(
+              tenantId,
+              "Expected a configuration that supports keeping the state in a relational database "
+                  + "(camunda.data.primary-storage.type is rdbms), but: "
+                  + String.join(", ", errors)),
+          null);
+    }
   }
 
   private static String tenantScopedMessage(final String tenantId, final String message) {
