@@ -300,6 +300,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         cluster.getMembershipService().getLocalMember().id());
   }
 
+  @Bean(destroyMethod = "close")
+  public PhysicalTenantCatalogueBackup physicalTenantCatalogueBackup(final Broker broker) {
+    return new PhysicalTenantCatalogueBackup(
+        broker, cluster.getMembershipService().getLocalMember().id());
+  }
+
   protected void startBroker() {
     broker.start();
   }
