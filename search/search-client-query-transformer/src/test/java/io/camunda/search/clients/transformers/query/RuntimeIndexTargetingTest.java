@@ -57,7 +57,8 @@ class RuntimeIndexTargetingTest {
     final var indices = transform(query);
 
     // then
-    assertThat(indices).containsExactly(indexDescriptors.get(template).getFullQualifiedName());
+    final var runtimeIndex = indexDescriptors.get(template).getFullQualifiedName();
+    assertThat(indices).containsExactly(runtimeIndex, runtimeIndex + "ord*");
   }
 
   @ParameterizedTest(name = "{0}")
