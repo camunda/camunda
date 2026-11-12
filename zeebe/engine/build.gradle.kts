@@ -21,6 +21,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-db-api"))
   testImplementation(project(":zeebe-db"))
+  testImplementation(project(":zeebe-db-writebehind"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-msgpack-core"))
   implementation(project(":zeebe-expression-language"))
