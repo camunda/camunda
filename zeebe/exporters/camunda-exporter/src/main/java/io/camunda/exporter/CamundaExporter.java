@@ -32,6 +32,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_DEFINITION_SUSPENSION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_BUSINESS_ID;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
@@ -422,6 +423,7 @@ public class CamundaExporter implements Exporter {
             INCIDENT,
             DECISION_EVALUATION,
             PROCESS,
+            PROCESS_DEFINITION_SUSPENSION,
             FORM,
             RESOURCE,
             USER_TASK,

@@ -58,6 +58,7 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscri
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessCreatedHandler;
+import io.camunda.exporter.handlers.ProcessDefinitionSuspensionHandler;
 import io.camunda.exporter.handlers.ProcessDrainingHandler;
 import io.camunda.exporter.handlers.ProcessFullyDeletedHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
@@ -434,14 +435,18 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ResourceDeletedHandler(
                 indexDescriptors.get(DeployedResourceIndex.class).getFullQualifiedName())));
 
-    // DRAINING is distributed to every partition, so register these on the deployment partition
-    // only: concurrent writes to the same process-definition document could otherwise race.
+    // DRAINING and suspension are distributed to every partition, so register these on the
+    // deployment partition only: concurrent writes to the same process-definition document could
+    // otherwise race.
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       exportHandlers.add(
           new ProcessDrainingHandler(
               indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
       exportHandlers.add(
           new ProcessFullyDeletedHandler(
+              indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
+      exportHandlers.add(
+          new ProcessDefinitionSuspensionHandler(
               indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()));
     }
 
