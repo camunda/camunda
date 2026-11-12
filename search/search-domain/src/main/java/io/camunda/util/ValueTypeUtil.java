@@ -25,12 +25,12 @@ public class ValueTypeUtil {
    *   <li>If the value is null or string "null", the method returns {@link ValueTypeEnum#NULL}.
    *   <li>If the value is a boolean or string boolean ("true", "false", ...) the method returns
    *       {@link ValueTypeEnum#BOOLEAN}.
-   *   <li>If the value is a long or integer or a numeric string without ".", the method returns
-   *       {@link ValueTypeEnum#LONG}.
+   *   <li>If the value is a long or integer or a numeric string without "." that fits into a long,
+   *       the method returns {@link ValueTypeEnum#LONG}.
    *   <li>If the value is a double or a numeric string with ".", the method returns {@link
    *       ValueTypeEnum#DOUBLE}.
-   *   <li>If the value is any other string (can also contain json), the method returns {@link
-   *       ValueTypeEnum#STRING}.
+   *   <li>If the value is any other string (can also contain json), including a whole number
+   *       outside of the long range, the method returns {@link ValueTypeEnum#STRING}.
    * </ul>
    */
   public static ValueTypeEnum getValueType(final Object value) {
@@ -52,8 +52,10 @@ public class ValueTypeUtil {
       } else {
         if (stringValue.contains(".")) {
           return ValueTypeEnum.DOUBLE;
-        } else {
+        } else if (isWithinLongRange(stringValue)) {
           return ValueTypeEnum.LONG;
+        } else {
+          return ValueTypeEnum.STRING;
         }
       }
     } else if (value instanceof Long || value instanceof Integer) {
@@ -64,6 +66,15 @@ public class ValueTypeUtil {
       return ValueTypeEnum.BOOLEAN;
     } else {
       throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
+    }
+  }
+
+  private static boolean isWithinLongRange(final String numericString) {
+    try {
+      Long.parseLong(numericString);
+      return true;
+    } catch (final NumberFormatException e) {
+      return false;
     }
   }
 
