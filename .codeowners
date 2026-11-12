@@ -252,6 +252,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/protocol-test-util/  @camunda/core-features
 /zeebe/msgpack-core/        @camunda/core-features
 /zeebe/msgpack-value/       @camunda/core-features
+/zeebe/msgpack-codegen/     @camunda/core-features
 
 # Secret store SPI
 /secret-store/              @camunda/core-features
@@ -447,9 +448,6 @@ optimize.Dockerfile         @camunda/core-features
 
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
-/.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml               @camunda/test-automation-team
-/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml                      @camunda/test-automation-team
-/.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml                @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                 @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-e2e.yml                    @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.8-api-es.yml                 @camunda/test-automation-team

@@ -55,7 +55,7 @@
     <version.commons-codec>1.23.0</version.commons-codec>
     <version.commons-compress>1.28.0</version.commons-compress>
     <version.commons-validator>1.11.0</version.commons-validator>
-    <version.zstd-jni>1.5.7-26</version.zstd-jni>
+    <version.zstd-jni>1.5.7-25</version.zstd-jni>
     <version.commons-text>1.15.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.7.1</version.docker-java-api>
@@ -81,8 +81,8 @@
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.10.4</version.identity>
     <version.instancio>6.2.1</version.instancio>
-    <version.jackson>2.23.0</version.jackson>
-    <version.jackson3>3.3.0</version.jackson3>
+    <version.jackson>2.22.4</version.jackson>
+    <version.jackson3>3.2.4</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.6</version.json-flattener>
     <version.jspecify>1.0.1</version.jspecify>
@@ -184,7 +184,7 @@
     <version.bind-api>4.0.5</version.bind-api>
     <version.jackson-databind-nullable>0.2.13</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.jackson-annotations>2.23</version.jackson-annotations>
+    <version.jackson-annotations>2.22</version.jackson-annotations>
     <version.json-path>3.0.0</version.json-path>
     <version.swagger-annotations>2.2.55</version.swagger-annotations>
     <version.swagger-parser>2.1.48</version.swagger-parser>
@@ -210,7 +210,7 @@
     <version.picocli>4.7.7</version.picocli>
 
     <version.commons-io>2.22.0</version.commons-io>
-    <version.thymeleaf>3.1.6.RELEASE</version.thymeleaf>
+    <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.6</version.unboundid-ldapsdk>
     <version.parsson>1.1.9</version.parsson>
     <version.springdoc>3.2.0</version.springdoc>
@@ -424,6 +424,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-msgpack-value</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-msgpack-codegen</artifactId>
         <version>${project.version}</version>
       </dependency>
 
