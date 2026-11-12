@@ -8,19 +8,32 @@
 package io.camunda.zeebe.scheduler;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.agrona.UnsafeApi;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
-@SuppressWarnings("restriction")
 public final class ActorTaskQueue extends ActorTaskQueueHead {
+  private static final VarHandle HEAD;
+  private static final VarHandle TAIL;
+
+  static {
+    try {
+      final var lookup = MethodHandles.lookup();
+      HEAD = lookup.findVarHandle(ActorTaskQueueHead.class, "head", ActorTaskQueueNode.class);
+      TAIL = lookup.findVarHandle(ActorTaskQueueTail.class, "tail", ActorTaskQueueNode.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
+    }
+  }
+
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
   public ActorTaskQueue() {
     headOrdered(empty);
-    UnsafeApi.putReferenceRelease(this, TAIL_OFFSET, empty);
+    TAIL.setRelease(this, empty);
   }
 
   /** appends a task at the end (tail) of the list */
@@ -107,41 +120,37 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   }
 
   private void headOrdered(final ActorTaskQueueNode head) {
-    UnsafeApi.putReferenceRelease(this, HEAD_OFFSET, head);
+    HEAD.setRelease(this, head);
   }
 
   private ActorTaskQueueNode swapTail(final ActorTaskQueueNode newTail) {
-    return (ActorTaskQueueNode) UnsafeApi.getAndSetReference(this, TAIL_OFFSET, newTail);
+    return (ActorTaskQueueNode) TAIL.getAndSet(this, newTail);
   }
 
   private boolean casTail(
       final ActorTaskQueueNode expectedNode, final ActorTaskQueueNode updateNode) {
-    return UnsafeApi.compareAndSetReference(this, TAIL_OFFSET, expectedNode, updateNode);
+    return TAIL.compareAndSet(this, expectedNode, updateNode);
   }
 }
 
-@SuppressWarnings("restriction")
 class ActorTaskQueueNode {
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
+  private static final VarHandle NEXT;
 
   static {
     try {
-      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      NEXT =
+          MethodHandles.lookup()
+              .findVarHandle(ActorTaskQueueNode.class, "next", ActorTaskQueueNode.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
     }
   }
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UnsafeApi (see NEXT_OFFSET usage)")
+      justification = "Written using a VarHandle (see NEXT usage)")
   volatile ActorTaskQueueNode next;
 
-  @SuppressFBWarnings(
-      value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UnsafeApi (see PREV_OFFSET usage)")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
@@ -149,12 +158,12 @@ class ActorTaskQueueNode {
 
   void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UnsafeApi.putReferenceRelease(this, NEXT_OFFSET, t);
+    NEXT.setRelease(this, t);
   }
 
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UnsafeApi.putReferenceVolatile(this, PREV_OFFSET, t);
+    prev = t;
   }
 
   public void setTask(final ActorTask task) {
@@ -162,27 +171,7 @@ class ActorTaskQueueNode {
   }
 }
 
-@SuppressWarnings("restriction")
 class ActorTaskQueuePadding1 {
-  protected static final long HEAD_OFFSET;
-  protected static final long TAIL_OFFSET;
-  protected static final long PREV_OFFSET;
-  protected static final long NEXT_OFFSET;
-  protected static final long STATE_COUNT_OFFSET;
-
-  static {
-    try {
-      HEAD_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueHead.class.getDeclaredField("head"));
-      TAIL_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueTail.class.getDeclaredField("tail"));
-      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-      STATE_COUNT_OFFSET =
-          UnsafeApi.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
   @SuppressWarnings("unused")
   protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
