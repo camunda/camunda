@@ -73,6 +73,71 @@ const ACTIONS = [
 	},
 ] as const;
 
+const ACTION_BY_NAME = {
+	Retry: ACTIONS[0],
+	Cancel: ACTIONS[1],
+	Delete: ACTIONS[2],
+	Suspend: ACTIONS[3],
+	Resume: ACTIONS[4],
+};
+
+const FORBIDDEN = {
+	title: "You don't have permission to perform this operation",
+	kind: 'warning',
+	subtitle: 'Contact the administrator if you need access.',
+} as const;
+const RETRY_FAILED = {
+	title: "Couldn't create operation",
+	kind: 'error',
+	subtitle: undefined,
+} as const;
+const CANCEL_FAILED = {
+	title: 'Failed to cancel process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const DELETE_FAILED = {
+	title: 'Failed to delete process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const SUSPEND_FAILED = {
+	title: 'Failed to suspend process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+const RESUME_FAILED = {
+	title: 'Failed to resume process instance',
+	kind: 'error',
+	subtitle: 'Command failed',
+} as const;
+
+const HTTP_FAILURES = [
+	{action: 'Retry', status: 401, ...RETRY_FAILED},
+	{action: 'Retry', status: 403, ...FORBIDDEN},
+	{action: 'Retry', status: 500, ...RETRY_FAILED},
+	{action: 'Cancel', status: 401, ...CANCEL_FAILED},
+	{action: 'Cancel', status: 403, ...CANCEL_FAILED},
+	{action: 'Cancel', status: 500, ...CANCEL_FAILED},
+	{action: 'Delete', status: 401, ...DELETE_FAILED},
+	{action: 'Delete', status: 403, ...DELETE_FAILED},
+	{action: 'Delete', status: 500, ...DELETE_FAILED},
+	{action: 'Suspend', status: 401, ...SUSPEND_FAILED},
+	{action: 'Suspend', status: 403, ...FORBIDDEN},
+	{action: 'Suspend', status: 500, ...SUSPEND_FAILED},
+	{action: 'Resume', status: 401, ...RESUME_FAILED},
+	{action: 'Resume', status: 403, ...FORBIDDEN},
+	{action: 'Resume', status: 500, ...RESUME_FAILED},
+] as const;
+
+const NETWORK_FAILURES = [
+	{action: 'Retry', title: "Couldn't create operation", subtitle: undefined},
+	{action: 'Cancel', title: 'Failed to cancel process instance', subtitle: 'Failed to fetch'},
+	{action: 'Delete', title: 'Failed to delete process instance', subtitle: 'Failed to fetch'},
+	{action: 'Suspend', title: 'Failed to suspend process instance', subtitle: undefined},
+	{action: 'Resume', title: 'Failed to resume process instance', subtitle: undefined},
+] as const;
+
 function renderOperations(instance: ProcessInstance, {isModificationModeEnabled = false, basepath = ''} = {}) {
 	const modification = {
 		state: initialModificationState,
@@ -285,37 +350,42 @@ describe('<ProcessInstanceOperations />', () => {
 		},
 	);
 
-	it.for(ACTIONS.flatMap((action) => [401, 403, 500, 0].map((status) => ({...action, status}))))(
+	it.for(HTTP_FAILURES)(
 		'should surface $action failures with HTTP status $status and recover',
-		async ({action, state, mock, status}, {worker}) => {
+		async ({action, status, title, kind, subtitle}, {worker}) => {
 			mockViewport(false);
+			const {state, mock} = ACTION_BY_NAME[action];
 			const instance = createInstance(state);
 			worker.use(
-				mock({
-					successResponse:
-						status === 0 ? HttpResponse.error() : new HttpResponse(null, {status, statusText: 'Command failed'}),
-				}),
+				mock({successResponse: new HttpResponse(null, {status, statusText: 'Command failed'})}),
 				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 			);
 			const screen = await renderOperations(instance);
 			await execute(screen, action, instance.processInstanceKey);
-			const isForbidden = status === 403 && ['Retry', 'Suspend', 'Resume'].includes(action);
-			const title = isForbidden
-				? "You don't have permission to perform this operation"
-				: action === 'Retry'
-					? "Couldn't create operation"
-					: `Failed to ${action.toLowerCase()} process instance`;
-			const subtitle = isForbidden
-				? 'Contact the administrator if you need access.'
-				: action === 'Retry'
-					? undefined
-					: status === 0
-						? action === 'Cancel' || action === 'Delete'
-							? 'Failed to fetch'
-							: undefined
-						: 'Command failed';
 			await expect.element(screen.getByText(title)).toBeVisible();
-			expect(notificationsStore.notifications[0]?.kind).toBe(isForbidden ? 'warning' : 'error');
+			expect(notificationsStore.notifications[0]?.kind).toBe(kind);
+			expect(notificationsStore.notifications[0]?.subtitle).toBe(subtitle);
+			await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
+			await expect
+				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+				.toBeEnabled();
+		},
+	);
+
+	it.for(NETWORK_FAILURES)(
+		'should surface $action network failures and recover',
+		async ({action, title, subtitle}, {worker}) => {
+			mockViewport(false);
+			const {state, mock} = ACTION_BY_NAME[action];
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: HttpResponse.error()}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(title)).toBeVisible();
+			expect(notificationsStore.notifications[0]?.kind).toBe('error');
 			expect(notificationsStore.notifications[0]?.subtitle).toBe(subtitle);
 			await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
 			await expect
