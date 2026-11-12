@@ -40,6 +40,7 @@ import {TenantField} from '#/operate/shared/TenantField/shadcn.components/Tenant
 import {TextInputField} from '#/operate/shared/TextInputField/shadcn.components/TextInputField';
 import {formatISODate} from '#/operate/shared/DateRangeField/formatDate';
 import {getTimeZoneLabel} from '#/operate/shared/DateRangeField/getTimeZoneLabel';
+import {getCurrentDateLocale} from '#/shared/i18n';
 import {FilterMultiSelect} from '#/operate/shared/FilterMultiSelect/shadcn.components/FilterMultiSelect';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES, AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES} from '../operationsLogFilters';
@@ -102,11 +103,13 @@ const TimestampRangeField: React.FC = () => {
 			id="timestamp-range"
 			label={t('operate.operationsLog.filters.timestampDateRange')}
 			value={value}
+			locale={getCurrentDateLocale()}
 			messages={{
 				placeholder: t('operate.shared.dateRangeField.enterDateRange'),
 				fromTime: t('operate.shared.dateRangeField.fromTime'),
 				toTime: t('operate.shared.dateRangeField.toTime'),
 				timeZone: t('operate.shared.dateTimeRangeField.timeZone', {timeZone: getTimeZoneLabel()}),
+				endBeforeStart: t('operate.shared.dateTimeRangeField.endBeforeStart'),
 				apply: t('operate.shared.dateRangeField.apply'),
 				cancel: t('operate.shared.dateRangeField.cancel'),
 				clearRange: t('operate.shared.dateTimeRangePicker.clearRange'),
