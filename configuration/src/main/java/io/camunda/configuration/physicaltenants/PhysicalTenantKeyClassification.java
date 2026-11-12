@@ -75,6 +75,16 @@ public final class PhysicalTenantKeyClassification implements PhysicalTenantConf
     }
   }
 
+  /**
+   * This classification with the given properties restarting the tenant instead of what the
+   * resource says; a proof-of-concept override for properties whose consumers can follow a change.
+   */
+  public PhysicalTenantKeyClassification withRestart(final Set<String> properties) {
+    final var overridden = new TreeMap<>(classifications);
+    properties.forEach(name -> overridden.put(name, new Classification(Kind.RESTART, null)));
+    return new PhysicalTenantKeyClassification(overridden);
+  }
+
   /** The properties that have a classification. */
   public Set<String> classifiedProperties() {
     return classifications.keySet();

@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 final class PhysicalTenantKeyClassificationTest {
@@ -70,6 +71,23 @@ final class PhysicalTenantKeyClassificationTest {
 
     // then
     assertThat(violations).isEmpty();
+  }
+
+  @Test
+  void shouldAcceptAChangeOfAPropertyOverriddenToRestart() {
+    // given
+    final var overridden = classification.withRestart(Set.of("security.authorizations.enabled"));
+    final var proposed = with("security.authorizations.enabled", "true");
+
+    // when
+    final var violations = overridden.validate(update(proposed));
+
+    // then
+    assertThat(violations).isEmpty();
+    assertThat(classification.validate(update(proposed)))
+        .singleElement()
+        .asString()
+        .contains("security-chain");
   }
 
   @Test

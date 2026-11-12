@@ -45,6 +45,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.NonNull;
@@ -58,6 +59,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -77,6 +79,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   static final String ROLLOUT_READINESS_TIMEOUT = "physical-tenant-rollout.readiness-timeout";
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
   private static final Duration PHYSICAL_TENANT_CHANGE_TIMEOUT = Duration.ofMinutes(2);
+  static final String RESTART_KEYS = "physical-tenant-rollout.restart-keys";
 
   private final BrokerBasedConfiguration configuration;
   private final SpringBrokerBridge springBrokerBridge;
@@ -240,9 +243,17 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     };
   }
 
+  /**
+   * The proof-of-concept property {@value #RESTART_KEYS} lists properties to classify as {@code
+   * RESTART} regardless of the resource, e.g. {@code security.authorizations.enabled}, whose
+   * consumers on the gRPC path (the broker module and every gateway's tenant module) follow a
+   * change while the HTTP security chain does not.
+   */
   @Bean
-  public PhysicalTenantKeyClassification physicalTenantKeyClassification() {
-    return PhysicalTenantKeyClassification.load();
+  public PhysicalTenantKeyClassification physicalTenantKeyClassification(
+      final Environment environment) {
+    final var restartKeys = environment.getProperty(RESTART_KEYS, String[].class, new String[0]);
+    return PhysicalTenantKeyClassification.load().withRestart(Set.of(restartKeys));
   }
 
   @Bean
