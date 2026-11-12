@@ -154,6 +154,7 @@
     <version.jqwik>1.10.2</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
+    <version.lincheck>3.7</version.lincheck>
     <version.json-smart>2.6.1</version.json-smart>
     <version.byte-buddy>1.18.17-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
@@ -1527,6 +1528,13 @@
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
         <version>${version.awaitility}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jetbrains.lincheck</groupId>
+        <artifactId>lincheck</artifactId>
+        <version>${version.lincheck}</version>
         <scope>test</scope>
       </dependency>
 
