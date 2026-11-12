@@ -296,7 +296,7 @@ final class WorkStealingStaleNodesTest {
     assertThat(countNodes(queue)).isEqualTo(3);
 
     // when -- the first thief resumes and unlinks with what it observed
-    ActorTaskQueue.skipStaleNodes(keep, observedPrev, newerNode, 99);
+    queue.skipStaleNodes(keep, observedPrev, newerNode, 99);
 
     // then -- the newer unlink is kept
     assertThat(countNodes(queue)).isEqualTo(3);

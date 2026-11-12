@@ -74,6 +74,8 @@ internal fun VersionCatalogBuilder.catalogTestingLibraries() {
   library("org-javassist-javassist", "org.javassist", "javassist").versionRef("javassist")
   library("org-jeasy-easy-random-core", "org.jeasy", "easy-random-core")
     .versionRef("org-jeasy-easy-random-core")
+  library("org-jetbrains-lincheck-lincheck", "org.jetbrains.lincheck", "lincheck")
+    .versionRef("lincheck")
   library("org-jmock-jmock", "org.jmock", "jmock").versionRef("jmock")
   library("org-junit-jupiter-junit-jupiter-api", "org.junit.jupiter", "junit-jupiter-api")
     .withoutVersion()
