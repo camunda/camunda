@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.impl.PhysicalTenantConfigStore;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.FileUtil;
@@ -46,6 +48,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,6 +164,14 @@ public final class ClusterRestore {
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);
           restoredPartitionCounts.put(physicalTenantId, entry.getValue().size());
+        }
+        if (target.tenantConfig() != null) {
+          final var tenantConfig = target.tenantConfig();
+          new PhysicalTenantConfigStore(dataDirectory)
+              .put(
+                  physicalTenantId,
+                  tenantConfig.reference().version(),
+                  tenantConfig.configuration());
         }
         LOG.info("Successfully restored physical tenant '{}'", physicalTenantId);
       }
@@ -321,7 +332,8 @@ public final class ClusterRestore {
                     "Generated routing state of physical tenant '{}': {}",
                     group,
                     config.routingState()));
-    final var restored = withRestorePlan(generated, generated.partitionGroups().keySet());
+    final var restored =
+        withRestorePlan(withTenantConfigs(generated), generated.partitionGroups().keySet());
 
     PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer()).update(restored);
     LOG.info(
@@ -468,6 +480,25 @@ public final class ClusterRestore {
                                       new AllPartitions(partitionCount),
                                       routing.messageCorrelation())))
                       .orElse(group));
+    }
+    return result;
+  }
+
+  /**
+   * {@code configuration} referring each tenant created through the API to the configuration it was
+   * restored with; the tenants of the static configuration are registered by the coordinator when
+   * it starts.
+   */
+  private CurrentClusterConfiguration withTenantConfigs(
+      final CurrentClusterConfiguration configuration) {
+    var result = configuration;
+    for (final var entry : targets.entrySet()) {
+      final var tenantConfig = entry.getValue().tenantConfig();
+      if (tenantConfig != null && result.partitionGroup(entry.getKey()) != null) {
+        result =
+            result.updatePartitionGroupConfig(
+                entry.getKey(), group -> group.setTenantConfig(tenantConfig.reference()));
+      }
     }
     return result;
   }
@@ -661,7 +692,26 @@ public final class ClusterRestore {
    *     all, which must not fail a restore that does not name it
    */
   public record PhysicalTenantRestoreTarget(
-      BrokerCfg configuration, Supplier<BackupStore> backupStore) {}
+      BrokerCfg configuration,
+      Supplier<BackupStore> backupStore,
+      @Nullable RestoredTenantConfig tenantConfig) {
+
+    public PhysicalTenantRestoreTarget(
+        final BrokerCfg configuration, final Supplier<BackupStore> backupStore) {
+      this(configuration, backupStore, null);
+    }
+  }
+
+  /**
+   * The configuration of a tenant that was created through the API, which no static configuration
+   * describes: the restore puts it back in the configuration store and the topology file, so the
+   * members start the tenant again with it.
+   *
+   * @param reference what the cluster configuration refers to the configuration by
+   * @param configuration the stored configuration
+   */
+  public record RestoredTenantConfig(
+      PhysicalTenantConfigReference reference, byte[] configuration) {}
 
   /** What this run may do to data already in the target directory. */
   public enum TargetDataPolicy {

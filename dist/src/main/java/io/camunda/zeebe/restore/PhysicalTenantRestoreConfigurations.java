@@ -7,21 +7,29 @@
  */
 package io.camunda.zeebe.restore;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.service.TenantRestoreEnvironment;
+import io.camunda.zeebe.broker.PhysicalTenantCatalogue;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.restore.ClusterRestore.RestoredTenantConfig;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 @Configuration(proxyBeanMethods = false)
 @NullMarked
@@ -31,9 +39,55 @@ class PhysicalTenantRestoreConfigurations {
    * @param dataDirectoryProvider not read here, but required: creating it is what resolves the root
    *     configuration's data directory, which every other tenant's configuration copies below.
    */
+  /**
+   * The tenants that were created through the API, read from the catalogue in the default tenant's
+   * backup store, with their configurations resolved as a broker resolves them. A tenant that the
+   * static configuration declares as well is left to the static configuration.
+   */
+  @Bean
+  RestoredApiTenants restoredApiTenants(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final Camunda rootCamunda,
+      final ConfigurableEnvironment environment) {
+    final var defaultBackup =
+        BrokerBasedPropertiesOverride.convert(
+                physicalTenantResolver.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID))
+            .getData()
+            .getBackup();
+    final var store = BackupStoreFactory.createStore(defaultBackup);
+    if (store == null) {
+      return new RestoredApiTenants(Map.of(), Map.of());
+    }
+    final PhysicalTenantCatalogue catalogue;
+    try {
+      catalogue = PhysicalTenantCatalogue.load(store).orElse(null);
+    } finally {
+      store.closeAsync().join();
+    }
+    if (catalogue == null) {
+      return new RestoredApiTenants(Map.of(), Map.of());
+    }
+    final Map<String, PhysicalTenantCatalogue.Entry> entries = new LinkedHashMap<>();
+    final Map<String, Camunda> configurations = new LinkedHashMap<>();
+    for (final var entry : catalogue.tenants()) {
+      if (physicalTenantResolver.known().contains(entry.id())) {
+        continue;
+      }
+      final var resolver =
+          PhysicalTenantResolver.of(
+              PhysicalTenantEnvironments.withTenants(
+                  environment, Map.of(entry.id(), entry.properties()), Set.of()),
+              rootCamunda);
+      entries.put(entry.id(), entry);
+      configurations.put(entry.id(), resolver.forPhysicalTenant(entry.id()));
+    }
+    return new RestoredApiTenants(entries, configurations);
+  }
+
   @Bean
   PhysicalTenantBrokerConfigurations physicalTenantConfigurations(
       final PhysicalTenantResolver physicalTenantResolver,
+      final RestoredApiTenants restoredApiTenants,
       final Camunda rootCamunda,
       final BrokerBasedProperties rootConfiguration,
       final NodeIdProvider nodeIdProvider,
@@ -44,26 +98,26 @@ class PhysicalTenantRestoreConfigurations {
     final var dataDirectory = rootConfiguration.getData().getDirectory();
 
     final Map<String, BrokerCfg> configurations = new LinkedHashMap<>();
-    physicalTenantResolver
-        .getAll()
-        .forEach(
-            (physicalTenantId, camunda) -> {
-              if (camunda == rootCamunda) {
-                configurations.put(physicalTenantId, rootConfiguration);
-                return;
-              }
-              final var configuration = BrokerBasedPropertiesOverride.convert(camunda);
-              final var cluster = configuration.getCluster();
-              cluster.setNodeId(nodeInstance.id());
-              cluster.setNodeVersion(nodeInstance.version().version());
-              // The working directory, not the data directory: init() fans this base out to
-              // network/cluster/threads/data/exporters/gateway to resolve their relative paths.
-              configuration.init(brokerBase);
-              // Applied after init(), which would otherwise resolve this tenant's own configured
-              // data directory against the base above.
-              configuration.getData().setDirectory(dataDirectory);
-              configurations.put(physicalTenantId, configuration);
-            });
+    final Map<String, Camunda> tenants = new LinkedHashMap<>(physicalTenantResolver.getAll());
+    tenants.putAll(restoredApiTenants.configurations());
+    tenants.forEach(
+        (physicalTenantId, camunda) -> {
+          if (camunda == rootCamunda) {
+            configurations.put(physicalTenantId, rootConfiguration);
+            return;
+          }
+          final var configuration = BrokerBasedPropertiesOverride.convert(camunda);
+          final var cluster = configuration.getCluster();
+          cluster.setNodeId(nodeInstance.id());
+          cluster.setNodeVersion(nodeInstance.version().version());
+          // The working directory, not the data directory: init() fans this base out to
+          // network/cluster/threads/data/exporters/gateway to resolve their relative paths.
+          configuration.init(brokerBase);
+          // Applied after init(), which would otherwise resolve this tenant's own configured
+          // data directory against the base above.
+          configuration.getData().setDirectory(dataDirectory);
+          configurations.put(physicalTenantId, configuration);
+        });
     return new PhysicalTenantBrokerConfigurations(configurations);
   }
 
@@ -80,13 +134,39 @@ class PhysicalTenantRestoreConfigurations {
    */
   @Bean
   PhysicalTenantRestoreEnvironments physicalTenantRestoreEnvironments(
-      final PhysicalTenantResolver physicalTenantResolver) {
-    return new PhysicalTenantRestoreEnvironments(
-        physicalTenantResolver.mapValues(
-            camunda ->
+      final PhysicalTenantResolver physicalTenantResolver,
+      final RestoredApiTenants restoredApiTenants) {
+    final Map<String, Camunda> tenants = new LinkedHashMap<>(physicalTenantResolver.getAll());
+    tenants.putAll(restoredApiTenants.configurations());
+    final Map<String, TenantRestoreEnvironment> environments = new LinkedHashMap<>();
+    tenants.forEach(
+        (physicalTenantId, camunda) ->
+            environments.put(
+                physicalTenantId,
                 new TenantRestoreEnvironment(
                     camunda.getData().getSecondaryStorage().getType().name(),
                     camunda.getData().getPrimaryStorage().getBackup().isContinuous())));
+    return new PhysicalTenantRestoreEnvironments(environments);
+  }
+
+  /**
+   * The tenants created through the API that the catalogue in the default tenant's backup store
+   * names, each with its catalogue entry and its resolved configuration.
+   */
+  record RestoredApiTenants(
+      Map<String, PhysicalTenantCatalogue.Entry> entries, Map<String, Camunda> configurations) {
+
+    RestoredApiTenants {
+      entries = Map.copyOf(entries);
+      configurations = Map.copyOf(configurations);
+    }
+
+    @Nullable RestoredTenantConfig tenantConfig(final String physicalTenantId) {
+      final var entry = entries.get(physicalTenantId);
+      return entry == null
+          ? null
+          : new RestoredTenantConfig(entry.reference(), entry.configuration());
+    }
   }
 
   /** The {@link TenantRestoreEnvironment} of every configured physical tenant. */

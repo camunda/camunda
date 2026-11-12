@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.RestoredApiTenants;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,7 @@ final class RestoreAppPhysicalTenantsTest {
         new PhysicalTenantBrokerConfigurations(configurations),
         new PhysicalTenantRestoreEnvironments(environments),
         new PhysicalTenantBackupStores(configurations),
+        new RestoredApiTenants(Map.of(), Map.of()),
         new RestoreArguments(),
         rdbmsMapperBundles,
         new RestoreProperties(false, List.of()),

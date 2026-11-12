@@ -23,10 +23,13 @@ import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
+import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
+import io.camunda.zeebe.restore.ClusterRestore.RestoredTenantConfig;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -36,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -253,6 +257,37 @@ final class ClusterRestoreTest {
           .containsOnlyKeys(1, 2, 3);
       assertThat(written.partitionGroup(OTHER_TENANT).members().get(LOCAL_MEMBER).partitions())
           .containsOnlyKeys(1, 2);
+    }
+
+    @Test
+    void shouldReferTheGroupOfATenantCreatedThroughTheApiToItsRestoredConfiguration(
+        @TempDir final Path dir) throws IOException {
+      // given
+      final var reference =
+          new PhysicalTenantConfigReference(
+              3, "abc", Owner.API, "1f0e6b8e-0000-4000-8000-000000000001", new TreeMap<>());
+      final var root = brokerCfg(dir, 1);
+      final Map<String, PhysicalTenantRestoreTarget> targets = new LinkedHashMap<>();
+      targets.put(
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+          new PhysicalTenantRestoreTarget(root, TestRestorableBackupStore::new));
+      targets.put(
+          OTHER_TENANT,
+          new PhysicalTenantRestoreTarget(
+              brokerCfg(dir, 2),
+              TestRestorableBackupStore::new,
+              new RestoredTenantConfig(reference, new byte[] {1})));
+      final var clusterRestore = new ClusterRestore(root, targets, new SimpleMeterRegistry());
+
+      // when
+      clusterRestore.restoreTopologyFile();
+
+      // then
+      final var written = read(dir);
+      assertThat(written.partitionGroup(OTHER_TENANT).tenantConfig()).contains(reference);
+      assertThat(
+              written.partitionGroup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).tenantConfig())
+          .isEmpty();
     }
 
     @Test

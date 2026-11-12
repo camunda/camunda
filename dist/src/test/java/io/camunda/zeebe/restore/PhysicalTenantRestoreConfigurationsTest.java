@@ -18,7 +18,9 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.RestoredApiTenants;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
@@ -31,6 +33,9 @@ import org.springframework.mock.env.MockEnvironment;
  * will derive for the same tenants on boot — see {@link PhysicalTenantRestoreConfigurations}.
  */
 final class PhysicalTenantRestoreConfigurationsTest {
+
+  private static final RestoredApiTenants NO_API_TENANTS =
+      new RestoredApiTenants(Map.of(), Map.of());
 
   private static final String TENANT_A = "tenanta";
 
@@ -118,7 +123,8 @@ final class PhysicalTenantRestoreConfigurationsTest {
 
     // when
     final var environments =
-        new PhysicalTenantRestoreConfigurations().physicalTenantRestoreEnvironments(resolver);
+        new PhysicalTenantRestoreConfigurations()
+            .physicalTenantRestoreEnvironments(resolver, NO_API_TENANTS);
 
     // then — each tenant's own setting, not the root's applied to both
     assertThat(environments.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID).continuousBackups())
@@ -155,6 +161,7 @@ final class PhysicalTenantRestoreConfigurationsTest {
     return new PhysicalTenantRestoreConfigurations()
         .physicalTenantConfigurations(
             resolver,
+            NO_API_TENANTS,
             resolver.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID),
             root,
             NodeIdProvider.staticProvider(0),

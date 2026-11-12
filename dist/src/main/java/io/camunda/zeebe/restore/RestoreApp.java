@@ -29,6 +29,7 @@ import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
 import io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
+import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.RestoredApiTenants;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -72,6 +73,7 @@ public class RestoreApp implements ApplicationRunner {
   private final PhysicalTenantBrokerConfigurations physicalTenantConfigurations;
   private final PhysicalTenantRestoreEnvironments physicalTenantRestoreEnvironments;
   private final PhysicalTenantBackupStores backupStores;
+  private final RestoredApiTenants restoredApiTenants;
   private final RestoreArguments arguments;
 
   private final Map<String, ExporterPositionMapper> exporterPositionMappers;
@@ -89,6 +91,7 @@ public class RestoreApp implements ApplicationRunner {
       final PhysicalTenantBrokerConfigurations physicalTenantConfigurations,
       final PhysicalTenantRestoreEnvironments physicalTenantRestoreEnvironments,
       final PhysicalTenantBackupStores backupStores,
+      final RestoredApiTenants restoredApiTenants,
       final RestoreArguments arguments,
       @Nullable @Autowired(required = false)
           final Map<String, RdbmsMapperBundle> rdbmsMapperBundleMap,
@@ -105,6 +108,7 @@ public class RestoreApp implements ApplicationRunner {
     this.physicalTenantConfigurations = physicalTenantConfigurations;
     this.physicalTenantRestoreEnvironments = physicalTenantRestoreEnvironments;
     this.backupStores = backupStores;
+    this.restoredApiTenants = restoredApiTenants;
     this.arguments = arguments;
     exporterPositionMappers =
         usesRdbms()
@@ -224,7 +228,8 @@ public class RestoreApp implements ApplicationRunner {
                     physicalTenantId,
                     new PhysicalTenantRestoreTarget(
                         tenantConfiguration,
-                        () -> backupStores.forPhysicalTenant(physicalTenantId))));
+                        () -> backupStores.forPhysicalTenant(physicalTenantId),
+                        restoredApiTenants.tenantConfig(physicalTenantId))));
     return targets;
   }
 
