@@ -53,6 +53,13 @@ public final class DefaultZeebeDbFactory {
   private static final boolean ACCESS_METRICS =
       Boolean.parseBoolean(System.getenv("ZEEBE_DB_ACCESS_METRICS"));
 
+  /**
+   * Caps the keys of each key index of the write-behind DB, see {@link
+   * WriteBehindConfiguration#keyIndexMaxKeys()}. Which column families have a key index is set with
+   * {@code ZEEBE_DB_KEY_INDEX}, see {@link EngineKeyIndexPolicies#parse}.
+   */
+  private static final String KEY_INDEX_MAX_KEYS_ENV = "ZEEBE_DB_KEY_INDEX_MAX_KEYS";
+
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
     return defaultFactory(DEFAULT_PARTITION_COUNT);
   }
@@ -81,12 +88,30 @@ public final class DefaultZeebeDbFactory {
     }
     var writeBehindConfig =
         WriteBehindConfiguration.defaults()
-            .withFlushDelay(Duration.ofMillis(WRITE_BEHIND_FLUSH_DELAY_MS));
+            .withFlushDelay(Duration.ofMillis(WRITE_BEHIND_FLUSH_DELAY_MS))
+            .withKeyIndexPolicies(EngineKeyIndexPolicies.fromEnvironment().byId())
+            .withKeyIndexMaxKeys(keyIndexMaxKeys());
     if (WRITE_BEHIND_MAX_PENDING_MB > 0) {
       final long bytes = WRITE_BEHIND_MAX_PENDING_MB * 1024 * 1024;
       writeBehindConfig =
           writeBehindConfig.withMaxPendingBytes(bytes).withFlushThresholdBytes(bytes);
     }
     return new WriteBehindZeebeDbFactory<>(rocksDbFactory, writeBehindConfig, "engine-test");
+  }
+
+  /**
+   * The key index cap of the write-behind DB: {@code ZEEBE_DB_KEY_INDEX_MAX_KEYS} or the default.
+   */
+  public static int keyIndexMaxKeys() {
+    final var value = System.getenv(KEY_INDEX_MAX_KEYS_ENV);
+    if (value == null || value.isBlank()) {
+      return WriteBehindConfiguration.DEFAULT_KEY_INDEX_MAX_KEYS;
+    }
+    try {
+      return Integer.parseInt(value.trim());
+    } catch (final NumberFormatException e) {
+      throw new IllegalArgumentException(
+          "Expected %s to be an int, but was '%s'".formatted(KEY_INDEX_MAX_KEYS_ENV, value), e);
+    }
   }
 }
