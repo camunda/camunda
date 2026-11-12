@@ -63,6 +63,20 @@ public class ProcessDefinitionStatisticsFilterTransformer
   }
 
   @Override
+  protected boolean matchesOnlyRuntimeData(final ProcessDefinitionStatisticsFilter filter) {
+    return matchesOnlyRunningProcessInstances(filter)
+        || allMatch(
+            filter.orFilters(),
+            ProcessDefinitionStatisticsFilterTransformer::matchesOnlyRunningProcessInstances);
+  }
+
+  private static boolean matchesOnlyRunningProcessInstances(
+      final ProcessDefinitionStatisticsFilter filter) {
+    return ProcessInstanceFilterTransformer.matchesOnlyRunningProcessInstances(
+        filter.stateOperations(), filter.hasIncident());
+  }
+
+  @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionStatisticsFilter filter) {
 
     final var queries = new ArrayList<SearchQuery>();

@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
@@ -31,9 +32,20 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoin
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFilter> {
+
+  /** Task states that end at the latest when the process instance of the task ends. */
+  private static final Set<String> UNFINISHED_TASK_STATES =
+      Set.of(
+          UserTaskState.CREATING.name(),
+          UserTaskState.CREATED.name(),
+          UserTaskState.ASSIGNING.name(),
+          UserTaskState.UPDATING.name(),
+          UserTaskState.COMPLETING.name(),
+          UserTaskState.CANCELING.name());
 
   private final ServiceTransformers transformers;
 
@@ -41,6 +53,11 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
       final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
     this.transformers = transformers;
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(final UserTaskFilter filter) {
+    return restrictsTo(filter.stateOperations(), UNFINISHED_TASK_STATES);
   }
 
   @Override
