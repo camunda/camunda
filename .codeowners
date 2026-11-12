@@ -473,3 +473,6 @@ optimize.Dockerfile         @camunda/core-features
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/operate/          @camunda/operate-admin-pod
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/tasklist/         @camunda/employee-engagement-tasklist
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/shared/           @camunda/orchestration-cluster-webapps
+
+# Overrides /.github/workflows/c8-orchestration-cluster-*.yml: the suite PR check is owned with the suite.
+/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml @camunda/test-automation-team
