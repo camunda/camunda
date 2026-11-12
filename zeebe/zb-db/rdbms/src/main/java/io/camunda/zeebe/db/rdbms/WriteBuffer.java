@@ -39,19 +39,25 @@ final class WriteBuffer {
     return writes.isEmpty();
   }
 
-  /** Sends the deletes, then the upserts, so that each kind goes in one batch. */
+  /**
+   * Sends the deletes, then the upserts, each in column family order, so that each kind of write to
+   * a table goes in one batch.
+   */
   void sendTo(final StateMapper mapper, final int partitionId) {
     for (final Map.Entry<BufferedKey, Write> entry : writes.entrySet()) {
       if (entry.getValue().isDelete()) {
         final var key = entry.getKey();
-        mapper.delete(partitionId, key.columnFamily(), key.key());
+        final var table = StateTables.of(key.columnFamily());
+        mapper.delete(partitionId, table.name(), table.shared(), key.columnFamily(), key.key());
       }
     }
     for (final Map.Entry<BufferedKey, Write> entry : writes.entrySet()) {
       final var value = entry.getValue().value();
       if (value != null) {
         final var key = entry.getKey();
-        mapper.upsert(partitionId, key.columnFamily(), key.key(), value);
+        final var table = StateTables.of(key.columnFamily());
+        mapper.upsert(
+            partitionId, table.name(), table.shared(), key.columnFamily(), key.key(), value);
       }
     }
   }

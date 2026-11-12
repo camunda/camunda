@@ -33,7 +33,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A column family in the state table. It behaves like RocksDB's: the same results, the same scan
+ * A column family in its state table. It behaves like RocksDB's: the same results, the same scan
  * order, and the same consistency checks with the same exceptions.
  *
  * <p>Writes go to the context's transaction; reads see that transaction's own writes.

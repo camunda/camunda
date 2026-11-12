@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The state of one partition, kept in the state table under its own state id. The table is shared
- * by all partitions, which never see each other's rows.
+ * The state of one partition, kept in the state tables under its partition id. The tables are
+ * shared by all partitions, which never see each other's rows.
  *
  * <p>It writes with the term it was opened with, until a newer leader claims the state. Opened
  * without a term, it only reads.

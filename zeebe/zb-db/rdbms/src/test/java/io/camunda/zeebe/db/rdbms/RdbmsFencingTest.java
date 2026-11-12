@@ -157,7 +157,7 @@ class RdbmsFencingTest {
     try (final var claim = database.dataSource().getConnection();
         final var statement = claim.createStatement()) {
       claim.setAutoCommit(false);
-      statement.executeUpdate("UPDATE ZEEBE_STATE_PARTITION SET OWNER_TERM = 2");
+      statement.executeUpdate("UPDATE ZS_PARTITION SET OWNER_TERM = 2");
 
       // when
       assertThatThrownBy(

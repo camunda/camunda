@@ -11,7 +11,12 @@ import java.util.Optional;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.ResultHandler;
 
-/** The statements on the state tables; see {@code StateMapper.xml} next to this class. */
+/**
+ * The statements on the state tables; see {@code StateMapper.xml} next to this class.
+ *
+ * <p>The statements on rows take the {@code table} of the column family and whether it is {@code
+ * shared}, from {@link StateTables}; a shared table also needs the {@code columnFamily}.
+ */
 interface StateMapper {
 
   Optional<String> findStateId(@Param("partitionId") int partitionId);
@@ -21,8 +26,8 @@ interface StateMapper {
       @Param("stateId") String stateId,
       @Param("term") long term);
 
-  /** Deletes every row the partition has in the state tables. */
-  void deleteRows(@Param("partitionId") int partitionId);
+  /** Deletes every row the partition has in the table. */
+  void deleteRows(@Param("partitionId") int partitionId, @Param("table") String table);
 
   /**
    * Sets the owner term, unless a newer term owns the state.
@@ -40,17 +45,23 @@ interface StateMapper {
 
   Optional<byte[]> get(
       @Param("partitionId") int partitionId,
+      @Param("table") String table,
+      @Param("shared") boolean shared,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key);
 
   void upsert(
       @Param("partitionId") int partitionId,
+      @Param("table") String table,
+      @Param("shared") boolean shared,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key,
       @Param("value") byte[] value);
 
   void delete(
       @Param("partitionId") int partitionId,
+      @Param("table") String table,
+      @Param("shared") boolean shared,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key);
 

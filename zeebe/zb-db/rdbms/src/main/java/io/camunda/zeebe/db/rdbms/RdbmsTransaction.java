@@ -78,7 +78,9 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
       // the caller may wrap and change it, while the buffer still has to send the original
       return value == null ? null : value.clone();
     }
-    return query(state -> state.get(partitionId, columnFamily, key)).orElse(null);
+    final var table = StateTables.of(columnFamily);
+    return query(state -> state.get(partitionId, table.name(), table.shared(), columnFamily, key))
+        .orElse(null);
   }
 
   void put(final int columnFamily, final byte[] key, final byte[] value) {

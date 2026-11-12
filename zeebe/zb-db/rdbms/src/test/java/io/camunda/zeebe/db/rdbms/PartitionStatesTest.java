@@ -79,7 +79,7 @@ class PartitionStatesTest {
     final var deleted = createDb(1);
     columnFamily(deleted).upsert(key(1), value("deleted"));
     final var deletedStateId = stateId(deleted);
-    database.execute("DELETE FROM ZEEBE_STATE_PARTITION");
+    database.execute("DELETE FROM ZS_PARTITION");
 
     // when
     final var created = createDb(1);

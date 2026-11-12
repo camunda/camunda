@@ -99,7 +99,7 @@ class RdbmsSnapshotTest {
       assertThatThrownBy(() -> factory(otherStorage, PARTITION).createDb(snapshot.toFile()))
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("holds none");
-      assertThat(otherDatabase.queryLong("SELECT COUNT(*) FROM ZEEBE_STATE_PARTITION")).isZero();
+      assertThat(otherDatabase.queryLong("SELECT COUNT(*) FROM ZS_PARTITION")).isZero();
     }
   }
 

@@ -38,7 +38,7 @@ class StateSchemaManagerTest {
     schemaManager.migrate();
 
     // then
-    assertThat(database.tableNames()).contains("A_ZEEBE_STATE_PARTITION", "A_ZEEBE_STATE");
+    assertThat(database.tableNames()).contains("A_ZS_PARTITION", "A_ZS_OTHER", "A_ZS_KEY");
   }
 
   @Test
@@ -80,19 +80,18 @@ class StateSchemaManagerTest {
 
     // then
     assertThat(database.tableNames())
-        .contains(
-            "ZEEBE_STATE_PARTITION", "ZEEBE_STATE", "B_ZEEBE_STATE_PARTITION", "B_ZEEBE_STATE");
+        .contains("ZS_PARTITION", "ZS_KEY", "B_ZS_PARTITION", "B_ZS_KEY");
   }
 
   @Test
   void shouldUpdatePrefixThatIsBehindAnotherPrefixOfTheSameDatabase() throws SQLException {
-    // given - B_ misses the last change set, as if it were still on an older version
+    // given - B_ misses a change set, as if it were still on an older version
     final var upToDate = new StateSchemaManager(database.dataSource(), "A_");
     final var behind = new StateSchemaManager(database.dataSource(), "B_");
     upToDate.migrate();
     behind.migrate();
-    execute("DROP TABLE B_ZEEBE_STATE");
-    execute("DELETE FROM B_ZEEBE_STATE_DATABASECHANGELOG WHERE ID = 'create_zeebe_state_table'");
+    execute("DROP TABLE B_ZS_KEY");
+    execute("DELETE FROM B_ZEEBE_STATE_DATABASECHANGELOG WHERE ID = 'create_zs_key_table'");
 
     // and Liquibase has found A_ up to date
     upToDate.migrate();
@@ -101,7 +100,7 @@ class StateSchemaManagerTest {
     behind.migrate();
 
     // then
-    assertThat(database.tableNames()).contains("B_ZEEBE_STATE");
+    assertThat(database.tableNames()).contains("B_ZS_KEY");
   }
 
   @Test
@@ -159,7 +158,7 @@ class StateSchemaManagerTest {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "INSERT INTO %sZEEBE_STATE_PARTITION VALUES (?, ?, 0)".formatted(prefix))) {
+                "INSERT INTO %sZS_PARTITION VALUES (?, ?, 0)".formatted(prefix))) {
       statement.setInt(1, partitionId);
       statement.setString(2, stateId);
       statement.executeUpdate();
@@ -171,7 +170,7 @@ class StateSchemaManagerTest {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "INSERT INTO %sZEEBE_STATE VALUES (?, 1, ?, ?)".formatted(prefix))) {
+                "INSERT INTO %sZS_KEY VALUES (?, ?, ?)".formatted(prefix))) {
       statement.setInt(1, partitionId);
       statement.setBytes(2, key);
       statement.setBytes(3, new byte[0]);
@@ -184,7 +183,7 @@ class StateSchemaManagerTest {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "SELECT STATE_KEY FROM %sZEEBE_STATE WHERE PARTITION_ID = ? AND COLUMN_FAMILY = 1 ORDER BY STATE_KEY"
+                "SELECT STATE_KEY FROM %sZS_KEY WHERE PARTITION_ID = ? ORDER BY STATE_KEY"
                     .formatted(prefix))) {
       statement.setInt(1, partitionId);
       try (final var rows = statement.executeQuery()) {

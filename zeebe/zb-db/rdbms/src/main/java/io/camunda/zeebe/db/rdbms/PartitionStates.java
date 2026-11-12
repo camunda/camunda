@@ -120,7 +120,9 @@ final class PartitionStates {
     final var stateId = UUID.randomUUID().toString();
     state.createState(partitionId, stateId, term);
     // rows are kept by partition, so a state deleted by hand may have left some behind
-    state.deleteRows(partitionId);
+    for (final var table : StateTables.all()) {
+      state.deleteRows(partitionId, table.name());
+    }
     return stateId;
   }
 

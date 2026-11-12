@@ -230,7 +230,7 @@ final class RdbmsZeebeDbTest {
     // given
     final var db = createDb(storage, 1);
     final var columnFamily = columnFamily(db, db.createContext());
-    database.execute("DROP TABLE ZEEBE_STATE");
+    database.execute("DROP TABLE " + StateTables.of(TestColumnFamilies.FIRST.getValue()).name());
 
     // when / then
     assertThatThrownBy(() -> columnFamily.get(key(1)))
