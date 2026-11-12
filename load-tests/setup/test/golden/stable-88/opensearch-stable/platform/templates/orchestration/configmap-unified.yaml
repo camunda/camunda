@@ -286,8 +286,6 @@ data:
     zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
     zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
     zeebe.broker.executionMetricsExporterEnabled: "true"
-    zeebe.broker.data.disk.freeSpace.processing: "3GB"
-    zeebe.broker.data.disk.freeSpace.replication: "2GB"
     
     # Camunda Exporter configuration
     zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 500
