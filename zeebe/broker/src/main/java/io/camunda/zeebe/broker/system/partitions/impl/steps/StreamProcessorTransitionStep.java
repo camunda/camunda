@@ -12,24 +12,33 @@ import io.camunda.zeebe.broker.engine.impl.BoundedScheduledCommandCache;
 import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedCommandCacheMetrics;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.db.impl.jdbc.MixedZeebeDb;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.state.ProcessingStateStoresFactory;
 import io.camunda.zeebe.engine.state.rdbms.RdbmsStateStores;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 public final class StreamProcessorTransitionStep implements PartitionTransitionStep {
+
+  private static final Duration RELATIONAL_METRICS_EXPORT_INTERVAL = Duration.ofSeconds(5);
 
   private final BiFunction<PartitionTransitionContext, Role, StreamProcessor>
       streamProcessorCreator;
@@ -130,6 +139,43 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         || (newRole == Role.CANDIDATE && currentRole != Role.FOLLOWER);
   }
 
+  /**
+   * The state controller only exports the meters of the plain RocksDB, so the meters of the
+   * relational store would never appear. Export them once the store is open, and then repeatedly to
+   * pick up column families that were first used since.
+   */
+  private static void exportRelationalMetricsPeriodically(
+      final PartitionTransitionContext context,
+      final MixedZeebeDb<ZbColumnFamilies> mixedDb,
+      final StreamProcessorBuilder builder) {
+    final var concurrencyControl = context.getConcurrencyControl();
+    final var timer = new AtomicReference<ScheduledTimer>();
+    final var closed = new AtomicBoolean();
+    final Runnable export =
+        new Runnable() {
+          @Override
+          public void run() {
+            if (closed.get()) {
+              return;
+            }
+            mixedDb.exportMetrics();
+            timer.set(concurrencyControl.schedule(RELATIONAL_METRICS_EXPORT_INTERVAL, this));
+          }
+        };
+    concurrencyControl.run(export);
+    builder.addLifecycleListener(
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onClose() {
+            closed.set(true);
+            final var scheduled = timer.get();
+            if (scheduled != null) {
+              scheduled.cancel();
+            }
+          }
+        });
+  }
+
   private static StreamProcessor createStreamProcessor(
       final PartitionTransitionContext context, final Role targetRole) {
     final StreamProcessorMode streamProcessorMode =
@@ -188,6 +234,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
               context.getPartitionId(),
               context.getBrokerCfg().getCluster().getReplicationFactor());
       builder.zeebeDb(mixedDb);
+      exportRelationalMetricsPeriodically(context, mixedDb, builder);
     } else {
       builder.zeebeDb(context.getZeebeDb());
     }

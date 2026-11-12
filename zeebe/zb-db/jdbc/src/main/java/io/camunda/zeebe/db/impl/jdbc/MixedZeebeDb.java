@@ -99,7 +99,7 @@ public final class MixedZeebeDb<ColumnFamilyType extends Enum<? extends EnumValu
 
   @Override
   public void exportMetrics() {
-    rocksDb.exportMetrics();
+    // The RocksDB meters are exported by the owner of the RocksDB, which also has the timer.
     if (relationalState != null) {
       relationalState.exportMetrics(rocksDb.getMeterRegistry());
     }
