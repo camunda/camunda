@@ -89,6 +89,11 @@ final class EntityType<K, E> {
     return groupOf == null ? null : groupOf.apply(key);
   }
 
+  /** Like {@link #groupOf}, for a key that the session holds untyped. */
+  @Nullable Object groupOfKey(final Object key) {
+    return groupOf(castKey(key));
+  }
+
   /**
    * The engine key a row belongs to: its key, or else its group, if that is a {@code long}, e.g.
    * the element instance of an event scope or the scope of a variable; otherwise -1. While that key

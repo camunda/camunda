@@ -398,13 +398,13 @@ final class EntitySession implements JdbcTransactionParticipant {
                     keysOfGroup.add(key);
                   }
                 }
-                for (final var write : notFlushed.entrySet()) {
-                  final K key = type.castKey(write.getKey());
-                  final Object group = type.groupOf(key);
-                  final var keysOfGroup = unknown.contains(group) ? keysByGroup.get(group) : null;
-                  if (keysOfGroup != null && write.getValue() != null) {
-                    cached.put(key, write.getValue());
-                    keysOfGroup.add(key);
+                for (final G group : unknown) {
+                  final var keysOfGroup = keysByGroup.get(group);
+                  for (final var write : unflushedOf(type, group).entrySet()) {
+                    if (write.getValue() != null) {
+                      cached.put(type.castKey(write.getKey()), write.getValue());
+                      keysOfGroup.add(type.castKey(write.getKey()));
+                    }
                   }
                 }
                 cacheGroups(type, unknown, keysByGroup, cached);
@@ -818,6 +818,17 @@ final class EntitySession implements JdbcTransactionParticipant {
     return new TypeView(type, range);
   }
 
+  /** Like {@link #unflushedOf(EntityType)}, restricted to the rows of one group. */
+  private Map<Object, @Nullable Object> unflushedOf(
+      final EntityType<?, ?> type, final Object group) {
+    if (store == null) {
+      return Map.of();
+    }
+    final var range =
+        currentUnflushed(store).range(EntityKey.first(type, group), EntityKey.after(type, group));
+    return new TypeView(type, range);
+  }
+
   /**
    * The unflushed writes of one type by the key of the row, read from the store's batches without a
    * copy. A null row is a delete.
@@ -906,7 +917,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   /** The keys of a group that a query of the database returned, with the unflushed writes. */
   private <K, E> Collection<K> withUnflushedKeys(
       final EntityType<K, E> type, final Object group, final Collection<K> committed) {
-    final var notFlushed = unflushedOf(type);
+    final var notFlushed = unflushedOf(type, group);
     if (notFlushed.isEmpty()) {
       return committed;
     }
@@ -917,9 +928,8 @@ final class EntitySession implements JdbcTransactionParticipant {
       }
     }
     for (final var write : notFlushed.entrySet()) {
-      final K key = type.castKey(write.getKey());
-      if (write.getValue() != null && group.equals(type.groupOf(key))) {
-        keys.add(key);
+      if (write.getValue() != null) {
+        keys.add(type.castKey(write.getKey()));
       }
     }
     return keys;
