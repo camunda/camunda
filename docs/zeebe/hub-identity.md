@@ -227,8 +227,8 @@ type and ID.
 | `CHUNK_APPLIED`     | Event   | A chunk is applied.                                                                             |
 | `COMMIT_VERSION`    | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
 | `VERSION_COMMITTED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
-| `ABORT`             | Command | Written by the transformer to abort a pending policy update (e.g. from a leader change).        |
-| `ABORTED`           | Event   | An open update was discarded; its buffered chunks are removed.                                  |
+| `CANCEL`            | Command | Written by the transformer to cancel a pending policy update (e.g. from a leader change).       |
+| `CANCELED`          | Event   | An open update was discarded; its buffered chunks are removed.                                  |
 
 The identity record values (`TenantRecordValue`, `RoleRecordValue`, `GroupRecordValue`,
 `MappingRuleRecordValue`, `AuthorizationRecordValue`) carry an optional `policyVersion`, default 0.
@@ -307,7 +307,7 @@ Only the last `PolicyUpdateRecordValue` of an update is kept in the `POLICY_UPDA
 
 All chunks of a policy update are removed when
 - the version is committed, so they do not accumulate
-- an update is aborted, so a failed update does not block the next one
+- an update is canceled, so a stuck update does not block the next one
 
 #### Identity State
 
