@@ -62,6 +62,9 @@ on:
         value: ${{ jobs.publish.outputs.changed }}
       sha:
         value: ${{ jobs.publish.outputs.sha }}
+      rejected:
+        description: "true when the patch failed the publish checks or lint; any other failure is the infrastructure's"
+        value: ${{ jobs.publish.outputs.rejected }}
 
 permissions:
   contents: read
@@ -84,10 +87,10 @@ jobs:
         id: job_start
         run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout main for workflow tooling
+      - name: Checkout the workflow's commit for tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
             .github/scripts/oc-flakiness
@@ -176,11 +179,33 @@ jobs:
             exit 1
           fi
 
-      - name: Download the evidence of earlier passes
+      - name: Download the scores of earlier passes
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: flaky-*
+          pattern: flaky-score-*
           path: /tmp/flaky-evidence
+          merge-multiple: true
+
+      # One bundle per pass with only the shards where the target failed;
+      # each unpacks to flaky-evidence-<pass>/, moved up to keep the layout
+      # flaky-<pass>-<cell>-s<n>/ the prompt describes.
+      - name: Download the shard reports of earlier passes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-evidence-*
+          path: /tmp/flaky-evidence
+          merge-multiple: true
+
+      - name: Unpack the shard report bundles
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          cd /tmp/flaky-evidence
+          for bundle in flaky-evidence-*/; do
+            for dir in "$bundle"*/; do mv "$dir" .; done
+            rmdir "$bundle"
+          done
+          ls
 
       - name: Keep only the requested passes
         env:
@@ -224,9 +249,11 @@ jobs:
           set -euo pipefail
           deadline=$(( JOB_START_EPOCH + 55 * 60 ))
           title=$(jq -r 'join(" › ")' <<< "$TITLE_PATH")
-          scores=$(for f in /tmp/flaky-evidence/flaky-score-*/score.json; do
-                     [[ -f "$f" ]] && printf '%s: %s\n' "$(basename "$(dirname "$f")")" "$(cat "$f")"
+          scores=$(shopt -s nullglob
+                   for f in /tmp/flaky-evidence/flaky-score-*/score.json; do
+                     printf '%s: %s\n' "$(basename "$(dirname "$f")")" "$(cat "$f")"
                    done)
+          [[ -n "$scores" ]] || { echo "::error::no scores downloaded"; exit 1; }
           if [[ "$BASE" == "iter1" ]]; then
             start="Your branch already holds fix attempt 1. It helped but did not remove every failure; refine it."
           elif [[ "$ITERATION" -gt 1 ]]; then
@@ -244,12 +271,14 @@ jobs:
           Flaky in nightly cells: ${CELLS}
           ${start}
 
-          It was just run many times, each shard on its own fresh docker-compose stack,
-          with --retries=0. The per-pass scores (pass rate per cell and the most common
+          Each shard just ran the nightly's whole test selection (the other tests run
+          alongside it, as in the nightly) on its own fresh docker-compose stack. A run
+          counts as failed when the test's first attempt failed. The per-pass scores (pass rate per cell and the most common
           failure messages) are:
           ${scores}
 
-          The raw shard reports are under /tmp/flaky-evidence/flaky-<pass>-<cell>-s<n>/:
+          The reports of the shards where it failed are under
+          /tmp/flaky-evidence/flaky-<pass>-<cell>-s<n>/:
           json-report/results.json for every run, test-results/ for traces, screenshots and
           videos of the failed runs (open trace.zip with unzip -l / unzip -p). Read them.
 
@@ -297,15 +326,21 @@ jobs:
             echo "has_patch=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Wrap the agent output in its artifact folder
+        if: always()
+        env:
+          ARTIFACT: flaky-agent-iter${{ inputs.iteration }}
+        run: |
+          mkdir -p "/tmp/agent-artifact/${ARTIFACT}"
+          cp /tmp/flaky-agent-output.md /tmp/flaky-fix-summary.md /tmp/flaky-fix.patch \
+            "/tmp/agent-artifact/${ARTIFACT}/" 2>/dev/null || true
+
       - name: Upload agent output
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flaky-agent-iter${{ inputs.iteration }}
-          path: |
-            /tmp/flaky-agent-output.md
-            /tmp/flaky-fix-summary.md
-            /tmp/flaky-fix.patch
+          path: /tmp/agent-artifact/
           if-no-files-found: ignore
           retention-days: 14
 
@@ -322,7 +357,9 @@ jobs:
     outputs:
       changed: ${{ steps.push.outputs.changed }}
       sha: ${{ steps.push.outputs.sha }}
+      rejected: ${{ steps.apply.outcome == 'failure' || steps.lint.outcome == 'failure' }}
     env:
+      ITERATION: ${{ inputs.iteration }}
       SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
     steps:
       - name: Checkout the starting commit
@@ -341,7 +378,7 @@ jobs:
         id: apply
         run: |
           set -euo pipefail
-          patch="$RUNNER_TEMP/agent/flaky-fix.patch"
+          patch="$RUNNER_TEMP/agent/flaky-agent-iter${ITERATION}/flaky-fix.patch"
           allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
           mapfile -t files < <(git apply --numstat "$patch" | cut -f3)
           # Renames show as "old => new"; both sides must be allowed.
@@ -388,11 +425,17 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ env.SUITE_PATH }}/package-lock.json
 
+      # Separate from the lint step: an install failure is the registry's,
+      # not a rejection of the patch.
+      - name: Install suite dependencies for lint
+        working-directory: ${{ env.SUITE_PATH }}
+        run: npm ci
+
       - name: Lint the change
+        id: lint
         working-directory: ${{ env.SUITE_PATH }}
         run: |
           set -euo pipefail
-          npm ci
           mapfile -t ts_files < "$RUNNER_TEMP/ts-files.txt"
           if [[ "${#ts_files[@]}" -gt 0 ]]; then
             # Pinned to the suite-root configs from the starting commit, so no
@@ -431,7 +474,7 @@ jobs:
           set -euo pipefail
           git add -A -- "$SUITE_PATH"
           title=$(jq -r '.[-1]' <<< "$TITLE_PATH" | cut -c1-70)
-          summary="$RUNNER_TEMP/agent/flaky-fix-summary.md"
+          summary="$RUNNER_TEMP/agent/flaky-agent-iter${ITERATION}/flaky-fix-summary.md"
           {
             echo "test: stabilize flaky \"${title}\" (${VERSION}, attempt ${ITERATION})"
             echo

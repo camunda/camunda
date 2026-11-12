@@ -7,8 +7,9 @@
 //     -> {"run_iter2": bool, "base": "iter1" | "target", "reason": "..."}
 //
 //   node decide.mjs --mode final --baseline b.json [--iter1 i1.json]
-//                   [--iter2 i2.json] [--min-rate 80] [--min-improvement 10]
-//     -> {"action": "open_pr" | "delete_branch" | "verified_green" | "blocked",
+//                   [--iter2 i2.json] [--fix-results <result>,<result>]
+//                   [--min-rate 80] [--min-improvement 10]
+//     -> {"action": "open_pr" | "delete_branch" | "not_reproduced" | "blocked",
 //         "best": "iter1" | "iter2" | null, "reason": "..."}
 //
 // Each input is the JSON written by score.mjs. A missing or unreadable file
@@ -36,15 +37,25 @@ export function next({baseline, iter1}) {
   };
 }
 
-export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10}) {
+// fixResults: the results of the jobs that ran the agent. A failed or
+// cancelled one never produced a patch to judge (an artifact outage, a
+// runner loss), which says nothing about the test.
+export function final({
+  baseline,
+  iter1,
+  iter2,
+  fixResults = [],
+  minRate = 80,
+  minImprovement = 10,
+}) {
   if (!baseline || baseline.verdict === 'blocked') {
     return {action: 'blocked', best: null, reason: 'baseline produced no score'};
   }
   if (baseline.verdict === 'green') {
     return {
-      action: 'verified_green',
+      action: 'not_reproduced',
       best: null,
-      reason: `baseline passed all ${baseline.pooled.passed} runs`,
+      reason: `baseline passed all ${baseline.pooled.passed} runs; the nightly flake did not reproduce`,
     };
   }
 
@@ -52,7 +63,11 @@ export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10
     ['iter1', iter1],
     ['iter2', iter2],
   ].filter(([, pass]) => usable(pass));
+  const crashed = fixResults.some((r) => r === 'failure' || r === 'cancelled');
   if (scored.length === 0) {
+    if (crashed) {
+      return {action: 'blocked', best: null, reason: 'a fix attempt failed before the agent finished'};
+    }
     const anyRan = iter1 || iter2;
     return {
       action: anyRan ? 'blocked' : 'delete_branch',
@@ -87,6 +102,13 @@ export function final({baseline, iter1, iter2, minRate = 80, minImprovement = 10
     return {action: 'open_pr', best: best.name, reason: best.summary};
   }
   const best = pickBest(judged);
+  if (crashed) {
+    return {
+      action: 'blocked',
+      best: best.name,
+      reason: `${best.summary}; ${best.failure}; a later fix attempt failed before the agent finished`,
+    };
+  }
   return {
     action: 'delete_branch',
     best: best.name,
@@ -106,6 +128,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       baseline,
       iter1: load('iter1'),
       iter2: load('iter2'),
+      fixResults: (args['fix-results'] ?? '').split(','),
       minRate: Number(args['min-rate'] ?? 80),
       minImprovement: Number(args['min-improvement'] ?? 10),
     });

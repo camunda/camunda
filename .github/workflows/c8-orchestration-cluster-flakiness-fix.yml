@@ -43,17 +43,12 @@ on:
         required: false
         type: string
       shards:
-        description: "Shards per cell, each on its own stack"
+        description: "Shards per cell, each on its own stack running the nightly's whole test selection"
         required: false
-        default: '5'
+        default: '20'
         type: string
       repeat_each:
-        description: "Runs of the test per shard"
-        required: false
-        default: '10'
-        type: string
-      workers:
-        description: "Playwright workers per shard. Keep 1: parallel repeats share the shard's stack and can take each other's jobs"
+        description: "Runs of the nightly selection per shard"
         required: false
         default: '1'
         type: string
@@ -298,7 +293,6 @@ jobs:
       branch: ${{ steps.prep.outputs.branch }}
       shard_ids: ${{ steps.prep.outputs.shard_ids }}
       repeat_each: ${{ steps.prep.outputs.repeat_each }}
-      workers: ${{ steps.prep.outputs.workers }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -320,7 +314,6 @@ jobs:
           CELLS: ${{ inputs.cells }}
           SHARDS: ${{ inputs.shards }}
           REPEAT_EACH: ${{ inputs.repeat_each }}
-          WORKERS: ${{ inputs.workers }}
         run: |
           set -euo pipefail
           case "$VERSION" in
@@ -337,8 +330,8 @@ jobs:
             || { echo "::error::cells must be a non-empty subset of ${allowed} for ${VERSION}"; exit 1; }
           [[ -n "$PROJECT" ]] || { echo "::error::project is required"; exit 1; }
           [[ "$SPEC" =~ ^[A-Za-z0-9_./-]+\.spec\.ts$ ]] || { echo "::error::spec must be a .spec.ts path"; exit 1; }
-          for n in "$SHARDS" "$REPEAT_EACH" "$WORKERS"; do
-            [[ "$n" =~ ^[1-9][0-9]?$ ]] || { echo "::error::shards, repeat_each and workers must be 1-99"; exit 1; }
+          for n in "$SHARDS" "$REPEAT_EACH"; do
+            [[ "$n" =~ ^[1-9][0-9]?$ ]] || { echo "::error::shards and repeat_each must be 1-99"; exit 1; }
           done
 
           title=$(jq -r '.[-1]' <<< "$TITLE_PATH")
@@ -356,7 +349,6 @@ jobs:
             echo "branch=${branch}"
             echo "shard_ids=$(jq -cn --argjson n "$SHARDS" '[range(1; $n + 1)]')"
             echo "repeat_each=${REPEAT_EACH}"
-            echo "workers=${WORKERS}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Observe build status
@@ -385,7 +377,6 @@ jobs:
       cells: ${{ inputs.cells }}
       shards: ${{ needs.prepare.outputs.shard_ids }}
       repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
-      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
       spec: ${{ inputs.spec }}
       title_path: ${{ inputs.title_path }}
       project: ${{ inputs.project }}
@@ -427,7 +418,6 @@ jobs:
       cells: ${{ inputs.cells }}
       shards: ${{ needs.prepare.outputs.shard_ids }}
       repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
-      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
       spec: ${{ inputs.spec }}
       title_path: ${{ inputs.title_path }}
       project: ${{ inputs.project }}
@@ -446,7 +436,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
             .github/scripts/oc-flakiness
@@ -457,6 +447,7 @@ jobs:
         with:
           pattern: flaky-score-*
           path: ${{ runner.temp }}/scores
+          merge-multiple: true
       - name: Decide
         id: next
         run: |
@@ -517,7 +508,6 @@ jobs:
       cells: ${{ inputs.cells }}
       shards: ${{ needs.prepare.outputs.shard_ids }}
       repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
-      workers: ${{ fromJSON(needs.prepare.outputs.workers) }}
       spec: ${{ inputs.spec }}
       title_path: ${{ inputs.title_path }}
       project: ${{ inputs.project }}
@@ -533,7 +523,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
             .github/scripts/oc-flakiness
@@ -545,9 +535,17 @@ jobs:
         with:
           pattern: flaky-{score,agent}-*
           path: ${{ runner.temp }}/out
+          merge-multiple: true
 
       - name: Decide
         id: final
+        env:
+          # success: the attempt completed, including a patch the publish
+          # checks rejected. failure: it broke for any other reason.
+          FIX_RESULTS: >-
+            ${{ format('{0},{1}',
+              needs.fix1.result != 'skipped' && ((needs.fix1.result == 'success' || needs.fix1.outputs.rejected == 'true') && 'success' || 'failure') || '',
+              needs.fix2.result != 'skipped' && ((needs.fix2.result == 'success' || needs.fix2.outputs.rejected == 'true') && 'success' || 'failure') || '') }}
         run: |
           set -euo pipefail
           o="$RUNNER_TEMP/out"
@@ -555,6 +553,7 @@ jobs:
             --baseline "$o/flaky-score-baseline/score.json" \
             --iter1 "$o/flaky-score-iter1/score.json" \
             --iter2 "$o/flaky-score-iter2/score.json" \
+            --fix-results "$FIX_RESULTS" \
             --min-rate "$MIN_PASS_RATE" --min-improvement "$MIN_IMPROVEMENT_PP")
           echo "$result"
           {
@@ -616,7 +615,7 @@ jobs:
               echo
               echo "Stabilizes the flaky test \`${SPEC}\` › $(jq -r 'join(" › ")' <<< "$TITLE_PATH") on \`${TARGET_REF}\`."
               echo
-              echo "**Result:** ${REASON}. Each pass ran the test on fresh docker-compose stacks per cell (\`$(jq -r 'join(", ")' <<< "$CELLS")\`) with \`--retries=0\`."
+              echo "**Result:** ${REASON}. Each pass ran the matching nightly's whole test selection on fresh docker-compose stacks per cell (\`$(jq -r 'join(", ")' <<< "$CELLS")\`), one stack per shard; a run counts as failed when its first attempt failed."
               echo
               echo "| pass | verdict | pooled | per cell |"
               echo "|---|---|---|---|"
@@ -663,8 +662,9 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # The ledger keeps the pick job from spending a slot on the same test
-      # every day: a cooldown after a failed or pending attempt, and a
-      # verified_at that discounts the nightly hits a 100% baseline disproved.
+      # every day: a cooldown after every attempt. A baseline that did not
+      # reproduce the flake gets a short one and keeps the nightly hits: the
+      # flake may depend on conditions the shards do not recreate.
       - name: Record the outcome in the ledger
         env:
           TOKEN: ${{ steps.github-token.outputs.token }}
@@ -682,6 +682,7 @@ jobs:
           case "$ACTION" in
             open_pr)        cooldown=$(date -u -d '14 days' +%Y-%m-%dT%H:%M:%SZ) ;;
             delete_branch)  cooldown=$(date -u -d '7 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
+            not_reproduced) cooldown=$(date -u -d '3 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
             blocked)        cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
             *)              cooldown="" ;;
           esac
@@ -710,7 +711,7 @@ jobs:
                 last_action: $action, last_reason: $reason, last_run: $run, updated_at: $now
               })
               | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
-              | if $action == "verified_green" then .[$fp].verified_at = $now else . end
+              | del(.[$fp].verified_at)
               | if $pr != "" then .[$fp].pr = $pr else . end
             ' "$state/ledger.json" > "$state/ledger.tmp"
             mv "$state/ledger.tmp" "$state/ledger.json"

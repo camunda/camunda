@@ -66,8 +66,11 @@ export function sameTitlePath(a, b) {
 export function errorKey(message) {
   // eslint-disable-next-line no-control-regex
   const plain = String(message ?? '').replace(/\u001b\[[0-9;]*m/g, '');
+  // Keys and ids differ per run; without masking them the same failure
+  // would be counted as many different errors.
   return (plain.split('\n').find((line) => line.trim() !== '') ?? 'unknown error')
     .trim()
+    .replace(/\d{6,}/g, '<n>')
     .slice(0, 300);
 }
 

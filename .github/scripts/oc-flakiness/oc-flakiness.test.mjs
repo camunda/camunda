@@ -90,7 +90,7 @@ test('should leave a test that never passed to the nightly fix agent', () => {
   assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
 });
 
-test('should skip a test under cooldown and ignore hits before verified_at', () => {
+test('should skip a test under cooldown and keep hits a green baseline did not reproduce', () => {
   // given
   const runs = [
     {version: '8.10', cell: 'api-profiles', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [flaky]},
@@ -105,15 +105,16 @@ test('should skip a test under cooldown and ignore hits before verified_at', () 
     ledger: {[fp]: {cooldown_until: '2026-11-20T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
-  const verified = pick({
+  const cooledDown = pick({
     reportsDir: dir,
-    ledger: {[fp]: {verified_at: '2026-11-01T12:00:00Z'}},
+    ledger: {[fp]: {cooldown_until: '2026-11-05T00:00:00Z', verified_at: '2026-11-03T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
 
   // then
   assert.deepEqual(cooling, []);
-  assert.deepEqual(verified, [], 'one hit after verification is below min score');
+  assert.equal(cooledDown.length, 1, 'a stale verified_at no longer discounts nightly hits');
+  assert.equal(cooledDown[0].score, 2);
 });
 
 test('should not count an interrupted nightly run as a failure', () => {
@@ -154,6 +155,24 @@ test('should score passes and failures and group errors', () => {
   assert.equal(result.verdict, 'scored');
   assert.deepEqual(result.pooled, {passed: 3, failed: 1, rate: 75});
   assert.deepEqual(result.topErrors, [{cell: 'e2e-v2', count: 1, message: 'Error: boom'}]);
+  assert.deepEqual(result.failingShards, ['flaky-baseline-e2e-v2-s1']);
+});
+
+test('should group the same error across runs whose ids differ', () => {
+  // given
+  const notFound = (key) => failed(`HTTPError: 404 - no process instance with key '${key}'`);
+  const dir = shardDir([
+    {cell: 'e2e-v2', tests: [notFound('2251799813693602')]},
+    {cell: 'e2e-v2', tests: [notFound('2251799813693589')]},
+  ]);
+
+  // when
+  const result = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(result.topErrors, [
+    {cell: 'e2e-v2', count: 2, message: "HTTPError: 404 - no process instance with key '<n>'"},
+  ]);
 });
 
 test('should not count interrupted runs or a sibling test with another title', () => {
@@ -207,6 +226,45 @@ test('should count a repeat skipped after a serial prerequisite failed as a fail
   assert.deepEqual(scored.pooled, {passed: 1, failed: 1, rate: 50});
   assert.equal(scored.cells['e2e-v2'].notRun, 2);
   assert.match(scored.topErrors[0].message, /serial block/);
+});
+
+test('should count a first-attempt pass even when a serial retry reran the test', () => {
+  // given
+  const rerunFailed = {
+    projectName: 'chromium',
+    status: 'unexpected',
+    results: [result('passed'), result('failed', 'Error: later test broke the block')],
+  };
+  const rerunSkipped = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('passed'), result('skipped')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, rerunFailed, rerunSkipped]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 3});
+
+  // then
+  assert.equal(scored.verdict, 'green');
+  assert.deepEqual(scored.pooled, {passed: 3, failed: 0, rate: 100});
+});
+
+test('should count a serial skip as a failure even when the retry passed', () => {
+  // given
+  const skippedThenPassed = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('skipped'), result('passed')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, skippedThenPassed]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(scored.pooled, {passed: 1, failed: 1, rate: 50});
+  assert.deepEqual(scored.failingShards, ['flaky-baseline-e2e-v2-s0']);
 });
 
 test('should report green when every scored run passed', () => {
@@ -266,7 +324,21 @@ test('should prefer an iteration that clears every gate over a higher pooled rat
 
 test('should not judge the test when the baseline did not score or was green', () => {
   assert.equal(final({baseline: pass(0, 'blocked')}).action, 'blocked');
-  assert.equal(final({baseline: pass(100, 'green')}).action, 'verified_green');
+  assert.equal(final({baseline: pass(100, 'green')}).action, 'not_reproduced');
   assert.equal(final({baseline: pass(60)}).action, 'delete_branch');
   assert.equal(final({baseline: pass(60), iter1: pass(0, 'blocked')}).action, 'blocked');
+});
+
+test('should block, not give up, when the agent job failed before producing a patch', () => {
+  assert.equal(final({baseline: pass(60), fixResults: ['failure', '']}).action, 'blocked');
+  assert.equal(final({baseline: pass(60), fixResults: ['success', '']}).action, 'delete_branch');
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(75), fixResults: ['success', 'failure']}).action,
+    'blocked',
+    'attempt 2 never finished, so attempt 1 falling short does not settle it',
+  );
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(92), fixResults: ['success', 'failure']}).action,
+    'open_pr',
+  );
 });
