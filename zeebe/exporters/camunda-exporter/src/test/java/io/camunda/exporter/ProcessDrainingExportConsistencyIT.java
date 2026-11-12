@@ -9,6 +9,8 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome.RESUMED;
+import static io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.impl.util.VersionUtil;
@@ -25,11 +27,17 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,6 +46,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch._types.FieldValue;
 
 /**
  * Reproduces #61277: a process definition the engine is draining can stay {@code ACTIVE} in
@@ -55,6 +64,7 @@ final class ProcessDrainingExportConsistencyIT {
   private static final long PROCESS_DEFINITION_KEY = 2_251_799_813_685_862L;
   private static final int DEPLOYMENT_PARTITION =
       DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
+  private static final long OTHER_PROCESS_DEFINITION_KEY = PROCESS_DEFINITION_KEY + 1;
   private static final int OTHER_PARTITION = DEPLOYMENT_PARTITION + 1;
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
@@ -109,6 +119,124 @@ final class ProcessDrainingExportConsistencyIT {
         .isEqualTo(ProcessDefinitionState.DRAINING);
   }
 
+  @TestTemplate
+  void shouldSuspendThenResumeProcessDefinition(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+
+    // when
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+
+    // when
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(RESUMED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.ACTIVE);
+  }
+
+  @TestTemplate
+  void shouldFindOnlySuspendedDefinitionsByState(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+    exportOnPartition(
+        config,
+        DEPLOYMENT_PARTITION,
+        processRecord(ProcessIntent.CREATED, OTHER_PROCESS_DEFINITION_KEY));
+
+    // when
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(searchIdsByState(config, ProcessDefinitionState.SUSPENDED))
+        .containsExactly(String.valueOf(PROCESS_DEFINITION_KEY));
+  }
+
+  @TestTemplate
+  void shouldKeepDrainingWhenDrainedAfterSuspensionWasFlushed(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+
+    // when
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.DRAINING));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.DRAINING);
+  }
+
+  @TestTemplate
+  void shouldEndDrainingWhenSuspendedAndDrainingAreExportedInOneBatch(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+    config.getBulk().setSize(100);
+
+    // when — both records are handled before the single flush on close
+    exportOnPartition(
+        config,
+        DEPLOYMENT_PARTITION,
+        suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY),
+        processRecord(ProcessIntent.DRAINING));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.DRAINING);
+  }
+
+  /** Cannot come from the engine (#65624: suspension never targets a draining version). */
+  @TestTemplate
+  void shouldEndSuspendedWhenDrainingAndSuspendedAreExportedInOneBatchInReverseOrder(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+    config.getBulk().setSize(100);
+
+    // when
+    exportOnPartition(
+        config,
+        DEPLOYMENT_PARTITION,
+        processRecord(ProcessIntent.DRAINING),
+        suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+  }
+
   private void prepareConfig(final ExporterConfiguration config) {
     config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfReplicas(0);
@@ -132,11 +260,110 @@ final class ProcessDrainingExportConsistencyIT {
     }
   }
 
+  private void exportOnPartition(
+      final ExporterConfiguration config, final int partitionId, final Record<?>... records)
+      throws IOException {
+    final var exporter = new CamundaExporter();
+    exporter.configure(
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>(config.getConnect().getType(), config))
+            .setPartitionId(partitionId));
+    exporter.open(new ExporterTestController());
+    try {
+      for (final var record : records) {
+        exporter.export(record);
+      }
+    } finally {
+      exporter.close();
+    }
+  }
+
+  private Record<ProcessDefinitionSuspensionRecordValue> suspensionRecord(
+      final ProcessDefinitionSuspensionOutcome outcome, final long processDefinitionKey) {
+    final var intent =
+        outcome == SUSPENDED
+            ? ProcessDefinitionSuspensionIntent.SUSPENDED
+            : ProcessDefinitionSuspensionIntent.RESUMED;
+    final var value =
+        ImmutableProcessDefinitionSuspensionRecordValue.builder()
+            .from(factory.generateObject(ImmutableProcessDefinitionSuspensionRecordValue.class))
+            .withResolvedVersions(
+                List.of(
+                    ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .withVersion(1)
+                        .withOutcome(outcome)
+                        .build()))
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        r ->
+            r.withIntent(intent)
+                .withPartitionId(DEPLOYMENT_PARTITION)
+                .withBrokerVersion(VersionUtil.getVersion())
+                .withTimestamp(System.currentTimeMillis())
+                .withValue(value));
+  }
+
+  private ProcessDefinitionState stateOf(
+      final ExporterConfiguration config,
+      final SearchClientAdapter clientAdapter,
+      final long processDefinitionKey)
+      throws IOException {
+    return clientAdapter
+        .get(String.valueOf(processDefinitionKey), processIndexName(config), ProcessEntity.class)
+        .getState();
+  }
+
+  private List<String> searchIdsByState(
+      final ExporterConfiguration config, final ProcessDefinitionState state) throws IOException {
+    final var index = processIndexName(config);
+    final var field = ProcessIndex.STATE;
+    if (ConnectionTypes.isElasticSearch(config.getConnect().getType())) {
+      return SEARCH_DB
+          .esClient()
+          .search(
+              r -> r.index(index).query(q -> q.term(t -> t.field(field).value(state.name()))),
+              ProcessEntity.class)
+          .hits()
+          .hits()
+          .stream()
+          .map(hit -> hit.id())
+          .toList();
+    }
+    return SEARCH_DB
+        .osClient()
+        .search(
+            r ->
+                r.index(index)
+                    .query(q -> q.term(t -> t.field(field).value(FieldValue.of(state.name())))),
+            ProcessEntity.class)
+        .hits()
+        .hits()
+        .stream()
+        .map(hit -> hit.id())
+        .toList();
+  }
+
+  private Record<Process> processRecord(final ProcessIntent intent) {
+    return processRecord(intent, DEPLOYMENT_PARTITION, PROCESS_DEFINITION_KEY);
+  }
+
+  private Record<Process> processRecord(final ProcessIntent intent, final long key) {
+    return processRecord(intent, DEPLOYMENT_PARTITION, key);
+  }
+
   private Record<Process> processRecord(final ProcessIntent intent, final int partitionId) {
+    return processRecord(intent, partitionId, PROCESS_DEFINITION_KEY);
+  }
+
+  private Record<Process> processRecord(
+      final ProcessIntent intent, final int partitionId, final long key) {
     final Process value =
         ImmutableProcess.builder()
             .from(factory.generateObject(ImmutableProcess.class))
-            .withProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .withProcessDefinitionKey(key)
             .withBpmnProcessId("testProcessId")
             .withResource(bpmnXml)
             .build();
@@ -144,7 +371,7 @@ final class ProcessDrainingExportConsistencyIT {
         ValueType.PROCESS,
         r ->
             r.withIntent(intent)
-                .withKey(PROCESS_DEFINITION_KEY)
+                .withKey(key)
                 .withPartitionId(partitionId)
                 .withBrokerVersion(VersionUtil.getVersion())
                 .withTimestamp(System.currentTimeMillis())
