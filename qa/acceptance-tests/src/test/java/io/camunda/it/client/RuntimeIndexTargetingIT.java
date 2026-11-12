@@ -27,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -38,10 +39,10 @@ import org.opensearch.client.opensearch._types.FieldValue;
  * Verifies that searches which can only match running process instances read the runtime index
  * only, and that all other searches still read the archived indices.
  *
- * <p>The test copies the documents of one running process instance into a dated archive index. The
- * archiver leaves the same duplicate behind for a short time while it moves an instance. A search
- * that reads the archive index counts the instance twice, a search that reads only the runtime
- * index counts it once.
+ * <p>The test copies the documents of two running process instances, one of them with an incident,
+ * into a dated archive index. The archiver leaves the same duplicate behind for a short time while
+ * it moves an instance. A search that reads the archive index counts an instance twice, a search
+ * that reads only the runtime index counts it once.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "(?i)rdbms.*")
@@ -57,6 +58,7 @@ class RuntimeIndexTargetingIT {
 
   private static long processDefinitionKey;
   private static long processInstanceKey;
+  private static long incidentProcessInstanceKey;
 
   @BeforeAll
   static void setup() throws IOException {
@@ -85,17 +87,25 @@ class RuntimeIndexTargetingIT {
             .join()
             .getProcessInstanceKey();
 
-    Awaitility.await("until the process instance and its user task are exported")
+    incidentProcessInstanceKey = startProcessInstanceWithIncident();
+
+    Awaitility.await(
+            "until the instance, its created user task and its active element are exported")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
               assertThat(countProcessInstances(null)).isOne();
-              assertThat(countUserTasks(null)).isOne();
+              assertThat(countUserTasks(UserTaskState.CREATED)).isOne();
+              assertThat(activeUserTaskElementInstances(null)).isOne();
+              assertThat(countProcessInstancesWithIncident(incidentProcessInstanceKey)).isOne();
             });
 
-    copyToArchiveIndex(ListViewTemplate.class, ListViewTemplate.PROCESS_INSTANCE_KEY);
-    copyToArchiveIndex(TaskTemplate.class, TaskTemplate.PROCESS_INSTANCE_ID);
+    copyToArchiveIndex(
+        ListViewTemplate.class, ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    copyToArchiveIndex(TaskTemplate.class, TaskTemplate.PROCESS_INSTANCE_ID, processInstanceKey);
+    copyToArchiveIndex(
+        ListViewTemplate.class, ListViewTemplate.PROCESS_INSTANCE_KEY, incidentProcessInstanceKey);
   }
 
   @Test
@@ -109,6 +119,7 @@ class RuntimeIndexTargetingIT {
     assertThat(processInstances).isEqualTo(2);
     assertThat(userTasks).isEqualTo(2);
     assertThat(activeElementInstances).isEqualTo(2);
+    assertThat(countProcessInstances(incidentProcessInstanceKey, null)).isEqualTo(2);
   }
 
   @Test
@@ -118,6 +129,37 @@ class RuntimeIndexTargetingIT {
 
     // then
     assertThat(processInstances).isOne();
+  }
+
+  @Test
+  void shouldSearchOnlyRuntimeIndexForProcessInstancesWithIncident() {
+    // when
+    final var processInstances = countProcessInstancesWithIncident(incidentProcessInstanceKey);
+
+    // then
+    assertThat(processInstances).isOne();
+  }
+
+  @Test
+  void shouldSearchOnlyRuntimeIndexForActiveOrIncidentProcessInstances() {
+    // when - the default filter of Operate
+    final var processInstances =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.processInstanceKey(k -> k.in(processInstanceKey, incidentProcessInstanceKey))
+                        .orFilters(
+                            List.of(
+                                o -> o.state(ProcessInstanceState.ACTIVE),
+                                o -> o.hasIncident(true))))
+            .send()
+            .join()
+            .page()
+            .totalItems();
+
+    // then
+    assertThat(processInstances).isEqualTo(2);
   }
 
   @Test
@@ -139,11 +181,15 @@ class RuntimeIndexTargetingIT {
   }
 
   private static long countProcessInstances(final ProcessInstanceState state) {
+    return countProcessInstances(processInstanceKey, state);
+  }
+
+  private static long countProcessInstances(final long key, final ProcessInstanceState state) {
     return camundaClient
         .newProcessInstanceSearchRequest()
         .filter(
             f -> {
-              f.processInstanceKey(processInstanceKey);
+              f.processInstanceKey(key);
               if (state != null) {
                 f.state(state);
               }
@@ -152,6 +198,62 @@ class RuntimeIndexTargetingIT {
         .join()
         .page()
         .totalItems();
+  }
+
+  private static long countProcessInstancesWithIncident(final long key) {
+    return camundaClient
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(key).hasIncident(true))
+        .send()
+        .join()
+        .page()
+        .totalItems();
+  }
+
+  private static long startProcessInstanceWithIncident() {
+    final var jobType = "job-" + UUID.randomUUID();
+    final var processId = "process-" + UUID.randomUUID();
+    final var definitionKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("job", t -> t.zeebeJobType(jobType))
+                    .endEvent()
+                    .done(),
+                processId + ".bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    final var instanceKey =
+        camundaClient
+            .newCreateInstanceCommand()
+            .processDefinitionKey(definitionKey)
+            .send()
+            .join()
+            .getProcessInstanceKey();
+
+    final var jobKey =
+        Awaitility.await("until the job is activated")
+            .atMost(TIMEOUT_DATA_AVAILABILITY)
+            .ignoreExceptions()
+            .until(
+                () ->
+                    camundaClient
+                        .newActivateJobsCommand()
+                        .jobType(jobType)
+                        .maxJobsToActivate(1)
+                        .send()
+                        .join()
+                        .getJobs(),
+                jobs -> !jobs.isEmpty())
+            .getFirst()
+            .getKey();
+    camundaClient.newFailCommand(jobKey).retries(0).send().join();
+    return instanceKey;
   }
 
   private static long countUserTasks(final UserTaskState state) {
@@ -192,7 +294,9 @@ class RuntimeIndexTargetingIT {
    * gives the new index the mappings and the alias of the runtime index.
    */
   private static void copyToArchiveIndex(
-      final Class<? extends IndexTemplateDescriptor> templateClass, final String keyField)
+      final Class<? extends IndexTemplateDescriptor> templateClass,
+      final String keyField,
+      final long instanceKey)
       throws IOException {
     final ConnectConfiguration connectConfiguration =
         BROKER.bean(SearchEngineConnectProperties.class);
@@ -202,7 +306,7 @@ class RuntimeIndexTargetingIT {
             .get(templateClass)
             .getFullQualifiedName();
     final var archiveIndex = runtimeIndex + ARCHIVE_DATE_SUFFIX;
-    final var key = String.valueOf(processInstanceKey);
+    final var key = String.valueOf(instanceKey);
 
     final long copied;
     if (isElasticsearch) {
