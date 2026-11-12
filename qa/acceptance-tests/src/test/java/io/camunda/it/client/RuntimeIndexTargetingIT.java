@@ -48,8 +48,8 @@ import org.opensearch.client.opensearch._types.Refresh;
  * index counts it once.
  */
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "(?i)rdbms.*")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "(?i)aws_os")
 class RuntimeIndexTargetingIT {
 
   @MultiDbTestApplication static final TestStandaloneBroker BROKER = new TestStandaloneBroker();
