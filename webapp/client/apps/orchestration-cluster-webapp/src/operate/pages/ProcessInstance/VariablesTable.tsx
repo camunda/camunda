@@ -37,6 +37,7 @@ import {NewVariableOperations} from './NewVariableOperations';
 import {parseDocumentVariable} from './parseDocumentVariable';
 import {DocumentValueCell} from './DocumentValueCell';
 import {ViewDocumentListButton} from './ViewDocumentListButton';
+import {VariableHistoryButton} from './VariableHistoryButton';
 import {VariablesError} from './VariablesError';
 import type {NewVariableFormValues, VariableFormValues} from './variableFormValues';
 import {
@@ -213,105 +214,110 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 								</FieldArray>
 							) : undefined
 						}
-						rows={variables.map(({name, value, variableKey, isTruncated, isRedacted, documentResult}) => ({
-							key: name,
-							dataTestId: `variable-${name}`,
-							columns: [
-								{cellContent: <VariableName title={name}>{name}</VariableName>, width: '35%'},
-								{
-									cellContent: isRedacted ? (
-										<RedactedValue>{t('globalRedactedValueLabel')}</RedactedValue>
-									) : isEditMode(name) ? (
-										<ExistingVariableValue
-											variableKey={variableKey}
-											variableName={name}
-											variableValue={value}
-											isTruncated={isTruncated}
-										/>
-									) : documentResult !== null ? (
-										<DocumentValueCell result={documentResult} />
-									) : (
-										<InlineJsonEditor
-											value={value}
-											label={name}
-											isTruncatedValue={isTruncated}
-											readOnly
-											onCopy={
-												isTruncated
-													? async () => (await queryClient.fetchQuery(variableQuery(variableKey))).value
-													: undefined
-											}
-											renderButton={
-												isTruncated
-													? () => (
-															<ViewFullVariableButton
-																variableKey={variableKey}
-																variableName={name}
-																buttonLabel={t('operate.processInstance.variables.showAll')}
-																canEdit={canEditRow}
-															/>
-														)
-													: undefined
-											}
-										/>
-									),
-									width: 'auto',
-								},
-								{
-									cellContent: isRedacted ? (
-										<Operations />
-									) : (
-										<Operations>
-											{isEditMode(name) ? (
-												<EditVariableModalButton
-													variableKey={variableKey}
-													variableName={name}
-													variableValue={value}
-													isTruncated={isTruncated}
+						rows={variables.map(
+							({name, value, variableKey, scopeKey: variableScopeKey, isTruncated, isRedacted, documentResult}) => ({
+								key: name,
+								dataTestId: `variable-${name}`,
+								columns: [
+									{cellContent: <VariableName title={name}>{name}</VariableName>, width: '35%'},
+									{
+										cellContent: isRedacted ? (
+											<RedactedValue>{t('globalRedactedValueLabel')}</RedactedValue>
+										) : isEditMode(name) ? (
+											<ExistingVariableValue
+												variableKey={variableKey}
+												variableName={name}
+												variableValue={value}
+												isTruncated={isTruncated}
+											/>
+										) : documentResult !== null ? (
+											<DocumentValueCell result={documentResult} />
+										) : (
+											<InlineJsonEditor
+												value={value}
+												label={name}
+												isTruncatedValue={isTruncated}
+												readOnly
+												onCopy={
+													isTruncated
+														? async () => (await queryClient.fetchQuery(variableQuery(variableKey))).value
+														: undefined
+												}
+												renderButton={
+													isTruncated
+														? () => (
+																<ViewFullVariableButton
+																	variableKey={variableKey}
+																	variableName={name}
+																	buttonLabel={t('operate.processInstance.variables.showAll')}
+																	canEdit={canEditRow}
+																/>
+															)
+														: undefined
+												}
+											/>
+										),
+										width: 'auto',
+									},
+									{
+										cellContent: isRedacted ? (
+											<Operations />
+										) : (
+											<Operations>
+												<VariableHistoryButton
+													target={{processInstanceKey: processInstanceId, scopeKey: variableScopeKey, name}}
 												/>
-											) : (
-												<ViewFullVariableButton variableKey={variableKey} variableName={name} canEdit={canEditRow} />
-											)}
-											{documentResult?.type === 'single' && (
-												<>
-													<PreviewDocumentButton document={documentResult.document} labelSuffix={name} />
-													<DownloadDocumentButton document={documentResult.document} labelSuffix={name} />
-												</>
-											)}
-											{documentResult?.type === 'list' && (
-												<ViewDocumentListButton
-													documents={documentResult.documents}
-													isLowerBound={documentResult.isLowerBound}
-													variableKey={variableKey}
-													variableName={name}
-												/>
-											)}
-											{documentResult === null &&
-												canEditRow &&
-												(initialValues?.name === name ? (
-													<VariableEditButtons />
-												) : (
-													<Button
-														kind="ghost"
-														size="sm"
-														tooltipPosition="top"
-														iconDescription={t('operate.processInstance.variables.editDescription')}
-														aria-label={t('operate.processInstance.variables.edit', {name})}
-														disabled={isFetchingNextPage || submitting}
-														onClick={() => {
-															form.reset({name, value, variableKey});
-															form.change('value', value);
-														}}
-														hasIconOnly
-														renderIcon={Edit}
+												{isEditMode(name) ? (
+													<EditVariableModalButton
+														variableKey={variableKey}
+														variableName={name}
+														variableValue={value}
+														isTruncated={isTruncated}
 													/>
-												))}
-										</Operations>
-									),
-									width: '120px',
-								},
-							],
-						}))}
+												) : (
+													<ViewFullVariableButton variableKey={variableKey} variableName={name} canEdit={canEditRow} />
+												)}
+												{documentResult?.type === 'single' && (
+													<>
+														<PreviewDocumentButton document={documentResult.document} labelSuffix={name} />
+														<DownloadDocumentButton document={documentResult.document} labelSuffix={name} />
+													</>
+												)}
+												{documentResult?.type === 'list' && (
+													<ViewDocumentListButton
+														documents={documentResult.documents}
+														isLowerBound={documentResult.isLowerBound}
+														variableKey={variableKey}
+														variableName={name}
+													/>
+												)}
+												{documentResult === null &&
+													canEditRow &&
+													(initialValues?.name === name ? (
+														<VariableEditButtons />
+													) : (
+														<Button
+															kind="ghost"
+															size="sm"
+															tooltipPosition="top"
+															iconDescription={t('operate.processInstance.variables.editDescription')}
+															aria-label={t('operate.processInstance.variables.edit', {name})}
+															disabled={isFetchingNextPage || submitting}
+															onClick={() => {
+																form.reset({name, value, variableKey});
+																form.change('value', value);
+															}}
+															hasIconOnly
+															renderIcon={Edit}
+														/>
+													))}
+											</Operations>
+										),
+										width: '120px',
+									},
+								],
+							}),
+						)}
 					/>
 				)}
 			</DimmableResults>

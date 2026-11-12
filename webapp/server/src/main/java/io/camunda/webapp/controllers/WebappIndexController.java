@@ -94,6 +94,11 @@ public class WebappIndexController {
     }
   }
 
+  @GetMapping({"/operate/processes", "/operate/processes/**"})
+  public String forwardOperateProcessesToWebapp(final HttpServletRequest request) {
+    return forwardToWebapp(request);
+  }
+
   private String saveRequestAndRedirectToLogin(final HttpServletRequest request) {
     final String requestedUrl = getRequestedUrl(request);
     request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);

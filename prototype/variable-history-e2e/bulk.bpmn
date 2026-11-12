@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="d2" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="bulk-order-processing" name="Bulk order processing" isExecutable="true">
+    <bpmn:startEvent id="start" name="Bulk order received"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="process-item" name="Process item">
+      <bpmn:extensionElements><zeebe:taskDefinition type="process-item"/></bpmn:extensionElements>
+      <bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements><zeebe:loopCharacteristics inputCollection="=items" inputElement="item" outputCollection="results" outputElement="=result"/></bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="approve" name="Approve bulk order"><bpmn:extensionElements><zeebe:userTask/></bpmn:extensionElements><bpmn:incoming>f2</bpmn:incoming><bpmn:outgoing>f3</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="end" name="Done"><bpmn:incoming>f3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="process-item"/>
+    <bpmn:sequenceFlow id="f2" sourceRef="process-item" targetRef="approve"/>
+    <bpmn:sequenceFlow id="f3" sourceRef="approve" targetRef="end"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="di2"><bpmndi:BPMNPlane id="pl2" bpmnElement="bulk-order-processing">
+    <bpmndi:BPMNShape id="b1" bpmnElement="start"><dc:Bounds x="150" y="100" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b2" bpmnElement="process-item" isMarkerVisible="true"><dc:Bounds x="240" y="78" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b3" bpmnElement="approve"><dc:Bounds x="400" y="78" width="100" height="80"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNShape id="b4" bpmnElement="end"><dc:Bounds x="560" y="100" width="36" height="36"/></bpmndi:BPMNShape>
+    <bpmndi:BPMNEdge id="g1" bpmnElement="f1"><di:waypoint x="186" y="118"/><di:waypoint x="240" y="118"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="g2" bpmnElement="f2"><di:waypoint x="340" y="118"/><di:waypoint x="400" y="118"/></bpmndi:BPMNEdge>
+    <bpmndi:BPMNEdge id="g3" bpmnElement="f3"><di:waypoint x="500" y="118"/><di:waypoint x="560" y="118"/></bpmndi:BPMNEdge>
+  </bpmndi:BPMNPlane></bpmndi:BPMNDiagram>
+</bpmn:definitions>

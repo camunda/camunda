@@ -12,9 +12,11 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBusinessRuleTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.variable.MappingContext;
@@ -45,6 +47,7 @@ public final class BpmnVariableMappingBehavior {
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
   private final VariableBehavior userTaskCompletionVariableBehavior;
+  private final VariableBehavior engineVariableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
 
   private final EventTriggerBehavior eventTriggerBehavior;
@@ -65,6 +68,7 @@ public final class BpmnVariableMappingBehavior {
     this.variableBehavior = variableBehavior;
     userTaskCompletionVariableBehavior =
         variableBehavior.withVariableSource(VariableSourceRecord.userTaskCompletion());
+    engineVariableBehavior = variableBehavior.withVariableSource(VariableSourceRecord.engine());
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.inputMappingResolver = inputMappingResolver;
@@ -109,7 +113,7 @@ public final class BpmnVariableMappingBehavior {
     if (result.isLeft()) {
       return Either.left(result.getLeft());
     }
-    return mapLocalVariables(context, element, result.get());
+    return mapLocalVariables(context, element, result.get(), engineVariableBehavior);
   }
 
   /**
@@ -133,18 +137,25 @@ public final class BpmnVariableMappingBehavior {
    */
   public Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, variableBehavior);
+    return applyOutputMappings(context, element, variableBehavior, engineVariableBehavior);
   }
 
   public Either<Failure, Void> applyUserTaskOutputMappings(
       final BpmnElementContext context, final ExecutableFlowNode element) {
-    return applyOutputMappings(context, element, userTaskCompletionVariableBehavior);
+    return applyOutputMappings(
+        context, element, userTaskCompletionVariableBehavior, userTaskCompletionVariableBehavior);
   }
 
+  /**
+   * @param requesterVariableBehavior writes the variables the requester sent, for example a job
+   *     completion or a message payload
+   * @param mappingVariableBehavior writes the results of the output mappings
+   */
   private Either<Failure, Void> applyOutputMappings(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
-      final VariableBehavior outputVariableBehavior) {
+      final VariableBehavior requesterVariableBehavior,
+      final VariableBehavior mappingVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     final long elementInstanceKey = context.getElementInstanceKey();
     final long processDefinitionKey = record.getProcessDefinitionKey();
@@ -156,6 +167,7 @@ public final class BpmnVariableMappingBehavior {
     final EventTrigger eventTrigger = eventScopeInstanceState.peekEventTrigger(elementInstanceKey);
     boolean hasVariables = false;
     DirectBuffer variables = null;
+    final boolean isEngineEvent = isEngineProducedEvent(element);
 
     if (eventTrigger != null) {
       variables = eventTrigger.getVariables();
@@ -174,7 +186,12 @@ public final class BpmnVariableMappingBehavior {
     if (outputMappings.isPresent()) {
       // set as local variables
       if (hasVariables) {
-        final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+        final Either<Failure, Void> variableEither =
+            mapLocalVariables(
+                context,
+                element,
+                variables,
+                isEngineEvent ? engineVariableBehavior : variableBehavior);
         if (variableEither.isLeft()) {
           return variableEither;
         }
@@ -201,11 +218,12 @@ public final class BpmnVariableMappingBehavior {
           element,
           isMultiInstanceActivity ? context.getElementInstanceKey() : context.getFlowScopeKey(),
           resolveResult.get(),
-          outputVariableBehavior,
+          mappingVariableBehavior,
           isMultiInstanceActivity);
 
     } else if (hasVariables && isCallActivityWithoutPropagation(element)) {
-      final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+      final Either<Failure, Void> variableEither =
+          mapLocalVariables(context, element, variables, engineVariableBehavior);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -213,7 +231,12 @@ public final class BpmnVariableMappingBehavior {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
           propagateVariables(
-              context, element, elementInstanceKey, variables, outputVariableBehavior, true);
+              context,
+              element,
+              elementInstanceKey,
+              variables,
+              isEngineEvent ? engineVariableBehavior : requesterVariableBehavior,
+              true);
       if (variableEither.isLeft()) {
         return variableEither;
       }
@@ -228,7 +251,7 @@ public final class BpmnVariableMappingBehavior {
               element,
               context.getFlowScopeKey(),
               localVariables,
-              outputVariableBehavior,
+              requesterVariableBehavior,
               false);
       if (variableEither.isLeft()) {
         return variableEither;
@@ -284,10 +307,11 @@ public final class BpmnVariableMappingBehavior {
   private @NonNull Either<Failure, Void> mapLocalVariables(
       final BpmnElementContext context,
       final ExecutableFlowNode element,
-      final DirectBuffer result) {
+      final DirectBuffer result,
+      final VariableBehavior localVariableBehavior) {
     final ProcessInstanceRecord record = context.getRecordValue();
     try {
-      variableBehavior.mergeLocalDocument(
+      localVariableBehavior.mergeLocalDocument(
           context.getElementInstanceKey(),
           record.getProcessDefinitionKey(),
           record.getProcessInstanceKey(),
@@ -313,6 +337,19 @@ public final class BpmnVariableMappingBehavior {
             .getInstance(context.getElementInstanceKey())
             .getMultiInstanceLoopCounter()
         > 0;
+  }
+
+  /**
+   * Returns true when the engine produced the event variables itself: the result of a called
+   * decision or a FEEL script, or the variables copied back from a called child process.
+   */
+  private boolean isEngineProducedEvent(final ExecutableFlowNode element) {
+    return switch (element) {
+      case final ExecutableCallActivity ignored -> true;
+      case final ExecutableBusinessRuleTask task -> task.getDecisionId() != null;
+      case final ExecutableScriptTask task -> task.getExpression() != null;
+      default -> false;
+    };
   }
 
   private boolean isCallActivityWithoutPropagation(final ExecutableFlowNode element) {

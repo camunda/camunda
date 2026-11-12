@@ -46,6 +46,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import java.util.Collection;
@@ -100,6 +101,7 @@ public class IndexDescriptors {
                 new DeployedResourceIndex(indexPrefix, isElasticsearch),
                 new AgentInstanceTemplate(indexPrefix, isElasticsearch),
                 new AgentHistoryTemplate(indexPrefix, isElasticsearch),
+                new VariableHistoryTemplate(indexPrefix, isElasticsearch),
                 new AgentDefinitionIndex(indexPrefix, isElasticsearch))
             .collect(Collectors.toMap(Object::getClass, Function.identity()));
   }
