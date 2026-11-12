@@ -136,3 +136,6 @@
 
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+
+# C8 Orchestration Cluster E2E test suite PR check (runs main's on-demand workflow)
+/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml @camunda/test-automation-team
