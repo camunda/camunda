@@ -494,3 +494,37 @@ test('should bump the revision on every change so a stale writer can tell', () =
   assert.ok(twice.rev > once.rev);
   assert.ok(mergeTargets(board, []).rev > board.rev);
 });
+
+test('a late dispatched write does not undo a verdict already on the board', () => {
+  const board = initBoard({
+    targets: [{fp: 'aa', version: '8.8', file: 'a.spec.ts', titlePath: ['A'], cells: []}],
+    date: '2026-11-12',
+  });
+  const reported = setRow(board, {
+    fp: 'aa',
+    status: 'skipped',
+    run: 'https://example.test/runs/1',
+  });
+  const late = setRow(reported, {
+    fp: 'aa',
+    status: 'dispatched',
+    run: 'https://example.test/runs/1',
+  });
+  assert.equal(late.rows[0].status, 'skipped');
+  assert.equal(late.rev, reported.rev, 'an ignored write must not bump rev');
+  assert.match(render(late), /skipped — a fix branch already covers this test/);
+});
+
+test('the run link still reaches a row that is still dispatched', () => {
+  const board = initBoard({
+    targets: [{fp: 'aa', version: '8.8', file: 'a.spec.ts', titlePath: ['A'], cells: []}],
+    date: '2026-11-12',
+  });
+  const linked = setRow(board, {
+    fp: 'aa',
+    status: 'dispatched',
+    run: 'https://example.test/runs/1',
+  });
+  assert.equal(linked.rows[0].run, 'https://example.test/runs/1');
+  assert.match(render(linked), /<https:\/\/example\.test\/runs\/1\|still running>/);
+});

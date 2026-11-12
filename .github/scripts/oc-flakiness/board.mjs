@@ -110,6 +110,15 @@ export function setRow(board, {fp, status, detail = '', pr = '', run = '', rate}
   if (!STATUS[status]) {
     throw new Error(`board.mjs: unknown status "${status}"`);
   }
+  // The pick writes `dispatched` only to attach the run link, and it can lose
+  // the race: a run that is skipped, or that fails outright, reaches its
+  // verdict while the pick is still resolving the ids of the runs after it.
+  // Putting that verdict back to "still running" would strand the row there
+  // for good, and the child's own write already carries the same run link.
+  const current = (board.rows ?? []).find((r) => r.fp === fp);
+  if (status === 'dispatched' && current && current.status !== 'dispatched') {
+    return board;
+  }
   return {
     ...board,
     rev: (board.rev ?? 0) + 1,

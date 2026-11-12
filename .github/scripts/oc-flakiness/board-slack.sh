@@ -36,7 +36,9 @@ case "$mode" in
     ;;
 esac
 
-response=$(curl -sS -X POST "https://slack.com/api/${method}" \
+# Without a deadline a Slack that accepts the connection and then goes quiet
+# would hang the pick until its job timeout -- with no fix agents dispatched.
+response=$(curl -sS --connect-timeout 10 --max-time 30 -X POST "https://slack.com/api/${method}" \
   -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN:?}" \
   -H 'Content-Type: application/json; charset=utf-8' \
   -d "$payload" || echo '{}')
