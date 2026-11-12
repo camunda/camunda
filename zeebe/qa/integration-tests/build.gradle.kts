@@ -22,6 +22,7 @@ dependencies {
   testImplementation(project(":zeebe-workflow-engine"))
   testImplementation(project(":camunda-client-java"))
   testImplementation(project(":camunda-db-rdbms"))
+  testImplementation(libs.com.h2database.h2)
   testImplementation(project(":zeebe-gateway"))
   testImplementation(project(":zeebe-gateway-grpc"))
   testImplementation(projectArtifact(":zeebe-gateway-grpc", ArtifactKind.TESTS))

@@ -103,6 +103,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-rdbms</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
     </dependency>
 

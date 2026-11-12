@@ -14,11 +14,31 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import java.util.function.LongConsumer;
 
 public final class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final String RECOVERY_FAILED_ERROR_MSG =
       "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d";
+
+  private final LongConsumer openingTerm;
+  private final boolean dbPerLeaderTerm;
+
+  public ZeebeDbPartitionTransitionStep() {
+    this(term -> {}, false);
+  }
+
+  /**
+   * @param openingTerm gets the transition's term right before the step opens the database
+   * @param dbPerLeaderTerm whether to open a new database for every term the partition leads, so
+   *     that the database knows the term of its leader. The relational storage needs this: it
+   *     writes with the term it was opened with, and a newer leader blocks writes of older terms.
+   */
+  public ZeebeDbPartitionTransitionStep(
+      final LongConsumer openingTerm, final boolean dbPerLeaderTerm) {
+    this.openingTerm = openingTerm;
+    this.dbPerLeaderTerm = dbPerLeaderTerm;
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -26,7 +46,9 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
 
     final var currentRole = context.getCurrentRole();
     if (context.getZeebeDb() != null
-        && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
+        && (currentRole == Role.LEADER
+            || targetRole == Role.INACTIVE
+            || (dbPerLeaderTerm && targetRole == Role.LEADER))) {
       try {
         if (context.getZeebeDb() instanceof final HealthMonitorable monitorable) {
           context.getComponentHealthMonitor().removeComponent(monitorable);
@@ -65,7 +87,7 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
         || currentRole == Role.INACTIVE
         || context.getZeebeDb() == null) {
 
-      recoverDb(context, transitionFuture);
+      recoverDb(context, term, transitionFuture);
     } else {
       transitionFuture.complete(null);
     }
@@ -79,9 +101,11 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
 
   private void recoverDb(
       final PartitionTransitionContext context,
+      final long term,
       final CompletableActorFuture<Void> transitionFuture) {
     final ActorFuture<ZeebeDb> recoverFuture;
 
+    openingTerm.accept(term);
     recoverFuture = context.getStateController().recover();
 
     recoverFuture.onComplete(

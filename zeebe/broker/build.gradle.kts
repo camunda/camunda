@@ -32,6 +32,8 @@ dependencies {
   implementation(project(":zeebe-db-rocksdb"))
   implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-db-cache"))
+  implementation(project(":zeebe-db-rdbms"))
+  implementation(libs.com.zaxxer.hikaricp)
   api(project(":zeebe-exporter-api"))
   implementation(project(":zeebe-exporter-config-support"))
   implementation(project(":zeebe-stream-platform"))
