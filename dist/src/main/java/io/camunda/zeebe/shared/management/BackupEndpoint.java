@@ -32,6 +32,7 @@ import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
+import io.camunda.zeebe.broker.PhysicalTenantLifecycleService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -58,8 +59,10 @@ import java.util.SequencedMap;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -90,12 +93,26 @@ import org.springframework.stereotype.Component;
 @WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
 
-  private final SequencedMap<String, PhysicalTenantBackup> backups;
+  private final Supplier<SequencedMap<String, PhysicalTenantBackup>> backups;
 
+  /**
+   * On a broker, the tenants and their backup configurations follow the tenant lifecycle, so a
+   * tenant added or replaced at runtime is backed up with the configuration it runs; elsewhere they
+   * are those of the static configuration.
+   */
   @SuppressWarnings("unused") // used by Spring
   @Autowired
-  public BackupEndpoint(final BrokerClient client, final PhysicalTenantResolver physicalTenants) {
-    this(physicalTenantBackups(client, physicalTenants));
+  public BackupEndpoint(
+      final BrokerClient client,
+      final PhysicalTenantResolver physicalTenants,
+      final ObjectProvider<PhysicalTenantLifecycleService> lifecycle) {
+    this(
+        () -> {
+          final var running = lifecycle.getIfAvailable();
+          return running == null
+              ? physicalTenantBackups(client, physicalTenants.getAll())
+              : physicalTenantBackups(client, running.configurations());
+        });
   }
 
   /**
@@ -119,6 +136,10 @@ public final class BackupEndpoint {
   }
 
   BackupEndpoint(final SequencedMap<String, PhysicalTenantBackup> backups) {
+    this(() -> backups);
+  }
+
+  private BackupEndpoint(final Supplier<SequencedMap<String, PhysicalTenantBackup>> backups) {
     this.backups = backups;
   }
 
@@ -762,11 +783,15 @@ public final class BackupEndpoint {
   }
 
   private List<String> resolveTargets(final @Nullable String physicalTenant) {
-    return PhysicalTenantScope.resolve(physicalTenant, backups::keySet);
+    return PhysicalTenantScope.resolve(physicalTenant, () -> backups.get().keySet());
   }
 
   private PhysicalTenantBackup api(final String physicalTenantId) {
-    return backups.get(physicalTenantId);
+    final var backup = backups.get().get(physicalTenantId);
+    if (backup == null) {
+      throw new UnknownPhysicalTenantException(physicalTenantId, backups.get().keySet());
+    }
+    return backup;
   }
 
   /**
@@ -776,17 +801,15 @@ public final class BackupEndpoint {
    * two-tenant cluster still reports a set that happens to be exactly {@code {default}}.
    */
   private String describeTenants(final String format, final Collection<String> tenants) {
-    return backups.size() > 1 ? format.formatted(tenants.stream().sorted().toList()) : "";
+    return backups.get().size() > 1 ? format.formatted(tenants.stream().sorted().toList()) : "";
   }
 
   private static SequencedMap<String, PhysicalTenantBackup> physicalTenantBackups(
-      final BrokerClient client, final PhysicalTenantResolver physicalTenants) {
+      final BrokerClient client, final Map<String, Camunda> physicalTenants) {
     final var backups = new LinkedHashMap<String, PhysicalTenantBackup>();
-    physicalTenants
-        .getAll()
-        .forEach(
-            (physicalTenantId, config) ->
-                backups.put(physicalTenantId, physicalTenantBackup(client, config)));
+    physicalTenants.forEach(
+        (physicalTenantId, config) ->
+            backups.put(physicalTenantId, physicalTenantBackup(client, config)));
     return backups;
   }
 

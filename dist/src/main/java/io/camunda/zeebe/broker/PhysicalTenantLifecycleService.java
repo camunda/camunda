@@ -45,10 +45,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -361,6 +363,21 @@ public final class PhysicalTenantLifecycleService {
   /** The resolved configuration a tenant currently runs with. */
   public Optional<Camunda> configuration(final String physicalTenantId) {
     return Optional.ofNullable(configurations.get(physicalTenantId));
+  }
+
+  /** The resolved configuration of every tenant on this node, in the order they were added. */
+  public SequencedMap<String, Camunda> configurations() {
+    final SequencedMap<String, Camunda> current = new LinkedHashMap<>();
+    registry
+        .tenants()
+        .forEach(
+            tenant -> {
+              final var configuration = configurations.get(tenant.id());
+              if (configuration != null) {
+                current.put(tenant.id(), configuration);
+              }
+            });
+    return current;
   }
 
   private Candidate resolve(
