@@ -1503,10 +1503,13 @@ jobs:
           fi
           cd pr
           allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
-          # Tool configuration is looked up per directory, so a dotfile,
-          # package.json, *.config.* or plain JavaScript file is refused even
-          # inside the allowed directories -- the lint below would execute it.
-          tool_config='(^|/)(\.[^/]*|package\.json|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
+          # Tool configuration is looked up per directory, so a dotfile, a
+          # package manifest in any form prettier reads (json, yaml, json5),
+          # a *.config.* or a plain JavaScript file is refused even inside the
+          # allowed directories -- the lint below would load it, and a
+          # `plugins` entry there executes arbitrary code in the job that holds
+          # the token.
+          tool_config='(^|/)(\.[^/]*|package\.(json5?|ya?ml)|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
           fail() { echo "::error::$1"; echo "applied=false" >> "$GITHUB_OUTPUT"; echo "error=$1" >> "$GITHUB_OUTPUT"; exit 0; }
 
           mapfile -t entries < <(git apply --numstat "$patch" | cut -f3)
@@ -1622,6 +1625,11 @@ jobs:
         run: |
           set -uo pipefail
           threads="${RUNNER_TEMP}/trusted-threads.json"
+          # The round directory is absent when the responder uploaded nothing,
+          # and this step runs under the runner's inherited `-e`: without the
+          # mkdir the fallback write below would end the step before a single
+          # placeholder reply went out.
+          mkdir -p "${RUNNER_TEMP}/round"
           manifest="${RUNNER_TEMP}/round/response.json"
           [ -s "$threads" ] || { echo "::warning::no eligible threads; nothing to reply to."; exit 0; }
           jq -e '.replies | type == "array"' "$manifest" >/dev/null 2>&1 || echo '{"replies":[]}' > "$manifest"
