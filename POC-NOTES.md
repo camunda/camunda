@@ -246,17 +246,17 @@ after it.
 
 ## How it works
 
-|                             Piece                              |     Where     |                                                                                                                  What                                                                                                                   |
-|----------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `RaftPartition#transferLeadership(MemberId)`                   | atomix        | A CLT transfer the leader starts itself: same admission and attempt as a coordinated one (caught up, lag under `replication-lag-threshold`, freeze, catch-up within `replication-timeout`, TimeoutNow)                                  |
-| `RaftPartition#requestLeadership(Duration)`                    | atomix        | A replica asks the leader for the leadership for itself (coordinator = desired leader); answers the leader's refusal, or `TRANSFERRED` once it leads, `LEADER_CHANGED`, or fails after the bound                                        |
-| `PartitionLeadershipHandover`                                  | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on a refusal another replica may not give; bounded; a report per partition                                                                                    |
-| `ZeebePartition#forceSnapshot`, `#replayProgress`              | zeebe/broker  | A snapshot on demand in either role, once the current role transition completed; the log end (from the log stream, as a follower's snapshot director does not follow commits), last replayed event, snapshot position                   |
-| `PartitionRestartSnapshots`                                    | zeebe/broker  | Snapshots every partition within one bound; a skipped, failed or timed-out snapshot never fails the restart                                                                                                                             |
+|                             Piece                              |     Where     |                                                                                                                                         What                                                                                                                                         |
+|----------------------------------------------------------------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RaftPartition#transferLeadership(MemberId)`                   | atomix        | A CLT transfer the leader starts itself: same admission and attempt as a coordinated one (caught up, lag under `replication-lag-threshold`, freeze, catch-up within `replication-timeout`, TimeoutNow)                                                                               |
+| `RaftPartition#requestLeadership(Duration)`                    | atomix        | A replica asks the leader for the leadership for itself (coordinator = desired leader); answers the leader's refusal, or `TRANSFERRED` once it leads, `LEADER_CHANGED`, or fails after the bound                                                                                     |
+| `PartitionLeadershipHandover`                                  | zeebe/broker  | Every led partition at once; replicas in the caller's order; next replica on a refusal another replica may not give; bounded; a report per partition                                                                                                                                 |
+| `ZeebePartition#forceSnapshot`, `#replayProgress`              | zeebe/broker  | A snapshot on demand in either role, once the current role transition completed; the log end (from the log stream, as a follower's snapshot director does not follow commits), last replayed event, snapshot position                                                                |
+| `PartitionRestartSnapshots`                                    | zeebe/broker  | Snapshots every partition within one bound; a skipped, failed or timed-out snapshot never fails the restart                                                                                                                                                                          |
 | `PartitionLeadershipReclaim`                                   | zeebe/broker  | Per partition: wait until installed and within 100 positions of its log end, then `requestLeadership`; asks again on `LAG_TOO_HIGH`, `TRANSFER_IN_PROGRESS`, …; gives up once the replica has not caught up further for `rebalance.leader-wait-timeout`; or only follow the catch-up |
-| `PhysicalTenantLifecycleService#replace`                       | dist          | snapshot (if on) → handover → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                        |
-| `camunda.cluster.raft.rebalance.tenant-restart-handover`       | configuration | `NONE`, `TRANSFER_AWAY`, `TRANSFER_BACK` (default); cluster-wide                                                                                                                                                                        |
-| `…tenant-restart-snapshot`, `…tenant-restart-snapshot-timeout` | configuration | `false` by default; 10 s                                                                                                                                                                                                                |
+| `PhysicalTenantLifecycleService#replace`                       | dist          | snapshot (if on) → handover → stop → start → reclaim (`TRANSFER_BACK`, waited for) or catch-up watch (otherwise, not waited for); never fails the change; `local.lastRestart` reports every step                                                                                     |
+| `camunda.cluster.raft.rebalance.tenant-restart-handover`       | configuration | `NONE`, `TRANSFER_AWAY`, `TRANSFER_BACK` (default); cluster-wide                                                                                                                                                                                                                     |
+| `…tenant-restart-snapshot`, `…tenant-restart-snapshot-timeout` | configuration | `false` by default; 10 s                                                                                                                                                                                                                                                             |
 
 Remove is unchanged: a delete disables the tenant cluster-wide in the same configuration update that
 starts the stops, so it serves no requests while members stop it and there is nothing to keep led.
@@ -553,3 +553,188 @@ grep -A40 "handover phases, ms" zeebe/qa/integration-tests/target/failsafe-repor
   -Dtest='CommandApiRequestHandlerTest,ZeebePartitionTest,PartitionTransitionImplTest'
 ```
 
+# Standalone gateway: physical tenants created, changed and removed at runtime
+
+Branch `pt-poc-standalone-gateway-tenants`, on top of `mk-pt-tenant-restart-handover`
+(3b042bda0df). Not for merge as is.
+
+A standalone gateway built its gRPC module per tenant once, from its own static configuration. A
+tenant created through the lifecycle API answered `NOT_FOUND` there until the gateway restarted with
+a matching file, and a removed tenant stayed known. This branch makes a standalone gateway follow
+the tenant set the brokers run, with no gateway restart, for gRPC.
+
+## What it proves, and by which test
+
+3 brokers without embedded gateways, 1 standalone gateway, changes through the brokers'
+`physicalTenants` actuator. A client publishes messages to `default` through the gateway in a loop
+during every test, and the test fails if a single one fails.
+
+|                                      Claim                                      |                                                                                                            Test                                                                                                             |
+|---------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| The gateway receives a tenant's `PhysicalTenantConfigReference` by gossip       | `PhysicalTenantStandaloneGatewayLifecycleIT#shouldServeATenantCreatedAtRuntimeThroughTheStandaloneGateway` (the gateway's `BrokerTopologyManager` holds version 1 of the new tenant's reference)                            |
+| A tenant created at runtime is served over gRPC                                 | same test: deploy, a job pushed to a job stream and completed (instance with result), and a job activated by polling and completed                                                                                          |
+| A tenant the brokers declare in their file, and the gateway does not, is served | `#shouldServeAFileTenantThatOnlyTheBrokersDeclare` (deploy, job stream, completion)                                                                                                                                         |
+| A removed tenant is rejected as unknown                                         | `#shouldRejectARemovedTenantAsUnknownOnTheStandaloneGateway` (`NOT_FOUND`; gone from the gateway's registry and gRPC modules)                                                                                               |
+| A changed tenant's gRPC-relevant config takes effect on the gateway             | `#shouldApplyAChangedTenantsGrpcSecurityOnTheStandaloneGateway`: `security.authorizations.enabled` false → true; the gateway's module and authorization converter switch, `default` keeps its own; the display name follows |
+| Other tenants keep serving                                                      | every test above: 0 failed publishes to `default` through the gateway                                                                                                                                                       |
+| A store without a data directory fetches once and keeps it                      | `PhysicalTenantConfigFetcherTest#shouldFetchIntoAStoreWithoutADataDirectoryAndAskNoPeerTheSecondTime`                                                                                                                       |
+| One tenant binds over a root the cross-tenant checks would reject               | `PhysicalTenantResolverTest#shouldBindOneTenantOverTheRootWithoutTheChecksAcrossTenants`                                                                                                                                    |
+| The PoC override makes a REJECT key restartable                                 | `PhysicalTenantKeyClassificationTest#shouldAcceptAChangeOfAPropertyOverriddenToRestart`                                                                                                                                     |
+
+The change test asserts on the gateway's beans, not on a client-visible result: with an unprotected
+API the claims a gateway sends do not depend on the tenant's security config. Every security key is
+`REJECT security-chain` on this tree, so the test turns `security.authorizations.enabled` into
+`RESTART` with the PoC property below. Without it, no change the API accepts reaches a gateway.
+
+## How it works
+
+|                 Piece                  |                                        Where                                         |                                                                                                                                                                 What                                                                                                                                                                  |
+|----------------------------------------|--------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Cluster configuration by gossip        | existing                                                                             | A standalone gateway runs `GatewayClusterConfigurationServiceImpl` (`DynamicClusterServices`, `@Profile("!broker")`) and so receives the whole `CurrentClusterConfiguration`: each group's `TenantAvailability` and configuration reference (version, hash, owner, incarnation). Nothing new is gossiped.                             |
+| `GatewayPhysicalTenantFollower`        | dist, `io.camunda.zeebe.gateway`                                                     | Listens to that configuration (bean in `GatewayModuleConfiguration`). Per group: disabled or removed → removes the gRPC module and the registry entry; a reference with a version newer than the one it serves → fetches, binds, `GatewayPhysicalTenants#put`, registry add or replace. Runs on its own thread; retries every second. |
+| Fetch                                  | dynamic-config `PhysicalTenantConfigFetcher`, `PhysicalTenantConfigStore.inMemory()` | Same request as between brokers (topic `physical-tenant-config-fetch`): the coordinator first, then the members that applied the version. The gateway stores what it fetched in memory and fetches again after a restart. The brokers already answer any member, so they needed no change.                                            |
+| Bind                                   | `PhysicalTenantResolver.bindOne`                                                     | Binds `name` and `security.*` of the blob over the gateway's root, with the map overlays (named OIDC providers) and provider narrowing of the full resolver, without the validations across tenants.                                                                                                                                  |
+| Registry                               | `DefaultPhysicalTenantRegistry` (gateway's)                                          | The live `PhysicalTenantIds` on the gateway, so health aggregation and other `known()` consumers follow. Uses the incarnation from the reference.                                                                                                                                                                                     |
+| `physical-tenant-rollout.restart-keys` | `BrokerModuleConfiguration`, `PhysicalTenantKeyClassification#withRestart`           | PoC property on brokers: keys classified `RESTART` regardless of the resource. Empty by default.                                                                                                                                                                                                                                      |
+
+Decisions taken where nothing says otherwise (each easy to change):
+
+- **Which tenants the gateway follows**: every non-`default` group with a reference, whatever its
+  owner, unless the gateway's own file declares it. A gateway-declared tenant keeps its file
+  configuration; only its disabling or removal applies.
+- **When a new version takes effect**: when the gateway sees the reference's version rise, not when
+  the brokers' rollout completes. During a rollout the gateway may already apply a security config
+  that some brokers do not run yet (from reading the follower; not measured).
+- **What the gateway binds**: `name` and `security.*`, the only keys its gRPC module reads.
+
+Two problems found on the way, both from binding the whole blob through `PhysicalTenantResolver.of`:
+
+1. The blob names exporters only the brokers declare (`data.exporters-assigned`), which the
+   gateway's exporter assignment check rejects.
+2. The checks across tenants compare the tenant with the gateway's root. The test gateway's root
+   storage is Elasticsearch, the brokers' tenants use `none`: the storage type compatibility check
+   rejects every runtime tenant. Keeping the tenant's storage keys does not help, and matching the
+   brokers' root (`none`) does not start: a standalone gateway with BASIC authentication fails fast
+   without secondary storage (`BasicAuthenticationNoDbConfiguration`).
+
+Hence the gateway binds a subset, without those checks, and relies on the brokers having validated
+the whole configuration.
+
+## Call sites that froze the tenant set on a standalone gateway
+
+From reading code (a survey of every gateway-active bean), not tested unless marked. Cost: S = a
+lookup or a register/remove hook, M = per-tenant objects with a close path, L = a per-tenant
+subsystem with resources and its own lifecycle.
+
+|                                                                                               Call site                                                                                               |                                                Builds once                                                |                          Affects                           |            Cost            |                                                                              Status here                                                                              |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `dist/.../gateway/GatewayModuleConfiguration.java:105`                                                                                                                                                | engine security config per boot tenant → `Gateway` → `GatewayPhysicalTenants`                             | gRPC                                                       | S                          | **Made live** by the follower (tested)                                                                                                                                |
+| `zeebe/gateway-grpc/.../EndpointManager.java:155`                                                                                                                                                     | static `RequestMapper.setMultiTenancyEnabled` from `default`                                              | gRPC                                                       | M                          | Left: `security.multi-tenancy` is uniform by the override policy, so one flag is consistent; per tenant needs the tenant at every `RequestMapper` call                |
+| `zeebe/gateway-grpc/.../Gateway.java:140`                                                                                                                                                             | `authEnabled` from `default`'s `unprotected-api`                                                          | gRPC                                                       | S                          | Left: uniform by the override policy                                                                                                                                  |
+| `GatewayModuleConfiguration.java:141` → `PhysicalTenantHandlerFactory`                                                                                                                                | BASIC handler resolves `serviceRegistry.userServices(id)`                                                 | gRPC BASIC                                                 | M (after the registry row) | Left: `DefaultServiceRegistry.byTenant` throws for a tenant it was not built with, so `put` of a runtime tenant with BASIC would fail; the IT uses an unprotected API |
+| `dist/.../commons/service/CamundaServicesConfiguration.java:143-600`                                                                                                                                  | `ServiceRegistry` (`Map.copyOf`) of every per-tenant service, cluster topology/status services per tenant | REST, MCP, gRPC BASIC, `/cluster/v2/topology` and `status` | L                          | Left (secondary storage, out of scope)                                                                                                                                |
+| `dist/.../search/*`, `dist/.../rdbms/*` (search clients, readers, data sources, schema initialisers, health indicators)                                                                               | per-tenant clients and schema                                                                             | REST, MCP, readiness                                       | L                          | Left (secondary storage, out of scope); the same gap as on brokers                                                                                                    |
+| `authentication/.../pt/PhysicalTenantSecurityConfiguration.java`, `PhysicalTenantOidcSettingsRegistry`, `OidcOverrideBeansConfiguration`                                                              | one CSL `SecurityFilterChain` and OIDC settings per tenant                                                | REST, MCP over HTTP                                        | L                          | Left (CSL, out of scope)                                                                                                                                              |
+| `zeebe/gateway-rest/.../PhysicalTenantServedFilter.java:54`                                                                                                                                           | boot incarnations with a security chain                                                                   | REST, MCP                                                  | by design                  | Left: answers 404 for a runtime tenant, which is the fail-closed behaviour until the chains are live                                                                  |
+| `dist/.../pt/SecondaryStorageReadinessMetrics.java:42`                                                                                                                                                | one gauge per boot tenant in `bindTo`                                                                     | metrics                                                    | S                          | Left                                                                                                                                                                  |
+| `dist/.../rest/PhysicalTenantRestConfiguration.java`, `security/AuthorizationCheckerProviderConfiguration.java`, `pt/DatabaseTypeProviderConfiguration.java`, `secrets/SecretStoreConfiguration.java` | per-tenant REST config, authorization checkers, database type, secret stores                              | REST                                                       | S–M                        | Left                                                                                                                                                                  |
+| `BrokerTopologyManagerImpl` (gateway bean), `JobStreamClient`, `clusterStatesByPhysicalTenant`, MCP tenant filter, `LongPollingActivateJobsHandler`                                                   | —                                                                                                         | gRPC, health                                               | live                       | Already live: new groups arrive by gossip and broker info, job stream handlers are created per tenant on the first broker of a group (job streaming tested)           |
+
+For gRPC with an unprotected API or OIDC, the first row was the only blocker. BASIC on gRPC needs
+the `ServiceRegistry` row, so it shares the cost of REST.
+
+## The lifecycle API on a standalone gateway (question 5)
+
+From reading code, not tested:
+
+- **The `/cluster/v2` controllers run on a standalone gateway.** `RestApiConfiguration`
+  (`@ComponentScan("io.camunda.zeebe.gateway.rest")`, `@ConditionalOnRestGatewayEnabled`) is in
+  `io.camunda.application.commons`, which `CommonsModuleConfiguration` scans for the standalone
+  gateway too; `GatewayModuleConfiguration`'s exclude filter only affects its own scan.
+  `@ClusterScoped` only keeps them off the per-tenant path prefix.
+- **They forward.** Exporting and recovery send through `ClusterConfigurationManagementRequestSender`
+  to the coordinator, which the gateway finds from the gossiped configuration; rebalance through
+  `RebalanceRequestSender` the same way. None acts on the gateway's own state.
+- **The actuator `PhysicalTenantsEndpoint` is `@Profile("broker")`.** Its service validates on the
+  receiving broker (key classification, credential guard, then the boot validations through
+  `PhysicalTenantLifecycleService#validate`, which needs the broker's `SystemContext`), and only then
+  sends `topology-physical-tenant-config` to the coordinator, which checks ownership, version and
+  concurrency but runs no validation.
+
+Recommendation: a call on a gateway should **forward to a broker, not refuse, and not go straight to
+the coordinator**. The transport exists on the gateway, but sending there would skip the
+validations, so an invalid change would be accepted and fail on every broker during the rollout
+instead of answering 400. The smallest step is a new request topic answered by
+`PhysicalTenantConfigService` on the coordinator (validate, then submit locally), with the gateway
+as a thin forwarder. Reads (`GET`) can be answered on the gateway from the gossiped configuration
+(owner, version, hash, applied versions, state), but not the per-member detail that the broker's
+endpoint reads from local state (health, the rollout step it waits for, the last restart).
+
+## Measurements
+
+Apple-silicon laptop, 3 brokers and 1 gateway in one JVM (`TestCluster`), 1 partition, RF 3,
+secondary storage `none`, warm JVM, another heavy build on the machine.
+
+|                                          What                                           |                            Result                             |                                        Method                                         |
+|-----------------------------------------------------------------------------------------|---------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| `202` of the create to the gateway serving version 1                                    | 150 ms and 152 ms (2 runs)                                    | `System.nanoTime` in the create test, until `followedVersion` is present              |
+| Failed publishes to `default` through the gateway, per test (2 green runs)              | 0 in all 8 test runs; 787–3145 accepted, longest gap 12–75 ms | `PublishLoad` from `@BeforeEach` to `@AfterEach`; each window is only 1–3 s           |
+| Same, in 2 earlier runs where every test waited 2 min and failed (see the two problems) | 0 failed of 288k–338k per test, longest gap 35–210 ms         | same; the brokers created tenants in these windows, but the gateway never served them |
+
+## Results (2026-11-12)
+
+|                                                 Suite                                                 |   Result   |
+|-------------------------------------------------------------------------------------------------------|------------|
+| `PhysicalTenantStandaloneGatewayLifecycleIT`                                                          | 4/4, twice |
+| `PhysicalTenantStandaloneGatewayTopologyIT`, `PhysicalTenantConfigRolloutIT` (regression, same batch) | 1/1, 9/9   |
+| `PhysicalTenantResolverTest`, `PhysicalTenantKeyClassificationTest` (configuration)                   | 30/30, 8/8 |
+| `PhysicalTenantConfigFetcherTest` (zeebe/dynamic-config/impl)                                         | 5/5        |
+
+## Not done, and why
+
+- **REST and MCP for a runtime tenant on a gateway**: answers 404 (served filter). It needs the
+  `ServiceRegistry`, secondary-storage clients and CSL chains to become per-tenant at runtime, the
+  same work as on brokers.
+- **BASIC on gRPC for a runtime tenant**: would fail in `put` (see the inventory); not tested.
+- **OIDC per tenant on the gateway**, the gRPC config that matters most in practice (issuer,
+  audiences, JWKS), is not tested: it needs an identity provider in the IT, and every
+  `security.authentication.*` key is `REJECT security-chain` today.
+- **A disabled tenant enabled again**: the gateway's registry keeps a removed id reserved, so the
+  follower would serve its gRPC module but not re-add it to the registry (from reading code).
+- **A version the gateway cannot fetch or bind** is retried every second with a WARN and no other
+  signal; the gateway keeps the previous version, or does not serve a new tenant.
+- **Meters**: `GatewayPhysicalTenants` registers `AuthenticationMetrics` per module when the API is
+  protected; whether a removed or replaced module leaves them behind was not checked.
+
+## Open questions for the team
+
+1. Should a gateway switch a tenant's security when the version rises (here), when the rollout
+   completes, or keep both and accept either during the rollout? Each option leaves a window where
+   gateway and brokers disagree.
+2. Fetch the configuration (here) or carry the gateway-relevant part in the cluster configuration?
+   Fetching keeps one source and keeps secret references out of gossip; carrying would save the
+   round trip and the dependency on a reachable broker.
+3. When the gateway's file and the cluster disagree about a tenant, which wins? Here the gateway's
+   file wins for tenants it declares.
+4. Should the gateway validate what it binds (e.g. an OIDC provider assigned on the brokers but not
+   declared on the gateway), and how does it report a version it cannot serve?
+5. Question 5: forward to a broker that validates (recommended), or refuse on gateways at first?
+6. Are `security.multi-tenancy` and `unprotected-api` meant to stay uniform across tenants? The
+   gateway's static flags rely on it.
+
+## How to run
+
+```bash
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dmaven.build.cache.enabled=false -Dit.test=PhysicalTenantStandaloneGatewayLifecycleIT
+grep -h "Load on the default\|standalone gateway served" \
+  zeebe/qa/integration-tests/target/failsafe-reports/*StandaloneGatewayLifecycleIT*-output.txt
+./mvnw verify -pl configuration -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='PhysicalTenantResolverTest,PhysicalTenantKeyClassificationTest'
+./mvnw verify -pl zeebe/dynamic-config/impl -Dquickly -DskipTests=false -DskipITs \
+  -Dtest=PhysicalTenantConfigFetcherTest
+```
+
+Brokers take `physical-tenant-rollout.restart-keys=security.authorizations.enabled` to let the API
+change that key.
