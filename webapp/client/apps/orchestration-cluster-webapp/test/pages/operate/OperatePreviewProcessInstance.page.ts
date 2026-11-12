@@ -39,6 +39,10 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.getByRole('region', {name: 'Diagram', exact: true});
 	}
 
+	get diagramZoomResetButton() {
+		return this.diagramPanel.getByRole('button', {name: 'Reset diagram zoom'});
+	}
+
 	stateOverlay(name: string) {
 		return this.diagramPanel.getByRole('img', {name, exact: true});
 	}
