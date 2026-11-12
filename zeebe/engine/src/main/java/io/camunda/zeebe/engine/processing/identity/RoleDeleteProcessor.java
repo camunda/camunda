@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.api.model.authz.DefaultRole;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -36,11 +35,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete role with ID '%s', but a role with this ID doesn't exist.";
-  public static final String ROLE_PROTECTED_ERROR_MESSAGE =
-      "Expected to delete role with ID '%s', which is a default role and cannot be deleted.";
   private final RoleState roleState;
+  private final RoleValidator roleValidator;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
   private final PermissionsBehavior permissionsBehavior;
@@ -52,11 +48,13 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   public RoleDeleteProcessor(
       final ProcessingState state,
+      final RoleValidator roleValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = state.getRoleState();
+    this.roleValidator = roleValidator;
     authorizationState = state.getAuthorizationState();
     membershipState = state.getMembershipState();
     this.permissionsBehavior = permissionsBehavior;
@@ -76,29 +74,17 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
             command, AuthorizationResourceType.ROLE, PermissionType.DELETE, roleId);
 
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    if (roleId != null && DefaultRole.ids().contains(roleId)) {
-      final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.INVALID_STATE, errorMessage);
+    final var validation = roleValidator.validateDelete(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
-    final var persistedRecord = roleState.getRole(roleId);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var persistedRole = persistedRecord.get();
+    final var persistedRole = roleState.getRole(roleId).orElseThrow();
     final var roleKey = persistedRole.getRoleKey();
     record.setRoleKey(roleKey);
 
@@ -117,22 +103,23 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    final var record = command.getValue();
-    roleState
-        .getRole(record.getRoleId())
-        .ifPresentOrElse(
-            role -> {
-              removeMembers(command.getValue());
-              deleteAuthorizations(command.getValue());
-              stateWriter.appendFollowUpEvent(
-                  command.getKey(), RoleIntent.DELETED, command.getValue());
+    roleValidator
+        .validateDelete(command.getValue())
+        .ifRightOrLeft(
+            record -> {
+              removeMembers(record);
+              deleteAuthorizations(record);
+              stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.DELETED, record);
             },
-            () -> {
-              final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-            });
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void reject(final TypedRecord<RoleRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private void removeMembers(final RoleRecord record) {

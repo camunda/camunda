@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -16,19 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
-import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
-import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -37,40 +28,24 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to update role with ID '%s', but a role with this ID does not exist.";
-  public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist.";
-  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
-      "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role.";
-  private final RoleState roleState;
-  private final MappingRuleState mappingRuleState;
-  private final MembershipState membershipState;
-  private final GroupState groupState;
-  private final UserState userState;
+  private final RoleValidator roleValidator;
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final EngineSecurityConfig securityConfig;
   private final SideEffectWriter sideEffectWriter;
   private final MembershipStateAdapter membershipStateAdapter;
 
   public RoleAddEntityProcessor(
-      final ProcessingState processingState,
+      final RoleValidator roleValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final EngineSecurityConfig securityConfig,
       final MembershipStateAdapter membershipStateAdapter) {
-    roleState = processingState.getRoleState();
-    mappingRuleState = processingState.getMappingRuleState();
-    membershipState = processingState.getMembershipState();
-    groupState = processingState.getGroupState();
-    userState = processingState.getUserState();
+    this.roleValidator = roleValidator;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -78,48 +53,23 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     responseWriter = writers.response();
     sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.securityConfig = securityConfig;
     this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var roleId = record.getRoleId();
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
-            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, roleId);
+            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, record.getRoleId());
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    final var persistedRecord = roleState.getRole(record.getRoleId());
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var entityId = record.getEntityId();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityType, entityId)) {
-      final var errorMessage =
-          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    if (isEntityAssigned(record)) {
-      final var errorMessage =
-          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.ALREADY_EXISTS, errorMessage);
+    final var validation = roleValidator.validateAddEntity(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
@@ -137,17 +87,22 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    final var record = command.getValue();
-    if (isEntityAssigned(record)) {
-      final var errorMessage =
-          ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-    } else {
-      stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
-      invalidateMembershipCache();
-    }
+    roleValidator
+        .validateEntityNotAssigned(command.getValue())
+        .ifRightOrLeft(
+            record -> {
+              stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
+              invalidateMembershipCache();
+            },
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void reject(final TypedRecord<RoleRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   /**
@@ -159,23 +114,5 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
         () -> {
           membershipStateAdapter.invalidateAll();
         });
-  }
-
-  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
-
-    final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
-    return switch (entityType) {
-      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
-      case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
-      case CLIENT -> true;
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
-      default -> false;
-    };
-  }
-
-  private boolean isEntityAssigned(final RoleRecord record) {
-    return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 }

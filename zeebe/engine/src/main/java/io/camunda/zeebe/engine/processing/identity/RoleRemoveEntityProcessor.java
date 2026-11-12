@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -15,18 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
-import io.camunda.zeebe.engine.state.immutable.MembershipState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -35,16 +28,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
-  public static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to update role with ID '%s', but a role with this ID does not exist.";
-  public static final String ENTITY_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to remove an entity with ID '%s' and type '%s' from role with ID '%s', but the entity doesn't exist.";
-  private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
-      "Expected to remove entity with ID '%s' from role with ID '%s', but the entity is not assigned to this role.";
-  private final RoleState roleState;
-  private final MappingRuleState mappingRuleState;
-  private final GroupState groupState;
-  private final MembershipState membershipState;
+  private final RoleValidator roleValidator;
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -55,16 +39,13 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private final MembershipStateAdapter membershipStateAdapter;
 
   public RoleRemoveEntityProcessor(
-      final ProcessingState processingState,
+      final RoleValidator roleValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
-    roleState = processingState.getRoleState();
-    mappingRuleState = processingState.getMappingRuleState();
-    groupState = processingState.getGroupState();
-    membershipState = processingState.getMembershipState();
+    this.roleValidator = roleValidator;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -78,40 +59,17 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   @Override
   public void processNewCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
-    final var roleId = record.getRoleId();
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
-            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, roleId);
+            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE, record.getRoleId());
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    final var persistedRecord = roleState.getRole(record.getRoleId());
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    final var entityId = record.getEntityId();
-    final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityType, entityId)) {
-      final var errorMessage =
-          ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-      return;
-    }
-
-    if (!isEntityAssigned(record)) {
-      final var errorMessage =
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    final var validation = roleValidator.validateRemoveEntity(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
@@ -129,18 +87,22 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    final var record = command.getValue();
+    roleValidator
+        .validateEntityAssigned(command.getValue())
+        .ifRightOrLeft(
+            record -> {
+              stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_REMOVED, record);
+              invalidateMembershipCache();
+            },
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
-    if (isEntityAssigned(record)) {
-      stateWriter.appendFollowUpEvent(
-          command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
-      invalidateMembershipCache();
-    } else {
-      final var errorMessage =
-          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-    }
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void reject(final TypedRecord<RoleRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   /**
@@ -152,19 +114,5 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
         () -> {
           membershipStateAdapter.invalidateAll();
         });
-  }
-
-  private boolean isEntityAssigned(final RoleRecord record) {
-    return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
-  }
-
-  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
-    return switch (entityType) {
-      case USER, CLIENT, GROUP ->
-          true; // With simple mapping rules, any username, client id or group can be assigned
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
-      default -> false;
-    };
   }
 }
