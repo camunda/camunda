@@ -31,6 +31,10 @@ public interface BrokerContext {
    */
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
+  /**
+   * @return the current partition manager of the {@code default} tenant, which a restart of its
+   *     module replaces; {@code null} while the module is stopped
+   */
   PartitionManager getPartitionManager();
 
   /**

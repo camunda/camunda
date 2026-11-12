@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.monitoring.BrokerStepMetrics;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -115,9 +114,8 @@ public final class BrokerStartupProcess {
         bsc.getDiskSpaceUsageMonitor(),
         bsc.getClusterServices(),
         bsc.getEmbeddedGatewayService(),
-        bsc.getPartitionManagers().get(PartitionManagerImpl.DEFAULT_GROUP_NAME),
         bsc.getPartitionManagers(),
-        bsc.getBrokerAdminService(PartitionManagerImpl.DEFAULT_GROUP_NAME),
+        bsc.getBrokerAdminServices(),
         bsc.getApiMessagingService(),
         bsc.getPhysicalTenantModules(),
         bsc.getClusterConfigurationService());

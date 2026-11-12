@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
+import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantModules;
@@ -24,9 +25,8 @@ final class BrokerContextImpl implements BrokerContext {
   private final ClusterServicesImpl clusterServices;
   private final EmbeddedGatewayService embeddedGatewayService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
-  private final PartitionManager partitionManager;
   private final Map<String, PartitionManager> partitionManagers;
-  private final BrokerAdminService brokerAdminService;
+  private final Map<String, ? extends BrokerAdminService> brokerAdminServices;
   private final ManagedMessagingService apiMessagingService;
   private final PhysicalTenantModules physicalTenantModules;
   private final ClusterConfigurationService clusterConfigurationService;
@@ -35,18 +35,16 @@ final class BrokerContextImpl implements BrokerContext {
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final ClusterServicesImpl clusterServices,
       final EmbeddedGatewayService embeddedGatewayService,
-      final PartitionManager partitionManager,
       final Map<String, PartitionManager> partitionManagers,
-      final BrokerAdminService brokerAdminService,
+      final Map<String, ? extends BrokerAdminService> brokerAdminServices,
       final ManagedMessagingService apiMessagingService,
       final PhysicalTenantModules physicalTenantModules,
       final ClusterConfigurationService clusterConfigurationService) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.clusterServices = requireNonNull(clusterServices);
     this.embeddedGatewayService = embeddedGatewayService;
-    this.partitionManager = requireNonNull(partitionManager);
     this.partitionManagers = requireNonNull(partitionManagers);
-    this.brokerAdminService = requireNonNull(brokerAdminService);
+    this.brokerAdminServices = requireNonNull(brokerAdminServices);
     this.apiMessagingService = requireNonNull(apiMessagingService);
     this.physicalTenantModules = requireNonNull(physicalTenantModules);
     this.clusterConfigurationService = requireNonNull(clusterConfigurationService);
@@ -69,7 +67,7 @@ final class BrokerContextImpl implements BrokerContext {
 
   @Override
   public PartitionManager getPartitionManager() {
-    return partitionManager;
+    return partitionManagers.get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
   }
 
   @Override
@@ -79,7 +77,7 @@ final class BrokerContextImpl implements BrokerContext {
 
   @Override
   public BrokerAdminService getBrokerAdminService() {
-    return brokerAdminService;
+    return brokerAdminServices.get(PartitionManagerImpl.DEFAULT_GROUP_NAME);
   }
 
   @Override
