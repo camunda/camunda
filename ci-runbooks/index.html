@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.2da64f2a.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.7b04cf97.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.0d63a443.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.b864e499.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -265,6 +265,34 @@ limits the cost of the duplicate.</p>
 <div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">gh api &quot;/repos/camunda/camunda/activity?ref=refs/heads/&lt;branch&gt;&amp;per_page=20&quot; \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --jq &#x27;.[] | [.timestamp, .activity_type, .before[0:8], .after[0:8]] | @tsv&#x27;</span><br></div></code></pre></div></div>
 <p><strong>What to do:</strong> check that the later same-commit runs succeeded, then close the incident as L2.
 No workflow change is needed.</p>
+<h5 class="anchor anchorTargetStickyNavbar_Vzrq" id="re-run-of-an-old-workflow-run-in-the-deploy-jobs">Re-run of an old workflow run in the deploy jobs<a href="#re-run-of-an-old-workflow-run-in-the-deploy-jobs" class="hash-link" aria-label="Direct link to Re-run of an old workflow run in the deploy jobs" title="Direct link to Re-run of an old workflow run in the deploy jobs" translate="no">​</a></h5>
+<p><strong>Symptom:</strong> <code>deploy-snapshots</code>, <code>deploy-camunda-docker-snapshot</code> and/or
+<code>deploy-optimize-docker-snapshot</code> fail together on one <code>stable/*</code> or <code>main</code> run. The run was
+created days ago and the failed attempt is a manual re-run (attempt 2 or later). Typically the job
+fails at the <code>Check whether to deploy the snapshot</code> step, or, on branches without that step,
+<code>actions/download-artifact</code> reports that <code>fe-*-&lt;run_id&gt;</code> is not found.</p>
+<p><strong>Cause:</strong> the deploy jobs download frontend bundles that are kept for only 2 days
+(<code>retention-days: 2</code>), so a re-run of an older run cannot get them. The
+<a href="https://github.com/camunda/camunda/tree/main/.github/actions/check-snapshot-deploy" target="_blank" rel="noopener noreferrer" class=""><code>check-snapshot-deploy</code></a>
+action handles re-runs early:</p>
+<ul>
+<li class="">If the run&#x27;s commit is no longer the branch head, it skips the deploy and the job stays green.
+Deploying it would roll the snapshot back
+(<a href="https://github.com/camunda/camunda/issues/67319" target="_blank" rel="noopener noreferrer" class="">#67319</a>).</li>
+<li class="">If the run is a re-run of the branch head and its <code>fe-*</code> artifacts have expired, the job fails
+with a clear message and is reported to CI analytics with <code>user_reason: stale-rerun</code>, so the
+alert can exclude it by that reason. &quot;Re-run all jobs&quot; uploads the artifacts again, so it
+deploys.</li>
+</ul>
+<p>Branches without that action still fail and raise this alert (e.g. INC-8805, INC-8806, INC-8807),
+and can roll the snapshot back if the re-run is within 2 days.</p>
+<p><strong>How to confirm:</strong> the run&#x27;s <code>created_at</code> is days before its <code>run_started_at</code>, <code>run_attempt</code> is
+greater than 1, and the <code>fe-*</code> artifacts have <code>expired: true</code>:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">gh api repos/camunda/camunda/actions/runs/&lt;run_id&gt; \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --jq &#x27;{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}&#x27;</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">gh api &quot;repos/camunda/camunda/actions/runs/&lt;run_id&gt;/artifacts?per_page=100&quot; \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --jq &#x27;.artifacts[] | select(.name | startswith(&quot;fe-&quot;)) | {name, expired, expires_at}&#x27;</span><br></div></code></pre></div></div>
+<p><strong>What to do:</strong> check that the latest run on the branch deployed successfully, then close the
+incident as L2. If a fresh snapshot is needed, start a new run (push or <code>workflow_dispatch</code> on the
+branch) instead of re-running the old one. If a branch without the action rolled its snapshot back,
+re-run CI for the current branch tip to rebuild it.</p>
 <hr>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="selfhosted-runner-high-disconnect-rate">Selfhosted Runner High Disconnect Rate<a href="#selfhosted-runner-high-disconnect-rate" class="hash-link" aria-label="Direct link to Selfhosted Runner High Disconnect Rate" title="Direct link to Selfhosted Runner High Disconnect Rate" translate="no">​</a></h3>
 <p>Disconnected <a href="https://confluence.camunda.com/display/HAN/Github+Actions+Self-Hosted+Runners" target="_blank" rel="noopener noreferrer" class="">self-hosted runners</a>
