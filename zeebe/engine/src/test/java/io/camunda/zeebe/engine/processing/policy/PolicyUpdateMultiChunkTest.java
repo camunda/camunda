@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -114,33 +114,61 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
-  public void shouldApplyAChunkThatIsSentAgainOnlyOnce() {
+  public void shouldFailTheUpdateWhenAChunkIsReceivedAgain() {
     // given
     final var updateId = "update-" + uid();
     apply(ENGINE, chunk(updateId, 0, 2));
+
+    // when
     apply(ENGINE, chunk(updateId, 0, 2));
+
+    // then
+    final var failed =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    assertThat(failed.getValue().getChunkIndex()).isZero();
+    assertThat(failed.getValue().getErrorMessage()).contains("chunk 0", updateId, "received again");
+    final var rejection =
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
+            .onlyCommandRejections()
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejection.getRejectionReason()).isEqualTo(failed.getValue().getErrorMessage());
+  }
+
+  @Test
+  public void shouldNotApplyAFailedUpdateWhenItsRemainingChunksArrive() {
+    // given
+    final var updateId = "update-" + uid();
+    final var roleId = "role-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
 
     // when
     apply(ENGINE, chunk(updateId, 1, 2));
 
-    // then
+    // then the failed update's chunks are gone, so the last chunk cannot complete it
     final var markerId = "update-" + uid();
     apply(ENGINE, chunk(markerId, 0, 1));
-    final var updateRecords =
-        RecordingExporter.policyUpdateRecords()
+    final var records =
+        RecordingExporter.records()
             .limit(
                 record ->
                     record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
-                        && record.getValue().getUpdateId().equals(markerId))
-            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+                        && ((PolicyUpdateRecordValue) record.getValue())
+                            .getUpdateId()
+                            .equals(markerId))
             .toList();
-    assertThat(updateRecords)
+    assertThat(records)
         .filteredOn(record -> record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED)
-        .extracting(record -> record.getValue().getChunkIndex())
-        .containsExactly(0, 1);
-    assertThat(updateRecords)
-        .filteredOn(record -> record.getRecordType() == RecordType.COMMAND_REJECTION)
-        .isEmpty();
+        .extracting(record -> ((PolicyUpdateRecordValue) record.getValue()).getUpdateId())
+        .doesNotContain(updateId);
+    assertThat(records)
+        .filteredOn(record -> record.getIntent() == RoleIntent.CREATED)
+        .extracting(record -> ((RoleRecordValue) record.getValue()).getRoleId())
+        .doesNotContain(roleId);
   }
 
   @Test
