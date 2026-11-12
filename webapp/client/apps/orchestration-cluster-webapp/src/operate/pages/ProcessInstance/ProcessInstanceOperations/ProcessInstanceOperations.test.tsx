@@ -172,13 +172,18 @@ describe('<ProcessInstanceOperations />', () => {
 			mockViewport(false);
 			const instance = createInstance(state, hasIncident);
 			const screen = await renderOperations(instance);
-			for (const action of [...ACTIONS.map(({action}) => action), 'Modify', 'Migrate']) {
-				const button = screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`});
-				if (actions.some((name) => name === action)) {
-					await expect.element(button).toBeEnabled();
-				} else {
-					await expect.element(button).not.toBeInTheDocument();
-				}
+			await expect
+				.poll(() =>
+					screen
+						.getByRole('button')
+						.elements()
+						.map((element) => element.getAttribute('aria-label')),
+				)
+				.toEqual(actions.map((action) => `${action} Instance ${instance.processInstanceKey}`));
+			for (const action of actions) {
+				await expect
+					.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
+					.toBeEnabled();
 			}
 		},
 	);
@@ -188,8 +193,8 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByRole('button')).not.toBeInTheDocument();
 	});
 
-	it.for(ACTIONS)(
-		'should submit $action with no request body and preserve its acceptance lifecycle',
+	it.for(ACTIONS.filter(({action}) => action !== 'Delete'))(
+		'should submit $action with no request body and stay on the instance',
 		async ({action, state, success, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
@@ -215,33 +220,55 @@ describe('<ProcessInstanceOperations />', () => {
 				);
 				const screen = await renderOperations(instance, {basepath: '/deployment'});
 				await execute(screen, action, instance.processInstanceKey);
-				if (action === 'Delete') {
-					await expect.poll(() => notificationsStore.notifications[0]?.title).toBe(success);
-				} else {
-					await expect.element(screen.getByText(success)).toBeVisible();
-				}
+				await expect.element(screen.getByText(success)).toBeVisible();
 				expect(requests).toHaveLength(1);
 				expect(requests[0]!.method).toBe('POST');
 				expect(await requests[0]!.text()).toBe('');
 				expect(requests[0]!.headers.has('content-type')).toBe(false);
 				expect(requests[0]!.url).toContain(`/process-instances/${instance.processInstanceKey}`);
-				if (action === 'Delete') {
-					await expect.poll(() => screen.router.history.location.pathname).toBe('/deployment/operate/processes');
-					expect(screen.router.state.location.search).toEqual({
-						active: true,
-						incidents: true,
-						suspended: true,
-						completed: false,
-						canceled: false,
-					});
-				} else {
-					expect(screen.router.state.location.search).toEqual({tenantId: 'tenant-a', elementId: 'task'});
-				}
+				expect(screen.router.state.location.search).toEqual({tenantId: 'tenant-a', elementId: 'task'});
 			} finally {
 				worker.events.removeListener('request:start', onRequest);
 			}
 		},
 	);
+
+	it('should submit Delete with no request body and return to the processes list', async ({worker}) => {
+		mockViewport(false);
+		const instance = createInstance('COMPLETED');
+		const requests: Request[] = [];
+		const onRequest = ({request}: {request: Request}) => {
+			if (request.method !== 'GET') {
+				requests.push(request.clone());
+			}
+		};
+		worker.events.on('request:start', onRequest);
+		try {
+			worker.use(
+				mockDeleteProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance, {basepath: '/deployment'});
+			await execute(screen, 'Delete', instance.processInstanceKey);
+			await expect.poll(() => notificationsStore.notifications[0]?.title).toBe('Instance is scheduled for deletion');
+			expect(requests).toHaveLength(1);
+			expect(requests[0]!.method).toBe('POST');
+			expect(await requests[0]!.text()).toBe('');
+			expect(requests[0]!.headers.has('content-type')).toBe(false);
+			expect(requests[0]!.url).toContain(`/process-instances/${instance.processInstanceKey}`);
+			await expect.poll(() => screen.router.history.location.pathname).toBe('/deployment/operate/processes');
+			expect(screen.router.state.location.search).toEqual({
+				active: true,
+				incidents: true,
+				suspended: true,
+				completed: false,
+				canceled: false,
+			});
+		} finally {
+			worker.events.removeListener('request:start', onRequest);
+		}
+	});
 
 	it.for(ACTIONS)(
 		'should show $pending while $action is in flight',
@@ -288,20 +315,45 @@ describe('<ProcessInstanceOperations />', () => {
 							: undefined
 						: 'Command failed';
 			await expect.element(screen.getByText(title)).toBeVisible();
-			if (subtitle !== undefined) {
-				await expect.element(screen.getByText(subtitle)).toBeVisible();
-			}
 			expect(notificationsStore.notifications[0]?.kind).toBe(isForbidden ? 'warning' : 'error');
 			expect(notificationsStore.notifications[0]?.subtitle).toBe(subtitle);
 			await expect.element(screen.getByText('Failed', {exact: true})).toBeVisible();
 			await expect
 				.element(screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`}))
 				.toBeEnabled();
-			if (status === 401) {
-				expect(authenticationStore.status).toBe('session-expired');
-			}
 		},
 	);
+
+	it('should show the failure reason returned by the server', async ({worker}) => {
+		mockViewport(false);
+		const instance = createInstance('ACTIVE');
+		worker.use(
+			mockSuspendProcessInstanceEndpoint({
+				successResponse: new HttpResponse(null, {status: 500, statusText: 'Command failed'}),
+			}),
+			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+		);
+		const screen = await renderOperations(instance);
+
+		await execute(screen, 'Suspend', instance.processInstanceKey);
+
+		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
+		await expect.element(screen.getByText('Command failed')).toBeVisible();
+	});
+
+	it.for(ACTIONS)('should expire the session when $action is unauthorized', async ({action, state, mock}, {worker}) => {
+		mockViewport(false);
+		const instance = createInstance(state);
+		worker.use(
+			mock({successResponse: new HttpResponse(null, {status: 401})}),
+			mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+		);
+		const screen = await renderOperations(instance);
+
+		await execute(screen, action, instance.processInstanceKey);
+
+		await expect.poll(() => authenticationStore.status).toBe('session-expired');
+	});
 
 	it.for(ACTIONS.filter(({action}) => action === 'Suspend' || action === 'Resume'))(
 		'should warn and recover when $action state polling is forbidden',
@@ -415,35 +467,35 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByText('Suspending...')).toBeVisible();
 	});
 
-	it.for(['ACTIVE', 'SUSPENDED', 'COMPLETED', 'TERMINATED'] as const)(
-		'should preserve collapsed %s actions and keyboard focus',
-		async (state) => {
-			mockViewport(true);
-			const instance = createInstance(state);
-			const screen = await renderOperations(instance);
-			if (state === 'COMPLETED' || state === 'TERMINATED') {
-				await expect
-					.element(screen.getByRole('button', {name: `Delete Instance ${instance.processInstanceKey}`}))
-					.toBeEnabled();
-				await expect.element(screen.getByRole('button', {name: 'Actions'})).not.toBeInTheDocument();
-			} else {
-				await userEvent.tab();
-				await userEvent.keyboard('{Enter}');
-				for (const label of state === 'ACTIVE'
-					? ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']
-					: ['Resume', 'Cancel']) {
-					await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
-				}
-				if (state === 'SUSPENDED') {
-					await expect.element(screen.getByRole('menuitem', {name: 'Modify'})).not.toBeInTheDocument();
-					await expect.element(screen.getByRole('menuitem', {name: 'Migrate'})).not.toBeInTheDocument();
-				}
-				await userEvent.keyboard('{Escape}');
-				await expect.element(screen.getByRole('button', {name: 'Actions'})).toHaveFocus();
-				await expect.element(screen.getByRole('menuitem')).not.toBeInTheDocument();
-			}
-		},
-	);
+	it.for(['COMPLETED', 'TERMINATED'] as const)('should show only Delete for collapsed %s instances', async (state) => {
+		mockViewport(true);
+		const instance = createInstance(state);
+		const screen = await renderOperations(instance);
+
+		await expect
+			.element(screen.getByRole('button', {name: `Delete Instance ${instance.processInstanceKey}`}))
+			.toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Actions'})).not.toBeInTheDocument();
+	});
+
+	it.for([
+		{state: 'ACTIVE', labels: ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate'], hiddenLabels: []},
+		{state: 'SUSPENDED', labels: ['Resume', 'Cancel'], hiddenLabels: ['Modify', 'Migrate']},
+	] as const)('should preserve collapsed $state actions and keyboard focus', async ({state, labels, hiddenLabels}) => {
+		mockViewport(true);
+		const screen = await renderOperations(createInstance(state));
+		await userEvent.tab();
+		await userEvent.keyboard('{Enter}');
+		for (const label of labels) {
+			await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
+		}
+		for (const label of hiddenLabels) {
+			await expect.element(screen.getByRole('menuitem', {name: label})).not.toBeInTheDocument();
+		}
+		await userEvent.keyboard('{Escape}');
+		await expect.element(screen.getByRole('button', {name: 'Actions'})).toHaveFocus();
+		await expect.element(screen.getByRole('menuitem')).not.toBeInTheDocument();
+	});
 
 	it('should stop state polling and avoid stale notifications after leaving the instance', async ({worker}) => {
 		mockViewport(false);
