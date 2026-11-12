@@ -344,7 +344,8 @@ public class ActorTask {
     // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up
     // by another
     // thread. That thread could modify the subscriptions array.
-    final List<ActorSubscription> subscriptionsRef = new ArrayList<>(subscriptions);
+    final List<ActorSubscription> subscriptionsRef =
+        subscriptions.isEmpty() ? List.of() : new ArrayList<>(subscriptions);
 
     // first set state to waiting
     schedulingState.set(TaskSchedulingState.WAITING);
