@@ -89,23 +89,33 @@ const usePagination = (
     setPage(config);
   }, [config]);
 
-  const [sortParams, setSort] = useSorting();
+  const [sortParams, setSortParams] = useSorting();
 
   const [searchParams, setSearch] = useSearch(resetPageState);
 
   const setPageNumber = useCallback((newPage: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageNumber: newPage,
-    }));
+    setPage((prevState) =>
+      prevState.pageNumber === newPage
+        ? prevState
+        : { ...prevState, pageNumber: newPage },
+    );
   }, []);
 
   const setPageSize = useCallback((newPageSize: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageSize: newPageSize,
-    }));
+    setPage((prevState) =>
+      prevState.pageSize === newPageSize
+        ? prevState
+        : { ...prevState, pageSize: newPageSize },
+    );
   }, []);
+
+  const setSort = useCallback(
+    (newSort: SortConfig[] | undefined) => {
+      setSortParams(newSort);
+      setPageNumber(1);
+    },
+    [setSortParams, setPageNumber],
+  );
 
   const pageParams = useMemo(() => {
     const result: PaginationRequestParams = {

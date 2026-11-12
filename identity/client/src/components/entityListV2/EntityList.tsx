@@ -103,6 +103,7 @@ type RowSelectionState = NonNullable<RowSelectionConfig["selectedRowIds"]>;
 
 const INLINE_ACTIONS_THRESHOLD = 3;
 const PAGESIZES = [10, 20, 30, 40, 50];
+const EMPTY_ROWS: never[] = [];
 
 /**
  * Entities are handed to the table as-is, so every consumer callback gets the
@@ -141,7 +142,7 @@ const EntityList = <D extends EntityData>({
 
   const [sortingState, setSortingState] = useState<SortingState>([]);
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const rows = useMemo(() => data ?? EMPTY_ROWS, [data]);
 
   const isEntityClickable = onEntityClick !== undefined;
 
@@ -262,8 +263,12 @@ const EntityList = <D extends EntityData>({
           pageSize: pageData.pageSize,
           rowCount: pageData.totalItems,
           onPaginationChange: ({ pageIndex, pageSize }) => {
-            setPageNumber(pageIndex + 1);
-            setPageSize(pageSize);
+            if (pageSize !== pageData.pageSize) {
+              setPageSize(pageSize);
+            }
+            if (pageIndex !== pageData.pageNumber - 1) {
+              setPageNumber(pageIndex + 1);
+            }
           },
         }
       : undefined;
