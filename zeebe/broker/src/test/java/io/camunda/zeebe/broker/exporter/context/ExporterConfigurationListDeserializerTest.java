@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -145,8 +146,79 @@ final class ExporterConfigurationListDeserializerTest {
   }
 
   // ---------------------------------------------------------------------------
+  // Set-typed properties — indexed properties must bind like they do for List
+  // ---------------------------------------------------------------------------
+
+  @Test
+  void shouldDeserializeMapWithNumericKeysAsSet() {
+    // given — Spring Boot flattens categories_0..2 to {"0", "1", "2"}; with no Set deserializer,
+    // Jackson rejected the START_OBJECT token
+    final var args =
+        Map.<String, Object>of(
+            "items", Map.of("0", "ADMIN", "1", "USER_TASKS", "2", "DEPLOYED_RESOURCES"));
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(CategorySetConfig.class, args);
+
+    // then
+    assertThat(instance.items())
+        .containsExactlyInAnyOrder(
+            Category.ADMIN, Category.USER_TASKS, Category.DEPLOYED_RESOURCES);
+  }
+
+  @Test
+  void shouldDeserializeIndexedSetNestedInObjectProperty() {
+    // given — Spring Boot flattens client.categories[0..1] under a nested object
+    final var args =
+        Map.<String, Object>of(
+            "client", Map.of("categories", Map.of("0", "ADMIN", "1", "USER_TASKS")));
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(NestedSetConfig.class, args);
+
+    // then
+    assertThat(instance.getClient().getCategories())
+        .containsExactlyInAnyOrder(Category.ADMIN, Category.USER_TASKS);
+  }
+
+  // ---------------------------------------------------------------------------
   // Test fixtures
   // ---------------------------------------------------------------------------
 
   private record StringListConfig(List<String> items) {}
+
+  private record CategorySetConfig(Set<Category> items) {}
+
+  // Fluent setters and a Set one level down, as in AuditLogConfiguration.
+  private static final class NestedSetConfig {
+    private ActorConfig client = new ActorConfig();
+
+    public ActorConfig getClient() {
+      return client;
+    }
+
+    public NestedSetConfig setClient(final ActorConfig client) {
+      this.client = client;
+      return this;
+    }
+  }
+
+  private static final class ActorConfig {
+    private Set<Category> categories = Set.of();
+
+    public Set<Category> getCategories() {
+      return categories;
+    }
+
+    public ActorConfig setCategories(final Set<Category> categories) {
+      this.categories = categories;
+      return this;
+    }
+  }
+
+  private enum Category {
+    ADMIN,
+    USER_TASKS,
+    DEPLOYED_RESOURCES
+  }
 }
