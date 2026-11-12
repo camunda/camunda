@@ -369,10 +369,19 @@ One replica comes first, so each step leaves a broker that works; followers come
   - Followers keep the log storage and the log stream.
   - The admin "take snapshot" request does nothing on followers, because they have no snapshot
     director. Their marker snapshots are taken on a schedule (below).
-- A follower snapshot director takes marker snapshots, so followers can compact their log:
-  - it reads the processed and exported positions through `openReadOnlyDb()` (§7.1), which never
-    claims the state, so it never fences the leader;
-  - it limits them to the end of its own committed log, and takes a marker snapshot there.
+- A `FollowerSnapshotDirector` takes marker snapshots, so followers can compact their log:
+  - In RDBMS mode only, `FollowerSnapshotDirectorStep` starts it when the node becomes a follower,
+    and stops it when the node becomes leader or inactive. It doesn't use the log stream, so it
+    keeps running when the follower moves to a new term.
+  - Once per snapshot period, it opens the state through `openReadOnlyDb()` (§7.1), which never
+    claims the state, so it never fences the leader. It closes it again after each attempt.
+  - It limits the shared processed position to the end of its own committed log, read from the
+    Raft server, so the snapshot index is always in its own log.
+  - From there it works like the leader's director: `SnapshotIdFinder` picks the index from the
+    processed and exported positions, it takes a marker snapshot, flushes the log and persists the
+    snapshot, which compacts the log.
+  - It skips quietly while there is no state, nothing is processed yet, or the snapshot already
+    exists. A failed attempt marks it unhealthy until the next attempt succeeds.
 - The replication factor limit from §9.1 goes away.
 
 ### 9.6 Recovery check and RocksDB-only paths
