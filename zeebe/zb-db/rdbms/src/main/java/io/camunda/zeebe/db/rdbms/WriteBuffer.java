@@ -57,7 +57,13 @@ final class WriteBuffer {
         final var key = entry.getKey();
         final var table = StateTables.of(key.columnFamily());
         mapper.upsert(
-            partitionId, table.name(), table.shared(), key.columnFamily(), key.key(), value);
+            partitionId,
+            table.name(),
+            table.shared(),
+            key.columnFamily(),
+            key.key(),
+            value,
+            StateMapper.NO_POSITION);
       }
     }
   }

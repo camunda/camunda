@@ -158,7 +158,7 @@ class StateSchemaManagerTest {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "INSERT INTO %sZS_PARTITION VALUES (?, ?, 0)".formatted(prefix))) {
+                "INSERT INTO %sZS_PARTITION VALUES (?, ?, 0, -1)".formatted(prefix))) {
       statement.setInt(1, partitionId);
       statement.setString(2, stateId);
       statement.executeUpdate();
@@ -170,7 +170,7 @@ class StateSchemaManagerTest {
     try (final var connection = database.dataSource().getConnection();
         final var statement =
             connection.prepareStatement(
-                "INSERT INTO %sZS_KEY VALUES (?, ?, ?)".formatted(prefix))) {
+                "INSERT INTO %sZS_KEY VALUES (?, ?, ?, -1)".formatted(prefix))) {
       statement.setInt(1, partitionId);
       statement.setBytes(2, key);
       statement.setBytes(3, new byte[0]);

@@ -24,8 +24,8 @@
   </select>
 
   <insert id="createState">
-    INSERT INTO ${prefix}ZS_PARTITION (PARTITION_ID, STATE_ID, OWNER_TERM)
-    VALUES (#{partitionId}, #{stateId}, #{term})
+    INSERT INTO ${prefix}ZS_PARTITION (PARTITION_ID, STATE_ID, OWNER_TERM, WRITTEN_POSITION)
+    VALUES (#{partitionId}, #{stateId}, #{term}, -1)
   </insert>
 
   <update id="claim">
@@ -95,16 +95,16 @@
   </select>
 
   <update id="upsert" databaseId="h2">
-    MERGE INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE)
+    MERGE INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE, UPDATED_POSITION)
     KEY (<include refid="keyColumns"/>)
-    VALUES (<include refid="keyValues"/>, #{value})
+    VALUES (<include refid="keyValues"/>, #{value}, #{position})
   </update>
 
   <update id="upsert" databaseId="postgresql">
-    INSERT INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE)
-    VALUES (<include refid="keyValues"/>, #{value})
+    INSERT INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE, UPDATED_POSITION)
+    VALUES (<include refid="keyValues"/>, #{value}, #{position})
     ON CONFLICT (<include refid="keyColumns"/>)
-    DO UPDATE SET STATE_VALUE = EXCLUDED.STATE_VALUE
+    DO UPDATE SET STATE_VALUE = EXCLUDED.STATE_VALUE, UPDATED_POSITION = EXCLUDED.UPDATED_POSITION
   </update>
 
   <delete id="delete">

@@ -19,8 +19,12 @@ import org.apache.ibatis.session.ResultHandler;
  */
 interface StateMapper {
 
+  /** The position of writes that come without one, and the written position of a new state. */
+  long NO_POSITION = -1;
+
   Optional<String> findStateId(@Param("partitionId") int partitionId);
 
+  /** Creates the state's row, with no written position yet. */
   void createState(
       @Param("partitionId") int partitionId,
       @Param("stateId") String stateId,
@@ -60,13 +64,19 @@ interface StateMapper {
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key);
 
+  /**
+   * Inserts or replaces the row.
+   *
+   * @param position the log position that wrote the value, or {@link #NO_POSITION}
+   */
   void upsert(
       @Param("partitionId") int partitionId,
       @Param("table") String table,
       @Param("shared") boolean shared,
       @Param("columnFamily") int columnFamily,
       @Param("key") byte[] key,
-      @Param("value") byte[] value);
+      @Param("value") byte[] value,
+      @Param("position") long position);
 
   void delete(
       @Param("partitionId") int partitionId,

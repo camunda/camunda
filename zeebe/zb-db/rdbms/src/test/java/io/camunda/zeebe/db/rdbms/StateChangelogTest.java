@@ -93,6 +93,9 @@ final class StateChangelogTest {
                   <column name="OWNER_TERM" type="BIGINT">
                     <constraints nullable="false"/>
                   </column>
+                  <column name="WRITTEN_POSITION" type="BIGINT">
+                    <constraints nullable="false"/>
+                  </column>
             """
                 .formatted(StateTables.PARTITION + "_PK")));
     for (final var table : StateTables.all()) {
@@ -122,6 +125,9 @@ final class StateChangelogTest {
                 %s
               </column>
               <column name="STATE_VALUE" type="${binaryType}">
+                <constraints nullable="false"/>
+              </column>
+              <column name="UPDATED_POSITION" type="BIGINT">
                 <constraints nullable="false"/>
               </column>
         """
