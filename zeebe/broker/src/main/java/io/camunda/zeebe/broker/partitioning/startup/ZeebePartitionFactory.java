@@ -44,6 +44,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupApiRequestHand
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.FollowerSnapshotDirectorStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderOnlyTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
@@ -92,6 +93,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -209,18 +211,22 @@ public final class ZeebePartitionFactory {
     final ZeebeDbFactory<ZbColumnFamilies> storage;
     final SnapshotCopy snapshotCopy;
     final @Nullable Supplier<CommitGate> commitGates;
+    final @Nullable PartitionTransitionStep followerSnapshots;
     if (keepsStateInRdbms()) {
-      storage =
-          new RdbmsZeebeDbFactory<>(
+      final var rdbmsStorage =
+          new RdbmsZeebeDbFactory<ZbColumnFamilies>(
               Objects.requireNonNull(rdbmsStateStorage, "must have a database for the state")
                   .storage(),
               new StateIdentity(partitionId.group(), partitionId.number()),
               stateTerm::get,
               consistencyChecks.getSettings(),
               dbMeterRegistry);
+      storage = rdbmsStorage;
       snapshotCopy = UNSUPPORTED_SNAPSHOT_COPY;
       commitGates =
           () -> Objects.requireNonNull(commitGate.get(), "must open a commit gate for the term");
+      followerSnapshots =
+          new FollowerSnapshotDirectorStep(rdbmsStorage::openReadOnlyDb, snapshotStore);
     } else {
       final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
       final var rocksDbFactory =
@@ -233,6 +239,7 @@ public final class ZeebePartitionFactory {
       storage = rocksDbFactory;
       snapshotCopy = new RocksDBSnapshotCopy(rocksDbFactory);
       commitGates = null;
+      followerSnapshots = null;
     }
     final StateController stateController =
         createStateController(
@@ -283,33 +290,40 @@ public final class ZeebePartitionFactory {
           }
         };
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps(openingTerm));
+        new PartitionTransitionImpl(generateTransitionSteps(openingTerm, followerSnapshots));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
-  private List<PartitionTransitionStep> generateTransitionSteps(final LongConsumer openingTerm) {
+  private List<PartitionTransitionStep> generateTransitionSteps(
+      final LongConsumer openingTerm, final @Nullable PartitionTransitionStep followerSnapshots) {
     // with the state in a relational database, only the leader opens it
     final UnaryOperator<PartitionTransitionStep> needsState =
         keepsStateInRdbms() ? LeaderOnlyTransitionStep::new : UnaryOperator.identity();
-    return List.of(
-        new MetricsStep(),
-        new LogStoragePartitionTransitionStep(),
-        new LogStreamPartitionTransitionStep(),
-        needsState.apply(new ZeebeDbPartitionTransitionStep(openingTerm)),
-        needsState.apply(new MigrationTransitionStep()),
-        needsState.apply(new QueryServicePartitionTransitionStep()),
-        new BackupStoreTransitionStep(),
-        new BackupServiceTransitionStep(),
-        new InterPartitionCommandServiceStep(),
-        needsState.apply(new StreamProcessorTransitionStep()),
-        new CommandApiServiceTransitionStep(),
-        needsState.apply(new SnapshotDirectorPartitionTransitionStep()),
-        needsState.apply(new SnapshotAfterMigrationTransitionStep()),
-        new SnapshotApiHandlerTransitionStep(),
-        needsState.apply(new ExporterDirectorPartitionTransitionStep()),
-        new BackupApiRequestHandlerStep(),
-        new AdminApiRequestHandlerStep());
+    final var steps =
+        new ArrayList<>(
+            List.of(
+                new MetricsStep(),
+                new LogStoragePartitionTransitionStep(),
+                new LogStreamPartitionTransitionStep(),
+                needsState.apply(new ZeebeDbPartitionTransitionStep(openingTerm)),
+                needsState.apply(new MigrationTransitionStep()),
+                needsState.apply(new QueryServicePartitionTransitionStep()),
+                new BackupStoreTransitionStep(),
+                new BackupServiceTransitionStep(),
+                new InterPartitionCommandServiceStep(),
+                needsState.apply(new StreamProcessorTransitionStep()),
+                new CommandApiServiceTransitionStep(),
+                needsState.apply(new SnapshotDirectorPartitionTransitionStep()),
+                needsState.apply(new SnapshotAfterMigrationTransitionStep()),
+                new SnapshotApiHandlerTransitionStep(),
+                needsState.apply(new ExporterDirectorPartitionTransitionStep()),
+                new BackupApiRequestHandlerStep(),
+                new AdminApiRequestHandlerStep()));
+    if (followerSnapshots != null) {
+      steps.add(followerSnapshots);
+    }
+    return steps;
   }
 
   private boolean keepsStateInRdbms() {
