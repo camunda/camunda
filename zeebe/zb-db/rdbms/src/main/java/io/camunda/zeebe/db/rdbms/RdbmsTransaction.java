@@ -11,10 +11,12 @@ import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ibatis.exceptions.PersistenceException;
+import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.ResultContext;
 import org.apache.ibatis.session.SqlSession;
@@ -29,10 +31,10 @@ import org.slf4j.LoggerFactory;
  * writes holds none until it commits. Writes wait in a {@link WriteBuffer} and go to the database
  * as one batch before every scan and at commit. Point reads look at the buffer first.
  *
- * <p>Before its first writes reach the database, it checks that its term still owns the state, and
- * locks the state row until it ends. A newer leader's claim waits for it, and once claimed, writes
- * of the older term throw {@link StateFencedException}. Transactions that only read never check.
- * Without a term, it only reads: writing throws right away.
+ * <p>Before its first writes reach the database, it updates the state row only if its term still
+ * owns the state, which locks the row until it ends. A newer leader's claim waits for it, and once
+ * claimed, writes of the older term throw {@link StateFencedException}. Transactions that only read
+ * never check. Without a term, it only reads: writing throws right away.
  *
  * <p>Like RocksDB's, it is used by one thread at a time and is reused for the next transaction.
  */
@@ -212,8 +214,9 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
 
   private void checkOwner(final StateMapper state) {
     final long writeTerm = term.orElseThrow();
-    final var ownerTerm = state.lockOwnerTerm(partitionId, stateId);
-    if (ownerTerm.isEmpty() || ownerTerm.get() != writeTerm) {
+    state.fence(partitionId, stateId, writeTerm);
+    if (updatedRows(session().flushStatements()) != 1) {
+      final var ownerTerm = state.findOwnerTerm(partitionId, stateId);
       throw new StateFencedException(
           "Expected to write to the state %s of partition %d with term %d, but %s"
               .formatted(
@@ -224,6 +227,16 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
                       .map(owner -> "a leader of term " + owner + " owns it")
                       .orElse("the state doesn't exist")));
     }
+  }
+
+  private static int updatedRows(final List<BatchResult> results) {
+    int rows = 0;
+    for (final var result : results) {
+      for (final int count : result.getUpdateCounts()) {
+        rows += count;
+      }
+    }
+    return rows;
   }
 
   /** Runs statements on this transaction's connection. */

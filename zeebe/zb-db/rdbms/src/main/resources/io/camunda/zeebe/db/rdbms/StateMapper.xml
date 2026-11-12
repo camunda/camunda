@@ -36,12 +36,23 @@
       AND OWNER_TERM &lt;= #{term}
   </update>
 
-  <select id="lockOwnerTerm" resultType="long">
+  <!--
+    Like any update, it locks the row until the transaction ends, so a newer leader's claim waits
+    for the write in progress. After the claim, it updates no row.
+  -->
+  <update id="fence">
+    UPDATE ${prefix}ZS_PARTITION
+    SET OWNER_TERM = OWNER_TERM
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
+      AND OWNER_TERM = #{term}
+  </update>
+
+  <select id="findOwnerTerm" resultType="long">
     SELECT OWNER_TERM
     FROM ${prefix}ZS_PARTITION
     WHERE PARTITION_ID = #{partitionId}
       AND STATE_ID = #{stateId}
-    FOR UPDATE
   </select>
 
   <!--

@@ -39,8 +39,18 @@ interface StateMapper {
       @Param("stateId") String stateId,
       @Param("term") long term);
 
-  /** Returns the owner term and locks the state row until the transaction ends. */
-  Optional<Long> lockOwnerTerm(
+  /**
+   * Locks the state row until the transaction ends, if the term owns the state. It changes nothing.
+   *
+   * <p>On a batching session, the next flush returns how many rows it updated: 1 if the term owns
+   * the state, else 0.
+   */
+  void fence(
+      @Param("partitionId") int partitionId,
+      @Param("stateId") String stateId,
+      @Param("term") long term);
+
+  Optional<Long> findOwnerTerm(
       @Param("partitionId") int partitionId, @Param("stateId") String stateId);
 
   Optional<byte[]> get(
