@@ -24,6 +24,8 @@ import java.nio.file.Path;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
@@ -359,6 +361,43 @@ final class MsgpackPojoProcessorTest {
 
     // then
     assertThat(get(read, "ids")).isEqualTo(List.of(buffer("a"), buffer("b")));
+  }
+
+  @Test
+  void shouldRoundTripAgronaPrimitiveLists() throws Exception {
+    // given
+    final var result =
+        compile(
+            pojo(
+                valid(
+                    """
+                    final org.agrona.collections.IntArrayList counts =
+                        new org.agrona.collections.IntArrayList();
+                    final org.agrona.collections.LongArrayList keys =
+                        new org.agrona.collections.LongArrayList();
+                    """)));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var source = (Recyclable) sampleClass.getConstructor().newInstance();
+    ((IntArrayList) get(source, "counts")).addInt(Integer.MIN_VALUE);
+    ((IntArrayList) get(source, "counts")).addInt(7);
+    ((LongArrayList) get(source, "keys")).addLong(Long.MAX_VALUE);
+    final var bytes = new ExpandableArrayBuffer();
+    final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), source);
+    final var read = (Recyclable) sampleClass.getConstructor().newInstance();
+    ((LongArrayList) get(read, "keys")).addLong(-1L);
+
+    // when
+    codec.read(new MsgPackReader().wrap(bytes, 0, length), read);
+
+    // then
+    assertThat(length).isEqualTo(codec.getLength(source));
+    assertThat(((IntArrayList) get(read, "counts")).toIntArray())
+        .containsExactly(Integer.MIN_VALUE, 7);
+    assertThat(((LongArrayList) get(read, "keys")).toLongArray()).containsExactly(Long.MAX_VALUE);
   }
 
   @Test

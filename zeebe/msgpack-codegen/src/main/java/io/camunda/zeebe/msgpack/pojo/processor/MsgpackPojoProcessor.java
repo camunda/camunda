@@ -43,6 +43,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private static final String UNSAFE_BUFFER = "org.agrona.concurrent.UnsafeBuffer";
   private static final String BUFFER_VALUE = "io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue";
   private static final String LIST = "java.util.List";
+  private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
+  private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
 
   @Override
   public SourceVersion getSupportedSourceVersion() {
@@ -149,7 +151,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       final var inPlace = isFinal && isUnsafeBuffer(mirror);
       final var mutable =
-          kind != Type.NESTED && kind != Type.STRING_LIST && kind != Type.LONG_LIST && !inPlace;
+          kind != Type.NESTED
+              && kind != Type.STRING_LIST
+              && kind != Type.LONG_LIST
+              && kind != Type.INT_ARRAY_LIST
+              && kind != Type.LONG_ARRAY_LIST
+              && !inPlace;
       if (isFinal && mutable) {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
@@ -176,6 +183,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
+        }
+        if (name.equals(INT_ARRAY_LIST)) {
+          return Type.INT_ARRAY_LIST;
+        }
+        if (name.equals(LONG_ARRAY_LIST)) {
+          return Type.LONG_ARRAY_LIST;
         }
         if (name.equals(LIST) && declared.getTypeArguments().size() == 1) {
           // compares the erased element, so type annotations like @Nullable do not matter
@@ -273,7 +286,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     for (final var p : m.properties()) {
       final var f = p.field();
       switch (p.type()) {
-        case STRING_LIST, LONG_LIST ->
+        case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
@@ -361,10 +374,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeString(%s.get(i));\n".formatted(get)
                     + "    }\n";
-            case LONG_LIST ->
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
-                    + "      n += w.writeInteger(%s.get(i));\n".formatted(get)
+                    + "      n += w.writeInteger(%s.%s(i));\n".formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
           });
@@ -404,11 +417,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += MsgPackWriter.getEncodedStringLength(%s.get(i).capacity());\n"
                         .formatted(get)
                     + "    }\n";
-            case LONG_LIST ->
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
-                    + "      n += MsgPackWriter.getEncodedLongValueLength(%s.get(i));\n"
-                        .formatted(get)
+                    + "      n += MsgPackWriter.getEncodedLongValueLength(%s.%s(i));\n"
+                        .formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
           });
@@ -459,6 +472,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case LONG_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.add(r.readInteger());\n          }\n        }"
                     .formatted(f);
+            case INT_ARRAY_LIST ->
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.addInt(Decoding.readInt(r));\n          }\n        }"
+                    .formatted(f);
+            case LONG_ARRAY_LIST ->
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.addLong(r.readInteger());\n          }\n        }"
+                    .formatted(f);
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
           };
       s.append("        case %d -> %s\n".formatted(i, line));
@@ -504,6 +523,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         }
         """);
     return s.toString();
+  }
+
+  /** The element getter of a list of numbers; the agrona lists have unboxed ones. */
+  private static String getter(final Type type) {
+    return switch (type) {
+      case INT_ARRAY_LIST -> "getInt";
+      case LONG_ARRAY_LIST -> "getLong";
+      default -> "get";
+    };
   }
 
   private static void constants(final StringBuilder s, final Model m) {
@@ -568,6 +596,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     ENUM,
     STRING_LIST,
     LONG_LIST,
+    INT_ARRAY_LIST,
+    LONG_ARRAY_LIST,
     NESTED
   }
 

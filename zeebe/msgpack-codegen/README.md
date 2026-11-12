@@ -31,7 +31,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
 - Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
-  or raw msgpack), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, other
+  or raw msgpack), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, agrona's
+  `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
   `@MsgpackPojo`s and `BaseValue`s.
 - The class must be top-level, its superclasses must not declare stored fields, and keys must be
   unique; compilation fails otherwise.
