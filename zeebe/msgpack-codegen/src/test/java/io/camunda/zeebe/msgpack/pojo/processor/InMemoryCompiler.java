@@ -8,10 +8,14 @@
 package io.camunda.zeebe.msgpack.pojo.processor;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,6 +47,15 @@ final class InMemoryCompiler {
   }
 
   static Result compile(final Source... sources) {
+    return compile(null, sources);
+  }
+
+  /** Like {@link #compile(Source...)}, with the classes of a previous compilation on the path. */
+  static Result compile(final Path previousClasses, final Source... sources) {
+    final var classpath =
+        previousClasses == null
+            ? System.getProperty("java.class.path")
+            : previousClasses + File.pathSeparator + System.getProperty("java.class.path");
     final var compiler = ToolProvider.getSystemJavaCompiler();
     final var diagnostics = new DiagnosticCollector<JavaFileObject>();
     final var output = new HashMap<String, ByteArrayOutputStream>();
@@ -88,7 +101,7 @@ final class InMemoryCompiler {
             null,
             fileManager,
             diagnostics,
-            List.of("-encoding", "UTF-8", "-classpath", System.getProperty("java.class.path")),
+            List.of("-encoding", "UTF-8", "-classpath", classpath),
             null,
             units);
     task.setProcessors(List.of(new MsgpackPojoProcessor()));
@@ -108,6 +121,17 @@ final class InMemoryCompiler {
       List<String> errors, Map<String, ByteArrayOutputStream> output, ClassLoader loader) {
     Result(final List<String> errors, final Map<String, ByteArrayOutputStream> output) {
       this(errors, output, loader(output));
+    }
+
+    /**
+     * Writes the compiled classes as class files, to be used as the path of another compilation.
+     */
+    void writeTo(final Path directory) throws IOException {
+      for (final var entry : output.entrySet()) {
+        final var file = directory.resolve(entry.getKey().replace('.', '/') + ".class");
+        Files.createDirectories(file.getParent());
+        Files.write(file, entry.getValue().toByteArray());
+      }
     }
 
     Class<?> load(final String className) throws ClassNotFoundException {

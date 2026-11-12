@@ -22,33 +22,61 @@ public final class Decoding {
     return new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8));
   }
 
+  /** Reads an integer, rejecting values outside the {@code int} range like {@code IntegerValue}. */
+  public static int readInt(final MsgPackReader reader) {
+    final long value = reader.readInteger();
+    if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
+      throw new IllegalStateException(
+          "Expected an int value, but got %d, which is out of range".formatted(value));
+    }
+    return (int) value;
+  }
+
   /**
-   * Reads a string as a view on the source buffer, like the StringProperty it replaces: nothing is
-   * copied, so the result is only valid while the source buffer is not reused.
+   * Reads a string as a new view on the source buffer, like the StringProperty it replaces: nothing
+   * is copied, so the result is only valid while the source buffer is not reused. Allocates the
+   * view; {@link #readString(MsgPackReader, UnsafeBuffer)} does not.
    */
-  public static DirectBuffer readString(final MsgPackReader reader) {
+  public static UnsafeBuffer readString(final MsgPackReader reader) {
+    return readString(reader, new UnsafeBuffer(0, 0));
+  }
+
+  /** Wraps {@code target} around a string of the source buffer, see {@link #readString}. */
+  public static UnsafeBuffer readString(final MsgPackReader reader, final UnsafeBuffer target) {
     final int length = reader.readStringLength();
     final int offset = reader.getOffset();
     reader.skipBytes(length);
-    return new UnsafeBuffer(reader.getBuffer(), offset, length);
+    target.wrap(reader.getBuffer(), offset, length);
+    return target;
   }
 
-  /**
-   * Reads a binary as a view on the source buffer, like the BinaryProperty it replaces: nothing is
-   * copied, so the result is only valid while the source buffer is not reused.
-   */
-  public static DirectBuffer readBinary(final MsgPackReader reader) {
+  /** Reads a binary as a new view on the source buffer, see {@link #readString}. */
+  public static UnsafeBuffer readBinary(final MsgPackReader reader) {
+    return readBinary(reader, new UnsafeBuffer(0, 0));
+  }
+
+  /** Wraps {@code target} around a binary of the source buffer, see {@link #readString}. */
+  public static UnsafeBuffer readBinary(final MsgPackReader reader, final UnsafeBuffer target) {
     final int length = reader.readBinaryLength();
     final int offset = reader.getOffset();
     reader.skipBytes(length);
-    return new UnsafeBuffer(reader.getBuffer(), offset, length);
+    target.wrap(reader.getBuffer(), offset, length);
+    return target;
   }
 
-  /** Reads one complete msgpack value as a view on the source buffer, see {@link #readString}. */
-  public static DirectBuffer readRaw(final MsgPackReader reader) {
+  /**
+   * Reads one complete msgpack value as a new view on the source buffer, see {@link #readString}.
+   */
+  public static UnsafeBuffer readRaw(final MsgPackReader reader) {
+    return readRaw(reader, new UnsafeBuffer(0, 0));
+  }
+
+  /** Wraps {@code target} around one complete msgpack value, see {@link #readString}. */
+  public static UnsafeBuffer readRaw(final MsgPackReader reader, final UnsafeBuffer target) {
     final int start = reader.getOffset();
     reader.skipValue();
-    return new UnsafeBuffer(reader.getBuffer(), start, reader.getOffset() - start);
+    target.wrap(reader.getBuffer(), start, reader.getOffset() - start);
+    return target;
   }
 
   /** Reads a string and resolves it to the constant with the same name, without allocating. */

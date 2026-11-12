@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -23,8 +24,10 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
@@ -36,6 +39,8 @@ import javax.tools.Diagnostic.Kind;
 public final class MsgpackPojoProcessor extends AbstractProcessor {
 
   private static final String DIRECT_BUFFER = "org.agrona.DirectBuffer";
+  private static final String UNSAFE_BUFFER = "org.agrona.concurrent.UnsafeBuffer";
+  private static final String BUFFER_VALUE = "io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue";
   private static final String LIST = "java.util.List";
 
   @Override
@@ -52,7 +57,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         continue;
       }
       try {
+        requireTopLevel((TypeElement) element);
         requireRecyclable((TypeElement) element);
+        requireNoInheritedFields((TypeElement) element);
         final var model = buildModel((TypeElement) element);
         write(model.pkg(), model.name() + "Codec", codec(model), element);
         write(model.pkg(), model.name() + "Resetter", resetter(model), element);
@@ -61,6 +68,38 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
     }
     return true;
+  }
+
+  /**
+   * The generated classes are named after the simple name, and {@code Codecs} finds them by the
+   * binary name, which only agree for top-level classes.
+   */
+  private static void requireTopLevel(final TypeElement type) {
+    if (type.getNestingKind() != NestingKind.TOP_LEVEL) {
+      throw new IllegalArgumentException("@MsgpackPojo class must be a top-level class");
+    }
+  }
+
+  /** Only the fields of the annotated class are stored, so a superclass must not declare any. */
+  private static void requireNoInheritedFields(final TypeElement type) {
+    TypeMirror current = type.getSuperclass();
+    while (current.getKind() == TypeKind.DECLARED) {
+      final var superclass = (TypeElement) ((DeclaredType) current).asElement();
+      final var name = superclass.getQualifiedName().toString();
+      if (name.equals(BUFFER_VALUE) || name.startsWith("java.")) {
+        break;
+      }
+      for (final Element field : superclass.getEnclosedElements()) {
+        if (field.getKind() == ElementKind.FIELD
+            && !field.getModifiers().contains(Modifier.STATIC)
+            && field.getAnnotation(MsgpackIgnore.class) == null) {
+          throw new IllegalArgumentException(
+              "Field %s of superclass %s would not be stored: declare it in the @MsgpackPojo class or annotate it with @MsgpackIgnore"
+                  .formatted(field.getSimpleName(), name));
+        }
+      }
+      current = superclass.getSuperclass();
+    }
   }
 
   private void requireRecyclable(final TypeElement type) {
@@ -78,6 +117,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     final var pkg =
         processingEnv.getElementUtils().getPackageOf(type).getQualifiedName().toString();
     final var properties = new ArrayList<Property>();
+    final var keys = new HashSet<String>();
     String unknownField = null;
     for (final Element field : type.getEnclosedElements()) {
       if (field.getKind() != ElementKind.FIELD
@@ -99,14 +139,20 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var binary = annotation != null && annotation.binary();
       final var key =
           annotation == null || annotation.value().isEmpty() ? fieldName : annotation.value();
+      if (!keys.add(key)) {
+        throw new IllegalArgumentException(
+            "Field " + fieldName + " uses the key '" + key + "' of another field");
+      }
       final var mirror = field.asType();
       final var kind = typeOf(mirror, raw, binary, fieldName);
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
-      final var mutable = kind != Type.NESTED && kind != Type.STRING_LIST && kind != Type.LONG_LIST;
+      final var inPlace = isFinal && isUnsafeBuffer(mirror);
+      final var mutable =
+          kind != Type.NESTED && kind != Type.STRING_LIST && kind != Type.LONG_LIST && !inPlace;
       if (isFinal && mutable) {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
-      properties.add(new Property(key, kind, fieldName, javaType(mirror, kind), isFinal));
+      properties.add(new Property(key, kind, fieldName, javaType(mirror, kind), inPlace));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -127,15 +173,16 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         final var declared = (DeclaredType) mirror;
         final var element = (TypeElement) declared.asElement();
         final var name = element.getQualifiedName().toString();
-        if (name.equals(DIRECT_BUFFER)) {
+        if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
         }
         if (name.equals(LIST) && declared.getTypeArguments().size() == 1) {
-          final var argument = declared.getTypeArguments().get(0).toString();
-          if (argument.equals(DIRECT_BUFFER)) {
+          // compares the erased element, so type annotations like @Nullable do not matter
+          final var argument = declared.getTypeArguments().get(0);
+          if (isType(argument, DIRECT_BUFFER)) {
             return Type.STRING_LIST;
           }
-          if (argument.equals("java.lang.Long")) {
+          if (isType(argument, "java.lang.Long")) {
             return Type.LONG_LIST;
           }
         }
@@ -155,9 +202,20 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     throw new IllegalArgumentException("Unsupported type " + mirror + " of field " + field);
   }
 
+  private boolean isType(final TypeMirror mirror, final String qualifiedName) {
+    final var expected = processingEnv.getElementUtils().getTypeElement(qualifiedName);
+    final var types = processingEnv.getTypeUtils();
+    return expected != null
+        && types.isSameType(types.erasure(mirror), types.erasure(expected.asType()));
+  }
+
+  private boolean isUnsafeBuffer(final TypeMirror mirror) {
+    return mirror.getKind() == TypeKind.DECLARED && isType(mirror, UNSAFE_BUFFER);
+  }
+
   private boolean isBaseValue(final TypeElement element) {
     TypeMirror current = element.asType();
-    while (current.getKind() == javax.lang.model.type.TypeKind.DECLARED) {
+    while (current.getKind() == TypeKind.DECLARED) {
       final var currentElement = (TypeElement) ((DeclaredType) current).asElement();
       if (currentElement
           .getQualifiedName()
@@ -200,7 +258,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         "public final class %1$sResetter implements MsgpackResetter<%1$s> {\n".formatted(pojo));
     s.append(
         "  public static final %1$sResetter INSTANCE = new %1$sResetter();\n\n".formatted(pojo));
+    // INSTANCE must be initialized before DEFAULTS: the constructor of the POJO may resolve it
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
+    s.append("  static {\n");
+    for (final var p : m.properties()) {
+      if (p.type() == Type.STRING || p.type() == Type.BINARY || p.type() == Type.RAW) {
+        s.append("    requireDefault(DEFAULTS.%1$s, \"%1$s\");\n".formatted(p.field()));
+      }
+    }
+    s.append("  }\n\n");
     s.append("  private %sResetter() {}\n\n".formatted(pojo));
     s.append("  @Override\n  public void reset(final %s target) {\n".formatted(pojo));
     for (final var p : m.properties()) {
@@ -210,13 +276,28 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
-        default -> s.append("    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
+        default ->
+            s.append(
+                p.inPlace()
+                    ? "    target.%1$s.wrap(DEFAULTS.%1$s);\n".formatted(f)
+                    : "    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
       }
     }
     if (m.unknownField() != null) {
       s.append("    target.%s.clear();\n".formatted(m.unknownField()));
     }
-    s.append("  }\n}\n");
+    s.append("  }\n\n");
+    s.append(
+        """
+          private static void requireDefault(final Object value, final String field) {
+            if (value == null) {
+              throw new IllegalStateException(
+                  "Field " + field + " of %s has no default: give it an initializer");
+            }
+          }
+        }
+        """
+            .formatted(pojo));
     return s.toString();
   }
 
@@ -355,11 +436,20 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var line =
           switch (p.type()) {
             case LONG -> f + " = r.readInteger();";
-            case INT -> f + " = (int) r.readInteger();";
+            case INT -> f + " = Decoding.readInt(r);";
             case BOOLEAN -> f + " = r.readBoolean();";
-            case STRING -> f + " = Decoding.readString(r);";
-            case RAW -> f + " = Decoding.readRaw(r);";
-            case BINARY -> f + " = Decoding.readBinary(r);";
+            case STRING ->
+                p.inPlace()
+                    ? "Decoding.readString(r, %s);".formatted(f)
+                    : f + " = Decoding.readString(r);";
+            case RAW ->
+                p.inPlace()
+                    ? "Decoding.readRaw(r, %s);".formatted(f)
+                    : f + " = Decoding.readRaw(r);";
+            case BINARY ->
+                p.inPlace()
+                    ? "Decoding.readBinary(r, %s);".formatted(f)
+                    : f + " = Decoding.readBinary(r);";
             case ENUM ->
                 "%s = Decoding.readEnum(r, ENUM_NAMES_%d, ENUM_VALUES_%d);".formatted(f, i, i);
             case STRING_LIST ->
@@ -480,7 +570,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     NESTED
   }
 
-  private record Property(String key, Type type, String field, String javaType, boolean isFinal) {}
+  /**
+   * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
+   *     being replaced by a new view
+   */
+  private record Property(String key, Type type, String field, String javaType, boolean inPlace) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }
