@@ -148,7 +148,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var errorReason = e.error().reason();
       if (errorReason != null
           && errorReason.equals(
-          "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+              "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
         LOG.debug(errorReason);
         return;
       }
