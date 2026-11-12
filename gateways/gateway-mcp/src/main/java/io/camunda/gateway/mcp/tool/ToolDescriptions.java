@@ -47,9 +47,7 @@ public final class ToolDescriptions {
           + "Example nested JSON value: `{\\\"myVar\\\":\\\"myValue\\\"}`.";
 
   public static final String VARIABLE_VALUE_RETURN_FORMAT =
-      "The variable value is returned in serialized JSON format. "
-          + "If `metadata.protectionModes` contains `REDACT`, the variable is redacted and the value is an empty string "
-          + "instead of the real value, so check it before you use the value.";
+      "The variable value is returned in serialized JSON format.";
 
   public static final String TRUNCATE_VARIABLES_DESCRIPTION =
       "When true (default), long variable values in the response are truncated. When false, full variable values are returned.";

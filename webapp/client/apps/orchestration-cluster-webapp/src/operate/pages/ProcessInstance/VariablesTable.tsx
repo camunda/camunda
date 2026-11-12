@@ -20,7 +20,6 @@ import {DownloadDocumentButton} from '#/operate/shared/Documents/DownloadDocumen
 import {InlineJsonEditor} from '#/operate/shared/Editors/InlineJsonEditor';
 import {StructuredRows} from '#/operate/shared/StructuredList/StructuredList';
 import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
-import {isRedactedVariable} from '#/shared/variables/redactedVariable';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
 import {useVariableScope} from './useVariableScope';
@@ -44,7 +43,6 @@ import {
 	EmptyMessageContainer,
 	FilterSwitcherContainer,
 	Operations,
-	RedactedValue,
 	StructuredList,
 	VariableName,
 	VariablesSearch,
@@ -80,14 +78,10 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 	const pages = useMemo(
 		() =>
 			(data?.pages ?? []).map((page) =>
-				page.items.map((variable) => {
-					const isRedacted = isRedactedVariable(variable);
-					return {
-						...variable,
-						isRedacted,
-						documentResult: isRedacted ? null : parseDocumentVariable(variable.value, variable.isTruncated),
-					};
-				}),
+				page.items.map((variable) => ({
+					...variable,
+					documentResult: parseDocumentVariable(variable.value, variable.isTruncated),
+				})),
 			),
 		[data],
 	);
@@ -213,15 +207,13 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 								</FieldArray>
 							) : undefined
 						}
-						rows={variables.map(({name, value, variableKey, isTruncated, isRedacted, documentResult}) => ({
+						rows={variables.map(({name, value, variableKey, isTruncated, documentResult}) => ({
 							key: name,
 							dataTestId: `variable-${name}`,
 							columns: [
 								{cellContent: <VariableName title={name}>{name}</VariableName>, width: '35%'},
 								{
-									cellContent: isRedacted ? (
-										<RedactedValue>{t('globalRedactedValueLabel')}</RedactedValue>
-									) : isEditMode(name) ? (
+									cellContent: isEditMode(name) ? (
 										<ExistingVariableValue
 											variableKey={variableKey}
 											variableName={name}
@@ -258,9 +250,7 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 									width: 'auto',
 								},
 								{
-									cellContent: isRedacted ? (
-										<Operations />
-									) : (
+									cellContent: (
 										<Operations>
 											{isEditMode(name) ? (
 												<EditVariableModalButton

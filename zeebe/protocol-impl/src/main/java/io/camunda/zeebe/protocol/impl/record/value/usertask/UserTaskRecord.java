@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
@@ -22,10 +23,8 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +95,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final StringProperty externalFormReferenceProp =
       new StringProperty("externalFormReference", EMPTY_STRING);
 
-  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
+  private final DocumentProperty variableProp = new DocumentProperty("variables");
   private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
 
   private final LongProperty processInstanceKeyProp =
@@ -159,7 +158,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
 
   public UserTaskRecord() {
-    super(26);
+    super(27);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -168,6 +167,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(followUpDateProp)
         .declareProperty(formKeyProp)
         .declareProperty(externalFormReferenceProp)
+        .declareProperty(variableProp)
         .declareProperty(customHeadersProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionVersionProp)
@@ -186,7 +186,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp);
-    declareProperties(variablesPropertyGroup);
   }
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
@@ -228,7 +227,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    */
   public void wrap(final UserTaskRecord record) {
     wrapWithoutVariables(record);
-    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
+    variableProp.setValue(record.getVariablesBuffer());
   }
 
   /** Returns a full copy of the record. */
@@ -676,11 +675,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   @Override
   public Map<String, Object> getVariables() {
-    return variablesPropertyGroup.getVariables();
+    return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 
   public UserTaskRecord setVariables(final DirectBuffer variables) {
-    variablesPropertyGroup.setVariables(variables);
+    variableProp.setValue(variables);
     return this;
   }
 
@@ -762,18 +761,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesPropertyGroup.getVariablesBuffer();
-  }
-
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return variablesPropertyGroup.getMetadata();
-  }
-
-  public UserTaskRecord setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    variablesPropertyGroup.setMetadata(variablesMetadata);
-    return this;
+    return variableProp.getValue();
   }
 
   @JsonIgnore

@@ -68,12 +68,6 @@ const VariableName = styled.div`
 	white-space: nowrap;
 `;
 
-const RedactedValue = styled.div`
-	${styles.code01};
-	margin: var(--cds-spacing-02) 0;
-	color: var(--cds-text-secondary);
-`;
-
 const Operations = styled.div`
 	display: flex;
 	justify-content: end;
@@ -151,7 +145,6 @@ export {
 	VariablesSearch,
 	DimmableResults,
 	StructuredList,
-	RedactedValue,
 	VariableName,
 	Operations,
 	InlineLoading,

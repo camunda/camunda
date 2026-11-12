@@ -57,7 +57,6 @@ class RdbmsDbModelCoverageArchTest {
           // UsageMetricIT
           "UsageMetricTUTenantStatisticsDbModel", // TU tenant statistics variant; covered by
           // UsageMetricIT
-          "ProtectionModeDbModel", // protection mode enum model; covered by VariableIT
           "ClusterVariableMetadataDbModel"); // metadata sub-entity of ClusterVariable; covered by
   // ClusterVariableIT
 

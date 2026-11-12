@@ -86,7 +86,6 @@ import type {
 	QueryGroupsRequestBody,
 	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {redactValue, redactValues} from '#/shared/variables/redactedVariable';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
@@ -309,7 +308,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValues(await response.json());
+				return response.json();
 			},
 		}),
 
@@ -326,7 +325,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValues(await response.json());
+				return response.json();
 			},
 			initialPageParam: 0,
 			getNextPageParam: (lastPage, _, lastPageParam) => {
@@ -343,7 +342,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValue(await response.json());
+				return response.json();
 			},
 			retry: false,
 		}),

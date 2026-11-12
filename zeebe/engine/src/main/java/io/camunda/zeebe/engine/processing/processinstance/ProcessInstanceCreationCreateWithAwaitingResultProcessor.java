@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -32,7 +31,6 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import java.util.Map;
 
 @ExcludeAuthorizationCheck
 public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
@@ -117,10 +115,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
         helper.initProcessInstanceRecord(
             process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
 
-    helper.setVariablesFromDocument(
-        processInstance,
-        record.getVariablesBuffer(),
-        VariableMetadataLookup.of(record.getVariablesMetadata()));
+    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
@@ -145,7 +140,6 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.
     record.setVariables(DocumentValue.EMPTY_DOCUMENT);
-    record.setVariablesMetadata(Map.of());
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     metrics.processInstanceCreated(record);

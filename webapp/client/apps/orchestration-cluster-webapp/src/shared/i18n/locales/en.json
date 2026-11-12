@@ -2,7 +2,6 @@
 	"translation": {
 		"globalDatePlaceholder": "mm/dd/yyyy",
 		"globalWrittenCalendarDateFormat": "m/d/Y",
-		"globalRedactedValueLabel": "[REDACTED]",
 		"headerSidebarDocumentationLink": "Documentation",
 		"headerSidebarCamundaAcademyLink": "Camunda Academy",
 		"headerSidebarFeedbackAndSupportLink": "Feedback and Support",

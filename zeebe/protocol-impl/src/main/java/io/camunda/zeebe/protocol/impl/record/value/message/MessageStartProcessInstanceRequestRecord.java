@@ -10,14 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -32,8 +32,7 @@ import org.agrona.DirectBuffer;
  *
  * <p>{@link #processInstanceKeyProp} is only populated on success replies (intents {@code START}
  * and {@code STARTED}); it is {@code -1} on the request and on rejection replies. {@link
- * #variablesPropertyGroup} carries the originating message's variables on requests and is empty on
- * replies.
+ * #variablesProp} carries the originating message's variables on requests and is empty on replies.
  */
 public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecordValue
     implements MessageStartProcessInstanceRequestRecordValue {
@@ -48,7 +47,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
   private final StringProperty startEventIdProp = new StringProperty("startEventId", "");
   private final LongProperty messageStartEventSubscriptionKeyProp =
       new LongProperty("messageStartEventSubscriptionKey", -1L);
-  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
   private final LongProperty messageTtlProp = new LongProperty("messageTtl", 0L);
@@ -57,7 +56,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
   private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   public MessageStartProcessInstanceRequestRecord() {
-    super(13);
+    super(14);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -66,12 +65,12 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(startEventIdProp)
         .declareProperty(messageStartEventSubscriptionKeyProp)
+        .declareProperty(variablesProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageDeadlineProp)
         .declareProperty(messageTtlProp)
         .declareProperty(tenantIdProp)
         .declareProperty(storageOrdinalProp);
-    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final MessageStartProcessInstanceRequestRecord record) {
@@ -83,7 +82,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
     setBpmnProcessId(record.getBpmnProcessId());
     setStartEventId(record.getStartEventId());
     setMessageStartEventSubscriptionKey(record.getMessageStartEventSubscriptionKey());
-    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
+    setVariables(record.getVariablesBuffer());
     setProcessInstanceKey(record.getProcessInstanceKey());
     setMessageDeadline(record.getMessageDeadline());
     setMessageTtl(record.getMessageTtl());
@@ -227,28 +226,17 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
 
   @Override
   public Map<String, Object> getVariables() {
-    return variablesPropertyGroup.getVariables();
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
   public MessageStartProcessInstanceRequestRecord setVariables(final DirectBuffer variables) {
-    variablesPropertyGroup.setVariables(variables);
+    variablesProp.setValue(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesPropertyGroup.getVariablesBuffer();
-  }
-
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return variablesPropertyGroup.getMetadata();
-  }
-
-  public MessageStartProcessInstanceRequestRecord setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    variablesPropertyGroup.setMetadata(variablesMetadata);
-    return this;
+    return variablesProp.getValue();
   }
 
   @Override

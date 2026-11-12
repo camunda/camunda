@@ -38,7 +38,6 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringValue("rootProcessInstanceKey");
   private static final StringValue SOURCE_KEY = new StringValue("source");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue METADATA_KEY = new StringValue("metadata");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -54,8 +53,6 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final ObjectProperty<VariableSourceRecord> sourceProp =
       new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
-  private final ObjectProperty<VariableMetadataRecord> metadataProp =
-      new ObjectProperty<>(METADATA_KEY, new VariableMetadataRecord());
 
   /**
    * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
@@ -64,7 +61,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private String cachedJsonValue;
 
   public VariableRecord() {
-    super(11);
+    super(10);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
@@ -74,8 +71,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(sourceProp)
-        .declareProperty(metadataProp);
+        .declareProperty(sourceProp);
   }
 
   @Override
@@ -151,16 +147,6 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
 
   public VariableRecord setSource(final VariableSourceRecord source) {
     sourceProp.getValue().wrap(source);
-    return this;
-  }
-
-  @Override
-  public VariableMetadataRecord getMetadata() {
-    return metadataProp.getValue();
-  }
-
-  public VariableRecord setMetadata(final VariableMetadataRecord metadata) {
-    metadataProp.getValue().wrap(metadata);
     return this;
   }
 

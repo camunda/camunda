@@ -36,8 +36,7 @@ public interface VariableRecordValue
   String getName();
 
   /**
-   * @return the value of the variable as JSON string, or the JSON empty string {@code ""} if the
-   *     value was redacted because the variable is protected with {@code REDACT}.
+   * @return the value of the variable as JSON string.
    */
   String getValue();
 
@@ -90,9 +89,4 @@ public interface VariableRecordValue
    *     VariableOperationType.UNKNOWN} if the source is unknown.
    */
   VariableSourceValue getSource();
-
-  /**
-   * @return the metadata of the variable, e.g. how its value is protected before it is exported.
-   */
-  VariableMetadataValue getMetadata();
 }

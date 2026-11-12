@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import static io.camunda.zeebe.protocol.record.value.ProtectionMode.REDACT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
@@ -25,7 +23,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -37,7 +34,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,8 +105,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -166,8 +161,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     assertThat(getFollowUpEvents()).isEmpty();
@@ -200,8 +194,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -247,8 +240,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -307,8 +299,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -355,8 +346,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -403,8 +393,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -438,8 +427,7 @@ final class VariableBehaviorTest {
         variableName,
         variableValue,
         0,
-        variableValue.capacity(),
-        VariableMetadataLookup.NONE);
+        variableValue.capacity());
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -489,8 +477,7 @@ final class VariableBehaviorTest {
         variableName,
         variableValue,
         0,
-        variableValue.capacity(),
-        VariableMetadataLookup.NONE);
+        variableValue.capacity());
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -541,8 +528,7 @@ final class VariableBehaviorTest {
         variableName,
         variableValue,
         0,
-        variableValue.capacity(),
-        VariableMetadataLookup.NONE);
+        variableValue.capacity());
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -579,8 +565,7 @@ final class VariableBehaviorTest {
         variableName,
         variableValue,
         0,
-        variableValue.capacity(),
-        VariableMetadataLookup.NONE);
+        variableValue.capacity());
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -634,8 +619,7 @@ final class VariableBehaviorTest {
         variableName,
         variableValue,
         0,
-        variableValue.capacity(),
-        VariableMetadataLookup.NONE);
+        variableValue.capacity());
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -686,8 +670,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -751,8 +734,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -815,8 +797,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -863,8 +844,7 @@ final class VariableBehaviorTest {
         storageOrdinal,
         bpmnProcessId,
         tenantId,
-        MsgPackUtil.asMsgPack(document),
-        VariableMetadataLookup.NONE);
+        MsgPackUtil.asMsgPack(document));
 
     // then
     final List<RecordedEvent<VariableRecordValue>> events = getFollowUpEvents();
@@ -893,340 +873,6 @@ final class VariableBehaviorTest {
   }
 
   @SuppressWarnings("SameParameterValue")
-  @Test
-  void shouldCreateLocalVariableWithProtectionModes() {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    final var value = packString("bar");
-
-    // when
-    behavior.setLocalVariable(
-        scopeKey,
-        1L,
-        scopeKey,
-        scopeKey,
-        0,
-        BufferUtil.wrapString("process"),
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        BufferUtil.wrapString("foo"),
-        value,
-        0,
-        value.capacity(),
-        lookup(Map.of("foo", redact())));
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.CREATED);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  @Test
-  void shouldCreateEachMergedVariableWithItsOwnProtectionModes()
-      throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-
-    // when
-    mergeLocalDocument(
-        scopeKey, Map.of("foo", "bar", "baz", "buz", "qux", "quux"), Map.of("foo", redact()));
-
-    // then
-    assertThat(getFollowUpEvents())
-        .hasSize(3)
-        .allSatisfy(event -> assertThat(event.intent).isEqualTo(VariableIntent.CREATED))
-        .extracting(
-            event -> event.value.getName(), event -> event.value.getMetadata().getProtectionModes())
-        .containsExactlyInAnyOrder(
-            tuple("foo", Set.of(REDACT)), tuple("baz", Set.of()), tuple("qux", Set.of()));
-  }
-
-  @Test
-  void shouldCreateVariableWithoutProtectionModesByDefault() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-
-    // when
-    behavior.mergeLocalDocument(
-        scopeKey,
-        1L,
-        scopeKey,
-        scopeKey,
-        0,
-        BufferUtil.wrapString("process"),
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
-        VariableMetadataLookup.NONE);
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(event -> assertThat(event.value.getMetadata().getProtectionModes()).isEmpty());
-  }
-
-  @Test
-  void shouldUpdateProtectionModesWithoutChangingValue() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setVariable(2L, scopeKey, 1L, "foo", "bar");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), Map.of("foo", redact()));
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.key).isEqualTo(2L);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  @Test
-  void shouldNotUpdateVariableWhenValueAndProtectionModesAreUnchanged()
-      throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "bar");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), Map.of("foo", redact()));
-
-    // then
-    assertThat(getFollowUpEvents()).isEmpty();
-  }
-
-  @Test
-  void shouldUpdateValueAndKeepProtectionModesPassedByCaller() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "qux");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), Map.of("foo", redact()));
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  @Test
-  void shouldReplaceProtectionModesWithTheOnesPassedByCaller() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "bar");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), Map.of());
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.value.getMetadata().getProtectionModes()).isEmpty();
-            });
-  }
-
-  @Test
-  void shouldUpdateProtectionModesInParentScope() throws VariableValidationException {
-    // given
-    final var parentScopeKey = 1L;
-    final var childScopeKey = 2L;
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
-    setVariable(3L, parentScopeKey, 1L, "foo", "bar");
-
-    // when
-    behavior.mergeDocument(
-        childScopeKey,
-        1L,
-        parentScopeKey,
-        parentScopeKey,
-        0,
-        BufferUtil.wrapString("process"),
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
-        lookup(Map.of("foo", redact())));
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.value.getScopeKey()).isEqualTo(parentScopeKey);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  @Test
-  void shouldPersistProtectionModesInState() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), Map.of("foo", redact()));
-
-    // then
-    assertThat(
-            state
-                .getVariableInstanceLocal(scopeKey, BufferUtil.wrapString("foo"))
-                .getMetadata()
-                .getProtectionModes())
-        .containsExactly(REDACT);
-  }
-
-  @Test
-  void shouldKeepProtectionModesWhenUpdatingValueWithoutMetadata()
-      throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "qux");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), VariableMetadataLookup.NONE);
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  @Test
-  void shouldNotUpdateUnchangedValueWithoutMetadata() throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "bar");
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar"), VariableMetadataLookup.NONE);
-
-    // then
-    assertThat(getFollowUpEvents()).isEmpty();
-  }
-
-  @Test
-  void shouldKeepProtectionModesOfVariablesWithoutMetadataInLookup()
-      throws VariableValidationException {
-    // given
-    final var scopeKey = 1L;
-    state.createScope(scopeKey, VariableState.NO_PARENT);
-    setProtectedVariable(2L, scopeKey, "foo", "qux");
-    final VariableMetadataLookup onlyBaz =
-        name -> "baz".equals(BufferUtil.bufferAsString(name)) ? redact() : null;
-
-    // when
-    mergeLocalDocument(scopeKey, Map.of("foo", "bar", "baz", "buz"), onlyBaz);
-
-    // then
-    assertThat(getFollowUpEvents())
-        .extracting(
-            event -> event.intent,
-            event -> event.value.getName(),
-            event -> event.value.getMetadata().getProtectionModes())
-        .containsExactlyInAnyOrder(
-            tuple(VariableIntent.UPDATED, "foo", Set.of(REDACT)),
-            tuple(VariableIntent.CREATED, "baz", Set.of(REDACT)));
-  }
-
-  @Test
-  void shouldKeepProtectionModesInParentScopeWithoutMetadata() throws VariableValidationException {
-    // given
-    final var parentScopeKey = 1L;
-    final var childScopeKey = 2L;
-    state.createScope(parentScopeKey, VariableState.NO_PARENT);
-    state.createScope(childScopeKey, parentScopeKey);
-    setProtectedVariable(3L, parentScopeKey, "foo", "qux");
-
-    // when
-    behavior.mergeDocument(
-        childScopeKey,
-        1L,
-        parentScopeKey,
-        parentScopeKey,
-        0,
-        BufferUtil.wrapString("process"),
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        MsgPackUtil.asMsgPack(Map.of("foo", "bar")),
-        VariableMetadataLookup.NONE);
-
-    // then
-    assertThat(getFollowUpEvents())
-        .singleElement()
-        .satisfies(
-            event -> {
-              assertThat(event.intent).isEqualTo(VariableIntent.UPDATED);
-              assertThat(event.value.getMetadata().getProtectionModes()).containsExactly(REDACT);
-            });
-  }
-
-  private void mergeLocalDocument(
-      final long scopeKey,
-      final Map<String, Object> document,
-      final Map<String, VariableMetadataRecord> metadataByName)
-      throws VariableValidationException {
-    mergeLocalDocument(scopeKey, document, lookup(metadataByName));
-  }
-
-  private void mergeLocalDocument(
-      final long scopeKey,
-      final Map<String, Object> document,
-      final VariableMetadataLookup metadataLookup)
-      throws VariableValidationException {
-    behavior.mergeLocalDocument(
-        scopeKey,
-        1L,
-        scopeKey,
-        scopeKey,
-        0,
-        BufferUtil.wrapString("process"),
-        TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-        MsgPackUtil.asMsgPack(document),
-        metadataLookup);
-  }
-
-  private static VariableMetadataLookup lookup(
-      final Map<String, VariableMetadataRecord> metadataByName) {
-    return name ->
-        metadataByName.getOrDefault(BufferUtil.bufferAsString(name), new VariableMetadataRecord());
-  }
-
-  private static VariableMetadataRecord redact() {
-    return new VariableMetadataRecord().setProtectionModes(Set.of(REDACT));
-  }
-
-  private void setProtectedVariable(
-      final long key, final long scopeKey, final String name, final String value) {
-    state.setVariableLocal(
-        key, scopeKey, 1L, BufferUtil.wrapString(name), packString(value), redact());
-  }
-
   private void setVariable(
       final long key,
       final long scopeKey,

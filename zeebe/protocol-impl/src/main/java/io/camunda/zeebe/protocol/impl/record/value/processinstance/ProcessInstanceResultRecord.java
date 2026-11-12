@@ -11,15 +11,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +36,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
       new StringValue("processDefinitionKey");
   public static final StringValue VERSION_KEY = new StringValue("version");
   public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  public static final StringValue VARIABLES_KEY = new StringValue("variables");
   public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
@@ -47,7 +48,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   private final IntegerProperty versionProperty = new IntegerProperty(VERSION_KEY, -1);
   private final StringProperty tenantIdProperty =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
+  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
   private final ArrayProperty<StringValue> tagsProperty =
@@ -57,16 +58,16 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
       new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public ProcessInstanceResultRecord() {
-    super(8);
+    super(9);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
         .declareProperty(tenantIdProperty)
+        .declareProperty(variablesProperty)
         .declareProperty(tagsProperty)
         .declareProperty(businessIdProperty)
         .declareProperty(storageOrdinalProperty);
-    declareProperties(variablesPropertyGroup);
   }
 
   @Override
@@ -157,27 +158,16 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesPropertyGroup.getVariablesBuffer();
-  }
-
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return variablesPropertyGroup.getMetadata();
-  }
-
-  public ProcessInstanceResultRecord setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    variablesPropertyGroup.setMetadata(variablesMetadata);
-    return this;
+    return variablesProperty.getValue();
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return variablesPropertyGroup.getVariables();
+    return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
   public ProcessInstanceResultRecord setVariables(final DirectBuffer variables) {
-    variablesPropertyGroup.setVariables(variables);
+    variablesProperty.setValue(variables);
     return this;
   }
 

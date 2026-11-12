@@ -16,7 +16,6 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -101,10 +100,5 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     return value == null || value.isEmpty()
         ? DocumentValue.EMPTY_DOCUMENT
         : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
-  }
-
-  protected Map<String, VariableMetadataValue> getMetadataOrEmpty(
-      final Map<String, VariableMetadataValue> value) {
-    return value == null ? Map.of() : value;
   }
 }

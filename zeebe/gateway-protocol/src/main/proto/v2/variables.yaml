@@ -183,13 +183,6 @@ components:
           description: The key of the process instance of this variable.
           allOf:
           - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
-        protectionMode:
-          description: The protection modes applied to the variable.
-          allOf:
-            - $ref: '#/components/schemas/ProtectionModeFilterProperty'
-      x-properties-added-in-version:
-        - propertyName: protectionMode
-          addedInVersion: "8.11"
 
     VariableSearchQueryResult:
       description: Variable search query response.
@@ -215,15 +208,7 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: |
-            The value of this variable. Can be truncated or redacted.
-
-            If the value is truncated, `isTruncated` is `true` and the value contains only the
-            beginning of the full value.
-
-            If the variable is redacted, the value is set to `""` instead of the real value. Check
-            `metadata.protectionModes` before you use the value: it contains `REDACT` for a redacted
-            variable.
+          description: Value of this variable. Can be truncated.
           type: string
         isTruncated:
           description: Whether the value is truncated or not.
@@ -238,11 +223,7 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: |
-            The full value of this variable, or `""` if the variable is redacted.
-
-            Check `metadata.protectionModes` before you use the value: it contains `REDACT` for a
-            redacted variable.
+          description: Full value of this variable.
           type: string
 
     VariableResultBase:
@@ -255,7 +236,6 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
-        - metadata
       properties:
         name:
           description: Name of this variable.
@@ -288,76 +268,9 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-        metadata:
-          description: Metadata of this variable.
-          allOf:
-            - $ref: '#/components/schemas/VariableMetadata'
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
-        - propertyName: metadata
-          addedInVersion: "8.11"
-
-    VariableMetadata:
-      description: Metadata describing how a variable is treated.
-      type: object
-      required:
-        - protectionModes
-      properties:
-        protectionModes:
-          description: |
-            The protections applied to the variable. The value of a variable protected with
-            `REDACT` is irrecoverably replaced before it is stored in secondary storage, so it is
-            never readable.
-          type: array
-          items:
-            $ref: '#/components/schemas/ProtectionModeEnum'
-
-    ProtectionModeEnum:
-      type: string
-      enum: [ REDACT ]
-      description: |
-        The kind of protection applied to a variable value. `REDACT` irrecoverably replaces the
-        value before it reaches secondary storage.
-
-    ProtectionModeFilterProperty:
-      description: ProtectionModeEnum property with full advanced search capabilities.
-      oneOf:
-        - type: string
-          title: Exact match
-          description: Matches variables that have this protection mode.
-          allOf:
-            - $ref: "#/components/schemas/ProtectionModeEnum"
-        - $ref: '#/components/schemas/AdvancedProtectionModeFilter'
-
-    AdvancedProtectionModeFilter:
-      title: Advanced filter
-      description: Advanced ProtectionModeEnum filter.
-      type: object
-      properties:
-        $eq:
-          description: Checks if the variable has the provided protection mode.
-          allOf:
-            - $ref: "#/components/schemas/ProtectionModeEnum"
-        $neq:
-          description: Checks if the variable does not have the provided protection mode.
-          allOf:
-            - $ref: "#/components/schemas/ProtectionModeEnum"
-        $exists:
-          description: |
-            Checks if the variable has any protection mode. Use `false` to match the variables
-            that are not protected.
-          type: boolean
-        $in:
-          description: Checks if the variable has at least one of the provided protection modes.
-          type: array
-          items:
-            $ref: "#/components/schemas/ProtectionModeEnum"
-        $notIn:
-          description: Checks if the variable has none of the provided protection modes.
-          type: array
-          items:
-            $ref: "#/components/schemas/ProtectionModeEnum"
 
     VariableValueFilterProperty:
       type: object
@@ -385,14 +298,6 @@ components:
           description: JSON object representing the variables to set in the element’s scope.
           additionalProperties: true
           type: object
-        variablesMetadata:
-          description: |
-            Metadata of the variables, keyed by variable name. Use it to set how a variable is
-            treated, for example to protect its value. Each key must be the name of a variable in
-            `variables`. A variable without an entry keeps the metadata it has, or has none.
-          type: object
-          additionalProperties:
-            $ref: '#/components/schemas/VariableMetadata'
         local:
           description: |-
             If set to `true`, the variables are merged strictly into the local scope (as specified
@@ -422,5 +327,3 @@ components:
           addedInVersionOverride: "8.6"
         - propertyName: "operationReference"
           addedInVersionOverride: "8.6"
-        - propertyName: "variablesMetadata"
-          addedInVersion: "8.11"

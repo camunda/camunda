@@ -8,7 +8,6 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
-import {redactValue} from 'modules/utils/redactedVariable';
 import {queryKeys} from '../queryKeys';
 
 function useVariable(variableKey: string, options?: {enabled?: boolean}) {
@@ -19,7 +18,7 @@ function useVariable(variableKey: string, options?: {enabled?: boolean}) {
       const {response, error} = await getVariable(variableKey);
 
       if (response !== null) {
-        return redactValue(response);
+        return response;
       }
 
       throw error;
