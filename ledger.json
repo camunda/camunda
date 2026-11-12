@@ -77,5 +77,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43167809293",
     "updated_at": "2026-11-12T06:27:21Z",
     "cooldown_until": "2026-11-13T06:27:21Z"
+  },
+  "bb4828fb": {
+    "version": "8.7",
+    "file": "operate/processInstanceMigration.spec.ts",
+    "titlePath": [
+      "Process Instance Migration",
+      "Migrated gateways"
+    ],
+    "last_action": "delete_branch",
+    "last_reason": "iter1 90% vs baseline 95% (+-5pp); needs at least +10pp",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43211497755",
+    "updated_at": "2026-11-12T12:42:11Z",
+    "cooldown_until": "2026-11-19T12:42:11Z"
   }
 }
