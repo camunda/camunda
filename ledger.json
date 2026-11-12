@@ -116,5 +116,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43224116544",
     "updated_at": "2026-11-12T13:08:54Z",
     "cooldown_until": "2026-11-13T13:08:54Z"
+  },
+  "b1ba4e19": {
+    "version": "8.8",
+    "file": "api/v2/job/job-error-api-tests.spec.ts",
+    "titlePath": [
+      "Job Error API Tests",
+      "Throw Error for Job - success"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43224011939",
+    "updated_at": "2026-11-12T13:08:57Z",
+    "cooldown_until": "2026-11-13T13:08:57Z"
   }
 }
