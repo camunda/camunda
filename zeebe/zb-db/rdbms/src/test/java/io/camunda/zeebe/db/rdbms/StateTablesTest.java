@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,26 @@ final class StateTablesTest {
 
     // then
     assertThat(names).doesNotHaveDuplicates();
+  }
+
+  @Test
+  void shouldGiveEveryViewColumnAPlainDistinctName() {
+    // given
+    final var fixed = List.of("PARTITION_ID", "UPDATED_POSITION", "STATE_KEY", "STATE_VALUE");
+    final var layouts =
+        StateTables.all().stream().map(StateTable::keyLayout).filter(Objects::nonNull);
+
+    // when / then
+    assertThat(layouts)
+        .isNotEmpty()
+        .allSatisfy(
+            layout -> {
+              final var columns = layout.parts().stream().map(KeyLayout.Part::column);
+              assertThat(columns)
+                  .doesNotHaveDuplicates()
+                  .doesNotContainAnyElementsOf(fixed)
+                  .allSatisfy(column -> assertThat(column).matches("[A-Z][A-Z0-9_]{0,29}"));
+            });
   }
 
   private static Stream<ZbColumnFamilies> columnFamilies() {

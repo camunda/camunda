@@ -7,6 +7,11 @@
  */
 package io.camunda.zeebe.db.rdbms;
 
+import static io.camunda.zeebe.db.rdbms.KeyLayout.bytes;
+import static io.camunda.zeebe.db.rdbms.KeyLayout.dbLong;
+import static io.camunda.zeebe.db.rdbms.KeyLayout.dbString;
+import static io.camunda.zeebe.db.rdbms.KeyLayout.tenantId;
+
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,6 +28,9 @@ import java.util.TreeMap;
  * column family never moves its rows. After the {@code ZS_} prefix, a name has at most {@value
  * #MAX_SHORT_NAME_LENGTH} characters, so that the names of the table, its primary key and its view
  * fit into 30 characters before the configured prefix.
+ *
+ * <p>A column family can also describe the parts of its key, which gives its table a view that
+ * shows them. The engine never reads the views.
  */
 final class StateTables {
 
@@ -32,7 +40,7 @@ final class StateTables {
   static final String PARTITION = "ZS_PARTITION";
 
   /** The table of the column families that have no table of their own. */
-  static final StateTable OTHER = new StateTable("ZS_OTHER", true);
+  static final StateTable OTHER = new StateTable("ZS_OTHER", true, null);
 
   private static final StateTable[] BY_COLUMN_FAMILY = byColumnFamily();
   private static final List<StateTable> ALL = all(BY_COLUMN_FAMILY);
@@ -62,13 +70,29 @@ final class StateTables {
     add(tables, ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, "TAKEN_SEQUENCE_FLOWS");
     add(tables, ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, "ELEMENT_CHILD_PARENT");
     add(tables, ZbColumnFamilies.VARIABLES, "VARIABLES");
-    add(tables, ZbColumnFamilies.TIMERS, "TIMERS");
-    add(tables, ZbColumnFamilies.TIMER_DUE_DATES, "TIMER_DUE_DATES");
+    add(
+        tables,
+        ZbColumnFamilies.TIMERS,
+        "TIMERS",
+        dbLong("ELEMENT_INSTANCE_KEY"),
+        dbLong("TIMER_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.TIMER_DUE_DATES,
+        "TIMER_DUE_DATES",
+        dbLong("DUE_DATE"),
+        dbLong("ELEMENT_INSTANCE_KEY"),
+        dbLong("TIMER_KEY"));
     add(tables, ZbColumnFamilies.PENDING_DEPLOYMENT, "PENDING_DEPLOYMENT");
     add(tables, ZbColumnFamilies.DEPLOYMENT_RAW, "DEPLOYMENT_RAW");
-    add(tables, ZbColumnFamilies.JOBS, "JOBS");
-    add(tables, ZbColumnFamilies.JOB_STATES, "JOB_STATES");
-    add(tables, ZbColumnFamilies.JOB_DEADLINES, "JOB_DEADLINES");
+    add(tables, ZbColumnFamilies.JOBS, "JOBS", dbLong("JOB_KEY"));
+    add(tables, ZbColumnFamilies.JOB_STATES, "JOB_STATES", dbLong("JOB_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.JOB_DEADLINES,
+        "JOB_DEADLINES",
+        dbLong("DEADLINE"),
+        dbLong("JOB_KEY"));
     add(tables, ZbColumnFamilies.MESSAGE_KEY, "MESSAGE_KEY");
     add(tables, ZbColumnFamilies.MESSAGE_DEADLINES, "MESSAGE_DEADLINES");
     add(tables, ZbColumnFamilies.MESSAGE_IDS, "MESSAGE_IDS");
@@ -87,7 +111,7 @@ final class StateTables {
     add(tables, ZbColumnFamilies.BANNED_INSTANCE, "BANNED_INSTANCE");
     add(tables, ZbColumnFamilies.EXPORTER, "EXPORTER");
     add(tables, ZbColumnFamilies.AWAIT_WORKLOW_RESULT, "AWAIT_WORKLOW_RESULT");
-    add(tables, ZbColumnFamilies.JOB_BACKOFF, "JOB_BACKOFF");
+    add(tables, ZbColumnFamilies.JOB_BACKOFF, "JOB_BACKOFF", dbLong("BACKOFF"), dbLong("JOB_KEY"));
     add(tables, ZbColumnFamilies.PENDING_DISTRIBUTION, "PENDING_DISTRIBUTION");
     add(tables, ZbColumnFamilies.COMMAND_DISTRIBUTION_RECORD, "CMD_DIST_RECORD");
     add(tables, ZbColumnFamilies.MESSAGE_STATS, "MESSAGE_STATS");
@@ -221,7 +245,14 @@ final class StateTables {
     add(tables, ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_DEDUP, "XP_MSG_START_DEDUP");
     add(tables, ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_ASK, "XP_MSG_START_ASK");
     add(tables, ZbColumnFamilies.CROSS_PARTITION_MESSAGE_START_LOCK, "XP_MSG_START_LOCK");
-    add(tables, ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY, "JOB_ACTIVATABLE_BY_PRIO");
+    add(
+        tables,
+        ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY,
+        "JOB_ACTIVATABLE_BY_PRIO",
+        dbString("JOB_TYPE"),
+        bytes("INVERTED_PRIORITY", Integer.BYTES),
+        dbLong("JOB_KEY"),
+        tenantId());
     add(tables, ZbColumnFamilies.MESSAGE_BY_BUSINESS_ID, "MESSAGE_BY_BUSINESS_ID");
     add(tables, ZbColumnFamilies.AGENT_HISTORY, "AGENT_HISTORY");
     add(tables, ZbColumnFamilies.AGENT_HISTORY_BY_JOB_KEY, "AGENT_HISTORY_BY_JOB_KEY");
@@ -244,7 +275,12 @@ final class StateTables {
         ZbColumnFamilies.AGENT_DEFINITION_KEY_BY_PROCESS_DEFINITION_KEY_AND_ELEMENT_ID,
         "AGENT_DEF_KEY_BY_ELEMENT");
     add(tables, ZbColumnFamilies.AGENT_DEFINITION_BY_KEY, "AGENT_DEFINITION_BY_KEY");
-    add(tables, ZbColumnFamilies.JOBS_BY_PROCESS_INSTANCE, "JOBS_BY_PROCESS_INSTANCE");
+    add(
+        tables,
+        ZbColumnFamilies.JOBS_BY_PROCESS_INSTANCE,
+        "JOBS_BY_PROCESS_INSTANCE",
+        dbLong("PROCESS_INSTANCE_KEY"),
+        dbLong("JOB_KEY"));
     add(tables, ZbColumnFamilies.AGENT_HISTORY_COMMITTED_IDS, "AGENT_HIST_COMMITTED_IDS");
     add(tables, ZbColumnFamilies.AGENT_HISTORY_METRICS_ACCUMULATED_IDS, "AGENT_HIST_METRICS_IDS");
     add(tables, ZbColumnFamilies.USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE, "USER_TASKS_SUSP_BY_PI");
@@ -260,8 +296,10 @@ final class StateTables {
   private static void add(
       final TreeMap<Integer, StateTable> tables,
       final ZbColumnFamilies columnFamily,
-      final String shortName) {
-    tables.put(columnFamily.getValue(), new StateTable("ZS_" + shortName, false));
+      final String shortName,
+      final KeyLayout.Part... key) {
+    final var keyLayout = key.length == 0 ? null : new KeyLayout(List.of(key));
+    tables.put(columnFamily.getValue(), new StateTable("ZS_" + shortName, false, keyLayout));
   }
 
   private static List<StateTable> all(final StateTable[] byColumnFamily) {

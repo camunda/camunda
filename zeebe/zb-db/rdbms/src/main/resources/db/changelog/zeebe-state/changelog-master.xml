@@ -13,5 +13,7 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
   <include file="/db/changelog/zeebe-state/changesets/8.11.0.xml" />
+  <!-- Keep the views last: they read the tables of every release. -->
+  <include file="/db/changelog/zeebe-state/views.xml" />
 
 </databaseChangeLog>
