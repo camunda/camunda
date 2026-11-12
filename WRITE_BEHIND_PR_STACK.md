@@ -56,11 +56,13 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 5. Defaults (not objected): drop `markAsReplaying`, `jdbc` module, Bloom filter / RDBMS bits;
    `Backend#knownAbsent` stays as a default-false hook; metrics + contract/differential tests in
    PR 2; key index (KEEP_LOWEST/KEEP_HIGHEST/DISABLE) entirely in PR 3.
-6. **R1 (2026-11-12): hold the encoded bytes.** At put time, encode once into a fresh immutable
-   `byte[]`. Copy-out = `target.wrap(bytes)`, flush writes the bytes as-is, weights use the real
-   length. With no `copyTo` yet, no path reads the object form, so PR 2 may hold only the bytes;
-   #69223 brings the object + fast copyTo back. Confirm with Carlo if keeping the object is wanted.
-   Risks R2-R4 get fixed in PR 2, one commit each.
+6. **R1 (2026-11-12): hold the Java object AND its encoded bytes** (Carlo: the cache must hold
+   Java values, not only buffers). At put time, encode once into a fresh immutable `byte[]` and
+   keep it next to the object, which wraps that same array. Flush writes the bytes (no encode on
+   the writer thread, so no race on the shared msgpack writer). Weights use the real length.
+   Copy-out into the caller's instance is `target.wrap(bytes)` until #69223 brings a fast
+   `copyTo` from the held object. Handing the held object out directly is unsafe because callers
+   mutate their instance. Risks R2-R4 get fixed in PR 2, one commit each.
 7. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
