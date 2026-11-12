@@ -104,6 +104,12 @@ async function gh(args) {
   return stdout;
 }
 
+/** Every item of a paginated list endpoint (one JSON object per line; works on any gh version). */
+async function ghList(path) {
+  const out = await gh(['api', '--paginate', '--jq', '.[]', path]);
+  return out.split('\n').filter((line) => line.trim()).map((line) => JSON.parse(line));
+}
+
 async function postComment(repo, prNumber, body) {
   await gh(['api', '-X', 'POST', `repos/${repo}/issues/${prNumber}/comments`, '-f', `body=${body}`]);
 }
@@ -149,12 +155,13 @@ async function main() {
   }
 
   if (mode === 'backport-summary') {
-    const branches = esupBranchesFromLabels(JSON.parse(process.env.LABELS_JSON || '[]'));
+    // The PR's current labels, as backport-action reads them: a re-run after a label was added
+    // would otherwise miss that target.
+    const labels = await ghList(`repos/${repo}/issues/${prNumber}/labels?per_page=100`);
+    const branches = esupBranchesFromLabels(labels);
     if (branches.length === 0) return console.log('No ESUP backport targets');
     const runId = requireEnv('RUN_ID');
-    const comments = JSON.parse(
-      await gh(['api', '--paginate', '--slurp', `repos/${repo}/issues/${prNumber}/comments?per_page=100`]),
-    ).flat();
+    const comments = await ghList(`repos/${repo}/issues/${prNumber}/comments?per_page=100`);
     const summary = findSummaryComment(comments, runId);
     const annotated = summary ? annotateSummary(summary.body, branches) : null;
     if (summary && annotated === summary.body) return console.log('Summary comment already has the ESUP warning');
