@@ -82,11 +82,11 @@ polling cursor advances in the same step as the version.
 - If validation fails, the whole update is `ABORTED` and all chunks are removed from the buffer.
 - The Hub client receives the failure through `errorMessage` and can retry the update.
 
-**D10. A policy update can be aborted externally while still buffering.**
+**D10. A policy update can be canceled externally while still buffering.**
 
 - If a leader transition happens while the transformer is still sending chunks, the policy update
   may be stuck in the buffer forever because the missing chunks are never sent. The new leader can
-  abort that pending update and start a new one.
+  cancel that pending update and start a new one.
 
 ## Alternatives considered
 
