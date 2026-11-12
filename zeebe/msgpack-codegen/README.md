@@ -30,10 +30,17 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - Every non-static field is stored under its field name, in declaration order, unless it is
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
-- Supported field types: `long`, `int`, `boolean`, `DirectBuffer` (string, or raw msgpack), enums
-  (stored by `toString()`), `List<DirectBuffer>`, other `@MsgpackPojo`s and `BaseValue`s.
+- Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
+  or raw msgpack), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, other
+  `@MsgpackPojo`s and `BaseValue`s.
+- The class must be top-level, its superclasses must not declare stored fields, and keys must be
+  unique; compilation fails otherwise.
 - Fields are read and written directly, so they must not be `private`. Scalars, strings and enums
-  must not be `final`, nested objects and lists must be.
+  must not be `final`, nested objects and lists must be. A `final UnsafeBuffer` is the exception:
+  it is wrapped in place on read, so reading does not allocate (a `DirectBuffer` field gets a new
+  view per read, and so does every element of a list).
+- String, binary and raw fields need an initializer. The resetter assigns (or wraps) the default of
+  a shared prototype instance, so a default buffer must never be modified in place.
 - Codecs and resetters are found with `Codecs.of(Type.class)` and `Codecs.resetterOf(Type.class)`
   (`ClassValue`s, by naming convention). Generated code resolves its nested codecs once, when the
   generated class is initialized.
