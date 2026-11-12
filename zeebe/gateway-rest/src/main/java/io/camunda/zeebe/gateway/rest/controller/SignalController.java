@@ -60,7 +60,11 @@ public class SignalController {
     return RequestExecutor.executeServiceMethod(
         () ->
             signalServices.broadcastSignal(
-                request.signalName(), request.variables(), request.tenantId(), authentication),
+                request.signalName(),
+                request.variables(),
+                request.tenantId(),
+                request.operationReference(),
+                authentication),
         ResponseMapper::toSignalBroadcastResponse,
         HttpStatus.OK);
   }

@@ -137,6 +137,7 @@ public class DecisionDefinitionController {
                 request.decisionKey(),
                 request.variables(),
                 request.tenantId(),
+                request.operationReference(),
                 authenticationProvider.getCamundaAuthentication()),
         ResponseMapper::toEvaluateDecisionResponse,
         HttpStatus.OK);

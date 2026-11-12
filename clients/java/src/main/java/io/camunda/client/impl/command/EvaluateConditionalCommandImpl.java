@@ -94,6 +94,13 @@ public final class EvaluateConditionalCommandImpl
   }
 
   @Override
+  public EvaluateConditionalCommandStep2 operationReference(final long operationReference) {
+    grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<EvaluateConditionalResponse> requestTimeout(
       final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;

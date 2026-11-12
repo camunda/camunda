@@ -108,7 +108,8 @@ public interface DeployResourceCommandStep1
   interface DeployResourceCommandStep2
       extends DeployResourceCommandStep1,
           CommandWithTenantStep<DeployResourceCommandStep2>,
-          FinalCommandStep<DeploymentEvent> {
+          FinalCommandStep<DeploymentEvent>,
+          CommandWithOperationReferenceStep<DeployResourceCommandStep2> {
     // the place for new optional parameters
   }
 }

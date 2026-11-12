@@ -108,13 +108,17 @@ public final class DecisionDefinitionServices
       final Long definitionKey,
       final Map<String, Object> variables,
       final String tenantId,
+      final Long operationReference,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequestWithFullResponse(
+    final var brokerRequest =
         new BrokerEvaluateDecisionRequest()
             .setDecisionId(definitionId)
             .setDecisionKey(definitionKey)
             .setVariables(getDocumentOrEmpty(variables))
-            .setTenantId(tenantId),
-        authentication);
+            .setTenantId(tenantId);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 }

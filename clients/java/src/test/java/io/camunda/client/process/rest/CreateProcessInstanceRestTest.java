@@ -73,6 +73,26 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+    final long operationReference = 456;
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotSendVariablesMetadataWhenNotSet() {
     // given
     gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);

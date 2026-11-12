@@ -34,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public final class ResourceServices extends PhysicalTenantScopedApiServices<ResourceServices> {
 
@@ -70,6 +71,9 @@ public final class ResourceServices extends PhysicalTenantScopedApiServices<Reso
     final var brokerRequest = new BrokerDeployResourceRequest();
     deployResourcesRequest.resources().forEach(brokerRequest::addResource);
     brokerRequest.setTenantId(deployResourcesRequest.tenantId());
+    if (deployResourcesRequest.operationReference() != null) {
+      brokerRequest.setOperationReference(deployResourcesRequest.operationReference());
+    }
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
@@ -262,7 +266,8 @@ public final class ResourceServices extends PhysicalTenantScopedApiServices<Reso
     return mappedException;
   }
 
-  public record DeployResourcesRequest(Map<String, byte[]> resources, String tenantId) {}
+  public record DeployResourcesRequest(
+      Map<String, byte[]> resources, String tenantId, @Nullable Long operationReference) {}
 
   public record ResourceDeletionRequest(
       long resourceKey, Long operationReference, boolean deleteHistory) {}

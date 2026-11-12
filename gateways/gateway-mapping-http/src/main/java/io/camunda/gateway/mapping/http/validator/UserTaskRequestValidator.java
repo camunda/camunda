@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.isEmpty;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -36,7 +37,9 @@ public final class UserTaskRequestValidator {
               INVALID_ARGUMENT.name());
       return Optional.of(problemDetail);
     }
-    return Optional.empty();
+    return validate(
+        violations ->
+            validateOperationReference(assignmentRequest.getOperationReference(), violations));
   }
 
   public static Optional<ProblemDetail> validateUpdateRequest(
@@ -46,6 +49,9 @@ public final class UserTaskRequestValidator {
           if (updateRequest == null
               || (updateRequest.getAction() == null && isEmpty(updateRequest.getChangeset()))) {
             violations.add(ERROR_MESSAGE_EMPTY_UPDATE_CHANGESET);
+          }
+          if (updateRequest != null) {
+            validateOperationReference(updateRequest.getOperationReference(), violations);
           }
           if (updateRequest != null && !isEmpty(updateRequest.getChangeset())) {
             final Changeset changeset = updateRequest.getChangeset();

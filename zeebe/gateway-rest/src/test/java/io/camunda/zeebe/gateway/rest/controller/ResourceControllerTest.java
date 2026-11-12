@@ -143,6 +143,66 @@ public class ResourceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldDeployResourceWithOperationReference() {
+    // given
+    final var filename = "process.bpmn";
+    final var content = new byte[] {1, 2, 3};
+
+    final var mockedResponse = new DeploymentRecord().setDeploymentKey(123);
+    when(resourceServices.deployResources(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockedResponse));
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder
+        .part("resources", content)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .filename(filename);
+    // the Java client sends the operation reference as a plain text form field
+    multipartBodyBuilder.part("operationReference", "123456").contentType(MediaType.TEXT_PLAIN);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DEPLOY_RESOURCES_ENDPOINT)
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(resourceServices).deployResources(deployRequestCaptor.capture(), any());
+    assertThat(deployRequestCaptor.getValue().operationReference()).isEqualTo(123456L);
+  }
+
+  @Test
+  void shouldRejectDeploymentWithInvalidOperationReference() {
+    // given
+    final var filename = "process.bpmn";
+    final var content = new byte[] {1, 2, 3};
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder
+        .part("resources", content)
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .filename(filename);
+    multipartBodyBuilder.part("operationReference", "0").contentType(MediaType.TEXT_PLAIN);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DEPLOY_RESOURCES_ENDPOINT)
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verify(resourceServices, Mockito.never()).deployResources(any(), any());
+  }
+
+  @Test
   void shouldDeployResourceWithMultitenancyDisabled() {
     // given
     when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);

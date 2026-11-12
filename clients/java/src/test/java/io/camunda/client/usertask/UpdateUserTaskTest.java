@@ -52,6 +52,17 @@ public final class UpdateUserTaskTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetOperationReference() {
+    // when
+    client.newUpdateUserTaskCommand(123L).operationReference(456L).send().join();
+
+    // then
+    final UserTaskUpdateRequest request =
+        gatewayService.getLastRequest(UserTaskUpdateRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(456L);
+  }
+
+  @Test
   void shouldUpdateUserTaskWithAction() {
     // when
     client.newUpdateUserTaskCommand(123L).action("foo").send().join();

@@ -283,6 +283,19 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client.newCompleteCommand(123).operationReference(operationReference).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotHaveNullResponse() {
     // given
     final CompleteJobCommandStep1 command = client.newCompleteCommand(12);

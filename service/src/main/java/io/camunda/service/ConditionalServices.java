@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateConditionalReq
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalEvaluationRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 public class ConditionalServices extends PhysicalTenantScopedApiServices<ConditionalServices> {
 
@@ -40,10 +41,16 @@ public class ConditionalServices extends PhysicalTenantScopedApiServices<Conditi
             .setProcessDefinitionKey(request.processDefinitionKey())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()));
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
 
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
   public record EvaluateConditionalRequest(
-      String tenantId, Long processDefinitionKey, Map<String, Object> variables) {}
+      String tenantId,
+      Long processDefinitionKey,
+      Map<String, Object> variables,
+      @Nullable Long operationReference) {}
 }
