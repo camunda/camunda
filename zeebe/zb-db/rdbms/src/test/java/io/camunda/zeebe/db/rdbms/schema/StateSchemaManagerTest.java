@@ -10,17 +10,19 @@ package io.camunda.zeebe.db.rdbms.schema;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.rdbms.TestDatabase;
 import io.camunda.zeebe.db.rdbms.TestH2Database;
 import java.sql.SQLException;
-import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-final class StateSchemaManagerTest {
+class StateSchemaManagerTest {
 
-  private final TestH2Database database = new TestH2Database();
+  private static final String UNIQUE_VIOLATION = "23505";
+
+  private final TestDatabase database = createDatabase();
 
   @AfterEach
   void tearDown() throws SQLException {
@@ -110,7 +112,8 @@ final class StateSchemaManagerTest {
 
     // when - then
     assertThatThrownBy(() -> insertPartition("A_", 2, 1))
-        .isInstanceOf(SQLIntegrityConstraintViolationException.class);
+        .isInstanceOfSatisfying(
+            SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo(UNIQUE_VIOLATION));
   }
 
   @Test
@@ -192,5 +195,10 @@ final class StateSchemaManagerTest {
       }
     }
     return keys;
+  }
+
+  /** Overridden to run the same tests on another database. */
+  TestDatabase createDatabase() {
+    return new TestH2Database();
   }
 }

@@ -18,30 +18,36 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
 import org.h2.jdbcx.JdbcDataSource;
+import org.postgresql.ds.PGSimpleDataSource;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * The relational storage on one in-memory H2 database, with the consistency checks on. Every
- * factory gets a partition and so a state of its own, so tests never see each other's rows, as with
+ * The relational storage on one database per JVM, with the consistency checks on. Every factory
+ * gets a partition and so a state of its own, so tests never see each other's rows, as with
  * RocksDB's directories.
  */
 final class RdbmsTestFactory {
 
   private static final AtomicInteger NEXT_PARTITION_ID = new AtomicInteger();
-  private static final RdbmsStorage STORAGE = openStorage();
 
   private RdbmsTestFactory() {}
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create() {
-    return create(nextPartition(), () -> 1);
+    return create(Database.H2);
+  }
+
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> create(final Database database) {
+    return create(database, nextPartition(), () -> 1);
   }
 
   /** A factory for a partition that other factories may share, for example after a failover. */
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create(
-          final StateIdentity partition, final LongSupplier term) {
+          final Database database, final StateIdentity partition, final LongSupplier term) {
     return new RdbmsZeebeDbFactory<>(
-        STORAGE,
+        database.storage(),
         partition,
         term,
         new ConsistencyChecksSettings(true, true),
@@ -53,9 +59,43 @@ final class RdbmsTestFactory {
     return new StateIdentity("contract-tests", NEXT_PARTITION_ID.incrementAndGet());
   }
 
-  private static RdbmsStorage openStorage() {
-    final var dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:zeebe-db-contract-tests;DB_CLOSE_DELAY=-1");
-    return RdbmsStorage.open(dataSource, "");
+  enum Database {
+    /** In memory, for the unit tests. */
+    H2,
+    /** In a container that starts with the first test using it, for the integration tests. */
+    POSTGRESQL;
+
+    private RdbmsStorage storage() {
+      return switch (this) {
+        case H2 -> H2Storage.STORAGE;
+        case POSTGRESQL -> PostgresStorage.STORAGE;
+      };
+    }
+  }
+
+  private static final class H2Storage {
+
+    private static final RdbmsStorage STORAGE = open();
+
+    private static RdbmsStorage open() {
+      final var dataSource = new JdbcDataSource();
+      dataSource.setURL("jdbc:h2:mem:zeebe-db-contract-tests;DB_CLOSE_DELAY=-1");
+      return RdbmsStorage.open(dataSource, "");
+    }
+  }
+
+  private static final class PostgresStorage {
+
+    private static final RdbmsStorage STORAGE = open();
+
+    private static RdbmsStorage open() {
+      final var container = new PostgreSQLContainer("postgres:15-alpine");
+      container.start();
+      final var dataSource = new PGSimpleDataSource();
+      dataSource.setUrl(container.getJdbcUrl());
+      dataSource.setUser(container.getUsername());
+      dataSource.setPassword(container.getPassword());
+      return RdbmsStorage.open(dataSource, "");
+    }
   }
 }

@@ -30,11 +30,11 @@ import org.junit.jupiter.api.io.TempDir;
  * through the steps the broker's recovery takes: open the snapshot, copy it into the runtime
  * directory, then open the DB on that directory.
  */
-final class RdbmsSnapshotTest {
+class RdbmsSnapshotTest {
 
   private static final StateIdentity PARTITION = new StateIdentity("raft-partition", 1);
 
-  private final TestH2Database database = new TestH2Database();
+  private final TestDatabase database = createDatabase();
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;
@@ -92,7 +92,7 @@ final class RdbmsSnapshotTest {
     final var snapshot = directory.resolve("snapshot");
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
-    try (final var otherDatabase = new TestH2Database()) {
+    try (final var otherDatabase = createDatabase()) {
       final var otherStorage = RdbmsStorage.open(otherDatabase.dataSource(), "");
 
       // when / then
@@ -110,7 +110,7 @@ final class RdbmsSnapshotTest {
     createDb(factory(storage, new StateIdentity("raft-partition", 2)), directory.resolve("other"));
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
-    try (final var otherDatabase = new TestH2Database()) {
+    try (final var otherDatabase = createDatabase()) {
       final var otherFactory =
           factory(RdbmsStorage.open(otherDatabase.dataSource(), ""), PARTITION);
       createDb(otherFactory, directory.resolve("other-runtime"));
@@ -192,5 +192,10 @@ final class RdbmsSnapshotTest {
     final var dbString = new DbString();
     dbString.wrapString(value);
     return dbString;
+  }
+
+  /** Overridden to run the same tests on another database. */
+  TestDatabase createDatabase() {
+    return new TestH2Database();
   }
 }

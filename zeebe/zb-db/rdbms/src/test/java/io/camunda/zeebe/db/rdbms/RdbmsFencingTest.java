@@ -19,6 +19,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -30,11 +31,11 @@ import org.junit.jupiter.api.io.TempDir;
  * may write. Waiting for a row lock fails fast here, so a test can show that one side waits for the
  * other without running them at the same time.
  */
-final class RdbmsFencingTest {
+class RdbmsFencingTest {
 
   private static final StateIdentity PARTITION = new StateIdentity("raft-partition", 1);
 
-  private final TestH2Database database = new TestH2Database(";LOCK_TIMEOUT=100");
+  private final TestDatabase database = createDatabase(Duration.ofMillis(100));
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;
@@ -200,5 +201,10 @@ final class RdbmsFencingTest {
     final var dbString = new DbString();
     dbString.wrapString(value);
     return dbString;
+  }
+
+  /** Overridden to run the same tests on another database. */
+  TestDatabase createDatabase(final Duration lockTimeout) {
+    return new TestH2Database(lockTimeout);
   }
 }

@@ -9,6 +9,8 @@ dependencies {
   testImplementation(libs.io.micrometer.micrometer.core)
   testImplementation(libs.org.agrona.agrona)
   testImplementation(libs.com.h2database.h2)
+  testImplementation(libs.org.postgresql.postgresql)
+  testImplementation(libs.org.testcontainers.testcontainers.postgresql)
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.net.jqwik.jqwik)

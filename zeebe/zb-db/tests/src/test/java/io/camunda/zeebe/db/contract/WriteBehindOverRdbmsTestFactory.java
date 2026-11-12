@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.cache.WriteBehindConfiguration;
 import io.camunda.zeebe.db.cache.WriteBehindZeebeDbFactory;
+import io.camunda.zeebe.db.contract.RdbmsTestFactory.Database;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 
@@ -24,12 +25,18 @@ final class WriteBehindOverRdbmsTestFactory {
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create() {
-    return create(WriteBehindConfiguration.DEFAULT);
+    return create(Database.H2);
   }
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
-      ZeebeDbFactory<ColumnFamilyType> create(final WriteBehindConfiguration configuration) {
-    return create(RdbmsTestFactory.create(), configuration);
+      ZeebeDbFactory<ColumnFamilyType> create(final Database database) {
+    return create(database, WriteBehindConfiguration.DEFAULT);
+  }
+
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> create(
+          final Database database, final WriteBehindConfiguration configuration) {
+    return create(RdbmsTestFactory.create(database), configuration);
   }
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
