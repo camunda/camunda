@@ -27,6 +27,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
@@ -50,6 +51,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The jobs are cluster-wide singletons: they run on the member with the lowest id, and all
  * tenants' jobs are started and stopped together as membership changes.
+ *
+ * <p>The tenants are those the broker started with, and follow the lifecycle of the tenant modules
+ * afterwards: {@link #putPhysicalTenant} replaces a tenant's jobs with ones for its new backup
+ * configuration, and {@link #removePhysicalTenant} stops them.
  */
 public class CheckpointSchedulingService extends Actor implements ClusterMembershipEventListener {
 
@@ -60,7 +65,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
   private final ActorSchedulingService actorScheduler;
   private final MeterRegistry meterRegistry;
   private final BrokerClient brokerClient;
-  private final List<PhysicalTenantSchedulers> tenantSchedulers = new ArrayList<>();
+  private final Map<String, PhysicalTenantSchedulers> tenantSchedulers = new LinkedHashMap<>();
 
   public CheckpointSchedulingService(
       final ClusterMembershipService membershipService,
@@ -82,9 +87,79 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         (physicalTenantId, backupCfg) -> {
           final var schedulers = createSchedulers(physicalTenantId, backupCfg);
           if (schedulers != null) {
-            tenantSchedulers.add(schedulers);
+            tenantSchedulers.put(physicalTenantId, schedulers);
           }
         });
+  }
+
+  /**
+   * Replaces the scheduled checkpoint, backup and retention jobs of a tenant with ones for the
+   * given backup configuration, or adds them for a tenant that had none. The previous jobs are
+   * closed and their meters removed before the new ones start, since both report under the same
+   * meter ids.
+   */
+  public ActorFuture<Void> putPhysicalTenant(
+      final String physicalTenantId, final BackupCfg backupCfg) {
+    final ActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () ->
+            actor.runOnCompletion(
+                closeSchedulers(physicalTenantId),
+                error -> {
+                  try {
+                    final var schedulers = createSchedulers(physicalTenantId, backupCfg);
+                    if (schedulers != null) {
+                      tenantSchedulers.put(physicalTenantId, schedulers);
+                      if (shouldStartSchedulers()) {
+                        schedulers.actors().forEach(this::submit);
+                      }
+                    }
+                    result.complete(null);
+                  } catch (final RuntimeException e) {
+                    result.completeExceptionally(e);
+                  }
+                }));
+    return result;
+  }
+
+  /** Stops the scheduled jobs of a tenant and removes their meters. */
+  public ActorFuture<Void> removePhysicalTenant(final String physicalTenantId) {
+    final ActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () ->
+            actor.runOnCompletion(
+                closeSchedulers(physicalTenantId), error -> result.complete(null)));
+    return result;
+  }
+
+  private List<ActorFuture<Void>> closeSchedulers(final String physicalTenantId) {
+    final var schedulers = tenantSchedulers.remove(physicalTenantId);
+    if (schedulers == null) {
+      return List.of();
+    }
+    final List<ActorFuture<Void>> closed =
+        schedulers.actors().stream()
+            .filter(scheduler -> !scheduler.isActorClosed())
+            .map(Actor::closeAsync)
+            .collect(Collectors.toCollection(ArrayList::new));
+    final ActorFuture<Void> released = new CompletableActorFuture<>();
+    actor.runOnCompletion(
+        closed,
+        error -> {
+          if (error != null) {
+            LOG.warn(
+                "Failed to close the checkpoint scheduling actors of physical tenant '{}'",
+                physicalTenantId,
+                error);
+          }
+          MicrometerUtil.close(schedulers.meterRegistry());
+          released.complete(null);
+        });
+    return List.of(released);
+  }
+
+  private void submit(final Actor scheduler) {
+    actorScheduler.submitActor(scheduler, SchedulingHints.ioBound());
   }
 
   @Override
@@ -198,19 +273,35 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     if (!shouldStartSchedulers()) {
       return;
     }
-    schedulerActors().stream()
-        .filter(Actor::isActorClosed)
-        .forEach(actor -> actorScheduler.submitActor(actor, SchedulingHints.ioBound()));
+    schedulerActors().stream().filter(Actor::isActorClosed).forEach(this::submit);
   }
 
   /** All physical tenants' scheduling actors, in configuration order. */
   @VisibleForTesting
   List<Actor> schedulerActors() {
-    return tenantSchedulers.stream().flatMap(schedulers -> schedulers.actors().stream()).toList();
+    return tenantSchedulers.values().stream()
+        .flatMap(schedulers -> schedulers.actors().stream())
+        .toList();
+  }
+
+  /** The scheduling actors of each physical tenant that has any. */
+  @VisibleForTesting
+  Map<String, List<Actor>> schedulerActorsByPhysicalTenant() {
+    return actor
+        .call(
+            () -> {
+              final Map<String, List<Actor>> byTenant = new LinkedHashMap<>();
+              tenantSchedulers.forEach(
+                  (tenant, schedulers) -> byTenant.put(tenant, schedulers.actors()));
+              return byTenant;
+            })
+        .join();
   }
 
   private void closeMeterRegistries() {
-    tenantSchedulers.forEach(schedulers -> MicrometerUtil.close(schedulers.meterRegistry()));
+    tenantSchedulers
+        .values()
+        .forEach(schedulers -> MicrometerUtil.close(schedulers.meterRegistry()));
   }
 
   private boolean shouldStartSchedulers() {

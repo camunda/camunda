@@ -168,6 +168,10 @@ final class PhysicalTenantModulesStep extends AbstractBrokerStartupStep
                 ignored ->
                     ctx.getClusterConfigurationService()
                         .provisionPhysicalTenant(ctx, physicalTenantId),
+                concurrencyControl)
+            .andThen(
+                ignored ->
+                    CheckpointSchedulerServiceStep.startTenantSchedulers(ctx, physicalTenantId),
                 concurrencyControl);
     concurrencyControl.runOnCompletion(
         started,
@@ -206,7 +210,12 @@ final class PhysicalTenantModulesStep extends AbstractBrokerStartupStep
     healthCheckService.releasePhysicalTenant(physicalTenantId);
     final ActorFuture<@Nullable Void> result = concurrencyControl.createFuture();
     final var stopped =
-        BrokerAdminServiceStep.shutdownTenantService(ctx, physicalTenantId, concurrencyControl)
+        CheckpointSchedulerServiceStep.stopTenantSchedulers(ctx, physicalTenantId)
+            .andThen(
+                ignored ->
+                    BrokerAdminServiceStep.shutdownTenantService(
+                        ctx, physicalTenantId, concurrencyControl),
+                concurrencyControl)
             .andThen(
                 ignored -> stopPartitionManager(ctx, concurrencyControl, physicalTenantId),
                 concurrencyControl)

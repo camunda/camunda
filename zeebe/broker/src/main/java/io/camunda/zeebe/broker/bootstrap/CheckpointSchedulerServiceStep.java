@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -74,6 +75,36 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
     } else {
       shutdownFuture.complete(brokerShutdownContext);
     }
+  }
+
+  /**
+   * Schedules the checkpoints, backups and backup retention of a tenant whose module starts while
+   * the broker runs, replacing what it had before; the tenants of the broker's start are scheduled
+   * by this step.
+   */
+  static ActorFuture<Void> startTenantSchedulers(
+      final BrokerStartupContext brokerStartupContext, final String physicalTenantId) {
+    final var schedulingService = brokerStartupContext.getCheckpointSchedulingService();
+    if (schedulingService == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    return schedulingService.putPhysicalTenant(
+        physicalTenantId,
+        brokerStartupContext
+            .getPhysicalTenantContext(physicalTenantId)
+            .config()
+            .getData()
+            .getBackup());
+  }
+
+  /** Stops the scheduled jobs of a tenant whose module stops while the broker runs. */
+  static ActorFuture<Void> stopTenantSchedulers(
+      final BrokerStartupContext brokerStartupContext, final String physicalTenantId) {
+    final var schedulingService = brokerStartupContext.getCheckpointSchedulingService();
+    if (schedulingService == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    return schedulingService.removePhysicalTenant(physicalTenantId);
   }
 
   @Override
