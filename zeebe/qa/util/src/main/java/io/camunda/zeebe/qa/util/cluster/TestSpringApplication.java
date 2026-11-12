@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
   private final PortReservations ports = new PortReservations();
   private final Set<String> refreshableKeys = new HashSet<>();
+  private final List<Path> additionalConfigLocations = new ArrayList<>();
 
   /**
    * Physical-tenant overrides, kept as the modifiers themselves rather than as materialised {@link
@@ -287,6 +289,16 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     return self();
   }
 
+  /**
+   * Makes the application read a configuration file as Spring Boot reads a mounted {@code
+   * application.yaml}, through {@code spring.config.additional-location}. Properties set with
+   * {@link #withProperty} take precedence over the file's.
+   */
+  public T withAdditionalConfigLocation(final Path file) {
+    additionalConfigLocations.add(file.toAbsolutePath());
+    return self();
+  }
+
   @Override
   public T withAdditionalProfile(final String profile) {
     additionalProfiles.add(profile);
@@ -477,7 +489,15 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   /** Returns the command line arguments that will be passed when the application is started. */
   protected String[] commandLineArgs() {
-    return new String[0];
+    if (additionalConfigLocations.isEmpty()) {
+      return new String[0];
+    }
+    return new String[] {
+      "--spring.config.additional-location="
+          + additionalConfigLocations.stream()
+              .map(file -> "file:" + file)
+              .collect(Collectors.joining(","))
+    };
   }
 
   /**
