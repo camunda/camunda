@@ -143,7 +143,7 @@ jobs:
         # extracts the labels for component and severity and sets them in the project accordingly.
         # The action must be triggered for any label change to keep the project data up to date.
         name: Add issue to Quality Board
-        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@67d00e9260887361a31f6446252fffbecae4a02e # add-bug-to-quality-board-1.0.4
+        uses: camunda/infra-global-github-actions/add-bug-to-quality-board@e6af3c4650d44677f5eb0210d9e7c128200741cd # add-bug-to-quality-board-1.0.5
         with:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           project-number: "187"
