@@ -6,8 +6,8 @@ ARG WAITFORIT_CHECKSUM="b7a04f38de1e51e7455ecf63151c8c7e405bd2d45a2d4e16f6419db7
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with Alpine.
-ARG BASE_IMAGE_PUBLIC="alpine:3.23.7"
-ARG BASE_DIGEST_PUBLIC="sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63"
+ARG BASE_IMAGE_PUBLIC="alpine:3.23.8"
+ARG BASE_DIGEST_PUBLIC="sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2"
 ARG BASE="hardened"
 
 ### Download wait-for-it.sh ###
