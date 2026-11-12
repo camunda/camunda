@@ -315,6 +315,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return requireNonNull(meterRegistry);
   }
 
+  @Override
   public Duration getScheduledTaskCheckInterval() {
     return scheduledTaskCheckInterval;
   }
