@@ -1,8 +1,8 @@
 # Write-behind cache: Phase 7 results
 
-These are the local benchmark results for the write-behind cache (see
-[write-behind-cache-design.md](write-behind-cache-design.md), Phase 7). The realistic load test on
-Kubernetes hasn't been run yet.
+These are the benchmark results for the write-behind cache (see
+[write-behind-cache-design.md](write-behind-cache-design.md), Phase 7): local benchmarks on one
+machine, and a load test on Kubernetes.
 
 ## Summary
 
@@ -17,10 +17,15 @@ Kubernetes hasn't been run yet.
 - **Cost:** with small values, the live heap grows by about the configured budget. With 1 MiB
   values, it grows by more than the budget. With small values, allocation goes up by 28% and GC
   pause time more than doubles. Recovery takes 11 ms longer.
+- **Load test:** on Kubernetes, with the same total memory, the cache gained no throughput. While
+  the cluster was healthy, it doubled processing p99 (55 against 24 ms). Once the state outgrew
+  RocksDB's memory, both runs were CPU-bound, and the cached one built a ten times larger export
+  backlog.
 
 **Recommendation: no-go.** At these gains, the cache doesn't justify its complexity and heap cost.
-Only a load test with more state than RocksDB keeps in memory could change that, so that's the
-scenario to run before closing the experiment.
+The load test with more state than RocksDB keeps in memory didn't change that, although it ran
+CPU-bound rather than disk-bound, so it doesn't fully settle that case (see
+[Kubernetes load test](#kubernetes-load-test)).
 
 ## Setup
 
@@ -129,6 +134,64 @@ What the cache's metrics showed, for a run at the defaults:
   64 MiB, or 67 MB, limit here), since it evicts after inserting.
 - Back-pressure never engaged.
 
+## Kubernetes load test
+
+**Setup:**
+- An image built from `5e504d42815`, on 3 brokers with 3 partitions and replication factor 3. Each
+broker had 3 CPUs and 3 GiB. Elasticsearch was the secondary storage. The brokers ran on spot
+nodes, because the stable node pool had no capacity.
+- RocksDB used the `PARTITION` strategy, with access metrics at `FINE` and statistics on.
+- Both runs had 1 280 MiB of heap plus RocksDB per broker. The baseline had a 512 MiB heap and
+256 MB of RocksDB per partition. The cached run had an 800 MiB heap, with room for the caches of
+all three partitions on a broker, followers included, and 160 MB of RocksDB per partition.
+- **Workload:** one service task per instance, with an 18 KB payload. Instances started at 150/s,
+and at 250/s from 16:48 UTC. One polling worker completed about 48 a second, oldest jobs first,
+so the state grew and every completion read old state. Both runs went from 16:20 to 23:15 UTC on
+11 November 2026.
+
+Windows: A is 16:25–16:48 at 150/s, healthy, with 0.1–0.3 GiB of state per partition. B
+(17:20–18:20), C (19:30–20:30) and D (22:00–23:00) are at 250/s, and overloaded in both runs. The
+figures come from the load tests' metrics reports.
+
+| Window |  Run   | Created/s | Completed/s | Backpressure | Processing p50 / p99 | Client p99 |   Heap   |   Disk   | Export backlog |
+|--------|--------|-----------|-------------|--------------|----------------------|------------|----------|----------|----------------|
+| A      | off    | 150.0     | 47.5        | 0%           | 2.9 / 24 ms          | 47 ms      | 0.47 GiB | 4.1 GiB  | 333            |
+| A      | cached | 150.0     | 47.3        | 0%           | 2.9 / 55 ms          | 106 ms     | 0.75 GiB | 4.3 GiB  | 494            |
+| B      | off    | 250.0     | 39.0        | 14%          | 26 / 560 ms          | 1 639 ms   | 0.47 GiB | 10.9 GiB | 2 253          |
+| B      | cached | 245.4     | 33.1        | 32%          | 82 / 664 ms          | ≥ 5 s      | 0.78 GiB | 11.1 GiB | 5 946          |
+| C      | off    | 210.2     | 26.5        | 54%          | 168 / 687 ms         | ≥ 5 s      | 0.48 GiB | 18.5 GiB | 1 222          |
+| C      | cached | 223.1     | 26.1        | 53%          | 153 / 685 ms         | ≥ 5 s      | 0.78 GiB | 23.3 GiB | 14 465         |
+| D      | off    | 227.0     | 26.9        | 53%          | 171 / 642 ms         | ≥ 5 s      | 0.46 GiB | 25.8 GiB | 1 357          |
+| D      | cached | 216.3     | 25.9        | 54%          | 159 / 671 ms         | ≥ 5 s      | 0.76 GiB | 34.1 GiB | 14 195         |
+
+The client latency histogram stops at 5 s.
+
+Detailed metrics were only collected during the ramp-up, in the 5 minutes before 16:23 UTC, with
+about 0.07 GiB of state per partition. They come from live Prometheus queries:
+
+- **Read cache:** 72% of cache gets missed. RocksDB served 12 000 reads a second at 18 µs on
+  average, against 40 000 at 6.3 µs without the cache. Its data-block cache hit rate fell from 94
+  to 82%.
+- **Writer:** 31% fewer keys were written than committed. At most 0.25 MiB was pending, commits
+  never waited, snapshot catch-up took 0.03 ms against a 12.6 ms checkpoint, and nothing failed.
+- **Heap:** the live set after GC peaked at 401 MiB against 213 MiB, and the longest GC pause took
+  271 ms against 35 ms.
+
+What it shows:
+
+- While the cluster was healthy, the cache didn't change throughput, but it doubled processing and
+  client p99, used 0.28 GiB more heap, and paused for GC much longer.
+- With large state, in C and D at about 7 GiB per partition on disk, far beyond RocksDB's 53–85 MiB
+  block cache and the brokers' roughly 1.2 GiB of page cache, the cache gained no throughput:
+  completions were 1.5% and 3.6% lower. The cached run's export backlog was ten times larger and
+  its disk use up to 32% higher. A likely reason is that its brokers were throttled for 90% of the
+  time instead of 80%, so the exporter fell behind and held back log compaction, but that isn't
+  proven.
+- From 17:20 UTC both runs were CPU-bound, after the start rate went up to 250/s, so the
+  large-state windows don't isolate RocksDB's disk reads. The detailed metrics weren't collected
+  for those windows, because access to Prometheus expired. A baseline broker was preempted at about
+  17:02 UTC and recovered.
+
 ## What this means
 
 1. **zb-db isn't the bottleneck.** With the WAL off and enough memory, a RocksDB write is a
@@ -145,12 +208,14 @@ What the cache's metrics showed, for a run at the defaults:
    checkpoint, and the pending budget was never reached.
 5. **The cost is real.** More live heap, more allocation and GC, and a cache that can overshoot its
    limit, all for a gain inside the noise.
+6. **The cluster agrees.** On Kubernetes, the cache added latency and heap while the cluster was
+   healthy, and gained nothing once the state outgrew RocksDB's memory.
 
 ## Not done
 
-- **The realistic load test** on Kubernetes, with `accessMetrics: FINE` and `enableStatistics`. It
-  is the one scenario that could still change the decision: state larger than RocksDB's memory, so
-  that RocksDB reads go to disk.
+- **A disk-bound comparison.** The load test's large-state windows were CPU-bound. A run at a rate
+  the cluster sustains, with the detailed metrics collected throughout, would isolate RocksDB's
+  disk reads. Nothing so far suggests the cache would win there.
 - **The off-heap tier and `mayExist`.** Neither addresses the findings above.
 - **An ADR.** It's only planned for a go.
 
