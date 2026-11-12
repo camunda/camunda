@@ -8,10 +8,13 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  createSingleInstance,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 
 type ProcessDeployment = {
   readonly processInstanceKey: string;
@@ -30,7 +33,7 @@ test.beforeAll(async () => {
     processInstanceKey: instance.processInstanceKey,
   };
 
-  await sleep(2000);
+  await waitForProcessInstancesIndexed([instance.processInstanceKey]);
 });
 
 test.describe('Call Activities', () => {

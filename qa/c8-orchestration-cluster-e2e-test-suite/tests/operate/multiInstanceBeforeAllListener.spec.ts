@@ -14,10 +14,10 @@ import {
   createSingleInstance,
   createWorker,
   deployWithSubstitutions,
+  waitForElementInstance,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 
 const suffix = randomUUID().slice(0, 8);
 const processId = `mi-el-basic-collection-ui-${suffix}`;
@@ -45,8 +45,14 @@ test.beforeAll(async () => {
   const instance = await createSingleInstance(processId, 1);
   processInstanceKey = String(instance.processInstanceKey);
 
-  // Allow beforeAll to fire and the MI body to materialise.
-  await sleep(10000);
+  // Inner instances only exist once the beforeAll listener has completed and
+  // the MI body has materialised.
+  await waitForElementInstance({
+    processInstanceKey,
+    elementId: 'mi_task',
+    type: 'SERVICE_TASK',
+    state: 'ACTIVE',
+  });
 });
 
 test.afterAll(async () => {

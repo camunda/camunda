@@ -254,7 +254,9 @@ class OperateProcessesPage {
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        await sleep(5_000);
+        // Click only once the list has finished (re)loading, so the link
+        // belongs to the filtered results rather than the previous list.
+        await expect(this.page.getByTestId('data-table-loader')).toBeHidden();
         await this.processInstanceLink.click();
         return;
       } catch {
@@ -620,12 +622,11 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached'});
-          await sleep(200);
+          await expect(checkbox).toBeVisible();
           if (!(await checkbox.isChecked())) {
             await checkbox.click();
           }
-          await sleep(100);
+          await expect(checkbox).toBeChecked();
           break;
         } catch (error) {
           retryCount++;

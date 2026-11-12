@@ -10,6 +10,7 @@ import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
 import {Camunda8, HTTPError} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {expect} from '@playwright/test';
 import {sleep} from './sleep';
 
 const c8 = new Camunda8({
@@ -77,6 +78,33 @@ const deployWithSubstitutions = async (
   }
 };
 
+/**
+ * Creates a process instance, retrying while the create is rejected
+ * `NOT_FOUND`.
+ *
+ * A deployment reaches the partitions asynchronously, so a create issued right
+ * after one can land on a partition that has not applied it yet. Retrying only
+ * that rejection lets callers create instances straight after `deploy()`
+ * instead of sleeping first; every other rejection is raised immediately.
+ */
+const createProcessInstanceOnceDeployed = async (
+  request: Parameters<typeof zeebe.createProcessInstance>[0],
+  timeout: number = 30_000,
+) => {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    try {
+      return await zeebe.createProcessInstance(request);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes('NOT_FOUND') || Date.now() > deadline) {
+        throw error;
+      }
+      await sleep(500);
+    }
+  }
+};
+
 const createInstances = async (
   processDefinitionId: string,
   processDefinitionVersion: number,
@@ -85,7 +113,7 @@ const createInstances = async (
 ) => {
   const instances = [];
   for (let i = 0; i < numberOfInstances; i++) {
-    const instance = await zeebe.createProcessInstance({
+    const instance = await createProcessInstanceOnceDeployed({
       processDefinitionId,
       processDefinitionVersion,
       variables: variables ?? {},
@@ -100,7 +128,7 @@ const createSingleInstance = async (
   processDefinitionVersion: number,
   variables?: JSONDoc,
 ) => {
-  return zeebe.createProcessInstance({
+  return createProcessInstanceOnceDeployed({
     processDefinitionId,
     processDefinitionVersion,
     variables: {...(variables ?? {})},
@@ -170,6 +198,103 @@ const setVariables = async (
   await zeebeGrpc.setVariables({elementInstanceKey, variables, local});
 };
 
+/**
+ * Waits until every given process instance is visible in secondary storage,
+ * so UI pages and search APIs opened afterwards can find them. Returns as
+ * soon as they are indexed instead of sleeping for a worst-case delay.
+ */
+async function waitForProcessInstancesIndexed(
+  processInstanceKeys: Array<string | number>,
+  timeout: number = 60_000,
+) {
+  const pending = new Set(processInstanceKeys.map(String));
+  await expect
+    .poll(
+      async () => {
+        for (const key of [...pending]) {
+          const res = await zeebe.searchProcessInstances({
+            filter: {processInstanceKey: key},
+          });
+          if (!res?.items?.length) {
+            break;
+          }
+          pending.delete(key);
+        }
+        return [...pending];
+      },
+      {
+        message: 'process instances not yet indexed',
+        intervals: [500, 1_000],
+        timeout,
+      },
+    )
+    .toEqual([]);
+}
+
+/**
+ * Waits until the process instance reaches the given state in secondary
+ * storage, e.g. until a worker has driven it to completion.
+ */
+async function waitForProcessInstanceState(
+  processInstanceKey: string | number,
+  state: 'ACTIVE' | 'COMPLETED' | 'TERMINATED',
+  timeout: number = 60_000,
+) {
+  await expect
+    .poll(
+      async () => {
+        const res = await zeebe.searchProcessInstances({
+          filter: {processInstanceKey: String(processInstanceKey)},
+        });
+        return res?.items?.[0]?.state;
+      },
+      {intervals: [500, 1_000], timeout},
+    )
+    .toBe(state);
+}
+
+/**
+ * Waits until at least one element instance matching the filter exists, e.g.
+ * until a multi-instance body has been activated.
+ */
+async function waitForElementInstance(
+  filter: Parameters<typeof zeebe.searchElementInstances>[0]['filter'],
+  timeout: number = 60_000,
+) {
+  await expect
+    .poll(
+      async () => {
+        const res = await zeebe.searchElementInstances({filter});
+        return res?.items?.length ?? 0;
+      },
+      {intervals: [500, 1_000], timeout},
+    )
+    .toBeGreaterThan(0);
+}
+
+/**
+ * Waits until a process-instance variable holds the given (JSON-serialised)
+ * value in secondary storage, e.g. after editing it in Operate.
+ */
+async function waitForVariableValue(
+  processInstanceKey: string | number,
+  name: string,
+  value: string,
+  timeout: number = 60_000,
+) {
+  await expect
+    .poll(
+      async () => {
+        const res = await zeebe.searchVariables({
+          filter: {processInstanceKey: String(processInstanceKey), name},
+        });
+        return res?.items?.[0]?.value;
+      },
+      {intervals: [500, 1_000], timeout},
+    )
+    .toBe(value);
+}
+
 async function checkUpdateOnVersion(
   targetVersion: string,
   processInstanceKey: string,
@@ -213,6 +338,10 @@ export {
   deploy,
   deployWithSubstitutions,
   waitForLatestProcessVersion,
+  waitForProcessInstancesIndexed,
+  waitForProcessInstanceState,
+  waitForElementInstance,
+  waitForVariableValue,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,

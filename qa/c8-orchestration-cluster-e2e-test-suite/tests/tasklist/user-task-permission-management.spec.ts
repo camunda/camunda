@@ -9,7 +9,6 @@
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
-import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {buildUrl, jsonHeaders} from 'utils/http';
@@ -50,7 +49,6 @@ const createdUsernames: string[] = [];
 test.describe.serial('Task visible to assignee with READ permission', () => {
   test.beforeAll(async ({request}) => {
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -87,7 +85,7 @@ test.describe.serial('Task visible to assignee with READ permission', () => {
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, userTaskKey, aliceUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -128,7 +126,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -153,7 +150,7 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, userTaskKey, aliceUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -192,7 +189,6 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -239,7 +235,7 @@ test.describe.serial('Task not visible to user without READ permission', () => {
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, bobUserTaskKey, bobUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -295,7 +291,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -334,8 +329,6 @@ test.describe
     authorizationKeys.push(claimAuthKey);
 
     userTaskKey = await findUserTask(request, processInstanceKey, 'CREATED');
-
-    await sleep(3000);
   });
 
   test.afterAll(async ({request}) => {
@@ -373,7 +366,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -402,8 +394,6 @@ test.describe
     );
 
     userTaskKey = await findUserTask(request, processInstanceKey, 'CREATED');
-
-    await sleep(3000);
   });
 
   test.afterAll(async ({request}) => {
@@ -439,7 +429,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -553,7 +542,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -616,7 +604,7 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, bobUserTaskKey, bobUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -658,7 +646,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     completePermissionTestId = Date.now().toString();
     const instance = await createSingleInstance(PROCESS_ID, 1, {
@@ -714,7 +701,7 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, userTaskKey, aliceUser.username);
   });
 
   test.afterAll(async ({request}) => {
@@ -755,7 +742,6 @@ test.describe
     createdUsernames.length = 0;
 
     await deploy(['./resources/user_task_api_test_process.bpmn']);
-    await sleep(500);
 
     const instance = await createSingleInstance(PROCESS_ID, 1);
     const processInstanceKey = instance.processInstanceKey;
@@ -808,7 +794,7 @@ test.describe
     );
     expect(assignRes.status()).toBe(204);
 
-    await sleep(3000);
+    await expectUserTaskAssigned(request, userTaskKey, aliceUser.username);
   });
 
   test.afterAll(async ({request}) => {
