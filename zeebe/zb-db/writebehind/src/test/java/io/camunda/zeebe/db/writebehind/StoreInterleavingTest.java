@@ -126,6 +126,52 @@ final class StoreInterleavingTest {
     assertThat(store.exists(key(1))).isTrue();
   }
 
+  @Test
+  void shouldNotCacheLoadedValueOverNewerFlushedValue() throws Exception {
+    // given a read that loaded a stored value and is about to cache it
+    storeDirectly(key(1), held(1));
+    final var reader = new TestThread(() -> longOf(key(1)));
+    final var pause = backend.pauseOnWeigh(reader.thread, key(1));
+    reader.start();
+    pause.awaitReached();
+
+    // when a newer value is flushed before the read caches the loaded one
+    TestValues.commit(store, key(1), held(2));
+    store.awaitFlushed();
+    pause.release();
+    reader.join();
+
+    // then
+    assertThat(longOf(key(1))).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotCacheLoadedValueOfKeyThatWasDeletedSince() throws Exception {
+    // given a read that loaded a stored value and is about to cache it
+    storeDirectly(key(1), held(1));
+    final var reader = new TestThread(() -> longOf(key(1)));
+    final var pause = backend.pauseOnWeigh(reader.thread, key(1));
+    reader.start();
+    pause.awaitReached();
+
+    // when the key is deleted and flushed before the read caches the loaded value
+    TestValues.commit(store, key(1), null);
+    store.awaitFlushed();
+    pause.release();
+    reader.join();
+
+    // then
+    assertThat(longOf(key(1))).isNull();
+    assertThat(store.exists(key(1))).isFalse();
+  }
+
+  private void storeDirectly(final RawKey key, final HeldValue value) {
+    try (final var batch = storage.newBatch()) {
+      batch.put(key.bytes(), value.bytes());
+      batch.write();
+    }
+  }
+
   private @Nullable Long longOf(final RawKey key) {
     return TestValues.longOf(store.get(key, new DbLong()));
   }

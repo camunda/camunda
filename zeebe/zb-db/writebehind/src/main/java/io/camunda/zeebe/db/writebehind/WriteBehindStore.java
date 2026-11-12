@@ -167,9 +167,24 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
     final var value = backend.get(key, prototype);
     countStorageGet(key, value != null);
     if (cache != null && (epoch & 1) == 0 && flushEpoch == epoch) {
-      cache.put(key, new Version<>(value, 0));
+      cacheLoaded(cache, key, new Version<>(value, 0), epoch);
     }
     return value;
+  }
+
+  /**
+   * Caches a value that a read loaded from the storage during {@code epoch}, unless a flush started
+   * since. A flush may start right after the epoch check, and cache a newer value or evict a
+   * deleted key; a plain put would then overwrite that value or bring the key back. So the loaded
+   * value only goes into an empty slot, and leaves again if a flush started meanwhile; anything the
+   * flush put in its place stays.
+   */
+  private void cacheLoaded(
+      final Cache<K, Version<V>> cache, final K key, final Version<V> loaded, final long epoch) {
+    final var map = cache.asMap();
+    if (map.putIfAbsent(key, loaded) == null && flushEpoch != epoch) {
+      map.remove(key, loaded);
+    }
   }
 
   /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
