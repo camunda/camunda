@@ -45,9 +45,14 @@ final class GroupCache {
         };
   }
 
-  /** The rows of the group by key, or null if the group isn't cached. Don't change the map. */
+  /**
+   * An immutable copy of the rows of the group by key, or null if the group isn't cached. A copy,
+   * because a later {@link #apply} changes the cached map and the caller reads the result without
+   * the lock.
+   */
   synchronized @Nullable Map<Object, Object> get(final EntityType<?, ?> type, final Object group) {
-    return groups.get(new GroupId(type, group));
+    final var rows = groups.get(new GroupId(type, group));
+    return rows == null ? null : Map.copyOf(rows);
   }
 
   /** Caches the committed rows of a group, unless it is too big. */
