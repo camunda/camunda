@@ -295,12 +295,62 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   /**
    * Call it before a scan of a column family: loads its key index if it has one that isn't loaded
-   * yet. Costs one map lookup when there is nothing to do.
+   * yet, or refills a window that deletes drained. Costs one map lookup when there is nothing to
+   * do.
    */
   void prepareKeyIndex(final long columnFamily) {
     final var index = keyIndexes.get(columnFamily);
-    if (index != null && index.state() == KeyIndex.State.UNLOADED) {
+    if (index == null) {
+      return;
+    }
+    if (index.state() == KeyIndex.State.UNLOADED) {
       loadKeyIndex(index);
+    } else if (index.needsRefill(config.keyIndexMaxKeys())) {
+      refillKeyIndex(index);
+    }
+  }
+
+  /**
+   * Extends the window of a drained index by a chunk of keys beyond the bound, on the calling
+   * thread. A chunk is a quarter of the index, so a scan isn't held up for long.
+   */
+  private void refillKeyIndex(final KeyIndex<K> index) {
+    final var bound = index.bound();
+    if (bound == null) {
+      return;
+    }
+    final long group = index.group();
+    // away from the covered end: forward for a window of the lowest keys, else backward
+    final boolean forward = index.policy().keepsLowest();
+    final var more = new ArrayList<K>();
+    final @Nullable K next;
+    final var view = openView(backend.groupRange(group));
+    try (final var source = new ViewSource<>(backend, view)) {
+      if (forward) {
+        source.seek(bound);
+      } else {
+        source.seekForPrev(bound);
+      }
+      next = collect(source, group, config.keyIndexMaxKeys() / 4, more);
+    }
+
+    final long stamp = publishLock.writeLock();
+    try {
+      if (index.state() != KeyIndex.State.LOADED || !bound.equals(index.bound())) {
+        // another thread extended or disabled it first
+        return;
+      }
+      if (index.lastCommitSeq() > view.viewSeq()) {
+        metrics.keyIndexDiscardedRefills.increment();
+        if (index.recordDiscardedLoad() >= MAX_DISCARDED_LOADS) {
+          disableKeyIndex(index, "commits made " + MAX_DISCARDED_LOADS + " refills obsolete");
+        }
+      } else {
+        index.extend(more, next);
+        metrics.keyIndexRefills.increment();
+      }
+    } finally {
+      publishLock.unlockWrite(stamp);
     }
   }
 

@@ -20,8 +20,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Each seek picks the committed source: the {@link IndexSource} if the column family has a
  * loaded key index whose window covers the seek key, which opens no storage iterator, else a {@link
- * ViewSource}. An index source can turn stale in the middle of a scan; the cursor then replaces it
- * with a view that it seeks to the current key, so that no key is returned twice or skipped.
+ * ViewSource}. A scan that runs out of a partial window continues with a view, see {@link
+ * HandoverSource}. An index source can turn stale in the middle of a scan; the cursor then replaces
+ * it with a view that it seeks to the current key, so that no key is returned twice or skipped.
  */
 final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseable {
 
@@ -119,22 +120,24 @@ final class MergingCursor<K extends Comparable<K>, V, T> implements AutoCloseabl
   }
 
   /**
-   * Positions an index source at {@code key} if the index may serve this scan. A scan that would
-   * run out of a partial window into the keys beyond it can't use the index.
+   * Positions an index source at {@code key} if the index may serve this scan. A scan that runs out
+   * of a partial window into the keys beyond it continues with a view at the bound.
    */
   private boolean useIndex(final KeyIndex<K> index, final K key) {
     // the sequence before the version, see KeyIndex#isStableAsOf
     final long seq = store.committedSeq();
     final long version = index.version();
     final var bound = index.bound();
-    if (!index.isStableAsOf(version, seq)
-        || !index.covers(bound, key)
-        || (bound != null && index.handsOver(forward))) {
+    if (!index.isStableAsOf(version, seq) || !index.covers(bound, key)) {
       return false;
     }
     store.ensureUsable();
     store.metrics().indexedScans.increment();
-    committed = new IndexSource<>(store, index, version);
+    final var source = new IndexSource<>(store, index, version);
+    committed =
+        bound != null && index.handsOver(forward)
+            ? new HandoverSource<>(source, store, range, bound)
+            : source;
     seekInDirection(key);
     if (committed().isStale()) {
       restartFromView(key);
