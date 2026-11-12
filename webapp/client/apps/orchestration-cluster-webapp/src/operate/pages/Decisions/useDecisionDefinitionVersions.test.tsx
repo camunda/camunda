@@ -25,6 +25,13 @@ function Versions() {
 	return <output>{`${isFetching || hasNextPage ? 'Loading' : 'Complete'}: ${data?.length ?? 0} versions`}</output>;
 }
 
+const FIRST_PAGE_REQUEST = {
+	filter: {decisionDefinitionId: 'invoice-approval', tenantId: 'tenant-a'},
+	sort: [{field: 'version', order: 'DESC'}],
+	page: {limit: 1000},
+};
+const SECOND_PAGE_REQUEST = {...FIRST_PAGE_REQUEST, page: {after: 'first-page', limit: 1000}};
+
 describe('useDecisionDefinitionVersions', () => {
 	it.for([
 		{
@@ -32,14 +39,14 @@ describe('useDecisionDefinitionVersions', () => {
 			firstCount: 1,
 			totalItems: 1,
 			hasMoreTotalItems: false,
-			expectedRequests: 1,
+			expectedRequests: [[FIRST_PAGE_REQUEST]],
 		},
 		{
 			description: 'an exact total on a full page',
 			firstCount: 1000,
 			totalItems: 1000,
 			hasMoreTotalItems: false,
-			expectedRequests: 1,
+			expectedRequests: [[FIRST_PAGE_REQUEST]],
 		},
 		{
 			description: 'an exact total across multiple pages',
@@ -47,7 +54,7 @@ describe('useDecisionDefinitionVersions', () => {
 			secondCount: 1,
 			totalItems: 1001,
 			hasMoreTotalItems: false,
-			expectedRequests: 2,
+			expectedRequests: [[FIRST_PAGE_REQUEST], [SECOND_PAGE_REQUEST]],
 		},
 		{
 			description: 'a capped total across multiple pages',
@@ -56,7 +63,7 @@ describe('useDecisionDefinitionVersions', () => {
 			totalItems: 1,
 			hasMoreTotalItems: true,
 			endCursor: null,
-			expectedRequests: 2,
+			expectedRequests: [[FIRST_PAGE_REQUEST], [SECOND_PAGE_REQUEST]],
 		},
 		{
 			description: 'a missing cursor with more reported items',
@@ -64,7 +71,7 @@ describe('useDecisionDefinitionVersions', () => {
 			totalItems: 2,
 			hasMoreTotalItems: false,
 			firstCursor: null,
-			expectedRequests: 1,
+			expectedRequests: [[FIRST_PAGE_REQUEST]],
 		},
 		{
 			description: 'a repeated cursor with a capped total',
@@ -73,14 +80,14 @@ describe('useDecisionDefinitionVersions', () => {
 			totalItems: 1,
 			hasMoreTotalItems: true,
 			endCursor: 'first-page',
-			expectedRequests: 2,
+			expectedRequests: [[FIRST_PAGE_REQUEST], [SECOND_PAGE_REQUEST]],
 		},
 		{
 			description: 'an empty page carrying a cursor',
 			firstCount: 0,
 			totalItems: 1,
 			hasMoreTotalItems: true,
-			expectedRequests: 1,
+			expectedRequests: [[FIRST_PAGE_REQUEST]],
 		},
 	])(
 		'should avoid an extra request after loading $description',
@@ -147,19 +154,7 @@ describe('useDecisionDefinitionVersions', () => {
 				await expect
 					.element(screen.getByRole('status'))
 					.toHaveTextContent(`Complete: ${firstCount + secondCount} versions`);
-				expect(onRequest).toHaveBeenCalledTimes(expectedRequests);
-				expect(onRequest).toHaveBeenNthCalledWith(1, {
-					filter: {decisionDefinitionId: 'invoice-approval', tenantId: 'tenant-a'},
-					sort: [{field: 'version', order: 'DESC'}],
-					page: {limit: 1000},
-				});
-				if (expectedRequests === 2) {
-					expect(onRequest).toHaveBeenNthCalledWith(2, {
-						filter: {decisionDefinitionId: 'invoice-approval', tenantId: 'tenant-a'},
-						sort: [{field: 'version', order: 'DESC'}],
-						page: {after: 'first-page', limit: 1000},
-					});
-				}
+				expect(onRequest.mock.calls).toEqual(expectedRequests);
 			} finally {
 				await cleanup();
 				queryClient.clear();
