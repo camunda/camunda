@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
@@ -102,7 +102,7 @@ final class CommandBufferingBehaviorTest {
   @Test
   void shouldAssignMainIndexWhenInstanceIsGoneAndCommandCarriesNoOrdinal() {
     // given: no root element instance, and a command value without an ordinal field
-    final UnifiedRecordValue command =
+    final MsgpackRecordValue command =
         new MessageRecord().setName("ordinal-less").setCorrelationKey("key").setTimeToLive(0L);
 
     // when

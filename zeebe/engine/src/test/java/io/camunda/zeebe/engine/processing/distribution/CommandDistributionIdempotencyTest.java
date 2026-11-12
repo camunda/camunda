@@ -72,7 +72,7 @@ import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -1254,7 +1254,7 @@ public class CommandDistributionIdempotencyTest {
         final ValueType valueType,
         final Intent intent,
         final Long recordKey,
-        final UnifiedRecordValue commandValue) {
+        final MsgpackRecordValue commandValue) {
 
       if (matchesScenario(intent, recordKey, commandValue)) {
         // intercept the first acknowledgement, pass on the rest
@@ -1265,7 +1265,7 @@ public class CommandDistributionIdempotencyTest {
     }
 
     private boolean matchesScenario(
-        final Intent intent, final Long recordKey, final UnifiedRecordValue commandValue) {
+        final Intent intent, final Long recordKey, final MsgpackRecordValue commandValue) {
       // allow other inter-partition commands to continue without waiting for the signal
       if (intent != CommandDistributionIntent.ACKNOWLEDGE) {
         return false;

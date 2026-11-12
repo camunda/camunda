@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -16,7 +17,7 @@ import java.util.Objects;
 import org.assertj.core.api.AbstractObjectAssert;
 
 public record TestEntry(
-    long key, int sourceIndex, UnifiedRecordValue recordValue, RecordMetadata recordMetadata)
+    long key, int sourceIndex, MsgpackRecordValue recordValue, RecordMetadata recordMetadata)
     implements LogAppendEntry {
 
   public static LogAppendEntry ofDefaults() {
@@ -77,7 +78,7 @@ public record TestEntry(
   public static class TestLogAppendEntryBuilder {
     private long key = -1L;
     private int sourceIndex = -1;
-    private UnifiedRecordValue recordValue = new UnifiedRecordValue(10);
+    private MsgpackRecordValue recordValue = new UnifiedRecordValue(10);
     private RecordMetadata recordMetadata = new RecordMetadata().intent(Intent.UNKNOWN);
 
     public TestLogAppendEntryBuilder withKey(final long key) {
@@ -90,7 +91,7 @@ public record TestEntry(
       return this;
     }
 
-    public TestLogAppendEntryBuilder withRecordValue(final UnifiedRecordValue recordValue) {
+    public TestLogAppendEntryBuilder withRecordValue(final MsgpackRecordValue recordValue) {
       this.recordValue = recordValue;
       return this;
     }

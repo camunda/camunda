@@ -13,7 +13,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -43,7 +43,7 @@ public final class InterPartitionCommandSenderService extends Actor
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     actor.submit(() -> commandSender.sendCommand(receiverPartitionId, valueType, intent, command));
   }
 
@@ -53,7 +53,7 @@ public final class InterPartitionCommandSenderService extends Actor
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     actor.submit(
         () ->
             commandSender.sendCommand(receiverPartitionId, valueType, intent, recordKey, command));
@@ -65,7 +65,7 @@ public final class InterPartitionCommandSenderService extends Actor
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue command,
+      final MsgpackRecordValue command,
       final AuthInfo authInfo) {
     actor.submit(
         () ->

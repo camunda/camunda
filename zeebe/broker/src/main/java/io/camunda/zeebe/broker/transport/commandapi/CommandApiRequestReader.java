@@ -12,8 +12,8 @@ import static io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder.TEMP
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import io.camunda.zeebe.broker.transport.RequestReaderException;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -23,7 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class CommandApiRequestReader implements RequestReader {
 
-  private UnifiedRecordValue value;
+  private MsgpackRecordValue value;
   private final RecordMetadata metadata = new RecordMetadata();
   private final DirectBuffer toolName = new UnsafeBuffer(0, 0);
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -62,7 +62,7 @@ public class CommandApiRequestReader implements RequestReader {
       metadata.requestChannelType(requestChannelType);
     }
     if (ValueTypes.isUserCommand(valueType)) {
-      final var record = UnifiedRecordValue.fromValueType(valueType);
+      final var record = MsgpackRecordValue.fromValueType(valueType);
       if (record != null) {
         final int valueOffset =
             commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
@@ -92,7 +92,7 @@ public class CommandApiRequestReader implements RequestReader {
     return commandRequestDecoder;
   }
 
-  public UnifiedRecordValue value() {
+  public MsgpackRecordValue value() {
     return value;
   }
 

@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -200,7 +201,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   public BatchOperationCreationRecord setFollowUpCommand(
-      final ValueType valueType, final Intent intent, final UnifiedRecordValue value) {
+      final ValueType valueType, final Intent intent, final MsgpackRecordValue value) {
     getFollowUpCommand().setValueType(valueType).setIntent(intent).setRecordValue(value);
     return this;
   }

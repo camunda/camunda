@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -43,7 +43,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
   public boolean appendCommandRecord(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final FollowUpCommandMetadata metadata) {
     final ValueType valueType = value.valueType();
     if (valueType == null) {
@@ -73,7 +73,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
   @Override
   public boolean canAppendRecords(
-      final List<? extends UnifiedRecordValue> values, final FollowUpCommandMetadata metadata) {
+      final List<? extends MsgpackRecordValue> values, final FollowUpCommandMetadata metadata) {
     if (values.isEmpty()) {
       return true;
     }

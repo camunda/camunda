@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -71,7 +72,7 @@ public final class NestedRecord extends ObjectValue implements NestedRecordValue
   }
 
   @Override
-  public UnifiedRecordValue getRecordValue() {
+  public MsgpackRecordValue getRecordValue() {
     // fetch a concrete instance of the record value by type
     final var valueType = getValueType();
     if (valueType == ValueType.NULL_VAL) {
@@ -83,12 +84,12 @@ public final class NestedRecord extends ObjectValue implements NestedRecordValue
       return storedRecordValue;
     }
 
-    final var recordValue = UnifiedRecordValue.fromValueType(valueType);
+    final var recordValue = MsgpackRecordValue.fromValueType(valueType);
     if (recordValue == null) {
       throw new IllegalStateException(
           "Expected to read the record value, but it's type `"
               + valueType.name()
-              + "` is unknown. Please add it to UnifiedRecordValue#fromValueType.");
+              + "` is unknown. Please add it to MsgpackRecordValue#fromValueType.");
     }
 
     // write the record value property's content into a buffer
@@ -102,7 +103,7 @@ public final class NestedRecord extends ObjectValue implements NestedRecordValue
     return recordValue;
   }
 
-  public NestedRecord setRecordValue(final UnifiedRecordValue recordValue) {
+  public NestedRecord setRecordValue(final MsgpackRecordValue recordValue) {
     if (recordValue == null) {
       recordValueProperty.reset();
       return this;

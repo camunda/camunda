@@ -10,8 +10,8 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
@@ -76,7 +76,7 @@ public final class ProcessingExporterTransistor implements StreamProcessorLifecy
       metadata.reset();
       rawEvent.readMetadata(metadata);
 
-      final UnifiedRecordValue recordValue =
+      final MsgpackRecordValue recordValue =
           recordValues.readRecordValue(rawEvent, metadata.getValueType());
       typedEvent.wrap(rawEvent, metadata, recordValue);
 

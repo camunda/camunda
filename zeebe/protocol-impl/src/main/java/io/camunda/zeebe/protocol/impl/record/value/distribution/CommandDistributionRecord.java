@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -53,7 +54,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class CommandDistributionRecord extends UnifiedRecordValue
     implements CommandDistributionRecordValue {
 
-  private static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
+  private static final Map<ValueType, Supplier<MsgpackRecordValue>> RECORDS_BY_TYPE =
       new EnumMap<>(ValueType.class);
   /*
    NOTE! When adding a new property here it must also be added to the ProtocolFactory! This class
@@ -162,7 +163,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public UnifiedRecordValue getCommandValue() {
+  public MsgpackRecordValue getCommandValue() {
     // fetch a concrete instance of the record value by type
     final var valueType = getValueType();
     if (valueType == ValueType.NULL_VAL) {
@@ -194,7 +195,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return concreteCommandValue;
   }
 
-  public CommandDistributionRecord setCommandValue(final UnifiedRecordValue commandValue) {
+  public CommandDistributionRecord setCommandValue(final MsgpackRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
       return this;

@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<T> {
+public final class CopiedRecord<T extends MsgpackRecordValue> implements Record<T> {
 
   private final ValueType valueType;
   private final T recordValue;
@@ -74,12 +74,12 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
-    final UnifiedRecordValue value = copiedRecord.getValue();
+    final MsgpackRecordValue value = copiedRecord.getValue();
     final byte[] bytes = new byte[value.getLength()];
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
     value.write(buffer, 0);
 
-    final Class<? extends UnifiedRecordValue> recordValueClass = value.getClass();
+    final Class<? extends MsgpackRecordValue> recordValueClass = value.getClass();
     try {
       final T recordValue = (T) recordValueClass.newInstance();
       recordValue.wrap(buffer);

@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfoProperty;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -85,7 +86,7 @@ public class PersistedCommandDistribution extends UnpackedObject
     return Intent.fromProtocolValue(getValueType(), (short) intentValue);
   }
 
-  public UnifiedRecordValue getCommandValue() {
+  public MsgpackRecordValue getCommandValue() {
     return commandValueProperty.getValue();
   }
 

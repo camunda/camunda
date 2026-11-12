@@ -8,8 +8,8 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -58,7 +58,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
     metadataDecorators.forEach(m -> m.accept(metadata));
 
-    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
+    if (value instanceof final MsgpackRecordValue unifiedRecordValue) {
       final var valueType = unifiedRecordValue.valueType();
       if (valueType == null) {
         // usually happens when the record is not registered at the TypedStreamEnvironment
@@ -74,7 +74,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     } else {
       throw new IllegalStateException(
           String.format(
-              "The record value %s is not a UnifiedRecordValue",
+              "The record value %s is not a MsgpackRecordValue",
               StringUtil.limitString(value.toString(), 1024)));
     }
 

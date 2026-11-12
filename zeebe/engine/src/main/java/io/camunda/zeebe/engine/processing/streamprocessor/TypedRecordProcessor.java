@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
+public interface TypedRecordProcessor<T extends MsgpackRecordValue> {
 
   default void processRecord(final TypedRecord<T> record) {
     throw new UnsupportedOperationException(

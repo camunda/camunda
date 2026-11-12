@@ -10,9 +10,8 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ public final class LogStreamPrinter {
     sb.append(logStream.getPartitionId());
     sb.append(":\n");
 
-    final Map<ValueType, UnifiedRecordValue> eventCache = UnifiedRecordValue.allRecordsMap();
+    final Map<ValueType, MsgpackRecordValue> eventCache = MsgpackRecordValue.allRecordsMap();
 
     try (final LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
@@ -47,7 +46,7 @@ public final class LogStreamPrinter {
   }
 
   private static void writeRecord(
-      final Map<ValueType, UnifiedRecordValue> eventCache,
+      final Map<ValueType, MsgpackRecordValue> eventCache,
       final LoggedEvent event,
       final StringBuilder sb) {
     sb.append(HEADER_INDENTATION);
@@ -59,10 +58,10 @@ public final class LogStreamPrinter {
     writeMetadata(metadata, sb);
     sb.append("\n");
 
-    final UnpackedObject unpackedObject = eventCache.get(metadata.getValueType());
-    event.readValue(unpackedObject);
+    final MsgpackRecordValue recordValue = eventCache.get(metadata.getValueType());
+    event.readValue(recordValue);
     sb.append(ENTRY_INDENTATION).append("Value:\n");
-    unpackedObject.writeJSON(sb);
+    sb.append(recordValue.toJson());
     sb.append("\n");
   }
 

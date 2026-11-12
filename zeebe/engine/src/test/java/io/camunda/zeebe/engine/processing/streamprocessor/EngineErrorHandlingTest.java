@@ -26,7 +26,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -202,9 +202,9 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                      new TypedRecordProcessor<UnifiedRecordValue>() {
+                      new TypedRecordProcessor<MsgpackRecordValue>() {
                         @Override
-                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                        public void processRecord(final TypedRecord<MsgpackRecordValue> record) {
                           processingContext
                               .getWriters()
                               .state()
@@ -425,7 +425,7 @@ public final class EngineErrorHandlingTest {
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
                       new TypedRecordProcessor<>() {
                         @Override
-                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                        public void processRecord(final TypedRecord<MsgpackRecordValue> record) {
                           throw new NullPointerException();
                         }
                       });

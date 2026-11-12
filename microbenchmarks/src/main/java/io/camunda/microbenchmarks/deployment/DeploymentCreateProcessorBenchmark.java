@@ -40,8 +40,8 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -282,7 +282,7 @@ public class DeploymentCreateProcessorBenchmark {
     @Override
     public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
         final long key, final RecordValue value, final RecordMetadata metadata) {
-      final var unifiedValue = (UnifiedRecordValue) value;
+      final var unifiedValue = (MsgpackRecordValue) value;
       return recordBatch
           .appendRecord(key, metadata.valueType(unifiedValue.valueType()), -1, unifiedValue)
           .map(ignored -> this);

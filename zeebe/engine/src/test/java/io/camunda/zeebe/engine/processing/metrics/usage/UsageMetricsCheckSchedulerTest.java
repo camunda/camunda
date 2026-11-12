@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -41,7 +41,7 @@ public class UsageMetricsCheckSchedulerTest {
   private TaskResultBuilder mockTaskResultBuilder;
   private ReadonlyStreamProcessorContext mockProcessingContext;
   private ProcessingScheduleService mockProcessingScheduleService;
-  private ArgumentCaptor<UnifiedRecordValue> recordCaptor;
+  private ArgumentCaptor<MsgpackRecordValue> recordCaptor;
 
   @Before
   public void setUp() {
@@ -50,7 +50,7 @@ public class UsageMetricsCheckSchedulerTest {
     mockProcessingContext = mock(ReadonlyStreamProcessorContext.class);
     mockProcessingScheduleService = mock(ProcessingScheduleService.class);
     when(mockProcessingContext.getScheduleService()).thenReturn(mockProcessingScheduleService);
-    recordCaptor = ArgumentCaptor.forClass(UnifiedRecordValue.class);
+    recordCaptor = ArgumentCaptor.forClass(MsgpackRecordValue.class);
 
     checker = new UsageMetricsCheckScheduler(Duration.ofMillis(1), mockClock);
     checker.setProcessingContext(mockProcessingContext);

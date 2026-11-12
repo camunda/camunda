@@ -21,7 +21,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -242,13 +242,13 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   }
 
   @Override
-  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
+  public long writeCommand(final Intent intent, final MsgpackRecordValue value) {
     return streamProcessingComposite.writeCommand(intent, value);
   }
 
   @Override
   public long writeCommand(
-      final Intent intent, final UnifiedRecordValue value, final String... authorizedTenants) {
+      final Intent intent, final MsgpackRecordValue value, final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(intent, value, authorizedTenants);
   }
 
@@ -256,19 +256,19 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommand(
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(intent, username, recordValue, authorizedTenants);
   }
 
   @Override
-  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
+  public long writeCommand(final long key, final Intent intent, final MsgpackRecordValue value) {
     return streamProcessingComposite.writeCommand(key, intent, value);
   }
 
   @Override
   public long writeCommand(
-      final Intent intent, final UnifiedRecordValue recordValue, final AuthInfo authorizations) {
+      final Intent intent, final MsgpackRecordValue recordValue, final AuthInfo authorizations) {
     return streamProcessingComposite.writeCommand(intent, recordValue, authorizations);
   }
 
@@ -276,7 +276,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(key, intent, recordValue, authorizedTenants);
   }
@@ -286,7 +286,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final long key,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
         key, intent, username, recordValue, authorizedTenants);
@@ -298,7 +298,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
         key, requestStreamId, requestId, intent, recordValue, authorizedTenants);
@@ -309,7 +309,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
         requestStreamId, requestId, intent, recordValue, authorizedTenants);
@@ -322,7 +322,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final long requestId,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommand(
         key, requestStreamId, requestId, intent, username, recordValue, authorizedTenants);
@@ -335,7 +335,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final long requestId,
       final Intent intent,
       final AuthInfo authorizations,
-      final UnifiedRecordValue recordValue) {
+      final MsgpackRecordValue recordValue) {
     return streamProcessingComposite.writeCommand(
         key, requestStreamId, requestId, intent, authorizations, recordValue);
   }
@@ -345,7 +345,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue value) {
+      final MsgpackRecordValue value) {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
   }
 
@@ -354,7 +354,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String username) {
     return streamProcessingComposite.writeCommand(
         requestStreamId, requestId, intent, value, username);
@@ -368,7 +368,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
-      final int partition, final Intent intent, final UnifiedRecordValue value) {
+      final int partition, final Intent intent, final MsgpackRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, intent, value);
   }
 
@@ -376,7 +376,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public long writeCommandOnPartition(
       final int partitionId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String username) {
     return streamProcessingComposite.writeCommandOnPartition(
         partitionId, intent, recordValue, username);
@@ -384,7 +384,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
-      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
+      final int partition, final long key, final Intent intent, final MsgpackRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
   }
 
@@ -393,7 +393,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final AuthInfo authorizations) {
     return streamProcessingComposite.writeCommandOnPartition(
         partition, key, intent, value, authorizations);
@@ -404,7 +404,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommandOnPartition(
         partition, key, intent, value, authorizedTenants);
@@ -416,7 +416,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
       final long key,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     return streamProcessingComposite.writeCommandOnPartition(
         partitionId, key, intent, username, recordValue, authorizedTenants);

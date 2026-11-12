@@ -20,7 +20,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -197,13 +197,13 @@ public class StreamProcessingComposite implements CommandWriter {
   }
 
   @Override
-  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
+  public long writeCommand(final Intent intent, final MsgpackRecordValue value) {
     return writeCommand(intent, value, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
   public long writeCommand(
-      final Intent intent, final UnifiedRecordValue value, final String... authorizedTenants) {
+      final Intent intent, final MsgpackRecordValue value, final String... authorizedTenants) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -218,7 +218,7 @@ public class StreamProcessingComposite implements CommandWriter {
   public long writeCommand(
       final Intent intent,
       final String username,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -235,13 +235,13 @@ public class StreamProcessingComposite implements CommandWriter {
   }
 
   @Override
-  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
+  public long writeCommand(final long key, final Intent intent, final MsgpackRecordValue value) {
     return writeCommand(key, intent, value, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
   public long writeCommand(
-      final Intent intent, final UnifiedRecordValue value, final AuthInfo authorizations) {
+      final Intent intent, final MsgpackRecordValue value, final AuthInfo authorizations) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
     final var writer =
@@ -260,7 +260,7 @@ public class StreamProcessingComposite implements CommandWriter {
   public long writeCommand(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -278,7 +278,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final long key,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -301,7 +301,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -321,7 +321,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -342,7 +342,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final long requestId,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final String... authorizedTenants) {
     final var writer =
         streams
@@ -364,7 +364,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final long requestId,
       final Intent intent,
       final AuthInfo authorizations,
-      final UnifiedRecordValue recordValue) {
+      final MsgpackRecordValue recordValue) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -383,7 +383,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue value) {
+      final MsgpackRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -401,7 +401,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String username) {
     final var writer =
         streams
@@ -425,7 +425,7 @@ public class StreamProcessingComposite implements CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
-      final int partition, final Intent intent, final UnifiedRecordValue value) {
+      final int partition, final Intent intent, final MsgpackRecordValue value) {
 
     final var writer =
         streams
@@ -441,7 +441,7 @@ public class StreamProcessingComposite implements CommandWriter {
   public long writeCommandOnPartition(
       final int partition,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String username) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();
@@ -459,7 +459,7 @@ public class StreamProcessingComposite implements CommandWriter {
 
   @Override
   public long writeCommandOnPartition(
-      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
+      final int partition, final long key, final Intent intent, final MsgpackRecordValue value) {
     return writeCommandOnPartition(
         partition, key, intent, value, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
@@ -469,7 +469,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final AuthInfo authorizations) {
     final var writer =
         streams
@@ -487,7 +487,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final int partition,
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String... authorizedTenants) {
     return writeCommandOnPartition(
         partition, key, intent, value, AuthorizationUtil.getAuthInfo(authorizedTenants));
@@ -499,7 +499,7 @@ public class StreamProcessingComposite implements CommandWriter {
       final long key,
       final Intent intent,
       final String username,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final String... authorizedTenants) {
     final var requestId = new Random().nextLong();
     final var requestStreamId = new Random().nextInt();

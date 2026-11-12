@@ -8,17 +8,17 @@
 package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public record RecordBatchEntry(
-    RecordMetadata recordMetadata, long key, int sourceIndex, UnifiedRecordValue unifiedRecordValue)
+    RecordMetadata recordMetadata, long key, int sourceIndex, MsgpackRecordValue unifiedRecordValue)
     implements LogAppendEntry {
 
   @Override
-  public UnifiedRecordValue recordValue() {
+  public MsgpackRecordValue recordValue() {
     return unifiedRecordValue;
   }
 
@@ -33,8 +33,8 @@ public record RecordBatchEntry(
     final var recordValueBuffer = new UnsafeBuffer(bytes);
     valueWriter.write(recordValueBuffer, 0);
 
-    final UnifiedRecordValue unifiedRecordValue =
-        UnifiedRecordValue.fromValueType(metadata.getValueType());
+    final MsgpackRecordValue unifiedRecordValue =
+        MsgpackRecordValue.fromValueType(metadata.getValueType());
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
     return new RecordBatchEntry(metadata, key, sourceIndex, unifiedRecordValue);

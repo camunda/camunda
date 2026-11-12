@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.message.command;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartCorrelationKeyLockReleaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -658,7 +658,7 @@ public class SubscriptionCommandSender {
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue record) {
+      final MsgpackRecordValue record) {
     if (receiverPartitionId == senderPartition) {
       writers.command().appendNewCommand(intent, record);
     } else {

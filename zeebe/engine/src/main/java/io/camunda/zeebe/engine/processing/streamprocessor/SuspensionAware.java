@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -21,7 +21,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *
  * @param <T> the record value type processed by the implementing {@link TypedRecordProcessor}
  */
-public interface SuspensionAware<T extends UnifiedRecordValue> {
+public interface SuspensionAware<T extends MsgpackRecordValue> {
 
   String ERROR_MESSAGE_SUSPENDED_PI =
       "Expected to process command for process instance with key '%d', but the process instance is suspended.";

@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
@@ -62,7 +62,7 @@ public final class CommandBufferingBehavior {
       final long commandKey,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue commandValue,
+      final MsgpackRecordValue commandValue,
       final long processInstanceKey) {
     final String tenantId =
         commandValue instanceof final TenantOwned tenantOwned
@@ -98,7 +98,7 @@ public final class CommandBufferingBehavior {
    * ordinal, so they arrive with the default 0 even when the instance has a real ordinal.
    */
   private int resolveStorageOrdinal(
-      final UnifiedRecordValue commandValue, final long processInstanceKey) {
+      final MsgpackRecordValue commandValue, final long processInstanceKey) {
     final var root = elementInstanceState.getInstance(processInstanceKey);
     if (root != null) {
       return root.getValue().getStorageOrdinal();

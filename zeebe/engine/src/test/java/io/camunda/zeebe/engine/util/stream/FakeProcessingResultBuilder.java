@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.util.stream;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -34,7 +34,7 @@ import java.util.List;
  *     to reduce the need for casting in tests if you know that only a specific value type is
  *     appended.
  */
-public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
+public class FakeProcessingResultBuilder<V extends MsgpackRecordValue>
     implements ProcessingResultBuilder {
 
   private final List<Record<V>> followupRecords = new ArrayList<>();

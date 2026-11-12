@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -109,7 +109,7 @@ public final class RecordToWrite implements LogAppendEntry {
   private static final long DEFAULT_KEY = 1;
 
   private final RecordMetadata recordMetadata;
-  private UnifiedRecordValue unifiedRecordValue;
+  private MsgpackRecordValue unifiedRecordValue;
 
   private long key = DEFAULT_KEY;
   private int sourceIndex = -1;
@@ -447,7 +447,7 @@ public final class RecordToWrite implements LogAppendEntry {
   }
 
   @Override
-  public UnifiedRecordValue recordValue() {
+  public MsgpackRecordValue recordValue() {
     return unifiedRecordValue;
   }
 }

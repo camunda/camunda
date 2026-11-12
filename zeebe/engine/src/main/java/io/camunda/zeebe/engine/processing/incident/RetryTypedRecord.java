@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,7 +32,7 @@ import java.util.Map;
  *
  * @param <T> the type of the record value being retried
  */
-public final class RetryTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
+public final class RetryTypedRecord<T extends MsgpackRecordValue> implements TypedRecord<T> {
 
   private final long key;
   private final Intent intent;

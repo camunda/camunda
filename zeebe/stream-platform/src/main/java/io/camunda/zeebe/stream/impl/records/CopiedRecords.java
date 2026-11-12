@@ -9,8 +9,8 @@ package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -37,8 +37,8 @@ public final class CopiedRecords {
     contentBuffer.getBytes(rawEvent.getValueOffset(), valueBytes);
     final DirectBuffer valueBuffer = new UnsafeBuffer(valueBytes);
 
-    final UnifiedRecordValue recordValue =
-        UnifiedRecordValue.fromValueType(metadata.getValueType());
+    final MsgpackRecordValue recordValue =
+        MsgpackRecordValue.fromValueType(metadata.getValueType());
     recordValue.wrap(valueBuffer);
 
     return new CopiedRecord<>(

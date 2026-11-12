@@ -18,8 +18,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -211,7 +211,7 @@ final class InterPartitionCommandReceiverImpl {
       CheckpointType checkpointType,
       Optional<Long> recordKey,
       RecordMetadata metadata,
-      UnifiedRecordValue command) {}
+      MsgpackRecordValue command) {}
 
   private static final class Decoder {
     private final InterPartitionMessageDecoder messageDecoder = new InterPartitionMessageDecoder();
@@ -251,7 +251,7 @@ final class InterPartitionCommandReceiverImpl {
      * @param recordMetadata The record metadata to update with record type, intent and value type.
      * @return a new instance of the command, read from the message decoder.
      */
-    private static UnifiedRecordValue decodeCommand(
+    private static MsgpackRecordValue decodeCommand(
         final InterPartitionMessageDecoder messageDecoder, final RecordMetadata recordMetadata) {
       final var offset =
           messageDecoder.limit() + InterPartitionMessageDecoder.commandHeaderLength();
@@ -261,7 +261,7 @@ final class InterPartitionCommandReceiverImpl {
       final var intent = Intent.fromProtocolValue(valueType, messageDecoder.intent());
       recordMetadata.recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
 
-      final var value = UnifiedRecordValue.fromValueType(valueType);
+      final var value = MsgpackRecordValue.fromValueType(valueType);
       if (value == null) {
         throw new IllegalArgumentException(
             "No value type mapped to %s, can't decode message".formatted(valueType));

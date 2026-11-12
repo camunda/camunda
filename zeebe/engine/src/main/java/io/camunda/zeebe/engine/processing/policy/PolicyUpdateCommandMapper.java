@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -353,5 +353,5 @@ public final class PolicyUpdateCommandMapper {
    * A command that applies one entry of the chunk. It is written without a record key, like the
    * commands of the identity APIs, because the identity processors find entities by their ID.
    */
-  public record IdentityCommand(Intent intent, UnifiedRecordValue value) {}
+  public record IdentityCommand(Intent intent, MsgpackRecordValue value) {}
 }
