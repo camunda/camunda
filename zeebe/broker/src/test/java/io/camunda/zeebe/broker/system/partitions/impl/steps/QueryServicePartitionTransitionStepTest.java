@@ -93,24 +93,6 @@ class QueryServicePartitionTransitionStepTest {
     assertThat(transitionContext.getQueryService()).isNull();
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = Role.class,
-      names = {"FOLLOWER", "CANDIDATE"})
-  void shouldBuildANewQueryServiceForTheLeaderWhenThereIsADbPerLeaderTerm(final Role currentRole) {
-    // given
-    step = new QueryServicePartitionTransitionStep(true);
-    initializeContext(currentRole);
-
-    // when
-    transitionTo(Role.LEADER);
-
-    // then
-    assertThat(transitionContext.getQueryService())
-        .isNotNull()
-        .isNotEqualTo(queryServiceFromPrevRole);
-  }
-
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {
     return Stream.of(
         Arguments.of(Role.CANDIDATE, Role.FOLLOWER),

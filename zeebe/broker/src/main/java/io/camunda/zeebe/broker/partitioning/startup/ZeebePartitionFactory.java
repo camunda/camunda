@@ -45,6 +45,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransit
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LeaderOnlyTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.MetricsStep;
@@ -97,6 +98,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -287,23 +289,25 @@ public final class ZeebePartitionFactory {
   }
 
   private List<PartitionTransitionStep> generateTransitionSteps(final LongConsumer openingTerm) {
-    final var dbPerLeaderTerm = keepsStateInRdbms();
+    // with the state in a relational database, only the leader opens it
+    final UnaryOperator<PartitionTransitionStep> needsState =
+        keepsStateInRdbms() ? LeaderOnlyTransitionStep::new : UnaryOperator.identity();
     return List.of(
         new MetricsStep(),
         new LogStoragePartitionTransitionStep(),
         new LogStreamPartitionTransitionStep(),
-        new ZeebeDbPartitionTransitionStep(openingTerm, dbPerLeaderTerm),
-        new MigrationTransitionStep(),
-        new QueryServicePartitionTransitionStep(dbPerLeaderTerm),
+        needsState.apply(new ZeebeDbPartitionTransitionStep(openingTerm)),
+        needsState.apply(new MigrationTransitionStep()),
+        needsState.apply(new QueryServicePartitionTransitionStep()),
         new BackupStoreTransitionStep(),
         new BackupServiceTransitionStep(),
         new InterPartitionCommandServiceStep(),
-        new StreamProcessorTransitionStep(),
+        needsState.apply(new StreamProcessorTransitionStep()),
         new CommandApiServiceTransitionStep(),
-        new SnapshotDirectorPartitionTransitionStep(),
-        new SnapshotAfterMigrationTransitionStep(),
+        needsState.apply(new SnapshotDirectorPartitionTransitionStep()),
+        needsState.apply(new SnapshotAfterMigrationTransitionStep()),
         new SnapshotApiHandlerTransitionStep(),
-        new ExporterDirectorPartitionTransitionStep(),
+        needsState.apply(new ExporterDirectorPartitionTransitionStep()),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep());
   }
