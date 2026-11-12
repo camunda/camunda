@@ -164,6 +164,155 @@ steps:
       python3 /tmp/gh-aw/api-review/main/.github/scripts/oas-breaking-change-check/check.py \
         --base-ref "${BASE_REF}" --oasdiff "${RUNNER_TEMP}/oasdiff/oasdiff" \
         --out-dir /tmp/gh-aw/api-review/oasdiff
+  # A deterministic list of the new contract surface (operations, schemas, properties, parameters,
+  # response codes, enum values), so the agent checks every item instead of what stands out in the
+  # diff. It compares the spec files at the two parents of the merge commit in the worktree of the
+  # previous step. Runs outside the sandbox on parsed YAML only: nothing from the pull request is
+  # executed, and ruamel's round-trip loader builds plain containers, no arbitrary objects. Without
+  # the worktree it writes a note, and on any other failure no file: the prompt then has the agent
+  # list the added elements from the diff itself.
+  - name: List what the spec change adds
+    continue-on-error: true
+    run: |
+      python3 - <<'PY'
+      import os
+      import subprocess
+      import sys
+
+      from ruamel.yaml import YAML
+
+      SPEC_DIR = "zeebe/gateway-protocol/src/main/proto/v2"
+      OUT = "/tmp/gh-aw/api-review/new-surface.md"
+      HTTP_METHODS = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+      KINDS = {
+          "operations": "Operations",
+          "schemas": "Schemas",
+          "properties": "Properties",
+          "parameters": "Parameters",
+          "responses": "Response codes",
+          "enums": "Enum values",
+      }
+
+      worktree = os.path.join(os.environ["RUNNER_TEMP"], "oas-merge")
+      if not os.path.isdir(worktree):
+          with open(OUT, "w") as out:
+              out.write("No list of added elements: the merge commit checkout is not available.\n")
+          sys.exit(0)
+
+
+      def git(*args):
+          return subprocess.run(
+              ["git", "-C", worktree, *args], check=True, capture_output=True, encoding="utf-8"
+          ).stdout
+
+
+      def mapping(node, key):
+          value = node.get(key) if isinstance(node, dict) else None
+          return value if isinstance(value, dict) else {}
+
+
+      def sequence(node, key):
+          value = node.get(key) if isinstance(node, dict) else None
+          return value if isinstance(value, list) else []
+
+
+      def where(trail):
+          if trail[:2] == ["components", "schemas"]:
+              trail = trail[2:]
+          elif trail[:1] == ["paths"] and len(trail) > 2:
+              trail = [f"{trail[2].upper()} {trail[1]}"] + trail[3:]
+          return ".".join(t for t in trail if t != "properties").replace(".[", "[")
+
+
+      def walk_enums(node, trail, found, path):
+          if isinstance(node, dict):
+              for key, value in node.items():
+                  if key == "enum" and isinstance(value, list):
+                      for i, member in enumerate(value):
+                          found["enums"].setdefault(
+                              (where(trail), str(member)),
+                              (path, value.lc.item(i)[0] + 1, f"`{member}` on `{where(trail)}`"),
+                          )
+                  walk_enums(value, trail + [str(key)], found, path)
+          elif isinstance(node, list):
+              for i, item in enumerate(node):
+                  name = item.get("name") if isinstance(item, dict) else None
+                  walk_enums(item, trail + [f"[{name if isinstance(name, str) else i}]"], found, path)
+
+
+      def collect(ref):
+          """Maps each kind to {identity: (file, line, text)} for the spec files at ref."""
+          found = {kind: {} for kind in KINDS}
+          listing = git("ls-tree", "-z", "--name-only", ref, SPEC_DIR + "/")
+          for path in sorted(p for p in listing.split("\0") if p.endswith(".yaml")):
+              doc = YAML(typ="rt").load(git("show", f"{ref}:{path}"))
+              if not isinstance(doc, dict):
+                  continue
+              for route, item in mapping(doc, "paths").items():
+                  for method, op in item.items() if isinstance(item, dict) else []:
+                      if method not in HTTP_METHODS or not isinstance(op, dict):
+                          continue
+                      label = f"{method.upper()} {route}"
+                      text = f"`{label}`" + (f" ({op['operationId']})" if "operationId" in op else "")
+                      found["operations"].setdefault(label, (path, item.lc.key(method)[0] + 1, text))
+                      for owner in (item, op):
+                          params = sequence(owner, "parameters")
+                          for i, param in enumerate(params):
+                              if not isinstance(param, dict):
+                                  continue
+                              desc = (
+                                  f"$ref {param['$ref']}"
+                                  if "$ref" in param
+                                  else f"{param.get('name')} ({param.get('in')})"
+                              )
+                              found["parameters"].setdefault(
+                                  (label, desc),
+                                  (path, params.lc.item(i)[0] + 1, f"`{desc}` on `{label}`"),
+                              )
+                      responses = mapping(op, "responses")
+                      for code in responses:
+                          found["responses"].setdefault(
+                              (label, str(code)),
+                              (path, responses.lc.key(code)[0] + 1, f"`{code}` on `{label}`"),
+                          )
+              schemas = mapping(mapping(doc, "components"), "schemas")
+              for name, schema in schemas.items():
+                  found["schemas"].setdefault(str(name), (path, schemas.lc.key(name)[0] + 1, f"`{name}`"))
+                  members = [schema] + [m for kw in ("allOf", "oneOf", "anyOf") for m in sequence(schema, kw)]
+                  for member in members:
+                      props = mapping(member, "properties")
+                      for prop in props:
+                          found["properties"].setdefault(
+                              (str(name), str(prop)),
+                              (path, props.lc.key(prop)[0] + 1, f"`{name}.{prop}`"),
+                          )
+              walk_enums(doc, [], found, path)
+          return found
+
+
+      base = collect("HEAD^1")
+      head = collect("HEAD")
+      added = {
+          kind: sorted(entry for ident, entry in head[kind].items() if ident not in base[kind])
+          for kind in KINDS
+      }
+      counts = ", ".join(f"{label.lower()} {len(added[kind])}" for kind, label in KINDS.items())
+      lines = [
+          "# New contract surface of this pull request",
+          "",
+          "Elements that exist at the pull request head and not at its base, found by comparing the",
+          "parsed spec files (`path:line` is the line in the head file). Check every item against the",
+          "guideline sections that govern it. Changes to existing elements, such as descriptions,",
+          "types, `required` and `nullable`, are not listed: read the diff for those.",
+          "",
+          f"Counts: {counts}.",
+      ]
+      for kind, label in KINDS.items():
+          lines += ["", f"## {label} ({len(added[kind])})", ""]
+          lines += [f"- {path}:{line}: {text}" for path, line, text in added[kind]] or ["None."]
+      with open(OUT, "w") as out:
+          out.write("\n".join(lines) + "\n")
+      PY
 safe-outputs:
   create-pull-request-review-comment:
     side: RIGHT
@@ -194,14 +343,19 @@ which changes the Orchestration Cluster REST API spec under
 You have 10 minutes in total. Work in four phases, in this order. The rules are hard limits.
 
 1. **Read.** Read exactly these and nothing else: the skill; the whole guideline in one go;
-   `/tmp/gh-aw/pr-review/changed-lines.txt`; `/tmp/gh-aw/pr-review/pr.diff`; the oasdiff report if
-   present; the style guide copy if present. Do not look at the pull request body, earlier pull
-   request comments or `gh pr diff` yet. Earlier reviews by this workflow are read in phase 4 only,
-   to decide on superseding and repeats. Read the diff once. Use the line numbers from
-   `changed-lines.txt` directly; never re-derive or re-confirm them.
+   `/tmp/gh-aw/pr-review/changed-lines.txt`; `/tmp/gh-aw/pr-review/pr.diff`;
+   `/tmp/gh-aw/api-review/new-surface.md` if present; the oasdiff report if present; the style guide
+   copy if present. Do not look at the pull request body, earlier pull request comments or
+   `gh pr diff` yet. Earlier reviews by this workflow are read in phase 4 only, to decide on
+   superseding and repeats. Read the diff once. Use the line numbers from `changed-lines.txt`
+   directly; never re-derive or re-confirm them.
 2. **Draft.** Before running any further command, write every candidate finding in your reply
-   text: location, blocking or non-blocking, guideline section. Stop at 10 candidates, blocking
-   findings first.
+   text: location, blocking or non-blocking, guideline section. First go through every item in
+   `new-surface.md`, the list of what the change adds, and check each against the guideline
+   sections that govern it. Then go through the rest of the diff: descriptions and changes to
+   existing elements. If `new-surface.md` is missing or only holds a note, enumerate the added
+   elements from the diff yourself. Stop at 10 candidates, blocking findings first, but check every
+   new-surface item before choosing which 10 to report.
 3. **Check.** Make at most 5 tool calls in total, and only for blocking findings you are unsure
    about. Run `date +%s` and compare it with `/tmp/gh-aw/api-review/started-at`. If 6 minutes have
    passed, skip this phase.
