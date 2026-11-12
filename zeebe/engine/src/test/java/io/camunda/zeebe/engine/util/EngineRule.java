@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.JobMetricsBatchClient;
 import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
+import io.camunda.zeebe.engine.util.client.ProbeClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
@@ -137,6 +139,7 @@ public final class EngineRule extends ExternalResource {
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
+  private ProbeNotifier probeNotifier = ProbeNotifier.noop();
   private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
@@ -257,6 +260,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
+    return this;
+  }
+
+  public EngineRule withProbeNotifier(final ProbeNotifier probeNotifier) {
+    this.probeNotifier = probeNotifier;
     return this;
   }
 
@@ -402,6 +410,7 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
+                        probeNotifier,
                         searchClientsProxy,
                         brokerRequestAuthorizationConverter,
                         secretStoreRegistry)
@@ -571,6 +580,10 @@ public final class EngineRule extends ExternalResource {
 
   public ExpressionClient expression() {
     return new ExpressionClient(environmentRule);
+  }
+
+  public ProbeClient probe() {
+    return new ProbeClient(environmentRule, () -> getClock().getCurrentTimeInMillis());
   }
 
   public JobActivationClient jobs() {

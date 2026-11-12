@@ -13,6 +13,8 @@ public interface ScheduledTaskState {
 
   SecretReferenceState getSecretReferenceState();
 
+  ProbeState getProbeState();
+
   DistributionState getDistributionState();
 
   MessageState getMessageState();
