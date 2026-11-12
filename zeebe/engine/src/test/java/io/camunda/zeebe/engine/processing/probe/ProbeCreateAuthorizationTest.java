@@ -36,15 +36,15 @@ import org.junit.Test;
  */
 public final class ProbeCreateAuthorizationTest {
 
-  private static final String TENANT = "probe-tenant";
-  private static final String OTHER_TENANT = "other-probe-tenant";
-  private static final String ADMIN = UUID.randomUUID().toString();
-
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withAuthorizationsEnabled(true)
           .withMultiTenancyChecksEnabled(true);
+
+  private static final String TENANT = "probe-tenant";
+  private static final String OTHER_TENANT = "other-probe-tenant";
+  private static final String ADMIN = UUID.randomUUID().toString();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
