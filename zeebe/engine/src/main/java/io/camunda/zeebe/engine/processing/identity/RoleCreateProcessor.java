@@ -8,17 +8,21 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -36,20 +40,27 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final EntityMembershipsRemover membershipsRemover;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public RoleCreateProcessor(
-      final RoleState roleState,
+      final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
-    this.roleState = roleState;
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final MembershipStateAdapter membershipStateAdapter) {
+    roleState = processingState.getRoleState();
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    membershipsRemover = new EntityMembershipsRemover(processingState, stateWriter);
+    sideEffectWriter = writers.sideEffect();
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -76,6 +87,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     final long key = keyGenerator.nextKey();
     record.setRoleKey(key);
 
+    removeLeftoverMemberships(record.getRoleId());
     stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record);
     responseWriter.writeAcceptedResponseOnCommand(key, RoleIntent.CREATED, record, command);
 
@@ -96,8 +108,25 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
                   ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
-            () -> stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, record));
+            () -> {
+              removeLeftoverMemberships(record.getRoleId());
+              stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.CREATED, record);
+            });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Removes the tenant memberships that are still recorded for the ID of the new role. Only an
+   * existing role can be assigned to a tenant, so they can only be left behind by a deleted role
+   * with the same ID, and the new role must not inherit them.
+   */
+  private void removeLeftoverMemberships(final String roleId) {
+    if (membershipsRemover.removeRoleAndTenantMemberships(EntityType.ROLE, roleId)) {
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            membershipStateAdapter.invalidateAll();
+          });
+    }
   }
 }

@@ -35,11 +35,13 @@ public class GroupProcessors {
         ValueType.GROUP,
         GroupIntent.CREATE,
         new GroupCreateProcessor(
-            processingState.getGroupState(),
+            processingState,
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            securityConfig,
+            membershipStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.UPDATE,
@@ -78,6 +80,7 @@ public class GroupProcessors {
             permissionsBehavior,
             keyGenerator,
             writers,
-            commandDistributionBehavior));
+            commandDistributionBehavior,
+            membershipStateAdapter));
   }
 }
