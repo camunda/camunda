@@ -74,7 +74,10 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     Every subagent brief must say: do NOT touch `TransactionalColumnFamily.count()`/
     `countEqualPrefix()` and do NOT add `shouldRollBackFailedTransactionAfterCount`. If a stack
     PR turns out to depend on the fix, report it; we then add that fix PR to the stack (as a base)
-    instead of duplicating it.
+    instead of duplicating it. **Done (2026-11-12):** camunda/camunda#69231 (branch
+    `claude/eager-keller-t5jcx5`, `c38016b0ae1`) is now the stack base under PR 1. GitHub refuses
+    to change #69232's base (native stack), so its diff vs main also shows the fix commit until
+    #69231 merges; the PR body says so.
 11. **Builds (2026-11-12):** subagents may build/test with Gradle (`./gradlew`, see the
     `gradle-run-build` skill) instead of Maven, and format with `./gradlew spotlessApply` (Java,
     markdown, sortPom). Gradle Spotless does NOT add license headers: new files need
@@ -98,11 +101,12 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 ## Status
 
 - [x] Baseline: main CI green, `./mvnw install -Dquickly -T1C` green on `a0761b3ef` (2026-11-12)
-- [x] PR 1 pushed: `cs/wb-1-zb-db-api` on main `a0761b3ef`, draft PR camunda/camunda#69232
-  - `4cc471f9543` refactor: split zeebe-db into an API module and the RocksDB implementation
-  - `8ba50341492` refactor: move DbNullKey to the API module
-  - `9c1e3f4d5fd` feat: expose the committed RocksDB state through a raw access SPI
-  - `b2121d1b6a0` test: run the ZeebeDb behavior tests as contracts in zeebe-db-tests
+- [x] PR 1 pushed: `cs/wb-1-zb-db-api` on #69231 fix `c38016b0ae1`, draft PR camunda/camunda#69232
+  - `661bcae9419` refactor: split zeebe-db into an API module and the RocksDB implementation
+  - `c9df0d16497` refactor: move DbNullKey to the API module
+  - `c509645bafa` feat: expose the committed RocksDB state through a raw access SPI
+  - `9e70c8ace44` test: run the ZeebeDb behavior tests as contracts in zeebe-db-tests
+    (fix's regression test now lives in `DbTransactionContractTest`)
   - Layout: `zeebe-db-parent` (pom), `zeebe-db-api`, `zeebe-db` (RocksDB, dir `rocksdb`, Gradle
     `:zeebe-db`), `zeebe-db-tests`. TransactionListener NOT ported. DbKeyInstanceFactory ported
     (unused yet, tested).
@@ -118,14 +122,14 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     commits nor rolls back, so a failed insert stays visible. Workshop branch had a fix + test
     `shouldRollBackFailedTransactionAfterCount`.
 - [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
-- [x] PR 2 pushed: `cs/wb-2-write-behind-store` on PR 1 `b2121d1b6a0`, draft PR camunda/camunda#69234
-  - 11 commits `09c5f875ebe`..`1b77e84a04a`: module, DbEnumValue#getEnumType (additive), held
+- [x] PR 2 pushed: `cs/wb-2-write-behind-store` on PR 1 `9e70c8ace44`, draft PR camunda/camunda#69234
+  - 12 commits ..`a55cbe190c5` (pre-restack tip was `1b77e84a04a`): module, DbEnumValue#getEnumType (additive), held
     values (R1), store + flusher, ZeebeDb, tests, contract tests, R1 test, R2/R3/R4 fixes.
   - Deviations: `Backend<K, V, T>` (3 type params); lambda-free column family (begin/commitIfBegun);
     metrics via agrona Long2ObjectHashMap; cache weight = bytes + 200 overhead.
-  - `RocksDbVsWriteBehindDifferentialTest` parked in `parked/` on this dev branch: needs
-    camunda/camunda#69231 (count() fix, in review, not draft). Add it to PR 2 once #69231 is in the
-    base (either merged to main and stack rebased, or #69231 put under PR 1).
+  - `RocksDbVsWriteBehindDifferentialTest` committed as the last PR 2 commit (`a55cbe190c5`),
+    300 tries green. NOTE: differential/property tests are tagged `randomized` and are skipped
+    unless Gradle gets `-PincludeRandomTests` (Maven: `-Pinclude-random-tests`).
   - Follow-ups: seek copies dirty range into a TreeMap; put does a full decode, miss decodes twice;
     weight ignores decoded heap size.
 - [ ] PR 3
