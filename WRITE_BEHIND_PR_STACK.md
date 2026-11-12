@@ -68,11 +68,13 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
    metrics), generic over `Backend`, with `RawBackend` over `RawDbAccess`. No key index.
    Contract + differential tests.
 3. **Key index with KEEP_LOWEST / KEEP_HIGHEST windows** (KeyIndex, IndexSource, HandoverSource).
+- Detailed cut plan + risks R1-R5: `WRITE_BEHIND_PR2_PR3_PLAN.md`.
 - Not in scope: enabling the cache in broker/engine, JDBC/RDBMS parts.
 
 ## Status
 
 - [x] Baseline: main CI green, `./mvnw install -Dquickly -T1C` green on `a0761b3ef` (2026-11-12)
-- [ ] PR 1
+- [ ] PR 1: subagent running on `cs/wb-1-zb-db-api` (started 2026-11-12)
+- [x] PR 2/3 cut plan done; open owner question: R1 value holding (a) bytes alongside object vs (b) synchronized
 - [ ] PR 2
 - [ ] PR 3
