@@ -43,6 +43,8 @@ class UntypedOperationTest {
     final UntypedOperation untypedOperation = UntypedOperation.of(operation);
 
     assertThat(untypedOperation.values()).containsExactly(1L, "18446744073709551615");
+    // the operation type comes from the first value only, the other values keep their own type
+    assertThat(untypedOperation.type()).isEqualTo(ValueTypeEnum.LONG);
   }
 
   @Test
