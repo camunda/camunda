@@ -155,5 +155,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43225049718",
     "updated_at": "2026-11-12T13:44:25Z",
     "cooldown_until": "2026-11-15T13:44:25Z"
+  },
+  "2746fe60": {
+    "version": "main",
+    "file": "tests/api/v2/element-instance/element-instance-update-api.spec.ts",
+    "titlePath": [
+      "Element Instance Update API",
+      "Update Element Instance - local update overrides global variable"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43225015469",
+    "updated_at": "2026-11-12T13:46:42Z",
+    "cooldown_until": "2026-11-15T13:46:42Z"
   }
 }
