@@ -18,7 +18,6 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -33,11 +32,13 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 class AuditLogInfoTest {
@@ -296,35 +297,43 @@ class AuditLogInfoTest {
 
   /**
    * Builds the msgpack encoding of an auth info by hand, as encoding such claims through the
-   * regular API would overflow the stack as well.
+   * regular API would overflow the stack as well. Only the few msgpack types needed are written:
+   * short strings (fixstr), small maps (fixmap), single element arrays (fixarray), nil and a binary
+   * with a 32 bit length.
    */
   private static AuthInfo authInfoWithUndecodableTokenClaims(final String username) {
     final int nesting = 100_000;
-    final var writer = new MsgPackWriter();
 
-    final var claims = new ExpandableArrayBuffer();
-    writer.wrap(claims, 0);
-    writer.writeMapHeader(2);
-    writer.writeString(BufferUtil.wrapString(Authorization.AUTHORIZED_USERNAME));
-    writer.writeString(BufferUtil.wrapString(username));
-    writer.writeString(BufferUtil.wrapString(Authorization.USER_TOKEN_CLAIMS));
-    writer.writeMapHeader(1);
-    writer.writeString(BufferUtil.wrapString("nested"));
+    final var claims = new ByteArrayOutputStream();
+    claims.write(0x82); // map with 2 entries
+    writeShortString(claims, Authorization.AUTHORIZED_USERNAME);
+    writeShortString(claims, username);
+    writeShortString(claims, Authorization.USER_TOKEN_CLAIMS);
+    claims.write(0x81); // map with 1 entry
+    writeShortString(claims, "nested");
     for (int i = 0; i < nesting; i++) {
-      writer.writeArrayHeader(1);
+      claims.write(0x91); // array with 1 element
     }
-    writer.writeNil();
-    final int claimsLength = writer.getOffset();
+    claims.write(0xc0); // nil
+    final var claimsBytes = claims.toByteArray();
 
-    final var encoded = new ExpandableArrayBuffer();
-    writer.wrap(encoded, 0);
-    writer.writeMapHeader(2);
-    writer.writeString(BufferUtil.wrapString("format"));
-    writer.writeString(BufferUtil.wrapString("UNKNOWN"));
-    writer.writeString(BufferUtil.wrapString("claims"));
-    writer.writeBinary(claims, 0, claimsLength);
+    final var encoded = new ByteArrayOutputStream();
+    encoded.write(0x82); // map with 2 entries
+    writeShortString(encoded, "format");
+    writeShortString(encoded, "UNKNOWN");
+    writeShortString(encoded, "claims");
+    encoded.write(0xc6); // binary with a 32 bit length
+    encoded.writeBytes(ByteBuffer.allocate(Integer.BYTES).putInt(claimsBytes.length).array());
+    encoded.writeBytes(claimsBytes);
 
-    return AuthInfo.decode(encoded, 0, writer.getOffset());
+    final var bytes = encoded.toByteArray();
+    return AuthInfo.decode(new UnsafeBuffer(bytes), 0, bytes.length);
+  }
+
+  private static void writeShortString(final ByteArrayOutputStream out, final String string) {
+    final var bytes = string.getBytes(StandardCharsets.UTF_8);
+    out.write(0xa0 | bytes.length); // string of up to 31 bytes
+    out.writeBytes(bytes);
   }
 
   private AuditLogEntityType getEntityTypeForValueType(final ValueType valueType) {
