@@ -4,7 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {test} from 'node:test';
 
-import {initBoard, render, setRow} from './board.mjs';
+import {initBoard, mergeTargets, render, setRow} from './board.mjs';
 import {final, next} from './decide.mjs';
 import {pick} from './pick.mjs';
 import {fingerprint} from './report.mjs';
@@ -448,4 +448,49 @@ test('should report the pass rate of the iteration it picked', () => {
   assert.equal(final({baseline: pass(40), iter1: pass(100)}).rate, 100);
   assert.equal(final({baseline: pass(40), iter1: pass(45)}).rate, 45);
   assert.equal(final({baseline: pass(40)}).rate, null);
+});
+
+test('should link a row to its run as soon as the dispatch resolved it', () => {
+  const board = setRow(initBoard({targets, date: '2026-11-12'}), {
+    fp: 'aaaa1111',
+    status: 'dispatched',
+    run: 'https://run/7',
+  });
+  const text = render(board);
+  assert.match(text, /<https:\/\/run\/7\|still running>/);
+  // The one the pick could not resolve still reads, just without a link.
+  assert.match(text, /tests\/api\/jobs\.spec\.ts.*— still running$/m);
+});
+
+test('should keep the message and the finished rows when the pick runs twice in a day', () => {
+  const posted = {
+    ...setRow(initBoard({targets, date: '2026-11-12'}), {
+      fp: 'aaaa1111',
+      status: 'open_pr',
+      pr: 'https://github.com/camunda/camunda/pull/7',
+      rate: 100,
+    }),
+    ts: '1794464394.303089',
+    channel: 'C06KV5G5PD5',
+  };
+  const again = mergeTargets(posted, [
+    ...targets,
+    {fp: 'dddd4444', version: 'main', file: 'tests/new.spec.ts', titlePath: ['New'], cells: ['e2e']},
+  ]);
+
+  assert.equal(again.ts, posted.ts, 'the message already in the channel is kept');
+  assert.equal(again.channel, posted.channel);
+  assert.equal(again.rows.length, 3, 'only the test it did not already carry is added');
+  assert.equal(again.rows[0].status, 'open_pr', 'a finished row is not reset');
+  assert.equal(again.rows[2].fp, 'dddd4444');
+  assert.equal(again.rows[2].status, 'dispatched');
+});
+
+test('should bump the revision on every change so a stale writer can tell', () => {
+  const board = initBoard({targets, date: '2026-11-12'});
+  const once = setRow(board, {fp: 'aaaa1111', status: 'blocked'});
+  const twice = setRow(once, {fp: 'bbbb2222', status: 'blocked'});
+  assert.ok(once.rev > board.rev);
+  assert.ok(twice.rev > once.rev);
+  assert.ok(mergeTargets(board, []).rev > board.rev);
 });

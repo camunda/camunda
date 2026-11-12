@@ -15,6 +15,15 @@
 //                  [--detail "..."] [--pr <url>] [--run <url>] [--rate 100]
 //     -> the same board with that row replaced
 //
+//   node board.mjs --merge board.json --targets targets.json
+//     -> the board with any target it does not yet carry appended
+//
+// Every change bumps `rev`. Writers overlap, so the one that publishes to
+// Slack must be able to tell whether the board it holds is still the newest:
+// a lower rev means somebody has already published a board that includes this
+// one's row, and publishing the older snapshot would put that row back to
+// "still running".
+//
 //   node board.mjs --render board.json [--now 2026-11-12T09:21:00Z]
 //     -> the Slack mrkdwn text
 //
@@ -68,24 +77,33 @@ export function escape(text) {
 
 const link = (url, text) => (url ? `<${url}|${escape(text)}>` : escape(text));
 
+const asRow = (t) => ({
+  fp: t.fp,
+  version: t.version,
+  file: t.file,
+  title: (t.titlePath ?? []).join(' › '),
+  cells: t.cells ?? [],
+  status: 'dispatched',
+  detail: '',
+  pr: '',
+  run: '',
+});
+
 export function initBoard({targets, date, runUrl = '', channel = CHANNEL}) {
-  return {
-    date,
-    channel,
-    ts: '',
-    run_url: runUrl,
-    rows: targets.map((t) => ({
-      fp: t.fp,
-      version: t.version,
-      file: t.file,
-      title: (t.titlePath ?? []).join(' › '),
-      cells: t.cells ?? [],
-      status: 'dispatched',
-      detail: '',
-      pr: '',
-      run: '',
-    })),
-  };
+  return {date, channel, ts: '', rev: 1, run_url: runUrl, rows: targets.map(asRow)};
+}
+
+// A second pick on the same day -- a re-run, or a manual dispatch -- must not
+// replace the board the already-running agents are updating: their rows would
+// vanish and their verdicts would land on a board nobody is reading.
+// Takes either picked targets or rows of an already-built board, so the pick
+// can merge the board it would have posted into the one already in the channel.
+export function mergeTargets(board, targets) {
+  const known = new Set((board.rows ?? []).map((r) => r.fp));
+  const added = targets
+    .filter((t) => !known.has(t.fp))
+    .map((t) => (t.titlePath ? asRow(t) : t));
+  return {...board, rev: (board.rev ?? 0) + 1, rows: [...(board.rows ?? []), ...added]};
 }
 
 export function setRow(board, {fp, status, detail = '', pr = '', run = '', rate}) {
@@ -94,6 +112,7 @@ export function setRow(board, {fp, status, detail = '', pr = '', run = '', rate}
   }
   return {
     ...board,
+    rev: (board.rev ?? 0) + 1,
     rows: (board.rows ?? []).map((row) =>
       row.fp === fp
         ? {
@@ -241,6 +260,15 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
         }),
       )}\n`,
     );
+  } else if (args.merge !== undefined) {
+    const board = readJson(args.merge, null);
+    if (!board) {
+      console.error(`board.mjs: cannot read ${args.merge}`);
+      process.exit(2);
+    }
+    process.stdout.write(
+      `${JSON.stringify(mergeTargets(board, readJson(args.targets, [])))}\n`,
+    );
   } else if (args.render !== undefined) {
     const board = readJson(args.render, null);
     if (!board) {
@@ -249,7 +277,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     }
     process.stdout.write(render(board, {now: args.now ? new Date(args.now) : new Date()}));
   } else {
-    console.error('board.mjs: one of --init, --set or --render is required');
+    console.error('board.mjs: one of --init, --set, --merge or --render is required');
     process.exit(2);
   }
 }

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 #
 # Post or rewrite the OC flakiness fix agent's daily board message.
-# Reads the message text on stdin and prints the message ts on stdout.
+# Reads the message text on stdin and prints {"ts": ..., "channel": ...} on
+# stdout -- `channel` being the conversation ID Slack resolved the name to.
+# chat.update needs that ID: handed the channel NAME it answers
+# channel_not_found, so a board posted by name would never update again.
 #
 #   board-slack.sh post   <channel>
 #   board-slack.sh update <channel> <ts>
@@ -42,4 +45,4 @@ if [[ "$(jq -r '.ok // false' <<< "$response")" != "true" ]]; then
   echo "::warning::${method} failed: $(jq -r '.error // "no response"' <<< "$response")" >&2
   exit 1
 fi
-jq -r '.ts // ""' <<< "$response"
+jq -c '{ts: (.ts // ""), channel: (.channel // "")}' <<< "$response"

@@ -245,32 +245,68 @@ jobs:
           s=.github/scripts/oc-flakiness
           date_key=$(date -u +%Y-%m-%d)
           node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
-            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board.json"
+            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"
 
-          ts=$(node "$s/board.mjs" --render "$RUNNER_TEMP/board.json" \
+          # Store first, post second. A re-run of the pick on the same day
+          # merges into the board already in the channel instead of posting a
+          # second message and orphaning the runs reporting to the first.
+          board=$(BOARD_JSON=$(cat "$RUNNER_TEMP/board-init.json") \
+            bash "$s/board-store.sh" init "$date_key")
+          echo "date=${date_key}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$(jq -r '.ts // ""' <<< "$board")" ]]; then
+            bash "$s/board-store.sh" publish "$date_key" > /dev/null
+            exit 0
+          fi
+
+          printf '%s' "$board" > "$RUNNER_TEMP/board.json"
+          posted=$(node "$s/board.mjs" --render "$RUNNER_TEMP/board.json" \
             | bash "$s/board-slack.sh" post "$SLACK_CHANNEL") || {
             echo "::warning::could not post the daily board; the runs will still report in the ledger"
             exit 0
           }
-          BOARD_JSON=$(jq -c --arg ts "$ts" '.ts = $ts' "$RUNNER_TEMP/board.json") \
-            bash "$s/board-store.sh" init "$date_key" > /dev/null
-          echo "date=${date_key}" >> "$GITHUB_OUTPUT"
+          # chat.update needs the conversation ID Slack resolved the name to,
+          # not the name.
+          bash "$s/board-store.sh" ts "$date_key" \
+            "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null
 
       - name: Dispatch one run per test
         if: github.event_name == 'schedule' || inputs.dispatch
         env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
           BOARD_DATE: ${{ steps.board.outputs.date }}
         run: |
           set -euo pipefail
-          jq -c '.[]' "$RUNNER_TEMP/targets.json" | while read -r t; do
-            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref main \
-              -f version="$(jq -r .version <<< "$t")" \
-              -f spec="$(jq -r .file <<< "$t")" \
+          s=.github/scripts/oc-flakiness
+          since=$(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%SZ)
+          claimed=""
+
+          # Not a `while read` over a pipe: that body runs in a subshell, and
+          # `claimed` has to survive from one dispatch to the next.
+          for i in $(seq 0 $(( $(jq length "$RUNNER_TEMP/targets.json") - 1 ))); do
+            t=$(jq -c ".[$i]" "$RUNNER_TEMP/targets.json")
+            version=$(jq -r .version <<< "$t")
+            spec=$(jq -r .file <<< "$t")
+            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref "$GITHUB_REF_NAME" \
+              -f version="$version" \
+              -f spec="$spec" \
               -f title_path="$(jq -c .titlePath <<< "$t")" \
               -f project="$(jq -r .project <<< "$t")" \
               -f cells="$(jq -c .cells <<< "$t")" \
               -f board_date="$BOARD_DATE"
-            echo "Dispatched $(jq -r '.version + " " + .file + " › " + .title' <<< "$t")"
+            echo "Dispatched ${version} ${spec}"
+
+            [[ -n "$BOARD_DATE" ]] || continue
+            # Linking the row now is what makes the board usable while the runs
+            # are still going; without it the first clickable link appears
+            # hours later, at the verdict.
+            run_url=$(VERSION="$version" SPEC="$spec" SINCE_TS="$since" CLAIMED="$claimed" \
+              bash "$s/resolve-dispatched-run.sh") || true
+            [[ -n "$run_url" ]] || continue
+            claimed="${claimed:+${claimed},}${run_url##*/}"
+            bash "$s/board-store.sh" set "$BOARD_DATE" \
+              "$(jq -r .fp <<< "$t")" dispatched "" "" "$run_url" "" > /dev/null
           done
 
       - name: Observe build status
@@ -904,27 +940,18 @@ jobs:
             pr="$PR_URL"
           fi
 
+          # `set` stores the row and, once its push has landed, rewrites the
+          # message -- but only while this board is still the newest on the
+          # branch, so it cannot undo a row another run published meanwhile.
           rc=0
-          board=$(bash "$s/board-store.sh" set "$BOARD_DATE" \
-            "$fp" "$status" "$detail" "$pr" "$RUN_URL" "$rate") || rc=$?
+          bash "$s/board-store.sh" set "$BOARD_DATE" \
+            "$fp" "$status" "$detail" "$pr" "$RUN_URL" "$rate" > /dev/null || rc=$?
           if [[ "$rc" -eq 3 ]]; then
             echo "No board for ${BOARD_DATE}; nothing to update."
             exit 0
           fi
           [[ "$rc" -eq 0 ]] || exit "$rc"
-
-          ts=$(jq -r '.ts // ""' <<< "$board")
-          channel=$(jq -r '.channel // ""' <<< "$board")
-          if [[ -z "$ts" || -z "$channel" ]]; then
-            echo "::warning::board ${BOARD_DATE} carries no message to update"
-            exit 0
-          fi
-          # The verdict is already on the state branch and in the PR; a Slack
-          # outage must not turn a successful fix run red.
-          printf '%s' "$board" > "$RUNNER_TEMP/board.json"
-          node "$s/board.mjs" --render "$RUNNER_TEMP/board.json" \
-            | bash "$s/board-slack.sh" update "$channel" "$ts" > /dev/null \
-            || echo "::warning::could not rewrite the daily board message"
+          echo "Reported ${status} for ${fp} on board ${BOARD_DATE}."
 
       - name: Observe build status
         if: always()
