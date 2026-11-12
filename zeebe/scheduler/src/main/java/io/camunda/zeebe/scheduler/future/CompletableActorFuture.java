@@ -16,6 +16,8 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -29,14 +31,12 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 
 /** Completable future implementation that is garbage free and reusable */
-@SuppressWarnings("restriction")
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
-  private static final long STATE_OFFSET;
+  private static final VarHandle STATE;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -46,10 +46,10 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   static {
     try {
-      STATE_OFFSET =
-          UnsafeApi.objectFieldOffset(CompletableActorFuture.class.getDeclaredField("state"));
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
+      STATE =
+          MethodHandles.lookup().findVarHandle(CompletableActorFuture.class, "state", int.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
     }
   }
 
@@ -209,7 +209,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   @Override
   public void complete(final V value) {
-    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       state = COMPLETED;
       completedAt = System.nanoTime();
@@ -230,7 +230,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
-    if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
+    if (STATE.compareAndSet(this, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
       completedAt = System.nanoTime();
@@ -451,7 +451,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   /** future is reusable after close */
   public boolean close() {
-    final int prevState = UnsafeApi.getAndSetInt(this, STATE_OFFSET, CLOSED);
+    final int prevState = (int) STATE.getAndSet(this, CLOSED);
 
     if (prevState != CLOSED) {
       value = null;
