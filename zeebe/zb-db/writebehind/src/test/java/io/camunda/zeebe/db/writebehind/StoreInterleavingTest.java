@@ -7,13 +7,18 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
+import static io.camunda.zeebe.db.writebehind.TestValues.COLUMN_FAMILY;
 import static io.camunda.zeebe.db.writebehind.TestValues.held;
 import static io.camunda.zeebe.db.writebehind.TestValues.key;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
@@ -162,6 +167,54 @@ final class StoreInterleavingTest {
     // then
     assertThat(longOf(key(1))).isNull();
     assertThat(store.exists(key(1))).isFalse();
+  }
+
+  @Test
+  void shouldNotTrustKeyIndexThatACommitBeingPublishedChanged() throws Exception {
+    // given an uncached, flushed key of an indexed column family
+    final var indexedBackend = new PausingBackend(new InMemoryRawDbAccess());
+    final var indexedStore =
+        new WriteBehindStore<>(
+            indexedBackend,
+            CONFIG
+                .withCacheMaxBytes(0)
+                .withKeyIndexPolicies(Map.of(COLUMN_FAMILY, KeyIndexPolicy.DISABLE)));
+    try {
+      TestValues.commit(indexedStore, key(1), held(1));
+      indexedStore.awaitFlushed();
+      indexedStore.prepareKeyIndex(COLUMN_FAMILY);
+
+      // and a commit that deletes it and has updated the key index, but isn't published yet
+      final var later = keyOfLaterColumnFamily();
+      final var committer =
+          new TestThread(
+              () ->
+                  indexedStore.commit(
+                      new RawKey[] {key(1), later}, new HeldValue[] {null, held(2)}));
+      // a commit asks for the group of a key while it publishes the key's version, then while it
+      // finds the keys of the column family before it, and then after it updated that one's index
+      final var pause = indexedBackend.pauseOnGroupOf(committer.thread, later, 2);
+      committer.start();
+      pause.awaitReached();
+
+      // when
+      final boolean exists = indexedStore.exists(key(1));
+      final var value = TestValues.longOf(indexedStore.get(key(1), new DbLong()));
+      pause.release();
+      committer.join();
+
+      // then
+      assertThat(exists).isTrue();
+      assertThat(value).isEqualTo(1);
+      assertThat(indexedStore.exists(key(1))).isFalse();
+    } finally {
+      indexedStore.close();
+    }
+  }
+
+  private static RawKey keyOfLaterColumnFamily() {
+    final var buffer = ByteBuffer.allocate(2 * Long.BYTES).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER);
+    return RawKey.of(buffer.putLong(COLUMN_FAMILY + 2).putLong(1).array());
   }
 
   private void storeDirectly(final RawKey key, final HeldValue value) {
