@@ -135,11 +135,8 @@ database orders byte by byte, so scans return the same order as RocksDB.
 - **Restoring several partitions to one point in time.** Partitions reach a checkpoint at different
   times. One database restore time must be valid for all of them, which may need the log of the
   previous backup too.
-- **Data source configuration.** A separate `camunda.data.primary-storage.rdbms` data source, or the
-  secondary storage's when both point to the same database.
 - **Partition scaling** copies column families from partition 1's snapshot. With a shared state that
   could be an `INSERT … SELECT` inside the database. It is unsupported at first.
-- **Where the commit gate reads the last written position** without slowing down the commit.
 - **Liquibase's lock is JVM-wide** (#61009). Our migration and the history migration must not run at
   the same time in one JVM.
 - **Removing the state of a deleted partition** or physical tenant.

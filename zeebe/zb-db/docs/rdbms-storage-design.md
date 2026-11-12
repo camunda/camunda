@@ -13,10 +13,10 @@ only the leader reads and writes it.
 This document covers:
 - **Part A, zb-db**: the new `zeebe-db-rdbms` module and the changes the cache needs. This is built
 first.
-- **Part B, broker**: wiring, leader and follower roles, snapshots and backups. This is only
-outlined here and will be designed in detail after Part A.
+- **Part B, broker**: configuration, wiring, leader and follower roles, and snapshots (§9).
 
-Out of scope: vendors other than H2 and PostgreSQL, partition scaling, zdb.
+Out of scope: vendors other than H2 and PostgreSQL, partition scaling, zdb, and for now backups
+and restore (ADR D6 stays the plan for later).
 
 ## 2. How it fits
 
@@ -51,8 +51,8 @@ later the state rows, fencing and the marker.
 
 Dependencies (all versions already managed in `parent/pom.xml`): `zeebe-db-api`, `liquibase-core`
 and `mybatis` at compile scope; `h2`, `postgresql` and `testcontainers-postgresql` at test scope. No
-Spring and no connection pool: the caller provides a `DataSource`. In the broker that will be a
-HikariCP pool (Part B).
+Spring and no connection pool: the caller provides a `DataSource`. In the broker that's a HikariCP
+pool (§9.2).
 
 Resources:
 - `db/changelog/zeebe-state/changelog-master.xml` and `changesets/8.11.0.xml`
@@ -272,29 +272,91 @@ other write failure.
 
 **Close.** Closing drops the transactions the writer hasn't written yet, held back or not; the new
 leader replays them from the log. Writing them on close could shorten the new leader's replay, but
-it delays the step-down; the benchmark decides (§11 risk 2, §12 step 13).
+it delays the step-down; the benchmark decides (§11 risk 2, §12 step 12).
 
-## 9. Broker changes (Part B, outline)
+## 9. Broker changes (Part B)
 
-1. **Configuration and wiring.** `camunda.data.primary-storage.rdbms.*` (data source, prefix, pool),
-   one `RdbmsStorage` per data source, `RdbmsZeebeDbFactory` per partition in
-   `ZeebePartitionFactory#stateDbFactory`. The write-behind cache is required.
-2. **Term.** `ZeebeDbPartitionTransitionStep` passes its term to the factory's term supplier before
-   `StateController.recover()`.
-3. **Leader.** Attaches, replays from the shared processed position, and feeds the commit gate from
-   the log stream's written and committed positions, only while it's the leader. On step-down it
-   must release a commit waiting for `maxPendingBytes` and a snapshot waiting for the log: the
-   transition closes the stream processor and the snapshot director before the DB, so closing
-   the DB comes too late.
-4. **Followers and candidates.** No `ZeebeDb`, no replay, no passive exporter state. A snapshot
-   director that writes markers from the processed and exported positions read from the shared
-   state, limited to their own log. Each transition step that uses the DB today needs a decision.
-5. **Recovery check.** The shared processed position must be at or above the marker's and within
-   the log (ADR D5).
-6. **RocksDB-only paths.** Skip the recovery sanity check for markers; reject partition scaling and
-   unsupported restores clearly.
-7. **Backups.** Restore with a database restore to the checkpoint time, then reset the owner terms
-   (ADR D6).
+One replica comes first, so each step leaves a broker that works; followers come after (§12).
+
+### 9.1 Configuration
+
+- `camunda.data.primary-storage.type`: `rocksdb` (default) or `rdbms`.
+- `camunda.data.primary-storage.rdbms.*`: `url`, `username`, `password`, `prefix` and
+  `connection-pool.*`. These are separate from the secondary storage's settings: the partition
+  state may live in another database, and its pool is sized for the partitions' writers.
+- Both map onto `DataCfg` in `BrokerBasedPropertiesOverride`, like the cache's settings.
+- In RDBMS mode, the broker fails to start, naming the setting, unless:
+  - the write-behind cache is turned on;
+  - backups are turned off: `camunda.data.primary-storage.backup.store` is `NONE` and
+    `continuous` is `false` (§9.7);
+  - the replication factor is 1, until followers are supported (§9.5).
+
+### 9.2 Wiring
+
+- `PartitionManagerImpl`, which exists once per partition group, builds one HikariCP pool from its
+  `BrokerCfg`, with auto-commit off. Before its partitions start, it opens one `RdbmsStorage`,
+  which runs the Liquibase changelog. It closes the pool after its partitions have stopped.
+- `ZeebePartitionFactory#stateDbFactory` creates one `RdbmsZeebeDbFactory` per partition, with
+  `StateIdentity(partitionGroup, partitionId)`, inside a `WriteBehindZeebeDbFactory` with the
+  commit gate (§9.4).
+- `zeebe-broker` gets two new dependencies: `zeebe-db-rdbms` and `HikariCP`.
+- Partition scaling copies a RocksDB snapshot (`RocksDBSnapshotCopy`), so it's rejected in RDBMS
+  mode.
+
+### 9.3 Term and leader
+
+- `ZeebeDbPartitionTransitionStep#transitionTo` receives the new term, but
+  `context.getCurrentTerm()` is only updated once the whole transition is done. The step hands its
+  term to a small holder that the factory's term supplier reads, before `StateController.recover()`
+  opens the DB. The term must be the one this node leads in. The Raft server's current term may
+  already be a later one, led by another node.
+- The leader claims the shared state and replays from the shared processed position, which
+  `StreamProcessor` already reads from the state. Exporters read their positions from the shared
+  state too.
+
+### 9.4 Commit gate
+
+- **Committed position:** a Raft committed-entry listener, as `AsyncSnapshotDirector` uses, starting
+  from the end of a committed log reader. `LogStream`'s committed-position listener isn't enough:
+  it only fires for records this node appended.
+- **Last written position:** a new `LogStream` method that returns the `Sequencer`'s position, which
+  is set as soon as a record is written. `FlowControl`'s last written position is only updated
+  after the journal write, so it can lag behind.
+- Only the leader feeds the gate. On step-down, the gate must release a commit waiting for
+  `maxPendingBytes` and a snapshot waiting for the log. The transition closes the stream processor
+  and the snapshot director before the DB, so closing the DB comes too late.
+
+### 9.5 Followers and candidates
+
+- They have no `ZeebeDb`. In RDBMS mode, the steps that use the DB run only on the leader: ZeebeDb,
+  Migration, QueryService, InterPartitionCommandService, StreamProcessor, SnapshotDirector,
+  ExporterDirector, BackupService and BackupApiRequestHandler. Followers keep the log storage and
+  the log stream. Code that expects these components on followers, such as partition health and
+  admin access, needs checks.
+- A follower snapshot director takes marker snapshots, so followers can compact their log:
+  - it reads the processed and exported positions through a read-only reader in
+    `zeebe-db-rdbms`, which never claims the state, so it never fences the leader;
+  - it limits them to the end of its own committed log, and takes a marker snapshot there.
+- The replication factor limit from §9.1 goes away.
+
+### 9.6 Recovery check and RocksDB-only paths
+
+- After the leader opens the DB, the shared processed position must be at or above the marker's
+  and within the log (ADR D5). Otherwise the partition fails to start.
+- `RecoveryPartitionManager#verifyRestoredRocksDb` and the `debug-cli` snapshot tools expect
+  RocksDB files. They skip or clearly reject markers.
+
+### 9.7 Backups
+
+Turned off in RDBMS mode for now (§9.1). ADR D6 stays the plan: restore the database to the time
+of the checkpoint, then reset the owner terms.
+
+### 9.8 Tests
+
+- **One replica:** a broker on H2 is restarted, and a process instance created before the restart
+  continues from the shared state.
+- **Followers:** three brokers in one JVM share one H2 database. The tests cover a leader change,
+  follower restarts and log compaction on followers, then the same on PostgreSQL.
 
 ## 10. Testing
 
@@ -341,15 +403,14 @@ differential and property suites are tagged `randomized`; they only run with
 4. **Commit gate and snapshots.** A partition that can't reach the Raft commit can't write, so its
    cache fills up and it can't snapshot. That's the same as today's commit wait in
    `AsyncSnapshotDirector`, but it now also blocks the writer and, once `maxPendingBytes` is
-   reached, the stream processor. Part B must release both on step-down (§9 item 3).
+   reached, the stream processor. Part B must release both on step-down (§9.4).
 5. **Liquibase lock overlap** with the history migration in the same JVM (§5).
 6. **Binary ordering on other vendors.** SQL Server compares trailing zeros as equal; MySQL and
    Oracle limit key lengths. Each new vendor needs the contract tests.
 
 ## 12. Implementation plan
 
-Each step is one commit, reviewed before the next one. Part A ends with a PR; Part B is planned in
-detail afterwards.
+Each step is one commit, reviewed before the next one. Part A ends with a PR.
 
 **Part A: zb-db**
 1. **docs:** this design and ADR 0015.
@@ -364,10 +425,12 @@ failover test.
 6. **feat:** the commit gate in the cache's writer.
 7. **test:** the suites on PostgreSQL with Testcontainers (§10).
 
-**Part B: broker** (outline in §9)
-8. Configuration and wiring.
-9. Term, leader attach and replay, commit gate from the log stream.
-10. Followers without a `ZeebeDb`, marker snapshots on followers.
-11. Recovery check and RocksDB-only paths.
-12. Backup and restore.
-13. Benchmark against RocksDB, with and without the cache, then decide.
+**Part B: broker** (§9)
+8. **feat:** configuration, connection pool, wiring and the term (§9.1–9.3), with one replica
+only; the one-replica broker test (§9.8). Until step 9, the writer doesn't wait for the commit, so a
+crash can leave the state ahead of the log.
+9. **feat:** the commit gate from the log stream (§9.4).
+10. **feat:** followers without a `ZeebeDb`, with marker snapshots; more than one replica; the
+follower tests (§9.5, §9.8).
+11. **feat:** the recovery check and the RocksDB-only paths (§9.6).
+12. Benchmark against RocksDB, with and without the cache, then decide.
