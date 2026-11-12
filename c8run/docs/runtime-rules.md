@@ -36,7 +36,7 @@ The `--port` flag changes the main web/REST port. If the user did not set `CAMUN
 
 ## Health Check Timeout
 
-Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). If Camunda does not become healthy within this window, C8Run reports failure. Each Connectors runtime is checked the same way on its own port. If one does not become healthy, C8Run logs a warning and Camunda keeps running.
+Startup health checks use 24 retries with a 14-second delay between attempts (~5.6 minutes total). Within each delay, the endpoint is probed every 500 ms, so a service is reported as started as soon as it becomes healthy. If Camunda does not become healthy within this window, C8Run reports failure. Each Connectors runtime is checked the same way on its own port. If one does not become healthy, C8Run logs a warning and Camunda keeps running.
 
 ## Startup URL and Quickstart Marker
 

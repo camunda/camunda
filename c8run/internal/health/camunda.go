@@ -120,28 +120,24 @@ func QueryConnectorsOnPort(ctx context.Context, name string, port int, retries i
 	return fmt.Errorf("queryConnectors: %s did not start", name)
 }
 
+// healthPollInterval is how often the endpoint is probed within each retry window. Probing
+// only once per delay would report a service as started up to a full delay after it
+// actually became healthy.
+var healthPollInterval = 500 * time.Millisecond
+
+// isRunning waits up to retries*delay for url to answer with a 2xx/3xx status. The progress
+// log and the overall budget follow the retries/delay cadence, while the endpoint itself is
+// probed every healthPollInterval so a healthy service is detected promptly.
 func isRunning(ctx context.Context, name, url string, retries int, delay time.Duration) bool {
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
 
+	poll := min(healthPollInterval, delay)
 	for i := retries; i >= 0; i-- {
 		log.Info().Str("name", name).Int("retries_left", i).Msg("Waiting for service to start")
 
-		// Build request with context so that we can cancel early when the caller terminates.
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-		if err == nil {
-			resp, err := client.Do(req)
-			if err == nil {
-				if resp.Body != nil {
-					if err := resp.Body.Close(); err != nil {
-						log.Error().Err(err).Msg("failed to close response body")
-					}
-				}
-
-				if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-					return true
-				}
-			}
+		if probe(ctx, client, url) {
+			return true
 		}
 
 		if i == 0 {
@@ -149,14 +145,45 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 			return false
 		}
 
-		select {
-		case <-ctx.Done():
-			log.Info().Msg("Gracefully stopping our retries...")
-			return false
-		case <-time.After(delay):
+		windowEnd := time.Now().Add(delay)
+		for {
+			wait := min(poll, time.Until(windowEnd))
+			if wait <= 0 {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				log.Info().Msg("Gracefully stopping our retries...")
+				return false
+			case <-time.After(wait):
+			}
+			if time.Until(windowEnd) <= 0 {
+				break
+			}
+			if probe(ctx, client, url) {
+				return true
+			}
 		}
 	}
 	return false
+}
+
+func probe(ctx context.Context, client *http.Client, url string) bool {
+	// Build request with context so that we can cancel early when the caller terminates.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	if resp.Body != nil {
+		if err := resp.Body.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close response body")
+		}
+	}
+	return resp.StatusCode >= 200 && resp.StatusCode < 400
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
