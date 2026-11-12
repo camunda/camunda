@@ -16,8 +16,15 @@ import {
 } from '../../../../utils/http';
 import {
   activateJobToObtainAValidJobKey,
+  activateSingleJob,
+  createInstanceOnceDeployed,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {
+  cancelProcessInstance,
+  deployWithSubstitutions,
+} from '../../../../utils/zeebeClient';
+import {uniquePrefixedId} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
@@ -75,13 +82,45 @@ test.describe('Job Fail API Tests', () => {
     });
     await assertBadRequest(failRes, '');
   });
+});
+
+// 'Fail Job - 409' owns everything it touches: its own process definition,
+// job type and instance. It is deliberately outside the describe above so the
+// shared hooks do not also start a 'jobApiProcess' instance for it — the
+// parallel completion spec can finish that shared instance, and the shared
+// teardown then cancels an instance that no longer exists.
+test.describe('Job Fail API Tests', () => {
+  const isolatedInstances: string[] = [];
+
+  test.afterEach(async () => {
+    for (const processInstanceKey of isolatedInstances.splice(0)) {
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
+    }
+  });
 
   test('Fail Job - 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
-    await test.step('First activate a job', async () => {
-      localState['jobKey'] = await activateJobToObtainAValidJobKey(
+    // The shared 'jobApiProcess'/'jobApiTaskType' pair is deployed by four
+    // sibling job-* specs that run on parallel workers. Activating from that
+    // shared pool hands back whichever job is activatable, so another test's
+    // afterEach could cancel the instance and delete the job mid-test (404
+    // instead of the expected 204/409), and this test's own job could be
+    // activated and completed by the parallel completion spec. A per-test
+    // process id and job type remove the shared ownership entirely.
+    const processDefinitionId = uniquePrefixedId('jobFail409Process');
+    const jobType = uniquePrefixedId('jobFail409TaskType');
+
+    await test.step('Deploy an isolated process and activate its job', async () => {
+      await deployWithSubstitutions('./resources/job_api_process.bpmn', {
+        jobApiProcess: processDefinitionId,
+        'type="jobApiTaskType"': `type="${jobType}"`,
+      });
+      const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+      isolatedInstances.push(instance.processInstanceKey);
+      localState['jobKey'] = await activateSingleJob(
         request,
-        'jobApiTaskType',
+        jobType,
+        instance.processInstanceKey,
       );
     });
 
