@@ -64,6 +64,13 @@ steps:
       mkdir -p /tmp/gh-aw/pr-review
       gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > /tmp/gh-aw/pr-review/pr.diff || true
       wc -l /tmp/gh-aw/pr-review/pr.diff
+  # Lists every added line with its new-file line number, so the agent gets exact line numbers for
+  # inline comments without mapping the hunks itself. Runs outside the sandbox, on the diff only.
+  - name: List the changed lines with their line numbers
+    run: |
+      python3 .github/scripts/oc-api-design-review/changed_lines.py \
+        --diff /tmp/gh-aw/pr-review/pr.diff --out /tmp/gh-aw/pr-review/changed-lines.txt
+      wc -l /tmp/gh-aw/pr-review/changed-lines.txt
   # Fetched in a step, so every run applies the style guide instead of leaving it to the agent to
   # follow the link.
   - name: Fetch the Camunda style guide
@@ -123,9 +130,8 @@ You have 10 minutes in total. Work in four phases, in this order. The rules are 
 
 - **Changed lines only.** Report only findings on lines this pull request adds or changes.
   Never mention pre-existing problems the pull request did not introduce, however bad. The
-  checkout is the pull request head, and `/tmp/gh-aw/pr-review/pr.diff` holds the pull request's
-  diff as GitHub shows it (merge base to head). Its `+` lines are the changed lines; their
-  line numbers count up from `c` in each `@@ -a,b +c,d @@` hunk header, skipping `-` lines. If
+  checkout is the pull request head. `/tmp/gh-aw/pr-review/changed-lines.txt` lists every added
+  line as `path:line: text`. Use those line numbers for inline comments. If
   the file is empty (GitHub serves no diff for very large pull requests), use the pull request's
   files and their patches from the GitHub tool. Do not diff against the base branch yourself:
   changes merged there since the branch was cut would show up as reversed changes. A finding
