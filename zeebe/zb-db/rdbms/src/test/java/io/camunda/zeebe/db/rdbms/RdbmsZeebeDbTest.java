@@ -18,9 +18,9 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
+import java.nio.file.Path;
 import java.sql.SQLTransientConnectionException;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +29,7 @@ import javax.sql.DataSource;
 import org.h2.jdbcx.JdbcConnectionPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /**
  * What the relational storage adds to the shared ZeebeDb contract tests: the database's own errors,
@@ -40,6 +41,7 @@ final class RdbmsZeebeDbTest {
   private final TestH2Database database = new TestH2Database(";LOCK_TIMEOUT=100");
   private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
+  @TempDir private Path directory;
 
   @AfterEach
   void tearDown() throws Exception {
@@ -261,14 +263,15 @@ final class RdbmsZeebeDbTest {
     }
   }
 
-  private ZeebeDb<TestColumnFamilies> createDb(final RdbmsStorage storage, final long stateId) {
+  private ZeebeDb<TestColumnFamilies> createDb(final RdbmsStorage storage, final int partitionId) {
     final var db =
         new RdbmsZeebeDbFactory<TestColumnFamilies>(
                 storage,
-                stateId,
+                new StateIdentity("raft-partition", partitionId),
+                () -> 1,
                 new ConsistencyChecksSettings(true, true),
                 SimpleMeterRegistry::new)
-            .createDb(new File("not-used"));
+            .createDb(directory.toFile());
     dbs.add(db);
     return db;
   }

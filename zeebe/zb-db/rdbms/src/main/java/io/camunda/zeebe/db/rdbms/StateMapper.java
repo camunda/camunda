@@ -11,8 +11,30 @@ import java.util.Optional;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.ResultHandler;
 
-/** The statements on the state table; see {@code StateMapper.xml} next to this class. */
+/** The statements on the state tables; see {@code StateMapper.xml} next to this class. */
 interface StateMapper {
+
+  Optional<Long> findStateId(
+      @Param("partitionGroup") String partitionGroup, @Param("partitionId") int partitionId);
+
+  /** Returns the highest state id, or 0 if there's no state. */
+  long maxStateId();
+
+  void createState(
+      @Param("stateId") long stateId,
+      @Param("partitionGroup") String partitionGroup,
+      @Param("partitionId") int partitionId,
+      @Param("term") long term);
+
+  /**
+   * Sets the owner term, unless a newer term owns the state.
+   *
+   * @return 1 if claimed, else 0; only correct on a session that doesn't batch
+   */
+  int claim(@Param("stateId") long stateId, @Param("term") long term);
+
+  /** Returns the owner term and locks the state row until the transaction ends. */
+  Optional<Long> lockOwnerTerm(@Param("stateId") long stateId);
 
   Optional<byte[]> get(
       @Param("stateId") long stateId,

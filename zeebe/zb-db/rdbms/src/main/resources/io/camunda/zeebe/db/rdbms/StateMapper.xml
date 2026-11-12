@@ -17,6 +17,37 @@
     </constructor>
   </resultMap>
 
+  <select id="findStateId" resultType="long">
+    SELECT STATE_ID
+    FROM ${prefix}ZEEBE_STATE_PARTITION
+    WHERE PARTITION_GROUP = #{partitionGroup}
+      AND PARTITION_ID = #{partitionId}
+  </select>
+
+  <select id="maxStateId" resultType="_long">
+    SELECT COALESCE(MAX(STATE_ID), 0)
+    FROM ${prefix}ZEEBE_STATE_PARTITION
+  </select>
+
+  <insert id="createState">
+    INSERT INTO ${prefix}ZEEBE_STATE_PARTITION (STATE_ID, PARTITION_GROUP, PARTITION_ID, OWNER_TERM)
+    VALUES (#{stateId}, #{partitionGroup}, #{partitionId}, #{term})
+  </insert>
+
+  <update id="claim">
+    UPDATE ${prefix}ZEEBE_STATE_PARTITION
+    SET OWNER_TERM = #{term}
+    WHERE STATE_ID = #{stateId}
+      AND OWNER_TERM &lt;= #{term}
+  </update>
+
+  <select id="lockOwnerTerm" resultType="long">
+    SELECT OWNER_TERM
+    FROM ${prefix}ZEEBE_STATE_PARTITION
+    WHERE STATE_ID = #{stateId}
+    FOR UPDATE
+  </select>
+
   <sql id="inRange">
     WHERE STATE_ID = #{stateId}
       AND COLUMN_FAMILY = #{columnFamily}

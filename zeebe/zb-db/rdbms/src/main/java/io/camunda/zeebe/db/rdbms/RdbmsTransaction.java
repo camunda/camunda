@@ -28,6 +28,10 @@ import org.slf4j.LoggerFactory;
  * writes holds none until it commits. Writes wait in a {@link WriteBuffer} and go to the database
  * as one batch before every scan and at commit. Point reads look at the buffer first.
  *
+ * <p>Before its first writes reach the database, it checks that its term still owns the state, and
+ * locks the state row until it ends. A newer leader's claim waits for it, and once claimed, writes
+ * of the older term throw {@link StateFencedException}. Transactions that only read never check.
+ *
  * <p>Like RocksDB's, it is used by one thread at a time and is reused for the next transaction.
  */
 final class RdbmsTransaction implements ZeebeDbTransaction {
@@ -36,15 +40,18 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
 
   private final RdbmsStorage storage;
   private final long stateId;
+  private final long term;
   private final WriteBuffer buffer = new WriteBuffer();
   private @Nullable Connection connection;
   private @Nullable SqlSession session;
   private @Nullable StateMapper mapper;
   private boolean inCurrentTransaction;
+  private boolean ownerChecked;
 
-  RdbmsTransaction(final RdbmsStorage storage, final long stateId) {
+  RdbmsTransaction(final RdbmsStorage storage, final long stateId, final long term) {
     this.storage = storage;
     this.stateId = stateId;
+    this.term = term;
   }
 
   long stateId() {
@@ -168,10 +175,28 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     }
     execute(
         state -> {
+          if (!ownerChecked) {
+            checkOwner(state);
+            ownerChecked = true;
+          }
           buffer.sendTo(state, stateId);
           session().flushStatements();
         });
     buffer.clear();
+  }
+
+  private void checkOwner(final StateMapper state) {
+    final var ownerTerm = state.lockOwnerTerm(stateId);
+    if (ownerTerm.isEmpty() || ownerTerm.get() != term) {
+      throw new StateFencedException(
+          "Expected to write to the partition state %d with term %d, but %s"
+              .formatted(
+                  stateId,
+                  term,
+                  ownerTerm
+                      .map(owner -> "a leader of term " + owner + " owns it")
+                      .orElse("the state doesn't exist")));
+    }
   }
 
   /** Runs statements on this transaction's connection. */
@@ -197,27 +222,13 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     if (current != null) {
       return current;
     }
-    final var borrowed = borrowConnection();
+    final var borrowed = storage.borrowConnection();
     connection = borrowed;
     final var opened = storage.sqlSessionFactory().openSession(ExecutorType.BATCH, borrowed);
     session = opened;
     final var openedMapper = opened.getMapper(StateMapper.class);
     mapper = openedMapper;
     return openedMapper;
-  }
-
-  private Connection borrowConnection() {
-    @Nullable Connection borrowed = null;
-    try {
-      borrowed = storage.dataSource().getConnection();
-      borrowed.setAutoCommit(false);
-      return borrowed;
-    } catch (final SQLException e) {
-      if (borrowed != null) {
-        closeQuietly(borrowed);
-      }
-      throw SqlErrors.translate(e);
-    }
   }
 
   private SqlSession session() {
@@ -235,6 +246,7 @@ final class RdbmsTransaction implements ZeebeDbTransaction {
     session = null;
     mapper = null;
     connection = null;
+    ownerChecked = false;
     if (openSession != null) {
       openSession.close();
     }

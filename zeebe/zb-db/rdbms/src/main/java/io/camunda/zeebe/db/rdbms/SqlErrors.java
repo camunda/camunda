@@ -30,6 +30,8 @@ final class SqlErrors {
 
   private static final String CONNECTION_ERROR_CLASS = "08";
 
+  private static final String UNIQUE_VIOLATION = "23505";
+
   /** Enough to reach the driver's exception through MyBatis' and any pool's wrappers. */
   private static final int MAX_CAUSE_DEPTH = 16;
 
@@ -42,6 +44,19 @@ final class SqlErrors {
           "A database error occurred that may pass if the transaction is tried again", error);
     }
     return new RuntimeException("Unexpected error occurred during RDBMS transaction.", error);
+  }
+
+  /** Whether an insert failed because a row with the same unique key exists. */
+  static boolean isUniqueViolation(final Throwable error) {
+    @Nullable Throwable cause = error;
+    for (int depth = 0; cause != null && depth < MAX_CAUSE_DEPTH; depth++) {
+      if (cause instanceof final SQLException sqlException
+          && UNIQUE_VIOLATION.equals(sqlException.getSQLState())) {
+        return true;
+      }
+      cause = cause.getCause() == cause ? null : cause.getCause();
+    }
+    return false;
   }
 
   static boolean isRecoverable(final Throwable error) {
