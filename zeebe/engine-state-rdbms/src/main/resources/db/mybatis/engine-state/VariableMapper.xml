@@ -46,6 +46,10 @@
     value, metadata
   </sql>
 
+  <select id="selectHighestVariableScopeKey" resultType="java.lang.Long">
+    SELECT MAX(scope_key) FROM CAM_RU_VARIABLE WHERE partition_id = #{partitionId}
+  </select>
+
   <select id="selectVariable" resultMap="variableRow">
     SELECT <include refid="variableColumns"/>
     FROM CAM_RU_VARIABLE

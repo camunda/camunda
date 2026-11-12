@@ -28,10 +28,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Like the RDBMS exporter's, the sessions borrow a connection from the data source, run with
  * auto-commit disabled and commit, roll back and return the connection to the pool themselves. The
- * pool must provide connections with auto-commit off and the isolation level read committed, as
- * the sessions don't set them, to save a round trip each. The
- * first-level cache is limited to a statement, so a session never serves rows that a flush changed
- * since.
+ * pool must provide connections with auto-commit off and the isolation level read committed, as the
+ * sessions don't set them, to save a round trip each. The first-level cache is limited to a
+ * statement, so a session never serves rows that a flush changed since.
  */
 public final class EngineStateMyBatis {
 

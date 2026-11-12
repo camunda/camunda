@@ -947,8 +947,7 @@ final class EntitySession implements JdbcTransactionParticipant {
         // taken before the first read, see WriteBehindStore#unflushed
         currentUnflushed(store);
       }
-      session =
-          sessionFactory.openSession(ExecutorType.BATCH);
+      session = sessionFactory.openSession(ExecutorType.BATCH);
     }
     return session;
   }

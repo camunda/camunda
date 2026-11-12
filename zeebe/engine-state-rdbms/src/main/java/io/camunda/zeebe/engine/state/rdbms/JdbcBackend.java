@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.rdbms;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.writebehind.Backend;
 import io.camunda.zeebe.db.writebehind.KeyRange;
+import io.camunda.zeebe.engine.state.rdbms.VariableMapper.VariableKey;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -44,9 +45,25 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
   private final int partitionId;
   private final SqlSessionFactory sessionFactory;
 
+  private final VariableKeyFilter variableKeys;
+
   JdbcBackend(final int partitionId, final SqlSessionFactory sessionFactory) {
     this.partitionId = partitionId;
     this.sessionFactory = sessionFactory;
+    variableKeys = new VariableKeyFilter(highestVariableScope(sessionFactory, partitionId));
+  }
+
+  private static long highestVariableScope(
+      final SqlSessionFactory sessionFactory, final int partitionId) {
+    try (final var session = sessionFactory.openSession(ExecutorType.SIMPLE)) {
+      final Long highest =
+          session.selectOne(
+              VariableMapper.class.getName() + ".selectHighestVariableScopeKey",
+              Map.of("partitionId", partitionId));
+      return highest == null ? -1L : highest;
+    } catch (final PersistenceException e) {
+      throw new ZeebeDbException("Failed to read the highest variable scope", e);
+    }
   }
 
   @Override
@@ -66,8 +83,7 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
 
   @Override
   public @Nullable Object get(final EntityKey key, final Object prototype) {
-    try (final var session =
-        sessionFactory.openSession(ExecutorType.SIMPLE)) {
+    try (final var session = sessionFactory.openSession(ExecutorType.SIMPLE)) {
       return session.selectOne(key.type().select, keyParameter(key.key()));
     } catch (final PersistenceException e) {
       throw new ZeebeDbException("Failed to read %s %s".formatted(key.type(), key.key()), e);
@@ -81,7 +97,17 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
 
   @Override
   public boolean mayExist(final EntityKey key) {
-    return true;
+    return !knownAbsent(key);
+  }
+
+  /**
+   * Variables are looked up before they are written, e.g. to merge a document into a scope, and
+   * almost every one of those lookups finds nothing, which the database would only confirm.
+   */
+  @Override
+  public boolean knownAbsent(final EntityKey key) {
+    return key.type() == RdbmsVariableStore.VARIABLE
+        && variableKeys.neverWritten((VariableKey) key.key());
   }
 
   @Override
@@ -124,6 +150,9 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
 
     @Override
     public void put(final EntityKey key, final Object row) {
+      if (key.type() == RdbmsVariableStore.VARIABLE) {
+        variableKeys.written((VariableKey) key.key());
+      }
       puts.add(Map.entry(key, row));
     }
 
@@ -137,8 +166,7 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
       if (puts.isEmpty() && deletes.isEmpty()) {
         return;
       }
-      try (final var session =
-          sessionFactory.openSession(ExecutorType.BATCH)) {
+      try (final var session = sessionFactory.openSession(ExecutorType.BATCH)) {
         final List<EntityKey> toDelete = new ArrayList<>(deletes);
         puts.forEach(put -> toDelete.add(put.getKey()));
         // the batch executor reuses a statement while consecutive calls have the same SQL

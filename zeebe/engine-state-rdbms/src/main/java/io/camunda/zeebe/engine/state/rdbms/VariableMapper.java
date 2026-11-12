@@ -36,6 +36,9 @@ interface VariableMapper {
   List<String> selectVariableNames(
       @Param("partitionId") int partitionId, @Param("scopeKey") long scopeKey);
 
+  /** The highest scope with a variable in the partition, or null if there is none. */
+  @Nullable Long selectHighestVariableScopeKey(@Param("partitionId") int partitionId);
+
   /** At most {@code limit} keys of variables of the partition. */
   List<VariableKey> selectAnyVariableKeys(
       @Param("partitionId") int partitionId, @Param("limit") int limit);

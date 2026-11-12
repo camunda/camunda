@@ -373,6 +373,10 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
    * {@code prototype}'s class and cached.
    */
   @Nullable V readStorage(final K key, final V prototype) {
+    if (backend.knownAbsent(key)) {
+      metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
+      return null;
+    }
     // A batch only leaves the store after the storage holds it and the cache has it, so a key that
     // isn't in a batch has its latest flushed value in the storage. A value that is loaded while
     // the writer flushes may be older than the one it caches, so it isn't cached then.
@@ -393,6 +397,10 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
       return !inMemory.isTombstone();
     }
     if (absentFromKeyIndex(key)) {
+      metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
+      return false;
+    }
+    if (backend.knownAbsent(key)) {
       metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
       return false;
     }
