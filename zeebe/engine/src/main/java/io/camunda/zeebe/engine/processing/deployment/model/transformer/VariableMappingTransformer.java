@@ -320,7 +320,7 @@ public final class VariableMappingTransformer {
    * name like {@code `a/b`}) would be read as a separator and wrongly split it. {@code ~} is
    * replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
    */
-  private static String toJsonPointer(final List<String> segments) {
+  public static String toJsonPointer(final List<String> segments) {
     final var pointer = new StringBuilder();
     for (final String segment : segments) {
       pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
