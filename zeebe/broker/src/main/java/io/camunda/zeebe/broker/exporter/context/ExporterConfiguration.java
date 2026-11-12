@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,7 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
    *       myfield} are all equivalent. {@code ACCEPT_CASE_INSENSITIVE_PROPERTIES} then matches the
    *       normalised key to the Java field name.
    *   <li>Case-insensitive enum, property, and value matching
-   *   <li>Custom List deserializer for Spring Boot indexed properties (myList[0]=value)
+   *   <li>Custom List and Set deserializers for Spring Boot indexed properties (myList[0]=value)
    *   <li>Custom Path module to preserve relative/absolute paths (no resolution)
    *   <li>Custom Duration module to preserve Duration objects (no conversion to BigDecimal)
    *   <li>JavaTimeModule for other temporal types (Instant, LocalDateTime, etc.)
@@ -66,7 +67,8 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
           .addModule(createPathModule())
           .addModule(
               new SimpleModule()
-                  .addDeserializer(List.class, new ExporterConfigurationListDeserializer<>()))
+                  .addDeserializer(List.class, new ExporterConfigurationListDeserializer<>())
+                  .addDeserializer(Set.class, new ExporterConfigurationSetDeserializer<>()))
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)
