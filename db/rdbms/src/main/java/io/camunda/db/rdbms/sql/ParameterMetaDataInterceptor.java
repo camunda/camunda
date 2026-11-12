@@ -28,6 +28,10 @@ import org.apache.ibatis.plugin.Signature;
  * ArrayIndexOutOfBoundsException} or {@code NullPointerException}, which MyBatis does not catch.
  * MyBatis only tolerates a {@link java.sql.SQLException}, after which it falls back to the behavior
  * of earlier versions. This interceptor makes that fallback the one that is always taken.
+ *
+ * <p>Temporary: once MyBatis 3.6.1 is released, delete this class and call {@code
+ * configuration.setIgnoreParameterMetaData(true)} instead, which does the same thing. Tracked in
+ * camunda/camunda#69167.
  */
 @Intercepts(
     @Signature(
