@@ -261,7 +261,16 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
    * fails or the flush takes longer than the configured timeout.
    */
   public void awaitFlushed() {
-    flusher.awaitFlushed(committedSeq);
+    // under the lock that commits hold to publish: a commit that is half published is visible to
+    // readers already, so it must be part of the target; with the lock, no commit is half published
+    final long target;
+    final long stamp = publishLock.readLock();
+    try {
+      target = committedSeq;
+    } finally {
+      publishLock.unlockRead(stamp);
+    }
+    flusher.awaitFlushed(target);
   }
 
   /** Throws if the writer failed or the store is closed, so that callers fail fast. */
