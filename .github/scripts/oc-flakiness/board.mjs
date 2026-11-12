@@ -180,7 +180,7 @@ export function render(board, {now = new Date()} = {}) {
       ':seedling: *No test met the bar today* — every candidate was already covered by a fix branch or is still cooling down.',
     );
     if (board.run_url) {
-      lines.push('', `<${board.run_url}|Pick run>`);
+      lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
     }
     return lines.join('\n');
   }
@@ -210,8 +210,10 @@ export function render(board, {now = new Date()} = {}) {
   if (parts.length > 0) health += ` — ${parts.join('  |  ')}`;
   lines.push(health, '', '*Run details:*');
 
-  for (const version of [...new Set(rows.map((r) => r.version))]) {
+  const versions = [...new Set(rows.map((r) => r.version))];
+  for (const [i, version] of versions.entries()) {
     const forVersion = rows.filter((r) => r.version === version);
+    if (i > 0) lines.push('');
     lines.push(`*${escape(version)}* — ${forVersion.length} test(s)`);
     lines.push(...forVersion.map(renderRow));
   }
@@ -232,7 +234,7 @@ export function render(board, {now = new Date()} = {}) {
   }
 
   if (board.run_url) {
-    lines.push('', `<${board.run_url}|Pick run>`);
+    lines.push('', `<${board.run_url}|Pick run> :arrow_right:`);
   }
   return lines.join('\n');
 }
