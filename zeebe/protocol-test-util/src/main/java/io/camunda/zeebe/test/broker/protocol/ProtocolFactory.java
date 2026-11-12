@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.msgpack.value.BooleanValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
@@ -344,7 +345,7 @@ public final class ProtocolFactory {
   }
 
   private Class<? extends RecordValue> getRecordValueImplClass(final ValueType valueType) {
-    final var newInstance = UnifiedRecordValue.fromValueType(valueType);
+    final var newInstance = MsgpackRecordValue.fromValueType(valueType);
     if (newInstance == null) {
       throw new IllegalArgumentException(
           "No implementation class found for value type: " + valueType);

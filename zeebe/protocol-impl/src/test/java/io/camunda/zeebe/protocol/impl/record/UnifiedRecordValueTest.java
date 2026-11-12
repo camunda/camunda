@@ -32,7 +32,7 @@ final class UnifiedRecordValueTest {
     // given
     final var expectedNull = EXPECTED_NULL_VALUE_TYPES.contains(valueType);
     // when
-    final UnifiedRecordValue result = UnifiedRecordValue.fromValueType(valueType);
+    final MsgpackRecordValue result = MsgpackRecordValue.fromValueType(valueType);
 
     // then
     if (expectedNull) {

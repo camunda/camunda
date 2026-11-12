@@ -12,8 +12,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -40,7 +40,7 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue command,
+      final MsgpackRecordValue command,
       final AuthInfo authInfo) {
     if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
       return;
@@ -94,6 +94,6 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
         final ValueType valueType,
         final Intent intent,
         final Long recordKey,
-        final UnifiedRecordValue command);
+        final MsgpackRecordValue command);
   }
 }

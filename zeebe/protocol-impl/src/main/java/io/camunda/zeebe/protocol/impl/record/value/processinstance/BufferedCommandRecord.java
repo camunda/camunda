@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -135,7 +136,7 @@ public final class BufferedCommandRecord extends UnifiedRecordValue
   }
 
   @Override
-  public UnifiedRecordValue getCommandValue() {
+  public MsgpackRecordValue getCommandValue() {
     final var valueType = getValueType();
     if (valueType == ValueType.NULL_VAL) {
       return null;
@@ -146,7 +147,7 @@ public final class BufferedCommandRecord extends UnifiedRecordValue
       return storedCommandValue;
     }
 
-    final var concreteCommandValue = UnifiedRecordValue.fromValueType(valueType);
+    final var concreteCommandValue = MsgpackRecordValue.fromValueType(valueType);
     if (concreteCommandValue == null) {
       throw new IllegalStateException(
           "Expected to read the command value, but its value type `"
@@ -163,7 +164,7 @@ public final class BufferedCommandRecord extends UnifiedRecordValue
     return concreteCommandValue;
   }
 
-  public BufferedCommandRecord setCommandValue(final UnifiedRecordValue commandValue) {
+  public BufferedCommandRecord setCommandValue(final MsgpackRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
       return this;

@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.identity.initialize;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-public interface EntityInitializationConfigurer<T, U extends UnifiedRecordValue> {
+public interface EntityInitializationConfigurer<T, U extends MsgpackRecordValue> {
 
   default Either<List<String>, List<U>> configureEntities(final List<T> auths) {
     return auths.stream()

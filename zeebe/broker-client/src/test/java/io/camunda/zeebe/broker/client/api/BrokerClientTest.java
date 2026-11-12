@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -160,7 +161,7 @@ public final class BrokerClientTest {
     final var request =
         new TestCommand() {
           @Override
-          protected UnifiedRecordValue toResponseDto(final DirectBuffer buffer) {
+          protected MsgpackRecordValue toResponseDto(final DirectBuffer buffer) {
             throw error;
           }
         };
@@ -619,11 +620,11 @@ public final class BrokerClientTest {
         .register();
   }
 
-  private static class TestCommand extends BrokerExecuteCommand<UnifiedRecordValue> {
+  private static class TestCommand extends BrokerExecuteCommand<MsgpackRecordValue> {
     private static final ValueType VALUE_TYPE = ValueType.JOB;
     private static final Intent INTENT = JobIntent.YIELD;
 
-    private final UnifiedRecordValue record;
+    private final MsgpackRecordValue record;
     private final long key;
     private final RequestDispatchStrategy dispatchStrategy;
 
@@ -639,23 +640,23 @@ public final class BrokerClientTest {
       this(new UnifiedRecordValue(10), key, dispatchStrategy);
     }
 
-    private TestCommand(final UnifiedRecordValue record) {
+    private TestCommand(final MsgpackRecordValue record) {
       this(record, Protocol.encodePartitionId(1, 1));
     }
 
-    private TestCommand(final UnifiedRecordValue record, final long key) {
+    private TestCommand(final MsgpackRecordValue record, final long key) {
       this(record, key, null);
     }
 
     private TestCommand(
-        final UnifiedRecordValue record,
+        final MsgpackRecordValue record,
         final long key,
         final RequestDispatchStrategy dispatchStrategy) {
       this(record, key, dispatchStrategy, true);
     }
 
     private TestCommand(
-        final UnifiedRecordValue record,
+        final MsgpackRecordValue record,
         final long key,
         final RequestDispatchStrategy dispatchStrategy,
         final boolean stampDefaultPartitionGroup) {
@@ -684,7 +685,7 @@ public final class BrokerClientTest {
     }
 
     @Override
-    protected UnifiedRecordValue toResponseDto(final DirectBuffer buffer) {
+    protected MsgpackRecordValue toResponseDto(final DirectBuffer buffer) {
       final var response = new UnifiedRecordValue(10);
       response.wrap(buffer);
       return response;

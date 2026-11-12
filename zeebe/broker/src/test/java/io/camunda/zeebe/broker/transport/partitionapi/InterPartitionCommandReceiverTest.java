@@ -26,8 +26,8 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -330,7 +330,7 @@ final class InterPartitionCommandReceiverTest {
       final Integer receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue recordValue) {
+      final MsgpackRecordValue recordValue) {
     return sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, null, recordValue);
   }
 
@@ -340,7 +340,7 @@ final class InterPartitionCommandReceiverTest {
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue recordValue) {
+      final MsgpackRecordValue recordValue) {
     return sendCommand(
         receiverBrokerId, receiverPartitionId, valueType, intent, recordKey, recordValue, null);
   }
@@ -351,7 +351,7 @@ final class InterPartitionCommandReceiverTest {
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue recordValue,
+      final MsgpackRecordValue recordValue,
       final AuthInfo authInfo) {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);

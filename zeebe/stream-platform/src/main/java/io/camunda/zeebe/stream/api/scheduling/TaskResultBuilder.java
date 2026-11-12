@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.api.scheduling;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import java.util.List;
@@ -22,7 +22,7 @@ public interface TaskResultBuilder {
    *
    * @return returns true if the record still fits into the result, false otherwise
    */
-  default boolean appendCommandRecord(final Intent intent, final UnifiedRecordValue value) {
+  default boolean appendCommandRecord(final Intent intent, final MsgpackRecordValue value) {
     return appendCommandRecord(NULL_KEY, intent, value);
   }
 
@@ -32,7 +32,7 @@ public interface TaskResultBuilder {
    * @return returns true if the record still fits into the result, false otherwise
    */
   default boolean appendCommandRecord(
-      final long key, final Intent intent, final UnifiedRecordValue value) {
+      final long key, final Intent intent, final MsgpackRecordValue value) {
     return appendCommandRecord(key, intent, value, FollowUpCommandMetadata.empty());
   }
 
@@ -44,7 +44,7 @@ public interface TaskResultBuilder {
   boolean appendCommandRecord(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final FollowUpCommandMetadata metadata);
 
   /**
@@ -54,7 +54,7 @@ public interface TaskResultBuilder {
    *     <code>false</code> otherwise
    */
   boolean canAppendRecords(
-      final List<? extends UnifiedRecordValue> value, final FollowUpCommandMetadata metadata);
+      final List<? extends MsgpackRecordValue> value, final FollowUpCommandMetadata metadata);
 
   TaskResult build();
 }

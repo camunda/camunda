@@ -17,8 +17,8 @@ import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
@@ -396,7 +396,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "DeploymentRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -537,7 +537,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "DeploymentDistributionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var record = new DeploymentDistributionRecord();
               record.setPartition(2);
@@ -556,7 +556,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "Empty DeploymentRecord",
-        (Supplier<UnifiedRecordValue>) DeploymentRecord::new,
+        (Supplier<MsgpackRecordValue>) DeploymentRecord::new,
         """
                 {
                   "resources": [],
@@ -577,7 +577,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "ProcessRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -620,7 +620,7 @@ final class JsonSerializableToJsonTest {
       },
       new Object[] {
         "ProcessRecord (with empty deployment key and version tag)",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String resourceName = "resource";
               final DirectBuffer resource = wrapString("contents");
@@ -664,7 +664,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "ErrorRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final ErrorRecord record = new ErrorRecord();
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
@@ -681,7 +681,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "Empty ErrorRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final ErrorRecord record = new ErrorRecord();
               record.initErrorRecord(RUNTIME_EXCEPTION, 123);
@@ -696,7 +696,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "ExpressionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final ExpressionRecord record = new ExpressionRecord();
               record
@@ -737,7 +737,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "IncidentRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long elementInstanceKey = 34;
               final long processDefinitionKey = 134;
@@ -793,7 +793,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       new Object[] {
         "Empty IncidentRecord",
-        (Supplier<UnifiedRecordValue>) IncidentRecord::new,
+        (Supplier<MsgpackRecordValue>) IncidentRecord::new,
         """
                 {
                   "errorType": "UNKNOWN",
@@ -822,7 +822,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "JobBatchRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int amount = 1;
               final long timeout = 2L;
@@ -1004,7 +1004,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty JobBatchRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String type = "type";
               return new JobBatchRecord().setType(type);
@@ -1031,7 +1031,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "JobRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String worker = "myWorker";
               final String type = "myType";
@@ -1207,7 +1207,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty JobRecord",
-        (Supplier<UnifiedRecordValue>) JobRecord::new,
+        (Supplier<MsgpackRecordValue>) JobRecord::new,
         """
                 {
                   "type": "",
@@ -1267,7 +1267,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "JobRecordWithNullableVariable",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new JobRecord()
                     .setVariables(
@@ -1333,7 +1333,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String correlationKey = "test-key";
               final String messageName = "test-message";
@@ -1372,7 +1372,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MessageRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String correlationKey = "test-key";
               final String messageName = "test-message";
@@ -1402,7 +1402,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageBatchRecord",
-        (Supplier<UnifiedRecordValue>) MessageBatchRecord::new,
+        (Supplier<MsgpackRecordValue>) MessageBatchRecord::new,
         """
                 {
                   "messageKeys": []
@@ -1417,7 +1417,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageStartEventSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String messageName = "name";
               final String startEventId = "startEvent";
@@ -1462,7 +1462,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MessageStartEventSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int processDefinitionKey = 22334;
 
@@ -1493,7 +1493,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long elementInstanceKey = 1L;
               final String bpmnProcessId = "process";
@@ -1550,7 +1550,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MessageSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long elementInstanceKey = 13L;
               final long processInstanceKey = 1L;
@@ -1588,7 +1588,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessMessageSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long elementInstanceKey = 123;
               final String bpmnProcessId = "process";
@@ -1652,7 +1652,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessMessageSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long elementInstanceKey = 123;
               final long processInstanceKey = 1345;
@@ -1691,7 +1691,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "TimerRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int processDefinitionKey = 13;
               final int processInstanceKey = 1234;
@@ -1735,7 +1735,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "VariableRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String name = "x";
               final String value = "1";
@@ -1780,7 +1780,7 @@ final class JsonSerializableToJsonTest {
       // custom tenant
       {
         "VariableRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String name = "x";
               final String value = "1";
@@ -1830,7 +1830,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "VariableDocumentRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String value = "{'foo':1}";
               final long scopeKey = 3;
@@ -1861,7 +1861,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty VariableDocumentRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long scopeKey = 3;
 
@@ -1885,7 +1885,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceCreationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String processId = "process";
               final long key = 1L;
@@ -1946,7 +1946,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceCreationRecord",
-        (Supplier<UnifiedRecordValue>) ProcessInstanceCreationRecord::new,
+        (Supplier<MsgpackRecordValue>) ProcessInstanceCreationRecord::new,
         """
                 {
                   "variables": {},
@@ -1974,7 +1974,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceModificationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final long key = 1L;
               final var elementInstanceKeyToTerminate = 2L;
@@ -2067,7 +2067,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceModificationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> new ProcessInstanceModificationRecord().setProcessInstanceKey(1L),
         """
                 {
@@ -2093,7 +2093,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String bpmnProcessId = "test-process";
               final int processDefinitionKey = 13;
@@ -2162,7 +2162,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceRecord",
-        (Supplier<UnifiedRecordValue>) ProcessInstanceRecord::new,
+        (Supplier<MsgpackRecordValue>) ProcessInstanceRecord::new,
         """
                 {
                   "bpmnProcessId": "",
@@ -2197,7 +2197,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "DecisionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new DecisionRecord()
                     .setDecisionId("decision-id")
@@ -2225,7 +2225,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "DecisionRecord (with empty deployment key and version tag)",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new DecisionRecord()
                     .setDecisionId("decision-id")
@@ -2257,7 +2257,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "DecisionRequirementsRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new DecisionRequirementsRecord()
                     .setDecisionRequirementsId("decision-requirements-id")
@@ -2293,7 +2293,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "DecisionEvaluationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int storageOrdinal = 9;
               final var record =
@@ -2408,7 +2408,7 @@ final class JsonSerializableToJsonTest {
       // custom tenant
       {
         "DecisionEvaluationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int storageOrdinal = 10;
               final var record =
@@ -2529,7 +2529,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty DecisionEvaluationRecord",
-        (Supplier<UnifiedRecordValue>) () -> new DecisionEvaluationRecord(),
+        (Supplier<MsgpackRecordValue>) () -> new DecisionEvaluationRecord(),
         """
                 {
                   "decisionKey":-1,
@@ -2560,7 +2560,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Checkpoint record",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new CheckpointRecord()
                     .setCheckpointId(1L)
@@ -2583,7 +2583,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Checkpoint record without timestamp",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> new CheckpointRecord().setCheckpointId(1L).setCheckpointPosition(10L),
         """
                 {
@@ -2602,7 +2602,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Escalation record",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new EscalationRecord()
                     .setProcessInstanceKey(4L)
@@ -2629,7 +2629,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty EscalationRecord",
-        (Supplier<UnifiedRecordValue>) EscalationRecord::new,
+        (Supplier<MsgpackRecordValue>) EscalationRecord::new,
         """
                 {
                   "processInstanceKey":-1,
@@ -2649,7 +2649,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "SignalRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String signalName = "test-signal";
 
@@ -2676,7 +2676,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty SignalRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String signalName = "test-signal";
 
@@ -2698,7 +2698,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "SignalSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String signalName = "name";
               final String catchEventId = "startEvent";
@@ -2737,7 +2737,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty SignalStartEventSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final int processDefinitionKey = 22334;
 
@@ -2765,7 +2765,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ResourceDeletionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var resourceKey = 1L;
               final var batchOperationKey = 2L;
@@ -2796,7 +2796,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty ResourceDeletionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var resourceKey = 1L;
 
@@ -2825,7 +2825,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AdHocSubProcessInstructionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var adHocSubProcessInstructionRecord =
                   new AdHocSubProcessInstructionRecord()
@@ -2875,7 +2875,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty AdHocSubProcessInstructionRecord",
-        (Supplier<UnifiedRecordValue>) AdHocSubProcessInstructionRecord::new,
+        (Supplier<MsgpackRecordValue>) AdHocSubProcessInstructionRecord::new,
         """
                 {
                   "adHocSubProcessInstanceKey": -1,
@@ -2895,7 +2895,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "CommandDistributionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var deploymentRecord = new DeploymentRecord();
               deploymentRecord
@@ -2963,7 +2963,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty CommandDistributionRecord",
-        (Supplier<UnifiedRecordValue>) () -> new CommandDistributionRecord().setPartitionId(1),
+        (Supplier<MsgpackRecordValue>) () -> new CommandDistributionRecord().setPartitionId(1),
         """
                 {
                   "startTime": -1,
@@ -2984,7 +2984,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "BufferedCommandRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var commandValue =
                   new ProcessInstanceRecord()
@@ -3044,7 +3044,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty BufferedCommandRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> new BufferedCommandRecord().setProcessInstanceKey(1234),
         """
                 {
@@ -3067,7 +3067,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceBatchRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ProcessInstanceBatchRecord()
                     .setProcessInstanceKey(123L)
@@ -3092,7 +3092,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ElementInstanceWalkRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ElementInstanceWalkRecord()
                     .setProcessInstanceKey(123L)
@@ -3114,7 +3114,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty ElementInstanceWalkRecord",
-        (Supplier<UnifiedRecordValue>) ElementInstanceWalkRecord::new,
+        (Supplier<MsgpackRecordValue>) ElementInstanceWalkRecord::new,
         """
                 {
                   "processInstanceKey": -1,
@@ -3132,7 +3132,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UserTaskLookupRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new UserTaskLookupRecord()
                     .setFetchVariables(List.of("foo", "bar"))
@@ -3184,7 +3184,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty UserTaskLookupRecord",
-        (Supplier<UnifiedRecordValue>) UserTaskLookupRecord::new,
+        (Supplier<MsgpackRecordValue>) UserTaskLookupRecord::new,
         """
                 {
                   "fetchVariables": [],
@@ -3230,7 +3230,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceBatchRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ProcessInstanceBatchRecord()
                     .setProcessInstanceKey(123L)
@@ -3254,7 +3254,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UserTaskRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new UserTaskRecord()
                     .setUserTaskKey(123)
@@ -3327,7 +3327,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty UserTaskRecord",
-        (Supplier<UnifiedRecordValue>) UserTaskRecord::new,
+        (Supplier<MsgpackRecordValue>) UserTaskRecord::new,
         """
                 {
                   "bpmnProcessId": "",
@@ -3367,7 +3367,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UserTaskRecord WithNullableVariable",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new UserTaskRecord()
                     .setVariables(
@@ -3414,7 +3414,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceMigrationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ProcessInstanceMigrationRecord()
                     .setTenantId("tenantId")
@@ -3465,7 +3465,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceMigrationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ProcessInstanceMigrationRecord()
                     .setProcessInstanceKey(123L)
@@ -3492,7 +3492,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ProcessInstanceBusinessIdRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ProcessInstanceBusinessIdRecord()
                     .setTenantId("tenantId")
@@ -3522,7 +3522,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ProcessInstanceBusinessIdRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> new ProcessInstanceBusinessIdRecord().setProcessInstanceKey(123L),
         """
                 {
@@ -3545,7 +3545,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "CompensationSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new CompensationSubscriptionRecord()
                     .setTenantId("tenantId")
@@ -3587,7 +3587,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "CompensationSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>) CompensationSubscriptionRecord::new,
+        (Supplier<MsgpackRecordValue>) CompensationSubscriptionRecord::new,
         """
                 {
                   "tenantId": "<default>",
@@ -3612,7 +3612,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "MessageCorrelationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final String correlationKey = "test-key";
               final String messageName = "test-message";
@@ -3965,7 +3965,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "TenantRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new TenantRecord()
                     .setTenantKey(123L)
@@ -3992,7 +3992,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty TenantRecord",
-        (Supplier<UnifiedRecordValue>) () -> new TenantRecord().setTenantId("tenantId"),
+        (Supplier<MsgpackRecordValue>) () -> new TenantRecord().setTenantId("tenantId"),
         """
                 {
                   "tenantKey": -1,
@@ -4932,7 +4932,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ConditionalSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ConditionalSubscriptionRecord()
                     .setTenantId("tenant-1")
@@ -4976,7 +4976,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ConditionalSubscriptionRecord",
-        (Supplier<UnifiedRecordValue>) ConditionalSubscriptionRecord::new,
+        (Supplier<MsgpackRecordValue>) ConditionalSubscriptionRecord::new,
         """
                 {
                   "tenantId":"<default>",
@@ -5003,7 +5003,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ConditionalEvaluationRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new ConditionalEvaluationRecord()
                     .setTenantId("tenant-1")
@@ -5038,7 +5038,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ConditionalEvaluationRecord with default storage ordinal",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var record =
                   new ConditionalEvaluationRecord()
@@ -5074,7 +5074,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty ConditionalEvaluationRecord",
-        (Supplier<UnifiedRecordValue>) ConditionalEvaluationRecord::new,
+        (Supplier<MsgpackRecordValue>) ConditionalEvaluationRecord::new,
         """
                 {
                   "processDefinitionKey": -1,
@@ -5825,7 +5825,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "ResourceRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final ResourceRecord record = new ResourceRecord();
               record
@@ -5857,7 +5857,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty ResourceRecord",
-        (Supplier<UnifiedRecordValue>) ResourceRecord::new,
+        (Supplier<MsgpackRecordValue>) ResourceRecord::new,
         """
         {
           "resourceProp": "",
@@ -5878,7 +5878,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AgentDefinitionRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new AgentDefinitionRecord()
                     .setAgentDefinitionKey(2251799813685251L)
@@ -5906,7 +5906,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty AgentDefinitionRecord",
-        (Supplier<UnifiedRecordValue>) AgentDefinitionRecord::new,
+        (Supplier<MsgpackRecordValue>) AgentDefinitionRecord::new,
         """
         {
           "agentDefinitionKey": -1,
@@ -5926,7 +5926,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AgentInstanceRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final AgentInstanceRecord record =
                   new AgentInstanceRecord()
@@ -6015,7 +6015,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty AgentInstanceRecord",
-        (Supplier<UnifiedRecordValue>) AgentInstanceRecord::new,
+        (Supplier<MsgpackRecordValue>) AgentInstanceRecord::new,
         """
         {
           "agentInstanceKey": -1,
@@ -6045,7 +6045,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "AgentInstanceRecord with embedded history batch",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final var item =
                   new AgentHistoryRecord()
@@ -6145,7 +6145,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AgentHistoryBatchRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new AgentHistoryBatchRecord()
                     .setAgentInstanceKey(2251799813685251L)
@@ -6161,7 +6161,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty AgentHistoryBatchRecord",
-        (Supplier<UnifiedRecordValue>) AgentHistoryBatchRecord::new,
+        (Supplier<MsgpackRecordValue>) AgentHistoryBatchRecord::new,
         """
         {
           "agentInstanceKey": -1,
@@ -6175,7 +6175,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AgentHistoryRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final AgentHistoryRecord record =
                   new AgentHistoryRecord()
@@ -6307,7 +6307,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "AgentHistoryRecord OBJECT content types",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final AgentHistoryRecord record = new AgentHistoryRecord();
               record.addContent(
@@ -6395,7 +6395,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "Empty AgentHistoryRecord",
-        (Supplier<UnifiedRecordValue>) AgentHistoryRecord::new,
+        (Supplier<MsgpackRecordValue>) AgentHistoryRecord::new,
         """
         {
           "agentHistoryKey": -1,
@@ -6431,7 +6431,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty SecretReferenceRecord",
-        (Supplier<UnifiedRecordValue>) SecretReferenceRecord::new,
+        (Supplier<MsgpackRecordValue>) SecretReferenceRecord::new,
         """
         {
           "storeId": "default",
@@ -6443,7 +6443,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "SecretReferenceRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () -> {
               final SecretReferenceRecord record = new SecretReferenceRecord();
               record.setStoreId("my-store");
@@ -6467,7 +6467,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "AsyncRequestRecord",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new AsyncRequestRecord()
                     .setScopeKey(123L)
@@ -6493,7 +6493,7 @@ final class JsonSerializableToJsonTest {
       },
       {
         "AsyncRequestRecord with default storage ordinal",
-        (Supplier<UnifiedRecordValue>)
+        (Supplier<MsgpackRecordValue>)
             () ->
                 new AsyncRequestRecord()
                     .setScopeKey(123L)

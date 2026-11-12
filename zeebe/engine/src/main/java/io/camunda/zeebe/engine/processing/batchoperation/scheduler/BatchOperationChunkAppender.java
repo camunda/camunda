@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvid
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
@@ -40,9 +40,9 @@ public class BatchOperationChunkAppender {
   // These empty records are used only for size checking in canAppendChunks,
   // to ensure that the size check accounts for the largest possible record types
   // that may be appended. They are not used for actual data processing.
-  private static final UnifiedRecordValue EMPTY_EXECUTION_RECORD =
+  private static final MsgpackRecordValue EMPTY_EXECUTION_RECORD =
       new BatchOperationExecutionRecord().setBatchOperationKey(-1L);
-  private static final UnifiedRecordValue EMPTY_INITIALIZATION_RECORD =
+  private static final MsgpackRecordValue EMPTY_INITIALIZATION_RECORD =
       new BatchOperationInitializationRecord()
           .setBatchOperationKey(-1L)
           .setSearchQueryPageSize(0)
@@ -153,7 +153,7 @@ public class BatchOperationChunkAppender {
       final TaskResultBuilder taskResultBuilder,
       final List<BatchOperationChunkRecord> chunkRecords,
       final FollowUpCommandMetadata metadata) {
-    final List<UnifiedRecordValue> sizeCheckRecords = new ArrayList<>(chunkRecords);
+    final List<MsgpackRecordValue> sizeCheckRecords = new ArrayList<>(chunkRecords);
     sizeCheckRecords.add(EMPTY_EXECUTION_RECORD);
     sizeCheckRecords.add(EMPTY_INITIALIZATION_RECORD);
     return taskResultBuilder.canAppendRecords(sizeCheckRecords, metadata);

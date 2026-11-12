@@ -10,8 +10,8 @@ package io.camunda.zeebe.logstreams.log;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryImpl;
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.impl.log.ProcessedLogAppendEntryImpl;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.util.Objects;
 
 /** Represents an unmodifiable application record entry to be appended on the log. */
@@ -36,7 +36,7 @@ public interface LogAppendEntry {
    * @return the actual record value, this method returns a general type but can be casted to the
    *     right record value class if necessary
    */
-  UnifiedRecordValue recordValue();
+  MsgpackRecordValue recordValue();
 
   /**
    * @return the length of the entry, used by writers to determine whether this entry can be written
@@ -67,7 +67,7 @@ public interface LogAppendEntry {
    * @return a simple value class implementation of a {@link LogAppendEntry} with the parameters
    */
   static LogAppendEntry of(
-      final RecordMetadata recordMetadata, final UnifiedRecordValue recordValue) {
+      final RecordMetadata recordMetadata, final MsgpackRecordValue recordValue) {
     return new LogAppendEntryImpl(
         LogEntryDescriptor.KEY_NULL_VALUE,
         -1,
@@ -86,7 +86,7 @@ public interface LogAppendEntry {
    * @return a simple value class implementation of a {@link LogAppendEntry} with the parameters
    */
   static LogAppendEntry of(
-      final long key, final RecordMetadata recordMetadata, final UnifiedRecordValue recordValue) {
+      final long key, final RecordMetadata recordMetadata, final MsgpackRecordValue recordValue) {
     return new LogAppendEntryImpl(
         key,
         -1,

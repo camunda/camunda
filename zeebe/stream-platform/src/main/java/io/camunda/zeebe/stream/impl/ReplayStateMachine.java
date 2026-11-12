@@ -20,8 +20,8 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchReader.Batch;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -344,7 +344,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter, CloseableSile
   }
 
   private TypedRecord<?> readRecordValue(final LoggedEvent currentEvent) {
-    final UnifiedRecordValue value =
+    final MsgpackRecordValue value =
         requireNonNull(recordValues.readRecordValue(currentEvent, metadata.getValueType()));
     typedEvent.wrap(currentEvent, metadata, value);
     return typedEvent;

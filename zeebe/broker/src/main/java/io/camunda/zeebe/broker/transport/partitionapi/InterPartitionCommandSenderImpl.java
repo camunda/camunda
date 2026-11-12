@@ -15,7 +15,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -53,7 +53,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, null, command);
   }
 
@@ -63,7 +63,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final ValueType valueType,
       final Intent intent,
       final @Nullable Long recordKey,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
   }
 
@@ -73,7 +73,7 @@ public final class InterPartitionCommandSenderImpl implements InterPartitionComm
       final ValueType valueType,
       final Intent intent,
       final @Nullable Long recordKey,
-      final UnifiedRecordValue command,
+      final MsgpackRecordValue command,
       final @Nullable AuthInfo authInfo) {
     final var partitionLeader = partitionLeaders.get(receiverPartitionId);
     if (partitionLeader == null) {
