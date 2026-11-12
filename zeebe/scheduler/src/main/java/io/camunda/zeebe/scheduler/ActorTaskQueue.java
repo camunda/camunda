@@ -13,7 +13,12 @@ import java.lang.invoke.VarHandle;
 import java.util.function.Consumer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
-/** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
+/**
+ * Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}.
+ *
+ * <p>The {@code minStaleNodesToSkip} threshold can be lowered per queue in tests so that thieves
+ * unlink stale nodes as often as possible.
+ */
 public final class ActorTaskQueue extends ActorTaskQueueHead {
   // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
   static final int MIN_STALE_NODES_TO_SKIP = 16;
@@ -34,6 +39,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
+  private final int minStaleNodesToSkip;
 
   /**
    * Test-only hook, always null in production. Runs in {@link #poll()} right before the tail is
@@ -42,10 +48,27 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   private final Consumer<ActorTaskQueue> beforeTailReset;
 
   public ActorTaskQueue() {
-    this(null);
+    this(MIN_STALE_NODES_TO_SKIP, null);
+  }
+
+  /**
+   * @param minStaleNodesToSkip the shortest run of stale nodes that a thief unlinks; tests lower it
+   *     so that thieves write to shared nodes as often as possible
+   */
+  ActorTaskQueue(final int minStaleNodesToSkip) {
+    this(minStaleNodesToSkip, null);
   }
 
   ActorTaskQueue(final Consumer<ActorTaskQueue> beforeTailReset) {
+    this(MIN_STALE_NODES_TO_SKIP, beforeTailReset);
+  }
+
+  ActorTaskQueue(final int minStaleNodesToSkip, final Consumer<ActorTaskQueue> beforeTailReset) {
+    if (minStaleNodesToSkip < 1) {
+      throw new IllegalArgumentException(
+          "Expected minStaleNodesToSkip to be at least 1, but was " + minStaleNodesToSkip);
+    }
+    this.minStaleNodesToSkip = minStaleNodesToSkip;
     this.beforeTailReset = beforeTailReset;
     headOrdered(empty);
     TAIL.setRelease(this, empty);
@@ -117,12 +140,12 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * walk. Does nothing if its prev changed since the walk read it: another thief may have unlinked
    * further in the meantime, and overwriting that would bring back the nodes it skipped.
    */
-  static void skipStaleNodes(
+  void skipStaleNodes(
       final ActorTaskQueueNode anchor,
       final ActorTaskQueueNode anchorPrev,
       final ActorTaskQueueNode next,
       final int stale) {
-    if (anchor != null && stale >= MIN_STALE_NODES_TO_SKIP && next != null) {
+    if (anchor != null && stale >= minStaleNodesToSkip && next != null) {
       anchor.casPrev(anchorPrev, next);
     }
   }
