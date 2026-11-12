@@ -51,5 +51,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43167805929",
     "updated_at": "2026-11-12T06:26:24Z",
     "cooldown_until": "2026-11-13T06:26:24Z"
+  },
+  "50982ae8": {
+    "version": "8.10",
+    "file": "tests/tasklist/task-details.spec.ts",
+    "titlePath": [
+      "task details page",
+      "task completion with number form by buttons"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43167802684",
+    "updated_at": "2026-11-12T06:27:01Z",
+    "cooldown_until": "2026-11-13T06:27:01Z"
   }
 }
