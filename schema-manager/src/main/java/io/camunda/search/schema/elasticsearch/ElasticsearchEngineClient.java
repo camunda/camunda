@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+
   private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
       "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
           + "'monitor' cluster privilege required to verify cluster health during startup. "
@@ -147,7 +148,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var errorReason = e.error().reason();
       if (errorReason != null
           && errorReason.equals(
-              "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+          "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
         LOG.debug(errorReason);
         return;
       }
@@ -450,12 +451,16 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       for (final String batch :
           SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var existing = getIndexNames(batch);
+        if (existing.isEmpty()) {
+          continue;
+        }
         final var response =
             client
                 .cluster()
                 .health(
                     r ->
-                        r.index(List.of(batch.split(",")))
+                        r.index(List.copyOf(existing))
                             .waitForStatus(HealthStatus.Yellow)
                             .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
         if (response.timedOut()) {
