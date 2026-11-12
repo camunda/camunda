@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 public interface TypedResponseWriter {
 
@@ -38,12 +38,12 @@ public interface TypedResponseWriter {
   void writeAcceptedResponse(TypedRecord<?> event);
 
   void writeAcceptedResponseOnCommand(
-      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
+      long eventKey, Intent eventState, BufferWriter eventValue, TypedRecord<?> command);
 
   void writeAcceptedResponse(
       long eventKey,
       Intent eventState,
-      UnpackedObject eventValue,
+      BufferWriter eventValue,
       ValueType valueType,
       long requestId,
       int requestStreamId);
