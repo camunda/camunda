@@ -205,7 +205,8 @@ public final class AuthInfo implements BufferWriter {
    * token claims, which are by far the most expensive part, are only decoded when the {@link
    * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
    * the other claims, e.g. exporters, never pay for them. If the token claims contain binary
-   * values, which decode to mutable arrays, they are decoded on every access instead of once.
+   * values, which decode to mutable arrays, the map is shared only until they are read: later calls
+   * return a new map, so callers can't change what others see.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -223,10 +224,9 @@ public final class AuthInfo implements BufferWriter {
     putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims != null ? new LazyTokenClaims() : null);
     final var result = Collections.unmodifiableMap(claims);
 
-    // Always safe to share: it only holds immutable values, and the token claims view hands out
-    // fresh copies if they contain mutable values. Caching only for immutable token claims would
-    // require decoding them here, which is what the lazy view avoids.
-    // Racing threads build equivalent maps, so it doesn't matter which one wins.
+    // Cached before knowing whether the token claims are immutable, as that requires decoding
+    // them, which is what the lazy view avoids. The view un-caches the map if they turn out not
+    // to be. Racing threads build equivalent maps, so it doesn't matter which one wins.
     claimsMap = result;
     return result;
   }
@@ -376,9 +376,12 @@ public final class AuthInfo implements BufferWriter {
   }
 
   /**
-   * A read-only view of the token claims that decodes them on first access. The decoded claims are
-   * kept unless they hold mutable values (binary values decode to arrays), as sharing those would
-   * let callers change this instance.
+   * A read-only view of the token claims that decodes them on first access, and keeps the decoded
+   * claims, so the view is stable: lookups by key, value and entry agree, and so does its hash.
+   *
+   * <p>If the decoded claims hold mutable values (binary values decode to arrays), the view is
+   * dropped from the cache of {@link #toClaimsMap()}: its callers share those arrays, but later
+   * calls get a new view, so they can't change what other callers, or this instance, see.
    */
   private final class LazyTokenClaims extends AbstractMap<String, Object> {
 
@@ -406,14 +409,18 @@ public final class AuthInfo implements BufferWriter {
 
     private Map<String, Object> delegate() {
       final var cached = decoded;
-      if (cached != null) {
-        return cached;
-      }
+      return cached != null ? cached : decode();
+    }
 
-      final var claims = Objects.requireNonNull(getTokenClaims());
-      if (isImmutableValue(claims)) {
-        // racing threads decode equal claims, so it doesn't matter which one wins
+    /** Synchronized so that racing threads agree on one snapshot, which matters for arrays. */
+    private synchronized Map<String, Object> decode() {
+      var claims = decoded;
+      if (claims == null) {
+        claims = Objects.requireNonNull(getTokenClaims());
         decoded = claims;
+        if (!isImmutableValue(claims)) {
+          claimsMap = null;
+        }
       }
       return claims;
     }

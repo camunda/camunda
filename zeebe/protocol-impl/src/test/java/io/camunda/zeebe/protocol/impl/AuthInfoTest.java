@@ -316,6 +316,20 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldKeepReusingClaimsMapAfterReadingTokenClaimsWithoutBinaryValues() {
+      // given
+      final var authInfo =
+          decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
+      final var first = authInfo.toClaimsMap();
+
+      // when
+      first.get(USER_TOKEN_CLAIMS).hashCode();
+
+      // then
+      assertThat(authInfo.toClaimsMap()).isSameAs(first);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void shouldNotReflectChangesToReturnedBinaryTokenClaimValuesInClaimsMap() {
       // given
@@ -345,15 +359,40 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldDecodeTokenClaimsOnEveryAccessWithBinaryValues() {
+    void shouldKeepBinaryTokenClaimsStableWithinReturnedClaimsMap() {
       // given
       final var authInfo =
           decode(
               encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
-      final var tokenClaims = (Map<?, ?>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS);
+      final var claims = authInfo.toClaimsMap();
+      final var tokenClaims = (Map<?, ?>) claims.get(USER_TOKEN_CLAIMS);
 
       // then
-      assertThat(tokenClaims.entrySet()).isNotSameAs(tokenClaims.entrySet());
+      assertThat(tokenClaims.get("key")).isSameAs(tokenClaims.get("key"));
+      assertThat(tokenClaims.containsValue(tokenClaims.get("key"))).isTrue();
+      assertThat(tokenClaims.entrySet()).isSameAs(tokenClaims.entrySet());
+      assertThat(tokenClaims.hashCode()).isEqualTo(tokenClaims.hashCode());
+      assertThat(claims.hashCode()).isEqualTo(claims.hashCode());
+    }
+
+    @Test
+    void shouldIsolateBinaryTokenClaimsAcrossClaimsMaps() {
+      // given
+      final var authInfo =
+          decode(
+              encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
+      final var first = authInfo.toClaimsMap();
+
+      // when
+      final var firstValue = (byte[]) ((Map<?, ?>) first.get(USER_TOKEN_CLAIMS)).get("key");
+      final var second = authInfo.toClaimsMap();
+      final var secondValue = (byte[]) ((Map<?, ?>) second.get(USER_TOKEN_CLAIMS)).get("key");
+      firstValue[0] = 2;
+
+      // then
+      assertThat(second).isNotSameAs(first);
+      assertThat(secondValue).isNotSameAs(firstValue).containsExactly(1);
+      assertThat(authInfo.getTokenClaims()).containsEntry("key", new byte[] {1});
     }
 
     @Test
