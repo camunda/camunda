@@ -125,11 +125,11 @@
       "Job Error API Tests",
       "Throw Error for Job - success"
     ],
-    "last_action": "blocked",
-    "last_reason": "baseline produced no score",
+    "last_action": "delete_branch",
+    "last_reason": "iter1 100% vs baseline 95% (+5pp); needs at least +10pp",
     "last_run": "https://github.com/camunda/camunda/actions/runs/43224011939",
-    "updated_at": "2026-11-12T13:08:57Z",
-    "cooldown_until": "2026-11-13T13:08:57Z"
+    "updated_at": "2026-11-12T13:58:10Z",
+    "cooldown_until": "2026-11-19T13:58:10Z"
   },
   "61c7eb54": {
     "version": "8.9",
