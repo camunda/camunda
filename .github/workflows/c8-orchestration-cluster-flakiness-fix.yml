@@ -4,7 +4,9 @@
 #              fresh docker-compose stacks of every cell it was flaky in, lets Claude
 #              Code fix it on a flaky-fix/* branch (at most two attempts), re-measures,
 #              and opens a PR only when the fix clears the pass-rate thresholds. A fix
-#              that does not is deleted with its branch.
+#              that does not is deleted with its branch. The pick posts one Slack
+#              message listing every dispatched test, and each run rewrites its own
+#              row there when it reaches a verdict.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/test-automation-team
@@ -62,6 +64,10 @@ on:
         required: false
         default: true
         type: boolean
+      board_date:
+        description: "Set by the pick job: the daily Slack board this run reports its verdict to. Empty = no Slack update."
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -74,6 +80,8 @@ concurrency:
 env:
   TEST_OWNER: '@camunda/test-automation-team'
   STATE_BRANCH: oc-flakiness-state
+  # The OC suite's own channel, where the nightly triage message already lands.
+  SLACK_CHANNEL: c8-orchestration-cluster-e2e-test-results
   # A PR needs every cell at MIN_PASS_RATE and the pooled rate up by
   # MIN_IMPROVEMENT_PP over the baseline: the floor alone cannot tell a real fix
   # from a no-op on a test that was already near it.
@@ -194,18 +202,128 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           jq . "$RUNNER_TEMP/targets.json"
 
+      - name: Import Vault secrets
+        id: slack-secret
+        if: github.event_name == 'schedule' || inputs.dispatch
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        if: github.event_name == 'schedule' || inputs.dispatch
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # Posted before the dispatch, so a run that finishes unusually fast still
+      # finds the board it is meant to update.
+      - name: Post the daily board to Slack
+        id: board
+        if: github.event_name == 'schedule' || inputs.dispatch
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # No `-e`: the board is a report on the work, not the work. Every
+          # failure here is handled in place, so that a Slack outage or a state
+          # branch that will not take a push cannot stop the run from
+          # dispatching the fix agents it picked.
+          set -uo pipefail
+          s=.github/scripts/oc-flakiness
+          date_key=$(date -u +%Y-%m-%d)
+          if ! node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
+            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"; then
+            echo "::warning::could not build the daily board; dispatching without it"
+            exit 0
+          fi
+
+          # Store first, post second. A re-run of the pick on the same day
+          # merges into the board already in the channel instead of posting a
+          # second message and orphaning the runs reporting to the first.
+          if ! board=$(BOARD_JSON=$(cat "$RUNNER_TEMP/board-init.json") \
+            bash "$s/board-store.sh" init "$date_key"); then
+            echo "::warning::could not store the daily board; dispatching without it"
+            exit 0
+          fi
+          # Only once the board is stored, so a run that could not store one
+          # dispatches with an empty board_date and its agents skip the update.
+          echo "date=${date_key}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$(jq -r '.ts // ""' <<< "$board")" ]]; then
+            bash "$s/board-store.sh" publish "$date_key" > /dev/null \
+              || echo "::warning::could not rewrite the daily board message"
+            exit 0
+          fi
+
+          printf '%s' "$board" > "$RUNNER_TEMP/board.json"
+          posted=$(node "$s/board.mjs" --render "$RUNNER_TEMP/board.json" \
+            | bash "$s/board-slack.sh" post "$SLACK_CHANNEL") || {
+            echo "::warning::could not post the daily board; the runs will still report in the ledger"
+            exit 0
+          }
+          # chat.update needs the conversation ID Slack resolved the name to,
+          # not the name.
+          bash "$s/board-store.sh" ts "$date_key" \
+            "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null \
+            || echo "::warning::posted the board but could not store its message id"
+
       - name: Dispatch one run per test
         if: github.event_name == 'schedule' || inputs.dispatch
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          BOARD_DATE: ${{ steps.board.outputs.date }}
         run: |
           set -euo pipefail
-          jq -c '.[]' "$RUNNER_TEMP/targets.json" | while read -r t; do
-            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref main \
-              -f version="$(jq -r .version <<< "$t")" \
-              -f spec="$(jq -r .file <<< "$t")" \
+          s=.github/scripts/oc-flakiness
+          since=$(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%SZ)
+          claimed=""
+
+          # Not a `while read` over a pipe: that body runs in a subshell, and
+          # `claimed` has to survive from one dispatch to the next.
+          for i in $(seq 0 $(( $(jq length "$RUNNER_TEMP/targets.json") - 1 ))); do
+            t=$(jq -c ".[$i]" "$RUNNER_TEMP/targets.json")
+            version=$(jq -r .version <<< "$t")
+            spec=$(jq -r .file <<< "$t")
+            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref "$GITHUB_REF_NAME" \
+              -f version="$version" \
+              -f spec="$spec" \
               -f title_path="$(jq -c .titlePath <<< "$t")" \
               -f project="$(jq -r .project <<< "$t")" \
-              -f cells="$(jq -c .cells <<< "$t")"
-            echo "Dispatched $(jq -r '.version + " " + .file + " › " + .title' <<< "$t")"
+              -f cells="$(jq -c .cells <<< "$t")" \
+              -f board_date="$BOARD_DATE"
+            echo "Dispatched ${version} ${spec}"
+
+            [[ -n "$BOARD_DATE" ]] || continue
+            # Linking the row now is what makes the board usable while the runs
+            # are still going; without it the first clickable link appears
+            # hours later, at the verdict.
+            run_url=$(VERSION="$version" SPEC="$spec" SINCE_TS="$since" CLAIMED="$claimed" \
+              bash "$s/resolve-dispatched-run.sh") || true
+            [[ -n "$run_url" ]] || continue
+            claimed="${claimed:+${claimed},}${run_url##*/}"
+            # Never fatal: losing a row's link must not stop the dispatches
+            # that come after it.
+            bash "$s/board-store.sh" set "$BOARD_DATE" \
+              "$(jq -r .fp <<< "$t")" dispatched "" "" "$run_url" "" > /dev/null \
+              || echo "::warning::could not link ${version} ${spec} on the board"
           done
 
       - name: Observe build status
@@ -519,6 +637,11 @@ jobs:
     if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      action: ${{ steps.final.outputs.action }}
+      reason: ${{ steps.final.outputs.reason }}
+      rate: ${{ steps.final.outputs.rate }}
+      pr_url: ${{ steps.act.outputs.pr_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -559,6 +682,7 @@ jobs:
           {
             echo "action=$(jq -r .action <<< "$result")"
             echo "best=$(jq -r '.best // ""' <<< "$result")"
+            echo "rate=$(jq -r '.rate // ""' <<< "$result")"
             echo "reason=$(jq -r .reason <<< "$result")"
           } >> "$GITHUB_OUTPUT"
 
@@ -733,6 +857,129 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "c8-orchestration-cluster-flakiness-fix/decide"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ─── Live Slack board ─────────────────────────────────────────────────────
+  # One row of the pick job's daily message, rewritten the moment this run
+  # knows its verdict. Separate from `decide` so a run that never reached a
+  # verdict -- a failed prepare, a lost runner -- still replaces its "still
+  # running" row instead of leaving the board stuck at it until someone
+  # notices.
+  board:
+    name: Update the daily Slack board
+    needs: [prepare, decide]
+    if: always() && inputs.spec != '' && inputs.board_date != ''
+    # The verdict is already on the state branch, in the run summary and -- for
+    # a fix -- in the PR. Reporting it to Slack failing must not turn a run
+    # that opened a fix PR red; the job itself still shows the failure.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Import Vault secrets
+        id: slack-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Rewrite this test's row
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          BOARD_DATE: ${{ inputs.board_date }}
+          FP: ${{ needs.prepare.outputs.fp }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          PREPARE_SKIP: ${{ needs.prepare.outputs.skip }}
+          DECIDE_RESULT: ${{ needs.decide.result }}
+          ACTION: ${{ needs.decide.outputs.action }}
+          REASON: ${{ needs.decide.outputs.reason }}
+          RATE: ${{ needs.decide.outputs.rate }}
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          s=.github/scripts/oc-flakiness
+
+          # prepare computes the fingerprint, but it is also the job that can
+          # fail before producing one -- and that is exactly the case whose row
+          # most needs replacing. Same formula as prepare and report.mjs.
+          fp="$FP"
+          if [[ -z "$fp" ]]; then
+            title=$(jq -r '.[-1]' <<< "$TITLE_PATH")
+            fp=$(printf '%s::%s::%s' "$VERSION" "$SPEC" "$title" | sha256sum | cut -c1-8)
+          fi
+
+          status=infra
+          detail="the run failed before reaching a verdict"
+          rate=""
+          pr=""
+          if [[ "$PREPARE_RESULT" == "success" && "$PREPARE_SKIP" == "true" ]]; then
+            status=skipped
+            detail=""
+          elif [[ "$DECIDE_RESULT" == "success" && -n "$ACTION" ]]; then
+            status="$ACTION"
+            detail="$REASON"
+            rate="$RATE"
+            pr="$PR_URL"
+          fi
+
+          # `set` stores the row and, once its push has landed, rewrites the
+          # message -- but only while this board is still the newest on the
+          # branch, so it cannot undo a row another run published meanwhile.
+          rc=0
+          bash "$s/board-store.sh" set "$BOARD_DATE" \
+            "$fp" "$status" "$detail" "$pr" "$RUN_URL" "$rate" > /dev/null || rc=$?
+          if [[ "$rc" -eq 3 ]]; then
+            echo "No board for ${BOARD_DATE}; nothing to update."
+            exit 0
+          fi
+          [[ "$rc" -eq 0 ]] || exit "$rc"
+          echo "Reported ${status} for ${fp} on board ${BOARD_DATE}."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/board"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
