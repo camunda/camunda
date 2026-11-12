@@ -37,14 +37,4 @@ public final class FutureUtil {
 
     return null;
   }
-
-  public static Runnable wrap(final Future<?> future) {
-    return () -> {
-      try {
-        future.get();
-      } catch (final Exception e) {
-        LangUtil.rethrowUnchecked(e);
-      }
-    };
-  }
 }

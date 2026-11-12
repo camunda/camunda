@@ -12,18 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 public interface TimerSubscription extends ActorSubscription, ScheduledTimer, Runnable {
 
-  @Override
-  boolean poll();
-
-  @Override
-  ActorJob getJob();
-
-  @Override
-  boolean isRecurring();
-
-  @Override
-  void onJobCompleted();
-
+  // resolves the clash between ActorSubscription's default and ScheduledTimer's abstract cancel()
   @Override
   void cancel();
 
@@ -36,9 +25,6 @@ public interface TimerSubscription extends ActorSubscription, ScheduledTimer, Ru
   long getDeadline(ActorClock now);
 
   void onTimerExpired(TimeUnit timeUnit, long now);
-
-  @Override
-  void run();
 
   long getTimerExpiredAt();
 }

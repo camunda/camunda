@@ -24,7 +24,6 @@ public final class ActorFutureSubscription implements ActorSubscription {
 
   @Override
   public boolean triggersInPhase(final ActorLifecyclePhase phase) {
-    // triggers in all phases
     return phase != ActorLifecyclePhase.CLOSED && (phase.getValue() & phaseMask) > 0;
   }
 

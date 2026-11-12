@@ -9,7 +9,6 @@ package io.camunda.zeebe.scheduler;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-@SuppressWarnings("restriction")
 public final class ActorConditionImpl implements ActorCondition, ActorSubscription {
 
   private final ActorJob job;

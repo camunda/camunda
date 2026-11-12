@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
  * A task executed by the scheduler. For each actor (instance), exactly one task is created. Each
  * invocation of one of the actor's methods is an {@link ActorJob}.
  */
-@SuppressWarnings("restriction")
 public class ActorTask {
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
   private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
@@ -329,11 +328,7 @@ public class ActorTask {
   }
 
   public boolean claim(final long stateCount) {
-    if (casStateCount(stateCount)) {
-      return true;
-    }
-
-    return false;
+    return casStateCount(stateCount);
   }
 
   /**

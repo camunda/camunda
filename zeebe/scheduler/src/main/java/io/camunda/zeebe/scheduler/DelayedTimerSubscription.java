@@ -115,10 +115,6 @@ public final class DelayedTimerSubscription implements TimerSubscription {
     return timerExpiredAt;
   }
 
-  public TimeUnit getTimeUnit() {
-    return timeUnit;
-  }
-
   @Override
   public String toString() {
     return "TimerSubscription{"

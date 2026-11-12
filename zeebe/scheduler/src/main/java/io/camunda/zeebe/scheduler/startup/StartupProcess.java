@@ -8,7 +8,6 @@
 package io.camunda.zeebe.scheduler.startup;
 
 import static java.util.Collections.singletonList;
-import static org.slf4j.MDC.*;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

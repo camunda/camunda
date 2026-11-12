@@ -134,7 +134,6 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     private ActorThreadFactory actorThreadFactory;
     private ActorExecutor actorExecutor;
     private ActorTimerQueue actorTimerQueue;
-    private final boolean enableMetrics = false;
     private Supplier<IdleStrategy> idleStrategySupplier =
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
     private ActorMetrics actorMetrics = ActorMetrics.disabled();
