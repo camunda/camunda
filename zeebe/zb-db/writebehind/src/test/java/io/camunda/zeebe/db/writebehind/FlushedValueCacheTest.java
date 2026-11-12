@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -52,7 +53,24 @@ final class FlushedValueCacheTest {
   }
 
   @Test
-  void shouldServeCommittedDeleteFromCacheAfterItIsFlushed() {
+  void shouldNotKeepDeletedKeyInCacheAfterItIsFlushed() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    store.exportMetrics(registry, "test");
+    store.commit(new RawKey[] {key(1)}, new DbValue[] {valueOf(5)});
+    store.awaitFlushed();
+    assertThat(cacheEntries(registry)).isEqualTo(1);
+
+    // when
+    store.commit(new RawKey[] {key(1)}, new DbValue[1]);
+    store.awaitFlushed();
+
+    // then
+    assertThat(cacheEntries(registry)).isZero();
+  }
+
+  @Test
+  void shouldReadDeletedKeyAsAbsentFromStorageAfterItIsFlushed() {
     // given
     store.commit(new RawKey[] {key(1)}, new DbValue[] {valueOf(5)});
     store.commit(new RawKey[] {key(1)}, new DbValue[1]);
@@ -63,7 +81,11 @@ final class FlushedValueCacheTest {
 
     // then
     assertThat(value).isNull();
-    assertThat(storage.gets()).isZero();
+    assertThat(storage.gets()).isEqualTo(1);
+  }
+
+  private static double cacheEntries(final SimpleMeterRegistry registry) {
+    return registry.get("zeebe.writebehind.cache.entries").gauge().value();
   }
 
   private static RawKey key(final long id) {

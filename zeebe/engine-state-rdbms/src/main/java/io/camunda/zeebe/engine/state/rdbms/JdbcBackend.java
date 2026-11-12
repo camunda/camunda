@@ -39,7 +39,7 @@ final class JdbcBackend implements Backend<EntityKey, Object> {
 
   private static final Comparator<EntityKey> BY_TYPE =
       Comparator.comparingInt(key -> key.type().id);
-  private static final int ENTRY_OVERHEAD = 64;
+  private static final int ENTRY_OVERHEAD = 200;
   private static final int ESTIMATED_ROW_BYTES = 256;
 
   private final int partitionId;

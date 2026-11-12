@@ -736,9 +736,17 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
    */
   private void releaseBatch(final NavigableMap<K, Version<V>> sealed) {
     if (cache != null) {
-      // without the history that the versions of the batch keep for readers of older commits
+      // without the history that the versions of the batch keep for readers of older commits; a
+      // deleted key is evicted, as a cached tombstone of short-lived state would only fill the
+      // cache, and a read of the key finds nothing in the storage
       sealed.forEach(
-          (key, version) -> cache.put(key, new Version<>(version.value(), version.seq())));
+          (key, version) -> {
+            if (version.isTombstone()) {
+              cache.invalidate(key);
+            } else {
+              cache.put(key, new Version<>(version.value(), version.seq()));
+            }
+          });
     }
     batches = new Batches<>(batches.active(), null);
     flushEpoch++;
