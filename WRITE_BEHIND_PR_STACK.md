@@ -136,5 +136,10 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     unless Gradle gets `-PincludeRandomTests` (Maven: `-Pinclude-random-tests`).
   - Follow-ups: seek copies dirty range into a TreeMap; put does a full decode, miss decodes twice;
     weight ignores decoded heap size.
-- [ ] PR 2b (engine load runner): agent running
+- [x] PR 2b pushed: `cs/wb-2b-engine-load-runner` on PR 2 `a55cbe190c5`, draft PR camunda/camunda#69247
+  - `ded4ea9e60c` test: let engine tests run on the write-behind DB (env toggles, test dep)
+  - `b5aa611f5b7` test: add a plain-main engine load runner (EngineLoadMain, TestEngine helpers,
+    Gradle `engineLoad`; env forwarded via providers for the configuration cache)
+  - Verified not run by default (Gradle dry runs, Maven 0 tests). Smoke 5000 instances:
+    rocksdb 383/s, write-behind 433/s.
 - [ ] PR 3 (to be stacked on PR 2b)
