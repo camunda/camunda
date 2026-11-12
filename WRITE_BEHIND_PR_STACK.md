@@ -142,4 +142,12 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     Gradle `engineLoad`; env forwarded via providers for the configuration cache)
   - Verified not run by default (Gradle dry runs, Maven 0 tests). Smoke 5000 instances:
     rocksdb 383/s, write-behind 433/s.
-- [ ] PR 3 (to be stacked on PR 2b)
+- [x] PR 3 pushed: `cs/wb-3-key-index-windows` on PR 2b `b5aa611f5b7`, draft PR camunda/camunda#69254
+  - 8 commits `dcf31e358a2`..`41bb24bb7d2` (backend group range refactor, KeyIndexPolicy +
+    config, absent-key lookups, indexed scans, windows past bound, tests, contract variants,
+    3 differential tests DISABLE/KEEP_LOWEST/KEEP_HIGHEST).
+  - Index stamps last-changing commit seq; point reads trust it only if not newer than their
+    read seq (deterministic interleaving test).
+  - New test dep `junit-jupiter-params` in writebehind pom (Maven only failed; Gradle adds it).
+  - Follow-ups: refill on processing thread (bounded maxKeys/4); IndexSource gives up after 4
+    storage reads; ~100-150 B/key. Engine factory configures no key-index policies yet.
