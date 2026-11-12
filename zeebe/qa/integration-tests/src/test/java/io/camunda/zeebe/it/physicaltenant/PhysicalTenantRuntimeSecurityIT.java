@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +16,10 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
 import io.atomix.cluster.MemberId;
+import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.zeebe.broker.PhysicalTenantConfigRejectedException;
+import io.camunda.zeebe.broker.PhysicalTenantConfigService;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -59,7 +63,10 @@ import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.io.TempDir;
 import org.keycloak.json.RawJsonValue;
 import org.keycloak.representations.idm.ClientPoliciesRepresentation;
@@ -75,6 +82,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -102,6 +110,8 @@ final class PhysicalTenantRuntimeSecurityIT {
   private static final String BOOT_TENANT = "boottenant";
   private static final String ROOT_REALM = "root";
   private static final String BOOT_REALM = "boot";
+  private static final String DEFAULT_TENANT = PhysicalTenantsITHelper.DEFAULT_TENANT_ID;
+  private static final String DEFAULT_ALIAS = "/physical-tenants/" + DEFAULT_TENANT;
   private static final String KEYCLOAK_ALIAS = "keycloak";
   private static final String PASSWORD = "password";
   private static final List<String> TRAFFIC_METERS =
@@ -147,6 +157,7 @@ final class PhysicalTenantRuntimeSecurityIT {
 
   private static Path internalSecrets;
   private static Realm bootRealm;
+  private static Realm defaultRealm;
   private static Proxy idpProxy;
   private static RestLoad bootLoad;
 
@@ -161,6 +172,7 @@ final class PhysicalTenantRuntimeSecurityIT {
     final var root = Realm.create(ROOT_REALM, directIssuer(ROOT_REALM));
     final var boot = Realm.create(BOOT_REALM, directIssuer(BOOT_REALM));
     bootRealm = boot;
+    defaultRealm = root;
     writeSecret(BOOT_TENANT + "-web", boot.webSecret());
     CLUSTER
         .brokers()
@@ -182,6 +194,28 @@ final class PhysicalTenantRuntimeSecurityIT {
                         oidc.setRedirectUri("{baseUrl}/sso-callback");
                         oidc.setUsernameClaim("preferred_username");
                       });
+              broker
+                  .withProperty(
+                      "camunda.physical-tenants.default.security.authorizations.enabled", "true")
+                  .withProperty(
+                      "camunda.physical-tenants.default.security.initialization.default-roles"
+                          + ".admin.clients[0]",
+                      Realm.SERVICE_CLIENT)
+                  .withProperty(
+                      "camunda.physical-tenants.default.security.initialization.default-roles"
+                          + ".admin.clients[1]",
+                      Realm.ADMIN_BY_CLAIM);
+              if (broker
+                  .unifiedConfig()
+                  .getData()
+                  .getExporters()
+                  .containsKey(TestStandaloneBroker.RECORDING_EXPORTER_ID)) {
+                broker.withProperty(
+                    "camunda.physical-tenants.default.data.exporters-assigned[0]",
+                    TestStandaloneBroker.RECORDING_EXPORTER_ID);
+              } else {
+                broker.withProperty("camunda.physical-tenants.default.data.exporters-assigned", "");
+              }
               tenantSecurity(BOOT_TENANT, boot, "azp")
                   .forEach(
                       (name, value) ->
@@ -594,6 +628,520 @@ final class PhysicalTenantRuntimeSecurityIT {
     assertThat(after.added(before)).as("meters added by the changes").isEmpty();
   }
 
+  @Test
+  void shouldChangeTheDefaultTenantsIdentityProviderAndClaimsMappingOnEveryBroker()
+      throws Exception {
+    // given
+    final var suffix = uniqueTenantId();
+    final var before = Realm.create("c" + suffix, directIssuer("c" + suffix));
+    changeDefaultAndAwait(before, "default-web-c" + suffix);
+    final var after = Realm.create("d" + suffix, directIssuer("d" + suffix), "web-after", 300);
+    final var secret = "default-web-" + suffix;
+    writeSecret(secret, after.webSecret());
+    final var beforeToken = before.serviceToken(Realm.SERVICE_CLIENT);
+    awaitDefaultOnEveryBroker(beforeToken, 200);
+    final var unprefixedSession = loginAt(broker(0), "", before);
+    final var aliasSession = loginAt(broker(0), DEFAULT_ALIAS, before);
+    final var bootSession = login(broker(0), BOOT_TENANT, bootRealm);
+    assertThat(unprefixedSession.topology()).isEqualTo(200);
+    assertThat(aliasSession.topology()).isEqualTo(200);
+    for (final var prefix : List.of("", DEFAULT_ALIAS)) {
+      assertThat(publishAt(broker(2), prefix, beforeToken)).isEqualTo(200);
+      assertThat(publishAt(broker(2), prefix, before.serviceToken(Realm.OTHER_SERVICE_CLIENT)))
+          .isEqualTo(403);
+    }
+    final var bootGenerations = generations(BOOT_TENANT);
+    final var version = status(broker(0), DEFAULT_TENANT).path("version").asLong();
+    final var afterAdminByClaim = after.serviceToken(Realm.OTHER_SERVICE_CLIENT);
+
+    // when
+    final var started = System.nanoTime();
+    changeDefault(broker(1), defaultSubtree(after, "alt_client", secret));
+    awaitDefaultOnEveryBroker(afterAdminByClaim, 200);
+    final var effective = Duration.ofNanos(System.nanoTime() - started);
+    awaitRolledOut(DEFAULT_TENANT, version + 1);
+    defaultRealm = after;
+
+    // then
+    LOG.info(
+        "Changed the identity provider of the default tenant; new tokens accepted on /v2 and its"
+            + " alias on every broker {} ms after the call",
+        effective.toMillis());
+    assertDefaultOnEveryBroker(beforeToken, 401);
+    for (final var broker : CLUSTER.brokers().values()) {
+      for (final var prefix : List.of("", DEFAULT_ALIAS)) {
+        assertThat(publishAt(broker, prefix, afterAdminByClaim))
+            .as("publish on '%s' as the admin by claim", prefix)
+            .isEqualTo(200);
+        assertThat(publishAt(broker, prefix, after.serviceToken(Realm.SERVICE_CLIENT)))
+            .as("publish on '%s' as svc, no admin by the new claim", prefix)
+            .isEqualTo(403);
+      }
+      assertThat(localSecurity(broker, DEFAULT_TENANT).path("outcome").asText())
+          .isEqualTo("REPLACED");
+    }
+    assertThat(unprefixedSession.topology()).isEqualTo(401);
+    assertThat(aliasSession.topology()).isEqualTo(401);
+    assertThat(bootSession.topology()).isEqualTo(200);
+    assertThat(loginAt(broker(0), "", after).topology()).isEqualTo(200);
+    assertThat(loginAt(broker(2), DEFAULT_ALIAS, after).topology()).isEqualTo(200);
+    assertThat(generations(BOOT_TENANT)).isEqualTo(bootGenerations);
+    assertOnEveryBroker(BOOT_TENANT, bootRealm.serviceToken(Realm.SERVICE_CLIENT), 200);
+    assertOnEveryBroker(BOOT_TENANT, afterAdminByClaim, 401);
+  }
+
+  @Test
+  void shouldRotateTheDefaultTenantsClientSecretFromTheSecretStoreAndKeepTheSessions()
+      throws Exception {
+    // given
+    final var suffix = uniqueTenantId();
+    final var realm = Realm.create("d" + suffix, directIssuer("d" + suffix), Realm.WEB_CLIENT, 5);
+    final var secret = "default-web-" + suffix;
+    writeSecret(secret, realm.webSecret());
+    final var version = status(broker(0), DEFAULT_TENANT).path("version").asLong();
+    changeDefault(broker(0), defaultSubtree(realm, "azp", secret));
+    awaitDefaultOnEveryBroker(realm.serviceToken(Realm.SERVICE_CLIENT), 200);
+    awaitRolledOut(DEFAULT_TENANT, version + 1);
+    defaultRealm = realm;
+    final var unprefixedSession = loginAt(broker(0), "", realm);
+    final var aliasSession = loginAt(broker(1), DEFAULT_ALIAS, realm);
+    assertThat(unprefixedSession.topology()).isEqualTo(200);
+    assertThat(aliasSession.topology()).isEqualTo(200);
+    final var rotated = realm.rotateWebSecret();
+
+    // when
+    final var started = System.nanoTime();
+    writeSecret(secret, rotated);
+    awaitSecurityOutcomeOnEveryBroker(DEFAULT_TENANT, "CREDENTIALS_ROTATED");
+    final var effective = Duration.ofNanos(System.nanoTime() - started);
+    realm.revokeRotatedWebSecret();
+    final var revokedAt = java.time.Instant.now();
+
+    // then
+    LOG.info(
+        "Rotated the client secret of the default tenant on every broker {} ms after the store"
+            + " changed",
+        effective.toMillis());
+    assertThat(realm.acceptsWebSecret(realm.webSecret())).isFalse();
+    Awaitility.await("the sessions' access tokens expired, so their next requests refresh them")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> java.time.Instant.now().isAfter(revokedAt.plusSeconds(6)));
+    assertThat(unprefixedSession.topology()).isEqualTo(200);
+    assertThat(aliasSession.topology()).isEqualTo(200);
+    assertThat(loginAt(broker(2), "", realm).topology()).isEqualTo(200);
+    assertThat(loginAt(broker(2), DEFAULT_ALIAS, realm).topology()).isEqualTo(200);
+    assertThat(status(broker(0), DEFAULT_TENANT).path("version").asLong()).isEqualTo(version + 1);
+  }
+
+  @Test
+  void shouldKeepTheDefaultTenantsPreviousSecurityWhileItsNewIdentityProviderIsUnreachable()
+      throws Exception {
+    // given
+    final var suffix = uniqueTenantId();
+    final var before = defaultRealm;
+    final var after = Realm.create("d" + suffix, proxiedIssuer("d" + suffix));
+    final var secret = "default-web-" + suffix;
+    writeSecret(secret, after.webSecret());
+    final var beforeToken = before.serviceToken(Realm.SERVICE_CLIENT);
+    awaitDefaultOnEveryBroker(beforeToken, 200);
+    final var afterToken = after.serviceToken(Realm.SERVICE_CLIENT);
+    final var version = status(broker(0), DEFAULT_TENANT).path("version").asLong();
+    idpProxy.disable();
+    try {
+      // when
+      changeDefault(broker(0), defaultSubtree(after, "azp", secret));
+
+      // then
+      Awaitility.await("the first member keeps the previous security and reports it")
+          .atMost(TIMEOUT)
+          .untilAsserted(
+              () -> {
+                final var local = status(broker(0), DEFAULT_TENANT).path("local");
+                assertThat(local.path("health").asText()).isEqualTo("DEGRADED");
+                assertThat(local.path("healthDetail").asText()).contains("KEPT_PREVIOUS");
+                assertThat(local.path("httpSecurity").path("outcome").asText())
+                    .isEqualTo("KEPT_PREVIOUS");
+              });
+      assertThat(status(broker(0), DEFAULT_TENANT).path("rolledOut").asBoolean()).isFalse();
+      assertDefaultOnEveryBroker(beforeToken, 200);
+      assertDefaultOnEveryBroker(afterToken, 401);
+      assertThat(
+              broker(0)
+                  .bean(io.camunda.cluster.PhysicalTenantRegistry.class)
+                  .health(BOOT_TENANT)
+                  .orElseThrow()
+                  .state())
+          .isEqualTo(io.camunda.cluster.PhysicalTenantHealth.State.HEALTHY);
+    } finally {
+      idpProxy.enable();
+    }
+
+    // and when the identity provider answers again
+    final var recovered = System.nanoTime();
+    awaitRolledOut(DEFAULT_TENANT, version + 1);
+    awaitDefaultOnEveryBroker(afterToken, 200);
+    defaultRealm = after;
+    LOG.info(
+        "The default tenant applied its new identity provider on every broker {} ms after it"
+            + " became reachable",
+        Duration.ofNanos(System.nanoTime() - recovered).toMillis());
+    assertDefaultOnEveryBroker(beforeToken, 401);
+    Awaitility.await("the default tenant is healthy again")
+        .atMost(TIMEOUT)
+        .untilAsserted(
+            () ->
+                CLUSTER
+                    .brokers()
+                    .values()
+                    .forEach(
+                        broker ->
+                            assertThat(
+                                    status(broker, DEFAULT_TENANT)
+                                        .path("local")
+                                        .path("health")
+                                        .asText())
+                                .isEqualTo("HEALTHY")));
+  }
+
+  @Test
+  void shouldRejectAChangeOfTheDefaultTenantsAuthenticationMethod() {
+    // given
+    final var subtree = new LinkedHashMap<>(defaultBaseSubtree());
+    subtree.put("security.authentication.method", "basic");
+    final var version = status(broker(0), DEFAULT_TENANT).path("version").asLong();
+
+    // when / then
+    assertThatThrownBy(() -> changeDefault(broker(0), subtree))
+        .isInstanceOf(PhysicalTenantConfigRejectedException.class)
+        .satisfies(
+            e ->
+                assertThat(((PhysicalTenantConfigRejectedException) e).violations())
+                    .anyMatch(violation -> violation.contains("security.authentication.method")));
+    assertThat(status(broker(0), DEFAULT_TENANT).path("version").asLong()).isEqualTo(version);
+    assertDefaultOnEveryBroker(defaultRealm.serviceToken(Realm.SERVICE_CLIENT), 200);
+  }
+
+  @Test
+  void shouldNotLeakOverManySecurityChangesOfTheDefaultTenant() throws Exception {
+    // given
+    final var suffix = uniqueTenantId();
+    final var realms =
+        List.of(
+            Realm.create("d" + suffix, directIssuer("d" + suffix)),
+            Realm.create("e" + suffix, directIssuer("e" + suffix)));
+    for (int i = 0; i < 2; i++) {
+      changeDefaultAndAwait(realms.get(i % 2), "default-web-" + suffix + i);
+    }
+    final var before = SecurityResources.measure();
+    final List<Long> durations = new ArrayList<>();
+
+    // when
+    for (int i = 0; i < 10; i++) {
+      final var started = System.nanoTime();
+      changeDefaultAndAwait(realms.get(i % 2), "default-web-" + suffix + i);
+      durations.add(Duration.ofNanos(System.nanoTime() - started).toMillis());
+    }
+    final var after = SecurityResources.measure();
+
+    // then
+    LOG.info(
+        "10 security changes of the default tenant, each new IdP accepted on /v2 and its alias on"
+            + " every broker and rolled out after {} ms; before {}, after {}",
+        durations,
+        before,
+        after);
+    assertThat(after.chains()).isEqualTo(before.chains());
+    assertThat(after.bearerConverters()).isLessThanOrEqualTo(before.bearerConverters());
+    assertThat(after.claimsConverters()).isLessThanOrEqualTo(before.claimsConverters());
+    assertThat(after.threads())
+        .as("threads before %s, after %s", before.threadNames(), after.threadNames())
+        .isLessThanOrEqualTo(before.threads());
+    assertThat(after.added(before)).as("meters added by the changes").isEmpty();
+  }
+
+  private static void changeDefaultAndAwait(final Realm realm, final String secret) {
+    writeSecret(secret, realm.webSecret());
+    final var version = status(broker(0), DEFAULT_TENANT).path("version").asLong();
+    changeDefault(broker((int) (version % 3)), defaultSubtree(realm, "azp", secret));
+    awaitDefaultOnEveryBroker(realm.serviceToken(Realm.SERVICE_CLIENT), 200);
+    awaitRolledOut(DEFAULT_TENANT, version + 1);
+    defaultRealm = realm;
+  }
+
+  /**
+   * Replaces the subtree of the default tenant as a changed static configuration file would; the
+   * default tenant is owned by the file, so the management API refuses to change it.
+   */
+  private static void changeDefault(
+      final TestStandaloneBroker broker, final Map<String, String> subtree) {
+    broker.bean(PhysicalTenantConfigService.class).updateFromFile(DEFAULT_TENANT, subtree);
+  }
+
+  /** The subtree of the default tenant in the static configuration of the brokers. */
+  private static Map<String, String> defaultBaseSubtree() {
+    return defaultBaseSubtree(CLUSTER);
+  }
+
+  private static Map<String, String> defaultBaseSubtree(final TestCluster cluster) {
+    return PhysicalTenantEnvironments.subtreeOf(
+        first(cluster).bean(ConfigurableEnvironment.class), DEFAULT_TENANT);
+  }
+
+  private static Map<String, String> defaultSubtree(
+      final Realm realm, final String clientIdClaim, final String secret) {
+    return defaultSubtree(defaultBaseSubtree(), realm, clientIdClaim, secret);
+  }
+
+  private static Map<String, String> defaultSubtree(
+      final Map<String, String> base,
+      final Realm realm,
+      final String clientIdClaim,
+      final String secret) {
+    final Map<String, String> subtree = new LinkedHashMap<>(base);
+    final var oidc = "security.authentication.oidc.";
+    subtree.put(oidc + "issuer-uri", realm.issuer());
+    subtree.put(oidc + "client-id", realm.webClient());
+    subtree.put(oidc + "client-secret", "camunda.secrets." + secret);
+    subtree.put(oidc + "audiences[0]", realm.audience());
+    subtree.put(oidc + "username-claim", "absent_username");
+    subtree.put(oidc + "client-id-claim", clientIdClaim);
+    subtree.put("security.authentication.providers.assigned[0]", "oidc");
+    return subtree;
+  }
+
+  /** The generation of the tenant's HTTP security on every broker. */
+  private static Map<MemberId, Long> generations(final String tenantId) {
+    final Map<MemberId, Long> generations = new LinkedHashMap<>();
+    CLUSTER
+        .brokers()
+        .forEach(
+            (id, broker) ->
+                generations.put(id, localSecurity(broker, tenantId).path("generation").asLong()));
+    return generations;
+  }
+
+  /** Checks the default tenant on its unprefixed paths and on its alias, on every broker. */
+  private static void assertDefaultOnEveryBroker(final String token, final int status) {
+    assertDefaultOnEveryBroker(CLUSTER, token, status);
+  }
+
+  private static void assertDefaultOnEveryBroker(
+      final TestCluster cluster, final String token, final int status) {
+    cluster
+        .brokers()
+        .forEach(
+            (id, broker) -> {
+              for (final var prefix : List.of("", DEFAULT_ALIAS)) {
+                assertThat(
+                        request(broker, "GET", prefix + "/v2/topology", token, null).statusCode())
+                    .as("GET %s/v2/topology on broker %s", prefix, id)
+                    .isEqualTo(status);
+              }
+            });
+  }
+
+  private static void awaitDefaultOnEveryBroker(final String token, final int status) {
+    awaitDefaultOnEveryBroker(CLUSTER, token, status);
+  }
+
+  private static void awaitDefaultOnEveryBroker(
+      final TestCluster cluster, final String token, final int status) {
+    Awaitility.await("the default tenant answers %d on every broker".formatted(status))
+        .atMost(TIMEOUT)
+        .pollInterval(Duration.ofMillis(50))
+        .untilAsserted(() -> assertDefaultOnEveryBroker(cluster, token, status));
+  }
+
+  private static int publishAt(
+      final TestStandaloneBroker broker, final String prefix, final String token) {
+    return request(
+            broker,
+            "POST",
+            prefix + "/v2/messages/publication",
+            token,
+            "{\"name\":\"probe\",\"correlationKey\":\"" + UUID.randomUUID() + "\"}")
+        .statusCode();
+  }
+
+  /**
+   * A cluster that configures no physical tenant at all, so the default tenant is implicit: no key
+   * under {@code camunda.physical-tenants.*} exists when it starts. Without a generic exporter its
+   * security changes like that of the cluster above.
+   */
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  final class WithoutPhysicalTenants {
+
+    private TestCluster cluster;
+    private Realm startupRealm;
+
+    @BeforeAll
+    void startCluster() {
+      final var suffix = uniqueTenantId();
+      startupRealm = Realm.create("n" + suffix, directIssuer("n" + suffix));
+      cluster = startDefaultOnlyCluster(startupRealm, false);
+    }
+
+    @AfterAll
+    void stopCluster() {
+      if (cluster != null) {
+        cluster.close();
+      }
+    }
+
+    @Test
+    void shouldChangeTheImplicitDefaultTenantsSecurityOnEveryBroker() throws Exception {
+      // given
+      assertThat(defaultBaseSubtree(cluster)).as("no physical tenant is configured").isEmpty();
+      final var startupToken = startupRealm.serviceToken(Realm.SERVICE_CLIENT);
+      awaitDefaultOnEveryBroker(cluster, startupToken, 200);
+      final var unprefixedSession = loginAt(first(cluster), "", startupRealm);
+      assertThat(unprefixedSession.topology()).isEqualTo(200);
+      final var suffix = uniqueTenantId();
+      final var after = Realm.create("m" + suffix, directIssuer("m" + suffix));
+      final var secret = "default-web-m" + suffix;
+      writeSecret(secret, after.webSecret());
+      final var version = status(first(cluster), DEFAULT_TENANT).path("version").asLong();
+
+      // when
+      final var started = System.nanoTime();
+      last(cluster)
+          .bean(PhysicalTenantConfigService.class)
+          .updateFromFile(DEFAULT_TENANT, defaultSubtree(Map.of(), after, "azp", secret));
+      awaitDefaultOnEveryBroker(cluster, after.serviceToken(Realm.SERVICE_CLIENT), 200);
+      final var effective = Duration.ofNanos(System.nanoTime() - started);
+      awaitRolledOut(first(cluster), DEFAULT_TENANT, version + 1);
+
+      // then
+      LOG.info(
+          "Changed the identity provider of the implicit default tenant; new tokens accepted on"
+              + " /v2 and its alias on every broker {} ms after the call",
+          effective.toMillis());
+      assertDefaultOnEveryBroker(cluster, startupToken, 401);
+      assertThat(unprefixedSession.topology()).isEqualTo(401);
+      assertThat(loginAt(last(cluster), "", after).topology()).isEqualTo(200);
+      assertThat(loginAt(first(cluster), DEFAULT_ALIAS, after).topology()).isEqualTo(200);
+    }
+  }
+
+  /**
+   * As {@link WithoutPhysicalTenants}, with a generic exporter in the root configuration, as the
+   * test clusters register the recording exporter.
+   */
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  final class WithoutPhysicalTenantsButAGenericExporter {
+
+    private TestCluster cluster;
+    private Realm startupRealm;
+
+    @BeforeAll
+    void startCluster() {
+      final var suffix = uniqueTenantId();
+      startupRealm = Realm.create("x" + suffix, directIssuer("x" + suffix));
+      cluster = startDefaultOnlyCluster(startupRealm, true);
+    }
+
+    @AfterAll
+    void stopCluster() {
+      if (cluster != null) {
+        cluster.close();
+      }
+    }
+
+    @Test
+    void shouldRejectTheFirstKeyOfTheImplicitDefaultTenant() {
+      // given
+      assertThat(defaultBaseSubtree(cluster)).as("no physical tenant is configured").isEmpty();
+      final var startupToken = startupRealm.serviceToken(Realm.SERVICE_CLIENT);
+      awaitDefaultOnEveryBroker(cluster, startupToken, 200);
+      final var suffix = uniqueTenantId();
+      final var after = Realm.create("y" + suffix, directIssuer("y" + suffix));
+      final var secret = "default-web-y" + suffix;
+      writeSecret(secret, after.webSecret());
+      final var securityOnly = defaultSubtree(Map.of(), after, "azp", secret);
+      final var withExporters = new LinkedHashMap<>(securityOnly);
+      withExporters.put("data.exporters-assigned[0]", TestStandaloneBroker.RECORDING_EXPORTER_ID);
+      final var service = first(cluster).bean(PhysicalTenantConfigService.class);
+
+      // when / then
+      assertThatThrownBy(() -> service.updateFromFile(DEFAULT_TENANT, securityOnly))
+          .isInstanceOfSatisfying(
+              PhysicalTenantConfigRejectedException.class,
+              rejected -> {
+                LOG.info("Security-only change of the implicit default: {}", rejected.violations());
+                assertThat(String.join(" ", rejected.violations())).contains("exporters-assigned");
+              });
+      assertThatThrownBy(() -> service.updateFromFile(DEFAULT_TENANT, withExporters))
+          .isInstanceOfSatisfying(
+              PhysicalTenantConfigRejectedException.class,
+              rejected -> {
+                LOG.info("Change with exporters-assigned: {}", rejected.violations());
+                assertThat(rejected.violations())
+                    .anyMatch(violation -> violation.contains("exporters-assigned"));
+              });
+      assertDefaultOnEveryBroker(cluster, startupToken, 200);
+    }
+  }
+
+  /**
+   * Starts two brokers whose static configuration names no physical tenant, with the given realm as
+   * their root identity provider.
+   */
+  private static TestCluster startDefaultOnlyCluster(
+      final Realm realm, final boolean genericExporter) {
+    final var tenants =
+        PhysicalTenantsITHelper.builder()
+            .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
+            .build();
+    final var cluster =
+        TestCluster.builder()
+            .withName("default-only-" + uniqueTenantId())
+            .withBrokersCount(2)
+            .withReplicationFactor(2)
+            .withPartitionsCount(1)
+            .useRecordingExporter(genericExporter)
+            .withBrokerConfig(
+                broker ->
+                    tenants.configure(
+                        broker
+                            .withAuthenticatedAccess()
+                            .withAuthenticationMethod(AuthenticationMethod.OIDC)))
+            .build();
+    cluster
+        .brokers()
+        .values()
+        .forEach(
+            broker ->
+                broker
+                    .withProperty(
+                        "camunda.secrets.stores.file.default.path",
+                        secrets.resolve("jobs").toString())
+                    .withProperty(
+                        "camunda.secrets.stores.file.default.internal-config.path",
+                        internalSecrets.toString())
+                    .withProperty("camunda.secrets.refresh-interval", "1s")
+                    .withSecurityConfig(
+                        security -> {
+                          final var oidc = security.getAuthentication().getOidc();
+                          oidc.setIssuerUri(realm.issuer());
+                          oidc.setClientId(Realm.WEB_CLIENT);
+                          oidc.setClientSecret(realm.webSecret());
+                          oidc.setRedirectUri("{baseUrl}/sso-callback");
+                          oidc.setUsernameClaim("preferred_username");
+                        }));
+    cluster.start();
+    return cluster;
+  }
+
+  private static TestStandaloneBroker first(final TestCluster cluster) {
+    return cluster.brokers().get(MemberId.from("0"));
+  }
+
+  private static TestStandaloneBroker last(final TestCluster cluster) {
+    return cluster.brokers().get(MemberId.from(String.valueOf(cluster.brokers().size() - 1)));
+  }
+
   private static long change(final String tenantId, final Realm realm, final long version) {
     writeSecret(tenantId + "-web", realm.webSecret());
     assertThat(
@@ -666,11 +1214,16 @@ final class PhysicalTenantRuntimeSecurityIT {
   }
 
   private static void awaitRolledOut(final String tenantId, final long version) {
+    awaitRolledOut(broker(0), tenantId, version);
+  }
+
+  private static void awaitRolledOut(
+      final TestStandaloneBroker broker, final String tenantId, final long version) {
     Awaitility.await("version %d of %s is applied by every broker".formatted(version, tenantId))
         .atMost(TIMEOUT)
         .untilAsserted(
             () -> {
-              final var status = status(broker(0), tenantId);
+              final var status = status(broker, tenantId);
               assertThat(status.get("version").asLong()).isEqualTo(version);
               assertThat(status.get("rolledOut").asBoolean()).isTrue();
               assertThat(status.get("changing").asBoolean()).isFalse();
@@ -681,10 +1234,16 @@ final class PhysicalTenantRuntimeSecurityIT {
   private static Session login(
       final TestStandaloneBroker broker, final String tenantId, final Realm realm)
       throws Exception {
+    return loginAt(broker, "/physical-tenants/" + tenantId, realm);
+  }
+
+  /** Logs the user in under a path prefix, {@code ""} for the unprefixed default tenant. */
+  private static Session loginAt(
+      final TestStandaloneBroker broker, final String prefix, final Realm realm) throws Exception {
+    final var tenantId = prefix.isEmpty() ? "the unprefixed paths" : prefix;
     final var app = new Browser();
     final var idp = new Browser();
     final var base = broker.restAddress().toString().replaceAll("/$", "");
-    final var prefix = "/physical-tenants/" + tenantId;
     final var start =
         app.send(
             HttpRequest.newBuilder(URI.create(base + prefix + "/oauth2/authorization/oidc"))
