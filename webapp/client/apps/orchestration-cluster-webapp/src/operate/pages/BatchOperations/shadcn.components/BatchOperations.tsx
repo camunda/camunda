@@ -37,7 +37,7 @@ const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
 ].join(' ');
 
-const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link className="underline" {...props} />;
+const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link {...props} />;
 const BatchOperationLink = createLink(TableLink);
 
 const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
