@@ -69,3 +69,16 @@ jobs:
             {
               "conflict_resolution": "draft_commit_conflicts"
             }
+      - name: Warn about ESUP targets
+        # Also after a failed backport, so the warning isn't lost. Marks the ESUP rows of this
+        # run's summary comment and adds a warning block; see esup-branch-warning.yml for the
+        # other two warnings.
+        if: ${{ !cancelled() && steps.github-token.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MODE: backport-summary
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          RUN_ID: ${{ github.run_id }}
+          LABELS_JSON: ${{ toJSON(github.event.pull_request.labels || github.event.issue.labels) }}
+        run: node .github/scripts/esup-backport-warning.mjs
