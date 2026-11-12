@@ -11,18 +11,18 @@ import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /** Plain data nested in {@link PojoFull}, stores the same bytes as {@link UnpackedNested}. */
 @MsgpackPojo
 public final class PojoNested extends MsgpackBufferValue<PojoNested> {
 
   long id = -1L;
-  DirectBuffer label = Decoding.EMPTY;
+  final UnsafeBuffer label = new UnsafeBuffer(Decoding.EMPTY);
 
   public PojoNested fill(final int seed) {
     id = seed;
-    label = BufferUtil.wrapString("label-" + seed);
+    label.wrap(BufferUtil.wrapString("label-" + seed));
     return this;
   }
 }
