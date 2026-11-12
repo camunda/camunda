@@ -104,7 +104,7 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
   - Validated: zb-db full verify without -Dquickly (462 + 111 tests), randomized profile, full repo
     install -Dquickly, downstream dependency analysis, Gradle compile of zb-db projects.
   - Found on main, NOT fixed (behavior change, separate fix PR?): `count()`/`countEqualPrefix()`
-    outside a transaction leaves the context's transaction open; a later runInTransaction neither
+    outside a transaction leaves the context's transaction open (tracked in camunda/camunda#68932); a later runInTransaction neither
     commits nor rolls back, so a failed insert stays visible. Workshop branch had a fix + test
     `shouldRollBackFailedTransactionAfterCount`.
 - [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
