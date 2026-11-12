@@ -65,11 +65,24 @@ final class StateTables {
     final var tables = new TreeMap<Integer, StateTable>();
     add(tables, ZbColumnFamilies.DEFAULT, "DEFAULT");
     add(tables, ZbColumnFamilies.KEY, "KEY");
-    add(tables, ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, "ELEMENT_PARENT_CHILD");
-    add(tables, ZbColumnFamilies.ELEMENT_INSTANCE_KEY, "ELEMENT_INSTANCE_KEY");
+    add(
+        tables,
+        ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD,
+        "ELEMENT_PARENT_CHILD",
+        dbLong("PARENT_KEY"),
+        dbLong("ELEMENT_INSTANCE_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.ELEMENT_INSTANCE_KEY,
+        "ELEMENT_INSTANCE_KEY",
+        dbLong("ELEMENT_INSTANCE_KEY"));
     add(tables, ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, "TAKEN_SEQUENCE_FLOWS");
-    add(tables, ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, "ELEMENT_CHILD_PARENT");
-    add(tables, ZbColumnFamilies.VARIABLES, "VARIABLES");
+    add(
+        tables,
+        ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT,
+        "ELEMENT_CHILD_PARENT",
+        dbLong("CHILD_KEY"));
+    add(tables, ZbColumnFamilies.VARIABLES, "VARIABLES", dbLong("SCOPE_KEY"), dbString("NAME"));
     add(
         tables,
         ZbColumnFamilies.TIMERS,
@@ -93,8 +106,13 @@ final class StateTables {
         "JOB_DEADLINES",
         dbLong("DEADLINE"),
         dbLong("JOB_KEY"));
-    add(tables, ZbColumnFamilies.MESSAGE_KEY, "MESSAGE_KEY");
-    add(tables, ZbColumnFamilies.MESSAGE_DEADLINES, "MESSAGE_DEADLINES");
+    add(tables, ZbColumnFamilies.MESSAGE_KEY, "MESSAGE_KEY", dbLong("MESSAGE_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.MESSAGE_DEADLINES,
+        "MESSAGE_DEADLINES",
+        dbLong("DEADLINE"),
+        dbLong("MESSAGE_KEY"));
     add(tables, ZbColumnFamilies.MESSAGE_IDS, "MESSAGE_IDS");
     add(tables, ZbColumnFamilies.MESSAGE_CORRELATED, "MESSAGE_CORRELATED");
     add(
@@ -102,12 +120,26 @@ final class StateTables {
         ZbColumnFamilies.MESSAGE_PROCESSES_ACTIVE_BY_CORRELATION_KEY,
         "MSG_ACTIVE_BY_CORR_KEY");
     add(tables, ZbColumnFamilies.MESSAGE_PROCESS_INSTANCE_CORRELATION_KEYS, "MSG_PI_CORR_KEYS");
-    add(tables, ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY, "MSG_SUB_BY_KEY");
-    add(tables, ZbColumnFamilies.INCIDENTS, "INCIDENTS");
-    add(tables, ZbColumnFamilies.INCIDENT_PROCESS_INSTANCES, "INCIDENT_PROC_INSTANCES");
-    add(tables, ZbColumnFamilies.INCIDENT_JOBS, "INCIDENT_JOBS");
-    add(tables, ZbColumnFamilies.EVENT_SCOPE, "EVENT_SCOPE");
-    add(tables, ZbColumnFamilies.EVENT_TRIGGER, "EVENT_TRIGGER");
+    add(
+        tables,
+        ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_KEY,
+        "MSG_SUB_BY_KEY",
+        dbLong("ELEMENT_INSTANCE_KEY"),
+        dbString("MESSAGE_NAME"));
+    add(tables, ZbColumnFamilies.INCIDENTS, "INCIDENTS", dbLong("INCIDENT_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.INCIDENT_PROCESS_INSTANCES,
+        "INCIDENT_PROC_INSTANCES",
+        dbLong("ELEMENT_INSTANCE_KEY"));
+    add(tables, ZbColumnFamilies.INCIDENT_JOBS, "INCIDENT_JOBS", dbLong("JOB_KEY"));
+    add(tables, ZbColumnFamilies.EVENT_SCOPE, "EVENT_SCOPE", dbLong("EVENT_SCOPE_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.EVENT_TRIGGER,
+        "EVENT_TRIGGER",
+        dbLong("EVENT_SCOPE_KEY"),
+        dbLong("EVENT_KEY"));
     add(tables, ZbColumnFamilies.BANNED_INSTANCE, "BANNED_INSTANCE");
     add(tables, ZbColumnFamilies.EXPORTER, "EXPORTER");
     add(tables, ZbColumnFamilies.AWAIT_WORKLOW_RESULT, "AWAIT_WORKLOW_RESULT");
@@ -140,7 +172,14 @@ final class StateTables {
     add(tables, ZbColumnFamilies.FORMS, "FORMS");
     add(tables, ZbColumnFamilies.FORM_VERSION, "FORM_VERSION");
     add(tables, ZbColumnFamilies.FORM_BY_ID_AND_VERSION, "FORM_BY_ID_AND_VERSION");
-    add(tables, ZbColumnFamilies.MESSAGES, "MESSAGES");
+    add(
+        tables,
+        ZbColumnFamilies.MESSAGES,
+        "MESSAGES",
+        tenantId(),
+        dbString("MESSAGE_NAME"),
+        dbString("CORRELATION_KEY"),
+        dbLong("MESSAGE_KEY"));
     add(
         tables,
         ZbColumnFamilies.MESSAGE_START_EVENT_SUBSCRIPTION_BY_NAME_AND_KEY,
@@ -152,12 +191,22 @@ final class StateTables {
     add(
         tables,
         ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY,
-        "MSG_SUB_BY_NAME_CORR_KEY");
-    add(tables, ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY, "PROC_SUB_BY_KEY");
+        "MSG_SUB_BY_NAME_CORR_KEY",
+        tenantId(),
+        dbString("MESSAGE_NAME"),
+        dbString("CORRELATION_KEY"),
+        dbLong("ELEMENT_INSTANCE_KEY"));
+    add(
+        tables,
+        ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY,
+        "PROC_SUB_BY_KEY",
+        dbLong("ELEMENT_INSTANCE_KEY"),
+        tenantId(),
+        dbString("MESSAGE_NAME"));
     add(tables, ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY, "SIGNAL_SUB_BY_NAME_KEY");
     add(tables, ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME, "SIGNAL_SUB_BY_KEY_NAME");
-    add(tables, ZbColumnFamilies.USER_TASKS, "USER_TASKS");
-    add(tables, ZbColumnFamilies.USER_TASK_STATES, "USER_TASK_STATES");
+    add(tables, ZbColumnFamilies.USER_TASKS, "USER_TASKS", dbLong("USER_TASK_KEY"));
+    add(tables, ZbColumnFamilies.USER_TASK_STATES, "USER_TASK_STATES", dbLong("USER_TASK_KEY"));
     add(tables, ZbColumnFamilies.COMPENSATION_SUBSCRIPTION, "COMPENSATION_SUB");
     add(
         tables,

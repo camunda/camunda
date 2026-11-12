@@ -149,6 +149,44 @@ abstract class StateViewsTestBase {
   }
 
   @Test
+  void shouldShowTheTenantBeforeTheKeyOfTheEngine() throws SQLException {
+    // given
+    final var tenant = new DbString();
+    tenant.wrapString("tenant-a");
+    final var messageName = new DbString();
+    messageName.wrapString("order-paid");
+    final var correlationKey = new DbString();
+    correlationKey.wrapString("order-42");
+    final var elementInstanceKey = new DbLong();
+    elementInstanceKey.wrapLong(2251799813685250L);
+    final var key =
+        new DbCompositeKey<>(
+            new DbTenantAwareKey<>(
+                tenant, new DbCompositeKey<>(messageName, correlationKey), PlacementType.PREFIX),
+            elementInstanceKey);
+    final var table =
+        StateTables.of(
+            ZbColumnFamilies.MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY.getValue());
+
+    // when
+    insert(table.name(), key(Stream.of(key)));
+
+    // then
+    assertThat(read(table.viewName()))
+        .singleElement()
+        .isEqualTo(
+            Map.of(
+                KeyLayout.TENANT_ID,
+                "tenant-a",
+                "MESSAGE_NAME",
+                "order-paid",
+                "CORRELATION_KEY",
+                "order-42",
+                "ELEMENT_INSTANCE_KEY",
+                2251799813685250L));
+  }
+
+  @Test
   void shouldShowNullForPartsOutsideTheKey() throws SQLException {
     // given
     final var view = createView(new KeyLayout(List.of(dbString("NAME"), dbString("OTHER"))));
