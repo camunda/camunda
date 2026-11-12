@@ -75,7 +75,7 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
-  /** The claims map, once built. See {@link #toClaimsMap()}. */
+  /** The claims map, once built, which is shared by all callers. See {@link #toClaimsMap()}. */
   private volatile @Nullable Map<String, Object> claimsMap;
 
   private AuthInfo(
@@ -223,7 +223,10 @@ public final class AuthInfo implements BufferWriter {
     putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims != null ? new LazyTokenClaims() : null);
     final var result = Collections.unmodifiableMap(claims);
 
-    // racing threads build equivalent maps, so it doesn't matter which one wins
+    // Always safe to share: it only holds immutable values, and the token claims view hands out
+    // fresh copies if they contain mutable values. Caching only for immutable token claims would
+    // require decoding them here, which is what the lazy view avoids.
+    // Racing threads build equivalent maps, so it doesn't matter which one wins.
     claimsMap = result;
     return result;
   }
