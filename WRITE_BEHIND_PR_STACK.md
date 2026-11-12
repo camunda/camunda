@@ -75,6 +75,10 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     `countEqualPrefix()` and do NOT add `shouldRollBackFailedTransactionAfterCount`. If a stack
     PR turns out to depend on the fix, report it; we then add that fix PR to the stack (as a base)
     instead of duplicating it.
+11. **Builds (2026-11-12):** subagents may build/test with Gradle (`./gradlew`, see the
+    `gradle-run-build` skill) instead of Maven. Still run `./mvnw license:format spotless:apply`
+    before committing and one Maven `-Dquickly` build of zb-db so pom wiring and dependency
+    analysis are checked.
 9. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
