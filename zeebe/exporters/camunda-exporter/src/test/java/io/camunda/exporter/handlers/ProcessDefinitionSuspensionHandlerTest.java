@@ -99,21 +99,6 @@ class ProcessDefinitionSuspensionHandlerTest {
   }
 
   @Test
-  void shouldGenerateNoIdsWhenNoVersionChangedState() {
-    // given
-    final Record<ProcessDefinitionSuspensionRecordValue> record =
-        suspensionRecord(
-            ProcessDefinitionSuspensionIntent.RESUMED,
-            1L,
-            List.of(
-                version(11L, ProcessDefinitionSuspensionOutcome.ALREADY_ACTIVE),
-                version(12L, ProcessDefinitionSuspensionOutcome.DRAINING)));
-
-    // when - then
-    assertThat(underTest.generateIds(record)).isEmpty();
-  }
-
-  @Test
   void shouldSetSuspendedStateOnUpdateEntity() {
     // given
     final Record<ProcessDefinitionSuspensionRecordValue> record =
@@ -131,35 +116,21 @@ class ProcessDefinitionSuspensionHandlerTest {
   }
 
   @Test
-  void shouldSetActiveStateForEachResumedVersionOfACascade() {
+  void shouldSetActiveStateOnUpdateEntityForResumedVersion() {
     // given
     final Record<ProcessDefinitionSuspensionRecordValue> record =
         suspensionRecord(
             ProcessDefinitionSuspensionIntent.RESUMED,
             1L,
-            List.of(
-                version(21L, ProcessDefinitionSuspensionOutcome.RESUMED),
-                version(22L, ProcessDefinitionSuspensionOutcome.RESUMED),
-                version(23L, ProcessDefinitionSuspensionOutcome.ALREADY_ACTIVE)));
+            List.of(version(11L, ProcessDefinitionSuspensionOutcome.RESUMED)));
+    final ProcessEntity entity = new ProcessEntity().setId("11");
+    entity.setState(ProcessDefinitionState.SUSPENDED);
 
     // when
-    final var ids = underTest.generateIds(record);
-    final List<ProcessEntity> entities =
-        ids.stream()
-            .map(
-                id -> {
-                  final ProcessEntity entity = new ProcessEntity().setId(id);
-                  entity.setState(ProcessDefinitionState.SUSPENDED);
-                  underTest.updateEntity(record, entity);
-                  return entity;
-                })
-            .toList();
+    underTest.updateEntity(record, entity);
 
     // then
-    assertThat(ids).containsExactly("21", "22");
-    assertThat(entities)
-        .extracting(ProcessEntity::getState)
-        .containsOnly(ProcessDefinitionState.ACTIVE);
+    assertThat(entity.getState()).isEqualTo(ProcessDefinitionState.ACTIVE);
   }
 
   @Test

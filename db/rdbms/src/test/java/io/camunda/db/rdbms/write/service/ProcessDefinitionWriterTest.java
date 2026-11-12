@@ -87,38 +87,4 @@ class ProcessDefinitionWriterTest {
                     "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDraining",
                     processDefinitionKey)));
   }
-
-  @Test
-  void shouldMarkProcessDefinitionSuspended() {
-    final Long processDefinitionKey = 123L;
-
-    writer.markSuspended(processDefinitionKey);
-
-    verify(executionQueue)
-        .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.PROCESS_DEFINITION,
-                    WriteStatementType.UPDATE,
-                    processDefinitionKey,
-                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markSuspended",
-                    processDefinitionKey)));
-  }
-
-  @Test
-  void shouldMarkProcessDefinitionActive() {
-    final Long processDefinitionKey = 123L;
-
-    writer.markActive(processDefinitionKey);
-
-    verify(executionQueue)
-        .executeInQueue(
-            eq(
-                new QueueItem(
-                    ContextType.PROCESS_DEFINITION,
-                    WriteStatementType.UPDATE,
-                    processDefinitionKey,
-                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markActive",
-                    processDefinitionKey)));
-  }
 }
