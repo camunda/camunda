@@ -13,8 +13,8 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionEntryValue;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -30,8 +30,8 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final BooleanProperty cascadeProp = new BooleanProperty("cascade", false);
-  private final ArrayProperty<ProcessDefinitionSuspensionEntry> resolvedVersionsProp =
-      new ArrayProperty<>("resolvedVersions", ProcessDefinitionSuspensionEntry::new);
+  private final ArrayProperty<ProcessDefinitionSuspensionResolvedVersion> resolvedVersionsProp =
+      new ArrayProperty<>("resolvedVersions", ProcessDefinitionSuspensionResolvedVersion::new);
   private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey", -1);
 
   public ProcessDefinitionSuspensionRecord() {
@@ -96,17 +96,17 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<ProcessDefinitionSuspensionEntryValue> getResolvedVersions() {
+  public List<ProcessDefinitionSuspensionResolvedVersionValue> getResolvedVersions() {
     return resolvedVersionsProp.stream().collect(Collectors.toList());
   }
 
   public ProcessDefinitionSuspensionRecord addResolvedVersion(
-      final ProcessDefinitionSuspensionEntryValue entry) {
+      final ProcessDefinitionSuspensionResolvedVersionValue resolvedVersion) {
     resolvedVersionsProp
         .add()
-        .setProcessDefinitionKey(entry.getProcessDefinitionKey())
-        .setVersion(entry.getVersion())
-        .setOutcome(entry.getOutcome());
+        .setProcessDefinitionKey(resolvedVersion.getProcessDefinitionKey())
+        .setVersion(resolvedVersion.getVersion())
+        .setOutcome(resolvedVersion.getOutcome());
     return this;
   }
 

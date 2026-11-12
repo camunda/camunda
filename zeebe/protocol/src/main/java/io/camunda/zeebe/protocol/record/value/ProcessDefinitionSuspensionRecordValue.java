@@ -38,7 +38,7 @@ public interface ProcessDefinitionSuspensionRecordValue extends RecordValue, Ten
   boolean isCascade();
 
   /** The process definition versions the command resolved to, with the outcome for each. */
-  List<ProcessDefinitionSuspensionEntryValue> getResolvedVersions();
+  List<ProcessDefinitionSuspensionResolvedVersionValue> getResolvedVersions();
 
   /** The batch operation that tracks the suspension, or -1 if there is none. */
   long getBatchOperationKey();

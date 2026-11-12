@@ -25,8 +25,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionEntryValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskLookupRecordValue;
@@ -108,7 +108,7 @@ class CompactRecordLoggerTest {
                       .withCascade(true)
                       .withResolvedVersions(
                           List.of(
-                              ImmutableProcessDefinitionSuspensionEntryValue.builder()
+                              ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
                                   .withProcessDefinitionKey(123L)
                                   .withVersion(1)
                                   .withOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED)

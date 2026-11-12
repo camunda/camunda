@@ -88,8 +88,8 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembership
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionEntry;
 import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionResolvedVersion;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -5772,12 +5772,12 @@ final class JsonSerializableToJsonTest {
                     .setTenantId("tenant-1")
                     .setCascade(true)
                     .addResolvedVersion(
-                        new ProcessDefinitionSuspensionEntry()
+                        new ProcessDefinitionSuspensionResolvedVersion()
                             .setProcessDefinitionKey(1L)
                             .setVersion(3)
                             .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
                     .addResolvedVersion(
-                        new ProcessDefinitionSuspensionEntry()
+                        new ProcessDefinitionSuspensionResolvedVersion()
                             .setProcessDefinitionKey(2L)
                             .setVersion(2)
                             .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED))
