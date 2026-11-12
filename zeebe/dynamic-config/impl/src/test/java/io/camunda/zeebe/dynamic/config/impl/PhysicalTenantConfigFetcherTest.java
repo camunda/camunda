@@ -90,6 +90,23 @@ final class PhysicalTenantConfigFetcherTest {
   }
 
   @Test
+  void shouldFetchIntoAStoreWithoutADataDirectoryAndAskNoPeerTheSecondTime() {
+    // given
+    final var fetcher =
+        new PhysicalTenantConfigFetcher(communication, PhysicalTenantConfigStore.inMemory());
+    answer(PEER_1, CompletableFuture.completedFuture(CONFIGURATION));
+    fetcher.fetch("tenant", reference(), List.of(PEER_1)).join();
+
+    // when
+    final var fetched = fetcher.fetch("tenant", reference(), List.of(PEER_1)).join();
+
+    // then
+    assertThat(fetched).isEqualTo(CONFIGURATION);
+    verify(communication)
+        .send(any(), any(), any(), any(), any(MemberId.class), any(Duration.class));
+  }
+
+  @Test
   void shouldNotTrustAStoredConfigurationThatDoesNotMatchTheHash() {
     // given
     final var store = new PhysicalTenantConfigStore(dataDirectory);

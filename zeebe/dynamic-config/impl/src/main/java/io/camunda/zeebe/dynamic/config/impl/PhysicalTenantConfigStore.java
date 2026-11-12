@@ -17,8 +17,12 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Keeps the configurations of physical tenants on this member's disk, one file per tenant and
@@ -30,14 +34,31 @@ public final class PhysicalTenantConfigStore {
 
   static final String DIRECTORY_NAME = "physical-tenant-configs";
 
-  private final Path directory;
+  private final @Nullable Path directory;
+  private final Map<String, byte[]> inMemory = new ConcurrentHashMap<>();
 
   public PhysicalTenantConfigStore(final Path dataRootDirectory) {
     directory = dataRootDirectory.resolve(DIRECTORY_NAME);
   }
 
+  private PhysicalTenantConfigStore() {
+    directory = null;
+  }
+
+  /**
+   * A store that keeps the configurations in memory only, for a node without a data directory, such
+   * as a standalone gateway, which fetches what it needs again after a restart.
+   */
+  public static PhysicalTenantConfigStore inMemory() {
+    return new PhysicalTenantConfigStore();
+  }
+
   /** Stores the configuration durably; storing the same version again replaces it. */
   public void put(final String physicalTenantId, final long version, final byte[] configuration) {
+    if (directory == null) {
+      inMemory.put(physicalTenantId + "/" + version, configuration.clone());
+      return;
+    }
     final var file = file(physicalTenantId, version);
     try {
       FileUtil.ensureDirectoryExists(FileUtil.requireParent(file));
@@ -54,6 +75,9 @@ public final class PhysicalTenantConfigStore {
   }
 
   public Optional<byte[]> get(final String physicalTenantId, final long version) {
+    if (directory == null) {
+      return Optional.ofNullable(inMemory.get(physicalTenantId + "/" + version)).map(byte[]::clone);
+    }
     try {
       return Optional.of(Files.readAllBytes(file(physicalTenantId, version)));
     } catch (final NoSuchFileException e) {
@@ -78,6 +102,6 @@ public final class PhysicalTenantConfigStore {
   }
 
   private Path file(final String physicalTenantId, final long version) {
-    return directory.resolve(physicalTenantId).resolve(version + ".config");
+    return Objects.requireNonNull(directory).resolve(physicalTenantId).resolve(version + ".config");
   }
 }
