@@ -45,6 +45,7 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.Tag;
 import net.jqwik.api.Tuple;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -63,6 +64,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * with random keys missing and random unknown entries in between, at a random offset of a larger
  * buffer.
  */
+@Tag("randomized")
 final class GeneratedCodecPropertyTest {
 
   private static final String IMPORTS =
