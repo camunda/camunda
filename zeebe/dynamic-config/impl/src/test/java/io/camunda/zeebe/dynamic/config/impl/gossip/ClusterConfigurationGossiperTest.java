@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
@@ -269,6 +270,36 @@ final class ClusterConfigurationGossiperTest {
   }
 
   @Test
+  void shouldGossipConfigurationToMemberThatJoinedAfterTheLastRefresh() {
+    // given - a sync round has cached the members known at that time
+    final var fixture = new SyncFixture(1);
+    fixture.addPeer("a");
+    fixture.addPeer("b");
+    fixture.start();
+    fixture.executor.runAll();
+
+    // when - a member joins and the configuration is updated afterwards
+    final var joined = fixture.addPeer("joined");
+    fixture.gossiper.event(
+        new ClusterMembershipEvent(
+            ClusterMembershipEvent.Type.MEMBER_ADDED,
+            Member.member(joined, Address.from("localhost:1"))));
+    final var configuration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MemberId.from("local"), MemberState.initializeAsActive(Map.of())));
+    fixture.gossiper.updateCurrentClusterConfiguration(configuration);
+
+    // then - the new configuration is gossiped to the joined member, not only the empty state
+    // gossiped on join
+    final var gossiped = ArgumentCaptor.forClass(ClusterConfigurationGossipState.class);
+    verify(fixture.communicationService, times(2))
+        .unicast(any(), gossiped.capture(), any(), eq(joined), eq(true));
+    assertThat(gossiped.getAllValues().getLast().getCurrentClusterConfiguration())
+        .isEqualTo(configuration);
+  }
+
+  @Test
   void shouldSyncWithEveryPeerBeforeRepeatingOne() {
     // given
     final var fixture = new SyncFixture();
@@ -441,6 +472,10 @@ final class ClusterConfigurationGossiperTest {
     private final ClusterConfigurationGossiper gossiper;
 
     private SyncFixture() {
+      this(0);
+    }
+
+    private SyncFixture(final int gossipFanout) {
       final var localMember =
           Member.member(MemberId.from("local"), Address.from("localhost:26501"));
       members.add(localMember);
@@ -456,7 +491,7 @@ final class ClusterConfigurationGossiperTest {
               new ClusterConfigurationGossiperConfig(
                   Duration.ofMillis(100),
                   Duration.ofSeconds(1),
-                  0,
+                  gossipFanout,
                   Duration.ofSeconds(1),
                   Duration.ofSeconds(1)),
               receivedConfigurations::add,
