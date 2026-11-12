@@ -40,7 +40,127 @@ public enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
     }
+  },
+
+  ACTIVATION_REQUESTS {
+    @Override
+    public String getDescription() {
+      return "Number of requests sent to brokers to activate jobs for one poll";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.gateway.activation.requests";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ActivationKeyNames.values();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
+    }
+  },
+
+  ACTIVATION_ROUNDS {
+    @Override
+    public String getDescription() {
+      return "Longest chain of broker requests that had to wait for one another to activate jobs for"
+          + " one poll";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.gateway.activation.rounds";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ActivationKeyNames.values();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
+    }
+  },
+
+  ACTIVATION_JOBS {
+    @Override
+    public String getDescription() {
+      return "Number of jobs received from all partitions for one poll";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.gateway.activation.jobs";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ActivationKeyNames.values();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
+    }
+  },
+
+  ACTIVATION_PARTITION_JOBS {
+    @Override
+    public String getDescription() {
+      return "Number of jobs received from one partition for one poll, for every partition asked";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.gateway.activation.partition.jobs";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ActivationKeyNames.values();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
+    }
   };
+
+  @SuppressWarnings("NullableProblems")
+  public enum ActivationKeyNames implements KeyName {
+    /** Whether partitions were asked in parallel ("parallel") or one by one ("sequential") */
+    MODE {
+      @Override
+      public String asString() {
+        return "mode";
+      }
+    }
+  }
 
   @SuppressWarnings("NullableProblems")
   public enum RequestsQueuedKeyNames implements KeyName {

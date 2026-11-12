@@ -10,13 +10,18 @@ package io.camunda.zeebe.gateway.metrics;
 import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.REQUESTS_QUEUED_CURRENT;
 import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQueuedKeyNames.TYPE;
 
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.ActivationKeyNames;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayKeyNames;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
 import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Records the number of long polling requests blocked per job type, for one physical tenant. Every
@@ -26,6 +31,9 @@ import java.util.Objects;
 public sealed class LongPollingMetrics {
 
   private final BoundedMeterCache<StatefulGauge> requestsQueued;
+  private final MeterRegistry registry;
+  private final Tags tags;
+  private final Map<String, DistributionSummary> summaries = new ConcurrentHashMap<>();
 
   LongPollingMetrics(
       final MeterRegistry registry,
@@ -42,10 +50,19 @@ public sealed class LongPollingMetrics {
             .withRegistry(registry);
 
     requestsQueued = BoundedMeterCache.of(registry, provider, TYPE);
+    this.registry = registry;
+    tags =
+        Tags.of(
+            GatewayKeyNames.GATEWAY_PROTOCOL.asString(),
+            gatewayProtocol.value(),
+            PartitionKeyNames.PHYSICAL_TENANT.asString(),
+            physicalTenantId);
   }
 
   protected LongPollingMetrics(final BoundedMeterCache<StatefulGauge> requestsQueued) {
     this.requestsQueued = requestsQueued;
+    registry = null;
+    tags = Tags.empty();
   }
 
   /**
@@ -61,6 +78,34 @@ public sealed class LongPollingMetrics {
     requestsQueued.get(type).set(count);
   }
 
+  /** Records what it took to activate jobs for one poll */
+  public void recordPoll(final JobActivationPollStats stats) {
+    final var modeTags =
+        tags.and(ActivationKeyNames.MODE.asString(), stats.parallel() ? "parallel" : "sequential");
+    summary(LongPollingMetricsDoc.ACTIVATION_REQUESTS, modeTags).record(stats.requests());
+    summary(LongPollingMetricsDoc.ACTIVATION_ROUNDS, modeTags).record(stats.rounds());
+    summary(LongPollingMetricsDoc.ACTIVATION_JOBS, modeTags).record(stats.jobs());
+    stats
+        .jobsPerPartition()
+        .forEach(
+            (partitionId, jobs) ->
+                summary(
+                        LongPollingMetricsDoc.ACTIVATION_PARTITION_JOBS,
+                        modeTags.and(
+                            PartitionKeyNames.PARTITION.asString(), partitionId.toString()))
+                    .record(jobs));
+  }
+
+  private DistributionSummary summary(final LongPollingMetricsDoc doc, final Tags summaryTags) {
+    return summaries.computeIfAbsent(
+        doc.getName() + summaryTags,
+        key ->
+            DistributionSummary.builder(doc.getName())
+                .description(doc.getDescription())
+                .tags(summaryTags)
+                .register(registry));
+  }
+
   private static final class Noop extends LongPollingMetrics {
 
     private Noop() {
@@ -69,5 +114,8 @@ public sealed class LongPollingMetrics {
 
     @Override
     public void setBlockedRequestsCount(final String type, final int count) {}
+
+    @Override
+    public void recordPoll(final JobActivationPollStats stats) {}
   }
 }

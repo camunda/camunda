@@ -19,6 +19,7 @@ public final class LongPollingCfg {
       ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
   private Duration notificationBatchWindow =
       ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
+  private boolean parallelActivation;
 
   public long getTimeout() {
     return timeout;
@@ -52,6 +53,14 @@ public final class LongPollingCfg {
     this.notificationBatchWindow = notificationBatchWindow;
   }
 
+  public boolean isParallelActivation() {
+    return parallelActivation;
+  }
+
+  public void setParallelActivation(final boolean parallelActivation) {
+    this.parallelActivation = parallelActivation;
+  }
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -63,7 +72,13 @@ public final class LongPollingCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, timeout, probeTimeout, minEmptyResponses, notificationBatchWindow);
+    return Objects.hash(
+        enabled,
+        timeout,
+        probeTimeout,
+        minEmptyResponses,
+        notificationBatchWindow,
+        parallelActivation);
   }
 
   @Override
@@ -79,7 +94,8 @@ public final class LongPollingCfg {
         && timeout == that.timeout
         && probeTimeout == that.probeTimeout
         && minEmptyResponses == that.minEmptyResponses
-        && Objects.equals(notificationBatchWindow, that.notificationBatchWindow);
+        && Objects.equals(notificationBatchWindow, that.notificationBatchWindow)
+        && parallelActivation == that.parallelActivation;
   }
 
   @Override
@@ -95,6 +111,8 @@ public final class LongPollingCfg {
         + minEmptyResponses
         + ", notificationBatchWindow="
         + notificationBatchWindow
+        + ", parallelActivation="
+        + parallelActivation
         + '}';
   }
 }

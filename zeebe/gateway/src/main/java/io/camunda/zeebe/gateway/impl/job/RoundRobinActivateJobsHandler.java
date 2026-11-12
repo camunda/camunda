@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.metrics.JobActivationPollStats;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -29,7 +30,8 @@ import java.util.function.Function;
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
  */
-public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandler<T> {
+public final class RoundRobinActivateJobsHandler<T>
+    implements ActivateJobsHandler<T>, PartitionedActivateJobsHandler<T> {
 
   private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
       new ConcurrentHashMap<>();
@@ -74,15 +76,18 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           topology.getPartitionsCount(),
           inflightRequest,
           responseObserver::onError,
-          (remainingAmount, resourceExhaustedWasPresent) -> responseObserver.onCompleted());
+          (remainingAmount, resourceExhaustedWasPresent) -> responseObserver.onCompleted(),
+          stats -> {});
     }
   }
 
+  @Override
   public void activateJobs(
       final int partitionsCount,
       final InflightActivateJobsRequest<T> request,
       final Consumer<Throwable> onError,
-      final BiConsumer<Integer, Boolean> onCompleted) {
+      final BiConsumer<Integer, Boolean> onCompleted,
+      final Consumer<JobActivationPollStats> onPollFinished) {
     final var jobType = request.getType();
     final var maxJobsToActivate = request.getMaxJobsToActivate();
     final var partitionIterator =
@@ -91,7 +96,16 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
 
     final var requestState =
         new InflightActivateJobsRequestState(partitionIterator, maxJobsToActivate);
-    final var delegate = new ResponseObserverDelegate(onError, onCompleted);
+    final var delegate =
+        new ResponseObserverDelegate(
+            error -> {
+              onPollFinished.accept(requestState.pollStats());
+              onError.accept(error);
+            },
+            (remainingAmount, resourceExhausted) -> {
+              onPollFinished.accept(requestState.pollStats());
+              onCompleted.accept(remainingAmount, resourceExhausted);
+            });
 
     activateJobs(request, requestState, delegate);
   }
@@ -114,6 +128,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
             final var remainingAmount = requestState.getRemainingAmount();
 
             // partitions to check and jobs to activate left
+            requestState.recordRequest(partitionId);
             brokerRequest.setPartitionId(partitionId);
             brokerRequest.setMaxJobsToActivate(remainingAmount);
 
@@ -152,12 +167,13 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final BrokerResponse<JobBatchRecord> brokerResponse) {
     actor.run(
         () -> {
-          final var outcome = delivery.deliver(actor, request, brokerResponse);
+          final var outcome = delivery.deliver(actor, request, brokerResponse, Integer.MAX_VALUE);
           if (outcome.wasUndelivered()) {
             cancelActivateJobsRequest(outcome.undeliveredReason(), delegate);
             return;
           }
 
+          requestState.recordJobs(requestState.getCurrentPartition(), outcome.jobsCount());
           final var remainingJobsToActivate =
               requestState.getRemainingAmount() - outcome.jobsCount();
           final var shouldPollCurrentPartitionAgain = brokerResponse.getResponse().getTruncated();

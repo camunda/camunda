@@ -43,7 +43,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private static final String PURGE_ERROR_MSG =
       "Cluster was purged; pending job activation requests have been cancelled. Please retry.";
 
-  private final RoundRobinActivateJobsHandler<T> activateJobsHandler;
+  private final PartitionedActivateJobsHandler<T> activateJobsHandler;
   private final BrokerClient brokerClient;
 
   private final Map<JobTypeKey, InFlightLongPollingActivateJobsRequestsState<T>> jobTypeState =
@@ -70,11 +70,21 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Exception> resourceExhaustedExceptionProvider,
       final Function<String, Throwable> requestCanceledExceptionProvider,
-      final LongPollingMetricsFactory metricsFactory) {
+      final LongPollingMetricsFactory metricsFactory,
+      final boolean parallelActivation) {
     this.brokerClient = brokerClient;
     activateJobsHandler =
-        new RoundRobinActivateJobsHandler<>(
-            brokerClient, maxMessageSize, activationResultMapper, requestCanceledExceptionProvider);
+        parallelActivation
+            ? new ParallelActivateJobsHandler<>(
+                brokerClient,
+                maxMessageSize,
+                activationResultMapper,
+                requestCanceledExceptionProvider)
+            : new RoundRobinActivateJobsHandler<>(
+                brokerClient,
+                maxMessageSize,
+                activationResultMapper,
+                requestCanceledExceptionProvider);
     this.resourceExhaustedExceptionProvider = resourceExhaustedExceptionProvider;
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
@@ -109,6 +119,10 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
         topic(physicalTenantId),
         this,
         jobType -> onJobAvailableNotification(physicalTenantId, jobType));
+    brokerClient.subscribeJobAvailableNotification(
+        partitionHintTopic(physicalTenantId),
+        this,
+        message -> onPartitionHintNotification(physicalTenantId, message));
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       brokerClient.subscribeJobAvailableNotification(
           JOBS_AVAILABLE_TOPIC,
@@ -120,6 +134,29 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   /** The physicalTenantId-scoped topic name, used for every physical tenant, including default. */
   private static String topic(final String physicalTenantId) {
     return physicalTenantId + "-" + JOBS_AVAILABLE_TOPIC;
+  }
+
+  /**
+   * Topic on which brokers say which partition has jobs of which type, as "partitionId:jobType".
+   * Brokers send it in addition to the topics that only carry the job type, so it is only used to
+   * prioritize partitions and never to wake up requests.
+   */
+  private static String partitionHintTopic(final String physicalTenantId) {
+    return topic(physicalTenantId) + "-partition";
+  }
+
+  private void onPartitionHintNotification(final String physicalTenantId, final String message) {
+    final var separator = message.indexOf(':');
+    if (separator <= 0) {
+      return;
+    }
+    try {
+      final var partitionId = Integer.parseInt(message.substring(0, separator));
+      activateJobsHandler.hintJobsAvailable(
+          physicalTenantId, message.substring(separator + 1), partitionId);
+    } catch (final NumberFormatException e) {
+      LOG.debug("Ignoring malformed job available hint '{}'", message);
+    }
   }
 
   /** Returns the {@link LongPollingMetrics} tagged for the given physical tenant. */
@@ -279,7 +316,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
                     handlePendingRequests(state, keyOf(request));
                   });
             }
-          });
+          },
+          metricsFor(request.getRequest().getPartitionGroup())::recordPoll);
     }
   }
 
@@ -521,6 +559,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     private Function<String, Exception> resourceExhaustedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
     private LongPollingMetricsFactory metricsFactory;
+    private boolean parallelActivation;
 
     public Builder<T> setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -575,6 +614,12 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return this;
     }
 
+    /** Activates jobs on several partitions at once instead of one partition after the other. */
+    public Builder<T> setParallelActivation(final boolean parallelActivation) {
+      this.parallelActivation = parallelActivation;
+      return this;
+    }
+
     public LongPollingActivateJobsHandler<T> build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
       return new LongPollingActivateJobsHandler<>(
@@ -587,7 +632,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           activationResultMapper,
           resourceExhaustedExceptionProvider,
           requestCanceledExceptionProvider,
-          metricsFactory);
+          metricsFactory,
+          parallelActivation);
     }
   }
 }

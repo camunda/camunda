@@ -8,6 +8,9 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
+import io.camunda.zeebe.gateway.metrics.JobActivationPollStats;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class InflightActivateJobsRequestState {
 
@@ -15,6 +18,8 @@ public class InflightActivateJobsRequestState {
   private int remainingAmount;
   private boolean pollPrevPartition;
   private boolean resourceExhaustedWasPresent;
+  private int requests;
+  private final Map<Integer, Integer> jobsPerPartition = new TreeMap<>();
 
   public InflightActivateJobsRequestState(
       final PartitionIdIterator iterator, final int remainingAmount) {
@@ -56,5 +61,21 @@ public class InflightActivateJobsRequestState {
 
   public boolean shouldActivateJobs() {
     return remainingAmount > 0 && (pollPrevPartition || hasNextPartition());
+  }
+
+  /** Counts a request to the partition, for {@link #pollStats()}. */
+  public void recordRequest(final int partitionId) {
+    requests++;
+    jobsPerPartition.putIfAbsent(partitionId, 0);
+  }
+
+  /** Counts jobs received from the partition, for {@link #pollStats()}. */
+  public void recordJobs(final int partitionId, final int jobs) {
+    jobsPerPartition.merge(partitionId, jobs, Integer::sum);
+  }
+
+  /** Every request waits for the one before it, so there are as many rounds as requests. */
+  public JobActivationPollStats pollStats() {
+    return new JobActivationPollStats(false, requests, requests, Map.copyOf(jobsPerPartition));
   }
 }

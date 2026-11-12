@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -34,6 +35,9 @@ final class ActivatedJobsDelivery<T> {
   private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
       "the response is bigger than the maximum allowed message size %d";
 
+  private static final String SURPLUS_JOBS_MSG =
+      "more jobs were activated than the request asked for";
+
   private final BrokerClient brokerClient;
   private final long maxMessageSize;
   private final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
@@ -51,14 +55,24 @@ final class ActivatedJobsDelivery<T> {
    * Sends the jobs of the given response to the client.
    *
    * @param actor the actor on which failures to reactivate jobs are reported
+   * @param maxJobs the number of jobs the client can still receive; jobs beyond that are given back
    * @return the number of jobs that were sent, or why the jobs could not be sent
    */
   Outcome deliver(
       final ActorControl actor,
       final InflightActivateJobsRequest<T> request,
-      final BrokerResponse<JobBatchRecord> brokerResponse) {
+      final BrokerResponse<JobBatchRecord> brokerResponse,
+      final int maxJobs) {
     final var response = brokerResponse.getResponse();
     final var partitionGroup = request.getRequest().getPartitionGroup();
+    final var surplusJobs = removeJobsBeyond(response, maxJobs);
+    if (!surplusJobs.isEmpty()) {
+      final var reason = SURPLUS_JOBS_MSG;
+      logResponseNotSent(
+          request.getType(), surplusJobs.stream().map(ActivatedJob::key).toList(), reason);
+      reactivateJobs(actor, surplusJobs, reason, partitionGroup);
+    }
+
     final JobActivationResult<T> jobActivationResult =
         activationResultMapper.apply(
             new JobActivationResponse(
@@ -89,6 +103,21 @@ final class ActivatedJobsDelivery<T> {
     }
 
     return new Outcome(jobsCount, null);
+  }
+
+  /** Removes the jobs beyond the first {@code maxJobs} from the response, and returns them. */
+  private static List<ActivatedJob> removeJobsBeyond(
+      final JobBatchRecord response, final int maxJobs) {
+    final var surplusJobs = new ArrayList<ActivatedJob>();
+    final var keys = response.jobKeys();
+    final var jobs = response.jobs();
+    while (keys.size() > Math.max(maxJobs, 0) && jobs.size() > Math.max(maxJobs, 0)) {
+      final var last = keys.size() - 1;
+      surplusJobs.add(new ActivatedJob(keys.get(last).getValue(), jobs.get(last).getRetries()));
+      keys.remove(last);
+      jobs.remove(last);
+    }
+    return surplusJobs;
   }
 
   private String createReasonMessage(final Either<Exception, Boolean> resultValue) {

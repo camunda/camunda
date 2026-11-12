@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collections;
 import java.util.List;
@@ -50,45 +51,49 @@ final class LongPollingActivateJobsHandlerMetricsTest {
 
   @BeforeEach
   void setUp() {
-    handler =
-        LongPollingActivateJobsHandler.newBuilder()
-            .setBrokerClient(brokerClient)
-            .setMaxMessageSize(MAX_MESSAGE_SIZE)
-            .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
-            .setProbeTimeoutMillis(PROBE_TIMEOUT)
-            .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
-            .setActivationResultMapper(
-                response ->
-                    new JobActivationResult<>() {
-                      @Override
-                      public int getJobsCount() {
-                        return response.brokerResponse().getJobKeys().size();
-                      }
-
-                      @Override
-                      public List<JobActivationResult.ActivatedJob> getJobs() {
-                        return Collections.emptyList();
-                      }
-
-                      @Override
-                      public Object getActivateJobsResponse() {
-                        return response;
-                      }
-
-                      @Override
-                      public List<JobActivationResult.ActivatedJob> getJobsToDefer() {
-                        return Collections.emptyList();
-                      }
-                    })
-            .setResourceExhaustedExceptionProvider(RuntimeException::new)
-            .setRequestCanceledExceptionProvider(RuntimeException::new)
-            .setMetricsFactory(new LongPollingMetricsFactory(meterRegistry, GatewayProtocol.GRPC))
-            .build();
+    handler = buildHandler(false);
     submitHandlerActor(handler);
 
     activateJobsStub = new ActivateJobsStub();
     activateJobsStub.registerWith(brokerClient);
     activateJobsStub.addAvailableJobs(TYPE, 0);
+  }
+
+  private LongPollingActivateJobsHandler<Object> buildHandler(final boolean parallelActivation) {
+    return LongPollingActivateJobsHandler.newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMaxMessageSize(MAX_MESSAGE_SIZE)
+        .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
+        .setProbeTimeoutMillis(PROBE_TIMEOUT)
+        .setMinEmptyResponses(FAILED_RESPONSE_THRESHOLD)
+        .setActivationResultMapper(
+            response ->
+                new JobActivationResult<>() {
+                  @Override
+                  public int getJobsCount() {
+                    return response.brokerResponse().getJobKeys().size();
+                  }
+
+                  @Override
+                  public List<JobActivationResult.ActivatedJob> getJobs() {
+                    return Collections.emptyList();
+                  }
+
+                  @Override
+                  public Object getActivateJobsResponse() {
+                    return response;
+                  }
+
+                  @Override
+                  public List<JobActivationResult.ActivatedJob> getJobsToDefer() {
+                    return Collections.emptyList();
+                  }
+                })
+        .setResourceExhaustedExceptionProvider(RuntimeException::new)
+        .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .setMetricsFactory(new LongPollingMetricsFactory(meterRegistry, GatewayProtocol.GRPC))
+        .setParallelActivation(parallelActivation)
+        .build();
   }
 
   @Test
@@ -119,7 +124,66 @@ final class LongPollingActivateJobsHandlerMetricsTest {
     assertThat(blockedRequestsGauge("tenanta")).isEqualTo(0);
   }
 
+  @Test
+  void shouldRecordRequestsAndRoundsPerPollForSequentialActivation() {
+    // when — a poll that finds no jobs on any partition
+    submitPendingRequest("tenanta");
+
+    // then — partitions are asked one after the other
+    final var partitions = brokerClient.getTopologyManager().getTopology().getPartitionsCount();
+    assertThat(pollSummary("zeebe.gateway.activation.requests", "sequential").totalAmount())
+        .isEqualTo(partitions);
+    assertThat(pollSummary("zeebe.gateway.activation.rounds", "sequential").totalAmount())
+        .isEqualTo(partitions);
+    assertThat(pollSummary("zeebe.gateway.activation.jobs", "sequential").totalAmount()).isZero();
+  }
+
+  @Test
+  void shouldRecordOneRoundPerPollForParallelActivationWithoutJobs() {
+    // given
+    handler = buildHandler(true);
+    submitHandlerActor(handler);
+
+    // when
+    final var partitions = brokerClient.getTopologyManager().getTopology().getPartitionsCount();
+    submitPendingRequest("tenanta", partitions * 2);
+
+    // then — all partitions are asked at once
+    assertThat(pollSummary("zeebe.gateway.activation.requests", "parallel").totalAmount())
+        .isEqualTo(partitions);
+    assertThat(pollSummary("zeebe.gateway.activation.rounds", "parallel").totalAmount())
+        .isEqualTo(1);
+  }
+
+  @Test
+  void shouldRecordJobsPerPartitionPerPoll() {
+    // given
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+
+    // when
+    submitPendingRequest("tenanta");
+
+    // then
+    assertThat(pollSummary("zeebe.gateway.activation.jobs", "sequential").totalAmount())
+        .isEqualTo(1);
+    final var partitionJobs =
+        meterRegistry
+            .find("zeebe.gateway.activation.partition.jobs")
+            .tag("physicalTenant", "tenanta")
+            .tag("mode", "sequential")
+            .summaries();
+    assertThat(partitionJobs.stream().mapToDouble(DistributionSummary::totalAmount).sum())
+        .isEqualTo(1);
+  }
+
   // -- helpers --
+
+  private DistributionSummary pollSummary(final String name, final String mode) {
+    final var summary =
+        meterRegistry.find(name).tag("physicalTenant", "tenanta").tag("mode", mode).summary();
+    assertThat(summary).describedAs("%s for mode %s", name, mode).isNotNull();
+    return summary;
+  }
 
   private Double blockedRequestsGauge(final String physicalTenantId) {
     final var gauge =
@@ -133,9 +197,13 @@ final class LongPollingActivateJobsHandlerMetricsTest {
   }
 
   private void submitPendingRequest(final String physicalTenantId) {
+    submitPendingRequest(physicalTenantId, MAX_JOBS_TO_ACTIVATE);
+  }
+
+  private void submitPendingRequest(final String physicalTenantId, final int maxJobs) {
     final var brokerRequest =
         new BrokerActivateJobsRequest(TYPE)
-            .setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
+            .setMaxJobsToActivate(maxJobs)
             .setTimeout(LONG_POLLING_TIMEOUT)
             .setTenantIds(Collections.emptyList())
             .setVariables(Collections.emptyList())
