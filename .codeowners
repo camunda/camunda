@@ -252,6 +252,7 @@ mwnw*                       @camunda/engineering-operations
 /zeebe/protocol-test-util/  @camunda/core-features
 /zeebe/msgpack-core/        @camunda/core-features
 /zeebe/msgpack-value/       @camunda/core-features
+/zeebe/msgpack-codegen/     @camunda/core-features
 
 # Secret store SPI
 /secret-store/              @camunda/core-features
