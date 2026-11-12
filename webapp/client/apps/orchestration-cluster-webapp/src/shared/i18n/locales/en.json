@@ -1387,8 +1387,6 @@
 					"emptyMessage": "There are no Instances matching this filter set",
 					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
 					"tableLabel": "Process instances",
-					"loadingPreviousPage": "Loading previous process instances",
-					"loadingNextPage": "Loading next process instances",
 					"errorTitle": "Couldn't fetch data",
 					"errorDescription": "Something went wrong while loading the instances. Try again."
 				},
@@ -1491,9 +1489,7 @@
 					"selectRow": "Select row {{key}}",
 					"stateEvaluated": "Evaluated",
 					"stateFailed": "Failed",
-					"tableLabel": "Decision instances",
-					"loadingPreviousPage": "Loading previous decision instances",
-					"loadingNextPage": "Loading next decision instances"
+					"tableLabel": "Decision instances"
 				},
 				"toolbar": {
 					"delete": "Delete",
@@ -2122,9 +2118,7 @@
 					"date": "Date",
 					"result": "Result",
 					"actions": "Actions",
-					"tableLabel": "Operations log",
-					"loadingPreviousPage": "Loading previous operations log entries",
-					"loadingNextPage": "Loading next operations log entries"
+					"tableLabel": "Operations log"
 				},
 				"emptyState": {
 					"noItemsTitle": "No operation log items yet",
@@ -2268,8 +2262,6 @@
 				"ds": {
 					"itemsTable": {
 						"tableLabel": "Batch operation items",
-						"loadingPreviousPage": "Loading previous items",
-						"loadingNextPage": "Loading more items",
 						"expandFailure": "Show failure details",
 						"collapseFailure": "Hide failure details"
 					}

@@ -94,7 +94,7 @@ describe('<BatchItemsTable />', () => {
 								processInstanceKey: '2251799813685250',
 							}),
 						],
-						page: {totalItems: 60, hasMoreTotalItems: true},
+						page: SINGLE_PAGE,
 					}),
 				),
 			}),

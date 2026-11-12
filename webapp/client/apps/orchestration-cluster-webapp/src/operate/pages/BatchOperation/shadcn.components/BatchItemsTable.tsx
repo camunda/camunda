@@ -220,8 +220,6 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 						rows={items}
 						rowKey={(row) => row.itemKey}
 						ariaLabel={t('operate.batchOperation.ds.itemsTable.tableLabel')}
-						loadingPreviousPageLabel={t('operate.batchOperation.ds.itemsTable.loadingPreviousPage')}
-						loadingNextPageLabel={t('operate.batchOperation.ds.itemsTable.loadingNextPage')}
 						expandRowLabel={t('operate.batchOperation.ds.itemsTable.expandFailure')}
 						collapseRowLabel={t('operate.batchOperation.ds.itemsTable.collapseFailure')}
 						expansion={(row) =>
