@@ -13,6 +13,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {buildUrl, jsonHeaders} from 'utils/http';
+import {sleep} from 'utils/sleep';
 
 test.beforeAll(async () => {
   const deployment = await deploy([
@@ -234,6 +235,10 @@ test.describe('process page', () => {
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
     await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
+    // Not a wait for the system: form-js debounces field changes into the
+    // form state, and nothing in the DOM signals when that has happened.
+    // Submitting earlier can send a stale value and the submit is rejected.
+    await sleep(500);
     await tasklistProcessesPage.clickStartProcessSubButton();
 
     await tasklistHeader.clickTasksTab();

@@ -293,6 +293,10 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 231');
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
+    // Not a wait for the system: form-js debounces field changes into the
+    // form state, and nothing in the DOM signals when that has happened.
+    // Submitting earlier can send a stale value and the submit is rejected.
+    await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
 
     // 60s was hit by the May 20 nightly — give completion more headroom on
