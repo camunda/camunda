@@ -678,6 +678,24 @@ camunda: # Type: io.camunda.configuration.Camunda
       # when using the S3-based node ID provider with versioned directories enabled. Older versions beyond
       # this count will be deleted after the current version is validated.
       versioned-directory-retention-count: 2 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_VERSIONEDDIRECTORYRETENTIONCOUNT
+      write-behind-cache: # Type: io.camunda.configuration.data.primarystorage.WriteBehindCache  
+        # The most distinct keys the writer writes to RocksDB in one transaction. A larger transaction is
+        # written alone.
+        batch-size: 1000 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_BATCHSIZE
+        # The size of the in-memory read cache.
+        cache-size: "64MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_CACHESIZE
+        # Whether each partition's state goes through the write-behind cache.
+        enabled: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_ENABLED
+        # The key and value bytes of committed state that RocksDB doesn't have yet, above which commits wait
+        # for the writer.
+        max-pending-size: "32MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_MAXPENDINGSIZE
+        # How long committed state waits at most before the writer writes it to RocksDB, unless a batch fills
+        # first. Longer delays combine more writes of the same keys; shorter ones keep RocksDB closer to the
+        # cache.
+        max-write-delay: "100ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_MAXWRITEDELAY
+        # How long a snapshot waits for the writer to write everything committed before it. If it takes
+        # longer, that snapshot fails and the next one is tried at the next snapshot interval.
+        snapshot-catch-up-timeout: "30s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_WRITEBEHINDCACHE_SNAPSHOTCATCHUPTIMEOUT
     
     secondary-storage: # Type: io.camunda.configuration.data.SecondaryStorage  
       # When enabled, the default exporter camundaexporter is automatically configured using the

@@ -52,7 +52,7 @@ dependencies {
   api(libs.com.google.guava.guava)
   implementation(project(":camunda-search-client-opensearch"))
   api(libs.org.opensearch.client.opensearch.java)
-  implementation(project(":zeebe-db"))
+  implementation(project(":zeebe-db-rocksdb"))
 }
 
 description = "Zeebe QA Utilities"

@@ -38,6 +38,7 @@ public final class DataCfg implements ConfigurationEntry {
   private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
   private BackupCfg backup = new BackupCfg();
+  private WriteBehindCacheCfg writeBehindCache = new WriteBehindCacheCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -164,6 +165,14 @@ public final class DataCfg implements ConfigurationEntry {
     this.backup = backup;
   }
 
+  public WriteBehindCacheCfg getWriteBehindCache() {
+    return writeBehindCache;
+  }
+
+  public void setWriteBehindCache(final WriteBehindCacheCfg writeBehindCache) {
+    this.writeBehindCache = writeBehindCache;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
@@ -191,6 +200,8 @@ public final class DataCfg implements ConfigurationEntry {
         + disk
         + ", backup="
         + backup
+        + ", writeBehindCache="
+        + writeBehindCache
         + '}';
   }
 }

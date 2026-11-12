@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -785,8 +786,8 @@ public final class EngineErrorHandlingTest {
         .contains("process instance is banned due to previous errors");
     assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
 
-    // verify response was sent to client
-    verify(mockCommandResponseWriter).tryWriteResponse(eq(1), eq(100L));
+    // verify response was sent to client - only after the rejection is written and committed
+    verify(mockCommandResponseWriter, timeout(5_000)).tryWriteResponse(eq(1), eq(100L));
 
     // verify the processor was called only once (for the first command that failed)
     assertThat(processor.getProcessCount()).isEqualTo(1);

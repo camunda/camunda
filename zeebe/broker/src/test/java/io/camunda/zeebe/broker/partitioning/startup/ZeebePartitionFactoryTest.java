@@ -9,9 +9,14 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.util.health.HealthMonitorable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -113,5 +118,36 @@ class ZeebePartitionFactoryTest {
                     ZeebePartitionFactory.resolveRuntimeDirectory(
                         brokerCfg, partitionId, runtimeRoot.toFile())))
         .isInstanceOf(UncheckedIOException.class);
+  }
+
+  @Test
+  void shouldKeepTheStateInTheStorageWhenTheWriteBehindCacheIsDisabled() {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    @SuppressWarnings("unchecked")
+    final ZeebeDbFactory<ZbColumnFamilies> storage = mock(ZeebeDbFactory.class);
+
+    // when
+    final var factory = ZeebePartitionFactory.stateDbFactory(brokerCfg, storage);
+
+    // then
+    assertThat(factory).isSameAs(storage);
+  }
+
+  @Test
+  void shouldPutTheStateBehindAHealthMonitoredCacheWhenEnabled(@TempDir final Path runtime)
+      throws Exception {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getWriteBehindCache().setEnabled(true);
+
+    // when
+    final var factory =
+        ZeebePartitionFactory.stateDbFactory(brokerCfg, DefaultZeebeDbFactory.defaultFactory());
+
+    // then - the partition registers it with its health monitor, so a failing writer shows up
+    try (final var db = factory.createDb(runtime.toFile())) {
+      assertThat(db).isInstanceOf(HealthMonitorable.class);
+    }
   }
 }

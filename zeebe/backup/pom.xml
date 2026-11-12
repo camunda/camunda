@@ -46,7 +46,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db</artifactId>
+      <artifactId>zeebe-db-api</artifactId>
     </dependency>
 
     <dependency>
@@ -146,6 +146,12 @@
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db-rocksdb</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>

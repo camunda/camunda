@@ -13,7 +13,7 @@ dependencies {
   testImplementation(project(":zeebe-cluster-config-openapi"))
   testImplementation(project(":zeebe-cluster-config-impl"))
   testImplementation(project(":zeebe-broker"))
-  testImplementation(project(":zeebe-db"))
+  testImplementation(project(":zeebe-db-rocksdb"))
   testImplementation(projectArtifact(":zeebe-broker", ArtifactKind.TESTS))
   testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
   testImplementation(project(":zeebe-logstreams"))
