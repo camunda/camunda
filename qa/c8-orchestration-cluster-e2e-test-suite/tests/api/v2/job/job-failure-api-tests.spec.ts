@@ -17,16 +17,31 @@ import {
 import {
   activateJobToObtainAValidJobKey,
   activateSingleJob,
+  createInstanceOnceDeployed,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
+import {
+  cancelProcessInstance,
+  deployWithSubstitutions,
+} from '../../../../utils/zeebeClient';
+import {uniquePrefixedId} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
-  const {state, beforeAll, beforeEach, afterEach} =
-    setupProcessInstanceForTests('job_api_process', 'jobApiProcess');
+  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
+    'job_api_process',
+    'jobApiProcess',
+  );
+  // Instances this spec deploys per test, torn down alongside the shared one.
+  const isolatedInstances: string[] = [];
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
+  test.afterEach(async () => {
+    for (const processInstanceKey of isolatedInstances.splice(0)) {
+      await cancelProcessInstance(processInstanceKey, {ignoreNotFound: true});
+    }
+  });
 
   test('Fail Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(
@@ -77,18 +92,27 @@ test.describe('Job Fail API Tests', () => {
 
   test('Fail Job - 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
-    await test.step('First activate a job', async () => {
-      // Scope activation to this test's own process instance. 'jobApiTaskType'
-      // is shared by the sibling job-* specs that run on parallel workers, so
-      // activating "any" job of that type can hand back a job owned by another
-      // test, whose afterEach then cancels the instance and deletes the job
-      // mid-test — turning the /failure calls below into 404s instead of the
-      // expected 204/409. activateSingleJob filters by processInstanceKey and
-      // retries until this instance's own job is activatable.
+    // The shared 'jobApiProcess'/'jobApiTaskType' pair is deployed by four
+    // sibling job-* specs that run on parallel workers. Activating from that
+    // shared pool hands back whichever job is activatable, so another test's
+    // afterEach could cancel the instance and delete the job mid-test (404
+    // instead of the expected 204/409), and this test's own job could be
+    // activated and completed by the parallel completion spec. A per-test
+    // process id and job type remove the shared ownership entirely.
+    const processDefinitionId = uniquePrefixedId('jobFail409Process');
+    const jobType = uniquePrefixedId('jobFail409TaskType');
+
+    await test.step('Deploy an isolated process and activate its job', async () => {
+      await deployWithSubstitutions('./resources/job_api_process.bpmn', {
+        jobApiProcess: processDefinitionId,
+        'type="jobApiTaskType"': `type="${jobType}"`,
+      });
+      const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+      isolatedInstances.push(instance.processInstanceKey);
       localState['jobKey'] = await activateSingleJob(
         request,
-        'jobApiTaskType',
-        state['processInstanceKey'] as string,
+        jobType,
+        instance.processInstanceKey,
       );
     });
 
