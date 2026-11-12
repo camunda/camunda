@@ -176,12 +176,8 @@ final class RdbmsPartitionStateIT {
   }
 
   /** Takes a snapshot once processing is idle, and waits until it covers everything processed. */
-  private static void awaitSnapshotOfEverythingProcessed(final PartitionsActuator partitions) {
-    final long processedPosition =
-        Awaitility.await("Processing is idle")
-            .atMost(Duration.ofSeconds(30))
-            .during(Duration.ofSeconds(2))
-            .until(() -> partitions.query().get(1).processedPosition(), hasStableValue());
+  static void awaitSnapshotOfEverythingProcessed(final PartitionsActuator partitions) {
+    final long processedPosition = awaitProcessingIsIdle(partitions);
     partitions.takeSnapshot();
     Awaitility.await("The snapshot covers everything processed")
         .atMost(Duration.ofSeconds(60))
@@ -191,5 +187,13 @@ final class RdbmsPartitionStateIT {
                 status.snapshotId() != null
                     && Objects.requireNonNullElse(status.processedPositionInSnapshot(), -1L)
                         >= processedPosition);
+  }
+
+  /** Returns the processed position once it stopped changing. */
+  static long awaitProcessingIsIdle(final PartitionsActuator partitions) {
+    return Awaitility.await("Processing is idle")
+        .atMost(Duration.ofSeconds(30))
+        .during(Duration.ofSeconds(2))
+        .until(() -> partitions.query().get(1).processedPosition(), hasStableValue());
   }
 }

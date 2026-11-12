@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import java.util.function.LongConsumer;
 
@@ -103,9 +104,12 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
     recoverFuture.onComplete(
         (zeebeDb, error) -> {
           if (error != null) {
+            final var message = String.format(RECOVERY_FAILED_ERROR_MSG, context.getPartitionId());
+            // an unrecoverable failure stops the partition, instead of retrying in a new term
             transitionFuture.completeExceptionally(
-                new IllegalStateException(
-                    String.format(RECOVERY_FAILED_ERROR_MSG, context.getPartitionId()), error));
+                error instanceof UnrecoverableException
+                    ? new UnrecoverableException(message, error)
+                    : new IllegalStateException(message, error));
           } else {
             context.setZeebeDb(zeebeDb);
             if (zeebeDb instanceof final HealthMonitorable monitorable) {

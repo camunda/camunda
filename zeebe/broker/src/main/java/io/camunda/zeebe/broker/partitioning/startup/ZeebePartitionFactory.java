@@ -345,7 +345,8 @@ public final class ZeebePartitionFactory {
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
         zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup),
-        concurrencyControl);
+        concurrencyControl,
+        keepsStateInRdbms());
   }
 
   /**

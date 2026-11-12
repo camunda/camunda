@@ -389,10 +389,28 @@ One replica comes first, so each step leaves a broker that works; followers come
 
 ### 9.6 Recovery check and RocksDB-only paths
 
-- After the leader opens the DB, the shared processed position must be at or above the marker's
-  and within the log (ADR D5). Otherwise the partition fails to start.
+- ADR D5 asks that, on recovery, the shared processed position is at or above the marker's and
+  within the log. Two places check this:
+  - `StateControllerImpl`, in RDBMS mode only, opens the DB and compares its processed position
+    with the processed position of the recovered snapshot. If the state is older, it closes the DB
+    and fails with an `UnrecoverableException`. `ZeebeDbPartitionTransitionStep` keeps that failure
+    unrecoverable, so the partition is marked dead and stops. Any other failure would make the
+    leader step down and try again in a new term, claiming the state each time, forever.
+  - The stream processor already fails when the log doesn't contain the processed position: it
+    can't find the next record to process.
+  - In normal operation the first check can't fail: before writing the marker, the cache waits
+    until everything up to the snapshot is in the database (ADR D5). It fails when the database was
+    restored to an earlier point in time. Replaying the log might still work at that moment, but
+    Raft may delete the log up to the marker at any time, so the broker refuses to start.
+  - RocksDB mode doesn't check: there, a snapshot is the state, and existing tests take snapshots
+    ahead of the processed position.
+- Switching the storage type of an existing partition fails, without extra code:
+  - RocksDB to RDBMS: the RocksDB snapshot has no marker, so opening it fails with "has no
+    zeebe-state.properties".
+  - RDBMS to RocksDB: RocksDB can't open a marker ("CURRENT does not exist").
 - `RecoveryPartitionManager#verifyRestoredRocksDb` and the `debug-cli` snapshot tools expect
-  RocksDB files. They skip or clearly reject markers.
+  RocksDB files, and fail on a marker the same way. Left as they are: backups are off in RDBMS mode
+  (§9.7), so a restore never finds a marker.
 
 ### 9.7 Backups
 
@@ -414,6 +432,11 @@ of the checkpoint, then reset the owner terms.
   Each test then completes the jobs of every acknowledged process instance, and checks that the
   state's owner term is the current leader's term. The tests find the leader through Raft and the
   gateway's topology, not through `/actuator/partitions` (§9.5).
+
+- **Restored database:** `PostgresRestoredRdbmsPartitionStateIT` copies the state database, lets
+  the broker process more and take a snapshot, then puts the copy back in place of the database.
+  The partition must stop as dead, with the recovery check's message (§9.6). Without the check it
+  would replay the log and seem healthy.
 
 ## 10. Testing
 
@@ -489,5 +512,6 @@ crash can leave the state ahead of the log.
 9. **feat:** the commit gate fed by Raft and the log stream (§9.4).
 10. **feat:** followers without a `ZeebeDb`, with marker snapshots; more than one replica; the
 follower tests (§9.5, §9.8).
-11. **feat:** the recovery check and the RocksDB-only paths (§9.6).
+11. **feat:** the recovery check, which stops a partition whose state is older than its snapshot;
+the restored-database test (§9.6, §9.8).
 12. Benchmark against RocksDB, with and without the cache, then decide.
