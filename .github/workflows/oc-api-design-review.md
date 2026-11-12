@@ -62,6 +62,37 @@ steps:
       mkdir -p /tmp/gh-aw/pr-review
       gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" > /tmp/gh-aw/pr-review/pr.diff || true
       wc -l /tmp/gh-aw/pr-review/pr.diff
+  # Lists every added line with its new-file line number, so the agent gets exact line numbers for
+  # inline comments without mapping the hunks itself. Runs outside the sandbox, on the diff only.
+  - name: List the changed lines with their line numbers
+    run: |
+      python3 - <<'PY'
+      import re
+
+      hunk = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+      path = None
+      line = 0
+      in_hunk = False
+      with open("/tmp/gh-aw/pr-review/pr.diff", errors="replace") as diff, \
+           open("/tmp/gh-aw/pr-review/changed-lines.txt", "w") as out:
+          for raw in diff:
+              raw = raw.rstrip("\n")
+              if raw.startswith("diff --git "):
+                  path, in_hunk = None, False
+              elif not in_hunk and raw.startswith("+++ "):
+                  target = raw[4:]
+                  path = target[2:] if target.startswith("b/") else None
+              elif (m := hunk.match(raw)):
+                  line, in_hunk = int(m.group(1)), True
+              elif not in_hunk or path is None or raw.startswith("\\"):
+                  continue
+              elif raw.startswith("+"):
+                  out.write(f"{path}:{line}: {raw[1:]}\n")
+                  line += 1
+              elif raw.startswith(" "):
+                  line += 1
+      PY
+      wc -l /tmp/gh-aw/pr-review/changed-lines.txt
   # The skill, the guideline and the linters' rules come from main, not from the pull request
   # head, so a pull request cannot weaken its own review. The trade-off: a pull request that
   # changes the guideline and the spec together is reviewed against main's rules. Everything is
@@ -183,9 +214,8 @@ You have 10 minutes in total. Work in four phases, in this order. The rules are 
 
 - **Changed lines only.** Report only findings on lines this pull request adds or changes.
   Never mention pre-existing problems the pull request did not introduce, however bad. The
-  checkout is the pull request head, and `/tmp/gh-aw/pr-review/pr.diff` holds the pull request's
-  diff as GitHub shows it (merge base to head). Its `+` lines are the changed lines; their
-  line numbers count up from `c` in each `@@ -a,b +c,d @@` hunk header, skipping `-` lines. If
+  checkout is the pull request head. `/tmp/gh-aw/pr-review/changed-lines.txt` lists every added
+  line as `path:line: text`. Use those line numbers for inline comments. If
   the file is empty (GitHub serves no diff for very large pull requests), use the pull request's
   files and their patches from the GitHub tool. Do not diff against the base branch yourself:
   changes merged there since the branch was cut would show up as reversed changes. A finding
