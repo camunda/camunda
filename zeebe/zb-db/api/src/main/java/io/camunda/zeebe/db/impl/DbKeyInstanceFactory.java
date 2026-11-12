@@ -26,6 +26,7 @@ public final class DbKeyInstanceFactory {
       case final DbString ignored -> (T) new DbString();
       case final DbBytes ignored -> (T) new DbBytes();
       case final DbNullKey ignored -> (T) DbNullKey.INSTANCE;
+      case final DbEnumValue<?> value -> (T) new DbEnumValue(value.getEnumType());
       case final DbCompositeKey<?, ?> key ->
           (T) new DbCompositeKey<>(newInstance(key.first()), newInstance(key.second()));
       case final DbForeignKey<?> key ->

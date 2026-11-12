@@ -94,6 +94,23 @@ final class DbKeyInstanceFactoryTest {
   }
 
   @Test
+  void shouldCreateEnumValueOfTheSameEnumType() {
+    // given
+    final var template = new DbEnumValue<>(MatchType.class);
+    template.setValue(MatchType.Prefix);
+
+    // when
+    final var instance = DbKeyInstanceFactory.newInstance(template);
+
+    // then
+    assertThat(instance).isNotSameAs(template);
+    assertThat(instance.getEnumType()).isEqualTo(MatchType.class);
+    instance.setValue(MatchType.Full);
+    assertThat(instance.getValue()).isEqualTo(MatchType.Full);
+    assertThat(template.getValue()).isEqualTo(MatchType.Prefix);
+  }
+
+  @Test
   void shouldCreateOtherKeysThroughTheirNoArgConstructor() {
     // when
     final var instance = DbKeyInstanceFactory.newInstance(new KeyWithNoArgConstructor());
