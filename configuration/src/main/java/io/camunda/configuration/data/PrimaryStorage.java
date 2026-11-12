@@ -68,7 +68,7 @@ public class PrimaryStorage {
   /**
    * Where the partitions keep their state: `rocksdb` on local disk, or `rdbms` in the relational
    * database configured under `rdbms`. The partitions' logs stay on local disk either way. The
-   * `rdbms` type needs the write-behind cache, no backups, and a replication factor of 1.
+   * `rdbms` type needs the write-behind cache and no backups.
    */
   private PrimaryStorageType type = PrimaryStorageType.rocksdb;
 

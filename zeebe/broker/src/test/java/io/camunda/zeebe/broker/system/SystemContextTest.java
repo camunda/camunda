@@ -137,7 +137,6 @@ final class SystemContextTest {
     brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.RDBMS);
     brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
     brokerCfg.getData().getBackup().setContinuous(true);
-    brokerCfg.getCluster().setReplicationFactor(3);
 
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
@@ -147,7 +146,6 @@ final class SystemContextTest {
             "camunda.data.primary-storage.write-behind-cache.enabled must be true",
             "camunda.data.primary-storage.backup.store must be NONE",
             "camunda.data.primary-storage.backup.continuous must be false",
-            "camunda.cluster.replication-factor must be 1, but was 3",
             "[physical tenant 'default']");
   }
 
