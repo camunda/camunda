@@ -68,6 +68,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final Cache<CacheKey, CachedValue> cache;
 
   private long lastSeq; // guarded by commitLock
+  private volatile long lastPublishedSeq;
   private final AtomicReference<@Nullable Throwable> failure = new AtomicReference<>();
   private final List<Consumer<Throwable>> failureListeners = new CopyOnWriteArrayList<>();
 
@@ -155,6 +156,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       final long stamp = publishLock.writeLock();
       try {
         versions.forEach(version -> dirtyIndex.put(version.getKey(), version.getValue()));
+        lastPublishedSeq = seq;
       } finally {
         publishLock.unlockWrite(stamp);
       }
@@ -222,16 +224,18 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   }
 
   /**
-   * Waits until the storage holds every transaction committed before this call. It doesn't hold
-   * commits back, and the writer writes those transactions at once instead of waiting out {@code
-   * maxWriteDelay}.
+   * Waits until the storage holds every transaction published before this call, so everything a
+   * reader could have seen, including a transaction whose commit hasn't queued it yet. It doesn't
+   * hold commits back, and the writer writes those transactions at once instead of waiting out
+   * {@code maxWriteDelay}.
    *
    * @throws ZeebeDbException if the writer doesn't catch up within {@code snapshotCatchUpTimeout}
    */
   void catchUp() {
     failIfFailed();
     final long start = System.nanoTime();
-    final long target = writer.lastQueuedSeq();
+    // not the last queued one, which can lag behind what readers see
+    final long target = lastPublishedSeq;
     writer.flushUpTo(target);
 
     final var timeout = configuration.snapshotCatchUpTimeout();
