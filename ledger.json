@@ -90,5 +90,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43211497755",
     "updated_at": "2026-11-12T12:42:11Z",
     "cooldown_until": "2026-11-19T12:42:11Z"
+  },
+  "a0b03834": {
+    "version": "8.8",
+    "file": "identity/roles.spec.ts",
+    "titlePath": [
+      "Roles functionalities",
+      "User inherits permissions through role assignment"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43224216687",
+    "updated_at": "2026-11-12T13:08:52Z",
+    "cooldown_until": "2026-11-13T13:08:52Z"
   }
 }
