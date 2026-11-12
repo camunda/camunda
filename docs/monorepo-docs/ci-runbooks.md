@@ -161,6 +161,45 @@ You can leverage [incident.io MCP](https://docs.incident.io/ai/remote-mcp) toget
 - Monitor the [Job Trends dashboard](https://dashboard.int.camunda.com/d/ch6qgkj/ci-job-trends-camunda-camunda) to confirm the fix reduces the failure rate.
 - Ensure the job remains stable across multiple successful runs before closing the incident.
 
+##### Re-run of an old workflow run in the deploy jobs
+
+**Symptom:** `deploy-snapshots`, `deploy-camunda-docker-snapshot` and/or
+`deploy-optimize-docker-snapshot` fail together on one `stable/*` or `main` run. The run was
+created days ago and the failed attempt is a manual re-run (attempt 2 or later). Typically the job
+fails at the `Check whether to deploy the snapshot` step, or, on branches without that step,
+`actions/download-artifact` reports that `fe-*-<run_id>` is not found.
+
+**Cause:** the deploy jobs download frontend bundles that are kept for only 2 days
+(`retention-days: 2`), so a re-run of an older run cannot get them. The
+[`check-snapshot-deploy`](https://github.com/camunda/camunda/tree/main/.github/actions/check-snapshot-deploy)
+action handles re-runs early:
+
+- If the run's commit is no longer the branch head, it skips the deploy and the job stays green.
+  Deploying it would roll the snapshot back
+  ([#67319](https://github.com/camunda/camunda/issues/67319)).
+- If the run is a re-run of the branch head and its `fe-*` artifacts have expired, the job fails
+  with a clear message and is reported to CI analytics with `user_reason: stale-rerun`, so the
+  alert can exclude it by that reason. "Re-run all jobs" uploads the artifacts again, so it
+  deploys.
+
+Branches without that action still fail and raise this alert (e.g. INC-8805, INC-8806, INC-8807),
+and can roll the snapshot back if the re-run is within 2 days.
+
+**How to confirm:** the run's `created_at` is days before its `run_started_at`, `run_attempt` is
+greater than 1, and the `fe-*` artifacts have `expired: true`:
+
+```bash
+gh api repos/camunda/camunda/actions/runs/<run_id> \
+  --jq '{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}'
+gh api "repos/camunda/camunda/actions/runs/<run_id>/artifacts?per_page=100" \
+  --jq '.artifacts[] | select(.name | startswith("fe-")) | {name, expired, expires_at}'
+```
+
+**What to do:** check that the latest run on the branch deployed successfully, then close the
+incident as L2. If a fresh snapshot is needed, start a new run (push or `workflow_dispatch` on the
+branch) instead of re-running the old one. If a branch without the action rolled its snapshot back,
+re-run CI for the current branch tip to rebuild it.
+
 ---
 
 ### Selfhosted Runner High Disconnect Rate
