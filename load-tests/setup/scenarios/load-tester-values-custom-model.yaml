@@ -44,11 +44,12 @@ k6:
         USER_TASK_PAGE_SIZE: "200"
         # k6 is a Go program: without this, its garbage collector ignores the container limit.
         GOMEMLIMIT: "3200MiB"
-  # Applies to all k6 tests. Each simulated user is one k6 VU with its own JS runtime.
-  resources:
-    requests:
-      cpu: 2000m
-      memory: 4Gi
-    limits:
-      cpu: 2000m
-      memory: 4Gi
+      # Each simulated user is one k6 VU with its own JS runtime. Only this test needs it:
+      # `default` and `data-read` keep the small `k6.resources` of `values.yaml`.
+      resources:
+        requests:
+          cpu: 2000m
+          memory: 4Gi
+        limits:
+          cpu: 2000m
+          memory: 4Gi
