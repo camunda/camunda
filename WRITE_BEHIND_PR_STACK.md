@@ -83,6 +83,10 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     markdown, sortPom). Gradle Spotless does NOT add license headers: new files need
     `./mvnw license:format` on their module (or a copied header). One Maven `-Dquickly` build of
     zb-db before finishing so pom wiring and dependency analysis are checked.
+12. **PR 2b + order (2026-11-12):** `cs/wb-2b-engine-load-runner` ports the workshop
+    `EngineLoadMain` (engine-only load runner, test sources, Gradle `engineLoad` task). It must
+    never run by default (no test naming, task not wired to check/test/build, no CI change).
+    Stack order: fix -> PR 1 -> PR 2 -> PR 2b -> PR 3 (PR 3 rebases onto 2b).
 9. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
@@ -132,4 +136,5 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     unless Gradle gets `-PincludeRandomTests` (Maven: `-Pinclude-random-tests`).
   - Follow-ups: seek copies dirty range into a TreeMap; put does a full decode, miss decodes twice;
     weight ignores decoded heap size.
-- [ ] PR 3
+- [ ] PR 2b (engine load runner): agent running
+- [ ] PR 3 (to be stacked on PR 2b)
