@@ -5,7 +5,6 @@ dependencies {
   api(project(":zeebe-msgpack-core"))
   api(project(":zeebe-msgpack-value"))
   api(project(":zeebe-util"))
-  implementation(libs.org.jspecify.jspecify)
 }
 
 description = "Zeebe Msgpack Codegen: annotations, runtime helpers and processor generating serializers for POJOs"
