@@ -29,8 +29,8 @@ public class ValueTypeUtil {
    *       the method returns {@link ValueTypeEnum#LONG}.
    *   <li>If the value is a double or a numeric string with ".", the method returns {@link
    *       ValueTypeEnum#DOUBLE}.
-   *   <li>If the value is any other string (can also contain json), including an integer outside of
-   *       the long range, the method returns {@link ValueTypeEnum#STRING}.
+   *   <li>If the value is any other string (can also contain json), including a whole number
+   *       outside of the long range, the method returns {@link ValueTypeEnum#STRING}.
    * </ul>
    */
   public static ValueTypeEnum getValueType(final Object value) {
@@ -52,7 +52,7 @@ public class ValueTypeUtil {
       } else {
         if (stringValue.contains(".")) {
           return ValueTypeEnum.DOUBLE;
-        } else if (fitsIntoLong(stringValue)) {
+        } else if (isWithinLongRange(stringValue)) {
           return ValueTypeEnum.LONG;
         } else {
           return ValueTypeEnum.STRING;
@@ -69,9 +69,9 @@ public class ValueTypeUtil {
     }
   }
 
-  private static boolean fitsIntoLong(final String integer) {
+  private static boolean isWithinLongRange(final String numericString) {
     try {
-      Long.parseLong(integer);
+      Long.parseLong(numericString);
       return true;
     } catch (final NumberFormatException e) {
       return false;
