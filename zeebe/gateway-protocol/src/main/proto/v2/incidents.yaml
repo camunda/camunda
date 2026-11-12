@@ -85,6 +85,52 @@ paths:
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
+  /incidents/{incidentKey}/acknowledge:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Incident
+      operationId: acknowledgeIncident
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Acknowledge Incident
+      description: |
+        Acknowledgement of an incident by the current user.
+        The incident stays active until the Incident is resolved.
+      parameters:
+        - name: incidentKey
+          in: path
+          required: true
+          description: Key of the incident to acknowledge.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/IncidentKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentAcknowledgementRequest'
+      responses:
+        "204":
+          description: The incident is acknowledged.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The incident with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /incidents/{incidentKey}/resolution:
     post:
       x-eventually-consistent: false
@@ -504,6 +550,7 @@ components:
         - jobKey
         - tenantId
         - storageOrdinal
+        - acknowledgementCount
       properties:
         processDefinitionId:
           allOf:
@@ -568,6 +615,11 @@ components:
           nullable: true
           type: integer
           format: int32
+        acknowledgementCount:
+          description: The number of times the incident was acknowledged.
+          nullable: true
+          type: integer
+          format: int32
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"
@@ -597,6 +649,27 @@ components:
           addedInVersion: "8.6"
         - propertyName: storageOrdinal
           addedInVersion: "8.11"
+        - propertyName: acknowledgementCount
+          addedInVersion: "8.11"
+
+    IncidentAcknowledgementRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        snoozeUntil:
+          description: |
+            The time until which the incident is snoozed. Specify either this or `snoozeDuration`, not both.
+          type: string
+          format: date-time
+        snoozeDuration:
+          description: |
+            The ISO 8601 duration for which the incident is snoozed. Specify either this or `snoozeUntil`, not both.
+          type: string
+          example: PT2H
+        hashCode:
+          description: The error hash code from the incident statistics by error, to acknowledge all matching incidents.
+          type: integer
+          format: int32
 
     IncidentResolutionRequest:
       type: object
