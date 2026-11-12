@@ -257,6 +257,7 @@ export default defineConfig({
 			rules: {
 				'vitest/expect-expect': 'error',
 				'vitest/no-commented-out-tests': 'error',
+				'vitest/no-conditional-expect': 'error',
 				'vitest/no-disabled-tests': 'warn',
 				'vitest/no-focused-tests': 'error',
 				'vitest/no-identical-title': 'error',
