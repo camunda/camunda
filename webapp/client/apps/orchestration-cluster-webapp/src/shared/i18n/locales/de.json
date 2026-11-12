@@ -2137,7 +2137,8 @@
 					"actor": "Akteur",
 					"actorPlaceholder": "Benutzername oder Client-ID",
 					"timestampDateRange": "Zeitstempel-Datumsbereich",
-					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern"
+					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern",
+					"noProcessesFound": "Keine Prozesse gefunden"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Batch-Vorgang {{key}} anzeigen",
@@ -2391,6 +2392,12 @@
 					"lastDays_one": "Letzter {{count}} Tag",
 					"lastDays_other": "Letzte {{count}} Tage"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Datums- und Zeitbereich löschen",
+					"selectEndDate": "Enddatum wählen",
+					"pickDayFirst": "Zuerst ein Datum wählen",
+					"pickEndDay": "Enddatum wählen"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",
 					"operatorNotEquals": "ist nicht gleich",
@@ -2432,7 +2439,9 @@
 					"copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Option(en) auswählen"
+					"chooseOption": "Option(en) auswählen",
+					"search": "Suchen...",
+					"noResults": "Keine Ergebnisse gefunden"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Löschen",

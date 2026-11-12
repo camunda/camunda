@@ -2149,7 +2149,8 @@
 					"actor": "Actor",
 					"actorPlaceholder": "Username or client ID",
 					"timestampDateRange": "Timestamp date range",
-					"filterByTimestampDateRange": "Filter by timestamp date range"
+					"filterByTimestampDateRange": "Filter by timestamp date range",
+					"noProcessesFound": "No processes found"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "View batch operation {{key}}",
@@ -2403,6 +2404,12 @@
 					"lastDays_one": "Last {{count}} day",
 					"lastDays_other": "Last {{count}} days"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Clear date and time range",
+					"selectEndDate": "Pick end date",
+					"pickDayFirst": "Pick a date first",
+					"pickEndDay": "Pick end date"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",
 					"operatorNotEquals": "does not equal",
@@ -2444,7 +2451,9 @@
 					"copyFailed": "Couldn't copy to clipboard"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choose option(s)"
+					"chooseOption": "Choose option(s)",
+					"search": "Search...",
+					"noResults": "No results found"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Delete",

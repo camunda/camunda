@@ -123,3 +123,68 @@ test('should keep audit rows and restore decision names on retry when the lookup
 	await expect(page.getByText('Invoice Decision')).toBeVisible();
 	await expect(operatePreviewOperationsLogPage.decisionNamesError).not.toBeVisible();
 });
+
+test('should keep keyboard focus on a row control across the background refresh', async ({
+	network,
+	page,
+	operatePreviewOperationsLogPage,
+}) => {
+	await operatePreviewOperationsLogPage.goto();
+	await expect(operatePreviewOperationsLogPage.table).toBeVisible();
+	const openDetails = page.getByRole('button', {name: 'Open details'}).first();
+	await openDetails.focus();
+	await expect(openDetails).toBeFocused();
+
+	network.use(
+		mockQueryAuditLogsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryAuditLogsResponse({
+					items: [
+						createAuditLog({
+							auditLogKey: '1',
+							entityType: 'PROCESS_INSTANCE',
+							entityKey: '42',
+							processInstanceKey: '42',
+						}),
+						createAuditLog({
+							auditLogKey: 'new-log',
+							entityType: 'PROCESS_INSTANCE',
+							entityKey: '77',
+							processInstanceKey: '77',
+						}),
+					],
+				}),
+			),
+		}),
+	);
+	await expect(page.getByRole('link', {name: 'View process instance 77'}).first()).toBeVisible({timeout: 10_000});
+
+	await expect(openDetails).toBeFocused();
+});
+
+test('should keep loading pages until the last one while scrolling down', async ({
+	page,
+	operatePreviewOperationsLogPage,
+}) => {
+	const totalItems = 260;
+	await page.route('**/v2/audit-logs/search', async (route) => {
+		const from: number = route.request().postDataJSON().page?.from ?? 0;
+		const items = Array.from({length: Math.min(50, totalItems - from)}, (_, index) =>
+			createAuditLog({
+				auditLogKey: `log-${from + index}`,
+				entityType: 'PROCESS_INSTANCE',
+				entityKey: `${from + index}`,
+				processInstanceKey: `${from + index}`,
+			}),
+		);
+		await route.fulfill({json: createQueryAuditLogsResponse({items, page: {totalItems}})});
+	});
+	await operatePreviewOperationsLogPage.goto();
+	await expect(operatePreviewOperationsLogPage.table).toBeVisible();
+
+	await page.mouse.move(600, 500);
+	await expect(async () => {
+		await page.mouse.wheel(0, 600);
+		await expect(page.getByRole('link', {name: 'View process instance 259'}).first()).toBeVisible({timeout: 200});
+	}).toPass({timeout: 25_000, intervals: [100]});
+});

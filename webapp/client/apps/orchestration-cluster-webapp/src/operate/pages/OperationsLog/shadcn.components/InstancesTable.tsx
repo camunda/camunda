@@ -239,6 +239,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		<section className="flex h-full flex-col">
 			<PanelHeader
 				title={t('operate.operationsLog.title')}
+				className="bg-transparent"
 				count={status === 'success' && !isPlaceholderData ? totalCount : undefined}
 				hasMoreTotalItems={status === 'success' && !isPlaceholderData && hasMoreTotalItems}
 			/>
@@ -268,6 +269,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 				loadingPreviousPageLabel={t('operate.operationsLog.table.loadingPreviousPage')}
 				loadingNextPageLabel={t('operate.operationsLog.table.loadingNextPage')}
 				isFetching={isLoading}
+				loadingRowCount={5}
 				emptyState={isLoading ? undefined : emptyState}
 				hideHeaderWhenEmpty
 				pagination={{
