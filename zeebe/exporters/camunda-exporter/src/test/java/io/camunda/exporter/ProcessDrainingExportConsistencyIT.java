@@ -237,6 +237,32 @@ final class ProcessDrainingExportConsistencyIT {
         .isEqualTo(ProcessDefinitionState.SUSPENDED);
   }
 
+  @TestTemplate
+  void shouldKeepSuspendedWhenAnotherPartitionExportsCreatedLater(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .as("precondition: the definition is SUSPENDED before the late CREATED")
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+
+    // when — a lagging partition exports its own copy of CREATED for the same definition (#61277)
+    exportOnPartition(
+        config, OTHER_PARTITION, processRecord(ProcessIntent.CREATED, OTHER_PARTITION));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+  }
+
   private void prepareConfig(final ExporterConfiguration config) {
     config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfReplicas(0);
