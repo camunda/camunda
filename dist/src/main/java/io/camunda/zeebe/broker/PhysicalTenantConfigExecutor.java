@@ -11,6 +11,9 @@ import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenantHealth;
 import io.camunda.cluster.PhysicalTenantHealth.State;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.physicaltenants.PhysicalTenantConfigChange;
+import io.camunda.configuration.physicaltenants.PhysicalTenantKeyClassification;
+import io.camunda.configuration.physicaltenants.PhysicalTenantKeyClassification.Kind;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference;
@@ -28,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -54,6 +58,7 @@ public final class PhysicalTenantConfigExecutor
   private final PhysicalTenantLifecycleService lifecycle;
   private final DefaultPhysicalTenantRegistry registry;
   private final MeterRegistry meterRegistry;
+  private final PhysicalTenantKeyClassification classification;
   private final ExecutorService changes =
       Executors.newSingleThreadExecutor(
           Thread.ofPlatform().name("physical-tenant-config").daemon().factory());
@@ -63,10 +68,12 @@ public final class PhysicalTenantConfigExecutor
   public PhysicalTenantConfigExecutor(
       final PhysicalTenantLifecycleService lifecycle,
       final DefaultPhysicalTenantRegistry registry,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final PhysicalTenantKeyClassification classification) {
     this.lifecycle = lifecycle;
     this.registry = registry;
     this.meterRegistry = meterRegistry;
+    this.classification = classification;
   }
 
   /** Records the subtree a tenant runs with since this node started, before any change. */
@@ -132,7 +139,8 @@ public final class PhysicalTenantConfigExecutor
       record(physicalTenantId, reference, subtree);
       return;
     }
-    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
+        && !changesOnlySecurity(running, subtree)) {
       LOG.warn(
           "Version {} of the default physical tenant's configuration differs from the static"
               + " configuration of this node; the default tenant takes it only with a node restart",
@@ -167,6 +175,27 @@ public final class PhysicalTenantConfigExecutor
       throw e;
     }
     record(physicalTenantId, reference, subtree);
+  }
+
+  /**
+   * Whether a change of the {@code default} tenant touches only keys of its HTTP security, which it
+   * applies at runtime; any other key of it changes only with a node restart.
+   */
+  private boolean changesOnlySecurity(
+      final @Nullable Applied running, final Map<String, String> proposed) {
+    if (running == null) {
+      return false;
+    }
+    return PhysicalTenantConfigChange.update(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, running.subtree(), proposed)
+        .changedProperties()
+        .stream()
+        .allMatch(
+            name ->
+                classification
+                    .classify(name)
+                    .filter(found -> found.kind() == Kind.SECURITY)
+                    .isPresent());
   }
 
   /**

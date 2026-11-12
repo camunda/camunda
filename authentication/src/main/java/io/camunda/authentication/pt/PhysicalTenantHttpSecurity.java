@@ -12,11 +12,15 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.scope.ScopeReloadOutcome;
 import io.camunda.security.api.model.scope.ScopeReloadResult;
+import io.camunda.security.api.model.scope.UnreachableIdentityProviderPolicy;
+import io.camunda.security.core.port.in.PrimarySecurityReloadPort;
 import io.camunda.security.core.port.in.ScopedSecurityReloadPort;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +36,10 @@ import org.slf4j.LoggerFactory;
  * configuration.
  *
  * <p>The changes of one tenant are serialised; different tenants change in parallel. The {@code
- * default} tenant is the root configuration that the unprefixed chains are built from at startup
- * and cannot change here.
+ * default} tenant is served twice, by the library's primary (unprefixed) chains and by its alias
+ * {@code /physical-tenants/default}: a change of it changes the primary chains first and then the
+ * alias, so the two serve the same configuration once the change returns. If the alias keeps its
+ * previous security, the primary chains are put back on it too.
  */
 @NullMarked
 public final class PhysicalTenantHttpSecurity {
@@ -42,6 +48,7 @@ public final class PhysicalTenantHttpSecurity {
 
   private final PhysicalTenantScopeProvider scopes;
   private final Supplier<ScopedSecurityReloadPort> port;
+  private final Supplier<@Nullable PrimarySecurityReloadPort> primary;
   private final PhysicalTenantAuthentications served;
   private final Map<String, Object> locks = new ConcurrentHashMap<>();
 
@@ -53,8 +60,21 @@ public final class PhysicalTenantHttpSecurity {
       final PhysicalTenantScopeProvider scopes,
       final Supplier<ScopedSecurityReloadPort> port,
       final PhysicalTenantAuthentications served) {
+    this(scopes, port, () -> null, served);
+  }
+
+  /**
+   * @param primary the library's port for the primary chains, which serve the {@code default}
+   *     tenant unprefixed; it yields {@code null} where the primary chains cannot change
+   */
+  public PhysicalTenantHttpSecurity(
+      final PhysicalTenantScopeProvider scopes,
+      final Supplier<ScopedSecurityReloadPort> port,
+      final Supplier<@Nullable PrimarySecurityReloadPort> primary,
+      final PhysicalTenantAuthentications served) {
     this.scopes = scopes;
     this.port = port;
+    this.primary = primary;
     this.served = served;
   }
 
@@ -68,12 +88,17 @@ public final class PhysicalTenantHttpSecurity {
    */
   public ScopeReloadResult apply(
       final String physicalTenantId, final AuthenticationConfiguration authentication) {
-    requireNotDefault(physicalTenantId);
     return locked(
         physicalTenantId,
         () -> {
           final var descriptor = scopes.put(physicalTenantId, authentication);
-          return record(physicalTenantId, authentication, port.get().apply(descriptor));
+          return record(
+              physicalTenantId,
+              authentication,
+              withPrimary(
+                  physicalTenantId,
+                  primary -> primary.apply(authentication),
+                  () -> port.get().apply(descriptor)));
         });
   }
 
@@ -84,7 +109,6 @@ public final class PhysicalTenantHttpSecurity {
    */
   public ScopeReloadResult rotateCredentials(
       final String physicalTenantId, final AuthenticationConfiguration authentication) {
-    requireNotDefault(physicalTenantId);
     return locked(
         physicalTenantId,
         () -> {
@@ -92,7 +116,12 @@ public final class PhysicalTenantHttpSecurity {
           final var descriptor = scopes.put(physicalTenantId, authentication);
           try {
             return record(
-                physicalTenantId, authentication, port.get().rotateCredentials(descriptor));
+                physicalTenantId,
+                authentication,
+                withPrimary(
+                    physicalTenantId,
+                    primary -> primary.rotateCredentials(authentication),
+                    () -> port.get().rotateCredentials(descriptor)));
           } catch (final IllegalArgumentException e) {
             previous.ifPresent(before -> scopes.put(physicalTenantId, before.authentication()));
             throw e;
@@ -102,12 +131,17 @@ public final class PhysicalTenantHttpSecurity {
 
   /** Reads the tenant's key material again, for a keystore replaced at the same path. */
   public ScopeReloadResult refreshCredentials(final String physicalTenantId) {
-    requireNotDefault(physicalTenantId);
     return locked(
         physicalTenantId,
         () -> {
           final var result =
-              port.get().refreshCredentials(PhysicalTenantScopeProvider.basePath(physicalTenantId));
+              withPrimary(
+                  physicalTenantId,
+                  PrimarySecurityReloadPort::refreshCredentials,
+                  () ->
+                      port.get()
+                          .refreshCredentials(
+                              PhysicalTenantScopeProvider.basePath(physicalTenantId)));
           log(physicalTenantId, result);
           return result;
         });
@@ -155,6 +189,41 @@ public final class PhysicalTenantHttpSecurity {
     return result.applied() || result.outcome() == ScopeReloadOutcome.UNCHANGED;
   }
 
+  /**
+   * Runs {@code alias} for any tenant; for the {@code default} tenant runs {@code primaryChange}
+   * first and the alias only if the primary chains took the change.
+   */
+  private ScopeReloadResult withPrimary(
+      final String physicalTenantId,
+      final Function<PrimarySecurityReloadPort, ScopeReloadResult> primaryChange,
+      final Supplier<ScopeReloadResult> alias) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return alias.get();
+    }
+    final var primaryPort = primary.get();
+    if (primaryPort == null) {
+      throw new IllegalArgumentException(
+          "The HTTP security of the default physical tenant cannot change on this node: its"
+              + " unprefixed chains have no runtime port");
+    }
+    final var primaryResult = primaryChange.apply(primaryPort);
+    log("default (unprefixed)", primaryResult);
+    if (!takesEffect(primaryResult)) {
+      return primaryResult;
+    }
+    final var aliasResult = alias.get();
+    if (!takesEffect(aliasResult)) {
+      served
+          .find(physicalTenantId)
+          .ifPresent(
+              previous ->
+                  log(
+                      "default (unprefixed, put back)",
+                      primaryPort.apply(previous, UnreachableIdentityProviderPolicy.APPLY)));
+    }
+    return aliasResult;
+  }
+
   private ScopeReloadResult record(
       final String physicalTenantId,
       final AuthenticationConfiguration authentication,
@@ -192,9 +261,7 @@ public final class PhysicalTenantHttpSecurity {
 
   private static void requireNotDefault(final String physicalTenantId) {
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      throw new IllegalArgumentException(
-          "The HTTP security of the default physical tenant is the root configuration and changes"
-              + " only with a node restart");
+      throw new IllegalArgumentException("The default physical tenant cannot be removed");
     }
   }
 }

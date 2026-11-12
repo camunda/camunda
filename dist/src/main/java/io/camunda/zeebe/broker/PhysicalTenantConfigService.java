@@ -149,6 +149,15 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     return update(physicalTenantId, subtree, Owner.API);
   }
 
+  /**
+   * Replaces the whole subtree of a tenant owned by the static configuration, as a changed file
+   * would. The watcher of the file is not part of this branch; tests call this directly.
+   */
+  public PhysicalTenantStatus updateFromFile(
+      final String physicalTenantId, final Map<String, String> subtree) {
+    return update(physicalTenantId, subtree, Owner.FILE);
+  }
+
   /** Removes a tenant owned by the management API; its data stays and its id stays reserved. */
   public void delete(final String physicalTenantId) {
     send(PhysicalTenantConfigRequest.delete(physicalTenantId, Owner.API));

@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.application.commons.secrets.InternalConfigRefresher;
 import io.camunda.application.commons.secrets.InternalConfigRefreshers;
 import io.camunda.application.commons.secrets.PhysicalTenantSecretStores;
@@ -92,9 +90,6 @@ public final class PhysicalTenantRestSecurity {
     }
     startupTenants.forEach(
         (physicalTenantId, configuration) -> {
-          if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-            return;
-          }
           try {
             apply(physicalTenantId, environment, configuration)
                 .filter(result -> !PhysicalTenantHttpSecurity.takesEffect(result))

@@ -279,8 +279,10 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean(destroyMethod = "close")
   public PhysicalTenantConfigExecutor physicalTenantConfigExecutor(
-      final PhysicalTenantLifecycleService lifecycle) {
-    return new PhysicalTenantConfigExecutor(lifecycle, physicalTenantRegistry, meterRegistry);
+      final PhysicalTenantLifecycleService lifecycle,
+      final PhysicalTenantKeyClassification classification) {
+    return new PhysicalTenantConfigExecutor(
+        lifecycle, physicalTenantRegistry, meterRegistry, classification);
   }
 
   @Bean(destroyMethod = "close")

@@ -164,7 +164,8 @@ public final class PhysicalTenantLifecycleService {
 
   /**
    * Replaces the configuration of a tenant and restarts only its module. The tenant keeps its
-   * incarnation.
+   * incarnation. The {@code default} tenant changes only its HTTP security: its module keeps
+   * running with the configuration it started with.
    *
    * @throws PhysicalTenantChangeException if the change is rejected, or the module did not start
    */
@@ -172,9 +173,21 @@ public final class PhysicalTenantLifecycleService {
       final String physicalTenantId, final Map<String, Object> configuration) {
     return underChangeLock(
         () -> {
-          final var current = requireChangeable(physicalTenantId);
+          final var current = requireExisting(physicalTenantId);
           final var candidate = resolve(physicalTenantId, configuration);
           replaceSecurity(physicalTenantId, candidate);
+          if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+            environment = candidate.environment();
+            configurations.put(physicalTenantId, candidate.configuration());
+            close(physicalTenantId, candidate.context());
+            if (registry
+                .health(physicalTenantId)
+                .filter(health -> health.state() == State.DEGRADED)
+                .isPresent()) {
+              registry.reportHealth(physicalTenantId, PhysicalTenantHealth.of(State.HEALTHY));
+            }
+            return current;
+          }
           registry.reportHealth(
               physicalTenantId,
               new PhysicalTenantHealth(State.RESTARTING, "applying a configuration change"));
@@ -483,11 +496,12 @@ public final class PhysicalTenantLifecycleService {
   private PhysicalTenant requireChangeable(final String physicalTenantId) {
     if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       throw rejected(
-          Reason.CONFLICT,
-          physicalTenantId,
-          "the default tenant is the root configuration and changes only with a node restart",
-          null);
+          Reason.CONFLICT, physicalTenantId, "the default tenant cannot be removed", null);
     }
+    return requireExisting(physicalTenantId);
+  }
+
+  private PhysicalTenant requireExisting(final String physicalTenantId) {
     return registry
         .find(physicalTenantId)
         .orElseThrow(() -> rejected(Reason.CONFLICT, physicalTenantId, "it does not exist", null));
