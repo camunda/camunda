@@ -142,6 +142,23 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   }
 
   /**
+   * Binds one physical tenant of the environment over the root, as {@link #of} does, without the
+   * validations across the tenant set. For a node that only serves a tenant whose configuration the
+   * brokers validated, such as a standalone gateway, whose own root may differ from theirs.
+   */
+  public static Camunda bindOne(final Environment environment, final String physicalTenantId) {
+    final Binder binder = Binder.get(environment);
+    final Camunda physicalTenant = new Camunda();
+    binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
+    binder.bind(
+        PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
+    PhysicalTenantMapOverlays.apply(physicalTenant, physicalTenantId, environment);
+    PhysicalTenantAuthenticationProviderConfigurations.narrowToAssigned(
+        physicalTenant, physicalTenantId, environment);
+    return physicalTenant;
+  }
+
+  /**
    * The display name declared under {@code camunda.physical-tenants.<id>.name}. Not unique, and
    * never used to identify a tenant.
    */

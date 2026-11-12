@@ -110,6 +110,29 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldBindOneTenantOverTheRootWithoutTheChecksAcrossTenants() {
+    // given
+    setProperties(
+        Map.of(
+            "camunda.data.secondary-storage.type",
+            "elasticsearch",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.type",
+            "none",
+            "camunda.physical-tenants.tenanta.security.authorizations.enabled",
+            "true",
+            "camunda.physical-tenants.tenanta.data.exporters-assigned[0]",
+            "undeclared"),
+        "tenanta");
+
+    // when
+    final var tenant = PhysicalTenantResolver.bindOne(environment, "tenanta");
+
+    // then
+    assertThat(tenant.getSecurity().getAuthorizations().isEnabled()).isTrue();
+    assertThatThrownBy(this::newResolver).isInstanceOf(UnifiedConfigurationException.class);
+  }
+
+  @Test
   void shouldResolveOneCamundaPerDiscoveredTenant() {
     // given two tenants under the physical-tenants prefix, each overriding an overridable property
     // (the index prefix) with a distinct value so they also pass cross-tenant isolation
