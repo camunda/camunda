@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl.rocksdb.transaction;
+package io.camunda.zeebe.db.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,7 +15,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DefaultColumnFamily;
-import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import java.io.File;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
@@ -27,11 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Verifies the transaction isolation contract for ZeebeTransactionDb backed by WriteBatchWithIndex.
- * These tests own the behavioral guarantee that was previously provided implicitly by RocksDB's
- * OptimisticTransactionDB.
+ * Verifies the transaction isolation contract. These tests own the behavioral guarantee that was
+ * previously provided implicitly by RocksDB's OptimisticTransactionDB.
  */
-final class ZeebeTransactionIsolationTest {
+public abstract class ZeebeTransactionIsolationContractTest {
 
   @TempDir File tempDir;
 
@@ -43,10 +41,11 @@ final class ZeebeTransactionIsolationTest {
   private final DbString key = new DbString();
   private final DbString value = new DbString();
 
+  protected abstract ZeebeDbFactory<DefaultColumnFamily> createFactory();
+
   @BeforeEach
   void setUp() {
-    final ZeebeDbFactory<DefaultColumnFamily> factory = DefaultZeebeDbFactory.getDefaultFactory();
-    db = factory.createDb(tempDir);
+    db = createFactory().createDb(tempDir);
     writeCtx = db.createContext();
     readCtx = db.createContext();
     writeCf =

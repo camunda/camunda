@@ -83,18 +83,6 @@
     </dependency>
 
     <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jqwik</groupId>
-      <artifactId>jqwik-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-ffi</artifactId>
     </dependency>
@@ -121,18 +109,4 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <usedDependencies>
-            <dependency>net.jqwik:jqwik</dependency>
-          </usedDependencies>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl;
+package io.camunda.zeebe.db.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
@@ -27,11 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public final class DbTransactionTest {
+public abstract class DbTransactionContractTest {
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private final ZeebeDbFactory<ColumnFamilies> dbFactory =
-      DefaultZeebeDbFactory.getDefaultFactory();
 
   private TransactionContext transactionContext;
 
@@ -46,10 +45,12 @@ public final class DbTransactionTest {
   private DbLong threeKey;
   private DbLong threeValue;
 
+  protected abstract ZeebeDbFactory<ColumnFamilies> createFactory();
+
   @Before
   public void setup() throws Exception {
     final File pathName = temporaryFolder.newFolder();
-    final ZeebeDb<ColumnFamilies> zeebeDb = dbFactory.createDb(pathName);
+    final ZeebeDb<ColumnFamilies> zeebeDb = createFactory().createDb(pathName);
     transactionContext = zeebeDb.createContext();
 
     oneKey = new DbLong();
@@ -501,7 +502,7 @@ public final class DbTransactionTest {
         .isSameAs(exception);
   }
 
-  private enum ColumnFamilies implements EnumValue, ScopedColumnFamily {
+  public enum ColumnFamilies implements EnumValue, ScopedColumnFamily {
     DEFAULT, // rocksDB needs a default column family
     ONE,
     TWO,

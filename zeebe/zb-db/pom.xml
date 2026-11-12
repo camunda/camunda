@@ -18,5 +18,6 @@
   <modules>
     <module>api</module>
     <module>rocksdb</module>
+    <module>tests</module>
   </modules>
 </project>
