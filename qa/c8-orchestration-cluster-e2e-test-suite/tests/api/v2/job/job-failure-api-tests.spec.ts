@@ -16,15 +16,14 @@ import {
 } from '../../../../utils/http';
 import {
   activateJobToObtainAValidJobKey,
+  activateSingleJob,
   setupProcessInstanceForTests,
 } from '@requestHelpers';
 
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Fail API Tests', () => {
-  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceForTests(
-    'job_api_process',
-    'jobApiProcess',
-  );
+  const {state, beforeAll, beforeEach, afterEach} =
+    setupProcessInstanceForTests('job_api_process', 'jobApiProcess');
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
@@ -79,9 +78,17 @@ test.describe('Job Fail API Tests', () => {
   test('Fail Job - 409', async ({request}) => {
     const localState: Record<string, unknown> = {};
     await test.step('First activate a job', async () => {
-      localState['jobKey'] = await activateJobToObtainAValidJobKey(
+      // Scope activation to this test's own process instance. 'jobApiTaskType'
+      // is shared by the sibling job-* specs that run on parallel workers, so
+      // activating "any" job of that type can hand back a job owned by another
+      // test, whose afterEach then cancels the instance and deletes the job
+      // mid-test — turning the /failure calls below into 404s instead of the
+      // expected 204/409. activateSingleJob filters by processInstanceKey and
+      // retries until this instance's own job is activatable.
+      localState['jobKey'] = await activateSingleJob(
         request,
         'jobApiTaskType',
+        state['processInstanceKey'] as string,
       );
     });
 
