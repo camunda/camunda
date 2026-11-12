@@ -334,3 +334,195 @@ traffic and for a 503 while a restarted partition elected its leader.
 ./mvnw verify -pl configuration -Dquickly -DskipTests=false -DskipITs
 ```
 
+# The default tenant's HTTP security at runtime
+
+Branch `pt-poc-default-tenant-security`, on top of `pt-poc-csl-runtime-security` (ae1a3b56a1ab).
+Built against the local CSL proof of concept `1.2.1-pt-poc-default-full-SNAPSHOT` (worktree
+`mk-csl-poc-default-full-reload`, spike note `docs/spikes/primary-chains-runtime-reload.md`). Not
+for merge as is.
+
+Question: can the `default` physical tenant's HTTP security change at runtime exactly like any other
+tenant's, with no node restart? For its HTTP security, yes: a change of
+`camunda.physical-tenants.default.security.*` changes `/v2`, the webapps and login (the library's
+primary chains) and the alias `/physical-tenants/default` on every broker, keeps the two equal, and
+leaves the other tenants alone. What is not the same is everything a module restart applies to
+another tenant (gRPC, the engine side, REST services), because the default tenant's module is not
+restarted here; that side belongs to the other spike.
+
+## What is proven, and by which test
+
+`PhysicalTenantRuntimeSecurityIT` (zeebe/qa/integration-tests), the cluster of the section above
+(three brokers in one JVM, RF 3, Keycloak 26, Toxiproxy, the boot tenant under continuous REST load).
+At startup `default` declares authorizations on, admins `svc` and `admin-by-claim`, and its
+exporters; everything else of it comes from the root. Every check goes over HTTP to each broker, on
+`/v2/...` and on `/physical-tenants/default/v2/...`.
+
+The default tenant is owned by the static configuration, so the management API refuses to change it
+(`NOT_OWNER`). The tests change it through `PhysicalTenantConfigService#updateFromFile`, which
+replaces a file-owned tenant's subtree as a changed file would and goes through the same
+validators, dynamic-config rollout, executor and lifecycle as every change; only the file watcher is
+missing (the other spike).
+
+|                     Scenario                      |                                                                                                                                                                                                                                                                               What is checked                                                                                                                                                                                                                                                                               |                                             Test                                              |
+|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| Change issuer, audience, client id, claim mapping | before: `svc` 200 and `svc-other` 403 on publish, on both paths. After one change: old-IdP tokens 401 on both paths of every broker; the new mapping (`client-id-claim: alt_client`) decides the engine's authorisation on both paths of every broker (new `svc-other` 200, new `svc` 403); the sessions on `/v2` and on the alias (login on broker 0) 401; new logins on `/v2` and on the alias work; each member reports `REPLACED`; the boot tenant keeps its generation on every member, its session (200) and its tokens (200), and the new default token is 401 on it | `shouldChangeTheDefaultTenantsIdentityProviderAndClaimsMappingOnEveryBroker`                  |
+| Rotate the client secret                          | Keycloak's rotation policy; the new value written to the default tenant's store; every member reports `CREDENTIALS_ROTATED`; old secret revoked; after the 5 s access token expired, the sessions on `/v2` and on the alias refresh (200); new logins on both work; config version unchanged                                                                                                                                                                                                                                                                                | `shouldRotateTheDefaultTenantsClientSecretFromTheSecretStoreAndKeepTheSessions`               |
+| Unreachable new IdP                               | proxy down: broker 0 reports `DEGRADED` with `KEPT_PREVIOUS`, not rolled out; old tokens 200 and new 401 on both paths of every broker; the boot tenant `HEALTHY`. Proxy up: applied by dynamic-config's retry, new tokens 200, old 401, `default` `HEALTHY` on every member                                                                                                                                                                                                                                                                                                | `shouldKeepTheDefaultTenantsPreviousSecurityWhileItsNewIdentityProviderIsUnreachable`         |
+| Switch authentication method                      | rejected naming `security.authentication.method`; version unchanged; still serving                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `shouldRejectAChangeOfTheDefaultTenantsAuthenticationMethod`                                  |
+| No leaks                                          | 10 changes (alternating realms), each awaited on both paths of every broker and rolled out: CSL `ScopeGeneration`, `ScopedOidcClients`, `DefaultSecurityFilterChain`, host bearer and claims converters, threads and meters equal before and after                                                                                                                                                                                                                                                                                                                          | `shouldNotLeakOverManySecurityChangesOfTheDefaultTenant`                                      |
+| Other tenants unaffected                          | 0 failed requests of the boot tenant's load during the class                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `@AfterAll`                                                                                   |
+| Without physical tenants, no generic exporter     | two brokers, no `camunda.physical-tenants.*` key at startup (the default subtree is empty): a session on `/v2` and the startup tokens work; after one change, new tokens 200 and old 401 on both paths of both brokers, the session 401, new logins on both paths work                                                                                                                                                                                                                                                                                                      | `WithoutPhysicalTenants#shouldChangeTheImplicitDefaultTenantsSecurityOnEveryBroker`           |
+| Without physical tenants, with a generic exporter | the first key of `default` is refused: a security-only subtree with "must declare `camunda.physical-tenants.default.data.exporters-assigned`", the same subtree with `data.exporters-assigned[0]` with "`'data.exporters-assigned[0]' cannot change at runtime (exporter-ids)`"; still serving                                                                                                                                                                                                                                                                              | `WithoutPhysicalTenantsButAGenericExporter#shouldRejectTheFirstKeyOfTheImplicitDefaultTenant` |
+
+Mutation check (made the named test fail, then reverted): calling only the alias for `default`
+(skipping the primary chains) leaves `/v2` on the old issuer; the first scenario times out waiting
+for the new token on `/v2`.
+
+Unit/module tests: `authentication` 502 unit + 47 IT, 0 failures; three tests that verified a
+root-built mock converter for a request of the default tenant now assert on the converted
+authentication (`OidcUserAuthenticationConverterIntegrationTest`, `OidcBearerUserInfoClaimGapIT`,
+`PhysicalTenantOidcSettingsRegistryTest`).
+
+## How it works
+
+|                                 Piece                                  |                                                                                                                                                                                            What changed                                                                                                                                                                                            |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CSL `PrimarySecurityReloadPort`                                        | New: changes the primary chains like a scope, see the CSL spike note. The primary chain beans are views over a slot; a change builds a generation with its own decoder and OIDC client stack and publishes both chains in one write. The primary sessions are bound to the serving configuration, so an authentication change ends them                                                            |
+| `PhysicalTenantHttpSecurity`                                           | For `default`: primary chains first, then the alias; if the alias keeps its previous security, the primary chains are put back (`APPLY` with the served configuration; not covered by a test: with an unreachable IdP the primary chains already keep their previous security, so the alias is not asked). `rotateCredentials` and `refreshCredentials` likewise. `remove` still refuses `default` |
+| `OidcOverrideBeansConfiguration`, `PhysicalTenantOidcSettingsRegistry` | `default` uses the converters and OIDC settings derived from `PhysicalTenantAuthentications` like every tenant; the root-built ones serve only a conversion outside any request                                                                                                                                                                                                                    |
+| `PhysicalTenantConfigExecutor`                                         | A version of `default` whose changed keys are all `SECURITY` goes to the lifecycle; any other change of `default` is still `DEGRADED` "takes it only with a node restart"                                                                                                                                                                                                                          |
+| `PhysicalTenantLifecycleService`                                       | `replace("default")` changes only the HTTP security (same `replaceSecurity` as every tenant, a kept-back change rejects the replace), records the new configuration and environment, closes the candidate context; it does not stop or start the module                                                                                                                                            |
+| `PhysicalTenantRestSecurity.startWith`                                 | `default` included: its credential references are resolved at startup and its secret refresher rotates them                                                                                                                                                                                                                                                                                        |
+| `PhysicalTenantConfigService#updateFromFile`                           | Test entry for a file-owned tenant (above)                                                                                                                                                                                                                                                                                                                                                         |
+
+## Root-built beans: what each depends on, and what it costs
+
+Code reading unless a test is named. "Default's startup configuration" means `cslProperties`
+after `physicalTenantClusterAuthUnification`, which copies `default`'s resolved configuration into
+it when any physical tenant is configured (and the raw root otherwise, which is then equal).
+
+|                                                Bean                                                |                                   Built from                                   |                                                                                                              Used by `default` after this branch                                                                                                               |                                                              Cost to follow `default`                                                              |
+|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| CSL primary `JwtDecoder`                                                                           | default's startup configuration                                                | startup generation only; later generations use their own `ScopedJwtDecoderFactory` decoder (test: first scenario)                                                                                                                                              | done here (part of the CSL port)                                                                                                                   |
+| CSL primary `ClientRegistrationRepository`                                                         | default's startup configuration                                                | startup generation only; generations own their registrations (test: logins after a change)                                                                                                                                                                     | done here                                                                                                                                          |
+| host `authorizedClientManager` (private_key_jwt refresh, observation)                              | primary registrations, `AssertionJwkProvider`                                  | startup generation only; generations use CSL's per-generation manager, without the host's observation `RestClient` (as scopes)                                                                                                                                 | done; S for an observation hook in CSL                                                                                                             |
+| host `OidcTokenEndpointCustomizer` (`resolvedJwks`, observation)                                   | `AssertionJwkProvider`                                                         | startup generation only; generations use CSL's token endpoint (as scopes)                                                                                                                                                                                      | done; same hook                                                                                                                                    |
+| `OidcProviderConfigurationPort`                                                                    | default's startup configuration                                                | not by `default`'s chains after a change. Still read for every tenant's session access-token decoding (`AdditionalJwkSetUrisByRegistrationId`, `preferIdTokenClaims` by registration id) and by the root path                                                  | done for `default`; the per-registration-id lookups are a pre-existing gap of every tenant, M to make per tenant                                   |
+| `tokenClaimsConverter` (root `LazyTokenClaimsConverter`)                                           | default's startup claims                                                       | REST bearer and login conversion of `default` now use derived converters (test: engine authorises by the new claim on both paths). Still used by the search-side `AuthorizationCheckPort` resolver for every tenant (not exercised: no secondary storage here) | done (S) for REST; search side not checked                                                                                                         |
+| `TokenValidatorFactory` (root, with SaaS validators, root clock skew)                              | default's startup providers                                                    | not by `default`'s chains after a change: the generation's decoder uses CSL's validator with the default clock skew and no host extras, as every scope                                                                                                         | done; S/M for a CSL hook for clock skew and host validators                                                                                        |
+| `idTokenDecoderFactory`'s root factory                                                             | default's startup providers                                                    | not by `default`: it now picks the derived settings like any tenant (test: logins after a change on both paths)                                                                                                                                                | done (S)                                                                                                                                           |
+| cluster-admin OIDC chain (`/cluster/v2/**`)                                                        | primary `JwtDecoder` bean + default's startup `client-id-claim`/`groups-claim` | not changed: keeps default's startup issuer and claims after a change of `default`                                                                                                                                                                             | decision needed: root-only is S (build from `camunda.security.authentication.*`), following `default` is M (a host-side reload of a non-CSL chain) |
+| `ProtectedResourceMetadataCustomizer` (RFC 9728 metadata on every OIDC API chain, scopes included) | primary `ClientRegistrationRepository`                                         | advertises default's startup issuers after a change, as it does for every tenant today                                                                                                                                                                         | S/M: pass the chain's issuers per generation                                                                                                       |
+| cluster `/v2` unification `BeanPostProcessor`                                                      | startup only                                                                   | `cslProperties` stays on default's startup configuration; nothing on `default`'s request path reads it after a change except the cluster-admin chain and the CSL options read once (authorize max-age, diagnostics, headers)                                   | none for HTTP security                                                                                                                             |
+
+No bean was genuinely hard to make follow `default`: every per-request consumer either became
+tenant-derived (S) or is no longer reached once the primary chains serve a CSL-built generation.
+
+## Other tenants are unaffected by a change of `default`
+
+Code reading: `PhysicalTenantAuthConfigurations.forPhysicalTenant(id, env)` binds
+`camunda.security.authentication` (the root) and then `camunda.physical-tenants.<id>.security.authentication`;
+no tenant reads `camunda.physical-tenants.default.*`, and the lifecycle hands each tenant its own
+descriptor. Test: during the first scenario the boot tenant keeps its generation on every member,
+its session and tokens keep working, the new default token is 401 on it, and its load sees 0 failed
+requests over the class. Only the startup unification copies `default` into `cslProperties`, and
+that is read by the cluster-admin chain (above), not by other tenants.
+
+## Without physical tenants
+
+- With no generic exporter in the root catalog, it works the same (nested test).
+- With one (the recording exporter in the test; whether the production Camunda exporter counts as
+  generic was not checked), the first key under `camunda.physical-tenants.default` makes `default`
+  explicitly declared, which requires `data.exporters-assigned`, a key that is `REJECT exporter-ids`
+  at runtime. So `default` cannot be changed at runtime in such a deployment until it declares its
+  exporters at startup. This is a configuration-model obstacle, not a security one: exempting a
+  default declared only by security keys, or comparing the effective exporter sets instead of the
+  keys, is S/M.
+
+## Measurements
+
+Apple M5 Pro, three brokers in one JVM, Keycloak in Docker, another heavy build running. Times from
+the call (or the store write) until seen on both paths of every broker, polling every 50 ms.
+
+|                                     What                                     |                                               Result                                                |
+|------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| Change IdP and claims, new token accepted on `/v2` and alias on every broker | 307–893 ms (5 runs)                                                                                 |
+| Same, until rolled out (10 changes per run)                                  | 337–885 ms per change (4 runs); another tenant's change takes 3.3–5.8 s because its module restarts |
+| Implicit default (two brokers)                                               | 176–699 ms (3 runs)                                                                                 |
+| Client secret rotation, `CREDENTIALS_ROTATED` on every broker                | 241–863 ms after the store write, 1 s refresh interval (4 runs)                                     |
+| Unreachable IdP, applied on every broker after it answered                   | 9.3–11.2 s (4 runs); dynamic-config's retry backoff starts at 10 s                                  |
+| CSL change per member (log, every outcome incl. `UNCHANGED` at startup)      | primary chains 3–89 ms (p50 24 ms, 232 calls over all runs); alias 17–36 ms (one run)               |
+| Boot tenant REST load, whole class                                           | 1,330,553 and 1,374,342 requests (2 full-class runs), 0 failed                                      |
+
+## Results on this tree (2026-11-12)
+
+|                                                                                                                                                           Suite                                                                                                                                                            |                                                                                                  Result                                                                                                   |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `./mvnw install -Dquickly -T2`                                                                                                                                                                                                                                                                                             | green, every module                                                                                                                                                                                       |
+| CSL `./mvnw verify`                                                                                                                                                                                                                                                                                                        | api 241, core 180, validation 267, spring-boot-starter 1,757, 0 failures                                                                                                                                  |
+| authentication                                                                                                                                                                                                                                                                                                             | 502 unit + 47 IT, 0 failures                                                                                                                                                                              |
+| zeebe/qa/integration-tests `PhysicalTenantRuntimeSecurityIT` (15) + `PhysicalTenantCredentialGuardIT` (9)                                                                                                                                                                                                                  | 24/24 in 2 full runs; the 5 default scenarios 5/5 in 2 more runs, the 2 nested 2/2 in 1 more                                                                                                              |
+| qa/acceptance-tests OIDC ITs (11 classes: `PhysicalTenantOidcLogin*`, `PhysicalTenantRestOidc*`, `PhysicalTenantOidcClaimInheritanceIT`, `PhysicalTenantOidcClientSecretIT`, `PhysicalTenantEncodedPathOidcRoutingIT`, `OidcNamedProvidersGlobalClaimsIT`, `OidcNoSecondaryStorageIT`, `ClusterAdminOidcAuthenticationIT`) | 38/39: only `PhysicalTenantEncodedPathOidcRoutingIT` fails, as on `pt-poc-csl-runtime-security` (see above). A first run also failed `PhysicalTenantOidcLoginSeparateIdpsIT`: the regression below, fixed |
+
+## Not done, or not proven
+
+- **The module side of a SECURITY change.** Another tenant's SECURITY change also restarts its
+  module, which rebuilds its gRPC security (`GatewayPhysicalTenants`), its REST services with their
+  `BrokerRequestAuthorizationConverter` (groups claims in broker requests depend on `groups-claim`)
+  and its engine. `default`'s module is not restarted here, so gRPC keeps its startup security and a
+  `groups-claim` change reaches REST conversion but not what the module reads (code reading). `S` for
+  gRPC (`gateway.put`), the rest belongs to the module-restart spike.
+- **Two publishes.** The primary chains and the alias are separate CSL slots: for the few
+  milliseconds between them `/v2` and the alias serve different configurations. Atomic needs a CSL
+  call that builds and publishes both (M).
+- **Sessions are per node**, as for other tenants. **Persistent sessions**, logout and refresh-token
+  revocation after a change of `default`, named providers and `private_key_jwt` on the primary chains
+  in an IT: not tested.
+- **Root configuration changes** (`camunda.security.authentication.*`) still apply only at node
+  start; other tenants inherit them.
+- **BASIC**: the CSL port refuses BASIC primary chains; the method stays cluster-wide.
+- **Regression found and fixed on the way:** the in-place credential rotation of
+  `mk-csl-poc-default-chain-reload` made the application's `OAuth2AuthorizedClientRepository`
+  rebind every stored client to the primary registration of the same id, which broke
+  `PhysicalTenantOidcLoginSeparateIdpsIT` (a tenant on another IdP read no username). Fixed in CSL
+  `8526e673`.
+
+## Cost
+
+|                                              Piece                                               |                         Size                          |                                                      Genuinely hard?                                                       |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| CSL primary chain port (views, generations, session binding, config-driven primary webapp chain) | M (+885/−236 main, +522/−250 tests)                   | No: the scope machinery fits; the only design choice is that later generations use CSL's stack instead of the host's beans |
+| Host-side derived state for `default`                                                            | S (camunda main code of this branch in all: +164/−57) | No                                                                                                                         |
+| Lifecycle, executor, startup credentials for `default` (security only)                           | S                                                     | No                                                                                                                         |
+| Primary and alias in one atomic publish                                                          | M                                                     | No, a CSL API addition                                                                                                     |
+| Cluster-admin chain                                                                              | S or M                                                | Needs a decision, not work                                                                                                 |
+| Host hooks per generation (observation, SaaS validators, clock skew)                             | M (CSL)                                               | No; also missing for every tenant                                                                                          |
+| Implicit `default` with a generic exporter                                                       | S/M                                                   | A configuration-model rule, not security                                                                                   |
+| The module side of `default` (gRPC, REST services, engine)                                       | other spike                                           | Restarting the default tenant's module is the open question there                                                          |
+
+## Open questions for the identity team
+
+1. Should `/cluster/v2/**` (cluster admin) validate against the root identity provider or follow
+   `default`? Today it silently follows `default`'s startup configuration when physical tenants are
+   configured.
+2. Is it acceptable that after the first change `default` is served by CSL-built generations, like
+   every tenant, without the host's customised beans (observation of token requests, SaaS
+   organisation/cluster validators, configured clock skew)? Or does CSL need a per-generation hook?
+3. Should `/v2` and `/physical-tenants/default` change atomically (one CSL call), or is a
+   milliseconds window acceptable?
+4. `KEEP_PREVIOUS` for an unreachable new IdP of `default`, as for every tenant?
+5. Should a default tenant declared only by security keys be exempt from the exporter manifest rule?
+
+## How to run
+
+```bash
+# CSL 1.2.1-pt-poc-default-full-SNAPSHOT (worktree mk-csl-poc-default-full-reload, ./mvnw install
+# -DskipTests) must be in the branch's local repository: copy
+# ~/.m2/repository/io/camunda/camunda-security-library*/1.2.1-pt-poc-default-full-SNAPSHOT into
+# ~/.m2/repository/installed/pt-poc-default-tenant-security/io/camunda/
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dmaven.build.cache.enabled=false '-Dit.test=PhysicalTenantRuntimeSecurityIT*,PhysicalTenantCredentialGuardIT'
+./mvnw verify -pl authentication -Dquickly -DskipTests=false -Dmaven.build.cache.enabled=false
+```
+
