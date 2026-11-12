@@ -1319,6 +1319,8 @@ jobs:
         run: bats .github/scripts/ci-relevance/check.bats
       - name: Run flattened-pom validation tests
         run: bats .github/scripts/validate-flattened-poms.bats
+      - name: Run ESUP backport warning tests
+        run: node --test .github/scripts/esup-backport-warning.test.mjs
       - name: Observe build status
         if: always()
         continue-on-error: true

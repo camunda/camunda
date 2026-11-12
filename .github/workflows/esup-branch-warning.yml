@@ -1,0 +1,67 @@
+# description: Warns on a pull request heading to an ESUP (extended support) branch: when a `backport stable/X` label whose description says ESUP is added, and when a PR is opened against (or moved to) such a branch. Warn only, never blocks; fork PRs are skipped. The third warning lives in backport.yml.
+# test location: .github/scripts/esup-backport-warning.test.mjs
+# type: CI Helper
+# owner: @camunda/engineering-operations
+---
+name: ESUP Branch Warning
+
+on:
+  # Fork PRs get a read-only token, so the job skips them. A pull_request run uses the workflow
+  # from the PR's branch, so this file must exist on each stable branch for the opened/edited
+  # warning there.
+  pull_request:
+    types: [labeled, opened, edited]
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
+jobs:
+  warn:
+    name: Warn about ESUP branch
+    # labeled: the label decides. opened / edited (base changed only): the base branch's
+    # `backport <base>` label decides, looked up by the script. Fork PRs are skipped.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && (
+        (github.event.action == 'labeled' &&
+          startsWith(github.event.label.name, 'backport ') &&
+          contains(github.event.label.description, 'ESUP')) ||
+        (github.event.action == 'opened' && startsWith(github.event.pull_request.base.ref, 'stable/')) ||
+        (github.event.action == 'edited' && github.event.changes.base &&
+          startsWith(github.event.pull_request.base.ref, 'stable/')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write  # comment on the PR and read the label
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MODE: ${{ github.event.action == 'labeled' && 'label' || 'pull-request' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          LABEL_DESCRIPTION: ${{ github.event.label.description }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: node .github/scripts/esup-backport-warning.mjs
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
