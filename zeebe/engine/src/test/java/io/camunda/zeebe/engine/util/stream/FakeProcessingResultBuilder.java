@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util.stream;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +70,7 @@ public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
       final RecordType type,
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final BufferWriter value,
       final ValueType valueType,
       final RejectionType rejectionType,
       final String rejectionReason,
