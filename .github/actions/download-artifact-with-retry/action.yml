@@ -76,7 +76,9 @@ runs:
       env:
         DELAY: ${{ inputs.retry-delay-seconds }}
         JITTER: ${{ inputs.retry-jitter-seconds }}
-      run: sleep $(( DELAY + RANDOM % (JITTER + 1) ))
+      # `10#` forces base-10: the regex above permits leading zeros, which
+      # bare arithmetic would read as octal (`08`/`09` abort, `010` waits 8s).
+      run: sleep $(( 10#$DELAY + RANDOM % (10#$JITTER + 1) ))
 
     - name: Download artifact (attempt 2 of 3)
       id: attempt-2
@@ -94,7 +96,9 @@ runs:
       env:
         DELAY: ${{ inputs.retry-delay-seconds }}
         JITTER: ${{ inputs.retry-jitter-seconds }}
-      run: sleep $(( DELAY + RANDOM % (JITTER + 1) ))
+      # `10#` forces base-10: the regex above permits leading zeros, which
+      # bare arithmetic would read as octal (`08`/`09` abort, `010` waits 8s).
+      run: sleep $(( 10#$DELAY + RANDOM % (10#$JITTER + 1) ))
 
     - name: Download artifact (attempt 3 of 3)
       id: attempt-3
