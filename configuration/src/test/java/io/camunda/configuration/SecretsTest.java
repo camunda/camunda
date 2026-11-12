@@ -8,11 +8,19 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -764,6 +772,269 @@ class SecretsTest {
       assertThat(store.getMaxRetries()).isEqualTo(3);
       assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
       assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+
+    @Test
+    void shouldResetEveryDefaultedAzureStorePropertyToItsDefaultWhenSetToNull() {
+      // given a store with every defaulted property set away from its default
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setMaxRetries(7);
+      store.setCallTimeout(Duration.ofSeconds(30));
+      store.setAttemptTimeout(Duration.ofSeconds(9));
+
+      // when each is set to null, as an explicitly empty property binds
+      store.setMaxRetries(null);
+      store.setCallTimeout(null);
+      store.setAttemptTimeout(null);
+
+      // then each is back to its documented default rather than left unset
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.azure.default.vault-url=https://my-vault.vault.azure.net",
+        "camunda.secrets.stores.azure.default.max-retries=",
+        "camunda.secrets.stores.azure.default.call-timeout=",
+        "camunda.secrets.stores.azure.default.attempt-timeout="
+      })
+  class WithEmptyAzureNumericProperties {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithEmptyAzureNumericProperties(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldFallBackToTheDefaultsWhenTheValuesAreEmpty() {
+      // given explicitly empty retries and timeouts, which an env-var-driven deployment produces
+      // routinely (see @TestPropertySource)
+      // when the unified configuration is bound
+      final var store =
+          unifiedConfiguration.getCamunda().getSecrets().getStores().getAzure().get("default");
+
+      // then binding succeeds and keeps the defaults
+      assertThat(store.getMaxRetries()).isEqualTo(3);
+      assertThat(store.getCallTimeout()).isEqualTo(Duration.ofSeconds(5));
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(2));
+    }
+  }
+
+  @Nested
+  class AzureStoreValidation {
+
+    private static final String AZURE_STORE =
+        "camunda.physical-tenants.pt1.secrets.stores.azure.default";
+
+    static Stream<Arguments> invalidStores() {
+      return Stream.of(
+          invalid(
+              "blank container-secret-id",
+              s -> s.setContainerSecretId(" "),
+              "container-secret-id must not be blank"),
+          invalid(
+              "blank managed-identity-client-id",
+              s -> s.setManagedIdentityClientId(" "),
+              "managed-identity-client-id must not be blank"),
+          invalid(
+              "blank authority-host",
+              s -> s.setAuthorityHost(""),
+              "authority-host must not be blank"),
+          invalid(
+              "vault-url without a scheme",
+              s -> s.setVaultUrl("my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "plain-http vault-url",
+              s -> s.setVaultUrl("http://my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "authority-host without a scheme",
+              s -> s.setAuthorityHost("login.microsoftonline.us"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "vault-url with credentials in its user info",
+              s -> s.setVaultUrl("https://client:s3cr3t@my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "authority-host with credentials in its user info",
+              s -> s.setAuthorityHost("https://client:s3cr3t@login.microsoftonline.us"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "vault-url with a path",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net/secrets"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "vault-url with a query",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net?sig=s3cr3t"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "authority-host with a fragment",
+              s -> s.setAuthorityHost("https://login.microsoftonline.us#s3cr3t"),
+              "authority-host must be an absolute https URL"),
+          invalid(
+              "path-prefix leaving no room for a secret name",
+              s -> s.setPathPrefix("p".repeat(127)),
+              "path-prefix must be at most 126 characters so a secret name fits after it, but was"
+                  + " 127"),
+          invalid(
+              "path-prefix outside the Key Vault charset",
+              s -> s.setPathPrefix("camunda/"),
+              "path-prefix must contain only [0-9A-Za-z-] to form valid Key Vault secret names,"
+                  + " but has an invalid character at index 7"),
+          invalid(
+              "container-secret-id outside the Key Vault charset",
+              s -> s.setContainerSecretId("all_secrets"),
+              "container-secret-id must contain only [0-9A-Za-z-] to form valid Key Vault secret"
+                  + " names, but has an invalid character at index 3"),
+          invalid(
+              "effective container secret name over 127 characters",
+              s -> {
+                s.setPathPrefix("p-");
+                s.setContainerSecretId("c".repeat(126));
+              },
+              "must be at most 127 characters, but was 128"),
+          invalid(
+              "negative max-retries", s -> s.setMaxRetries(-1), "max-retries must not be negative"),
+          invalid(
+              "zero call-timeout",
+              s -> s.setCallTimeout(Duration.ZERO),
+              "call-timeout must be positive"),
+          invalid(
+              "negative attempt-timeout",
+              s -> s.setAttemptTimeout(Duration.ofSeconds(-1)),
+              "attempt-timeout must be positive"),
+          invalid(
+              "attempt-timeout longer than call-timeout",
+              s -> {
+                s.setCallTimeout(Duration.ofSeconds(2));
+                s.setAttemptTimeout(Duration.ofSeconds(3));
+              },
+              "attempt-timeout must not be longer than .call-timeout"));
+    }
+
+    private static Arguments invalid(
+        final String description,
+        final Consumer<Secrets.AzureKeyVaultStore> misconfiguration,
+        final String expectedMessage) {
+      return Arguments.of(Named.of(description, misconfiguration), expectedMessage);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidStores")
+    void shouldRejectInvalidAzureStore(
+        final Consumer<Secrets.AzureKeyVaultStore> misconfiguration, final String expectedMessage) {
+      // given
+      final var store = new Secrets.AzureKeyVaultStore();
+      misconfiguration.accept(store);
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageStartingWith(AZURE_STORE)
+          .hasMessageContaining(expectedMessage)
+          .message()
+          .doesNotContain("s3cr3t");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"vault-url", "authority-host"})
+    void shouldNotExposeAMalformedUrlAnywhereInTheExceptionChain(final String setting) {
+      // given a malformed URL holding a pasted credential, which the URI parser rejects
+      final var pastedValue = "https://client:s3cr3t value";
+      final var store = new Secrets.AzureKeyVaultStore();
+      if ("vault-url".equals(setting)) {
+        store.setVaultUrl(pastedValue);
+      } else {
+        store.setAuthorityHost(pastedValue);
+      }
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage(
+              AZURE_STORE
+                  + "."
+                  + setting
+                  + " must be an absolute https URL with no user info, path, query or fragment")
+          .hasNoCause()
+          .satisfies(e -> assertThat(e.getSuppressed()).isEmpty());
+    }
+
+    @Test
+    void shouldCapTheDefaultAttemptTimeoutAtAShorterCallTimeout() {
+      // given only the call timeout, lowered below the 2s attempt-timeout default
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setCallTimeout(Duration.ofSeconds(1));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+      assertThat(store.getAttemptTimeout()).isEqualTo(Duration.ofSeconds(1));
+    }
+
+    @Test
+    void shouldStripWhitespaceAroundEveryStringSetting() {
+      // given values with surrounding whitespace, as quoting in YAML or an env var can leave
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl(" https://my-vault.vault.azure.net ");
+      store.setPathPrefix(" camunda- ");
+      store.setContainerSecretId(" bundle ");
+      store.setManagedIdentityClientId(" client-id ");
+      store.setAuthorityHost(" https://login.microsoftonline.us ");
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+      assertThat(store.getVaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
+      assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+      assertThat(store.getContainerSecretId()).isEqualTo("bundle");
+      assertThat(store.getManagedIdentityClientId()).isEqualTo("client-id");
+      assertThat(store.getAuthorityHost()).isEqualTo("https://login.microsoftonline.us");
+    }
+
+    @Test
+    void shouldNotEchoARejectedSecretNameSettingInTheMessage() {
+      // given a value pasted by mistake, e.g. a credential instead of an id
+      final var pastedValue = "client_secret=s3cr3t";
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setContainerSecretId(pastedValue);
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageEndingWith("invalid character at index 6")
+          .message()
+          .doesNotContain(pastedValue)
+          .doesNotContain("s3cr3t");
+    }
+
+    @Test
+    void shouldAcceptAzureStoreAtEveryBoundary() {
+      // given every validated value at the edge of what is allowed
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl(" https://my-vault.vault.azure.net/ ");
+      store.setAuthorityHost("HTTPS://login.microsoftonline.us");
+      store.setPathPrefix("");
+      store.setContainerSecretId("c".repeat(127));
+      store.setMaxRetries(0);
+      store.setCallTimeout(Duration.ofSeconds(2));
+      store.setAttemptTimeout(Duration.ofSeconds(2));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptPathPrefixThatLeavesRoomForAOneCharacterSecretName() {
+      // given
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setPathPrefix("p".repeat(126));
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
     }
   }
 

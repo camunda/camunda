@@ -131,7 +131,11 @@ public class SecretStoreConfiguration {
               + tenantId
               + "' has "
               + totalStores
-              + " secret stores configured, but only one is supported at this time");
+              + " secret stores configured, but only one is supported at this time"
+              + (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+                  ? ""
+                  : "; stores under camunda.secrets.stores.* are inherited by every physical"
+                      + " tenant and count towards this limit"));
     }
     // both rules are checked before any store is built, so the operator gets the configuration
     // error rather than whatever the store's own construction fails with — an AWS or GCP store
@@ -333,12 +337,14 @@ public class SecretStoreConfiguration {
 
   private static SecretStore azureStore(
       final String storeId, final String tenantId, final AzureKeyVaultStore config) {
+    final var property = storesProperty(tenantId, "azure") + "." + storeId;
     final var vaultUrl = config.getVaultUrl();
-    if (vaultUrl == null || vaultUrl.isBlank()) {
+    if (vaultUrl == null || vaultUrl.isEmpty()) {
       throw new IllegalStateException(
-          "Azure Key Vault store '%s' for physical tenant '%s' has no %s.%s.vault-url configured"
-              .formatted(storeId, tenantId, storesProperty(tenantId, "azure"), storeId));
+          "Azure Key Vault store '%s' for physical tenant '%s' has no %s.vault-url configured"
+              .formatted(storeId, tenantId, property));
     }
+    config.validate(property);
     LOG.warn(
         "Azure Key Vault store '{}' for physical tenant '{}' does not read the vault yet: every"
             + " secret reference it serves resolves as not found",

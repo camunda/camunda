@@ -8,6 +8,7 @@
 package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -746,6 +747,66 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldThrowWhenTheDefaultTenantsAzureVaultUrlIsBlank() {
+    // given a default-tenant azure store whose vault URL is only whitespace
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.azure.default.vault-url", "  "));
+
+    // when / then — the message names the root property, not a tenant-scoped one
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("has no camunda.secrets.stores.azure.default.vault-url configured");
+  }
+
+  @Test
+  void shouldStripWhitespaceAroundEveryAzureStringSetting() {
+    // given values with surrounding whitespace, as quoting in YAML or an env var can leave
+    final var store = "camunda.secrets.stores.azure.default.";
+    final var resolver =
+        resolverFor(
+            Map.of(
+                store + "vault-url",
+                " https://my-vault.vault.azure.net ",
+                store + "path-prefix",
+                " camunda- ",
+                store + "container-secret-id",
+                " bundle ",
+                store + "managed-identity-client-id",
+                " client-id ",
+                store + "authority-host",
+                " https://login.microsoftonline.us "));
+    final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
+
+    // when
+    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
+      registries(resolver);
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()));
+    }
+
+    // then
+    assertThat(built.getValue().vaultUrl()).isEqualTo("https://my-vault.vault.azure.net");
+    assertThat(built.getValue().pathPrefix()).isEqualTo("camunda-");
+    assertThat(built.getValue().containerSecretId()).isEqualTo("bundle");
+    assertThat(built.getValue().managedIdentityClientId()).isEqualTo("client-id");
+    assertThat(built.getValue().authorityHost()).isEqualTo("https://login.microsoftonline.us");
+  }
+
+  @Test
+  void shouldExplainInheritedRootStoresWhenATenantExceedsOneStore(@TempDir final Path secretsDir) {
+    // given a root file store, which pt1 inherits, and an azure store pt1 adds on top
+    final var properties = new HashMap<String, Object>();
+    properties.put("camunda.secrets.stores.file.default.path", secretsDir.toString());
+    properties.putAll(tenantWithStore("pt1", "azure", "vault-url", "https://pt1.vault.azure.net"));
+    final var resolver = resolverFor(properties);
+
+    // when / then — the operator learns the second store is the inherited root one
+    assertThatIllegalStateException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageContaining("Physical tenant 'pt1' has 2 secret stores configured")
+        .withMessageContaining("inherited by every physical tenant");
+  }
+
+  @Test
   void shouldThrowWhenAzureStoreHasNoVaultUrl() {
     // given a pt1 azure store under the only supported id that sets everything but the vault URL
     final var resolver =
@@ -756,6 +817,71 @@ class SecretStoreConfigurationTest {
         .isThrownBy(() -> registries(resolver))
         .withMessageContaining(
             "camunda.physical-tenants.pt1.secrets.stores.azure.default.vault-url");
+  }
+
+  @Test
+  void shouldBuildTenantAzureStoreWhoseTimeoutsAreOnlyValidOnceMergedWithTheRoot() {
+    // given a root call timeout of 30s and pt1 overriding only the attempt timeout to 10s, longer
+    // than the 5s call-timeout default but within the 30s it inherits
+    final var properties = new HashMap<String, Object>();
+    properties.put(
+        "camunda.secrets.stores.azure.default.vault-url", "https://root.vault.azure.net");
+    properties.put("camunda.secrets.stores.azure.default.call-timeout", "30s");
+    properties.putAll(tenantWithAzureStore("pt1", "attempt-timeout", "10s"));
+    final var resolver = resolverFor(properties);
+    final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
+
+    // when
+    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
+      registries(resolver);
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+    }
+
+    // then pt1's store gets the merged timeouts
+    assertThat(built.getAllValues())
+        .extracting(AzureKeyVaultStoreConfig::callTimeout, AzureKeyVaultStoreConfig::attemptTimeout)
+        .contains(tuple(Duration.ofSeconds(30), Duration.ofSeconds(10)));
+  }
+
+  @Test
+  void shouldCapTheDefaultAttemptTimeoutAtATenantsShorterCallTimeout() {
+    // given pt1 lowering only the call timeout, below the 2s attempt-timeout default
+    final var properties = new HashMap<String, Object>();
+    properties.put(
+        "camunda.secrets.stores.azure.default.vault-url", "https://root.vault.azure.net");
+    properties.putAll(tenantWithAzureStore("pt1", "call-timeout", "1s"));
+    final var resolver = resolverFor(properties);
+    final var built = ArgumentCaptor.forClass(AzureKeyVaultStoreConfig.class);
+
+    // when
+    try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
+      registries(resolver);
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+    }
+
+    // then startup succeeds, pt1's attempt bound follows its call bound and the root keeps 2s
+    assertThat(built.getAllValues())
+        .extracting(AzureKeyVaultStoreConfig::callTimeout, AzureKeyVaultStoreConfig::attemptTimeout)
+        .containsExactlyInAnyOrder(
+            tuple(Duration.ofSeconds(5), Duration.ofSeconds(2)),
+            tuple(Duration.ofSeconds(1), Duration.ofSeconds(1)));
+  }
+
+  @Test
+  void shouldNameTheTenantPropertyWhenATenantsAzureStoreIsInvalid() {
+    // given a valid root azure store and pt1 overriding its max-retries with a negative value
+    final var properties = new HashMap<String, Object>();
+    properties.put(
+        "camunda.secrets.stores.azure.default.vault-url", "https://root.vault.azure.net");
+    properties.putAll(tenantWithAzureStore("pt1", "max-retries", "-1"));
+    final var resolver = resolverFor(properties);
+
+    // when / then — the operator is pointed at pt1's override, not the root property
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessage(
+            "camunda.physical-tenants.pt1.secrets.stores.azure.default.max-retries must not be"
+                + " negative, but was -1");
   }
 
   @Test

@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,7 +52,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * under any other id is rejected at startup, since nothing could ever read it.
  *
  * <p>Secrets configuration is overridable per physical tenant via {@code
- * camunda.physical-tenants.<id>.secrets.*}.
+ * camunda.physical-tenants.<id>.secrets.*}. Every physical tenant inherits the stores configured
+ * under {@code camunda.secrets.stores.*}, so a tenant that needs a different store type than the
+ * root must not leave a root store configured: the inherited store would count towards its one
+ * store.
  */
 @NullMarked
 public class Secrets {
@@ -223,6 +228,7 @@ public class Secrets {
       this.env = env;
     }
 
+    /** Not validated here, see {@link AzureKeyVaultStore#validate(String)}. */
     public Map<String, AzureKeyVaultStore> getAzure() {
       return azure;
     }
@@ -776,6 +782,12 @@ public class Secrets {
      */
     private static final int DEFAULT_MAX_RETRIES = 3;
 
+    /** Characters Key Vault accepts in a secret name. */
+    private static final Pattern SECRET_NAME_PATTERN = Pattern.compile("[0-9A-Za-z-]*");
+
+    /** Longest secret name Key Vault accepts. */
+    private static final int MAX_SECRET_NAME_LENGTH = 127;
+
     /**
      * URL of the vault holding the secrets, such as {@code https://my-vault.vault.azure.net}.
      * Required.
@@ -787,7 +799,8 @@ public class Secrets {
      * Key Vault secret name (e.g. {@code camunda-} plus reference {@code db-password} reads secret
      * {@code camunda-db-password}). When omitted, references map to bare secret names. Applies to
      * {@link #containerSecretId} as well. Key Vault secret names allow only {@code [0-9A-Za-z-]},
-     * so use e.g. {@code camunda-} rather than {@code camunda/}.
+     * so use e.g. {@code camunda-} rather than {@code camunda/}; any other character is rejected at
+     * startup.
      */
     private @Nullable String pathPrefix;
 
@@ -828,56 +841,66 @@ public class Secrets {
 
     /**
      * Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume
-     * the whole {@link #callTimeout} budget. Defaults to 2 seconds.
+     * the whole {@link #callTimeout} budget. Defaults to 2 seconds, or to {@link #callTimeout} when
+     * that is shorter. {@code null} while unset, so the default can follow {@link #callTimeout}.
      */
-    private Duration attemptTimeout = DEFAULT_ATTEMPT_TIMEOUT;
+    private @Nullable Duration attemptTimeout;
 
     public @Nullable String getVaultUrl() {
       return vaultUrl;
     }
 
+    /** Surrounding whitespace, as quoting in YAML or an env var can leave, is stripped. */
     public void setVaultUrl(final @Nullable String vaultUrl) {
-      this.vaultUrl = vaultUrl;
+      this.vaultUrl = strip(vaultUrl);
     }
 
     public @Nullable String getPathPrefix() {
       return pathPrefix;
     }
 
+    /** Surrounding whitespace is stripped, as for {@link #setVaultUrl}. */
     public void setPathPrefix(final @Nullable String pathPrefix) {
-      this.pathPrefix = pathPrefix;
+      this.pathPrefix = strip(pathPrefix);
     }
 
     public @Nullable String getContainerSecretId() {
       return containerSecretId;
     }
 
+    /** Surrounding whitespace is stripped, as for {@link #setVaultUrl}. */
     public void setContainerSecretId(final @Nullable String containerSecretId) {
-      this.containerSecretId = containerSecretId;
+      this.containerSecretId = strip(containerSecretId);
     }
 
     public @Nullable String getManagedIdentityClientId() {
       return managedIdentityClientId;
     }
 
+    /** Surrounding whitespace is stripped, as for {@link #setVaultUrl}. */
     public void setManagedIdentityClientId(final @Nullable String managedIdentityClientId) {
-      this.managedIdentityClientId = managedIdentityClientId;
+      this.managedIdentityClientId = strip(managedIdentityClientId);
     }
 
     public @Nullable String getAuthorityHost() {
       return authorityHost;
     }
 
+    /** Surrounding whitespace is stripped, as for {@link #setVaultUrl}. */
     public void setAuthorityHost(final @Nullable String authorityHost) {
-      this.authorityHost = authorityHost;
+      this.authorityHost = strip(authorityHost);
     }
 
     public int getMaxRetries() {
       return maxRetries;
     }
 
-    public void setMaxRetries(final int maxRetries) {
-      this.maxRetries = maxRetries;
+    /**
+     * @param maxRetries the configured value, or {@code null}, bound to the default the same way an
+     *     unset property is, so an explicitly empty value does not fail binding
+     */
+    public void setMaxRetries(final @Nullable Integer maxRetries) {
+      this.maxRetries = maxRetries == null ? DEFAULT_MAX_RETRIES : maxRetries;
     }
 
     public Duration getCallTimeout() {
@@ -892,16 +915,159 @@ public class Secrets {
       this.callTimeout = callTimeout == null ? DEFAULT_CALL_TIMEOUT : callTimeout;
     }
 
+    /**
+     * @return the configured value or, when unset, 2 seconds capped at {@link #getCallTimeout()},
+     *     so lowering only the call timeout does not leave the default attempt timeout above it
+     */
     public Duration getAttemptTimeout() {
-      return attemptTimeout;
+      if (attemptTimeout != null) {
+        return attemptTimeout;
+      }
+      return DEFAULT_ATTEMPT_TIMEOUT.compareTo(callTimeout) <= 0
+          ? DEFAULT_ATTEMPT_TIMEOUT
+          : callTimeout;
     }
 
     /**
-     * @param attemptTimeout the configured value, or {@code null}, bound to the same outcome {@code
-     *     callTimeout} already has for an empty value
+     * @param attemptTimeout the configured value, or {@code null}, bound to the default the same
+     *     way an unset property is
      */
     public void setAttemptTimeout(final @Nullable Duration attemptTimeout) {
-      this.attemptTimeout = attemptTimeout == null ? DEFAULT_ATTEMPT_TIMEOUT : attemptTimeout;
+      this.attemptTimeout = attemptTimeout;
+    }
+
+    /**
+     * Rejects settings that are set but can never work. Called where the store is built rather than
+     * from {@link Stores#getAzure()}, unlike the AWS and GCP stores: the physical-tenant overlay
+     * reads that map while a tenant's overrides sit on a fresh instance whose other fields still
+     * hold their defaults, so a cross-field check there would compare against values nobody set.
+     * Required-field presence ({@code vault-url}) is checked by the caller.
+     *
+     * @param property the property prefix of this store as the operator configured it, e.g. {@code
+     *     camunda.physical-tenants.pt1.secrets.stores.azure.default}, so an error names the
+     *     property to fix
+     * @throws IllegalArgumentException if the store sets a blank container-secret-id,
+     *     managed-identity-client-id or authority-host, a vault-url or authority-host that is not
+     *     an absolute https URL, a path-prefix or container-secret-id with characters outside
+     *     {@code [0-9A-Za-z-]}, a path-prefix that leaves no room for a secret name, an effective
+     *     container secret name longer than 127 characters (Key Vault secret-name rules), a
+     *     negative max-retries, or timeouts that are not positive or whose attempt bound exceeds
+     *     the call bound. An https URL must hold no user info, path, query or fragment, so no
+     *     credential can be passed in it
+     */
+    public void validate(final String property) {
+      requireNotBlank(property, "container-secret-id", containerSecretId);
+      requireNotBlank(property, "managed-identity-client-id", managedIdentityClientId);
+      requireNotBlank(property, "authority-host", authorityHost);
+      requireHttpsUrl(property, "vault-url", vaultUrl);
+      requireHttpsUrl(property, "authority-host", authorityHost);
+      requireSecretNameChars(property, "path-prefix", pathPrefix);
+      requireSecretNameChars(property, "container-secret-id", containerSecretId);
+      if (pathPrefix != null && pathPrefix.length() >= MAX_SECRET_NAME_LENGTH) {
+        throw new IllegalArgumentException(
+            property
+                + ".path-prefix must be at most "
+                + (MAX_SECRET_NAME_LENGTH - 1)
+                + " characters so a secret name fits after it, but was "
+                + pathPrefix.length());
+      }
+      if (containerSecretId != null) {
+        final int fullLength =
+            (pathPrefix == null ? 0 : pathPrefix.length()) + containerSecretId.length();
+        if (fullLength > MAX_SECRET_NAME_LENGTH) {
+          throw new IllegalArgumentException(
+              property
+                  + " effective container secret name (path-prefix + container-secret-id) must be"
+                  + " at most "
+                  + MAX_SECRET_NAME_LENGTH
+                  + " characters, but was "
+                  + fullLength);
+        }
+      }
+      if (maxRetries < 0) {
+        throw new IllegalArgumentException(
+            property + ".max-retries must not be negative, but was " + maxRetries);
+      }
+      if (!callTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            property + ".call-timeout must be positive, but was " + callTimeout);
+      }
+      final var effectiveAttemptTimeout = getAttemptTimeout();
+      if (!effectiveAttemptTimeout.isPositive()) {
+        throw new IllegalArgumentException(
+            property + ".attempt-timeout must be positive, but was " + effectiveAttemptTimeout);
+      }
+      if (effectiveAttemptTimeout.compareTo(callTimeout) > 0) {
+        throw new IllegalArgumentException(
+            property
+                + ".attempt-timeout must not be longer than .call-timeout ("
+                + callTimeout
+                + "), but was "
+                + effectiveAttemptTimeout);
+      }
+    }
+
+    private static @Nullable String strip(final @Nullable String value) {
+      return value == null ? null : value.strip();
+    }
+
+    private static void requireNotBlank(
+        final String property, final String name, final @Nullable String value) {
+      if (value != null && value.isBlank()) {
+        throw new IllegalArgumentException(property + "." + name + " must not be blank");
+      }
+    }
+
+    /** Blank values are left to the presence checks, so only a set value is checked here. */
+    private static void requireHttpsUrl(
+        final String property, final String name, final @Nullable String value) {
+      if (value == null || value.isBlank()) {
+        return;
+      }
+      final var message =
+          property
+              + "."
+              + name
+              + " must be an absolute https URL with no user info, path, query or fragment";
+      final URI uri;
+      try {
+        uri = new URI(value);
+      } catch (final URISyntaxException e) {
+        // the cause is dropped: its message repeats the value, which may hold credentials
+        throw new IllegalArgumentException(message);
+      }
+      final var path = uri.getRawPath();
+      if (!"https".equalsIgnoreCase(uri.getScheme())
+          || uri.getHost() == null
+          || uri.getRawUserInfo() != null
+          || (path != null && !path.isEmpty() && !"/".equals(path))
+          || uri.getRawQuery() != null
+          || uri.getRawFragment() != null) {
+        throw new IllegalArgumentException(message);
+      }
+    }
+
+    private static void requireSecretNameChars(
+        final String property, final String name, final @Nullable String value) {
+      if (value != null && !SECRET_NAME_PATTERN.matcher(value).matches()) {
+        throw new IllegalArgumentException(
+            property
+                + "."
+                + name
+                + " must contain only [0-9A-Za-z-] to form valid Key Vault secret names, but has"
+                + " an invalid character at index "
+                + firstInvalidCharIndex(value));
+      }
+    }
+
+    private static int firstInvalidCharIndex(final String value) {
+      for (int i = 0; i < value.length(); i++) {
+        final char c = value.charAt(i);
+        if (!(c == '-' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z')) {
+          return i;
+        }
+      }
+      return -1;
     }
   }
 }
