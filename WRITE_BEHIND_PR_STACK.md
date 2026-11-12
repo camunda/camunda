@@ -70,6 +70,11 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
    `RawDbAccess`, `RawAccessibleDb`, `RocksDbRawAccess`/`RocksDbIterator` + `DbNullKey` -> `impl`.
 8. **Subagents:** use Sonnet for simpler tasks (mechanical ports, test moves, build fixes,
    formatting); keep the default model for concurrency-sensitive store work and reviews.
+10. **`count()` transaction leak (camunda/camunda#68932) is fixed in a separate PR by Carlo.**
+    Every subagent brief must say: do NOT touch `TransactionalColumnFamily.count()`/
+    `countEqualPrefix()` and do NOT add `shouldRollBackFailedTransactionAfterCount`. If a stack
+    PR turns out to depend on the fix, report it; we then add that fix PR to the stack (as a base)
+    instead of duplicating it.
 9. Commits authored as Carlo Sana <1188147+entangled90@users.noreply.github.com>, no Claude
    co-author line.
 
