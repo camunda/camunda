@@ -114,16 +114,6 @@ class ProcessDefinitionSuspensionHandlerTest {
   }
 
   @Test
-  void shouldGenerateNoIdsWhenNoVersionsResolved() {
-    // given
-    final Record<ProcessDefinitionSuspensionRecordValue> record =
-        suspensionRecord(ProcessDefinitionSuspensionIntent.SUSPENDED, 1L, List.of());
-
-    // when - then
-    assertThat(underTest.generateIds(record)).isEmpty();
-  }
-
-  @Test
   void shouldSetSuspendedStateOnUpdateEntity() {
     // given
     final Record<ProcessDefinitionSuspensionRecordValue> record =

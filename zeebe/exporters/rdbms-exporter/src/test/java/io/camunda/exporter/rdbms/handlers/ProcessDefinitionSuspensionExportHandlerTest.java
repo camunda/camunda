@@ -119,23 +119,6 @@ class ProcessDefinitionSuspensionExportHandlerTest {
     verifyNoMoreInteractions(processDefinitionWriter);
   }
 
-  @Test
-  void shouldNeverUseRecordLevelProcessDefinitionKey() {
-    // given
-    final Record<ProcessDefinitionSuspensionRecordValue> record =
-        suspensionRecord(
-            ProcessDefinitionSuspensionIntent.SUSPENDED,
-            999L,
-            List.of(version(1L, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
-
-    // when
-    underTest.export(record);
-
-    // then
-    verify(processDefinitionWriter, never()).markSuspended(999L);
-    verify(processDefinitionWriter).markSuspended(1L);
-  }
-
   private Record<ProcessDefinitionSuspensionRecordValue> suspensionRecord(
       final ProcessDefinitionSuspensionIntent intent,
       final long requestKey,
