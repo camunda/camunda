@@ -241,21 +241,34 @@ jobs:
           TOKEN: ${{ steps.github-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          set -euo pipefail
+          # No `-e`: the board is a report on the work, not the work. Every
+          # failure here is handled in place, so that a Slack outage or a state
+          # branch that will not take a push cannot stop the run from
+          # dispatching the fix agents it picked.
+          set -uo pipefail
           s=.github/scripts/oc-flakiness
           date_key=$(date -u +%Y-%m-%d)
-          node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
-            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"
+          if ! node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
+            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"; then
+            echo "::warning::could not build the daily board; dispatching without it"
+            exit 0
+          fi
 
           # Store first, post second. A re-run of the pick on the same day
           # merges into the board already in the channel instead of posting a
           # second message and orphaning the runs reporting to the first.
-          board=$(BOARD_JSON=$(cat "$RUNNER_TEMP/board-init.json") \
-            bash "$s/board-store.sh" init "$date_key")
+          if ! board=$(BOARD_JSON=$(cat "$RUNNER_TEMP/board-init.json") \
+            bash "$s/board-store.sh" init "$date_key"); then
+            echo "::warning::could not store the daily board; dispatching without it"
+            exit 0
+          fi
+          # Only once the board is stored, so a run that could not store one
+          # dispatches with an empty board_date and its agents skip the update.
           echo "date=${date_key}" >> "$GITHUB_OUTPUT"
 
           if [[ -n "$(jq -r '.ts // ""' <<< "$board")" ]]; then
-            bash "$s/board-store.sh" publish "$date_key" > /dev/null
+            bash "$s/board-store.sh" publish "$date_key" > /dev/null \
+              || echo "::warning::could not rewrite the daily board message"
             exit 0
           fi
 
@@ -268,7 +281,8 @@ jobs:
           # chat.update needs the conversation ID Slack resolved the name to,
           # not the name.
           bash "$s/board-store.sh" ts "$date_key" \
-            "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null
+            "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null \
+            || echo "::warning::posted the board but could not store its message id"
 
       - name: Dispatch one run per test
         if: github.event_name == 'schedule' || inputs.dispatch
@@ -305,8 +319,11 @@ jobs:
               bash "$s/resolve-dispatched-run.sh") || true
             [[ -n "$run_url" ]] || continue
             claimed="${claimed:+${claimed},}${run_url##*/}"
+            # Never fatal: losing a row's link must not stop the dispatches
+            # that come after it.
             bash "$s/board-store.sh" set "$BOARD_DATE" \
-              "$(jq -r .fp <<< "$t")" dispatched "" "" "$run_url" "" > /dev/null
+              "$(jq -r .fp <<< "$t")" dispatched "" "" "$run_url" "" > /dev/null \
+              || echo "::warning::could not link ${version} ${spec} on the board"
           done
 
       - name: Observe build status
@@ -855,6 +872,10 @@ jobs:
     name: Update the daily Slack board
     needs: [prepare, decide]
     if: always() && inputs.spec != '' && inputs.board_date != ''
+    # The verdict is already on the state branch, in the run summary and -- for
+    # a fix -- in the PR. Reporting it to Slack failing must not turn a run
+    # that opened a fix PR red; the job itself still shows the failure.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
