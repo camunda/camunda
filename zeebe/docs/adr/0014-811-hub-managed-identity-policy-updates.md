@@ -79,7 +79,7 @@ polling cursor advances in the same step as the version.
 
 **D9. Validation happens in the policy update processor before any chunk is applied.**
 - Before any chunk is applied, the update processor validates the whole update and only then starts processing.
-- If validation fails, the whole update is `ABORTED` and all chunks are removed from the buffer.
+- If validation fails, the whole update is `FAILED` and all chunks are removed from the buffer.
 - The Hub client receives the failure through `errorMessage` and can retry the update.
 
 **D10. A policy update can be canceled externally while still buffering.**
