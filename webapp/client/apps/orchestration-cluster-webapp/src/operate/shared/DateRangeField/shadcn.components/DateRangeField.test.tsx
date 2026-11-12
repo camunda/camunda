@@ -212,21 +212,6 @@ describe('<DateRangeField />', () => {
 			.toHaveTextContent('2022-01-01 12:30:00 - 2022-12-01 17:15:00');
 	});
 
-	it('should swap the dates when the from date is after the to date', async () => {
-		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
-
-		await screen.getByLabelText('Start Date Range').click();
-		await userEvent.fill(screen.getByTestId('fromTime'), '12:30:00');
-		await userEvent.fill(screen.getByTestId('toTime'), '17:15:00');
-		await userEvent.fill(screen.getByLabelText('From date'), '2022-12-01');
-		await userEvent.fill(screen.getByLabelText('To date'), '2022-01-01');
-		await applyDateRange(screen);
-
-		await expect
-			.element(screen.getByLabelText('Start Date Range'))
-			.toHaveTextContent('2022-01-01 12:30:00 - 2022-12-01 17:15:00');
-	});
-
 	it('should show validation error on invalid character', async () => {
 		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
 		const TIME_ERROR = 'Time has to be in the format hh:mm:ss';

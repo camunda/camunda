@@ -2393,6 +2393,12 @@
 					"lastDays_one": "Letzter {{count}} Tag",
 					"lastDays_other": "Letzte {{count}} Tage"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Datums- und Zeitbereich löschen",
+					"selectEndDate": "Enddatum wählen",
+					"pickDayFirst": "Zuerst ein Datum wählen",
+					"pickEndDay": "Enddatum wählen"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",
 					"operatorNotEquals": "ist nicht gleich",

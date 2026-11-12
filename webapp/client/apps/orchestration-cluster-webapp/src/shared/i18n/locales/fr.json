@@ -2396,6 +2396,12 @@
 					"lastDays_one": "Dernier {{count}} jour",
 					"lastDays_other": "Derniers {{count}} jours"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Effacer la plage de dates et d'heures",
+					"selectEndDate": "Choisir la date de fin",
+					"pickDayFirst": "Choisissez d'abord une date",
+					"pickEndDay": "Choisir la date de fin"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",
 					"operatorNotEquals": "n'est pas égal à",

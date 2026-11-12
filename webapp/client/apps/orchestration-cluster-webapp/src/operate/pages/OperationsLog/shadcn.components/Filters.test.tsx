@@ -404,19 +404,27 @@ describe('Operations Log saved filters', () => {
 		await expect.element(screen.getByText(DEFINITION_UNAVAILABLE)).not.toBeInTheDocument();
 	});
 
-	it('should keep the timestamp range dialog open when the user clicks outside of it', async ({worker}) => {
+	it('should show the timestamp range in the picker and drop it from the query when cleared', async ({worker}) => {
+		let lastFilter: Record<string, unknown> | undefined;
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-			mockQueryAuditLogsEndpoint({successResponse: EMPTY_AUDIT}),
+			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
+				const body = (await request.json()) as {filter?: Record<string, unknown>};
+				lastFilter = body.filter;
+				return HttpResponse.json(createQueryAuditLogsResponse());
+			}),
 		);
-		const screen = await renderPage();
-		await userEvent.click(screen.getByRole('button', {name: 'Timestamp date range'}));
-		await expect.element(screen.getByRole('dialog')).toBeVisible();
 
-		await userEvent.click(document.body, {position: {x: 2, y: 2}});
+		const screen = await renderPage('?timestampAfter=2024-06-10T12:00:00&timestampBefore=2024-06-20T18:30:00');
+		const picker = screen.getByRole('button', {name: /Timestamp date range/});
+		await expect.element(picker).toHaveTextContent('Jun 10, 2024 12:00:00 PM – Jun 20, 2024 06:30:00 PM');
+		await expect.poll(() => lastFilter?.['timestamp']).toBeDefined();
 
-		await expect.element(screen.getByRole('dialog')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Clear date and time range'}));
+
+		await expect.element(picker).toHaveTextContent('Enter date range');
+		await expect.poll(() => lastFilter?.['timestamp']).toBeUndefined();
 	});
 
 	it('should block a selected version when process resolution fails even if decision names fail', async ({worker}) => {
@@ -622,7 +630,7 @@ describe('Operations Log saved filters', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
 		await userEvent.click(screen.getByRole('option', {name: 'Tenant B'}));
 
-		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Search by Process Name');
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Search by process name');
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeDisabled();
 	});
 
