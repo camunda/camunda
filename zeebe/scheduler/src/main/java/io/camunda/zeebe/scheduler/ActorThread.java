@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.ArrayDeque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
@@ -28,6 +29,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
   private static final VarHandle STATE_HANDLE;
+  private static final int MAX_POOLED_JOBS = 2048;
 
   static {
     try {
@@ -49,7 +51,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private final ActorClock clock;
   private final int threadId;
   private final TaskScheduler taskScheduler;
-  private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
+  private final ArrayDeque<ActorJob> jobs = new ArrayDeque<>(MAX_POOLED_JOBS);
   private final ActorThreadGroup actorThreadGroup;
   private volatile ActorThreadState state;
 
@@ -199,8 +201,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   void recycleJob(final ActorJob j) {
-    j.reset();
-    jobs.offer(j);
+    if (jobs.size() < MAX_POOLED_JOBS) {
+      j.reset();
+      jobs.offer(j);
+    }
   }
 
   public int getRunnerId() {
