@@ -8,17 +8,23 @@
 package io.camunda.zeebe.scheduler.future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -197,6 +203,145 @@ public class CompletableActorFutureTest {
           .withMessageContaining("Expected");
       // does not contain 3 as the computation is not spawned
       assertThat(map.keySet()).containsExactly(1);
+    }
+  }
+
+  @Nested
+  class BlockingGet {
+    private final List<Thread> threads = new ArrayList<>();
+
+    @AfterEach
+    void tearDown() throws InterruptedException {
+      for (final Thread thread : threads) {
+        thread.interrupt();
+        thread.join();
+      }
+    }
+
+    @Test
+    void shouldWakeUpAllBlockedThreadsOnCompletion() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var results =
+          IntStream.range(0, 3)
+              .mapToObj(i -> blockOn(() -> future.get(1, TimeUnit.MINUTES)))
+              .toList();
+
+      // when
+      future.complete("done");
+
+      // then
+      assertThat(results)
+          .allSatisfy(
+              result -> assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo("done"));
+    }
+
+    @Test
+    void shouldReturnFailureToBlockedThread() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var failure = new RuntimeException("expected");
+      final var result = blockOn(() -> future.get(1, TimeUnit.MINUTES));
+
+      // when
+      future.completeExceptionally(failure);
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingRootCause()
+          .isSameAs(failure);
+    }
+
+    @Test
+    void shouldThrowWhenInterruptedWhileWaiting() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var result = blockOn(() -> future.get(1, TimeUnit.MINUTES));
+
+      // when
+      threads.getFirst().interrupt();
+
+      // then
+      assertThat(result)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .withCauseInstanceOf(InterruptedException.class);
+    }
+
+    @Test
+    void shouldWakeUpBlockedThreadWhenClosedFutureIsReusedAndCompleted() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var result = blockOn(() -> future.get(1, TimeUnit.MINUTES));
+
+      // when - closing wakes the thread without completing the future, so it has to keep waiting
+      future.close();
+      future.setAwaitingResult();
+      awaitBlocked(threads.getFirst());
+      future.complete("reused");
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo("reused");
+    }
+
+    /** Runs the call on a new non-actor thread and returns once that thread is blocked. */
+    private <T> CompletableFuture<T> blockOn(final Callable<T> call) {
+      final var result = new CompletableFuture<T>();
+      final var thread =
+          new Thread(
+              () -> {
+                try {
+                  result.complete(call.call());
+                } catch (final Exception e) {
+                  result.completeExceptionally(e);
+                }
+              });
+      threads.add(thread);
+      thread.start();
+      awaitBlocked(thread);
+      return result;
+    }
+
+    private void awaitBlocked(final Thread thread) {
+      await()
+          .until(
+              () ->
+                  thread.getState() == Thread.State.WAITING
+                      || thread.getState() == Thread.State.TIMED_WAITING);
+    }
+  }
+
+  @Nested
+  class Callbacks {
+    @Test
+    void shouldNotifyCallbacksInRegistrationOrder() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var notified = new ArrayList<Integer>();
+      IntStream.range(0, 5)
+          .forEach(i -> future.onComplete((value, error) -> notified.add(i), Runnable::run));
+
+      // when
+      future.complete("done");
+
+      // then
+      assertThat(notified).containsExactly(0, 1, 2, 3, 4);
+    }
+
+    @Test
+    void shouldNotifyCallbackRegisteredAfterCompletion() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      future.complete("done");
+      final var result = new AtomicReference<String>();
+
+      // when
+      future.onComplete((value, error) -> result.set(value), Runnable::run);
+
+      // then
+      assertThat(result).hasValue("done");
     }
   }
 }
