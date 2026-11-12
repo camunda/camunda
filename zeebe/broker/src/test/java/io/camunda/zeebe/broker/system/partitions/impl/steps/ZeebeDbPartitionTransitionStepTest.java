@@ -203,11 +203,8 @@ class ZeebeDbPartitionTransitionStepTest {
     inOrder.verify(stateController).closeDb();
   }
 
-  @ParameterizedTest
-  @EnumSource(
-      value = Role.class,
-      names = {"FOLLOWER", "CANDIDATE"})
-  void shouldOpenANewDbWithTheLeaderTermWhenThereIsADbPerLeaderTerm(final Role currentRole) {
+  @Test
+  void shouldGiveTheTermBeforeOpeningTheDb() {
     // given
     final var handedTerm = new AtomicLong(-1);
     final var termWhenOpening = new AtomicLong(-1);
@@ -217,39 +214,15 @@ class ZeebeDbPartitionTransitionStepTest {
               termWhenOpening.set(handedTerm.get());
               return TestActorFuture.completedFuture(zeebeDb);
             });
-    step = new ZeebeDbPartitionTransitionStep(handedTerm::set, true);
-    transitionContext.setCurrentRole(currentRole);
-    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
+    step = new ZeebeDbPartitionTransitionStep(handedTerm::set);
+    transitionContext.setCurrentRole(Role.INACTIVE);
 
     // when
     transitionTo(Role.LEADER, 5);
 
     // then
-    verify(stateController).closeDb();
     assertThat(transitionContext.getZeebeDb()).isEqualTo(zeebeDb);
     assertThat(termWhenOpening).hasValue(5);
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideTransitionsBetweenFollowerAndCandidate")
-  void shouldKeepTheDbBetweenFollowerAndCandidateWhenThereIsADbPerLeaderTerm(
-      final Role currentRole, final Role targetRole) {
-    // given
-    step = new ZeebeDbPartitionTransitionStep(term -> {}, true);
-    transitionContext.setCurrentRole(currentRole);
-    transitionContext.setZeebeDb(zeebeDbFromPrevRole);
-
-    // when
-    transitionTo(targetRole);
-
-    // then
-    assertThat(transitionContext.getZeebeDb()).isEqualTo(zeebeDbFromPrevRole);
-    verify(stateController, never()).closeDb();
-  }
-
-  private static Stream<Arguments> provideTransitionsBetweenFollowerAndCandidate() {
-    return Stream.of(
-        Arguments.of(Role.CANDIDATE, Role.FOLLOWER), Arguments.of(Role.FOLLOWER, Role.CANDIDATE));
   }
 
   private static Stream<Arguments> provideTransitionsThatShouldDoNothing() {

@@ -19,29 +19,12 @@ import org.agrona.CloseHelper;
 
 public final class QueryServicePartitionTransitionStep implements PartitionTransitionStep {
 
-  private final boolean dbPerLeaderTerm;
-
-  public QueryServicePartitionTransitionStep() {
-    this(false);
-  }
-
-  /**
-   * @param dbPerLeaderTerm whether the partition opens a new database for every term it leads; the
-   *     service is then built again on the new database
-   */
-  public QueryServicePartitionTransitionStep(final boolean dbPerLeaderTerm) {
-    this.dbPerLeaderTerm = dbPerLeaderTerm;
-  }
-
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final var currentRole = context.getCurrentRole();
     final QueryService queryService = context.getQueryService();
-    if (queryService != null
-        && (currentRole == Role.LEADER
-            || targetRole == Role.INACTIVE
-            || (dbPerLeaderTerm && targetRole == Role.LEADER))) {
+    if (queryService != null && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
       try {
         CloseHelper.close(queryService);
         context.setQueryService(null);

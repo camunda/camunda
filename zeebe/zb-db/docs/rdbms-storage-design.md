@@ -325,9 +325,9 @@ One replica comes first, so each step leaves a broker that works; followers come
   term to a small holder that the factory's term supplier reads, before `StateController.recover()`
   opens the DB. The term must be the one this node leads in. The Raft server's current term may
   already be a later one, led by another node.
-- In RDBMS mode, the ZeebeDb and QueryService steps close and reopen on every move to leader, not
-  only when leaving it, so the DB always writes with the term the node leads in. The other steps
-  that use the DB are already rebuilt on every move to leader.
+- Only the leader opens the DB (§9.5), so every move to leader opens a new DB with the term the
+  node leads in. A leader that moves straight to a later term closes its DB and opens a new one
+  too, as the ZeebeDb step already does with RocksDB.
 - The leader claims the shared state and replays from the shared processed position, which
   `StreamProcessor` already reads from the state. Exporters read their positions from the shared
   state too.
@@ -352,17 +352,23 @@ One replica comes first, so each step leaves a broker that works; followers come
 - **Last written position:** a new `LogStream#getLastWrittenPosition` returns the `Sequencer`'s
   position, which moves as soon as a record goes to the log storage. `FlowControl`'s last written
   position is only updated after the journal write, so it can lag behind.
-- With one replica, the transient follower DB at startup gets a gate that stops straight away:
-  its replayed transactions stay held back and are dropped when it closes, which is fine until
-  followers have no DB (§9.5).
+- Followers and candidates don't open a DB (§9.5), so every gate belongs to a term this node
+  leads in.
 
 ### 9.5 Followers and candidates
 
-- They have no `ZeebeDb`. In RDBMS mode, the steps that use the DB run only on the leader: ZeebeDb,
-  Migration, QueryService, InterPartitionCommandService, StreamProcessor, SnapshotDirector,
-  ExporterDirector, BackupService and BackupApiRequestHandler. Followers keep the log storage and
-  the log stream. Code that expects these components on followers, such as partition health and
-  admin access, needs checks.
+- They have no `ZeebeDb`. In RDBMS mode, `ZeebePartitionFactory` wraps each step that uses the DB
+  in a `LeaderOnlyTransitionStep`, which passes every role except leader to the step as
+  `INACTIVE`. The wrapped steps are ZeebeDb, Migration, QueryService, StreamProcessor,
+  SnapshotDirector, SnapshotAfterMigration and ExporterDirector.
+  - The steps still see the real current role, so a follower that becomes leader opens them, and a
+    leader that steps down closes them.
+  - InterPartitionCommandService, SnapshotApiHandler, BackupApiRequestHandler and CommandApi
+    already run only on the leader. BackupService installs a backup manager that does nothing on
+    followers, and backups are off (§9.7).
+  - Followers keep the log storage and the log stream.
+  - The admin "take snapshot" request does nothing on followers, because they have no snapshot
+    director. Their marker snapshots are taken on a schedule (below).
 - A follower snapshot director takes marker snapshots, so followers can compact their log:
   - it reads the processed and exported positions through `openReadOnlyDb()` (§7.1), which never
     claims the state, so it never fences the leader;

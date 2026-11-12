@@ -22,22 +22,16 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
       "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d";
 
   private final LongConsumer openingTerm;
-  private final boolean dbPerLeaderTerm;
 
   public ZeebeDbPartitionTransitionStep() {
-    this(term -> {}, false);
+    this(term -> {});
   }
 
   /**
    * @param openingTerm gets the transition's term right before the step opens the database
-   * @param dbPerLeaderTerm whether to open a new database for every term the partition leads, so
-   *     that the database knows the term of its leader. The relational storage needs this: it
-   *     writes with the term it was opened with, and a newer leader blocks writes of older terms.
    */
-  public ZeebeDbPartitionTransitionStep(
-      final LongConsumer openingTerm, final boolean dbPerLeaderTerm) {
+  public ZeebeDbPartitionTransitionStep(final LongConsumer openingTerm) {
     this.openingTerm = openingTerm;
-    this.dbPerLeaderTerm = dbPerLeaderTerm;
   }
 
   @Override
@@ -46,9 +40,7 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
 
     final var currentRole = context.getCurrentRole();
     if (context.getZeebeDb() != null
-        && (currentRole == Role.LEADER
-            || targetRole == Role.INACTIVE
-            || (dbPerLeaderTerm && targetRole == Role.LEADER))) {
+        && (currentRole == Role.LEADER || targetRole == Role.INACTIVE)) {
       try {
         if (context.getZeebeDb() instanceof final HealthMonitorable monitorable) {
           context.getComponentHealthMonitor().removeComponent(monitorable);
