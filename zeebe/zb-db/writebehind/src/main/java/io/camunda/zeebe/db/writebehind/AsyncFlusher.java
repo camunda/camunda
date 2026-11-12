@@ -10,9 +10,9 @@ package io.camunda.zeebe.db.writebehind;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.camunda.zeebe.db.ZeebeDbException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -20,6 +20,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,18 +54,12 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
 
-  /**
-   * How many flushed versions are removed from the dirty index while the publish lock is held. A
-   * flush of a few seconds of commits holds many more keys than this, and the committing thread
-   * waits for every hold.
-   */
-  private static final int REMOVAL_CHUNK_SIZE = 512;
-
   private final Backend<K, V> backend;
   private final WriteBehindConfiguration config;
   private final WriteBehindMetrics metrics;
   private final Runnable ensureUsable;
-  private final Consumer<List<Map.Entry<K, Version<V>>>> onFlushed;
+  private final Function<Runnable, NavigableMap<K, Version<V>>> sealBatch;
+  private final Consumer<NavigableMap<K, Version<V>>> releaseBatch;
   private final long flushThresholdBytes;
   private final Thread writer;
 
@@ -93,20 +88,25 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   /**
    * @param ensureUsable throws if the store can't be used any more; called while waiting, so that
    *     waiters fail fast
-   * @param onFlushed called on the writer thread with versions that the storage now holds; the
-   *     store removes them from its dirty index if they are still the latest
+   * @param sealBatch called on the writer thread to take the batch of the queued commits away from
+   *     the store; it runs the given task, which takes them off the queue, while no commit can
+   *     publish
+   * @param releaseBatch called on the writer thread when the storage holds the batch; the store
+   *     moves it to its cache and drops it
    */
   AsyncFlusher(
       final Backend<K, V> backend,
       final WriteBehindConfiguration config,
       final WriteBehindMetrics metrics,
       final Runnable ensureUsable,
-      final Consumer<List<Map.Entry<K, Version<V>>>> onFlushed) {
+      final Function<Runnable, NavigableMap<K, Version<V>>> sealBatch,
+      final Consumer<NavigableMap<K, Version<V>>> releaseBatch) {
     this.backend = backend;
     this.config = config;
     this.metrics = metrics;
     this.ensureUsable = ensureUsable;
-    this.onFlushed = onFlushed;
+    this.sealBatch = sealBatch;
+    this.releaseBatch = releaseBatch;
     flushThresholdBytes = Math.min(config.flushThresholdBytes(), config.maxPendingBytes());
     writer = new Thread(this::runWriter, "zb-db-write-behind");
     writer.setDaemon(true);
@@ -240,12 +240,12 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
           oldestTaken = oldest;
           awaitFlushDue(oldest);
         }
-        queue.drainTo(group);
+        final var sealed = sealBatch.apply(() -> queue.drainTo(group));
         final boolean stopAfter = group.getLast() == stop;
         if (stopAfter) {
           group.removeLast();
         }
-        if (!group.isEmpty() && !flush(group)) {
+        if (!flush(group, sealed)) {
           return;
         }
         group.clear();
@@ -291,35 +291,29 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
     }
   }
 
-  /** Writes a group of consecutive transactions atomically; returns false if the store failed. */
-  private boolean flush(final List<PendingTransaction<K, V>> group) {
-    final var latest = new HashMap<K, Version<V>>();
+  /**
+   * Writes a sealed batch, the latest version per key of a group of consecutive transactions,
+   * atomically; returns false if the store failed.
+   */
+  private boolean flush(
+      final List<PendingTransaction<K, V>> group, final NavigableMap<K, Version<V>> sealed) {
+    if (group.isEmpty()) {
+      releaseBatch.accept(sealed);
+      return true;
+    }
     long bytes = 0;
     for (final var transaction : group) {
-      for (int i = 0; i < transaction.keys().length; i++) {
-        latest.put(transaction.keys()[i], transaction.versions()[i]);
-      }
       bytes += transaction.bytes();
     }
 
     final long start = System.nanoTime();
-    if (!writeWithRetries(latest)) {
+    if (!writeWithRetries(sealed)) {
       return false;
     }
     metrics.flushNanos.add(System.nanoTime() - start);
     metrics.flushes.increment();
 
-    final var chunk = new ArrayList<Map.Entry<K, Version<V>>>(REMOVAL_CHUNK_SIZE);
-    for (final var entry : latest.entrySet()) {
-      chunk.add(entry);
-      if (chunk.size() == REMOVAL_CHUNK_SIZE) {
-        onFlushed.accept(chunk);
-        chunk.clear();
-      }
-    }
-    if (!chunk.isEmpty()) {
-      onFlushed.accept(chunk);
-    }
+    releaseBatch.accept(sealed);
     pendingBytes.addAndGet(-bytes);
     flushedSeq = group.getLast().seq();
     signalFlushed();

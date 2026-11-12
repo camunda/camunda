@@ -12,10 +12,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
@@ -48,7 +54,13 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
 
   private final Backend<K, V> backend;
   private final WriteBehindConfiguration config;
-  private final ConcurrentSkipListMap<K, Version<V>> dirty = new ConcurrentSkipListMap<>();
+  // the unflushed commits: commits go to the active batch, the writer seals it to flush it
+  private volatile Batches<K, V> batches =
+      new Batches<>(new ConcurrentSkipListMap<K, Version<V>>(), null);
+
+  // odd while the writer flushes a sealed batch: a value that a reader loaded from the storage
+  // during that time may be older than the one that the writer caches
+  private volatile long flushEpoch;
   private final @Nullable Cache<K, Version<V>> cache;
   private final StampedLock publishLock = new StampedLock();
 
@@ -81,7 +93,9 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
       keyIndexes.put(
           columnFamily, new KeyIndex<>(columnFamily, config.keyIndexPolicy(columnFamily)));
     }
-    flusher = new AsyncFlusher<>(backend, config, metrics, this::ensureUsable, this::removeFlushed);
+    flusher =
+        new AsyncFlusher<>(
+            backend, config, metrics, this::ensureUsable, this::sealBatch, this::releaseBatch);
     flusher.start();
   }
 
@@ -102,18 +116,15 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     try {
       ensureUsable();
       final long seq = ++lastSeq;
+      final var active = batches.active();
       long bytes = 0;
       for (int i = 0; i < keys.length; i++) {
-        final var version = new Version<>(values[i], seq);
+        final var version = new Version<>(values[i], seq, active.get(keys[i]));
         versions[i] = version;
         final var counters = metrics.of(backend.groupOf(keys[i]));
         (values[i] == null ? counters.committedDeletes : counters.committedPuts).increment();
         bytes += backend.weigh(keys[i], values[i]);
-        dirty.put(keys[i], version);
-        if (cache != null) {
-          // the dirty index answers first; the cache takes over when the flush removes the entry
-          cache.put(keys[i], version);
-        }
+        active.put(keys[i], version);
       }
       updateKeyIndexes(keys, values, seq);
       flusher.enqueue(seq, keys, versions, bytes);
@@ -143,43 +154,208 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
   }
 
   /**
-   * A copy of the unflushed writes, taken at one instant: the latest value per key, or null for a
+   * The unflushed writes at this instant, without a copy: the latest value per key, or null for a
    * delete. For users that read the storage in other ways than by key, for example with queries,
    * and merge these writes into the result. Take it before such a read: a write that is flushed
-   * after the copy is in the storage when the read starts, and one that is flushed before is in the
-   * copy, so the two together hold every committed write.
+   * after it is in the storage when the read starts, and one that is flushed before is in it, so
+   * the two together hold every committed write. The writer only drops a flushed batch from the
+   * store, the batch itself stays complete for whoever holds it.
    */
-  public Unflushed<K, V> unflushedSnapshot() {
+  public Unflushed<K, V> unflushed() {
     ensureUsable();
-    final var copy = new TreeMap<K, @Nullable V>();
-    final long stamp = publishLock.readLock();
-    try {
-      dirty.forEach((key, version) -> copy.put(key, version.value()));
-      return new Unflushed<>(lastSeq, copy);
-    } finally {
-      publishLock.unlockRead(stamp);
-    }
+    // the sequence first: a commit in between only makes the snapshot look outdated
+    final long seq = committedSeq;
+    return new Unflushed<>(seq, batches);
   }
 
   /**
-   * The sequence of the last commit. A snapshot of the unflushed writes is valid until it changes.
+   * The sequence of the last commit. A snapshot of the unflushed writes holds the commits up to
+   * then, and later ones only if they are in the same batch.
    */
   public long committedSeq() {
     return committedSeq;
   }
 
   /**
-   * The unflushed writes as of the commit with the given sequence. It stays correct for reads of
-   * the storage until the next commit: the flush only moves the same rows from these writes to the
-   * storage.
-   *
-   * @param writes the latest value per key, or null for a delete
+   * The unflushed writes as of the commit with the given sequence, kept as the batches that held
+   * them. Not a copy: valid until the next commit, see {@link #committedSeq()}.
    */
-  public record Unflushed<K, V>(long seq, NavigableMap<K, @Nullable V> writes) {}
+  public static final class Unflushed<K extends Comparable<K>, V> {
+    private final long seq;
+    private final Batches<K, V> batches;
+
+    private Unflushed(final long seq, final Batches<K, V> batches) {
+      this.seq = seq;
+      this.batches = batches;
+    }
+
+    public long seq() {
+      return seq;
+    }
+
+    /** The unflushed writes of the keys from {@code from} to {@code to}, both inclusive. */
+    public Map<K, @Nullable V> range(final K from, final K to) {
+      return new RangeView<>(
+          seq,
+          batches.active().subMap(from, true, to, true),
+          batches.sealed() == null ? null : batches.sealed().subMap(from, true, to, true));
+    }
+  }
+
+  /**
+   * A sorted view of two batches as of a commit, the active one wins; a delete has a null value.
+   * Commits after that one, which may be published to a batch while the view is read, are left out.
+   */
+  private static final class RangeView<K extends Comparable<K>, V>
+      extends AbstractMap<K, @Nullable V> {
+    private final long seq;
+    private final NavigableMap<K, Version<V>> active;
+    private final @Nullable NavigableMap<K, Version<V>> sealed;
+
+    private RangeView(
+        final long seq,
+        final NavigableMap<K, Version<V>> active,
+        final @Nullable NavigableMap<K, Version<V>> sealed) {
+      this.seq = seq;
+      this.active = active;
+      this.sealed = sealed;
+    }
+
+    private @Nullable Version<V> versionOf(final Object key) {
+      var version = active.get(key);
+      version = version == null ? null : version.asOf(seq);
+      if (version == null && sealed != null) {
+        version = sealed.get(key);
+        version = version == null ? null : version.asOf(seq);
+      }
+      return version;
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return !entrySet().iterator().hasNext();
+    }
+
+    @Override
+    public boolean containsKey(final Object key) {
+      return versionOf(key) != null;
+    }
+
+    @Override
+    public @Nullable V get(final Object key) {
+      final var version = versionOf(key);
+      return version == null ? null : version.value();
+    }
+
+    @Override
+    public Set<Map.Entry<K, @Nullable V>> entrySet() {
+      return new AbstractSet<>() {
+        @Override
+        public Iterator<Map.Entry<K, @Nullable V>> iterator() {
+          return new MergedIterator<>(
+              visible(active.entrySet().iterator()),
+              sealed == null ? Collections.emptyIterator() : visible(sealed.entrySet().iterator()));
+        }
+
+        @Override
+        public int size() {
+          int size = 0;
+          for (final var ignored : this) {
+            size++;
+          }
+          return size;
+        }
+      };
+    }
+
+    /** The entries of the iterator as of the commit, without the keys that it didn't write yet. */
+    private Iterator<Map.Entry<K, Version<V>>> visible(
+        final Iterator<Map.Entry<K, Version<V>>> entries) {
+      return new Iterator<>() {
+        private Map.@Nullable Entry<K, Version<V>> next = advance();
+
+        private Map.@Nullable Entry<K, Version<V>> advance() {
+          while (entries.hasNext()) {
+            final var entry = entries.next();
+            final var version = entry.getValue().asOf(seq);
+            if (version != null) {
+              return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), version);
+            }
+          }
+          return null;
+        }
+
+        @Override
+        public boolean hasNext() {
+          return next != null;
+        }
+
+        @Override
+        public Map.Entry<K, Version<V>> next() {
+          final var current = next;
+          if (current == null) {
+            throw new NoSuchElementException();
+          }
+          next = advance();
+          return current;
+        }
+      };
+    }
+  }
+
+  /** Merges two sorted iterators; on equal keys the first one wins. */
+  private static final class MergedIterator<K extends Comparable<K>, V>
+      implements Iterator<Map.Entry<K, @Nullable V>> {
+    private final Iterator<Map.Entry<K, Version<V>>> first;
+    private final Iterator<Map.Entry<K, Version<V>>> second;
+    private Map.@Nullable Entry<K, Version<V>> nextFirst;
+    private Map.@Nullable Entry<K, Version<V>> nextSecond;
+
+    private MergedIterator(
+        final Iterator<Map.Entry<K, Version<V>>> first,
+        final Iterator<Map.Entry<K, Version<V>>> second) {
+      this.first = first;
+      this.second = second;
+      nextFirst = first.hasNext() ? first.next() : null;
+      nextSecond = second.hasNext() ? second.next() : null;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return nextFirst != null || nextSecond != null;
+    }
+
+    @Override
+    public Map.Entry<K, @Nullable V> next() {
+      final var one = nextFirst;
+      final var two = nextSecond;
+      final Map.Entry<K, Version<V>> entry;
+      if (one == null && two == null) {
+        throw new NoSuchElementException();
+      }
+      final int order =
+          one == null || two == null
+              ? (one == null ? 1 : -1)
+              : one.getKey().compareTo(two.getKey());
+      if (order <= 0 && one != null) {
+        entry = one;
+        nextFirst = first.hasNext() ? first.next() : null;
+        if (order == 0) {
+          nextSecond = second.hasNext() ? second.next() : null;
+        }
+      } else if (two != null) {
+        entry = two;
+        nextSecond = second.hasNext() ? second.next() : null;
+      } else {
+        throw new NoSuchElementException();
+      }
+      return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().value());
+    }
+  }
 
   /** The unflushed version of a key, or else the cached one; null if the store has neither. */
   @Nullable Version<V> lookupInMemory(final K key) {
-    final var unflushed = dirty.get(key);
+    final var unflushed = batches.get(key);
     if (unflushed != null) {
       metrics.of(backend.groupOf(key)).dirtyHits.increment();
       return unflushed;
@@ -197,24 +373,16 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
    * {@code prototype}'s class and cached.
    */
   @Nullable V readStorage(final K key, final V prototype) {
-    // Under the read lock no commit can publish this key and no flush can remove it, so if it isn't
-    // in the dirty index now, the storage has its latest value and nothing can make the cached copy
-    // stale before a later commit invalidates it.
-    final long stamp = publishLock.readLock();
-    try {
-      final var latest = dirty.get(key);
-      if (latest != null) {
-        return latest.value();
-      }
-      final var value = backend.get(key, prototype);
-      countStorageGet(key, value != null);
-      if (cache != null) {
-        cache.put(key, new Version<>(value, 0));
-      }
-      return value;
-    } finally {
-      publishLock.unlockRead(stamp);
+    // A batch only leaves the store after the storage holds it and the cache has it, so a key that
+    // isn't in a batch has its latest flushed value in the storage. A value that is loaded while
+    // the writer flushes may be older than the one it caches, so it isn't cached then.
+    final long epoch = flushEpoch;
+    final var value = backend.get(key, prototype);
+    countStorageGet(key, value != null);
+    if (cache != null && (epoch & 1) == 0 && flushEpoch == epoch) {
+      cache.put(key, new Version<>(value, 0));
     }
+    return value;
   }
 
   /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
@@ -228,18 +396,9 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
       metrics.of(backend.groupOf(key)).keyIndexAbsent.increment();
       return false;
     }
-    final long stamp = publishLock.readLock();
-    try {
-      final var latest = dirty.get(key);
-      if (latest != null) {
-        return !latest.isTombstone();
-      }
-      final var found = backend.exists(key);
-      countStorageGet(key, found);
-      return found;
-    } finally {
-      publishLock.unlockRead(stamp);
-    }
+    final var found = backend.exists(key);
+    countStorageGet(key, found);
+    return found;
   }
 
   private void countStorageGet(final K key, final boolean found) {
@@ -287,11 +446,20 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     final var to = range.to();
     final long stamp = publishLock.readLock();
     try {
+      // the batches first: what is flushed after this is in the batches we hold, what was flushed
+      // before is in the storage that the cursor reads
+      final var current = batches;
       final var storageCursor = backend.newCursor();
       metrics.iteratorsOpened.increment();
       metrics.of(backend.groupOf(from)).iterators.increment();
-      final var dirtyRange = to == null ? dirty.tailMap(from) : dirty.subMap(from, to);
-      return new View<>(storageCursor, new TreeMap<>(dirtyRange), lastSeq);
+      final var dirtyRange = new TreeMap<K, Version<V>>();
+      if (current.sealed() != null) {
+        dirtyRange.putAll(
+            to == null ? current.sealed().tailMap(from) : current.sealed().subMap(from, to));
+      }
+      dirtyRange.putAll(
+          to == null ? current.active().tailMap(from) : current.active().subMap(from, to));
+      return new View<>(storageCursor, dirtyRange, lastSeq);
     } finally {
       publishLock.unlockRead(stamp);
     }
@@ -535,15 +703,46 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     flusher.awaitStopped();
   }
 
-  /** Called by the writer after the storage holds these versions. */
-  private void removeFlushed(final List<Map.Entry<K, Version<V>>> flushed) {
+  /**
+   * Called by the writer: seals the active batch, so that commits go to a new one. {@code drain}
+   * takes the queued transactions of the sealed batch, under the lock that commits hold to publish,
+   * so that the batch and the queue hold the same commits.
+   */
+  private NavigableMap<K, Version<V>> sealBatch(final Runnable drain) {
     final long stamp = publishLock.writeLock();
     try {
-      for (final var entry : flushed) {
-        dirty.remove(entry.getKey(), entry.getValue());
-      }
+      final var current = batches;
+      drain.run();
+      flushEpoch++;
+      batches = new Batches<>(new ConcurrentSkipListMap<>(), current.active());
+      return current.active();
     } finally {
       publishLock.unlockWrite(stamp);
+    }
+  }
+
+  /**
+   * Called by the writer after the storage holds the sealed batch: moves its values to the cache,
+   * then drops the batch. A reader finds a value in the batch or in the cache, never in neither.
+   * The cache only gets flushed values, so it never holds one that is newer than the storage.
+   */
+  private void releaseBatch(final NavigableMap<K, Version<V>> sealed) {
+    if (cache != null) {
+      // without the history that the versions of the batch keep for readers of older commits
+      sealed.forEach(
+          (key, version) -> cache.put(key, new Version<>(version.value(), version.seq())));
+    }
+    batches = new Batches<>(batches.active(), null);
+    flushEpoch++;
+  }
+
+  /** The unflushed commits: the active batch, and the sealed one that the writer is flushing. */
+  private record Batches<K extends Comparable<K>, V>(
+      NavigableMap<K, Version<V>> active, @Nullable NavigableMap<K, Version<V>> sealed) {
+
+    @Nullable Version<V> get(final K key) {
+      final var version = active.get(key);
+      return version != null || sealed == null ? version : sealed.get(key);
     }
   }
 

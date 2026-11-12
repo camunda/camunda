@@ -14,12 +14,15 @@ import io.camunda.zeebe.engine.state.rdbms.PartitionStateMapper.PartitionStateRo
 import io.camunda.zeebe.protocol.Protocol;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -110,17 +113,13 @@ final class EntitySession implements JdbcTransactionParticipant {
   private final Map<EntityType<?, ?>, Map<Object, List<Object>>> loadedGroups = new HashMap<>();
 
   /**
-   * The writes that the store hasn't flushed yet, see {@link WriteBehindStore#unflushedSnapshot}.
-   * The database doesn't hold them, so every row that is read from it is merged with them, like
-   * with the staged writes. The snapshot is kept until the next commit, not only for the
-   * transaction: a read that is made of several calls, outside of a transaction, then merges one
-   * snapshot with its query, whichever flush happens in between.
+   * The writes that the store hasn't flushed yet, see {@link WriteBehindStore#unflushed}. The
+   * database doesn't hold them, so every row that is read from it is merged with them, like with
+   * the staged writes. The snapshot is kept until the next commit, not only for the transaction: a
+   * read that is made of several calls, outside of a transaction, then merges one snapshot with its
+   * query, whichever flush happens in between.
    */
   private WriteBehindStore.@Nullable Unflushed<EntityKey, Object> unflushed;
-
-  /** The unflushed writes of {@link #unflushed} per type and key; a null row is a delete. */
-  private final Map<EntityType<?, ?>, Map<Object, @Nullable Object>> unflushedByType =
-      new HashMap<>();
 
   /**
    * The first key the engine generated in this transaction, or {@link #NO_GENERATED_KEY}. Keys grow
@@ -815,20 +814,64 @@ final class EntitySession implements JdbcTransactionParticipant {
     if (store == null) {
       return Map.of();
     }
-    final var snapshot = currentUnflushed(store);
-    var ofType = unflushedByType.get(type);
-    if (ofType == null) {
-      ofType = new LinkedHashMap<>();
-      for (final var write :
-          snapshot
-              .writes()
-              .subMap(EntityKey.first(type), true, EntityKey.after(type), true)
-              .entrySet()) {
-        ofType.put(write.getKey().key(), write.getValue());
-      }
-      unflushedByType.put(type, ofType);
+    final var range = currentUnflushed(store).range(EntityKey.first(type), EntityKey.after(type));
+    return new TypeView(type, range);
+  }
+
+  /**
+   * The unflushed writes of one type by the key of the row, read from the store's batches without a
+   * copy. A null row is a delete.
+   */
+  private static final class TypeView extends AbstractMap<Object, @Nullable Object> {
+    private final EntityType<?, ?> type;
+    private final Map<EntityKey, @Nullable Object> range;
+
+    private TypeView(final EntityType<?, ?> type, final Map<EntityKey, @Nullable Object> range) {
+      this.type = type;
+      this.range = range;
     }
-    return ofType;
+
+    @Override
+    public boolean isEmpty() {
+      return range.isEmpty();
+    }
+
+    @Override
+    public boolean containsKey(final Object key) {
+      return range.containsKey(new EntityKey(type, key));
+    }
+
+    @Override
+    public @Nullable Object get(final Object key) {
+      return range.get(new EntityKey(type, key));
+    }
+
+    @Override
+    public Set<Entry<Object, @Nullable Object>> entrySet() {
+      return new AbstractSet<>() {
+        @Override
+        public Iterator<Entry<Object, @Nullable Object>> iterator() {
+          final var entries = range.entrySet().iterator();
+          return new Iterator<>() {
+            @Override
+            public boolean hasNext() {
+              return entries.hasNext();
+            }
+
+            @Override
+            public Entry<Object, @Nullable Object> next() {
+              final var entry = entries.next();
+              return new SimpleImmutableEntry<>(entry.getKey().key(), entry.getValue());
+            }
+          };
+        }
+
+        @Override
+        public int size() {
+          return range.size();
+        }
+      };
+    }
   }
 
   /** The snapshot of the unflushed writes of the last commit; takes a new one after a commit. */
@@ -836,9 +879,8 @@ final class EntitySession implements JdbcTransactionParticipant {
       final WriteBehindStore<EntityKey, Object> source) {
     var snapshot = unflushed;
     if (snapshot == null || snapshot.seq() != source.committedSeq()) {
-      snapshot = source.unflushedSnapshot();
+      snapshot = source.unflushed();
       unflushed = snapshot;
-      unflushedByType.clear();
     }
     return snapshot;
   }
@@ -893,7 +935,7 @@ final class EntitySession implements JdbcTransactionParticipant {
   private SqlSession session() {
     if (session == null) {
       if (store != null) {
-        // taken before the first read, see WriteBehindStore#unflushedSnapshot
+        // taken before the first read, see WriteBehindStore#unflushed
         currentUnflushed(store);
       }
       session =
