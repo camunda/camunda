@@ -33,7 +33,13 @@ public enum ProbeIntent implements Intent {
   TIME_OUT((short) 6),
   TIMED_OUT((short) 7),
 
-  CANCELED((short) 8);
+  CANCELED((short) 8),
+
+  /**
+   * Internal command that the engine appends after a valid {@link #ANSWER}: it carries the answer's
+   * data and answers the client, since the {@code ANSWER} command answers the worker (D74).
+   */
+  RESPOND((short) 9);
 
   private final short value;
 
@@ -65,6 +71,8 @@ public enum ProbeIntent implements Intent {
         return TIMED_OUT;
       case 8:
         return CANCELED;
+      case 9:
+        return RESPOND;
       default:
         return Intent.UNKNOWN;
     }
