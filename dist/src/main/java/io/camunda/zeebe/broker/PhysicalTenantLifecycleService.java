@@ -152,11 +152,13 @@ public final class PhysicalTenantLifecycleService {
    */
   public PhysicalTenant add(
       final String physicalTenantId, final Map<String, Object> configuration) {
-    return add(physicalTenantId, configuration, UUID.randomUUID());
+    return add(physicalTenantId, configuration, UUID.randomUUID(), false);
   }
 
   /**
-   * Adds a tenant as the given incarnation, for an incarnation that the cluster agreed on.
+   * Adds a tenant as the given incarnation, for an incarnation that the cluster agreed on. An id
+   * this node removed is taken back: the cluster asks for it only for a tenant it disabled and
+   * enabled again, since it never re-creates a removed tenant.
    *
    * @see #add(String, Map)
    */
@@ -164,8 +166,19 @@ public final class PhysicalTenantLifecycleService {
       final String physicalTenantId,
       final Map<String, Object> configuration,
       final UUID incarnationId) {
+    return add(physicalTenantId, configuration, incarnationId, true);
+  }
+
+  private PhysicalTenant add(
+      final String physicalTenantId,
+      final Map<String, Object> configuration,
+      final UUID incarnationId,
+      final boolean agreedByTheCluster) {
     return underChangeLock(
         () -> {
+          if (agreedByTheCluster) {
+            registry.release(physicalTenantId);
+          }
           if (registry.find(physicalTenantId).isPresent()) {
             throw rejected(Reason.CONFLICT, physicalTenantId, "it already exists", null);
           }

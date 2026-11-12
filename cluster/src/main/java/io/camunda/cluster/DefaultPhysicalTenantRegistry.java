@@ -153,6 +153,18 @@ public final class DefaultPhysicalTenantRegistry implements PhysicalTenantRegist
     return removed;
   }
 
+  /**
+   * Releases a removed id, so that it can be added again. For a tenant the cluster disabled and
+   * enabled again: the cluster configuration, not this node, decides whether an id may come back.
+   */
+  public void release(final String physicalTenantId) {
+    synchronized (lock) {
+      if (isRemoved(physicalTenantId)) {
+        health.remove(physicalTenantId);
+      }
+    }
+  }
+
   @Override
   public void addListener(final Listener listener) {
     listeners.add(listener);
