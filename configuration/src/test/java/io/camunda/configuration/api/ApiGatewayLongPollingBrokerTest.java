@@ -30,7 +30,11 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @ActiveProfiles("broker")
 public class ApiGatewayLongPollingBrokerTest {
   @Nested
-  @TestPropertySource(properties = "camunda.api.long-polling.notification-batch-window=200")
+  @TestPropertySource(
+      properties = {
+        "camunda.api.long-polling.notification-batch-window=200",
+        "camunda.api.long-polling.parallel-activation=true"
+      })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
 
@@ -42,6 +46,11 @@ public class ApiGatewayLongPollingBrokerTest {
     void shouldSetNotificationBatchWindow() {
       assertThat(brokerCfg.getGateway().getLongPolling().getNotificationBatchWindow())
           .isEqualTo(Duration.ofMillis(200));
+    }
+
+    @Test
+    void shouldSetParallelActivation() {
+      assertThat(brokerCfg.getGateway().getLongPolling().isParallelActivation()).isTrue();
     }
   }
 
@@ -57,6 +66,11 @@ public class ApiGatewayLongPollingBrokerTest {
     void shouldSetNotificationBatchWindowToDefault() {
       assertThat(brokerCfg.getGateway().getLongPolling().getNotificationBatchWindow())
           .isEqualTo(ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW);
+    }
+
+    @Test
+    void shouldDisableParallelActivationByDefault() {
+      assertThat(brokerCfg.getGateway().getLongPolling().isParallelActivation()).isFalse();
     }
   }
 }

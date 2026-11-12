@@ -57,6 +57,13 @@ public class LongPolling implements Cloneable {
   private Duration notificationBatchWindow =
       ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
 
+  /**
+   * Activates jobs on several partitions at the same time instead of one partition after the other.
+   * This lowers the latency of polling for jobs on clusters with several partitions, at the cost of
+   * sending more requests to the brokers when there are plenty of jobs.
+   */
+  private boolean parallelActivation;
+
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".enabled",
@@ -127,6 +134,19 @@ public class LongPolling implements Cloneable {
               .formatted(notificationBatchWindow));
     }
     this.notificationBatchWindow = notificationBatchWindow;
+  }
+
+  public boolean isParallelActivation() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".parallel-activation",
+        parallelActivation,
+        Boolean.class,
+        BackwardsCompatibilityMode.NOT_SUPPORTED,
+        Set.of());
+  }
+
+  public void setParallelActivation(final boolean parallelActivation) {
+    this.parallelActivation = parallelActivation;
   }
 
   @Override

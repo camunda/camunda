@@ -34,7 +34,8 @@ public class ApiGatewayLongPollingTest {
         "camunda.api.long-polling.timeout=20000",
         "camunda.api.long-polling.probe-timeout=30000",
         "camunda.api.long-polling.min-empty-responses=5",
-        "camunda.api.long-polling.notification-batch-window=200"
+        "camunda.api.long-polling.notification-batch-window=200",
+        "camunda.api.long-polling.parallel-activation=true"
       })
   class WithOnlyUnifiedConfigSet {
     final GatewayBasedProperties gatewayCfg;
@@ -68,6 +69,11 @@ public class ApiGatewayLongPollingTest {
       assertThat(gatewayCfg.getLongPolling().getNotificationBatchWindow())
           .isEqualTo(Duration.ofMillis(200));
     }
+
+    @Test
+    void shouldSetParallelActivation() {
+      assertThat(gatewayCfg.getLongPolling().isParallelActivation()).isTrue();
+    }
   }
 
   @Nested
@@ -82,6 +88,11 @@ public class ApiGatewayLongPollingTest {
     void shouldSetNotificationBatchWindowToDefault() {
       assertThat(gatewayCfg.getLongPolling().getNotificationBatchWindow())
           .isEqualTo(ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW);
+    }
+
+    @Test
+    void shouldDisableParallelActivationByDefault() {
+      assertThat(gatewayCfg.getLongPolling().isParallelActivation()).isFalse();
     }
   }
 

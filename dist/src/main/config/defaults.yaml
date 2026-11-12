@@ -54,6 +54,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       # job type: at most one wakes up blocked requests per window, and notifications within the window are
       # collapsed into a single trailing wake-up. A value of 0 disables throttling.
       notification-batch-window: null # Type: Duration, Env: CAMUNDA_API_LONGPOLLING_NOTIFICATIONBATCHWINDOW
+      # Activates jobs on several partitions at the same time instead of one partition after the other. This
+      # lowers the latency of polling for jobs on clusters with several partitions, at the cost of sending
+      # more requests to the brokers when there are plenty of jobs.
+      parallel-activation: false # Type: Boolean, Env: CAMUNDA_API_LONGPOLLING_PARALLELACTIVATION
       # Set the probe timeout for long polling in milliseconds
       probe-timeout: null # Type: Long, Env: CAMUNDA_API_LONGPOLLING_PROBETIMEOUT
       # Set the timeout for long polling in milliseconds
