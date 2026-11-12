@@ -49,7 +49,7 @@ orchestration:
         # Uses the unified `camunda.*` property tree rather than the legacy `zeebe.broker.*` one, because otherwise only the default physical tenant
         # receives this configuration.
         camunda.processing.flow-control.write.enabled: "true"
-        camunda.processing.flow-control.write.limit: 10000
+        camunda.processing.flow-control.write.limit: 25000
         camunda.processing.flow-control.write.throttle.enabled: "true"
         # Grant the dedicated leader-balancer client (declared via `identity.clients`) cluster-admin
         # access, so it can call the coordinated `/cluster/v2/rebalance` endpoint.
