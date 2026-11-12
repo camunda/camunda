@@ -1,0 +1,24 @@
+---
+name: Probe job.check_run_id
+description: Temporary probe — checks whether job.check_run_id is readable inside a composite action.
+
+inputs:
+  check-run-id:
+    description: job.check_run_id passed in by the caller, for comparison.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Read job.check_run_id inside composite
+      shell: bash
+      env:
+        FROM_CONTEXT: ${{ job.check_run_id }}
+        FROM_INPUT: ${{ inputs.check-run-id }}
+      run: |
+        echo "composite: job.check_run_id='${FROM_CONTEXT}' input='${FROM_INPUT}'"
+        if [ -z "${FROM_CONTEXT}" ] || [ "${FROM_CONTEXT}" != "${FROM_INPUT}" ]; then
+          echo "::error title=probe::job.check_run_id inside composite is '${FROM_CONTEXT}', caller passed '${FROM_INPUT}'"
+          exit 1
+        fi
+        echo "::notice title=probe-composite::job.check_run_id=${FROM_CONTEXT}"

@@ -1,0 +1,63 @@
+# Temporary probe, do not merge: checks that ${{ job.check_run_id }} is populated during a job,
+# equals the REST API job ID, and is readable inside composite actions, across runner types.
+# owner: @camunda/engineering-operations
+name: Probe job.check_run_id
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/probe-job-check-run-id.yml
+      - .github/actions/probe-check-run-id/**
+
+permissions: {}
+
+jobs:
+  probe:
+    name: "probe (${{ matrix.runner }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-slim, windows-latest, macos-latest, gcp-core-2-default]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Read job.check_run_id and compare with REST API
+        shell: bash
+        env:
+          CHECK_RUN_ID: ${{ job.check_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          echo "job.check_run_id='${CHECK_RUN_ID}'"
+          echo "Env var names mentioning job/check (values hidden):"
+          env | cut -d= -f1 | grep -iE 'job|check' | sort || true
+          if [ -z "${CHECK_RUN_ID}" ]; then
+            echo "::error title=probe::job.check_run_id is empty on ${RUNNER_NAME}"
+            exit 1
+          fi
+          job="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/actions/jobs/${CHECK_RUN_ID}")"
+          api_run_id="$(echo "${job}" | jq -r '.run_id')"
+          api_attempt="$(echo "${job}" | jq -r '.run_attempt')"
+          api_name="$(echo "${job}" | jq -r '.name')"
+          echo "API: run_id=${api_run_id} run_attempt=${api_attempt} name='${api_name}'"
+          if [ "${api_run_id}" != "${RUN_ID}" ] || [ "${api_attempt}" != "${RUN_ATTEMPT}" ]; then
+            echo "::error title=probe::API job ${CHECK_RUN_ID} belongs to run ${api_run_id}/${api_attempt}, expected ${RUN_ID}/${RUN_ATTEMPT}"
+            exit 1
+          fi
+          echo "::notice title=probe::job.check_run_id=${CHECK_RUN_ID} matches API job '${api_name}'"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/probe-check-run-id
+
+      - name: Read job.check_run_id inside composite action
+        uses: ./.github/actions/probe-check-run-id
+        with:
+          check-run-id: ${{ job.check_run_id }}
