@@ -142,5 +142,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43224981555",
     "updated_at": "2026-11-12T13:34:25Z",
     "cooldown_until": "2026-11-19T13:34:25Z"
+  },
+  "669ec313": {
+    "version": "main",
+    "file": "tests/api/v2/job/job-api-tests.spec.ts",
+    "titlePath": [
+      "Job Priority API Tests",
+      "Search Jobs - filter priority $gte 50 returns only the mid and high priority jobs"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43225049718",
+    "updated_at": "2026-11-12T13:44:25Z",
+    "cooldown_until": "2026-11-15T13:44:25Z"
   }
 }
