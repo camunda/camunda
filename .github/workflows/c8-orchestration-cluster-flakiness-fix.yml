@@ -1582,16 +1582,18 @@ jobs:
               { echo "pushed="; echo "error=the change did not pass lint"; } >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            # The suite's own gate is `tsc && eslint .`, and prettier/eslint on
-            # the changed files alone would let a type error through to the PR
-            # -- a renamed export, a wrong fixture type -- for CI to find after
-            # the push. Whole-project, because a change here can break a file it
-            # does not touch.
-            if ! ( cd "$SUITE_PATH" && npx tsc --noEmit ); then
-              echo "::error::the round's changes do not typecheck"
-              { echo "pushed="; echo "error=the change did not typecheck"; } >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
+          fi
+          # The suite's own gate is `tsc && eslint .`, and prettier/eslint on the
+          # changed files alone would let a type error through to the PR -- a
+          # renamed export, a wrong fixture type -- for CI to find after the
+          # push. Run unconditionally, not only when a .ts file changed: a JSON
+          # fixture or a resource the tests import types from breaks the build
+          # just as well, and that patch would otherwise reach the PR with no
+          # validation at all.
+          if ! ( cd "$SUITE_PATH" && npx tsc --noEmit ); then
+            echo "::error::the round's changes do not typecheck"
+            { echo "pushed="; echo "error=the change did not typecheck"; } >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           git config user.name "qa-processes[bot]"
           git config user.email "qa-processes[bot]@users.noreply.github.com"
