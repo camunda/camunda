@@ -9,6 +9,9 @@ package io.camunda.zeebe.db.writebehind;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -156,7 +159,9 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     }
   }
 
-  /** The sequence of the last commit. A snapshot of the unflushed writes is valid until it changes. */
+  /**
+   * The sequence of the last commit. A snapshot of the unflushed writes is valid until it changes.
+   */
   public long committedSeq() {
     return committedSeq;
   }
@@ -415,9 +420,36 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
     return keyIndexes.get(columnFamily);
   }
 
-  /** Registers the counters per column family as gauges in the registry. */
-  public void exportMetrics(final io.micrometer.core.instrument.MeterRegistry registry) {
-    metrics.export(registry);
+  /**
+   * Registers the store's meters in the registry, tagged with {@code storeName} so that several
+   * stores can share a registry. Call it again to pick up column families that were first used
+   * since; meters that exist are kept.
+   */
+  public void exportMetrics(final MeterRegistry registry, final String storeName) {
+    metrics.export(registry, storeName);
+    final var tags = Tags.of("store", storeName);
+    Gauge.builder("zeebe.writebehind.pending.bytes", flusher, AsyncFlusher::pendingBytes)
+        .baseUnit("bytes")
+        .tags(tags)
+        .register(registry);
+    Gauge.builder(
+            "zeebe.writebehind.pending.transactions",
+            this,
+            store -> store.committedSeq - store.flusher.flushedSeq())
+        .tags(tags)
+        .register(registry);
+    Gauge.builder(
+            "zeebe.writebehind.pending.age",
+            flusher,
+            f -> f.oldestUnflushedAgeNanos() / 1_000_000_000d)
+        .baseUnit("seconds")
+        .tags(tags)
+        .register(registry);
+    if (cache != null) {
+      Gauge.builder("zeebe.writebehind.cache.entries", cache, Cache::estimatedSize)
+          .tags(tags)
+          .register(registry);
+    }
   }
 
   Backend<K, V> backend() {

@@ -87,6 +87,9 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   private volatile @Nullable Throwable failure;
   private volatile boolean stopping;
 
+  // the oldest transaction that the writer took off the queue and has not flushed yet
+  private volatile @Nullable PendingTransaction<K, V> oldestTaken;
+
   /**
    * @param ensureUsable throws if the store can't be used any more; called while waiting, so that
    *     waiters fail fast
@@ -116,6 +119,24 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
 
   @Nullable Throwable failure() {
     return failure;
+  }
+
+  long flushedSeq() {
+    return flushedSeq;
+  }
+
+  long pendingBytes() {
+    return pendingBytes.get();
+  }
+
+  /** How long the oldest transaction that the storage doesn't hold yet has been committed. */
+  long oldestUnflushedAgeNanos() {
+    final var taken = oldestTaken;
+    final var oldest = taken != null ? taken : queue.peek();
+    if (oldest == null || oldest == stop) {
+      return 0;
+    }
+    return Math.max(0, System.nanoTime() - oldest.committedAtNanos());
   }
 
   /**
@@ -216,6 +237,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
         final var oldest = queue.take();
         group.add(oldest);
         if (oldest != stop) {
+          oldestTaken = oldest;
           awaitFlushDue(oldest);
         }
         queue.drainTo(group);
@@ -227,6 +249,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
           return;
         }
         group.clear();
+        oldestTaken = null;
         if (stopAfter) {
           return;
         }
@@ -279,9 +302,12 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
       bytes += transaction.bytes();
     }
 
+    final long start = System.nanoTime();
     if (!writeWithRetries(latest)) {
       return false;
     }
+    metrics.flushNanos.add(System.nanoTime() - start);
+    metrics.flushes.increment();
 
     final var chunk = new ArrayList<Map.Entry<K, Version<V>>>(REMOVAL_CHUNK_SIZE);
     for (final var entry : latest.entrySet()) {
@@ -311,6 +337,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
           fail(e);
           return false;
         }
+        metrics.flushRetries.increment();
         LOG.warn("Failed to write a batch to the storage, will retry (attempt {})", attempt + 1, e);
         LockSupport.parkNanos(delay);
         delay = Math.min(delay * 2, MAX_RETRY_DELAY_NANOS);
@@ -348,6 +375,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
         "Failed to write committed state to the storage; the write-behind store stops accepting work",
         cause);
     failure = cause;
+    metrics.flushFailures.increment();
     signalFlushed();
   }
 

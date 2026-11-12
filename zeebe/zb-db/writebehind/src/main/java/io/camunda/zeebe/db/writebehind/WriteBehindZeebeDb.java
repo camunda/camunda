@@ -88,7 +88,7 @@ public final class WriteBehindZeebeDb<
   @Override
   public void exportMetrics() {
     delegate.exportMetrics();
-    store.exportMetrics(delegate.getMeterRegistry());
+    store.exportMetrics(delegate.getMeterRegistry(), "rocksdb");
   }
 
   /** Stops the writer before closing the wrapped DB, so that it never writes to a closed DB. */
