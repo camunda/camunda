@@ -19,3 +19,4 @@ windows.
 
 - How much RocksDB memory can we remove without a loss in read speed?
 - Is a lower `keyIndexMaxKeys` for some column families enough?
+

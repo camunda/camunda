@@ -249,10 +249,10 @@ commit.
 
 Add to `WriteBehindConfiguration`:
 
-|          Property          |  Default   |                                     Notes                                     |
-|----------------------------|------------|-------------------------------------------------------------------------------|
-| `keyIndexColumnFamilies`   | see below  | `Set<Long>` of column family IDs. An empty set disables the feature.         |
-| `keyIndexMaxKeys`          | 100 000    | Cap per column family (decision 4).                                           |
+|         Property         |  Default  |                                Notes                                 |
+|--------------------------|-----------|----------------------------------------------------------------------|
+| `keyIndexColumnFamilies` | see below | `Set<Long>` of column family IDs. An empty set disables the feature. |
+| `keyIndexMaxKeys`        | 100 000   | Cap per column family (decision 4).                                  |
 
 Add `withKeyIndexColumnFamilies` and `withKeyIndexMaxKeys`, as the other `with…` methods do.
 
@@ -315,22 +315,22 @@ API. Put them in `:zeebe-db-writebehind` when they need package-private access. 
 use `DefaultColumnFamily.DEFAULT`, ID `0`. Follow the repository test conventions: JUnit 5,
 AssertJ, `should…` names, `// given`, `// when`, `// then`, Awaitility instead of `Thread.sleep`.
 
-|                                                                Test                                                                 |                                         What it proves                                         |
-|-------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| A second differential test class: tiny cache, tiny pending budget, column family `0` indexed, `keyIndexMaxKeys` small enough that random runs hit it | Random operations give the same results as RocksDB with the index loaded, and after a disable  |
-| The contract test classes again, with column family `0` indexed (one subclass each, as `WriteBehind*Test` does today)               | The full contract holds with the index                                                         |
-| Scan once, then insert, update and delete keys in later transactions, then scan again                                               | Commits keep the index complete (I1)                                                           |
-| Scan twice. Count the RocksDB iterators that each scan opens (a counting `RawDbAccess` wrapper)                                      | The second scan opens no iterator                                                              |
-| An update of an existing key during a scan from a second context                                                                    | `version` does not change, and the scan does not switch                                        |
-| `exists` and `get` of an absent key in a loaded column family                                                                       | No RocksDB read happens, and the result is absent                                              |
-| Load race: start a load, commit to the same column family from a second context before the install                                 | The load is discarded, and the next scan loads again and sees the new key                      |
-| Three discarded loads in a row                                                                                                       | The index is disabled, and scans still return the same results as RocksDB                                  |
-| Load a column family with more keys than the cap. Separately, grow a loaded column family past the cap through commits              | The index is disabled, and results match RocksDB                                                |
-| A second context inserts and deletes keys while a scan is between two keys (pause the visitor with a latch)                         | The scan switches. It returns no key twice, skips no key, and each returned value was committed |
-| Own writes during an indexed scan: insert and delete while iterating (as `ColumnFamilyContractTest#shouldDeleteOnForeachPair` does) | Own writes still merge live                                                                    |
-| An indexed scan where all values were evicted from the cache                                                                        | After 4 RocksDB reads the cursor switches to an iterator, and results match RocksDB             |
-| Reverse scans (`whileTrueReverse`) over a loaded column family                                                                      | Reverse order and the reverse switch match RocksDB                                               |
-| A column family that is not configured                                                                                               | It uses the merged scan only, and no `KeyIndex` exists for it                                  |
+|                                                                         Test                                                                         |                                         What it proves                                          |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| A second differential test class: tiny cache, tiny pending budget, column family `0` indexed, `keyIndexMaxKeys` small enough that random runs hit it | Random operations give the same results as RocksDB with the index loaded, and after a disable   |
+| The contract test classes again, with column family `0` indexed (one subclass each, as `WriteBehind*Test` does today)                                | The full contract holds with the index                                                          |
+| Scan once, then insert, update and delete keys in later transactions, then scan again                                                                | Commits keep the index complete (I1)                                                            |
+| Scan twice. Count the RocksDB iterators that each scan opens (a counting `RawDbAccess` wrapper)                                                      | The second scan opens no iterator                                                               |
+| An update of an existing key during a scan from a second context                                                                                     | `version` does not change, and the scan does not switch                                         |
+| `exists` and `get` of an absent key in a loaded column family                                                                                        | No RocksDB read happens, and the result is absent                                               |
+| Load race: start a load, commit to the same column family from a second context before the install                                                   | The load is discarded, and the next scan loads again and sees the new key                       |
+| Three discarded loads in a row                                                                                                                       | The index is disabled, and scans still return the same results as RocksDB                       |
+| Load a column family with more keys than the cap. Separately, grow a loaded column family past the cap through commits                               | The index is disabled, and results match RocksDB                                                |
+| A second context inserts and deletes keys while a scan is between two keys (pause the visitor with a latch)                                          | The scan switches. It returns no key twice, skips no key, and each returned value was committed |
+| Own writes during an indexed scan: insert and delete while iterating (as `ColumnFamilyContractTest#shouldDeleteOnForeachPair` does)                  | Own writes still merge live                                                                     |
+| An indexed scan where all values were evicted from the cache                                                                                         | After 4 RocksDB reads the cursor switches to an iterator, and results match RocksDB             |
+| Reverse scans (`whileTrueReverse`) over a loaded column family                                                                                       | Reverse order and the reverse switch match RocksDB                                              |
+| A column family that is not configured                                                                                                               | It uses the merged scan only, and no `KeyIndex` exists for it                                   |
 
 ## 8. Files to change
 

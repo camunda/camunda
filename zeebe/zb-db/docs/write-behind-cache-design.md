@@ -24,13 +24,13 @@ replication format, or use of memory as durable storage.
 
 ## 2. How zb-db works without write-behind
 
-|   Concern    |                                                                                                          RocksDB implementation                                                                                                          |                                                   Where                                                    |
-|--------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| Layout       | One RocksDB column family. Each "virtual" column family is an 8-byte key prefix.                                                                                                                                                         | `ColumnFamilyContext#writeKey`                                                                             |
-| Transactions | One transaction per `TransactionContext`, backed by a `WriteBatchWithIndex`. Commit runs `db.write(batch)`. Rollback runs `batch.clear()`.                                                                                              | `WriteBatchTransaction`, `DefaultTransactionContext`                                                       |
-| Iteration    | `WBWI.newIteratorWithBase(db.newIterator(prefixReadOptions))`. Callers seek, then step forward or backward, and stop on a prefix mismatch.                                                                                               | `TransactionalColumnFamily#forEachInPrefix*`                                                               |
-| Snapshots    | RocksDB `Checkpoint` of the live DB, taken while processing continues. The StateController picks the position. The checkpoint runs on the snapshot store's actor, on the broker's I/O-bound pool (2 threads by default).                | `ZeebeTransactionDb#createSnapshot`, `StateControllerImpl#takeSnapshot`, `FileBasedTransientSnapshot#take` |
-| Durability   | WAL disabled. On (re)start, the runtime directory is deleted and restored from the latest snapshot, then the log is replayed.                                                                                                          | `RocksDbConfiguration#DEFAULT_WAL_DISABLED`, `StateControllerImpl#recoverInternal`                         |
+|   Concern    |                                                                                                  RocksDB implementation                                                                                                  |                                                   Where                                                    |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| Layout       | One RocksDB column family. Each "virtual" column family is an 8-byte key prefix.                                                                                                                                         | `ColumnFamilyContext#writeKey`                                                                             |
+| Transactions | One transaction per `TransactionContext`, backed by a `WriteBatchWithIndex`. Commit runs `db.write(batch)`. Rollback runs `batch.clear()`.                                                                               | `WriteBatchTransaction`, `DefaultTransactionContext`                                                       |
+| Iteration    | `WBWI.newIteratorWithBase(db.newIterator(prefixReadOptions))`. Callers seek, then step forward or backward, and stop on a prefix mismatch.                                                                               | `TransactionalColumnFamily#forEachInPrefix*`                                                               |
+| Snapshots    | RocksDB `Checkpoint` of the live DB, taken while processing continues. The StateController picks the position. The checkpoint runs on the snapshot store's actor, on the broker's I/O-bound pool (2 threads by default). | `ZeebeTransactionDb#createSnapshot`, `StateControllerImpl#takeSnapshot`, `FileBasedTransientSnapshot#take` |
+| Durability   | WAL disabled. On (re)start, the runtime directory is deleted and restored from the latest snapshot, then the log is replayed.                                                                                            | `RocksDbConfiguration#DEFAULT_WAL_DISABLED`, `StateControllerImpl#recoverInternal`                         |
 
 ### Facts that shape the design
 
@@ -70,12 +70,12 @@ cache. It is already managed in `parent/pom.xml`, so no new dependency was neces
 
 ### 4.1 Modules
 
-|          Module          |         Directory          |                                                         Holds                                                          |
-|--------------------------|----------------------------|------------------------------------------------------------------------------------------------------------------------|
-| `zeebe-db-api`           | `zeebe/zb-db/api`          | Interfaces, key and value types, `RawDbAccess` and `RawAccessibleDb`.                                                  |
-| `zeebe-db-rocksdb`       | `zeebe/zb-db/rocksdb`      | The RocksDB implementation. `ZeebeTransactionDb` implements `RawAccessibleDb`.                                         |
-| `zeebe-db-writebehind`   | `zeebe/zb-db/writebehind`  | The write-behind DB, package `io.camunda.zeebe.db.writebehind`. Depends on `zeebe-db-api` and Caffeine only.          |
-| `zeebe-db-tests`         | `zeebe/zb-db/tests`        | Contract tests and differential tests, run against both implementations.                                              |
+|         Module         |         Directory         |                                                    Holds                                                     |
+|------------------------|---------------------------|--------------------------------------------------------------------------------------------------------------|
+| `zeebe-db-api`         | `zeebe/zb-db/api`         | Interfaces, key and value types, `RawDbAccess` and `RawAccessibleDb`.                                        |
+| `zeebe-db-rocksdb`     | `zeebe/zb-db/rocksdb`     | The RocksDB implementation. `ZeebeTransactionDb` implements `RawAccessibleDb`.                               |
+| `zeebe-db-writebehind` | `zeebe/zb-db/writebehind` | The write-behind DB, package `io.camunda.zeebe.db.writebehind`. Depends on `zeebe-db-api` and Caffeine only. |
+| `zeebe-db-tests`       | `zeebe/zb-db/tests`       | Contract tests and differential tests, run against both implementations.                                     |
 
 The write-behind DB wraps any `RawAccessibleDb`. It uses the wrapped DB only as storage, through
 `RawDbAccess`: point get, `keyMayExist`, iterator, atomic batch and checkpoint.
@@ -101,19 +101,19 @@ flowchart LR
 
 ### 4.2 Classes
 
-|             Class               |                                                                                    Role                                                                                    |
-|---------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `WriteBehindZeebeDbFactory`     | Wraps only `createDb(path)`, the runtime DB. `createDb(path, false)` and `openSnapshotOnlyDb` delegate.                                                                   |
-| `WriteBehindZeebeDb`            | `ZeebeDb` over a `RawAccessibleDb`. Creates the column families and contexts. `createSnapshot` waits for the flush, then delegates.                                         |
+|              Class              |                                                                                  Role                                                                                   |
+|---------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `WriteBehindZeebeDbFactory`     | Wraps only `createDb(path)`, the runtime DB. `createDb(path, false)` and `openSnapshotOnlyDb` delegate.                                                                 |
+| `WriteBehindZeebeDb`            | `ZeebeDb` over a `RawAccessibleDb`. Creates the column families and contexts. `createSnapshot` waits for the flush, then delegates.                                     |
 | `WriteBehindColumnFamily`       | Typed column family. Same consistency checks as RocksDB's. Keys are encoded like RocksDB's (8-byte big-endian column family prefix, then the key). Values stay objects. |
-| `WriteBehindTransaction`        | Own writes of one context. Read-your-writes, commit and rollback.                                                                                                          |
-| `WriteBehindTransactionContext` | Same semantics as `DefaultTransactionContext`.                                                                                                                              |
-| `WriteBehindStore`              | Committed state: dirty index, read cache, key indexes, publish lock.                                                                                                       |
-| `AsyncFlusher`                  | The queue, the writer thread, the flush delay, byte back-pressure and the failure state.                                                                                   |
-| `MergingCursor`                 | Merges own writes with one committed source: a key index source, or a copy of the dirty range with a RocksDB iterator.                                                    |
-| `KeyIndex`, `KeyIndexPolicy`    | The in-memory keys of one column family and its window (section 5).                                                                                                        |
-| `IndexSource`, `HandoverSource` | Committed sources that read keys from a `KeyIndex`. `HandoverSource` continues with a storage view at the window bound.                                                   |
-| `RawKey`, `Version`, `Values`   | Key bytes with unsigned bytewise order. A value and its commit sequence. Copy, encode and decode helpers.                                                                 |
+| `WriteBehindTransaction`        | Own writes of one context. Read-your-writes, commit and rollback.                                                                                                       |
+| `WriteBehindTransactionContext` | Same semantics as `DefaultTransactionContext`.                                                                                                                          |
+| `WriteBehindStore`              | Committed state: dirty index, read cache, key indexes, publish lock.                                                                                                    |
+| `AsyncFlusher`                  | The queue, the writer thread, the flush delay, byte back-pressure and the failure state.                                                                                |
+| `MergingCursor`                 | Merges own writes with one committed source: a key index source, or a copy of the dirty range with a RocksDB iterator.                                                  |
+| `KeyIndex`, `KeyIndexPolicy`    | The in-memory keys of one column family and its window (section 5).                                                                                                     |
+| `IndexSource`, `HandoverSource` | Committed sources that read keys from a `KeyIndex`. `HandoverSource` continues with a storage view at the window bound.                                                 |
+| `RawKey`, `Version`, `Values`   | Key bytes with unsigned bytewise order. A value and its commit sequence. Copy, encode and decode helpers.                                                               |
 
 ### 4.3 Values as objects
 
@@ -228,12 +228,12 @@ a restart replays from a snapshot that includes all state up to its position.
 **When the stream processor waits for the writer.** The committing thread must not wait. These are
 all the places where it can:
 
-|                     Place                      |                                                  When                                                  |                                                      Cost and limit                                                      |
-|------------------------------------------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| `awaitCapacity` in `commit`                    | `pendingBytes` is above `maxPendingBytes`. The writer starts an early flush at `flushThresholdBytes`, so this is rare. | Waits for a whole flush. It is the only wait that depends on the speed of RocksDB.                                      |
-| Publish lock (write side) in `removeFlushed`   | The writer drops a chunk while a commit or read view needs the lock.                                  | One chunk of 512 drops. Before the chunking it was the whole group, which grows with `flushDelay`.             |
-| `enqueue` and `wakeWriter`                     | A commit adds to the queue. The commit that crosses the early-flush threshold wakes the writer.         | A queue insert, and one lock of `flushLock` per crossing. No I/O under `flushLock`.                                      |
-| Read view of a scan without a key index        | The scan copies the dirty range and opens a RocksDB iterator.                                           | The copy grows with the dirty index, so with `flushDelay`. Key indexes avoid it for the hot column families.            |
+|                    Place                     |                                                          When                                                          |                                                Cost and limit                                                |
+|----------------------------------------------|------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `awaitCapacity` in `commit`                  | `pendingBytes` is above `maxPendingBytes`. The writer starts an early flush at `flushThresholdBytes`, so this is rare. | Waits for a whole flush. It is the only wait that depends on the speed of RocksDB.                           |
+| Publish lock (write side) in `removeFlushed` | The writer drops a chunk while a commit or read view needs the lock.                                                   | One chunk of 512 drops. Before the chunking it was the whole group, which grows with `flushDelay`.           |
+| `enqueue` and `wakeWriter`                   | A commit adds to the queue. The commit that crosses the early-flush threshold wakes the writer.                        | A queue insert, and one lock of `flushLock` per crossing. No I/O under `flushLock`.                          |
+| Read view of a scan without a key index      | The scan copies the dirty range and opens a RocksDB iterator.                                                          | The copy grows with the dirty index, so with `flushDelay`. Key indexes avoid it for the hot column families. |
 
 What never blocks the stream processor: the RocksDB write, value encoding, retries after a failed
 write, and the snapshot wait. The snapshot wait runs on the snapshot store's actor. It flushes at
@@ -260,16 +260,16 @@ The wait runs on the snapshot store's actor, on the broker's I/O-bound pool.
 
 `WriteBehindConfiguration`, per partition:
 
-|      Property      | Default |                                                     Notes                                                     |
-|--------------------|---------|---------------------------------------------------------------------------------------------------------------|
-| `maxPendingBytes`  | 32 MiB  | Estimated bytes in the dirty index before commits wait.                                                       |
-| `cacheMaxBytes`    | 64 MiB  | Caffeine maximum weight. `0` disables the cache.                                                              |
-| `maxWriteRetries`  | 10      | Retries of a recoverable write error before the store fails.                                                 |
-| `flushTimeout`     | 30 s    | Limit for the snapshot wait and for close.                                                                    |
-| `flushThresholdBytes` | 16 MiB | Unflushed bytes that end the flush delay. |
-| `flushDelay`       | 0 (broker: 5 s) | How long the writer waits after the oldest unflushed commit before it writes (section 4.7).        |
-| `keyIndexColumnFamilies` | 23 column families | IDs of the column families that have a key index (section 5).                                       |
-| `keyIndexMaxKeys`  | 10000   | The most keys that one key index holds.                                                                       |
+|         Property         |      Default       |                                            Notes                                            |
+|--------------------------|--------------------|---------------------------------------------------------------------------------------------|
+| `maxPendingBytes`        | 32 MiB             | Estimated bytes in the dirty index before commits wait.                                     |
+| `cacheMaxBytes`          | 64 MiB             | Caffeine maximum weight. `0` disables the cache.                                            |
+| `maxWriteRetries`        | 10                 | Retries of a recoverable write error before the store fails.                                |
+| `flushTimeout`           | 30 s               | Limit for the snapshot wait and for close.                                                  |
+| `flushThresholdBytes`    | 16 MiB             | Unflushed bytes that end the flush delay.                                                   |
+| `flushDelay`             | 0 (broker: 5 s)    | How long the writer waits after the oldest unflushed commit before it writes (section 4.7). |
+| `keyIndexColumnFamilies` | 23 column families | IDs of the column families that have a key index (section 5).                               |
+| `keyIndexMaxKeys`        | 10000              | The most keys that one key index holds.                                                     |
 
 Wiring:
 
@@ -313,11 +313,11 @@ of section 4.6.
 A column family can have more keys than `keyIndexMaxKeys`. The policy of the column family
 (`KeyIndexPolicy`) then decides what the index does:
 
-|    Policy      |                              Behavior                              |
-|----------------|--------------------------------------------------------------------|
+|     Policy     |                                  Behavior                                   |
+|----------------|-----------------------------------------------------------------------------|
 | `DISABLE`      | The index turns off until the restart. This was the only behavior at first. |
-| `KEEP_LOWEST`  | The index holds the keys below a bound.                            |
-| `KEEP_HIGHEST` | The index holds the keys above a bound.                            |
+| `KEEP_LOWEST`  | The index holds the keys below a bound.                                     |
+| `KEEP_HIGHEST` | The index holds the keys above a bound.                                     |
 
 The window is one range at one end of the column family. The bound is the first key that the
 index does not cover. It is null while the index covers the whole column family. A key is in the
@@ -364,9 +364,9 @@ window, with an unchanged version. A key outside the window takes the normal pat
 policy of each column family is a constant in `WriteBehindConfiguration`, by column family
 name. The broker does not expose it. A column family without a policy has `DISABLE`.
 
-|    Policy      |                                             Column families                                             |
-|----------------|---------------------------------------------------------------------------------------------------------|
-| `KEEP_LOWEST`  | `TIMER_DUE_DATES`, `JOB_DEADLINES`, `MESSAGE_DEADLINES`, `JOB_BACKOFF`: scans start at the next due entry. |
+|     Policy     |                                                                                                                                                                                                                                                                                                                                                                                                                                       Column families                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `KEEP_LOWEST`  | `TIMER_DUE_DATES`, `JOB_DEADLINES`, `MESSAGE_DEADLINES`, `JOB_BACKOFF`: scans start at the next due entry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `KEEP_HIGHEST` | Keys start with an element instance, scope, job or process instance key. That key grows with time, so reads and scans hit the newest keys: `ELEMENT_INSTANCE_PARENT_CHILD`, `NUMBER_OF_TAKEN_SEQUENCE_FLOWS`, `ELEMENT_INSTANCE_KEY`, `ELEMENT_INSTANCE_CHILD_PARENT`, `EVENT_SCOPE`, `EVENT_TRIGGER`, `VARIABLES`, `TIMERS`, `PROCESS_SUBSCRIPTION_BY_KEY`, `SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME`, `CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY`, `SECRET_REFERENCES_BY_JOB`, `BANNED_INSTANCE`, `SUSPENDED_PROCESS_INSTANCES`, `JOBS`, `JOB_STATES`, `RUNTIME_INSTRUCTIONS`, `AWAIT_WORKLOW_RESULT`, `COMPENSATION_SUBSCRIPTION` (its keys start with the tenant, which is constant for one tenant). Most of their lookups and scans find nothing (the engine checks for variables, triggers, timers and subscriptions when an element ends), so the index answers them without a storage read. |
 
 The window of a `KEEP_HIGHEST` column family helps only with scans on recent keys. A scan under
@@ -419,3 +419,4 @@ Not done:
    [the issue](../issues/refill-stalls-the-processing-thread.md).
 7. **The key index windows add memory.** 23 column families can hold 10000 keys each, about 30 MB
    per partition. See [the issue](../issues/key-index-windows-use-more-memory.md).
+

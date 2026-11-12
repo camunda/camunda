@@ -17,3 +17,4 @@ randomized ones with `-PincludeRandomTests`). We did not test two things yet:
 1. Add the key count to the log line "Disabled the key index".
 2. Run `WriteBehindLoadIT` with the index on. List the column families that pass the cap, and read `keyIndexHandovers`, `keyIndexRefills`, `keyIndexDiscardedRefills` and `iteratorsOpened`.
 3. Run the engine suite with windows on.
+
