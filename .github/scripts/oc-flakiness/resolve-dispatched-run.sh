@@ -39,9 +39,12 @@ for _ in $(seq 1 "$ATTEMPTS"); do
       | [ .[]
           | select(.displayTitle == $t)
           | select($since == "" or .createdAt >= $since)
-          | select($taken | index(.databaseId | tostring) | not) ]
+          # Bind the id first: inside index() the input is $taken, so
+          # .databaseId there would be read off the array and error out.
+          | (.databaseId | tostring) as $id
+          | select($taken | index($id) | not) ]
       | sort_by(.createdAt) | .[0].databaseId // ""
-    ' 2>/dev/null)
+    ')
   if [[ -n "${id:-}" ]]; then
     printf '%s/%s/actions/runs/%s' "${GITHUB_SERVER_URL:-https://github.com}" "$REPO" "$id"
     exit 0
