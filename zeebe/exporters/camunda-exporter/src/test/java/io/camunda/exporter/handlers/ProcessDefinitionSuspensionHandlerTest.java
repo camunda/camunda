@@ -89,13 +89,15 @@ class ProcessDefinitionSuspensionHandlerTest {
   }
 
   @Test
-  void shouldSetSuspendedStateOnUpdateEntity() {
+  void shouldSetStateFromTheVersionMatchingTheEntityId() {
     // given
     final Record<ProcessDefinitionSuspensionRecordValue> record =
         suspensionRecord(
             ProcessDefinitionSuspensionIntent.SUSPENDED,
             1L,
-            List.of(version(11L, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+            List.of(
+                version(12L, ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED),
+                version(11L, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
     final ProcessEntity entity = new ProcessEntity().setId("11");
 
     // when
