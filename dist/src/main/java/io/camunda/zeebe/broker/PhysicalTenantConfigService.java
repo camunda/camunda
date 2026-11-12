@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantConfigChange;
 import io.camunda.configuration.physicaltenants.PhysicalTenantConfigValidator;
 import io.camunda.configuration.physicaltenants.PhysicalTenantEnvironments;
@@ -28,12 +29,12 @@ import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner
 import io.camunda.zeebe.dynamic.config.state.TenantAvailability;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -43,11 +44,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
-import org.springframework.core.env.Environment;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * The front door to changes of physical tenants' configurations. Both inputs use it: the management
@@ -57,9 +59,16 @@ import org.springframework.core.env.Environment;
  * which rolls it out to every member through dynamic-config.
  *
  * <p>Once the broker started, this member also brings itself in line with the cluster
- * configuration: it records the version it already runs, starts the tenants the cluster created at
- * runtime, and, on the coordinator, sends every tenant of its static configuration through the same
- * path as the API. A tenant owned by the API ignores the file.
+ * configuration: it records the version it already runs, and starts the tenants the cluster created
+ * at runtime.
+ *
+ * <p>The coordinator brings the cluster in line with its configuration files, through the same path
+ * as the API, when it starts, when it becomes the coordinator, and whenever the files change while
+ * it runs (see {@link PhysicalTenantConfigFileWatcher}): a tenant the files declare is registered,
+ * created, updated or enabled again, and a tenant the files owned and no longer declare is
+ * disabled, keeping its data, as a node restart with the files would do. The other members do not
+ * act on their own files. A tenant owned by the API ignores the files. The {@code default} tenant
+ * is changed like any other, but never disabled.
  */
 @NullMarked
 public final class PhysicalTenantConfigService implements AutoCloseable {
@@ -69,6 +78,8 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
   private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
   static final String API_UPDATES_FILE_TENANTS =
       "physical-tenant-rollout.api-updates-file-owned-tenants";
+  static final String FILE_WATCH_INTERVAL = "physical-tenant-rollout.file-watch.interval";
+  static final String FILE_WATCH_QUIET_PERIOD = "physical-tenant-rollout.file-watch.quiet-period";
 
   private final PhysicalTenantLifecycleService lifecycle;
   private final PhysicalTenantConfigExecutor executor;
@@ -80,6 +91,14 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
   private final ScheduledExecutorService background =
       Executors.newSingleThreadScheduledExecutor(
           Thread.ofPlatform().name("physical-tenant-config-sync").daemon().factory());
+  private final PhysicalTenantConfigFiles files;
+  private final @Nullable PhysicalTenantConfigFileWatcher watcher;
+  private final Duration watchInterval;
+  // what the configuration files declare, as last read and stable; only the coordinator acts on it
+  private volatile Map<String, Map<String, String>> fileSubtrees;
+  private final Set<String> rejectedFileTenants = new HashSet<>();
+  private final AtomicBoolean retryScheduled = new AtomicBoolean();
+  private boolean wasCoordinator;
 
   public PhysicalTenantConfigService(
       final Broker broker,
@@ -87,7 +106,7 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
       final PhysicalTenantConfigExecutor executor,
       final ClusterConfigurationManagementRequestSender sender,
       final List<PhysicalTenantConfigValidator> validators,
-      final Environment bootEnvironment,
+      final ConfigurableEnvironment bootEnvironment,
       final Collection<String> bootTenants,
       final MemberId localMemberId) {
     this.lifecycle = lifecycle;
@@ -98,12 +117,25 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
     apiUpdatesFileTenants =
         bootEnvironment.getProperty(API_UPDATES_FILE_TENANTS, Boolean.class, false);
     clusterConfigurationService = () -> broker.getBrokerContext().getClusterConfigurationService();
-    final Map<String, Map<String, String>> fileSubtrees = new TreeMap<>();
+    final Map<String, Map<String, String>> bootSubtrees = new TreeMap<>();
     bootTenants.forEach(
         tenantId ->
-            fileSubtrees.put(
+            bootSubtrees.put(
                 tenantId, PhysicalTenantEnvironments.subtreeOf(bootEnvironment, tenantId)));
-    fileSubtrees.forEach(executor::runsFromStaticConfiguration);
+    bootSubtrees.forEach(executor::runsFromStaticConfiguration);
+    fileSubtrees = Map.copyOf(bootSubtrees);
+    files = PhysicalTenantConfigFiles.of(bootEnvironment);
+    watchInterval =
+        bootEnvironment.getProperty(FILE_WATCH_INTERVAL, Duration.class, Duration.ofSeconds(1));
+    watcher =
+        files.files().isEmpty() || watchInterval.isZero() || watchInterval.isNegative()
+            ? null
+            : new PhysicalTenantConfigFileWatcher(
+                files,
+                bootEnvironment.getProperty(
+                    FILE_WATCH_QUIET_PERIOD, Duration.class, Duration.ofSeconds(2)),
+                fingerprintOrNull(files),
+                System::nanoTime);
     broker
         .start()
         .thenRunAsync(
@@ -113,9 +145,30 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
               catchUp();
               service.addUpdateListener(
                   configuration -> background.execute(() -> recordRunningVersions(configuration)));
-              sendFileTenants(fileSubtrees);
+              wasCoordinator = isCoordinator();
+              if (wasCoordinator) {
+                reconcileFileTenants();
+              }
+              if (watcher != null) {
+                LOG.info(
+                    "Watching the configuration files {} for changes of physical tenants",
+                    files.files());
+                background.scheduleWithFixedDelay(
+                    this::watchFiles,
+                    watchInterval.toMillis(),
+                    watchInterval.toMillis(),
+                    MILLISECONDS);
+              }
             },
             background);
+  }
+
+  private static @Nullable String fingerprintOrNull(final PhysicalTenantConfigFiles files) {
+    try {
+      return files.fingerprint();
+    } catch (final Exception e) {
+      return null;
+    }
   }
 
   /** Every physical tenant the cluster configuration holds a configuration reference for. */
@@ -384,24 +437,76 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
         .orElse(false);
   }
 
-  private void sendFileTenants(final Map<String, Map<String, String>> fileSubtrees) {
-    final var configuration = clusterConfigurationService.get().getCurrentClusterConfiguration();
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.from(() -> configuration).getDefaultCoordinator();
-    if (localMemberId.equals(coordinator)) {
-      sendFileTenants(new ArrayDeque<>(fileSubtrees.entrySet()));
+  /**
+   * Picks up a stable change of the configuration files, and a change of the coordinator: the
+   * member that becomes the coordinator brings the cluster in line with its own files.
+   */
+  private void watchFiles() {
+    try {
+      final var changed = Objects.requireNonNull(watcher).poll();
+      final var coordinator = isCoordinator();
+      final var becameCoordinator = coordinator && !wasCoordinator;
+      wasCoordinator = coordinator;
+      if (changed.isPresent()) {
+        fileSubtrees = changed.get();
+        LOG.info(
+            "The configuration files declare physical tenants {}{}",
+            fileSubtrees.keySet(),
+            coordinator ? "; bringing the cluster in line" : "; only the coordinator acts on it");
+      }
+      if (coordinator && (changed.isPresent() || becameCoordinator)) {
+        reconcileFileTenants();
+      }
+    } catch (final RuntimeException e) {
+      LOG.warn("Failed to act on the configuration files {}", files.files(), e);
     }
   }
 
-  /** Sends one tenant at a time, retrying while another tenant change runs. */
-  private void sendFileTenants(final Deque<Map.Entry<String, Map<String, String>>> pending) {
-    while (!pending.isEmpty()) {
-      final var next = pending.peek();
-      if (!trySendFileTenant(next.getKey(), next.getValue())) {
-        background.schedule(() -> sendFileTenants(pending), RETRY_DELAY.toMillis(), MILLISECONDS);
-        return;
+  private boolean isCoordinator() {
+    final var configuration = clusterConfigurationService.get().getCurrentClusterConfiguration();
+    return localMemberId.equals(
+        ClusterConfigurationCoordinatorSupplier.from(() -> configuration).getDefaultCoordinator());
+  }
+
+  /**
+   * Sends every difference between the configuration files and the cluster configuration to the
+   * coordinator, one tenant at a time, and tries again later while another change of a tenant runs.
+   */
+  private void reconcileFileTenants() {
+    if (!isCoordinator()) {
+      return;
+    }
+    final var desired = fileSubtrees;
+    var retry = false;
+    for (final var tenant : desired.entrySet()) {
+      retry |= !trySendFileTenant(tenant.getKey(), tenant.getValue());
+    }
+    final var configuration = clusterConfigurationService.get().getCurrentClusterConfiguration();
+    for (final var group : configuration.partitionGroups().entrySet()) {
+      final var tenantId = group.getKey();
+      final var ownedByTheFile =
+          group
+              .getValue()
+              .tenantConfig()
+              .filter(reference -> reference.owner() == Owner.FILE)
+              .isPresent();
+      if (ownedByTheFile
+          && !group.getValue().isDisabled()
+          && !desired.containsKey(tenantId)
+          && !PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)) {
+        retry |=
+            !trySendFileChange(
+                tenantId, PhysicalTenantConfigRequest.disable(tenantId, Owner.FILE), "disabled");
       }
-      pending.poll();
+    }
+    if (retry && retryScheduled.compareAndSet(false, true)) {
+      background.schedule(
+          () -> {
+            retryScheduled.set(false);
+            reconcileFileTenants();
+          },
+          RETRY_DELAY.toMillis(),
+          MILLISECONDS);
     }
   }
 
@@ -411,37 +516,82 @@ public final class PhysicalTenantConfigService implements AutoCloseable {
   private boolean trySendFileTenant(final String tenantId, final Map<String, String> subtree) {
     final var group =
         clusterConfigurationService.get().getCurrentClusterConfiguration().partitionGroup(tenantId);
-    if (group == null || group.isRemoved()) {
+    if (group != null && group.isRemoved()) {
       return true;
     }
-    final var reference = group.tenantConfig();
-    final var sha256 = PhysicalTenantConfigCodec.sha256(PhysicalTenantConfigCodec.encode(subtree));
-    if (reference.filter(r -> r.owner() == Owner.API || r.sha256().equals(sha256)).isPresent()) {
+    final var reference =
+        group == null ? Optional.<PhysicalTenantConfigReference>empty() : group.tenantConfig();
+    if (reference.filter(r -> r.owner() == Owner.API).isPresent()) {
+      return true;
+    }
+    final var encoded = PhysicalTenantConfigCodec.encode(subtree);
+    final var sha256 = PhysicalTenantConfigCodec.sha256(encoded);
+    final var disabled = group != null && group.isDisabled();
+    if (!disabled && reference.filter(r -> r.sha256().equals(sha256)).isPresent()) {
+      return true;
+    }
+    if (rejectedFileTenants.contains(tenantId + "@" + sha256)) {
       return true;
     }
     try {
-      if (reference.isEmpty()) {
-        runValidators(PhysicalTenantConfigChange.create(tenantId, subtree));
+      if (group == null) {
+        final var brokerCfg = validate(PhysicalTenantConfigChange.create(tenantId, subtree));
         send(
             PhysicalTenantConfigRequest.create(
-                tenantId, Owner.FILE, PhysicalTenantConfigCodec.encode(subtree), 0, Set.of()));
+                tenantId,
+                Owner.FILE,
+                encoded,
+                brokerCfg.getCluster().getPartitionsCount(),
+                brokerCfg.getExporters().keySet()));
+        LOG.info("Created physical tenant '{}' from the configuration files", tenantId);
+      } else if (reference.isEmpty()) {
+        runValidators(PhysicalTenantConfigChange.create(tenantId, subtree));
+        send(PhysicalTenantConfigRequest.create(tenantId, Owner.FILE, encoded, 0, Set.of()));
+        LOG.info("Registered physical tenant '{}' from the configuration files", tenantId);
+      } else if (disabled) {
+        validate(PhysicalTenantConfigChange.create(tenantId, subtree));
+        send(PhysicalTenantConfigRequest.enable(tenantId, Owner.FILE, encoded));
+        LOG.info("Enabled physical tenant '{}' again from the configuration files", tenantId);
       } else {
         update(tenantId, subtree, Owner.FILE);
+        LOG.info("Sent the changed configuration of physical tenant '{}' to the cluster", tenantId);
       }
-      LOG.info("Sent the static configuration of physical tenant '{}' to the cluster", tenantId);
       return true;
     } catch (final PhysicalTenantConfigRejectedException e) {
-      if (e.status() == PhysicalTenantConfigRejectedException.Status.IN_PROGRESS
-          || e.status() == PhysicalTenantConfigRejectedException.Status.UNAVAILABLE) {
+      if (isTransient(e)) {
         return false;
       }
+      rejectedFileTenants.add(tenantId + "@" + sha256);
       LOG.error(
-          "The static configuration of physical tenant '{}' was rejected: {} {}",
+          "The configuration files' configuration of physical tenant '{}' was rejected: {} {}",
           tenantId,
           e.getMessage(),
           e.violations());
       return true;
     }
+  }
+
+  private boolean trySendFileChange(
+      final String tenantId, final PhysicalTenantConfigRequest request, final String done) {
+    try {
+      send(request);
+      LOG.info(
+          "Physical tenant '{}' is {}: the configuration files no longer declare it",
+          tenantId,
+          done);
+      return true;
+    } catch (final PhysicalTenantConfigRejectedException e) {
+      if (isTransient(e)) {
+        return false;
+      }
+      LOG.error("Physical tenant '{}' could not be {}: {}", tenantId, done, e.getMessage());
+      return true;
+    }
+  }
+
+  private static boolean isTransient(final PhysicalTenantConfigRejectedException e) {
+    return e.status() == PhysicalTenantConfigRejectedException.Status.IN_PROGRESS
+        || e.status() == PhysicalTenantConfigRejectedException.Status.UNAVAILABLE;
   }
 
   private static <T> Either<ErrorResponse, T> await(
