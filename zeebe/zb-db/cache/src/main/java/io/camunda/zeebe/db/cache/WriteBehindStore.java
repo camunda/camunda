@@ -65,6 +65,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
   private final WriteBehindMetrics metrics;
   private final StorageLoader<ColumnFamilyNames> loader;
   private final TransactionWriter<ColumnFamilyNames> writer;
+  private final Runnable onGateChanged = this::signalFlushed;
   private final CacheManager cacheManager;
   private final Cache<CacheKey, CachedValue> cache;
 
@@ -139,6 +140,8 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
       throw e;
     }
     writer = startedWriter;
+    // wakes a commit or a snapshot waiting for the log once the gate stops
+    commitGate.addCommitListener(onGateChanged);
   }
 
   /**
@@ -147,7 +150,8 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    * commits without taking a lock.
    *
    * <p>The caller must keep its writes until this returns, so that a retried commit applies them
-   * again.
+   * again. While the storage is behind by more than {@code maxPendingBytes}, it waits, unless the
+   * commit gate has stopped.
    */
   void commit(final Map<CacheKey, Op> writes) {
     if (writes.isEmpty()) {
@@ -243,7 +247,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
    * their records, instead of waiting out {@code maxWriteDelay}.
    *
    * @throws ZeebeDbException if the writer doesn't catch up within {@code snapshotCatchUpTimeout},
-   *     including the wait for the log
+   *     including the wait for the log, or if the commit gate stops before it does
    */
   void catchUp() {
     failIfFailed();
@@ -257,7 +261,10 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     flushLock.lock();
     try {
       long remaining = timeout.toNanos();
-      while (writer.flushedSeq() < target && failure.get() == null && remaining > 0) {
+      while (writer.flushedSeq() < target
+          && failure.get() == null
+          && remaining > 0
+          && !commitGate.stopped()) {
         flushed.awaitNanos(remaining);
         remaining = deadline - System.nanoTime();
       }
@@ -271,6 +278,12 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
     failIfFailed();
     if (writer.flushedSeq() < target) {
+      if (commitGate.stopped()) {
+        throw new ZeebeDbException(
+            "Expected the writer to write every committed transaction, but it can't anymore",
+            new IllegalStateException(
+                "The log stopped committing records for this state: this replica no longer leads"));
+      }
       throw new ZeebeDbException(
           "Expected the writer to write every committed transaction within %s, but it didn't"
               .formatted(timeout),
@@ -299,6 +312,7 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
 
   @Override
   public void close() {
+    commitGate.removeCommitListener(onGateChanged);
     writer.close();
     cacheManager.close();
   }
@@ -342,7 +356,9 @@ final class WriteBehindStore<ColumnFamilyNames extends Enum<? extends EnumValue>
     try {
       final long start = System.nanoTime();
       boolean waited = false;
-      while (writer.queuedBytes() > configuration.maxPendingBytes() && failure.get() == null) {
+      while (writer.queuedBytes() > configuration.maxPendingBytes()
+          && failure.get() == null
+          && !commitGate.stopped()) {
         waited = true;
         flushed.awaitUninterruptibly();
       }

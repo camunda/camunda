@@ -245,6 +245,19 @@ final class WriteBehindStoreTest {
   }
 
   @Test
+  void shouldStopListeningToTheCommitGateOnceClosed() {
+    // given
+    final var gate = new TestCommitGate();
+    final var store = new WriteBehindStore<>(storage.db(), new TestConfiguration().build(), gate);
+
+    // when
+    store.close();
+
+    // then
+    assertThat(gate.listeners()).isEmpty();
+  }
+
+  @Test
   void shouldFailCommitsOnceAnEnqueueFails() {
     // given
     final var store = store(STALLED, UNLIMITED, UNLIMITED);
