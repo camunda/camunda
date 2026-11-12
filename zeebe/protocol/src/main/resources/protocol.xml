@@ -106,6 +106,8 @@
       <validValue name="PROCESS_DEFINITION_RESTORE">80</validValue>
       <validValue name="USER_TASK_LOOKUP">81</validValue>
       <validValue name="POLICY_UPDATE">82</validValue>
+      <validValue name="PROBE">83</validValue>
+      <validValue name="PROBE_BATCH">84</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

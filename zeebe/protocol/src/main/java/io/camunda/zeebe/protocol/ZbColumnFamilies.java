@@ -404,7 +404,24 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
    * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
    */
-  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  /**
+   * probeKey -> the probe, its lifecycle state ({@code ACTIVATABLE}, {@code
+   * WAITING_FOR_SECRET_RESOLUTION} or {@code ACTIVATED}) and the worker of the poll that collected
+   * it. A probe lives only on the partition that created it, until it ends.
+   */
+  PROBES(167, PARTITION_LOCAL),
+
+  /**
+   * [[probeId | probeKey] | tenantId] -> ∅: the probes that wait for a poll, found by a prefix scan
+   * on the probe ID, as jobs by their type in {@link #JOB_ACTIVATABLE_BY_PRIORITY}, without the
+   * priority.
+   */
+  PROBES_ACTIVATABLE(168, PARTITION_LOCAL),
+
+  /** [deadline | probeKey] -> ∅: the probes in deadline order, for the time-out scheduler. */
+  PROBE_DEADLINES(169, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -86,6 +86,8 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizat
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -141,9 +143,12 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -5423,6 +5428,167 @@ final class JsonSerializableToJsonTest {
         {
           "resourceKey": -1,
           "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ProbeRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeRecord",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                    .setTenantId("tenant-1")
+                    .setInputExpression("={accessKey: camunda.secrets.awsKey}")
+                    .setInput(VARIABLES_MSGPACK)
+                    .addSecretReference("default", "awsKey", "/accessKey")
+                    .setRequestTimeout(5000L)
+                    .setDeadline(123L)
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.ERROR)
+                    .setData(VARIABLES_MSGPACK)
+                    .setMessage("AWS is unreachable.")
+                    .setEndReason(ProbeEndReason.WORKER_DID_NOT_ANSWER),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:aws-credential:1",
+          "tenantId": "tenant-1",
+          "inputExpression": "={accessKey: camunda.secrets.awsKey}",
+          "input": {"foo": "bar"},
+          "secretReferences": [
+            {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+          ],
+          "requestTimeout": 5000,
+          "deadline": 123,
+          "worker": "connectors",
+          "outcome": "ERROR",
+          "data": {"foo": "bar"},
+          "message": "AWS is unreachable.",
+          "endReason": "WORKER_DID_NOT_ANSWER"
+        }
+        """
+      },
+      {
+        "Empty ProbeRecord",
+        (Supplier<ProbeRecord>) ProbeRecord::new,
+        """
+        {
+          "probeId": "",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "",
+          "outcome": "UNSPECIFIED",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      {
+        "ProbeRecord with reset data",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:slack:1")
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.OK)
+                    .setData(VARIABLES_MSGPACK)
+                    .resetData(),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:slack:1",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "connectors",
+          "outcome": "OK",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////// ProbeBatchRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>)
+            () ->
+                new ProbeBatchRecord()
+                    .setProbeIds(
+                        List.of(
+                            "validate-configuration/io.camunda:aws-credential:1",
+                            "validate-configuration/io.camunda:slack:1"))
+                    .setWorker("connectors")
+                    .setMaxProbesToActivate(4)
+                    .setTenantIds(List.of("tenant-1"))
+                    .setTenantFilter(TenantFilter.ASSIGNED)
+                    .setTruncated(true)
+                    .addProbe(
+                        2251799813685464L,
+                        new ProbeRecord()
+                            .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                            .setTenantId("tenant-1")
+                            .setInput(VARIABLES_MSGPACK)
+                            .addSecretReference("default", "awsKey", "/accessKey")
+                            .setDeadline(1000L)
+                            .setWorker("connectors")),
+        """
+        {
+          "probeIds": [
+            "validate-configuration/io.camunda:aws-credential:1",
+            "validate-configuration/io.camunda:slack:1"
+          ],
+          "worker": "connectors",
+          "maxProbesToActivate": 4,
+          "probeKeys": [2251799813685464],
+          "probes": [
+            {
+              "probeId": "validate-configuration/io.camunda:aws-credential:1",
+              "tenantId": "tenant-1",
+              "inputExpression": "",
+              "input": {"foo": "bar"},
+              "secretReferences": [
+                {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+              ],
+              "requestTimeout": 0,
+              "deadline": 1000,
+              "worker": "connectors",
+              "outcome": "UNSPECIFIED",
+              "data": {},
+              "message": "",
+              "endReason": "UNSPECIFIED"
+            }
+          ],
+          "truncated": true,
+          "tenantIds": ["tenant-1"],
+          "tenantFilter": "ASSIGNED"
+        }
+        """
+      },
+      {
+        "Empty ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>) ProbeBatchRecord::new,
+        """
+        {
+          "probeIds": [],
+          "worker": "",
+          "maxProbesToActivate": -1,
+          "probeKeys": [],
+          "probes": [],
+          "truncated": false,
+          "tenantIds": [],
+          "tenantFilter": "PROVIDED"
         }
         """
       },

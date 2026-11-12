@@ -123,6 +123,10 @@ import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequest
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -357,6 +361,8 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
+    valueLoggers.put(ValueType.PROBE, this::summarizeProbe);
+    valueLoggers.put(ValueType.PROBE_BATCH, this::summarizeProbeBatch);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -2307,6 +2313,35 @@ public class CompactRecordLogger {
     }
 
     return result.toString();
+  }
+
+  private String summarizeProbe(final Record<?> record) {
+    final var value = (ProbeRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("\"").append(value.getProbeId()).append("\"");
+    if (!value.getWorker().isEmpty()) {
+      result.append(" worker:").append(value.getWorker());
+    }
+    if (value.getOutcome() != ProbeOutcome.UNSPECIFIED) {
+      result.append(" outcome:").append(value.getOutcome());
+    }
+    if (value.getEndReason() != ProbeEndReason.UNSPECIFIED) {
+      result.append(" reason:").append(value.getEndReason());
+    }
+    result.append(" tenantId:").append(value.getTenantId());
+
+    return result.toString();
+  }
+
+  private String summarizeProbeBatch(final Record<?> record) {
+    final var value = (ProbeBatchRecordValue) record.getValue();
+    return "%s worker:%s max:%d probes:%s"
+        .formatted(
+            value.getProbeIds(),
+            value.getWorker(),
+            value.getMaxProbesToActivate(),
+            value.getProbeKeys().stream().map(this::shortenKey).toList());
   }
 
   private String formatPinnedTime(final long time) {
