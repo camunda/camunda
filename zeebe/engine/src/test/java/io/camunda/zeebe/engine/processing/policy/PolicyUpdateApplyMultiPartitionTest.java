@@ -70,13 +70,19 @@ public final class PolicyUpdateApplyMultiPartitionTest {
     assertRejectedOnAnotherPartition(PolicyUpdateIntent.APPLY_CHUNK);
   }
 
+  @Test
+  public void shouldRejectACommitOnAnotherPartition() {
+    assertRejectedOnAnotherPartition(PolicyUpdateIntent.COMMIT_VERSION);
+  }
+
   private void assertRejectedOnAnotherPartition(final PolicyUpdateIntent intent) {
     // given
     final var chunk = chunk();
 
-    // when
+    // when written as a new command; with a key of another partition, a commit would be taken
+    // for a distributed one
     engine.writeRecordsOnPartition(
-        2, RecordToWrite.commandWithoutClaims().policyUpdate(intent, chunk));
+        2, RecordToWrite.commandWithoutClaims().key(-1L).policyUpdate(intent, chunk));
 
     // then
     final var rejection =
