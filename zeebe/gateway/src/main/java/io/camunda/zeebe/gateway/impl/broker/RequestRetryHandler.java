@@ -47,7 +47,11 @@ public final class RequestRetryHandler {
 
   public RequestRetryHandler(
       final BrokerClient brokerClient, final BrokerTopologyManager topologyManager) {
-    this(brokerClient, topologyManager, RequestDispatchStrategy.roundRobin());
+    this(
+        brokerClient,
+        topologyManager,
+        RequestDispatchStrategy.roundRobin(
+            (group, partition) -> brokerClient.hasLeaderOutsideTopology(group, partition)));
   }
 
   public RequestRetryHandler(

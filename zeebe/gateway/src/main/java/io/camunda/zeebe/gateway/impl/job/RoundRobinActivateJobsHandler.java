@@ -323,12 +323,15 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount, final String partitionGroup) {
     final var nextPartitionSupplier =
-        jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
+        jobTypeToNextPartitionId.computeIfAbsent(
+            jobType,
+            t -> new RoundRobinDispatchStrategy(0, brokerClient::hasLeaderOutsideTopology));
     return new PartitionIdIterator(
         nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
         topologyManager,
-        partitionGroup);
+        partitionGroup,
+        brokerClient::hasLeaderOutsideTopology);
   }
 
   private record ResponseObserverDelegate(

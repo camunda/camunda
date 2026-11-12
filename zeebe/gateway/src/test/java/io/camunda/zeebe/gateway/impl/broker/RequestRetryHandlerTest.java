@@ -59,6 +59,43 @@ final class RequestRetryHandlerTest {
   }
 
   @Test
+  void shouldSendToAPartitionWithoutLeaderInTheTopologyWhenTheClientReachesTheLeaderAnotherWay() {
+    // given - a region that leads no partition, whose client reaches the leaders through the
+    // mailbox of the database
+    brokerClient.leaderOutsideTopology = true;
+    final var handler =
+        new RequestRetryHandler(
+            brokerClient, StubbedTopologyManager.withoutLeaders(PARTITION_COUNT));
+    brokerClient.setResponse(new BrokerResponse<>("result", 1, 1));
+    final var request = new TestBrokerRequest(Optional.empty());
+
+    // when
+    final var result = new AtomicReference<String>();
+    handler.sendRequest(request, (key, response) -> result.set(response), error -> {});
+
+    // then
+    assertThat(result.get()).isEqualTo("result");
+    assertThat(brokerClient.sendCount.get()).isOne();
+  }
+
+  @Test
+  void shouldFailWithoutLeaderInTheTopologyAndWithoutAnotherWayToReachOne() {
+    // given
+    final var handler =
+        new RequestRetryHandler(
+            brokerClient, StubbedTopologyManager.withoutLeaders(PARTITION_COUNT));
+    final var request = new TestBrokerRequest(Optional.empty());
+
+    // when
+    final var error = new AtomicReference<Throwable>();
+    handler.sendRequest(request, (key, response) -> {}, error::set);
+
+    // then - no request is sent, as no partition can take it
+    assertThat(error.get()).isInstanceOf(RequestRetriesExhaustedException.class);
+    assertThat(brokerClient.sendCount.get()).isZero();
+  }
+
+  @Test
   void shouldSendToFixedPartitionWhenDispatchStrategyIsPresent() {
     // given - a request with a specific dispatch strategy targeting partition 2
     final int targetPartition = 2;
@@ -231,6 +268,7 @@ final class RequestRetryHandlerTest {
   private static final class TestBrokerClient implements BrokerClient {
     final AtomicInteger sendCount = new AtomicInteger(0);
     final List<Integer> partitionsHit = new ArrayList<>();
+    boolean leaderOutsideTopology;
     private BrokerResponse<String> response;
     private Throwable error;
     private BrokerResponse<String> failFirstResponse;
@@ -249,6 +287,11 @@ final class RequestRetryHandlerTest {
       failFirstResponse = firstResponse;
       response = new BrokerResponse<>("result", 1, 1);
       error = null;
+    }
+
+    @Override
+    public boolean hasLeaderOutsideTopology(final String partitionGroup, final int partitionId) {
+      return leaderOutsideTopology;
     }
 
     @Override

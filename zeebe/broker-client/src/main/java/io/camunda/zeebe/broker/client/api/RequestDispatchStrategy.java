@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.client.api;
 
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiPredicate;
 
 /** Implementations must be thread-safe. */
 public interface RequestDispatchStrategy {
@@ -35,5 +36,16 @@ public interface RequestDispatchStrategy {
    */
   static RequestDispatchStrategy roundRobin() {
     return new RoundRobinDispatchStrategy(ThreadLocalRandom.current().nextInt(MAX_RANDOM_OFFSET));
+  }
+
+  /**
+   * Like {@link #roundRobin()}, but a partition whose leader the topology does not show is not
+   * skipped if the predicate says that it has a leader the client reaches in another way, see
+   * {@code BrokerClient#hasLeaderOutsideTopology}.
+   */
+  static RequestDispatchStrategy roundRobin(
+      final BiPredicate<String, Integer> hasLeaderOutsideTopology) {
+    return new RoundRobinDispatchStrategy(
+        ThreadLocalRandom.current().nextInt(MAX_RANDOM_OFFSET), hasLeaderOutsideTopology);
   }
 }

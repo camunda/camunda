@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import java.util.Iterator;
 import java.util.PrimitiveIterator.OfInt;
+import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 
 public final class PartitionIdIterator implements Iterator<Integer> {
@@ -24,13 +25,30 @@ public final class PartitionIdIterator implements Iterator<Integer> {
       final int partitionsCount,
       final BrokerTopologyManager topologyManager,
       final String partitionGroup) {
+    this(startPartitionId, partitionsCount, topologyManager, partitionGroup, (group, p) -> false);
+  }
+
+  /**
+   * @param hasLeaderOutsideTopology tells whether a partition of a group has a leader that the
+   *     topology does not show, but that can take requests, for example through the mailbox. Such a
+   *     partition is not skipped. Must not block.
+   */
+  public PartitionIdIterator(
+      final int startPartitionId,
+      final int partitionsCount,
+      final BrokerTopologyManager topologyManager,
+      final String partitionGroup,
+      final BiPredicate<String, Integer> hasLeaderOutsideTopology) {
     iterator =
         IntStream.range(0, partitionsCount)
             .map(
                 index ->
                     (index + startPartitionId - START_PARTITION_ID) % partitionsCount
                         + START_PARTITION_ID)
-            .filter(p -> hasLeader(topologyManager, partitionGroup, p))
+            .filter(
+                p ->
+                    hasLeader(topologyManager, partitionGroup, p)
+                        || hasLeaderOutsideTopology.test(partitionGroup, p))
             .iterator();
   }
 

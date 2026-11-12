@@ -95,6 +95,20 @@ public interface BrokerClient extends AutoCloseable {
   BrokerTopologyManager getTopologyManager();
 
   /**
+   * Whether a partition of the group has a leader that the topology does not show, but that this
+   * client reaches in another way, for example through the mailbox of the database. Such a
+   * partition takes requests, so choosing a partition for a request must not skip it. This is the
+   * case in a region that leads no partition: its topology holds none of the leaders.
+   *
+   * <p>Does not block.
+   *
+   * @return false if there is no other way to reach a leader
+   */
+  default boolean hasLeaderOutsideTopology(final String partitionGroup, final int partitionId) {
+    return false;
+  }
+
+  /**
    * Subscribes to job-available notifications on the given topic.
    *
    * @param topic the topic to subscribe to

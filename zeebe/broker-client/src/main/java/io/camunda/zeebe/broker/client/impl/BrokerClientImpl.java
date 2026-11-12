@@ -106,10 +106,19 @@ public final class BrokerClientImpl implements BrokerClient {
       return new RoundRobinDispatchStrategy();
     }
     return new RoundRobinDispatchStrategy(
-        0,
-        (group, partition) ->
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(group)
-                && mailbox.recordedLeader(partition).isPresent());
+        0, (group, partition) -> hasLeaderInMailbox(mailbox, group, partition));
+  }
+
+  static boolean hasLeaderInMailbox(
+      final @Nullable GatewayMailbox mailbox, final String partitionGroup, final int partitionId) {
+    return mailbox != null
+        && PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionGroup)
+        && mailbox.recordedLeader(partitionId).isPresent();
+  }
+
+  @Override
+  public boolean hasLeaderOutsideTopology(final String partitionGroup, final int partitionId) {
+    return hasLeaderInMailbox(mailbox, partitionGroup, partitionId);
   }
 
   @Override

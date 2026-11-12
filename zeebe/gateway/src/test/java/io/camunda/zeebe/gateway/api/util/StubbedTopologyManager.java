@@ -28,15 +28,31 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   public StubbedTopologyManager(final int partitionsCount) {
+    this(partitionsCount, true);
+  }
+
+  private StubbedTopologyManager(final int partitionsCount, final boolean withLeaders) {
     clusterConfiguration = CurrentClusterConfiguration.uninitialized();
     clusterState = new TestBrokerClusterState(partitionsCount);
     clusterState.addBroker(BrokerMemberId.from(0), "localhost:26501");
     clusterState.setClusterId(UUID.randomUUID().toString());
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
-      clusterState.setPartitionLeader(
-          START_PARTITION_ID + partitionOffset, BrokerMemberId.from(0), 1);
-      clusterState.addPartition(START_PARTITION_ID + partitionOffset);
+      final int partitionId = START_PARTITION_ID + partitionOffset;
+      if (withLeaders) {
+        clusterState.setPartitionLeader(partitionId, BrokerMemberId.from(0), 1);
+        clusterState.addPartition(partitionId);
+      } else {
+        clusterState.addPartitionInactive(partitionId, BrokerMemberId.from(0));
+      }
     }
+  }
+
+  /**
+   * The topology of a region that leads no partition: its one broker has every partition as a
+   * standby, and the topology shows no leader.
+   */
+  public static StubbedTopologyManager withoutLeaders(final int partitionsCount) {
+    return new StubbedTopologyManager(partitionsCount, false);
   }
 
   @Override

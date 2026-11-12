@@ -51,6 +51,46 @@ final class PartitionIdIteratorTest {
   }
 
   @Test
+  void shouldNotSkipPartitionsWhoseLeaderIsReachedAnotherWay() {
+    // given - the topology shows a leader for partition 1 only, but the client reaches the
+    // leader of partition 3 through the mailbox
+    topologyManager.addPartition(1, ZERO);
+    final var iterator =
+        new PartitionIdIterator(
+            1,
+            3,
+            topologyManager,
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            (group, partition) -> partition == 3);
+    final List<Integer> ids = new ArrayList<>();
+
+    // when
+    iterator.forEachRemaining(ids::add);
+
+    // then
+    assertThat(ids).containsExactly(1, 3);
+  }
+
+  @Test
+  void shouldIterateOverPartitionsOfARegionThatLeadsNone() {
+    // given - the topology of a region that leads nothing shows no leader at all
+    final var iterator =
+        new PartitionIdIterator(
+            2,
+            3,
+            topologyManager,
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            (group, partition) -> true);
+    final List<Integer> ids = new ArrayList<>();
+
+    // when
+    iterator.forEachRemaining(ids::add);
+
+    // then - all partitions, starting from the requested one
+    assertThat(ids).containsExactly(2, 3, 1);
+  }
+
+  @Test
   void shouldFilterLeadersByPartitionGroup() {
     // given - a leader for partition 2 only exists in group tenant-b
     topologyManager.addPartition("tenant-b", 2, ZERO);
