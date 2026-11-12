@@ -177,12 +177,8 @@ public class StreamProcessingComposite implements CommandWriter {
     return streams.getMeterRegistry(getLogName(partitionId));
   }
 
-  public MutableProcessingState getProcessingState() {
+  MutableProcessingState getProcessingState() {
     return processingState;
-  }
-
-  public MutableProcessingState getProcessingState(final String streamName) {
-    return streams.getProcessingState(streamName);
   }
 
   public RecordStream events() {

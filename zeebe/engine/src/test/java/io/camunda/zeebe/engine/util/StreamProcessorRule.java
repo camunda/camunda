@@ -209,12 +209,12 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return clock;
   }
 
-  public MutableProcessingState getProcessingState() {
+  /**
+   * Only for reads that do not go through the stream processor's transaction, as that is not safe
+   * from another thread. Tests read through the {@link EngineRule} methods built on it.
+   */
+  MutableProcessingState getProcessingState() {
     return streamProcessingComposite.getProcessingState();
-  }
-
-  public MutableProcessingState getProcessingState(final int partitionId) {
-    return streamProcessingComposite.getProcessingState(getLogName(partitionId));
   }
 
   public StreamProcessorMode getStreamProcessorMode() {
