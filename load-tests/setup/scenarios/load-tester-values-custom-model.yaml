@@ -43,13 +43,14 @@ k6:
         USER_TASK_ORDER: "DESC"
         USER_TASK_PAGE_SIZE: "200"
         # k6 is a Go program: without this, its garbage collector ignores the container limit.
-        GOMEMLIMIT: "3200MiB"
-      # Each simulated user is one k6 VU with its own JS runtime. Only this test needs it:
-      # `default` and `data-read` keep the small `k6.resources` of `values.yaml`.
+        GOMEMLIMIT: "800MiB"
+      # Each simulated user is one k6 VU with its own JS runtime. Only this test needs more than
+      # the small `k6.resources` of `values.yaml`: `default` and `data-read` keep those.
+      # 250 users peaked at 0.4 CPU and 0.21 GiB, also while the database was saturated.
       resources:
         requests:
-          cpu: 2000m
-          memory: 4Gi
+          cpu: 1000m
+          memory: 1Gi
         limits:
-          cpu: 2000m
-          memory: 4Gi
+          cpu: 1000m
+          memory: 1Gi

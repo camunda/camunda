@@ -89,7 +89,7 @@ _scenario_load_test_flags = -f load-tester-values-custom-model.yaml
 _scenario_platform_flags = -f camunda-platform-values-custom-model.yaml
 else ifeq ($(scenario),custom-model-mt)
 # The custom-model scenario with multi-tenancy checks on (see the override file).
-_scenario_load_test_flags = -f load-tester-values-custom-model.yaml
+_scenario_load_test_flags = -f load-tester-values-custom-model.yaml -f load-tester-values-custom-model-multitenancy.yaml
 _scenario_platform_flags = -f camunda-platform-values-custom-model.yaml --set-file '$(scenario_max_override_key)./camunda-platform-override-values-custom-model-multitenancy.yaml'
 else ifeq ($(scenario),typical)
 _scenario_load_test_flags = --set load-tester.starter.rate=50 --set load-tester.workers.worker.replicas=6 --set load-tester.starter.bpmnXmlPath=bpmn/typical_process.bpmn

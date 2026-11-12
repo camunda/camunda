@@ -1,0 +1,11 @@
+# Load tester values for the `custom-model-mt` scenario (multi-tenancy checks on), on top of
+# `load-tester-values-custom-model.yaml`.
+#
+# With the checks on, every deployment must name a tenant: without it the deploy fails with
+# "multi-tenancy enabled, but no tenant identifier was provided". k6 deploys the model, so give it
+# the `<default>` tenant. The starter and the workers use the Java client, which already uses it.
+k6:
+  tests:
+    custom-model:
+      env:
+        TENANT_ID: "<default>"
