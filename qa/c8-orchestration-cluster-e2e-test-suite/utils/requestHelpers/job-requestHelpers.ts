@@ -89,7 +89,13 @@ export function setupProcessInstanceForTests(
     },
     afterEach: async () => {
       if (!state['processCompleted']) {
-        await cancelProcessInstance(state['processInstanceKey'] as string);
+        // The instance can reach an end state without this test completing it:
+        // sibling specs on parallel workers activate the same shared job types
+        // and complete whichever job they get. Teardown must not turn that into
+        // a NOT_FOUND failure after the test's own assertions have passed.
+        await cancelProcessInstance(state['processInstanceKey'] as string, {
+          ignoreNotFound: true,
+        });
       }
     },
   };
