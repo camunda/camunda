@@ -851,27 +851,48 @@ class SecretsTest {
           invalid(
               "plain-http vault-url",
               s -> s.setVaultUrl("http://my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL with only a host and optional port, as"
+                  + " Azure Key Vault requires HTTPS"),
+          invalid(
+              "malformed vault-url",
+              s -> s.setVaultUrl("https://my vault"),
               "vault-url must be an absolute https URL"),
+          invalid(
+              "vault-url without a host",
+              s -> s.setVaultUrl("https:///"),
+              "vault-url must be an absolute https URL"),
+          invalid(
+              "vault-url whose host has an underscore",
+              s -> s.setVaultUrl("https://my_vault.vault.azure.net"),
+              "vault-url must have a host name of only letters, digits, hyphens and dots"),
+          invalid(
+              "authority-host whose host has an underscore",
+              s -> s.setAuthorityHost("https://login_host.microsoftonline.us"),
+              "authority-host must have a host name of only letters, digits, hyphens and dots"),
+          invalid(
+              "vault-url with credentials",
+              s -> s.setVaultUrl("https://user:pass@my-vault.vault.azure.net"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "vault-url with a path",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net/secrets"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
+          invalid(
+              "vault-url with a query",
+              s -> s.setVaultUrl("https://my-vault.vault.azure.net?api-version=7.4"),
+              "vault-url must be an absolute https URL with only a host and optional port"),
           invalid(
               "authority-host without a scheme",
               s -> s.setAuthorityHost("login.microsoftonline.us"),
               "authority-host must be an absolute https URL"),
           invalid(
-              "vault-url with credentials in its user info",
-              s -> s.setVaultUrl("https://client:s3cr3t@my-vault.vault.azure.net"),
-              "vault-url must be an absolute https URL"),
-          invalid(
-              "authority-host with credentials in its user info",
-              s -> s.setAuthorityHost("https://client:s3cr3t@login.microsoftonline.us"),
+              "plain-http authority-host",
+              s -> s.setAuthorityHost("http://login.microsoftonline.us"),
               "authority-host must be an absolute https URL"),
           invalid(
-              "vault-url with a path",
-              s -> s.setVaultUrl("https://my-vault.vault.azure.net/secrets"),
-              "vault-url must be an absolute https URL"),
-          invalid(
-              "vault-url with a query",
-              s -> s.setVaultUrl("https://my-vault.vault.azure.net?sig=s3cr3t"),
-              "vault-url must be an absolute https URL"),
+              "authority-host with credentials",
+              s -> s.setAuthorityHost("https://client:s3cr3t@login.microsoftonline.us"),
+              "authority-host must be an absolute https URL with only a host and optional port"),
           invalid(
               "authority-host with a fragment",
               s -> s.setAuthorityHost("https://login.microsoftonline.us#s3cr3t"),
@@ -960,7 +981,8 @@ class SecretsTest {
               AZURE_STORE
                   + "."
                   + setting
-                  + " must be an absolute https URL with no user info, path, query or fragment")
+                  + " must be an absolute https URL with only a host and optional port, as Azure"
+                  + " Key Vault requires HTTPS")
           .hasNoCause()
           .satisfies(e -> assertThat(e.getSuppressed()).isEmpty());
     }
@@ -1009,6 +1031,31 @@ class SecretsTest {
           .message()
           .doesNotContain(pastedValue)
           .doesNotContain("s3cr3t");
+    }
+
+    @Test
+    void shouldNotEchoAUrlWithCredentialsInTheMessage() {
+      // given a well-formed URL that carries credentials
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl("https://app:s3cr3t@my-vault.vault.azure.net");
+
+      // when / then
+      assertThatThrownBy(() -> store.validate(AZURE_STORE))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasNoCause()
+          .message()
+          .doesNotContain("s3cr3t");
+    }
+
+    @Test
+    void shouldAcceptSovereignCloudAndTrailingSlashUrls() {
+      // given a sovereign-cloud vault in the form the Azure portal shows, with a trailing slash
+      final var store = new Secrets.AzureKeyVaultStore();
+      store.setVaultUrl("https://my-vault.vault.usgovcloudapi.net/");
+      store.setAuthorityHost("https://login.microsoftonline.us:443/");
+
+      // when / then
+      assertThatCode(() -> store.validate(AZURE_STORE)).doesNotThrowAnyException();
     }
 
     @Test

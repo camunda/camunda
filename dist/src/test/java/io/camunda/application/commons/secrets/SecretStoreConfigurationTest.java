@@ -885,6 +885,20 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldRefuseAzureStoreOverPlainHttpForThePhysicalTenantThatConfiguresIt() {
+    // given pt1 pointing its azure store at a vault over plain http
+    final var resolver =
+        resolverFor(tenantWithAzureStore("pt1", "vault-url", "http://pt1.vault.azure.net"));
+
+    // when / then
+    assertThatIllegalArgumentException()
+        .isThrownBy(() -> registries(resolver))
+        .withMessageStartingWith(
+            "camunda.physical-tenants.pt1.secrets.stores.azure.default.vault-url must be")
+        .withMessageContaining("Azure Key Vault requires HTTPS");
+  }
+
+  @Test
   void shouldThrowWhenFileAndAzureStoresCombinedExceedOne() {
     // given one file store and one azure store for the same tenant
     final var resolver =

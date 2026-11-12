@@ -948,12 +948,11 @@ public class Secrets {
      *     property to fix
      * @throws IllegalArgumentException if the store sets a blank container-secret-id,
      *     managed-identity-client-id or authority-host, a vault-url or authority-host that is not
-     *     an absolute https URL, a path-prefix or container-secret-id with characters outside
-     *     {@code [0-9A-Za-z-]}, a path-prefix that leaves no room for a secret name, an effective
-     *     container secret name longer than 127 characters (Key Vault secret-name rules), a
-     *     negative max-retries, or timeouts that are not positive or whose attempt bound exceeds
-     *     the call bound. An https URL must hold no user info, path, query or fragment, so no
-     *     credential can be passed in it
+     *     an absolute https URL with only a host and optional port, a path-prefix or
+     *     container-secret-id with characters outside {@code [0-9A-Za-z-]}, a path-prefix that
+     *     leaves no room for a secret name, an effective container secret name longer than 127
+     *     characters (Key Vault secret-name rules), a negative max-retries, or timeouts that are
+     *     not positive or whose attempt bound exceeds the call bound
      */
     public void validate(final String property) {
       requireNotBlank(property, "container-secret-id", containerSecretId);
@@ -1028,7 +1027,8 @@ public class Secrets {
           property
               + "."
               + name
-              + " must be an absolute https URL with no user info, path, query or fragment";
+              + " must be an absolute https URL with only a host and optional port, as Azure Key"
+              + " Vault requires HTTPS";
       final URI uri;
       try {
         uri = new URI(value);
@@ -1036,15 +1036,32 @@ public class Secrets {
         // the cause is dropped: its message repeats the value, which may hold credentials
         throw new IllegalArgumentException(message);
       }
-      final var path = uri.getRawPath();
-      if (!"https".equalsIgnoreCase(uri.getScheme())
-          || uri.getHost() == null
-          || uri.getRawUserInfo() != null
-          || (path != null && !path.isEmpty() && !"/".equals(path))
-          || uri.getRawQuery() != null
-          || uri.getRawFragment() != null) {
+      if (uri.getHost() == null && uri.getRawAuthority() != null) {
+        // java.net.URI leaves the host null for names it cannot parse, e.g. with an underscore
+        throw new IllegalArgumentException(
+            property
+                + "."
+                + name
+                + " must have a host name of only letters, digits, hyphens and dots");
+      }
+      if (!isHttpsHostUrl(uri)) {
         throw new IllegalArgumentException(message);
       }
+    }
+
+    /**
+     * Whether the URI is {@code https://host[:port][/]}: credentials, a path, a query or a fragment
+     * never form a Key Vault or Entra ID endpoint. Mirrored by {@code AzureKeyVaultStoreConfig} in
+     * the store module.
+     */
+    private static boolean isHttpsHostUrl(final URI uri) {
+      final var path = uri.getRawPath();
+      return "https".equalsIgnoreCase(uri.getScheme())
+          && uri.getHost() != null
+          && uri.getRawUserInfo() == null
+          && (path == null || path.isEmpty() || "/".equals(path))
+          && uri.getRawQuery() == null
+          && uri.getRawFragment() == null;
     }
 
     private static void requireSecretNameChars(
