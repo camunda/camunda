@@ -92,7 +92,10 @@ export function reportErrors(report) {
   );
 }
 
-const key = (t) => `${t.file}\u0000${t.title}`;
+// A test's identity: its project, spec and title. The same spec can run in
+// several projects of one job (e.g. a project and its teardown "-subset"
+// project), and a result in one project is no evidence about another.
+const key = (t) => `${t.project ?? ''}\u0000${t.file}\u0000${t.title}`;
 
 // --- Evidence: re-running the failed tests with the base test code ---------
 //
@@ -128,9 +131,17 @@ const isSerialSpec = (file) => {
   }
 };
 
-export function rerunPlan(report, baseSuiteDir) {
+// projects: the projects the job selected with --project. A failed test in
+// any other project ran implicitly, as the teardown of a selected one, after
+// that project's tests had set up its state; re-running it alone cannot
+// reproduce that, so it is not re-run (compareWithBase reports why).
+const implicitProject = (t, projects) => projects?.length > 0 && !projects.includes(t.project);
+
+export function rerunPlan(report, baseSuiteDir, projects = []) {
   const failed = uniqueFailed(report);
-  const inBase = failed.filter((t) => fs.existsSync(path.join(baseSuiteDir, t.file)));
+  const inBase = failed.filter(
+    (t) => fs.existsSync(path.join(baseSuiteDir, t.file)) && !implicitProject(t, projects),
+  );
   const serial = new Set(
     inBase.map((t) => t.file).filter((f) => isSerialSpec(path.join(baseSuiteDir, f))),
   );
@@ -149,9 +160,10 @@ export function rerunPlan(report, baseSuiteDir) {
 // The base outcome of each failed PR test, from the base re-run's reports:
 // "passed" (first time), "flaky" (failed, then passed on retry: the test is
 // intermittent, so no evidence either way), "failed", "skipped", "absent" when
-// its spec does not exist on the base, or "not-run" when the spec exists but
-// the test is not in the reports (renamed, or not selected): no evidence.
-export function compareWithBase(report, baseReports, baseSuiteDir) {
+// its spec does not exist on the base, "teardown" when it ran in a project the
+// job did not select itself (see rerunPlan), or "not-run" when the spec exists
+// but the test is not in the reports (renamed, or not selected): no evidence.
+export function compareWithBase(report, baseReports, baseSuiteDir, projects = []) {
   // Every base result of each test: one test can run in more than one base
   // run (a teardown project runs in each), so no result may overwrite another.
   const base = new Map();
@@ -163,12 +175,14 @@ export function compareWithBase(report, baseReports, baseSuiteDir) {
   }
   return uniqueFailed(report).map((t) => {
     const statuses = base.get(key(t));
-    const outcome = statuses
-      ? baseOutcome(statuses)
-      : fs.existsSync(path.join(baseSuiteDir, t.file))
-        ? 'not-run'
-        : 'absent';
-    return {file: t.file, title: t.title, base: outcome};
+    const outcome = !fs.existsSync(path.join(baseSuiteDir, t.file))
+      ? 'absent'
+      : implicitProject(t, projects)
+        ? 'teardown'
+        : statuses
+          ? baseOutcome(statuses)
+          : 'not-run';
+    return {file: t.file, title: t.title, project: t.project, base: outcome};
   });
 }
 
@@ -239,6 +253,8 @@ export function classify(prLegs) {
 function whyNotVerified(rerun, outcome) {
   if (outcome === 'flaky') return 'flaky with the base test code (failed, then passed on retry)';
   if (outcome === 'mixed') return 'mixed results with the base test code (passed in one base run, failed in another)';
+  if (outcome === 'teardown')
+    return "ran as the teardown of another project, after that project's tests; not re-run alone";
   if (outcome === 'not-run') return 'not found in the base re-run (renamed or changed title?)';
   if (outcome === 'skipped') return 'skipped in the base re-run';
   if (!rerun) return 'no base re-run for this job';
@@ -490,13 +506,17 @@ function main(argv) {
 
 // Subcommands used by c8-e2e-suite-base-rerun.sh inside a suite job:
 //   rerun-plan <results.json> <base-suite-dir>
-//     prints {failed, files, grep} for the tests to re-run on the base code
+//     prints {failed, files, grep, serialFiles} for the tests to re-run on the
+//     base code
+// Both read RERUN_PROJECTS: the projects the job selected, comma-separated.
 //   rerun-compare <results.json> <base-suite-dir> <base-sha> <out.json> <base-results.json>...
 //     writes the leg's base-rerun.json from the base run's report
+const rerunProjects = () => (process.env.RERUN_PROJECTS ?? '').split(',').filter(Boolean);
+
 function cli(argv) {
   const [cmd, ...args] = argv;
   if (cmd === 'rerun-plan') {
-    console.log(JSON.stringify(rerunPlan(readReport(args[0]), args[1])));
+    console.log(JSON.stringify(rerunPlan(readReport(args[0]), args[1], rerunProjects())));
   } else if (cmd === 'rerun-compare') {
     const [reportPath, baseSuiteDir, baseSha, outPath, ...baseReportPaths] = args;
     const baseReports = baseReportPaths.filter((p) => fs.existsSync(p)).map(readReport).filter(Boolean);
@@ -504,7 +524,7 @@ function cli(argv) {
       ? {
           status: 'done',
           base: baseSha,
-          results: compareWithBase(readReport(reportPath), baseReports, baseSuiteDir),
+          results: compareWithBase(readReport(reportPath), baseReports, baseSuiteDir, rerunProjects()),
         }
       : {status: 'error', base: baseSha, reason: 'the base re-run produced no report'};
     fs.writeFileSync(outPath, JSON.stringify(out, null, 2));

@@ -70,7 +70,7 @@ test('passedKeys counts expected and flaky results only', () => {
     ['tests/a.spec.ts', 'g', 'retry', 'flaky'],
     ['tests/a.spec.ts', 'g', 'bad', 'unexpected'],
   );
-  assert.deepEqual([...passedKeys(r)].map((k) => k.split('\u0000')[1]), ['g › ok', 'g › retry']);
+  assert.deepEqual([...passedKeys(r)].map((k) => k.split('\u0000')[2]), ['g › ok', 'g › retry']);
 });
 
 test('reportErrors keeps the first line of each report-level error', () => {
@@ -175,7 +175,7 @@ test('classify: passing on the base in one job is a regression; passes in other 
   const b = classify([
     {leg: 'A', failures: [t], rerun: done({...t, base: 'failed'})},
     {leg: 'B', failures: [t], rerun: done({...t, base: 'passed'})},
-    {leg: 'C', failures: [], passed: new Set(['tests/a.spec.ts\u0000x'])},
+    {leg: 'C', failures: [], passed: new Set(['\u0000tests/a.spec.ts\u0000x'])},
   ]);
   assert.deepEqual(b.regression[0].basePassedIn, ['B']);
   assert.deepEqual(b.regression[0].passedIn, ['C']);
@@ -294,4 +294,37 @@ test('a test failing in one base run and passing in another is unverified in eit
     assert.equal(b.regression.length, 0);
     assert.match(b.unverified[0].notVerified[0], /E2E: mixed results with the base test code/);
   }
+});
+
+// A report whose tests carry a project: [project, file, describe, title, status].
+const repP = (...tests) => ({
+  suites: tests.map(([project, file, describe, title, status]) => ({
+    title: file,
+    file,
+    suites: [{title: describe, specs: [{title, file, tests: [{projectName: project, status}]}]}],
+  })),
+});
+
+test('compareWithBase: a base result in another project is no evidence', () => {
+  const pr = repP(['chromium-subset', 'tests/a.spec.ts', 'g', 'x', 'unexpected']);
+  const base = repP(['identity-e2e', 'tests/a.spec.ts', 'g', 'x', 'unexpected']);
+  const [r] = compareWithBase(pr, [base], baseSuite());
+  assert.equal(r.project, 'chromium-subset');
+  assert.equal(r.base, 'not-run');
+});
+
+test('a failed test in a teardown project is not re-run and is not verified', () => {
+  const pr = repP(
+    ['api-tests', 'tests/a.spec.ts', 'g', 'main', 'unexpected'],
+    ['api-tests-subset', 'tests/a.spec.ts', 'g', 'subset', 'unexpected'],
+  );
+  const plan = rerunPlan(pr, baseSuite(), ['api-tests']);
+  assert.equal(plan.failed, 2);
+  assert.equal(plan.grep, 'g main');
+  const base = repP(['api-tests', 'tests/a.spec.ts', 'g', 'main', 'expected']);
+  const results = compareWithBase(pr, [base], baseSuite(), ['api-tests']);
+  assert.deepEqual(results.map((r) => [r.title, r.base]), [['g › main', 'passed'], ['g › subset', 'teardown']]);
+  const b = classify([{leg: 'API', failures: failedTests(pr), rerun: done(...results)}]);
+  assert.equal(b.regression.length, 1);
+  assert.match(b.unverified[0].notVerified[0], /teardown of another project/);
 });

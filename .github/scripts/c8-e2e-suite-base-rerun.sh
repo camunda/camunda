@@ -40,6 +40,10 @@ record() { # status reason
 }
 
 PROJECT_ARGS=("$@")
+# The projects the job selected: a failed test in any other project ran as
+# a teardown and is not re-run (c8-e2e-suite-triage.mjs).
+RERUN_PROJECTS="$(printf '%s\n' "${PROJECT_ARGS[@]}" | sed -n 's/^--project=//p' | paste -sd, -)"
+export RERUN_PROJECTS
 
 if [[ ! -s "$report" ]]; then
   echo "No test report; nothing to compare."
@@ -89,13 +93,18 @@ grep_re="$(jq -r '.grep' <<<"$plan")"
 
 base_reports=()
 if (( ${#files[@]} + ${#serial_files[@]} )); then
-  # Same dependencies when the lockfile is unchanged; install otherwise.
-  if cmp -s package-lock.json "${base_suite}/package-lock.json"; then
+  # The PR's tests ran on the node_modules the job installed. With the same
+  # package.json on the base, reuse them, so both sides run on the same
+  # dependencies. (Not the lockfile: the job deletes it and resolves afresh,
+  # so its lockfile never matches the committed one.) Otherwise install the
+  # base's dependencies the way the job does, resolved now, like the PR's.
+  if cmp -s package.json "${base_suite}/package.json"; then
     ln -s "$PWD/node_modules" "${base_suite}/node_modules"
   else
     need 60 "installing the base dependencies"
-    if ! (cd "$base_suite" && timeout "$(left)s" npm ci --no-audit --no-fund >/dev/null); then
-      record error "npm ci failed or ran out of time for the base test code"
+    if ! (cd "$base_suite" && rm -f package-lock.json &&
+      timeout "$(left)s" npm install --no-audit --no-fund >/dev/null); then
+      record error "npm install failed or ran out of time for the base test code"
       exit 0
     fi
     # The job installed browsers for the PR's Playwright version. With a

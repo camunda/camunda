@@ -242,9 +242,10 @@ bot PR, its assignees) with what that showed:
 
 Everything else is listed as **not verified**, with the reason per job; it is not guessed at: more
 than 15 failures in a job, not enough time left in the job, a renamed test, a test that was flaky
-with the base test code or passed in one base run and failed in another, or a job that was not
-compared. Tests in serial specs are compared by re-running the whole spec, since they depend on the
-earlier tests. When a later run passes, it posts one comment saying so.
+with the base test code or passed in one base run and failed in another, a test in a teardown
+project (it needs its parent project's tests first), or a job that was not compared. Tests in
+serial specs are compared by re-running the whole spec, since they depend on the earlier tests.
+When a later run passes, it posts one comment saying so.
 
 ### Running the On-Demand Workflow
 
