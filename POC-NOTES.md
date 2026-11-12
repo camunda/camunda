@@ -738,3 +738,194 @@ grep -h "Load on the default\|standalone gateway served" \
 
 Brokers take `physical-tenant-rollout.restart-keys=security.authorizations.enabled` to let the API
 change that key.
+
+# No restart for any input: the configuration file at runtime, and `default` like any tenant
+
+Branch `pt-poc-default-tenant-file-watch`, on top of `pt-poc-standalone-gateway-tenants`
+(e6730e4da4c). Not for merge as is.
+
+Two requirements confirmed by the product owner: a change of the configuration file takes effect
+without restarting any node, as an API change does; and `default` is treated like every other
+tenant. Before this branch the coordinator read its file only at start, a differing version of
+`default` was reported `DEGRADED` and never applied, and the lifecycle refused to restart `default`.
+"Changing `default`" means changing `camunda.physical-tenants.default.*`; root configuration still
+applies only at node start. `default` stays file-owned (the API answers `409 NOT_OWNER`), and it
+cannot be disabled or deleted.
+
+## What it proves, and by which test
+
+|                                                                                                Claim                                                                                                 |                                                                                     Test                                                                                      |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| A changed file tenant rolls out to every broker, as a normal rolling change, and reaches a standalone gateway                                                                                        | `PhysicalTenantConfigFileWatchIT#shouldRollOutAChangedTenantOnlyOnceTheFileIsStable` (snapshot period on every broker, version 2, gateway serves version 2 with the new name) |
+| A file written in two steps (first truncated to `default` only, then in full, within the quiet period) is acted on once, with its final contents                                                     | same test: the availability version of every other tenant is unchanged afterwards                                                                                             |
+| A tenant added to the file is created (owner `FILE`) and serves gRPC through the standalone gateway                                                                                                  | `#shouldCreateATenantAddedToTheFile`                                                                                                                                          |
+| A tenant taken out of the file is disabled, not removed: stopped on every broker and the gateway (`NOT_FOUND`), its data directory kept                                                              | `#shouldDisableATenantTakenOutOfTheFileKeepItsDataAndEnableItWhenPutBack`                                                                                                     |
+| Put back, it is enabled at the same version, runs on every broker and the gateway again, and its process deployed before still runs                                                                  | same test                                                                                                                                                                     |
+| A change of `camunda.physical-tenants.default.*` rolls out like any tenant: new module context on every broker, readiness gate and handover, gateway follows                                         | `#shouldRollOutAChangeOfTheDefaultTenantFromTheFile` (0 failed publishes to `default` through the gateway during it, see measurements)                                        |
+| Only the coordinator acts on its file                                                                                                                                                                | `#shouldActOnTheFileOfTheCoordinatorOnly`: a change in brokers 1 and 2's files stays at version 1 for 4 s; written to broker 0's file, it rolls out                           |
+| A coordinator that was down acts on the file it finds when it starts; nobody acts while it is down                                                                                                   | `#shouldActOnTheFileOfACoordinatorThatChangedWhileItWasDown`                                                                                                                  |
+| A cluster with no `camunda.physical-tenants` section: adding a `default` section rolls out (default stops being the root object), taking it out again rolls out and default is the root object again | `PhysicalTenantDefaultWithoutSectionIT` (3 brokers, processes run through every broker after each step)                                                                       |
+| Every sentinel `RESTART` key changed on `default` reaches every consumer that a boot with the value gives it, and no component keeps the old value                                                   | `PhysicalTenantDefaultKeyEffectIT` (85 keys in 8 batches; the two consumers it found are fixed, see below)                                                                    |
+| DISABLE/ENABLE changes, `default` cannot be disabled or deleted, `default` updates like any tenant                                                                                                   | `PhysicalTenantConfigChangesTest` (6 new)                                                                                                                                     |
+| The availability initializer leaves file-owned tenants to the file input                                                                                                                             | `PhysicalTenantAvailabilityInitializerTest#shouldLeaveATenantOwnedByTheFileToTheFileInput`                                                                                    |
+| Discovery of the files, re-read with boot precedence, quiet period, partial and repeated writes, unparseable and missing files                                                                       | `PhysicalTenantConfigFileWatcherTest` (8)                                                                                                                                     |
+
+## How it works
+
+|                  Piece                  |                                     Where                                     |                                                                                                                                                                                                                                                                                                                        What                                                                                                                                                                                                                                                                                                                        |
+|-----------------------------------------|-------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PhysicalTenantConfigFiles`             | dist                                                                          | Finds the files Spring Boot loaded: every property source named `Config resource 'file [<path>]' via location '…'` (one per YAML document), so `./config/application.yaml`, `spring.config.location` and `spring.config.additional-location` alike. Re-reading = load each file again with the same loader, put its documents where its old documents were (later documents first, inactive profiles dropped), keep every other source (env vars, system properties, command line, classpath files) as it is, then take `subtreeOf` for `default` and every id `PhysicalTenantConfigUtil.discover` finds. Root configuration is never bound again. |
+| `PhysicalTenantConfigFileWatcher`       | dist                                                                          | Polled every `physical-tenant-rollout.file-watch.interval` (1 s). Reads the files once per poll; hands out their tenants once the bytes stayed the same for `…file-watch.quiet-period` (2 s) and parse, parsing exactly the bytes found stable. Unparseable contents are logged once and skipped until the files change; a missing file is waited for.                                                                                                                                                                                                                                                                                             |
+| File reconciliation                     | `PhysicalTenantConfigService`                                                 | On every broker; only the coordinator acts: at start, when it becomes the coordinator (checked at every poll), and when the files changed. State-based against the cluster configuration: no group → create (owner `FILE`, partitions and exporters from the validated configuration); group without reference → register; disabled → `ENABLE`; different hash → update through the API's path (classification, validators, boot validations); a `FILE` group missing from the files, except `default` → `DISABLE`. `IN_PROGRESS`/`UNAVAILABLE` → retried after 1 s; a rejected hash is not sent again.                                            |
+| `DISABLE`, `ENABLE`                     | dynamic-config `PhysicalTenantConfigChanges`, proto values 5 and 6            | `DISABLE`: group disabled + `StopPhysicalTenantOperation` per live member; members, routing, reference and data stay. `ENABLE`: group enabled, reference moves to the next version only if the hash differs, `ApplyPhysicalTenantConfigOperation` per live member. Both refused for `default`, as `DELETE` is.                                                                                                                                                                                                                                                                                                                                     |
+| `PhysicalTenantAvailabilityInitializer` | dynamic-config                                                                | Leaves every group with a configuration reference alone; the file input disables and enables those with stops and starts. Groups without a reference keep the flag-only behaviour of `main`.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Re-enabled tenant on a member           | `DefaultPhysicalTenantRegistry#release`, `PhysicalTenantLifecycleService#add` | A stop reserves the id on the member, which made a re-enable fail ("stays reserved"). An add with a cluster-agreed incarnation releases it first; the cluster configuration already refuses to re-create a removed tenant.                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `default`                               | `PhysicalTenantLifecycleService`, `PhysicalTenantConfigExecutor`              | The restart guard and the `DEGRADED` special case are gone; removal is still refused. A `default` subtree with overrides resolves to an object of its own and a converted `BrokerCfg`; an empty one resolves to the root object and the root `BrokerCfg`, as at boot.                                                                                                                                                                                                                                                                                                                                                                              |
+| Standalone gateway                      | `GatewayPhysicalTenantFollower`                                               | Follows the cluster for every tenant, `default` and its own file's tenants included. Its own file serves a tenant until the gateway sees the tenant's reference; it then fetches the cluster's configuration and replaces the gRPC module unless the gateway part (`name`, `security.*`) equals its own. Keeps the registry's incarnation of a boot tenant; serves a re-enabled tenant again.                                                                                                                                                                                                                                                      |
+| Test support                            | `TestSpringApplication#withAdditionalConfigLocation`                          | Passes `--spring.config.additional-location=file:…`, so a test broker reads a real file as a mounted `application.yaml`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+A bug found on the way: the first version fingerprinted the file and then parsed it with a second
+read. `Files.writeString` truncates before writing, so a write that started between the two reads
+was parsed as an empty file, and the coordinator disabled every tenant, then enabled them again
+once the full file was stable. The IT's log showed it while the test still passed on the final
+state; the test now also checks that no other tenant's availability version moved. The watcher now
+parses the bytes it fingerprinted. A second one: the IT deleted its files after the tests, and the
+watcher took the missing files as files without tenants and disabled them all; a missing file is
+now waited for. In Kubernetes a ConfigMap volume is swapped
+atomically (`..data` symlink), so a reader there never sees a half-written file; the quiet period
+covers editors and tools that write in place.
+
+## Root-object consumers that keep `default` stale
+
+The harness changed 85 sentinel `RESTART` keys on `default` (one broker boots with X, another boots
+with Y and restarts `default`'s module with X) and also listed beans still holding a configuration
+object with Y. Rows marked **H** were found by it; the others are from reading code. Cost as in the
+sections above: S = a lookup or a hook, M = per-tenant objects with a close path, L = a subsystem.
+
+|                                                                    Where                                                                    |                                  Keys                                   |                                                                                                         Symptom                                                                                                         |      Cost      |                                     Status                                     |
+|---------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------------------------------------------------------------------------|
+| `dist/.../commons/rest/PhysicalTenantRestConfiguration.java:22-35` (boot `resolver.mapValues`)                                              | `monitoring.metrics.job-metrics.*` (5 sentinel keys)                    | REST `/v2/system/configuration` and the job-metrics gate keep the boot values (**H**); the same for every replaced tenant                                                                                               | S              | Fixed: cherry-pick of `9d51833a1470` from `pt-poc-tenant-config-consumers`     |
+| `zeebe/broker/.../bootstrap/BrokerContextImpl.java` (fields), `BrokerStartupProcess.java` (`createBrokerContext`)                           | all                                                                     | `getPartitionManager()`/`getBrokerAdminService()` returned the stopped boot instances and kept the old module (factory, disk monitor, `BrokerCfg`) reachable (**H**, for every key)                                     | S              | Fixed: looked up in the live maps                                              |
+| `dist/.../zeebe/broker/RdbmsExporterConfiguration.java:46` → `RdbmsExporterWrapper.configure`                                               | `data.wait-states.enabled`                                              | RDBMS exporter keeps the boot value; not exercised (`secondary-storage: none`)                                                                                                                                          | S              | Left; in flight on `pt-poc-runtime-secondary-storage`                          |
+| `BrokerBasedConfiguration.java:94` → `SchedulerConfiguration`; `ActorClockControlledPropertiesOverride.java:31`; `ConditionalOnJfr.java:35` | `monitoring.metrics.actor`, `system.clock-controlled`, `monitoring.jfr` | Node-wide beans built from the root; accepted for `default` and ignored, as for every tenant                                                                                                                            | S (reclassify) | Left: `REJECT root-only` on `pt-poc-tenant-config-consumers`, not on this base |
+| `dist/.../zeebe/broker/SystemContextLoader.java:281-301`                                                                                    | legacy `zeebe.broker.*` without a unified twin                          | Not stale, but drift: `default` without overrides runs on the root `BrokerCfg`, which carries legacy properties; the first override switches it to a converted `BrokerCfg` without them, and back when the overrides go | M              | Left; whatever a restart with the same file does                               |
+| `zeebe/broker/.../system/SystemContext.java:246-275` (`getPhysicalTenantContexts`, `getSecurityConfiguration`)                              | `default`'s boot security and `BrokerCfg`                               | Boot snapshot; no runtime caller found (the lifecycle seeds from it)                                                                                                                                                    | S              | Left, latent                                                                   |
+
+Every other consumer of the 85 keys is rebuilt by the module restart, as for the other tenants:
+the open journal segment keeps its size until the next one. Not covered: the 37 flags and choices
+of the original harness (they need several tenants in one broker to be attributed), and `SECURITY`
+keys (`REJECT security-chain`, another spike).
+
+## A cluster without a `physical-tenants` section
+
+The same path works (`PhysicalTenantDefaultWithoutSectionIT`). What differs:
+
+- `default` is the root `Camunda` object itself, and its file subtree is empty. The coordinator
+  registers it as `FILE` version 1 with the hash of the empty subtree.
+- The first `camunda.physical-tenants.default.*` key turns it into an object of its own with a
+  converted `BrokerCfg` (legacy `zeebe.broker.*` drift above); taking the section out turns it back
+  into the root object. Both are what a restart with that file gives.
+- **With a generic exporter in the root catalog the section cannot be added at runtime.** A
+  declared `default` must list `data.exporters-assigned` (boot validation), and that key is
+  `REJECT exporter-ids`, so the coordinator rejects the change ("'data.exporters-assigned[0]'
+  cannot change at runtime"), although the exporter set is the same and a restart accepts it. Seen
+  in a run with the recording exporter; the IT runs without it. Fix: compare the effective exporter
+  sets of the resolved configurations instead of the key (S–M). The same rejection applies to a
+  file tenant whose `exporters-assigned` line is dropped.
+
+## Kubernetes delivery
+
+No checkout of camunda-platform-helm exists in `~/git`. A rendered copy of chart `15.0.0-alpha3`
+(appVersion 8.10.x) is in `~/git/camunda/load-tests/setup/c8-mk-render-check/charts/camunda-platform`
+(untracked, in the main checkout), so this reads that copy:
+
+- `templates/orchestration/statefulset.yaml` mounts the ConfigMap's `application.yaml` with
+  `subPath` at `/usr/local/camunda/config/application.yaml`; `orchestration.extraConfiguration`
+  files are mounted with `subPath` too (`camundaPlatform.extraConfigurationVolumeMounts`). A
+  `subPath` mount is never updated in place, so a running pod never sees a ConfigMap change.
+- The pod template carries `checksum/config` of the orchestration ConfigMap, so a `helm upgrade`
+  that changes the configuration rolls every pod anyway.
+
+So with today's chart the watcher never sees a change, and every change restarts the cluster. For
+no-restart file changes the chart needs: the tenants' configuration in its own ConfigMap, mounted as
+a directory (no `subPath`), added through `SPRING_CONFIG_ADDITIONALLOCATION`, and excluded from the
+checksum annotation. The kubelet then swaps the files atomically within its sync period (about a
+minute by default), and the brokers pick it up within the poll interval plus the quiet period.
+
+## Measurements
+
+Apple-silicon laptop, 3 brokers and 1 standalone gateway in one JVM, 1 partition, RF 3, secondary
+storage `none`, poll interval 200 ms, quiet period 1 s, another heavy build on the machine.
+
+|                                         What                                         |                                        Result                                         |                                  Method                                  |
+|--------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| Files written to a `default` change rolled out to 3 brokers (version applied by all) | 2161, 4844, 7064, 7404 ms (4 runs, the first before the half-read fix)                | `System.nanoTime` in the IT; includes the 1 s quiet period and the polls |
+| Files written to a new tenant rolled out to 3 brokers                                | 1974, 2016, 1793, 1815 ms (4 runs)                                                    | same                                                                     |
+| Publishes to `default` through the standalone gateway during its rollout             | 0 failed in 4 runs (3102 to 16531 accepted); longest gap 95–161 ms (3 runs logged it) | one client in a loop, 5 s timeout, during the whole `default` test       |
+| Restart of `default`'s module (`lifecycle.replace`, single broker)                   | 175–405 ms (8 batches)                                                                | `PhysicalTenantDefaultKeyEffectIT` report header                         |
+| Walk of the harness, per batch (2 brokers)                                           | whole class 49 s                                                                      | failsafe                                                                 |
+
+Most of a `default` rollout is the per-member restart with handover and transfer back behind the
+readiness gate, as for other tenants; why it took 2.2 s once and 7 s in the other runs was not
+analysed.
+
+## Not done, and why
+
+- **A coordinator change through a membership change** is not tested: the coordinator is the lowest
+  member id of the cluster configuration, so it changes only when that member leaves. The code path
+  is the one tested at coordinator start (the poll notices "became coordinator" and reconciles).
+- **A re-enabled boot tenant answers 404 on REST** (from reading): it comes back with the cluster's
+  incarnation, and `PhysicalTenantServedFilter` serves only boot incarnations with a security chain.
+  gRPC serves it (tested).
+- **A member that restarts with a file listing a tenant the cluster disabled**: whether its boot
+  starts the tenant was not checked.
+- **Cancel through the file** is still not possible; writing the old contents back is the file's
+  cancel, as a new version.
+- **`spring.config.import`, config trees and `optional:` locations created after start** are not
+  watched; only files that were loaded at boot. Environment variables and system properties cannot
+  change at runtime and are kept.
+- **Security keys** of `default` stay `REJECT security-chain`; another spike covers its HTTP security.
+- **The exporter-assignment rejection** above is not fixed.
+
+## Open questions
+
+1. Should a file tenant taken out of the file be disabled at once, or only after a grace period (a
+   bad ConfigMap edit stops a tenant cluster-wide within seconds)? `main` disabled it only at the
+   next coordinator start.
+2. Should non-coordinators warn when their own file differs from the cluster (they ignore it)?
+3. Is the exporter-set comparison the right fix for `exporters-assigned`, or should a declared
+   `default` default to the root catalog?
+4. Should the chart move tenants to their own ConfigMap (needed for any of this to work in
+   Kubernetes), and who owns that change?
+5. A missing file is waited for here; a restart without an `optional:` file would not start at all,
+   one with an `optional:` file would start without its tenants. Which should a runtime deletion mean?
+
+## Results (2026-11-12)
+
+|                                                                                                               Suite                                                                                                               |                                                                                                               Result                                                                                                                |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PhysicalTenantConfigFileWatchIT`                                                                                                                                                                                                 | 6/6 in 2 runs after both fixes above; earlier: one run did not start (missing `default` exporter assignment in the test file), one passed with the half-read bug in its log, one passed with the deleted-files disabling in its log |
+| `PhysicalTenantDefaultWithoutSectionIT`                                                                                                                                                                                           | 1/1, twice (first run, with the recording exporter, failed: the exporter-assignment rejection)                                                                                                                                      |
+| `PhysicalTenantDefaultKeyEffectIT`                                                                                                                                                                                                | 8/8 after the two fixes; 2/8 before (REST job-metrics, broker context), 7/8 with the broker context fix only                                                                                                                        |
+| Regression batch: `PhysicalTenantConfigRolloutIT` 9, `PhysicalTenantRuntimeLifecycleIT` 10, `PhysicalTenantStandaloneGatewayLifecycleIT` 4, `PhysicalTenantStandaloneGatewayTopologyIT` 1, plus the file-watch 6 and no-section 1 | 31/31, one run                                                                                                                                                                                                                      |
+| dynamic-config impl: `PhysicalTenantConfig*Test`, `PhysicalTenantAvailabilityInitializerTest`, `ClusterConfigurationManagementRequestsHandlerTest`                                                                                | 45/45                                                                                                                                                                                                                               |
+| dist: `PhysicalTenantConfigFileWatcherTest` 8, `PhysicalTenantConfigExecutorTest` 5, `PhysicalTenantRestConfigurationTest` 8                                                                                                      | 21/21                                                                                                                                                                                                                               |
+
+## How to run
+
+```bash
+./mvnw install -Dquickly -T2 -Dmaven.build.cache.enabled=false
+./mvnw verify -pl zeebe/qa/integration-tests -Dquickly -DskipTests=false -DskipUTs \
+  -Dmaven.build.cache.enabled=false \
+  -Dit.test='PhysicalTenantConfigFileWatchIT,PhysicalTenantDefaultWithoutSectionIT,PhysicalTenantDefaultKeyEffectIT'
+grep -h "rolled out to 3 brokers\|Load on the default" \
+  zeebe/qa/integration-tests/target/failsafe-reports/*FileWatchIT*-output.txt
+cat zeebe/qa/integration-tests/target/physical-tenant-key-effect/default-*.txt
+./mvnw verify -pl zeebe/dynamic-config/impl -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='PhysicalTenantConfig*Test,PhysicalTenantAvailabilityInitializerTest'
+./mvnw verify -pl dist -Dquickly -DskipTests=false -DskipITs \
+  -Dtest='PhysicalTenantConfigFileWatcherTest,PhysicalTenantConfigExecutorTest,PhysicalTenantRestConfigurationTest'
+```
+
+Brokers take `physical-tenant-rollout.file-watch.interval` and `…quiet-period` (Spring durations;
+an interval of 0 turns the watcher off).
