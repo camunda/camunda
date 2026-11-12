@@ -20,6 +20,6 @@ public interface MutablePolicyUpdateState extends PolicyUpdateState {
    */
   void bufferChunk(PolicyUpdateRecord chunk);
 
-  /** Removes the update and all its buffered chunks. */
-  void removeUpdate(String updateId);
+  /** Removes all buffered updates and their chunks. */
+  void removeAll();
 }

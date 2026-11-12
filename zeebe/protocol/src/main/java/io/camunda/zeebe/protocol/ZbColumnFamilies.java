@@ -425,15 +425,22 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   /**
    * The open policy update of the partition, keyed [updateId]: its identifiers and how many of its
-   * chunks are buffered. Only partition 1 holds one. Removed after the last chunk is applied.
+   * chunks are buffered. Only partition 1 holds one. Removed when the policy version is committed.
    */
   POLICY_UPDATE(170, PARTITION_LOCAL),
 
   /**
    * The buffered chunks of the open policy update, keyed [updateId | chunkIndex]. Removed with the
-   * update after its last chunk is applied.
+   * update when the policy version is committed.
    */
-  POLICY_UPDATE_CHUNK(171, PARTITION_LOCAL);
+  POLICY_UPDATE_CHUNK(171, PARTITION_LOCAL),
+
+  /**
+   * The committed policy of a partition that Hub manages, as a single row under a constant key.
+   * Global, so a partition added by scaling starts with the current policy version. An update that
+   * is still being applied is not part of it: that only exists on partition 1.
+   */
+  POLICY(172, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -90,6 +90,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyState;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -106,6 +107,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyState;
 import io.camunda.zeebe.engine.state.policy.DbPolicyUpdateState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
@@ -157,6 +159,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
   private final MutableClockState clockState;
+  private final MutablePolicyState policyState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
@@ -237,6 +240,7 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
+    policyState = new DbPolicyState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
@@ -431,6 +435,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableClockState getClockState() {
     return clockState;
+  }
+
+  @Override
+  public MutablePolicyState getPolicyState() {
+    return policyState;
   }
 
   @Override

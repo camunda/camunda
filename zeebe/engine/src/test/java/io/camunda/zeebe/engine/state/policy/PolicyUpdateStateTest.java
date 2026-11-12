@@ -124,32 +124,21 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
-  void shouldRemoveTheUpdateWithAllItsChunks() {
+  void shouldRemoveAllUpdatesAndTheirChunks() {
     // given
     state.bufferChunk(chunk("update-1", 0, 2));
     state.bufferChunk(chunk("update-1", 1, 2));
-
-    // when
-    state.removeUpdate("update-1");
-
-    // then
-    assertThat(state.getUpdate("update-1")).isEmpty();
-    assertThat(state.getChunk("update-1", 0)).isEmpty();
-    assertThat(state.getChunk("update-1", 1)).isEmpty();
-  }
-
-  @Test
-  void shouldKeepTheChunksOfAnUpdateWhoseIdStartsWithTheRemovedId() {
-    // given
-    state.bufferChunk(chunk("update-1", 0, 1));
     state.bufferChunk(chunk("update-10", 0, 1));
 
     // when
-    state.removeUpdate("update-1");
+    state.removeAll();
 
     // then
-    assertThat(state.getChunk("update-10", 0)).isPresent();
-    assertThat(state.getUpdate("update-10")).isPresent();
+    assertThat(state.getUpdate("update-1")).isEmpty();
+    assertThat(state.getUpdate("update-10")).isEmpty();
+    assertThat(state.getChunk("update-1", 0)).isEmpty();
+    assertThat(state.getChunk("update-1", 1)).isEmpty();
+    assertThat(state.getChunk("update-10", 0)).isEmpty();
   }
 
   private static PolicyUpdateRecord chunk(

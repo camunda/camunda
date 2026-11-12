@@ -214,10 +214,11 @@ public final class EventAppliers implements EventApplier {
     register(
         PolicyUpdateIntent.CHUNK_APPENDED,
         new PolicyUpdateChunkAppendedApplier(state.getPolicyUpdateState()));
+    register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
     register(
-        PolicyUpdateIntent.CHUNK_APPLIED,
-        new PolicyUpdateChunkAppliedApplier(state.getPolicyUpdateState()));
-    register(PolicyUpdateIntent.VERSION_SWITCHED, NOOP_EVENT_APPLIER);
+        PolicyUpdateIntent.VERSION_COMMITTED,
+        new PolicyUpdateVersionCommittedApplier(
+            state.getPolicyState(), state.getPolicyUpdateState()));
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
   }
 

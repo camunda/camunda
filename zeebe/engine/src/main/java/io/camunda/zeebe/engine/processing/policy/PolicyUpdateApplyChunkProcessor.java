@@ -31,8 +31,8 @@ import org.jspecify.annotations.NullMarked;
  * of the chunk apply.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
- * after those of this chunk, so the chunks are applied in order. After the last chunk, the update
- * and its chunks are removed from the buffer.
+ * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead
+ * writes the command that commits the update's policy version.
  *
  * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
  */
@@ -110,6 +110,12 @@ public final class PolicyUpdateApplyChunkProcessor
           command.getKey(),
           PolicyUpdateIntent.APPLY_CHUNK,
           PolicyUpdateRecords.withoutPolicyData(update, nextChunkIndex));
+    } else {
+      // the last chunk completes the update, which is then committed
+      commandWriter.appendFollowUpCommand(
+          NO_KEY,
+          PolicyUpdateIntent.COMMIT_VERSION,
+          PolicyUpdateRecords.withoutPolicyData(update, update.getChunkIndex()));
     }
   }
 }
