@@ -190,8 +190,8 @@ The last `APPLY_CHUNK` writes the `COMMIT_VERSION` command. Partition 1 processe
 `VERSION_COMMITTED`, which sets its current policy version and Hub sequence and removes the update's
 buffered chunks. It then distributes the command on the `IDENTITY` queue. Because the update's
 identity commands were distributed on the same queue before, every partition commits only after it
-has applied the whole update. A partition that is already at that version or a newer one rejects
-the commit and still acknowledges the distribution.
+has applied the whole update. The commit does not check that the version is newer: the first
+`APPEND_CHUNK` of an update does that before anything is buffered.
 
 The commit of a version automatically invalidates the identity caches of the engine.
 
