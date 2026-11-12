@@ -43,22 +43,22 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
     this(TypeFactory.defaultInstance().constructType(Object.class));
   }
 
-  private ExporterConfigurationListDeserializer(final JavaType contentType) {
+  ExporterConfigurationListDeserializer(final JavaType contentType) {
     this.contentType = contentType;
   }
 
   @Override
   public JsonDeserializer<?> createContextual(
       final DeserializationContext ctxt, final BeanProperty property) throws JsonMappingException {
-    final JavaType type;
-    if (property == null) {
-      // When property is null, use Object as fallback
-      type = ctxt.getTypeFactory().constructType(Object.class);
-    } else {
-      type = property.getType().getContentType();
-    }
+    return new ExporterConfigurationListDeserializer<>(contentType(ctxt, property));
+  }
 
-    return new ExporterConfigurationListDeserializer<>(type);
+  /** Element type of a list or set property, or {@code Object} when there is no property. */
+  static JavaType contentType(final DeserializationContext ctxt, final BeanProperty property) {
+    if (property == null) {
+      return ctxt.getTypeFactory().constructType(Object.class);
+    }
+    return property.getType().getContentType();
   }
 
   @Override
