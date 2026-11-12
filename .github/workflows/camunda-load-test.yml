@@ -324,8 +324,28 @@ jobs:
           | Connectors tag | \`${CONNECTORS_TAG:-—}\` |
           EOF
 
+  validate-namespace:
+    name: Validate namespace name
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      # Mirrors parse_namespace in load-tests/setup/utils.sh, so an invalid name fails
+      # immediately instead of after the image builds, when the Helm install runs.
+      - name: Validate namespace is a Kubernetes DNS-1123 label
+        run: |
+          if [[ ! "${NAMESPACE}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
+            echo "::error::Namespace '${NAMESPACE}' (derived from name '${NAME}') is not a valid Kubernetes DNS-1123 label. Allowed: lowercase letters, digits and '-'; must start and end with an alphanumeric."
+            exit 1
+          fi
+          if [ "${#NAMESPACE}" -gt 63 ]; then
+            echo "::error::Namespace '${NAMESPACE}' is ${#NAMESPACE} characters; Kubernetes labels are capped at 63."
+            exit 1
+          fi
+
   calculate-image-tag:
     name: Calculate Image Tag
+    needs: validate-namespace
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
