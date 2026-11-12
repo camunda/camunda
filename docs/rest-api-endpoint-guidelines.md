@@ -65,7 +65,7 @@ v2/
 
 ### 2.2 Naming and terminology
 
-All descriptive text (summaries, descriptions, property docs) should follow the [Camunda style guide](https://confluence.camunda.com/display/HAN/Camunda+style+guide).
+All descriptive text (summaries, descriptions, property docs) should follow the [Camunda style guide](https://github.com/camunda/camunda-docs/blob/main/howtos/technical-writing-styleguide.md).
 
 |                           Rule                           |                              Example                               |
 |----------------------------------------------------------|--------------------------------------------------------------------|
@@ -2133,7 +2133,7 @@ MySchema:
 | Public REST API reference    | [docs.camunda.io](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/)                                 |
 | OpenAPI 3.0.3 specification  | [spec.openapis.org](https://spec.openapis.org/oas/v3.0.3)                                                                                                                     |
 | OpenAPI guide                | [learn.openapis.org](https://learn.openapis.org/)                                                                                                                             |
-| Camunda style guide          | [Confluence](https://confluence.camunda.com/display/HAN/Camunda+style+guide)                                                                                                  |
+| Camunda style guide          | [camunda-docs](https://github.com/camunda/camunda-docs/blob/main/howtos/technical-writing-styleguide.md)                                                                      |
 | OpenAPI spec (v2)            | `zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml`                                                                                                                      |
 | Spectral ruleset             | `zeebe/gateway-protocol/.spectral.yaml`                                                                                                                                       |
 | Custom Spectral functions    | `zeebe/gateway-protocol/spectral-functions/`                                                                                                                                  |
