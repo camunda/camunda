@@ -40,14 +40,14 @@ against it with and without the cache. In production it's only used behind the c
 in `zeebe/zb-db/pom.xml`, `settings.gradle.kts` and its own `build.gradle.kts`, like
 `zeebe-db-cache`.
 
-|  Package   |                                    Contents                                    |
-|------------|--------------------------------------------------------------------------------|
-| (root)     | `RdbmsZeebeDbFactory`, `RdbmsZeebeDb`, `RdbmsStorage`, `StateIdentity`, config |
-| `schema`   | `StateSchemaManager`: runs the Liquibase changelog                             |
-| `mapper`   | `StateMapper` (MyBatis interface) and row types                                |
-| `tx`       | transaction context, transaction, write buffer, fencing                        |
-| `cf`       | the column family: point operations, scans, key ranges                         |
-| `snapshot` | the marker file                                                                |
+| Package  |                       Contents                        |
+|----------|-------------------------------------------------------|
+| (root)   | `RdbmsZeebeDbFactory` and `RdbmsStorage`, both public |
+| `schema` | `StateSchemaManager`: runs the Liquibase changelog    |
+
+Everything else sits in the root package too, so that it can stay package-private: the DB, its
+transactions and write buffer, the column family, key ranges, `StateMapper` and its row types, and
+later the state rows, fencing and the marker.
 
 Dependencies (all versions already managed in `parent/pom.xml`): `zeebe-db-api`, `liquibase-core`
 and `mybatis` at compile scope; `h2`, `postgresql` and `testcontainers-postgresql` at test scope. No
@@ -56,8 +56,8 @@ HikariCP pool (Part B).
 
 Resources:
 - `db/changelog/zeebe-state/changelog-master.xml` and `changesets/8.11.0.xml`
-- `io/camunda/zeebe/db/rdbms/mapper/StateMapper.xml`. It must not live under `mapper/`: the history
-RDBMS loads every `classpath*:mapper/*.xml`.
+- `io/camunda/zeebe/db/rdbms/StateMapper.xml`, next to the interface, so `addMapper` loads it. It
+must not live under `mapper/`: the history RDBMS loads every `classpath*:mapper/*.xml`.
 
 ## 4. Schema
 
@@ -147,21 +147,26 @@ selection that MyBatis gives us, as the history RDBMS uses. We'll compare in the
 - `openSnapshotOnlyDb(dir)` reads the marker and opens the state read-only. Writing through it
   fails. Its `createSnapshot` copies the marker, so `StateControllerImpl`'s recovery (open snapshot,
   copy it to the runtime directory, open the runtime DB) keeps working.
-- `createDb(dir, avoidFlush)` is only used to copy partitions when scaling. It throws
-  `UnsupportedOperationException` for now.
+- `createDb(dir, avoidFlush)` is the same as `createDb(dir)`: flushing is a RocksDB setting.
+- Until step 4 adds the state rows, the factory takes the state id directly, and `createSnapshot`
+  and `openSnapshotOnlyDb` throw `UnsupportedOperationException`.
 
 ### 7.2 Transactions
 
-- A transaction borrows a connection from the data source with auto-commit off, at the database's
-  `READ COMMITTED` level. It keeps the connection until it commits or rolls back. That matches
-  `ZeebeDb` today: `NoSnapshotIsolationTest` expects reads to see other transactions' commits.
+- A transaction borrows a connection from the data source at its first statement, a read or the
+  flush at commit, so a transaction that only writes holds no connection until it commits. It turns
+  auto-commit off and keeps the connection until it commits or rolls back.
+- We don't set the isolation level per connection: `READ COMMITTED` is the default on PostgreSQL
+  and H2, and the broker's pool will set it (Part B). That matches `ZeebeDb` today:
+  `NoSnapshotIsolationTest` expects reads to see other transactions' commits.
 - `runInTransaction` inside an open transaction runs in it. Column family calls outside a
   transaction run in a short transaction of their own, as with RocksDB.
 - **Write buffer.** Writes go into a per-transaction map keyed by (column family, key), where the
   last write wins. It's written as one batch of deletes and one batch of upserts before a scan, a
   count or an `isEmpty` in the same transaction, and at commit. Point reads check the buffer first,
   so the transaction always sees its own writes.
-- `close()` rolls back open transactions and returns their connections.
+- `close()` rolls back open transactions and returns their connections. An error while rolling back
+  is logged, not thrown: the database discards the work either way.
 
 ### 7.3 Point operations
 
@@ -180,10 +185,13 @@ nothing in production.
   the prefix with its last byte below `0xFF` incremented and the bytes after it dropped. If the
   prefix is all `0xFF`, there's no upper bound. The scan stops at the first key without the prefix,
   as RocksDB does when `start` is before the prefix.
-- Reverse: `STATE_KEY <= start ORDER BY STATE_KEY DESC`, with the same prefix rule.
+- Reverse: `STATE_KEY >= prefix AND STATE_KEY < start + 0x00 ORDER BY STATE_KEY DESC`, which is
+  `STATE_KEY <= start`, with the same stop rule. Today only `whileTrueReverse` uses it, without a
+  prefix.
 - **Difference from RocksDB:** a scan doesn't see writes its own transaction makes while it's
-  running. The cache never writes to its storage during a scan. If a contract test relies on it, we
-  mark it as RocksDB-only, as `WriteBehindStringColumnFamilyTest` already does for nested scans.
+  running. The cache never writes to its storage during a scan, and no contract test relies on it.
+- `RdbmsStringColumnFamilyTest` skips `shouldThrowExceptionOnMultipleNestedWhileEqualPrefix`: it
+  expects RocksDB's limit of two nested prefix scans, which a database doesn't have.
 - Nested scans run as separate queries on the same connection; both databases allow several open
   result sets in one transaction.
 
@@ -211,7 +219,8 @@ written once the state contains everything the snapshot stands for.
 - `SQLTransientException`, connection failures and lock timeouts become `ZeebeDbException`, which
   is recoverable; the cache's writer already retries those. Other `SQLException`s are not.
 - Metrics under `zeebe.db.rdbms.*`: latency of point reads, scans, flushes and commits, rows
-  written, and fenced writes.
+  written, and fenced writes. They come with the benchmark (Part B); until then the DB only closes
+  the meter registry it's given.
 - `getProperty` returns empty; `exportMetrics` does nothing.
 
 ## 8. Changes in the cache
@@ -269,7 +278,9 @@ the new leader replays the rest from the log.
   waits for the commit, and close gives up when the DB closes.
 
 Builds: `./mvnw install -pl zeebe/zb-db/rdbms -am -Dquickly -T1C`, then
-`./mvnw verify -pl zeebe/zb-db/rdbms,zeebe/zb-db/tests -DskipTests=false -Dquickly`.
+`./mvnw verify -pl zeebe/zb-db/rdbms,zeebe/zb-db/tests -DskipTests=false -Dquickly`. The
+differential and property suites are tagged `randomized`; they only run with
+`-Pinclude-random-tests`.
 
 ## 11. Risks
 
@@ -295,18 +306,18 @@ detail afterwards.
 1. **docs:** this design and ADR 0015.
 2. **build:** module skeleton, Liquibase changelog and `StateSchemaManager`, MyBatis setup, tests on
 H2.
-3. **feat:** transactions, write buffer and point operations; the point, transaction, empty value
-and isolation contract suites on H2.
-4. **feat:** scans; the remaining contract suites and the differential test against RocksDB.
-5. **feat:** state rows, fencing by term, marker snapshots and the snapshot-only DB.
-6. **test:** the write-behind cache over the RDBMS: contract suites and differential test.
-7. **feat:** the commit gate in the cache's writer.
-8. **test:** all suites on PostgreSQL with Testcontainers.
+3. **feat:** transactions, write buffer, point operations and scans; every contract suite and the
+differential test against RocksDB on H2. One step, because the point and transaction suites
+already need scans, `count` and `isEmpty`.
+4. **feat:** state rows, fencing by term, marker snapshots and the snapshot-only DB.
+5. **test:** the write-behind cache over the RDBMS: contract suites and differential test.
+6. **feat:** the commit gate in the cache's writer.
+7. **test:** all suites on PostgreSQL with Testcontainers.
 
 **Part B: broker** (outline in §9)
-9. Configuration and wiring.
-10. Term, leader attach and replay, commit gate from the log stream.
-11. Followers without a `ZeebeDb`, marker snapshots on followers.
-12. Recovery check and RocksDB-only paths.
-13. Backup and restore.
-14. Benchmark against RocksDB, with and without the cache, then decide.
+8. Configuration and wiring.
+9. Term, leader attach and replay, commit gate from the log stream.
+10. Followers without a `ZeebeDb`, marker snapshots on followers.
+11. Recovery check and RocksDB-only paths.
+12. Backup and restore.
+13. Benchmark against RocksDB, with and without the cache, then decide.

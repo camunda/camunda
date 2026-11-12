@@ -23,11 +23,29 @@ public final class TestH2Database implements AutoCloseable {
   private final JdbcDataSource dataSource = new JdbcDataSource();
 
   public TestH2Database() {
-    dataSource.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    this("");
+  }
+
+  /**
+   * @param settings more settings for every connection, like {@code ;LOCK_TIMEOUT=100}
+   */
+  public TestH2Database(final String settings) {
+    dataSource.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1" + settings);
   }
 
   public DataSource dataSource() {
     return dataSource;
+  }
+
+  public String url() {
+    return dataSource.getURL();
+  }
+
+  public void execute(final String sql) throws SQLException {
+    try (final var connection = dataSource.getConnection();
+        final var statement = connection.createStatement()) {
+      statement.execute(sql);
+    }
   }
 
   public List<String> tableNames() throws SQLException {
@@ -44,9 +62,6 @@ public final class TestH2Database implements AutoCloseable {
 
   @Override
   public void close() throws SQLException {
-    try (final var connection = dataSource.getConnection();
-        final var statement = connection.createStatement()) {
-      statement.execute("SHUTDOWN");
-    }
+    execute("SHUTDOWN");
   }
 }
