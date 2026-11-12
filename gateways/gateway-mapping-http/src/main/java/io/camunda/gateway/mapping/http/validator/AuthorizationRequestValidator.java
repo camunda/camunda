@@ -67,8 +67,7 @@ public final class AuthorizationRequestValidator {
                       request.getPermissionTypes() == null
                           ? Set.of()
                           : Set.copyOf(request.getPermissionTypes())));
-          validateSecretResourceId(request.getResourceType(), request.getResourceId(), violations);
-          validateProbeResourceId(request.getResourceType(), request.getResourceId(), violations);
+          validateResourceId(request.getResourceType(), request.getResourceId(), violations);
           return violations;
         });
   }
@@ -77,26 +76,49 @@ public final class AuthorizationRequestValidator {
    * A probe ID is an opaque string, for example {@code
    * validate-configuration/io.camunda:aws-credential:1}, so the generic ID pattern would reject it
    * for characters such as {@code /} and {@code :}. The generic check gets the wildcard instead,
-   * and {@link #validateProbeResourceId} checks the probe ID.
+   * and {@link #validateResourceId} checks the probe ID.
    */
   private static @Nullable String resourceIdForGenericCheck(
       final @Nullable ResourceTypeEnum resourceType, final @Nullable String resourceId) {
-    if (resourceType == ResourceTypeEnum.PROBE && resourceId != null && !resourceId.isBlank()) {
-      return AuthorizationScope.WILDCARD_CHAR;
-    }
-    return resourceId;
+    return resourceId != null && isProbeResourceId(resourceType, resourceId)
+        ? AuthorizationScope.WILDCARD_CHAR
+        : resourceId;
   }
 
-  private static void validateProbeResourceId(
+  /**
+   * Checks the resource ID rules that only some resource types have, beyond the generic ID check.
+   *
+   * <ul>
+   *   <li>A SECRET resource id that isn't {@code *} or {@code camunda.secrets.<name>} can never
+   *       match a reference, so a grant using it would be silently inert (camunda/camunda#62736) —
+   *       reject it up front instead.
+   *   <li>A PROBE resource id must be the wildcard or a probe ID the engine would accept, see
+   *       {@link #isValidProbeResourceId}.
+   * </ul>
+   */
+  private static void validateResourceId(
       final @Nullable ResourceTypeEnum resourceType,
       final @Nullable String resourceId,
       final List<String> violations) {
-    if (resourceType == ResourceTypeEnum.PROBE
-        && resourceId != null
-        && !resourceId.isBlank()
-        && !isValidProbeResourceId(resourceId)) {
+    if (resourceId == null) {
+      return;
+    }
+    if (resourceType == ResourceTypeEnum.SECRET
+        && !SECRET_RESOURCE_ID_PATTERN.matcher(resourceId).matches()) {
+      violations.add(
+          ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID.formatted(resourceId, SECRET_NAME_PATTERN));
+    } else if (isProbeResourceId(resourceType, resourceId) && !isValidProbeResourceId(resourceId)) {
       violations.add(ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID.formatted(resourceId));
     }
+  }
+
+  /**
+   * A non-blank resource ID of a PROBE authorization. A blank one is left to the generic check,
+   * which reports it as missing.
+   */
+  private static boolean isProbeResourceId(
+      final @Nullable ResourceTypeEnum resourceType, final String resourceId) {
+    return resourceType == ResourceTypeEnum.PROBE && !resourceId.isBlank();
   }
 
   /**
@@ -108,23 +130,6 @@ public final class AuthorizationRequestValidator {
   private static boolean isValidProbeResourceId(final String resourceId) {
     return resourceId.length() <= MAX_PROBE_ID_LENGTH
         && resourceId.chars().noneMatch(Character::isWhitespace);
-  }
-
-  /**
-   * A SECRET resource id that isn't {@code *} or {@code camunda.secrets.<name>} can never match a
-   * reference, so a grant using it would be silently inert (camunda/camunda#62736) — reject it up
-   * front instead.
-   */
-  private static void validateSecretResourceId(
-      final @Nullable ResourceTypeEnum resourceType,
-      final @Nullable String resourceId,
-      final List<String> violations) {
-    if (resourceType == ResourceTypeEnum.SECRET
-        && resourceId != null
-        && !SECRET_RESOURCE_ID_PATTERN.matcher(resourceId).matches()) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID.formatted(resourceId, SECRET_NAME_PATTERN));
-    }
   }
 
   public Optional<ProblemDetail> validatePropertyBasedRequest(
