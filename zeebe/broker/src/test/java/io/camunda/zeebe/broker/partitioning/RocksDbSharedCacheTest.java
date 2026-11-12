@@ -422,4 +422,64 @@ class RocksDbSharedCacheTest {
       recorder.stop();
     }
   }
+
+  static Stream<Arguments> provideMaxPartitionsScenarios() {
+    final long mib = 1024 * 1024L;
+    return Stream.of(
+        // 100MB shared between partitions of at least 32MB each
+        Arguments.of(MemoryAllocationStrategy.BROKER, 100 * mib, -1.0, 3),
+        // 10% of 1GB shared between partitions of at least 32MB each
+        Arguments.of(MemoryAllocationStrategy.FRACTION, 100 * mib, -1.0, 3),
+        // too little memory for a single partition
+        Arguments.of(MemoryAllocationStrategy.BROKER, 16 * mib, -1.0, 0),
+        // 32MB per partition, up to 50% of 1GB
+        Arguments.of(MemoryAllocationStrategy.PARTITION, 32 * mib, 0.5, 16),
+        // a single partition already exceeds 5% of 1GB
+        Arguments.of(MemoryAllocationStrategy.PARTITION, 100 * mib, 0.05, 0),
+        // the shared 512MB already exceeds 25% of 1GB
+        Arguments.of(MemoryAllocationStrategy.BROKER, 512 * mib, 0.25, 0));
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideMaxPartitionsScenarios")
+  void shouldReportLargestPartitionCountThatPassesValidation(
+      final MemoryAllocationStrategy strategy,
+      final long memoryLimitBytes,
+      final double maxMemoryFraction,
+      final int expectedMaxPartitions) {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(strategy);
+    rocksdbCfg.setMemoryLimit(DataSize.ofBytes(memoryLimitBytes));
+    rocksdbCfg.setMemoryFraction(0.1);
+    rocksdbCfg.setMaxMemoryFraction(maxMemoryFraction);
+
+    try (final var ignored = mockMemoryEnvironment(1024L * 1024 * 1024)) { // 1GB
+      // when
+      final var maxPartitions = rocksdbCfg.getMaxPartitionsPerBroker();
+
+      // then
+      assertThat(maxPartitions).hasValue(expectedMaxPartitions);
+      if (expectedMaxPartitions > 0) {
+        assertThatCode(() -> rocksdbCfg.validateRocksDbMemory(expectedMaxPartitions))
+            .doesNotThrowAnyException();
+      }
+      assertThatThrownBy(() -> rocksdbCfg.validateRocksDbMemory(expectedMaxPartitions + 1))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Test
+  void shouldReportNoPartitionLimitWithoutMaxMemoryFractionForPartitionStrategy() {
+    // given
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    rocksdbCfg.setMemoryLimit(DataSize.ofBytes(MINIMUM_PARTITION_MEMORY_LIMIT));
+
+    try (final var ignored = mockMemoryEnvironment(1024L * 1024 * 1024)) { // 1GB
+      // when
+      final var maxPartitions = rocksdbCfg.getMaxPartitionsPerBroker();
+
+      // then
+      assertThat(maxPartitions).isEmpty();
+    }
+  }
 }

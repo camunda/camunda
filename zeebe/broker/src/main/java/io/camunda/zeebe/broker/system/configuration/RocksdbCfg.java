@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import java.lang.management.ManagementFactory;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -110,6 +111,37 @@ public final class RocksdbCfg implements ConfigurationEntry {
               "Expected the allocated memory for RocksDB per partition to be at least %s bytes, but was %s bytes.",
               MINIMUM_PARTITION_MEMORY_LIMIT, blockCacheBytes / partitionsPerBrokerCount));
     }
+  }
+
+  /**
+   * Returns the largest partition count per broker that {@link #validateRocksDbMemory(int)}
+   * accepts, or empty if it accepts any partition count.
+   */
+  public OptionalInt getMaxPartitionsPerBroker() {
+    try {
+      validateRocksDbMemory(1);
+    } catch (final IllegalArgumentException e) {
+      return OptionalInt.of(0);
+    }
+
+    return switch (getMemoryAllocationStrategy()) {
+      case BROKER, FRACTION ->
+          OptionalInt.of(saturatedCast(getMemoryLimitBytes(1) / MINIMUM_PARTITION_MEMORY_LIMIT));
+      case PARTITION -> {
+        if (getMaxMemoryFraction() == -1) {
+          yield OptionalInt.empty();
+        }
+        final long totalMemorySize =
+            ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean())
+                .getTotalMemorySize();
+        final long maxRocksDbMem = (long) (totalMemorySize * getMaxMemoryFraction());
+        yield OptionalInt.of(saturatedCast(maxRocksDbMem / getMemoryLimit().toBytes()));
+      }
+    };
+  }
+
+  private static int saturatedCast(final long value) {
+    return (int) Math.min(value, Integer.MAX_VALUE);
   }
 
   private void validateMaxMemoryFraction(final long totalMemorySize, final long blockCacheBytes) {

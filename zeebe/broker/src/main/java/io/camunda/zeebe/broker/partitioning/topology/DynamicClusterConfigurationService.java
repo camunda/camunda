@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.LegacyExportingStateReader
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeValidator;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -109,6 +108,9 @@ public class DynamicClusterConfigurationService
   public ActorFuture<Void> start(final BrokerStartupContext brokerStartupContext) {
     final CompletableActorFuture<Void> started = new CompletableActorFuture<>();
 
+    RocksDbMemoryChangeValidator.advertiseMaxPartitions(
+        brokerStartupContext.getClusterServices().getMembershipService().getLocalMember(),
+        brokerStartupContext.getBrokerConfiguration().getExperimental().getRocksdb());
     clusterConfigurationManagerService = getClusterTopologyManagerService(brokerStartupContext);
 
     final var topologyManagerStartedFuture =
@@ -313,7 +315,8 @@ public class DynamicClusterConfigurationService
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
-        ClusterConfigurationChangeValidator.ACCEPT_ALL,
+        new RocksDbMemoryChangeValidator(
+            brokerStartupContext.getClusterServices().getMembershipService()),
         brokerStartupContext.getMeterRegistry());
   }
 
