@@ -19,11 +19,14 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateReco
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * Buffers a chunk of a policy update. Chunks may arrive in any order. Once the last missing chunk
- * is buffered, the processor starts applying the update with its first chunk.
+ * is buffered, the processor starts applying the update with its first chunk. It applies the update
+ * with the identifiers and chunk count that are buffered with the update, which is the same count
+ * that decides whether every chunk is buffered.
  *
  * <p>The processor does not validate the chunks: it assumes that the broker sends every chunk of an
  * update with the update's identifiers, and one update at a time. A chunk that is sent again
@@ -61,20 +64,26 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     final var chunk = command.getValue();
-    final boolean wasComplete = hasAllChunksBuffered(chunk.getUpdateId());
+    final boolean wasComplete = completeUpdate(chunk.getUpdateId()).isPresent();
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, PolicyUpdateIntent.CHUNK_APPENDED, chunk);
-
-    if (!wasComplete && hasAllChunksBuffered(chunk.getUpdateId())) {
-      commandWriter.appendFollowUpCommand(
-          key, PolicyUpdateIntent.APPLY_CHUNK, PolicyUpdateRecords.withoutPolicyData(chunk, 0));
+    if (wasComplete) {
+      return;
     }
+
+    completeUpdate(chunk.getUpdateId())
+        .ifPresent(
+            update ->
+                commandWriter.appendFollowUpCommand(
+                    key,
+                    PolicyUpdateIntent.APPLY_CHUNK,
+                    PolicyUpdateRecords.withoutPolicyData(update.getUpdate(), 0)));
   }
 
-  private boolean hasAllChunksBuffered(final String updateId) {
+  /** The update, if every one of its chunks is buffered. */
+  private Optional<PersistedPolicyUpdate> completeUpdate(final String updateId) {
     return policyUpdateState
         .getUpdate(updateId)
-        .map(PersistedPolicyUpdate::hasAllChunksBuffered)
-        .orElse(false);
+        .filter(PersistedPolicyUpdate::hasAllChunksBuffered);
   }
 }
