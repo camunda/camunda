@@ -1187,21 +1187,26 @@ class SecretStoreConfigurationTest {
   /** A physical tenant with an env store, plus the settings every physical tenant requires. */
   private static Map<String, Object> tenantWithEnvStore(
       final String tenantId, final String prefix) {
-    final var tenant = "camunda.physical-tenants." + tenantId;
-    return Map.of(
-        tenant + ".secrets.stores.env.default.prefix",
-        prefix,
-        tenant + ".security.initialization.default-roles.admin.users[0]",
-        tenantId + "-admin",
-        tenant + ".data.secondary-storage.elasticsearch.index-prefix",
-        tenantId);
+    return tenantWithStore(tenantId, "env", "prefix", prefix);
   }
 
   private static Map<String, Object> tenantWithAzureStore(
       final String tenantId, final String storeProperty, final String value) {
+    return tenantWithStore(tenantId, "azure", storeProperty, value);
+  }
+
+  /**
+   * A physical tenant setting one property of its default store of the given type, plus the
+   * settings every physical tenant requires.
+   */
+  private static Map<String, Object> tenantWithStore(
+      final String tenantId,
+      final String storeType,
+      final String storeProperty,
+      final String value) {
     final var tenant = "camunda.physical-tenants." + tenantId;
     return Map.of(
-        tenant + ".secrets.stores.azure.default." + storeProperty,
+        tenant + ".secrets.stores." + storeType + ".default." + storeProperty,
         value,
         tenant + ".security.initialization.default-roles.admin.users[0]",
         tenantId + "-admin",
