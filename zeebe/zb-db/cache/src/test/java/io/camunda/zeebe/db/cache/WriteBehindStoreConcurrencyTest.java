@@ -194,7 +194,8 @@ final class WriteBehindStoreConcurrencyTest {
   private WriteBehindStore<TestColumnFamily> store(
       final TestConfiguration configuration, final int optimisticReadAttempts) {
     final var store =
-        new WriteBehindStore<>(storage.db(), configuration.build(), optimisticReadAttempts);
+        new WriteBehindStore<>(
+            storage.db(), configuration.build(), NoCommitGate.INSTANCE, optimisticReadAttempts);
     stores.add(store);
     return store;
   }
