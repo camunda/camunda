@@ -52,6 +52,11 @@ val defaultConfig =
 
 artifacts { add(defaultConfig.name, generatedDefaultsFile) { builtBy(generateDefaultConfig) } }
 
+// The configuration processor rewrites spring-configuration-metadata.json from the sources it sees.
+// After a partial recompile it drops the untouched classes, which corrupts the generated
+// defaults.yaml. Recompile the whole module instead (mirrors Maven's useIncrementalCompilation).
+tasks.named<JavaCompile>("compileJava") { options.isIncremental = false }
+
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(libs.org.springframework.boot.spring.boot)
