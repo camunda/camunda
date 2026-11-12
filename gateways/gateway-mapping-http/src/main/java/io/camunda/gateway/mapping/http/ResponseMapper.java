@@ -1006,7 +1006,6 @@ public final class ResponseMapper {
       case CREATING -> UserTaskLookupStateEnum.CREATING;
       case CREATED -> UserTaskLookupStateEnum.CREATED;
       case ASSIGNING -> UserTaskLookupStateEnum.ASSIGNING;
-      case CLAIMING -> UserTaskLookupStateEnum.CLAIMING;
       case UPDATING -> UserTaskLookupStateEnum.UPDATING;
       case COMPLETING -> UserTaskLookupStateEnum.COMPLETING;
       case CANCELING -> UserTaskLookupStateEnum.CANCELING;
