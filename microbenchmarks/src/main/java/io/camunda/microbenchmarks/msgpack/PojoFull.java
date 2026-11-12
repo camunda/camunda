@@ -33,13 +33,13 @@ public final class PojoFull extends MsgpackBufferValue<PojoFull> {
   int count = 1;
   boolean flag;
   SampleKind kind = SampleKind.FIRST;
-  DirectBuffer text = Decoding.EMPTY;
+  final UnsafeBuffer text = new UnsafeBuffer(Decoding.EMPTY);
 
   @MsgpackProperty(binary = true)
-  DirectBuffer blob = Decoding.EMPTY;
+  final UnsafeBuffer blob = new UnsafeBuffer(Decoding.EMPTY);
 
   @MsgpackProperty(raw = true)
-  DirectBuffer raw = Decoding.EMPTY;
+  final UnsafeBuffer raw = new UnsafeBuffer(Decoding.EMPTY);
 
   final List<DirectBuffer> ids = new ArrayList<>();
   final PojoNested nested = new PojoNested();
@@ -52,9 +52,9 @@ public final class PojoFull extends MsgpackBufferValue<PojoFull> {
     count = 1 + seed % 5;
     flag = seed % 2 == 0;
     kind = SampleKind.values()[seed % SampleKind.values().length];
-    text = BufferUtil.wrapString("text-" + seed);
-    blob = BufferUtil.wrapString("{\"orderId\":" + seed + "}");
-    raw = RAW;
+    text.wrap(BufferUtil.wrapString("text-" + seed));
+    blob.wrap(BufferUtil.wrapString("{\"orderId\":" + seed + "}"));
+    raw.wrap(RAW);
     for (int i = 0; i < 3; i++) {
       ids.add(BufferUtil.wrapString("id-" + seed + "-" + i));
     }
