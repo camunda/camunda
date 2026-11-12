@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,18 @@ final class WhiteListedCommandsTest {
   void shouldWhitelistUserTaskCommandsEquivalentToJobCommands(final UserTaskIntent intent) {
     // when - then
     assertThat(WhiteListedCommands.isWhitelisted(intent)).isTrue();
+  }
+
+  @Test
+  void shouldWhitelistTheTimeOutOfAProbeAsOfAJob() {
+    // when - then
+    assertThat(WhiteListedCommands.isWhitelisted(ProbeIntent.TIME_OUT)).isTrue();
+  }
+
+  @Test
+  void shouldNotWhitelistTheCreationOfAProbe() {
+    // when - then
+    assertThat(WhiteListedCommands.isWhitelisted(ProbeIntent.CREATE)).isFalse();
   }
 
   @Test

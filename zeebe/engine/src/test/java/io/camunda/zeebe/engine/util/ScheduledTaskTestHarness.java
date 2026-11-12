@@ -46,6 +46,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ScheduledTaskTestHarness {
 
+  private static final Duration CHECK_INTERVAL = Duration.ofSeconds(1);
+
   private final ControlledActorSchedulerExtension actorScheduler;
   private final StreamProcessorLifecycleAware scheduler;
   private final ProcessingScheduleServiceImpl scheduleService;
@@ -68,7 +70,7 @@ public final class ScheduledTaskTestHarness {
             () -> writer,
             new NoopScheduledCommandCache(),
             actorScheduler.getClock(),
-            Duration.ofSeconds(1),
+            CHECK_INTERVAL,
             ScheduledTaskMetrics.noop());
     actorScheduler.submitActor(new ScheduleServiceActor(scheduleService));
     actorScheduler.workUntilDone();
@@ -172,6 +174,11 @@ public final class ScheduledTaskTestHarness {
     @Override
     public @NonNull StreamClock getClock() {
       throw new UnsupportedOperationException("The harness does not provide a stream clock");
+    }
+
+    @Override
+    public @NonNull Duration getScheduledTaskCheckInterval() {
+      return CHECK_INTERVAL;
     }
   }
 
