@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
+import io.camunda.zeebe.db.impl.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;

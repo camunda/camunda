@@ -5,13 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.impl.rocksdb;
+package io.camunda.zeebe.db.impl;
 
 import io.camunda.zeebe.db.DbKey;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-/** This class is used only internally by #isEmpty to search for same column family prefix. */
+/**
+ * Empty key that addresses a whole column family, used to iterate over all of its entries or to
+ * check whether it is empty.
+ */
 public final class DbNullKey implements DbKey {
 
   public static final DbNullKey INSTANCE = new DbNullKey();
