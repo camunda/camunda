@@ -346,6 +346,10 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1message-subscriptions'
   /process-definitions/statistics/process-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances'
+  /process-definitions/suspension:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1suspension'
+  /process-definitions/resumption:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1resumption'
   /process-definitions/{processDefinitionKey}:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}'
   /process-definitions/{processDefinitionKey}/form:
