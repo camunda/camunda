@@ -2,7 +2,9 @@
 
 **DRI**: Mathias Vandaele
 
-**Status**: Accepted (specification validated on 2026-11-10), implementation in progress
+**Status**: Accepted for the core in `camunda/camunda` (specification validated on 2026-11-10),
+implementation in progress. The connector runtime part (specification section 5.2, and the
+connector part of D58) stays proposed until it is agreed with Connectors.
 
 **Purpose**: Record why Camunda gets a dedicated probe primitive, what it decides at the level of
 the architecture, and where it is known to fall short. Every detail (records, endpoints, states,
@@ -103,7 +105,8 @@ At `CREATE` the engine detects references in the input as it does for input mapp
 imprecise ones (D28, D60). The records carry placeholders, never values. When a poll collects the
 probe, the engine reads the cache only, as `JobBatchCollector` does: all cached, the values go into
 the activation response only; one missing, the probe is parked and resolved through the existing
-resolution chain (D12, D39). A resolution failure ends the probe with
+resolution chain (D12, D39). The response also names the JSON pointers of the injected leaves, so
+the Java client can keep the values out of `toString()` and its `ERROR` messages (D73). A resolution failure ends the probe with
 `400 SECRET_RESOLUTION_ERROR` instead of raising an incident, since there is no process (D13).
 
 ### Records, export and audit
@@ -136,13 +139,19 @@ Connectors role gets `PROBE:ANSWER` on `*` by default (D69).
   backpressure the engine can still miss the 500 ms margin (D49).
 - **No feature flag.** Probes are available as soon as a release ships them, behind alpha
   endpoints. During a rolling update, a `CREATE` or a poll that reaches an old broker is rejected;
-  workers back off (D43, D51).
+  workers back off (D43, D51). An old follower cannot replay the new probe events and stays
+  unhealthy until it is updated, and if leadership moves back to an old broker that must replay a
+  probe event or process a pending probe command, the partition stalls until that broker is
+  updated. Worker backoff does not help there; the risk is accepted, as for any new record (D71).
 - **No worker means a full wait.** `NO_WORKER` is decided at the deadline, so a client with no
   worker waits its whole `requestTimeout` (D40).
 - **`PROBE:ANSWER` grants secrets.** Since `probeId` is a free string, a worker with `ANSWER` on `*`
   receives every probe's secrets. Grant it only to the runtimes that serve those IDs (specification
   section 8).
 - **Secret values can be up to the cache TTL stale**, as for jobs (D12).
+- **A worker can still write a secret to the log through its answer.** The cluster never writes a
+  secret value to a record, but the `PROBE:ANSWER` command is logged as the worker sent it, and the
+  engine does not check `data`. A worker must keep injected values out of its answer (D72).
 - **A raw secret typed into a literal field** ends up in `CREATED`; the engine cannot detect it.
   Clients mitigate with the secret picker (specification section 7).
 - **The `PROBE` resource type comes from `camunda-security-library`**, which must be released before
@@ -159,20 +168,23 @@ must fix:
 - The audit log gives `TIMED_OUT` and `CANCELED` the default result `SUCCESS`; it must be `FAIL`
   (D70).
 
-## Open question
+## Open points
 
 - **OQ30: which roles get `PROBE:CREATE` by default?** Owners: Security and Product management.
   Proposal: users who manage connections get `PROBE:CREATE` on `*` and `SECRET:READ`, and Admin
   gets all (specification section 8).
+- **The connector runtime design (specification section 5.2)** is to agree with Connectors before
+  that part is built in `camunda/connectors` (D58). The core in `camunda/camunda` does not depend
+  on it.
 
 ## Source
 
-- [Probes specification](probes-specification.md), the source of truth: decisions D1 to D70, open
-  and discussed questions.
+- [Probes specification](probes-specification.md), the source of truth: decisions, open and
+  discussed questions, acceptance tests AT1 to AT24 and success metrics (section 13).
 - [Epic: Connection Validation phase 2 (camunda/product-hub#3433)](https://github.com/camunda/product-hub/issues/3433)
 - [Write the ADR for probes (camunda/camunda#68861)](https://github.com/camunda/camunda/issues/68861)
 - [Probe specification tab of the Phase 2 doc (Google Doc)](https://docs.google.com/document/d/1omtaMu3HWFpPakfCU4aDQtZSTGpjzbqQ-y7M9o71PDc/edit?tab=t.5y3t70xg24uo),
-  with the acceptance tests AT1 to AT24 and the success metrics.
+  the shared summary of the specification.
 - [POC: probes (camunda/camunda#68078)](https://github.com/camunda/camunda/pull/68078), a reference
   only.
 - [Central secret resolution (secrets ADR 001)](../secrets/001-central-secret-resolution-architecture.md)

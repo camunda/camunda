@@ -88,7 +88,7 @@ ADR for that domain is written.
   poll for up to 100 probe IDs, an absolute deadline set by the gateway, secrets
   detected at `CREATE` and injected at collection, `ANSWERED` never carrying
   `data`, and the `PROBE` resource type with `CREATE` and `ANSWER`; the full
-  specification (D1 to D70) is in `probes/probes-specification.md`
+  specification (decisions and acceptance tests) is in `probes/probes-specification.md`
   (camunda/camunda#68861, camunda/product-hub#3433).
 - `data-protection/001-variable-redaction.md` — how a process variable is declared
   sensitive through `variablesMetadata` protection modes, and how its value is
