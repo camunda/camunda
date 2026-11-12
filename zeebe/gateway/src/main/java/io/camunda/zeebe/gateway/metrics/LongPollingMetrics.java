@@ -85,6 +85,7 @@ public sealed class LongPollingMetrics {
     summary(LongPollingMetricsDoc.ACTIVATION_REQUESTS, modeTags).record(stats.requests());
     summary(LongPollingMetricsDoc.ACTIVATION_ROUNDS, modeTags).record(stats.rounds());
     summary(LongPollingMetricsDoc.ACTIVATION_JOBS, modeTags).record(stats.jobs());
+    summary(LongPollingMetricsDoc.ACTIVATION_SURPLUS_JOBS, modeTags).record(stats.surplusJobs());
     stats
         .jobsPerPartition()
         .forEach(

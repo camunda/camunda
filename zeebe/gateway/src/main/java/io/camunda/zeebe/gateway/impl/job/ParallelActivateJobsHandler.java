@@ -146,6 +146,7 @@ final class ParallelActivateJobsHandler<T> implements PartitionedActivateJobsHan
     final var response = brokerResponse.getResponse();
     final var returnedJobs = response.getJobKeys().size();
     final var outcome = delivery.deliver(actor, request, brokerResponse, state.planner.remaining());
+    state.surplusJobs += outcome.surplusJobs();
     if (outcome.wasUndelivered()) {
       state.fail(requestCanceledExceptionProvider.apply(outcome.undeliveredReason()));
       state.planner.onFailure(ask);
@@ -232,6 +233,7 @@ final class ParallelActivateJobsHandler<T> implements PartitionedActivateJobsHan
 
     private int requests;
     private int rounds;
+    private int surplusJobs;
     private boolean resourceExhaustedWasPresent;
     private boolean finished;
     private @Nullable Throwable failure;
@@ -274,7 +276,8 @@ final class ParallelActivateJobsHandler<T> implements PartitionedActivateJobsHan
       }
       finished = true;
       onPollFinished.accept(
-          new JobActivationPollStats(true, requests, rounds, Map.copyOf(jobsPerPartition)));
+          new JobActivationPollStats(
+              true, requests, rounds, Map.copyOf(jobsPerPartition), surplusJobs));
       if (failure != null) {
         onError.accept(failure);
       } else {

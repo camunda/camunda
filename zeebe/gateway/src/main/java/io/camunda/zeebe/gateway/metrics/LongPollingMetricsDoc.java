@@ -124,6 +124,33 @@ public enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  ACTIVATION_SURPLUS_JOBS {
+    @Override
+    public String getDescription() {
+      return "Number of jobs activated beyond what one poll needed, which were given back";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.gateway.activation.surplus.jobs";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.DISTRIBUTION_SUMMARY;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return ActivationKeyNames.values();
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return KeyName.merge(GatewayKeyNames.values(), PartitionKeyNames.values());
+    }
+  },
+
   ACTIVATION_PARTITION_JOBS {
     @Override
     public String getDescription() {

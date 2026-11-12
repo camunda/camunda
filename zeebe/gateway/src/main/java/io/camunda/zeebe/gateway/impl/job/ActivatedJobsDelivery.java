@@ -98,11 +98,11 @@ final class ActivatedJobsDelivery<T> {
 
         logResponseNotSent(request.getType(), response.getJobKeys(), reason);
         reactivateJobs(actor, jobActivationResult.getJobs(), reason, partitionGroup);
-        return new Outcome(0, reason);
+        return new Outcome(0, surplusJobs.size(), reason);
       }
     }
 
-    return new Outcome(jobsCount, null);
+    return new Outcome(jobsCount, surplusJobs.size(), null);
   }
 
   /** Removes the jobs beyond the first {@code maxJobs} from the response, and returns them. */
@@ -183,9 +183,11 @@ final class ActivatedJobsDelivery<T> {
 
   /**
    * @param jobsCount number of jobs sent to the client; zero if they could not be sent
+   * @param surplusJobs number of jobs that were activated beyond what the request needed and were
+   *     given back
    * @param undeliveredReason why the response could not be sent, or null if it was sent (or empty)
    */
-  record Outcome(int jobsCount, @Nullable String undeliveredReason) {
+  record Outcome(int jobsCount, int surplusJobs, @Nullable String undeliveredReason) {
 
     boolean wasUndelivered() {
       return undeliveredReason != null;

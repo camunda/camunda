@@ -74,8 +74,11 @@ public class InflightActivateJobsRequestState {
     jobsPerPartition.merge(partitionId, jobs, Integer::sum);
   }
 
-  /** Every request waits for the one before it, so there are as many rounds as requests. */
+  /**
+   * Every request waits for the one before it, so there are as many rounds as requests. Asking one
+   * partition at a time never activates more jobs than the request needs.
+   */
   public JobActivationPollStats pollStats() {
-    return new JobActivationPollStats(false, requests, requests, Map.copyOf(jobsPerPartition));
+    return new JobActivationPollStats(false, requests, requests, Map.copyOf(jobsPerPartition), 0);
   }
 }

@@ -18,9 +18,15 @@ import java.util.Map;
  * @param rounds the longest chain of requests that had to wait for one another; for sequential
  *     activation this is the number of requests
  * @param jobsPerPartition the number of jobs received from each partition that was asked
+ * @param surplusJobs the number of jobs that were activated beyond what the request needed and were
+ *     given back to the broker
  */
 public record JobActivationPollStats(
-    boolean parallel, int requests, int rounds, Map<Integer, Integer> jobsPerPartition) {
+    boolean parallel,
+    int requests,
+    int rounds,
+    Map<Integer, Integer> jobsPerPartition,
+    int surplusJobs) {
 
   public int jobs() {
     return jobsPerPartition.values().stream().mapToInt(Integer::intValue).sum();

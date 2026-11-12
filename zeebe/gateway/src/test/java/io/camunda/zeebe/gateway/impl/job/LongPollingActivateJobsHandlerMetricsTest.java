@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
+import io.camunda.zeebe.gateway.api.job.FailJobStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
@@ -56,6 +57,7 @@ final class LongPollingActivateJobsHandlerMetricsTest {
 
     activateJobsStub = new ActivateJobsStub();
     activateJobsStub.registerWith(brokerClient);
+    new FailJobStub().registerWith(brokerClient);
     activateJobsStub.addAvailableJobs(TYPE, 0);
   }
 
@@ -153,6 +155,36 @@ final class LongPollingActivateJobsHandlerMetricsTest {
         .isEqualTo(partitions);
     assertThat(pollSummary("zeebe.gateway.activation.rounds", "parallel").totalAmount())
         .isEqualTo(1);
+  }
+
+  @Test
+  void shouldRecordJobsGivenBackBecauseTheyWereNotNeeded() {
+    // given — jobs on every partition, but the poll wants only one
+    handler = buildHandler(true);
+    submitHandlerActor(handler);
+    activateJobsStub.addAvailableJobs(TYPE, 100);
+
+    // when
+    submitPendingRequest("tenanta", 1);
+
+    // then — every partition returned its one job, and only one of them was needed
+    final var partitions = brokerClient.getTopologyManager().getTopology().getPartitionsCount();
+    assertThat(pollSummary("zeebe.gateway.activation.jobs", "parallel").totalAmount()).isEqualTo(1);
+    assertThat(pollSummary("zeebe.gateway.activation.surplus.jobs", "parallel").totalAmount())
+        .isEqualTo(partitions - 1);
+  }
+
+  @Test
+  void shouldRecordNoJobsGivenBackForSequentialActivation() {
+    // given
+    activateJobsStub.addAvailableJobs(TYPE, 100);
+
+    // when
+    submitPendingRequest("tenanta", 1);
+
+    // then
+    assertThat(pollSummary("zeebe.gateway.activation.surplus.jobs", "sequential").totalAmount())
+        .isZero();
   }
 
   @Test
