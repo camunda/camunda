@@ -10,7 +10,8 @@
 //                   [--iter2 i2.json] [--fix-results <result>,<result>]
 //                   [--min-rate 80] [--min-improvement 10]
 //     -> {"action": "open_pr" | "delete_branch" | "not_reproduced" | "blocked",
-//         "best": "iter1" | "iter2" | null, "reason": "..."}
+//         "best": "iter1" | "iter2" | null, "rate": <pooled % of the best pass,
+//         or null when none was scored>, "reason": "..."}
 //
 // Each input is the JSON written by score.mjs. A missing or unreadable file
 // means that pass did not run.
@@ -49,12 +50,13 @@ export function final({
   minImprovement = 10,
 }) {
   if (!baseline || baseline.verdict === 'blocked') {
-    return {action: 'blocked', best: null, reason: 'baseline produced no score'};
+    return {action: 'blocked', best: null, rate: null, reason: 'baseline produced no score'};
   }
   if (baseline.verdict === 'green') {
     return {
       action: 'not_reproduced',
       best: null,
+      rate: baseline.pooled.rate,
       reason: `baseline passed all ${baseline.pooled.passed} runs; the nightly flake did not reproduce`,
     };
   }
@@ -66,12 +68,18 @@ export function final({
   const crashed = fixResults.some((r) => r === 'failure' || r === 'cancelled');
   if (scored.length === 0) {
     if (crashed) {
-      return {action: 'blocked', best: null, reason: 'a fix attempt failed before the agent finished'};
+      return {
+        action: 'blocked',
+        best: null,
+        rate: null,
+        reason: 'a fix attempt failed before the agent finished',
+      };
     }
     const anyRan = iter1 || iter2;
     return {
       action: anyRan ? 'blocked' : 'delete_branch',
       best: null,
+      rate: null,
       reason: anyRan ? 'no fix iteration produced a score' : 'the agent produced no fix',
     };
   }
@@ -99,19 +107,21 @@ export function final({
   const qualifying = judged.filter((j) => j.failure === null);
   if (qualifying.length > 0) {
     const best = pickBest(qualifying);
-    return {action: 'open_pr', best: best.name, reason: best.summary};
+    return {action: 'open_pr', best: best.name, rate: best.rate, reason: best.summary};
   }
   const best = pickBest(judged);
   if (crashed) {
     return {
       action: 'blocked',
       best: best.name,
+      rate: best.rate,
       reason: `${best.summary}; ${best.failure}; a later fix attempt failed before the agent finished`,
     };
   }
   return {
     action: 'delete_branch',
     best: best.name,
+    rate: best.rate,
     reason: `${best.summary}; ${best.failure}`,
   };
 }

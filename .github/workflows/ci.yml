@@ -3028,6 +3028,8 @@ jobs:
         run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
       - name: Run e2e scoped-run verdict tests
         run: node --test .github/scripts/e2e-scoped-verdict.test.mjs
+      - name: Run OC flakiness fix agent tests
+        run: node --test .github/scripts/oc-flakiness/oc-flakiness.test.mjs
       # planned-for-paths.mjs imports the plan parser, which imports `yaml`;
       # this job installs only bats and xmllint, so without these it dies with
       # ERR_MODULE_NOT_FOUND before a single assertion runs.
