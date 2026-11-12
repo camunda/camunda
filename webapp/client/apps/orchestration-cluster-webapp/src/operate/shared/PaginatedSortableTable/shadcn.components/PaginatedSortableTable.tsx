@@ -13,6 +13,7 @@ type PaginationProps = {
 	hasNextPage: boolean;
 	isFetchingPreviousPage: boolean;
 	isFetchingNextPage: boolean;
+	isFetchPreviousPageError?: boolean;
 	fetchPreviousPage: () => Promise<unknown>;
 	fetchNextPage: () => Promise<unknown>;
 };
@@ -34,14 +35,24 @@ type PaginatedSortableTableProps<TRow> = DistributiveOmit<
 };
 
 function PaginatedSortableTable<TRow>({pagination, ...tableProps}: PaginatedSortableTableProps<TRow>) {
-	const {hasPreviousPage, hasNextPage, isFetchingPreviousPage, isFetchingNextPage, fetchPreviousPage, fetchNextPage} =
-		pagination;
+	const {
+		hasNextPage,
+		isFetchingPreviousPage,
+		isFetchingNextPage,
+		isFetchPreviousPageError = false,
+		fetchPreviousPage,
+		fetchNextPage,
+	} = pagination;
+	const hasPreviousPage = pagination.hasPreviousPage && !isFetchPreviousPageError;
 
 	const handleScrollStartReach = () => {
 		// Infinite-query page fetches share one request pipeline: starting fetchPreviousPage()
 		// while fetchNextPage() is still in flight (or vice versa, below) would cancel and
 		// discard the other direction's request. Block either while the opposite is loading,
 		// matching the Dashboard pagination guard in ExpandableList.tsx.
+		// A failed previous-page fetch also stays blocked: removing its skeleton row undoes the
+		// scroll compensation, which re-reaches the top edge and would refetch forever. The caller's
+		// retry action owns the next attempt.
 		if (!hasPreviousPage || isFetchingPreviousPage || isFetchingNextPage) {
 			return;
 		}
