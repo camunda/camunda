@@ -965,8 +965,11 @@ final class JobWorkerImplTest {
   @ParameterizedTest
   @MethodSource("metricsFailures")
   void shouldKeepPollingWhenJobMetricsThrowOnActivation(final Runnable failure) {
-    // given metrics that throw for the first job the worker activates
+    // given metrics that throw for the first job the worker activates, before counting it
     final AtomicBoolean metricsThrew = new AtomicBoolean();
+    final AtomicInteger activatedJobs = new AtomicInteger();
+    final AtomicInteger refusedJobs = new AtomicInteger();
+    final AtomicInteger handledJobs = new AtomicInteger();
     final JobWorkerMetrics metrics =
         new JobWorkerMetrics() {
           @Override
@@ -974,10 +977,22 @@ final class JobWorkerImplTest {
             if (metricsThrew.compareAndSet(false, true)) {
               failure.run();
             }
+            activatedJobs.addAndGet(count);
+          }
+
+          @Override
+          public void jobRefused(final int count) {
+            refusedJobs.addAndGet(count);
+          }
+
+          @Override
+          public void jobHandled(final int count) {
+            handledJobs.addAndGet(count);
           }
         };
     final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
-    respondWithJobsAfterAFailingOne();
+    // and no jobs after the first response, so that the counts settle
+    gateway.respondOnceWith(TestData.jobs(2));
 
     // when
     try (final JobWorker ignored =
@@ -1000,6 +1015,14 @@ final class JobWorkerImplTest {
                       .filteredOn(request -> request.getJobKey() == 0L)
                       .extracting(FailJobRequest::getErrorMessage)
                       .containsExactly(JobWorkerImpl.FAILED_HAND_OFF_ERROR_MSG));
+      // and that job is not reported as refused either, since its activation never was, so that
+      // activated minus refused and handled still gives no jobs in flight once the other one is
+      // done
+      Awaitility.await("the other job is reported as handled")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(handledJobs).hasValue(1));
+      assertThat(activatedJobs).as("jobs reported as activated").hasValue(1);
+      assertThat(refusedJobs).as("jobs reported as refused").hasValue(0);
     }
   }
 

@@ -429,7 +429,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
    *     the worker asked for and one the broker pushed to it. It is also what tells the user about
    *     the refusal, since the two paths leave the job in very different places.
    * @param onFailed the same for a job that failed to reach its handler for any other reason, for
-   *     example because the executor or the metrics threw. Such a job is reported as refused too.
+   *     example because the executor or the metrics threw. Such a job is reported as refused too,
+   *     unless reporting its activation is what failed.
    */
   private void handleActivatedJob(
       final ActivatedJob job,
@@ -442,8 +443,12 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     // handler has started, only it knows what became of the job, so the flag below keeps the
     // worker from stepping in afterwards.
     final AtomicBoolean handlerStarted = new AtomicBoolean(false);
+    // A job is only reported as refused once its activation was reported, so that activated minus
+    // refused, expired and handled still gives the jobs in flight when jobActivated throws.
+    boolean activationReported = false;
     try {
       metrics.jobActivated(1);
+      activationReported = true;
       // Starts here rather than where the handler runs, so that the wait for a free handler thread
       // counts against the activation the same way the handler's own runtime does.
       final ActivationDeadline deadline = ActivationDeadline.startingNow(nanoClock, jobTimeout);
@@ -483,7 +488,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
       // handed back before it is counted, so a metric that throws cannot keep it out of reach
       onRefused.accept(job, e);
-      metrics.jobRefused(1);
+      if (activationReported) {
+        metrics.jobRefused(1);
+      }
     } catch (final Throwable e) {
       // Throwable rather than RuntimeException or Error: user code written in Kotlin, for example,
       // can throw a checked exception without declaring it, and that must not stall polling either
@@ -498,7 +505,9 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
       // handed back before it is counted, since the metrics may be what failed
       onFailed.accept(job, e);
-      metrics.jobRefused(1);
+      if (activationReported) {
+        metrics.jobRefused(1);
+      }
     }
   }
 
