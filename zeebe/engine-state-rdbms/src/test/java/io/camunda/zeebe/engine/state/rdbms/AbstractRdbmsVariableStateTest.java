@@ -61,6 +61,7 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
   private JdbcTransactionContext transactionContext;
   private int partitionId;
   private int queries;
+  private int variableQueries;
   private MutableVariableState createdVariableState;
 
   @BeforeAll
@@ -296,13 +297,13 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
     elementInstanceState.getInstance(202);
 
     // when - then: one query for the variable in all scopes
-    assertThat(queriesOf(() -> variableState.getVariable(202, wrapString("a")))).isOne();
+    assertThat(variableQueriesOf(() -> variableState.getVariable(202, wrapString("a")))).isOne();
     // a repeated lookup is answered from the transaction's reads, also a missing variable
-    assertThat(queriesOf(() -> variableState.getVariable(202, wrapString("a")))).isZero();
-    assertThat(queriesOf(() -> variableState.getVariable(202, wrapString("x")))).isOne();
-    assertThat(queriesOf(() -> variableState.getVariable(202, wrapString("x")))).isZero();
-    assertThat(queriesOf(() -> variableState.getVariable(201, wrapString("a")))).isOne();
-    assertThat(queriesOf(() -> variableState.getVariable(201, wrapString("a")))).isZero();
+    assertThat(variableQueriesOf(() -> variableState.getVariable(202, wrapString("a")))).isZero();
+    assertThat(variableQueriesOf(() -> variableState.getVariable(202, wrapString("x")))).isOne();
+    assertThat(variableQueriesOf(() -> variableState.getVariable(202, wrapString("x")))).isZero();
+    // a scope of the chain needs no query for a name that the lookup of 202 covered
+    assertThat(variableQueriesOf(() -> variableState.getVariable(201, wrapString("a")))).isZero();
   }
 
   @Test
@@ -455,6 +456,17 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
   }
 
   /**
+   * Like {@link #queriesOf}, but counts only the queries of the variable table. A lookup also reads
+   * element instances, and the write-behind store may answer those from its read cache, depending
+   * on when its writer flushed.
+   */
+  private int variableQueriesOf(final Runnable lookup) {
+    variableQueries = 0;
+    lookup.run();
+    return variableQueries;
+  }
+
+  /**
    * The committed rows of this test's partition, ordered by the first column, of a query of the
    * form {@code SELECT <columns> FROM <table>}.
    */
@@ -488,13 +500,13 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
               final Object result = invoke(target, method, args);
               if (method.getName().equals("prepareStatement")
                   && result instanceof final PreparedStatement statement) {
-                return countingStatement(statement);
+                return countingStatement(statement, (String) args[0]);
               }
               return result;
             });
   }
 
-  private PreparedStatement countingStatement(final PreparedStatement target) {
+  private PreparedStatement countingStatement(final PreparedStatement target, final String sql) {
     return (PreparedStatement)
         Proxy.newProxyInstance(
             PreparedStatement.class.getClassLoader(),
@@ -503,6 +515,9 @@ abstract class AbstractRdbmsVariableStateTest extends AbstractVariableStateContr
               if (method.getName().startsWith("execute")
                   && !method.getName().equals("executeBatch")) {
                 queries++;
+                if (sql.contains("CAM_RU_VARIABLE")) {
+                  variableQueries++;
+                }
               }
               return invoke(target, method, args);
             });
