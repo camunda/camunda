@@ -21,6 +21,8 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.auth.condition.AnyOfAuthorizationCondition;
@@ -32,6 +34,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,5 +198,46 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   @Override
   public IndexDescriptor getIndex() {
     return indexDescriptor;
+  }
+
+  /**
+   * Returns the indices to search for the filter. If {@link #matchesOnlyRuntimeData} holds, only
+   * the runtime index is searched, otherwise the alias that also covers the archived indices.
+   */
+  public List<String> toIndices(final T filter) {
+    return List.of(
+        matchesOnlyRuntimeData(filter)
+            ? indexDescriptor.getFullQualifiedName()
+            : indexDescriptor.getAlias());
+  }
+
+  /**
+   * Returns true if every document that matches the filter belongs to a process instance that has
+   * not ended. The archiver moves only ended process instances out of the runtime index, so the
+   * archived indices cannot hold such a document.
+   */
+  protected boolean matchesOnlyRuntimeData(final T filter) {
+    return false;
+  }
+
+  /**
+   * Returns true if one of the AND-combined operations limits the values to a subset of {@code
+   * allowed}.
+   */
+  protected static boolean restrictsTo(
+      final List<Operation<String>> operations, final Set<String> allowed) {
+    return operations != null
+        && operations.stream()
+            .anyMatch(
+                operation ->
+                    (operation.operator() == Operator.EQUALS || operation.operator() == Operator.IN)
+                        && operation.values() != null
+                        && !operation.values().isEmpty()
+                        && allowed.containsAll(operation.values()));
+  }
+
+  /** Returns true if there is at least one OR branch and every branch matches the predicate. */
+  protected static <F> boolean allMatch(final List<F> orFilters, final Predicate<F> predicate) {
+    return orFilters != null && !orFilters.isEmpty() && orFilters.stream().allMatch(predicate);
   }
 }
