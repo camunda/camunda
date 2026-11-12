@@ -375,10 +375,11 @@ abstract class AbstractEngineStateRoundTripsTest {
     elementInstanceState.removeInstance(101);
 
     // then - one SELECT per distinct row or table read: 10 without the loaded-row cache. The
-    // removal reads the child's variables to delete them.
+    // removal reads the child's variables to delete them. The write-behind store also holds the
+    // committed rows of the setup, so it does not select the two scopes.
     final int selects = counting.otherStatements;
     transaction.rollback();
-    assertThat(selects).isEqualTo(5);
+    assertThat(selects).isEqualTo(mode() == StateMode.WRITE_BEHIND ? 3 : 5);
   }
 
   @Test

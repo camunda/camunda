@@ -33,8 +33,9 @@ import org.slf4j.LoggerFactory;
  * sequence and none after it, and a checkpoint at any moment is transaction-consistent.
  *
  * <p>Values are held as objects, never as bytes: the dirty index holds exactly the versions that
- * the storage doesn't have yet, and the read cache holds values decoded from the storage. A commit
- * invalidates the keys it writes. Only the writer thread encodes values.
+ * the storage doesn't have yet, and the read cache holds the latest committed value of the keys
+ * that were read or written lately. A commit replaces the cached value of the keys it writes. Only
+ * the writer thread encodes values.
  *
  * <p>{@link #publishLock} makes three things atomic: publishing a transaction, removing a flushed
  * group from the dirty index, and taking a read view (a storage cursor plus a copy of the dirty
@@ -110,7 +111,8 @@ public final class WriteBehindStore<K extends Comparable<K>, V> implements AutoC
         bytes += backend.weigh(keys[i], values[i]);
         dirty.put(keys[i], version);
         if (cache != null) {
-          cache.invalidate(keys[i]);
+          // the dirty index answers first; the cache takes over when the flush removes the entry
+          cache.put(keys[i], version);
         }
       }
       updateKeyIndexes(keys, values, seq);

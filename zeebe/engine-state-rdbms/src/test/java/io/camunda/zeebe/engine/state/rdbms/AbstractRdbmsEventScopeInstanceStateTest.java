@@ -291,7 +291,8 @@ abstract class AbstractRdbmsEventScopeInstanceStateTest
                 .map(EventTrigger::getEventKey))
         .contains(2L);
 
-    // the process is read once per transaction
+    // the process is read once per transaction; the write-behind store has it cached from the
+    // insert
     transactionContext.getCurrentTransaction();
     assertThat(
             queryCounter.queriesOf(
@@ -299,7 +300,8 @@ abstract class AbstractRdbmsEventScopeInstanceStateTest
                   scopes.triggerStartEvent(900, 3, wrapString("start"), wrapString(""), 400);
                   scopes.triggerStartEvent(900, 4, wrapString("start"), wrapString(""), 500);
                 }))
-        .containsExactly("CAM_RU_PROCESS_DEFINITION");
+        .containsExactlyElementsOf(
+            mode() == StateMode.WRITE_BEHIND ? List.of() : List.of("CAM_RU_PROCESS_DEFINITION"));
   }
 
   @Test

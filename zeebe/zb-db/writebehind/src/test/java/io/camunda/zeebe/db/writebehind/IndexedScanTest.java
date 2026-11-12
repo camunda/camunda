@@ -139,9 +139,8 @@ final class IndexedScanTest {
     assertThat(store.get(key(INDEXED, 99), new DbLong())).isNull();
     assertThat(access.gets()).isEqualTo(gets);
 
-    // and a key of the index still takes the normal path
+    // and a key of the index is not answered as absent
     assertThat(store.exists(key(INDEXED, 1))).isTrue();
-    assertThat(access.gets()).isGreaterThan(gets);
   }
 
   @Test
