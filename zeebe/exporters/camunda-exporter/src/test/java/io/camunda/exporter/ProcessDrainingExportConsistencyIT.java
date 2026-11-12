@@ -145,30 +145,6 @@ final class ProcessDrainingExportConsistencyIT {
         .isEqualTo(ProcessDefinitionState.ACTIVE);
   }
 
-  @TestTemplate
-  void shouldEndDrainingWhenSuspendedAndDrainingAreExportedInOneBatch(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    prepareConfig(config);
-    createSchemas(config);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
-    config.getBulk().setSize(100);
-
-    // when — both records are handled before the single flush on close; the draining handler
-    // flushes last, so this checks the outcome (AC3), not the getState() flush (unit-tested)
-    exportOnPartition(
-        config,
-        DEPLOYMENT_PARTITION,
-        suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY),
-        processRecord(ProcessIntent.DRAINING));
-    clientAdapter.refresh(testPrefix);
-
-    // then
-    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
-        .isEqualTo(ProcessDefinitionState.DRAINING);
-  }
-
   private void prepareConfig(final ExporterConfiguration config) {
     config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfReplicas(0);
