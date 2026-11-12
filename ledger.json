@@ -38,5 +38,18 @@
     "updated_at": "2026-11-11T21:49:35Z",
     "cooldown_until": "2026-11-25T21:49:35Z",
     "pr": "https://github.com/camunda/camunda/pull/69103"
+  },
+  "0acc0fd5": {
+    "version": "8.9",
+    "file": "tests/api/v2/job/job-failure-api-tests.spec.ts",
+    "titlePath": [
+      "Job Fail API Tests",
+      "Fail Job - 409"
+    ],
+    "last_action": "blocked",
+    "last_reason": "baseline produced no score",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43167805929",
+    "updated_at": "2026-11-12T06:26:24Z",
+    "cooldown_until": "2026-11-13T06:26:24Z"
   }
 }
