@@ -61,18 +61,26 @@ public final class PolicyUpdateApplyMultiPartitionTest {
   }
 
   @Test
-  public void shouldRejectAChunkOnAnotherPartition() {
+  public void shouldRejectAnAppendedChunkOnAnotherPartition() {
+    assertRejectedOnAnotherPartition(PolicyUpdateIntent.APPEND_CHUNK);
+  }
+
+  @Test
+  public void shouldRejectAnAppliedChunkOnAnotherPartition() {
+    assertRejectedOnAnotherPartition(PolicyUpdateIntent.APPLY_CHUNK);
+  }
+
+  private void assertRejectedOnAnotherPartition(final PolicyUpdateIntent intent) {
     // given
     final var chunk = chunk();
 
     // when
     engine.writeRecordsOnPartition(
-        2,
-        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
+        2, RecordToWrite.commandWithoutClaims().policyUpdate(intent, chunk));
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
+        RecordingExporter.policyUpdateRecords(intent)
             .onlyCommandRejections()
             .withPartitionId(2)
             .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))

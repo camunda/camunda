@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -27,16 +28,14 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-/**
- * Policy updates of several chunks. Each test gets its own engine, so the updates a test leaves in
- * the buffer don't affect the others.
- */
+/** Policy updates of several chunks. */
 public final class PolicyUpdateMultiChunkTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -47,10 +46,10 @@ public final class PolicyUpdateMultiChunkTest {
     // given
     final var updateId = "update-" + uid();
     final var roleId = "role-" + uid();
-    apply(engine, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
 
     // when
-    apply(engine, chunk(updateId, 1, 2));
+    apply(ENGINE, chunk(updateId, 1, 2));
 
     // then
     final var lastChunkAppended = appendedRecord(updateId, 1);
@@ -68,7 +67,7 @@ public final class PolicyUpdateMultiChunkTest {
     // when
     for (final int chunkIndex : List.of(2, 0, 1)) {
       apply(
-          engine,
+          ENGINE,
           chunk(updateId, chunkIndex, 3)
               .setRoles(List.<RoleRecordValue>of(role(roleIds.get(chunkIndex)))));
     }
@@ -95,7 +94,7 @@ public final class PolicyUpdateMultiChunkTest {
     final var roleId = "role-" + uid();
     final var clientId = "client-" + uid();
     apply(
-        engine,
+        ENGINE,
         chunk(updateId, 1, 2)
             .setMemberships(
                 List.<PolicyMembershipEntryValue>of(
@@ -106,7 +105,7 @@ public final class PolicyUpdateMultiChunkTest {
                         .setMemberId(clientId))));
 
     // when
-    apply(engine, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
 
     // then
     final var entityAdded =
@@ -115,16 +114,46 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
+  public void shouldApplyAChunkThatIsSentAgainOnlyOnce() {
+    // given
+    final var updateId = "update-" + uid();
+    apply(ENGINE, chunk(updateId, 0, 2));
+    apply(ENGINE, chunk(updateId, 0, 2));
+
+    // when
+    apply(ENGINE, chunk(updateId, 1, 2));
+
+    // then
+    final var markerId = "update-" + uid();
+    apply(ENGINE, chunk(markerId, 0, 1));
+    final var updateRecords =
+        RecordingExporter.policyUpdateRecords()
+            .limit(
+                record ->
+                    record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                        && record.getValue().getUpdateId().equals(markerId))
+            .filter(record -> record.getValue().getUpdateId().equals(updateId))
+            .toList();
+    assertThat(updateRecords)
+        .filteredOn(record -> record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED)
+        .extracting(record -> record.getValue().getChunkIndex())
+        .containsExactly(0, 1);
+    assertThat(updateRecords)
+        .filteredOn(record -> record.getRecordType() == RecordType.COMMAND_REJECTION)
+        .isEmpty();
+  }
+
+  @Test
   public void shouldAcceptTheNextUpdateOnceTheOpenOneIsApplied() {
     // given
     final var firstUpdateId = "update-" + uid();
-    apply(engine, chunk(firstUpdateId, 0, 2));
-    apply(engine, chunk(firstUpdateId, 1, 2));
+    apply(ENGINE, chunk(firstUpdateId, 0, 2));
+    apply(ENGINE, chunk(firstUpdateId, 1, 2));
     appliedRecord(firstUpdateId);
 
     // when
     final var secondUpdateId = "update-" + uid();
-    apply(engine, chunk(secondUpdateId, 0, 1));
+    apply(ENGINE, chunk(secondUpdateId, 0, 1));
 
     // then
     assertThat(appliedRecord(secondUpdateId).getValue().getChunkIndex()).isZero();
