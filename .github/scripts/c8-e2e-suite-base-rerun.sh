@@ -66,12 +66,23 @@ need() { # seconds phase
   fi
 }
 
-# The base suite: the suite directory at the PR's base commit.
+# The base suite: the suite directory at the PR's base commit, checked out
+# into a repository of its own. Not fetched into the job's checkout: a git
+# process outside this script (e.g. background maintenance) can hold its
+# lock, which made the fetch fail. Only the suite directory's files are
+# downloaded (partial clone, sparse checkout).
 need 120 "checking out the base test code"
 base_root="${RUNNER_TEMP}/c8-e2e-base-suite"
 rm -rf "$base_root" && mkdir -p "$base_root"
-if ! timeout "$(left)s" git -C "$GITHUB_WORKSPACE" fetch --no-tags --depth=1 origin "$COMPARE_BASE_SHA" \
-  || ! git -C "$GITHUB_WORKSPACE" archive "$COMPARE_BASE_SHA" -- "$suite_rel" | tar -x -C "$base_root"; then
+origin_url="$(git -C "$GITHUB_WORKSPACE" remote get-url origin)"
+if ! (
+  cd "$base_root" &&
+    git init -q &&
+    git remote add origin "$origin_url" &&
+    git sparse-checkout set "$suite_rel" &&
+    timeout "$(left)s" git fetch -q --no-tags --depth=1 --filter=blob:none origin "$COMPARE_BASE_SHA" &&
+    timeout "$(left)s" git checkout -q FETCH_HEAD
+); then
   record error "could not check out the base test code"
   exit 0
 fi
