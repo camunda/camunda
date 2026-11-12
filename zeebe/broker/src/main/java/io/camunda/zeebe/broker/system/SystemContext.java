@@ -267,8 +267,7 @@ public final class SystemContext {
 
   /**
    * Keeping the state in a relational database works only with the parts that exist so far: the
-   * state is written through the write-behind cache, there are no backups of it yet, and only one
-   * replica can use it until followers stop writing to the shared state.
+   * state is written through the write-behind cache, and there are no backups of it yet.
    */
   private void validatePrimaryStorageType(final String tenantId, final BrokerCfg tenantCfg) {
     final var data = tenantCfg.getData();
@@ -289,11 +288,6 @@ public final class SystemContext {
     }
     if (data.getBackup().isContinuous()) {
       errors.add("camunda.data.primary-storage.backup.continuous must be false");
-    }
-    final var replicationFactor = tenantCfg.getCluster().getReplicationFactor();
-    if (replicationFactor != 1) {
-      errors.add(
-          "camunda.cluster.replication-factor must be 1, but was %d".formatted(replicationFactor));
     }
 
     if (!errors.isEmpty()) {

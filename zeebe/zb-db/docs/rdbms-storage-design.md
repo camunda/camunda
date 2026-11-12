@@ -301,8 +301,8 @@ One replica comes first, so each step leaves a broker that works; followers come
 - In RDBMS mode, the broker fails to start, naming the setting, unless:
   - the write-behind cache is turned on;
   - backups are turned off: `camunda.data.primary-storage.backup.store` is `NONE` and
-    `continuous` is `false` (§9.7);
-  - the replication factor is 1, until followers are supported (§9.5).
+    `continuous` is `false` (§9.7).
+- Any replication factor works (§9.5).
 
 ### 9.2 Wiring
 
@@ -369,6 +369,10 @@ One replica comes first, so each step leaves a broker that works; followers come
   - Followers keep the log storage and the log stream.
   - The admin "take snapshot" request does nothing on followers, because they have no snapshot
     director. Their marker snapshots are taken on a schedule (below).
+  - The partition status, which `/actuator/partitions` shows, needs the stream processor and the
+    exporter director, so reading it fails on followers. One failed partition leaves the whole
+    answer empty, so the endpoint shows nothing on a broker that follows any partition. Left as it
+    is for now.
 - A `FollowerSnapshotDirector` takes marker snapshots, so followers can compact their log:
   - In RDBMS mode only, `FollowerSnapshotDirectorStep` starts it when the node becomes a follower,
     and stops it when the node becomes leader or inactive. It doesn't use the log stream, so it
@@ -382,7 +386,6 @@ One replica comes first, so each step leaves a broker that works; followers come
     snapshot, which compacts the log.
   - It skips quietly while there is no state, nothing is processed yet, or the snapshot already
     exists. A failed attempt marks it unhealthy until the next attempt succeeds.
-- The replication factor limit from §9.1 goes away.
 
 ### 9.6 Recovery check and RocksDB-only paths
 
@@ -400,8 +403,17 @@ of the checkpoint, then reset the owner terms.
 
 - **One replica:** a broker on H2 is restarted, and a process instance created before the restart
   continues from the shared state.
-- **Followers:** three brokers in one JVM share one H2 database. The tests cover a leader change,
-  follower restarts and log compaction on followers, then the same on PostgreSQL.
+- **Followers:** three brokers in one JVM share one database, on H2
+  (`ReplicatedRdbmsPartitionStateIT`) and on PostgreSQL (`PostgresReplicatedRdbmsPartitionStateIT`):
+  - the leader stops, and a new leader takes the state over;
+  - the followers compact their logs with marker snapshots, then one of them restarts and is made
+    the leader;
+  - the leader is cut off from the others while they choose a new leader, then it rejoins and is
+    made the leader again.
+
+  Each test then completes the jobs of every acknowledged process instance, and checks that the
+  state's owner term is the current leader's term. The tests find the leader through Raft and the
+  gateway's topology, not through `/actuator/partitions` (§9.5).
 
 ## 10. Testing
 
