@@ -37,6 +37,27 @@ final class PartitionStates {
   }
 
   /**
+   * Finds the partition's state without claiming it, in a short transaction of its own.
+   *
+   * @return the id of the state, or empty if the partition has none yet
+   */
+  OptionalLong find(final StateIdentity identity) {
+    final var connection = storage.borrowConnection();
+    try (final var session =
+        storage.sqlSessionFactory().openSession(ExecutorType.SIMPLE, connection)) {
+      return session
+          .getMapper(StateMapper.class)
+          .findStateId(identity.partitionGroup(), identity.partitionId())
+          .map(OptionalLong::of)
+          .orElseGet(OptionalLong::empty);
+    } catch (final PersistenceException e) {
+      throw SqlErrors.translate(e);
+    } finally {
+      rollbackAndClose(connection);
+    }
+  }
+
+  /**
    * Claims the partition's state for the term, in a short transaction of its own. Without an
    * expected state, it creates the state if the partition has none yet.
    *
@@ -111,7 +132,7 @@ final class PartitionStates {
     try (connection) {
       connection.rollback();
     } catch (final SQLException e) {
-      LOG.warn("Failed to roll back and return the connection used to attach a state", e);
+      LOG.warn("Failed to roll back and return the connection used to find or claim a state", e);
     }
   }
 }

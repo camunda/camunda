@@ -160,6 +160,11 @@ settings and a meter registry supplier.
   `UnsupportedOperationException`. That's all `StateControllerImpl`'s recovery needs (open snapshot,
   copy it to the runtime directory, open the runtime DB).
 - `createDb(dir, avoidFlush)` is the same as `createDb(dir)`: flushing is a RocksDB setting.
+- `openReadOnlyDb()` finds the partition's state without claiming it, so the leader keeps writing.
+  It is empty if the partition has no state yet. Reads see what the leader has committed, and never
+  wait for its writes in progress. Writes throw `UnsupportedOperationException` right away, before
+  they reach the database. Its `createSnapshot` writes a marker naming the state, like the leader's.
+  Followers use it to take snapshots (§9.5).
 
 ### 7.2 Transactions
 
@@ -359,8 +364,8 @@ One replica comes first, so each step leaves a broker that works; followers come
   the log stream. Code that expects these components on followers, such as partition health and
   admin access, needs checks.
 - A follower snapshot director takes marker snapshots, so followers can compact their log:
-  - it reads the processed and exported positions through a read-only reader in
-    `zeebe-db-rdbms`, which never claims the state, so it never fences the leader;
+  - it reads the processed and exported positions through `openReadOnlyDb()` (§7.1), which never
+    claims the state, so it never fences the leader;
   - it limits them to the end of its own committed log, and takes a marker snapshot there.
 - The replication factor limit from §9.1 goes away.
 
