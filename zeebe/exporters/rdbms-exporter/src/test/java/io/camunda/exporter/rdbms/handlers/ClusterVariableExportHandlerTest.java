@@ -44,6 +44,28 @@ class ClusterVariableExportHandlerTest {
   }
 
   @Test
+  void shouldExportIntegerBeyondLongRange() {
+    // given
+    final var recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .withName("myVariable")
+            .withValue("18446744073709551615")
+            .withScope(ClusterVariableScope.GLOBAL)
+            .build();
+    final Record<io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    assertThat(modelCaptor.getValue().value()).isEqualTo("18446744073709551615");
+  }
+
+  @Test
   void shouldMapMetadataStringAndNumericValues() {
     // given
     final var recordValue =
