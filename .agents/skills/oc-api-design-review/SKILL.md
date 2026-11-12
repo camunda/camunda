@@ -29,13 +29,16 @@ where to post findings.
 2. **Read every file the change touches, not only `proto/v2`.** Section 2.12's checklist spans
    `gateways/gateway-model/pom.xml` (both profiles), the Java client, the search domain
    operations and MyBatis.
-3. To check the unchanged rest of the spec, for example whether a shared schema already exists or
+3. **List every element the change adds** (paths and operations, schemas, properties, parameters,
+   response codes, enum values) and check each against the guideline sections that govern it. Use
+   a list the caller provides if there is one.
+4. To check the unchanged rest of the spec, for example whether a shared schema already exists or
    where a resource's paths live, grep across `zeebe/gateway-protocol/src/main/proto/v2/`. Don't
    read whole files: some are 90 KB or more.
-4. **Judge only what the change adds or alters**, not pre-existing issues around it. The existing
+5. **Judge only what the change adds or alters**, not pre-existing issues around it. The existing
    spec is not precedent. If the change breaks a guideline rule, report it even when other parts of
    the spec do the same: those are existing violations, not exceptions.
-5. **Skip what is already enforced mechanically** (next section).
+6. **Skip what is already enforced mechanically** (next section).
 
 Work in this order:
 
