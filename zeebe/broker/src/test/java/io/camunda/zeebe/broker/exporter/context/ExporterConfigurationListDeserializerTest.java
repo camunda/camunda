@@ -167,6 +167,53 @@ final class ExporterConfigurationListDeserializerTest {
   }
 
   @Test
+  void shouldDeserializeJsonArrayAsSetWithoutDuplicates() {
+    // given — a JSON array must keep working after the Set deserializer is registered
+    final var args = Map.<String, Object>of("items", List.of("ADMIN", "ADMIN", "USER_TASKS"));
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(CategorySetConfig.class, args);
+
+    // then
+    assertThat(instance.items()).containsExactlyInAnyOrder(Category.ADMIN, Category.USER_TASKS);
+  }
+
+  @Test
+  void shouldDeserializeEmptyStringAsEmptySet() {
+    // given — Spring Boot flattens an empty YAML list to an empty string, as for List
+    final var args = Map.<String, Object>of("items", "");
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(CategorySetConfig.class, args);
+
+    // then
+    assertThat(instance.items()).isEmpty();
+  }
+
+  @Test
+  void shouldDeserializeNonEmptyStringAsSingletonSet() {
+    // given — a single configured value without array syntax
+    final var args = Map.<String, Object>of("items", "ADMIN");
+
+    // when
+    final var instance = ExporterConfiguration.fromArgs(CategorySetConfig.class, args);
+
+    // then
+    assertThat(instance.items()).containsExactly(Category.ADMIN);
+  }
+
+  @Test
+  void shouldThrowOnUnexpectedTokenTypeForSet() {
+    // given — an integer is not a valid token for a Set property
+    final var args = Map.<String, Object>of("items", 42);
+
+    // when - then
+    assertThatCode(() -> ExporterConfiguration.fromArgs(CategorySetConfig.class, args))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Expected START_ARRAY, START_OBJECT, or VALUE_STRING");
+  }
+
+  @Test
   void shouldDeserializeIndexedSetNestedInObjectProperty() {
     // given — Spring Boot flattens client.categories[0..1] under a nested object
     final var args =
