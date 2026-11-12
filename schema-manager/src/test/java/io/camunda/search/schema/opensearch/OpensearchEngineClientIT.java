@@ -9,6 +9,7 @@ package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.MAX_INDEX_PATTERN_REQUEST_LENGTH;
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,16 +30,19 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState;
 import io.camunda.search.schema.utils.SchemaTestUtil;
+import io.camunda.search.schema.utils.SearchEngineClientUtils;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
@@ -79,6 +83,55 @@ public class OpensearchEngineClientIT {
     // when / then
     assertThatNoException()
         .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)));
+  }
+
+  @Test
+  void shouldIgnoreMissingIndicesWhenAwaitingPrimaries() {
+    // given an index that does not exist, e.g. deleted by ILM after the schema was created
+    final var missingIndex = "await_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitExistingIndicesWhenSomeAreMissing() throws IOException {
+    // given
+    final var existingIndex = "await_mixed_existing-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var missingIndex = "await_mixed_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(existingIndex));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                opensearchEngineClient.awaitActivePrimaries(List.of(existingIndex, missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitPrimariesAcrossMultipleBatches() throws IOException {
+    // given two existing indices, one in the first and one in the last batch, separated by enough
+    // missing indices to need several requests
+    final var firstIndex = "await_batch_first-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var lastIndex = "await_batch_last-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(firstIndex));
+    openSearchClient.indices().create(req -> req.index(lastIndex));
+    final var indexNames = new ArrayList<String>();
+    indexNames.add(firstIndex);
+    IntStream.range(0, 2 * MAX_INDEX_PATTERN_REQUEST_LENGTH / 100)
+        .mapToObj(
+            i ->
+                "await_batch_missing_%03d-%s-%s"
+                    .formatted(i, "x".repeat(70), ENGINE_CLIENT_TEST_MARKERS))
+        .forEach(indexNames::add);
+    indexNames.add(lastIndex);
+    assertThat(SearchEngineClientUtils.batchPatterns(String.join(",", indexNames)))
+        .hasSizeGreaterThan(1);
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(indexNames));
   }
 
   @Test

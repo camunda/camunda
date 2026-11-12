@@ -74,6 +74,7 @@ import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.opensearch.client.transport.httpclient5.ResponseException;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
@@ -153,9 +154,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
     try {
       if (create
           && client
-          .indices()
-          .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
-          .value()) {
+              .indices()
+              .existsIndexTemplate(req -> req.name(templateDescriptor.getTemplateName()))
+              .value()) {
         // Creation should only occur once during initialisation but multiple partitions with
         // their own exporter will create race conditions where multiple exporters try to
         // create the same template
@@ -476,6 +477,9 @@ public class OpensearchEngineClient implements SearchEngineClient {
       throw new SearchEngineException(
           "Failed to wait for active primary shards of indices " + indexNames, e);
     } catch (final IOException e) {
+      if (isForbidden(e)) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
       throw new SearchEngineException(
           "Failed to wait for active primary shards of indices " + indexNames, e);
     }
@@ -496,9 +500,27 @@ public class OpensearchEngineClient implements SearchEngineClient {
           "OpenSearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
       return false;
     } catch (final IOException e) {
+      if (isForbidden(e)) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
       LOG.warn("Couldn't connect to OpenSearch: {}. Returning unhealthy.", e.getMessage(), e);
       return false;
     }
+  }
+
+  /**
+   * The OpenSearch client reports an HTTP 403 as an {@link IOException} wrapping a {@link
+   * ResponseException}, rather than as an {@link OpenSearchException}, so the status has to be
+   * looked up in the cause chain.
+   */
+  private static boolean isForbidden(final IOException exception) {
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof final ResponseException responseException
+          && responseException.status() == 403) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -633,10 +655,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   /**
-   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and
-   * {@code last_updated_time} into every policy it returns, none of which our PUT ever specifies,
-   * so a whole-document comparison against the static template would never match. Comparing only
-   * the fields the PUT actually sends keeps the drift check meaningful.
+   * OpenSearch injects fields such as {@code policy_id}, {@code schema_version} and {@code
+   * last_updated_time} into every policy it returns, none of which our PUT ever specifies, so a
+   * whole-document comparison against the static template would never match. Comparing only the
+   * fields the PUT actually sends keeps the drift check meaningful.
    */
   private static JsonNode normalizedPolicyDefinition(final JsonNode policyNode) {
     final var normalized = JsonNodeFactory.instance.objectNode();
