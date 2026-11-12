@@ -23,13 +23,13 @@ Not in scope of this process are [SNAPSHOT releases](../ci.md#available-snapshot
 
 ### Release Types
 
-* [Minor](https://confluence.camunda.com/display/HAN/Product+Releases) (version format is 8.x.0):
+* [Minor](https://lamppost.camunda-it.rocks/handbook/#1392a98e/product-releases) (version format is 8.x.0):
   * includes new features, for production use
   * usually released every 6 months
   * supported for certain time with new patch releases after the minor release
   * code freeze before the release, to allow QA on a release candidate build
   * source branch is `stable/${minor_version}`
-* [Alpha](https://confluence.camunda.com/display/HAN/Alpha+Releases) (version format 8.x.0-alphaN)
+* [Alpha](https://lamppost.camunda-it.rocks/handbook/#23f4cddf/alpha-releases) (version format 8.x.0-alphaN)
   * includes new features to get early customer feedback, not for production use
   * usually released every 1 month
   * code freeze before the release, to allow QA on a release candidate build
@@ -318,7 +318,7 @@ Ownership model:
 
 #### 0. Prerequisites — dates and ownership
 
-- [ ] Confirm the minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) handbook — **not just `timeline.json`**. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases).
+- [ ] Confirm the minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train) handbook — **not just `timeline.json`**. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases).
 - [ ] Confirm the MRM is available for feature freeze week, the cut / code freeze, and the final RC window. Check for holidays in those weeks — if any, align stakeholders on adjusted ETAs and document it.
 - [ ] Confirm the acting MRM (whoever pushes the branch) is in the `monorepo-release-manager` GitHub team — the bypass actor for creating `stable/**/*` under the `no-persistent-branch-creations-deletions` ruleset. Without it the `git push` is rejected.
 
@@ -404,8 +404,8 @@ Ownership model:
 ### Minor Release References
 
 - [Release process documentation](./index.md)
-- [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train)
-- [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze)
+- [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train)
+- [Minor Release Feature Freeze](https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze)
 - [Issue #46249](https://github.com/camunda/camunda/issues/46249)
 - [Issue #40009](https://github.com/camunda/camunda/issues/40009)
 - [Issue #37374](https://github.com/camunda/camunda/issues/37374)
@@ -520,8 +520,8 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
 
 **📅 Important References**
-- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
-- **Detailed Policy**: See [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze) for comprehensive guidelines
+- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train) page
+- **Detailed Policy**: See [Minor Release Feature Freeze](https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze) for comprehensive guidelines
 
 ## Troubleshooting
 
