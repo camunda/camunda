@@ -128,9 +128,18 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
     return readStorage(key, prototype);
   }
 
-  /** The unflushed version of a key, or else the cached one; null if the store has neither. */
+  /**
+   * The unflushed version of a key as of the last whole commit, or else the cached one; null if the
+   * store has neither.
+   *
+   * <p>A commit puts its versions into the active batch one by one and sets {@link #committedSeq}
+   * after the last one. So the sequence is read first, and a version of a later commit, which may
+   * be half published, is skipped for the one it replaced. The cache only holds flushed values,
+   * which are whole commits.
+   */
   private @Nullable Version<V> lookupInMemory(final K key) {
-    final var unflushed = batches.get(key);
+    final long seq = committedSeq;
+    final var unflushed = batches.getAsOf(key, seq);
     if (unflushed != null) {
       metrics.of(backend.groupOf(key)).dirtyHits.increment();
       return unflushed;
@@ -347,9 +356,19 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
   private record Batches<K extends Comparable<K>, V>(
       NavigableMap<K, Version<V>> active, @Nullable NavigableMap<K, Version<V>> sealed) {
 
-    @Nullable Version<V> get(final K key) {
-      final var version = active.get(key);
-      return version != null || sealed == null ? version : sealed.get(key);
+    /**
+     * The latest version of the key up to the commit with the given sequence: from the active
+     * batch, or else from the sealed one. Null if neither has one, then the cache or the storage
+     * has the latest value up to that commit.
+     */
+    @Nullable Version<V> getAsOf(final K key, final long seq) {
+      final var active = this.active.get(key);
+      final var fromActive = active == null ? null : active.asOf(seq);
+      if (fromActive != null || sealed == null) {
+        return fromActive;
+      }
+      final var fromSealed = sealed.get(key);
+      return fromSealed == null ? null : fromSealed.asOf(seq);
     }
   }
 

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.impl.DbLong;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
@@ -63,6 +64,70 @@ final class StoreInterleavingTest {
 
     // then
     assertThat(flushedKey.get()).isTrue();
+  }
+
+  @Test
+  void shouldNotReadPartOfCommitThatIsBeingPublished() throws Exception {
+    // given an unflushed commit, and a later one that has published its first key only
+    commit(key(1), held(1), key(2), held(1));
+    final var committer = new TestThread(() -> commit(key(1), held(2), key(2), held(2)));
+    final var pause = backend.pauseOnWeigh(committer.thread, key(2));
+    committer.start();
+    pause.awaitReached();
+
+    // when
+    final var first = longOf(key(1));
+    final var second = longOf(key(2));
+    pause.release();
+    committer.join();
+
+    // then
+    assertThat(first).isEqualTo(1);
+    assertThat(second).isEqualTo(1);
+    assertThat(longOf(key(1))).isEqualTo(2);
+  }
+
+  @Test
+  void shouldReadFlushedValueOfKeyThatACommitBeingPublishedChanges() throws Exception {
+    // given a flushed value, and a commit that has published a new value for it only
+    commit(key(1), held(1), key(2), held(1));
+    store.awaitFlushed();
+    final var committer = new TestThread(() -> commit(key(1), held(2), key(2), held(2)));
+    final var pause = backend.pauseOnWeigh(committer.thread, key(2));
+    committer.start();
+    pause.awaitReached();
+
+    // when
+    final var first = longOf(key(1));
+    pause.release();
+    committer.join();
+
+    // then
+    assertThat(first).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotFindKeyThatACommitBeingPublishedCreates() throws Exception {
+    // given a commit that has published the first of two new keys only
+    final var committer = new TestThread(() -> commit(key(1), held(1), key(2), held(1)));
+    final var pause = backend.pauseOnWeigh(committer.thread, key(2));
+    committer.start();
+    pause.awaitReached();
+
+    // when
+    final var value = store.get(key(1), new DbLong());
+    final var exists = store.exists(key(1));
+    pause.release();
+    committer.join();
+
+    // then
+    assertThat(value).isNull();
+    assertThat(exists).isFalse();
+    assertThat(store.exists(key(1))).isTrue();
+  }
+
+  private @Nullable Long longOf(final RawKey key) {
+    return TestValues.longOf(store.get(key, new DbLong()));
   }
 
   private void commit(
