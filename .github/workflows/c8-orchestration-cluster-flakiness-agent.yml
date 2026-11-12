@@ -425,12 +425,17 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ env.SUITE_PATH }}/package-lock.json
 
+      # Separate from the lint step: an install failure is the registry's,
+      # not a rejection of the patch.
+      - name: Install suite dependencies for lint
+        working-directory: ${{ env.SUITE_PATH }}
+        run: npm ci
+
       - name: Lint the change
         id: lint
         working-directory: ${{ env.SUITE_PATH }}
         run: |
           set -euo pipefail
-          npm ci
           mapfile -t ts_files < "$RUNNER_TEMP/ts-files.txt"
           if [[ "${#ts_files[@]}" -gt 0 ]]; then
             # Pinned to the suite-root configs from the starting commit, so no
