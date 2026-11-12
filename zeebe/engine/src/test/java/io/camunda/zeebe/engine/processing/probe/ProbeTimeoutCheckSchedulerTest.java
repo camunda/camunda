@@ -17,8 +17,10 @@ import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -164,6 +166,14 @@ final class ProbeTimeoutCheckSchedulerTest {
         final long timestamp, final BiPredicate<Long, ProbeRecord> visitor) {
       counter.incrementAndGet();
       return delegate.forEachTimedOutProbe(timestamp, visitor);
+    }
+
+    @Override
+    public void forEachActivatableProbe(
+        final DirectBuffer probeId,
+        final List<String> tenantIds,
+        final BiPredicate<Long, ProbeRecord> visitor) {
+      delegate.forEachActivatableProbe(probeId, tenantIds, visitor);
     }
   }
 }

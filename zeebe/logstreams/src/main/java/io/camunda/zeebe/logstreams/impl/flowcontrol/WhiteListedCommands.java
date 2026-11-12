@@ -27,6 +27,7 @@ public class WhiteListedCommands {
           JobIntent.FAIL,
           JobIntent.YIELD,
           JobIntent.TIME_OUT,
+          ProbeIntent.YIELD,
           ProbeIntent.TIME_OUT,
           UserTaskIntent.COMPLETE,
           UserTaskIntent.ASSIGN,

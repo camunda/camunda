@@ -583,6 +583,7 @@ public final class EngineProcessors {
         bpmnBehaviors.expressionLanguage(),
         bpmnBehaviors.expressionProcessor(),
         cslCheck,
+        tenantCheck,
         asyncRequestBehavior,
         probeNotifier,
         clock);

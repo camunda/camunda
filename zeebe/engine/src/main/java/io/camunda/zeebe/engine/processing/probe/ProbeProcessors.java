@@ -11,12 +11,14 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
@@ -35,6 +37,7 @@ public final class ProbeProcessors {
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
       final CslAuthorizationCheck cslCheck,
+      final CslTenantCheck tenantCheck,
       final AsyncRequestBehavior asyncRequestBehavior,
       final ProbeNotifier probeNotifier,
       final InstantSource clock) {
@@ -59,6 +62,22 @@ public final class ProbeProcessors {
                 keyGenerator,
                 writers,
                 clock))
+        .onCommand(
+            ValueType.PROBE_BATCH,
+            ProbeBatchIntent.ACTIVATE,
+            new ProbeBatchActivateProcessor(
+                processingState.getProbeState(), cslCheck, tenantCheck, keyGenerator, writers))
+        .onCommand(
+            ValueType.PROBE,
+            ProbeIntent.YIELD,
+            new ProbeYieldProcessor(
+                processingState.getProbeState(), probeBehavior, tenantCheck, writers))
+        .onCommand(
+            ValueType.PROBE,
+            ProbeIntent.ANSWER,
+            new ProbeAnswerProcessor(processingState.getProbeState(), cslCheck, writers))
+        .onCommand(
+            ValueType.PROBE, ProbeIntent.RESPOND, new ProbeRespondProcessor(probeBehavior, writers))
         .onCommand(
             ValueType.PROBE,
             ProbeIntent.TIME_OUT,

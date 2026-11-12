@@ -139,10 +139,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
 
   private Either<Rejection, ProbeRecord> validate(final ProbeRecord probe) {
     final var probeId = probe.getProbeId();
-    if (probeId.isEmpty()
-        || probeId.length() > MAX_PROBE_ID_LENGTH
-        || probeId.chars().anyMatch(Character::isWhitespace)
-        || "*".equals(probeId)) {
+    if (!isValidProbeId(probeId)) {
       return invalidArgument(
           "Expected a probe ID of 1 to %d characters, without whitespace and other than '*', but got '%s'."
               .formatted(MAX_PROBE_ID_LENGTH, probeId));
@@ -161,6 +158,14 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
               .formatted(probe.getDeadline()));
     }
     return Either.right(probe);
+  }
+
+  /** A probe ID as D54 defines it, on create and on activation alike. */
+  static boolean isValidProbeId(final String probeId) {
+    return !probeId.isEmpty()
+        && probeId.length() <= MAX_PROBE_ID_LENGTH
+        && probeId.chars().noneMatch(Character::isWhitespace)
+        && !"*".equals(probeId);
   }
 
   private Either<Rejection, ProbeRecord> authorizeCreate(

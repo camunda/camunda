@@ -20,7 +20,9 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import java.util.List;
 import java.util.function.BiPredicate;
+import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -90,6 +92,32 @@ public final class DbProbeState implements MutableProbeState {
   }
 
   @Override
+  public void activate(final long key, final DirectBuffer worker) {
+    probeKey.wrapLong(key);
+    final var probe = probesColumnFamily.get(probeKey);
+    if (probe == null) {
+      return;
+    }
+    wrapActivatableKey(key, probe.getRecord());
+    activatableColumnFamily.deleteExisting(activatableKey);
+    probe.setState(State.ACTIVATED).getRecord().setWorker(worker);
+    probesColumnFamily.update(probeKey, probe);
+  }
+
+  @Override
+  public void makeActivatable(final long key) {
+    probeKey.wrapLong(key);
+    final var probe = probesColumnFamily.get(probeKey);
+    if (probe == null) {
+      return;
+    }
+    probe.setState(State.ACTIVATABLE).getRecord().setWorker("");
+    probesColumnFamily.update(probeKey, probe);
+    wrapActivatableKey(key, probe.getRecord());
+    activatableColumnFamily.insert(activatableKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public void remove(final long key) {
     probeKey.wrapLong(key);
     final var probe = probesColumnFamily.get(probeKey);
@@ -138,6 +166,24 @@ public final class DbProbeState implements MutableProbeState {
           return true;
         });
     return nextDeadline[0];
+  }
+
+  @Override
+  public void forEachActivatableProbe(
+      final DirectBuffer probeId,
+      final List<String> tenantIds,
+      final BiPredicate<Long, ProbeRecord> visitor) {
+    activatableProbeId.wrapBuffer(probeId);
+    activatableColumnFamily.whileEqualPrefix(
+        activatableProbeId,
+        (key, nil) -> {
+          if (!tenantIds.contains(key.tenantKey().toString())) {
+            return true;
+          }
+          final long activatableKey = key.wrappedKey().second().inner().getValue();
+          final var probe = getProbe(activatableKey);
+          return probe == null || visitor.test(activatableKey, probe);
+        });
   }
 
   private void wrapActivatableKey(final long key, final ProbeRecord probe) {
