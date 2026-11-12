@@ -28,6 +28,11 @@ final class NoCommitGate implements CommitGate {
   }
 
   @Override
+  public boolean stopped() {
+    return false;
+  }
+
+  @Override
   public void addCommitListener(final Runnable listener) {}
 
   @Override

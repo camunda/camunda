@@ -18,6 +18,7 @@ final class TestCommitGate implements CommitGate {
   private final AtomicInteger committedPositionReads = new AtomicInteger();
   private volatile long lastWrittenPosition = -1;
   private volatile long committedPosition = -1;
+  private volatile boolean stopped;
 
   /** Pretends the stream processor wrote records up to {@code position}. */
   void write(final long position) {
@@ -27,6 +28,12 @@ final class TestCommitGate implements CommitGate {
   /** Pretends the log committed the records up to {@code position}, and tells the listeners. */
   void commit(final long position) {
     committedPosition = position;
+    listeners.forEach(Runnable::run);
+  }
+
+  /** Pretends this replica stopped leading, and tells the listeners. */
+  void stop() {
+    stopped = true;
     listeners.forEach(Runnable::run);
   }
 
@@ -48,6 +55,11 @@ final class TestCommitGate implements CommitGate {
   public long committedPosition() {
     committedPositionReads.incrementAndGet();
     return committedPosition;
+  }
+
+  @Override
+  public boolean stopped() {
+    return stopped;
   }
 
   @Override

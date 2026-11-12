@@ -19,6 +19,11 @@ package io.camunda.zeebe.db.cache;
  * <p>The committed position must only move forward while this replica is the leader that opened the
  * database. A follower learns committed positions from a new leader, whose records can sit at the
  * positions of records this leader wrote but never committed.
+ *
+ * <p>Once this replica no longer leads, the gate {@linkplain #stopped() stops}. Waiting for the log
+ * is pointless from then on, so the cache stops waiting for it: a commit no longer waits for room
+ * among the transactions held back, and a snapshot fails instead of waiting for them. Those
+ * transactions stay held back, and closing the database drops them.
  */
 public interface CommitGate {
 
@@ -32,8 +37,14 @@ public interface CommitGate {
   long committedPosition();
 
   /**
-   * Calls {@code listener} after each time {@link #committedPosition()} moves forward. It may be
-   * called on any thread, and returns quickly.
+   * Returns whether the log no longer commits records for this database, because this replica no
+   * longer leads. Once {@code true}, it stays {@code true}.
+   */
+  boolean stopped();
+
+  /**
+   * Calls {@code listener} after each time {@link #committedPosition()} moves forward, and after
+   * the gate {@linkplain #stopped() stops}. It may be called on any thread, and returns quickly.
    */
   void addCommitListener(Runnable listener);
 

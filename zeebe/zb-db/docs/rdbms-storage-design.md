@@ -243,13 +243,16 @@ written once the state contains everything the snapshot stands for.
 
 ## 8. Changes in the cache
 
-**Commit gate.** `WriteBehindZeebeDbFactory` takes an optional `CommitGate`:
+**Commit gate.** `WriteBehindZeebeDbFactory` optionally takes a supplier of `CommitGate`s, and
+asks it for a new gate for each DB it opens, since the broker opens one DB per leader term:
 
 ```java
 public interface CommitGate {
   long lastWrittenPosition();  // the log's last written position
   long committedPosition();    // the log's committed position
-  void addCommitListener(Runnable listener);    // called after the committed position moves
+  boolean stopped();           // this replica no longer leads; never goes back to false
+  void addCommitListener(Runnable listener);    // called after the committed position moves,
+                                                // and once when the gate stops
   void removeCommitListener(Runnable listener);
 }
 ```
@@ -265,6 +268,11 @@ public interface CommitGate {
 - The committed position may only move while this replica is the leader that opened the DB. A
   follower hears committed positions from the new leader, whose records may sit where this
   replica's uncommitted records were.
+- Once the gate stops, the cache stops waiting for the log: a commit waiting for
+  `maxPendingBytes` goes through, and a snapshot waiting for the log fails. The held-back
+  transactions stay held back until the DB closes and drops them. A commit must not fail instead:
+  the stream processor retries a failed commit, and once retries run out the partition dies. A
+  snapshot waiting the full timeout would block the snapshot store's actor for that long.
 - Without a gate (RocksDB today) nothing changes.
 
 **Fenced writes.** A `StateFencedException` stops the writer and fails the partition, like any
