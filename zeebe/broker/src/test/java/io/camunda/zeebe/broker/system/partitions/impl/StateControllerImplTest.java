@@ -18,14 +18,13 @@ import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -39,16 +38,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
-public final class StateControllerImplTest {
+final class StateControllerImplTest {
 
-  @Rule public final TemporaryFolder tempFolderRule = new TemporaryFolder();
-  @Rule public final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
-  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  @RegisterExtension
+  private final ActorSchedulerExtension actorScheduler = new ActorSchedulerExtension();
+
+  @TempDir private Path tempDir;
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
   private final MutableLong backupPosition = new MutableLong(Long.MAX_VALUE);
@@ -65,19 +66,19 @@ public final class StateControllerImplTest {
   private final AtomicReference<AtomixRecordEntrySupplier> atomixRecordEntrySupplier =
       new AtomicReference<>(indexedRaftLogEntry);
 
-  @Before
-  public void setup() throws IOException {
+  @BeforeEach
+  void setup() throws IOException {
     final var meterRegistry = new SimpleMeterRegistry();
     store =
         new FileBasedSnapshotStore(
             0,
             1,
-            tempFolderRule.newFolder("data").toPath(),
+            Files.createDirectories(tempDir.resolve("data")),
             snapshotPath -> SnapshotFilesInfo.none(),
             meterRegistry);
-    actorSchedulerRule.submitActor(store).join();
+    actorScheduler.submitActor(store).join();
 
-    runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
+    runtimeDirectory = tempDir.resolve("runtime");
     snapshotController =
         new StateControllerImpl(
             DefaultZeebeDbFactory.defaultFactory(),
@@ -102,12 +103,15 @@ public final class StateControllerImplTest {
                   }
                 },
             store);
+  }
 
-    autoCloseableRule.manage(snapshotController);
+  @AfterEach
+  void tearDown() {
+    snapshotController.closeDb().join();
   }
 
   @Test
-  public void shouldNotTakeSnapshotIfDbIsClosed() {
+  void shouldNotTakeSnapshotIfDbIsClosed() {
     // given
 
     // then
@@ -117,7 +121,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldNotTakeSnapshotIfNoIndexedEntry() {
+  void shouldNotTakeSnapshotIfNoIndexedEntry() {
     // given
     atomixRecordEntrySupplier.set(emptyEntrySupplier);
     snapshotController.recover().join();
@@ -128,7 +132,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeTempSnapshotWithExporterPosition() {
+  void shouldTakeTempSnapshotWithExporterPosition() {
     // given
     final var snapshotPosition = 1;
     exporterPosition.set(snapshotPosition - 1);
@@ -146,7 +150,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeTempSnapshot() throws Exception {
+  void shouldTakeTempSnapshot() throws Exception {
     // given
     final var key = "test";
     final var value = 3;
@@ -168,7 +172,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshotWithExporterPosition() {
+  void shouldTakeSnapshotWithExporterPosition() {
     // given
     final var snapshotPosition = 1;
     exporterPosition.set(snapshotPosition - 1);
@@ -182,7 +186,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshot() throws Exception {
+  void shouldTakeSnapshot() throws Exception {
     // given
     final var key = "test";
     final var value = 3;
@@ -202,7 +206,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshotWhenExporterPositionNotChanged() {
+  void shouldTakeSnapshotWhenExporterPositionNotChanged() {
     // given
     final var snapshotPosition = 2;
     exporterPosition.set(snapshotPosition - 1);
@@ -226,7 +230,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshotWithoutIndexedEntryWhenProcessedPositionChanged() {
+  void shouldTakeSnapshotWithoutIndexedEntryWhenProcessedPositionChanged() {
     // given
     final var snapshotPosition = 2;
     exporterPosition.set(snapshotPosition - 1);
@@ -257,7 +261,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshotWhenProcessorPositionNotChanged() {
+  void shouldTakeSnapshotWhenProcessorPositionNotChanged() {
     // given
     final var snapshotPosition = 2;
     exporterPosition.set(snapshotPosition);
@@ -282,7 +286,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldOpenEmptyDatabaseWhenNoSnapshotsToRecoverFrom() {
+  void shouldOpenEmptyDatabaseWhenNoSnapshotsToRecoverFrom() {
     // given
 
     // when
@@ -293,7 +297,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldRecoverFromLatestSnapshot() throws Exception {
+  void shouldRecoverFromLatestSnapshot() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     wrapper.wrap(snapshotController.recover().join());
@@ -317,7 +321,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldFailToRecoverIfSnapshotIsCorrupted() throws Exception {
+  void shouldFailToRecoverIfSnapshotIsCorrupted() throws Exception {
     // given two snapshots
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
@@ -334,7 +338,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldNotOpenDatabaseWhenRecoveryFails() throws Exception {
+  void shouldNotOpenDatabaseWhenRecoveryFails() throws Exception {
     // given
     final RocksDBWrapper wrapper = new RocksDBWrapper();
 
@@ -355,7 +359,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldRecoverFromLatestSnapshotAfterSnapshotForBootstrapIsDeleted() throws Exception {
+  void shouldRecoverFromLatestSnapshotAfterSnapshotForBootstrapIsDeleted() throws Exception {
     // given
     final RocksDBWrapper wrapper = new RocksDBWrapper();
     wrapper.wrap(snapshotController.recover().join());
@@ -376,7 +380,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldDeleteRuntimeFolderOnClose() {
+  void shouldDeleteRuntimeFolderOnClose() {
     // given
     snapshotController.recover().join();
 
@@ -388,7 +392,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldNotTakeSnapshotWhenDbIsClosed() {
+  void shouldNotTakeSnapshotWhenDbIsClosed() {
     // given
     snapshotController.recover().join();
 
@@ -402,7 +406,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldCloseDbOnlyAfterTakingSnapshot() {
+  void shouldCloseDbOnlyAfterTakingSnapshot() {
     // given
     snapshotController.recover().join();
 
@@ -416,7 +420,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldSetExporterPositionToZero() {
+  void shouldSetExporterPositionToZero() {
     // given
     snapshotController.recover().join();
 
@@ -436,7 +440,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldKeepIndexAndTerm() {
+  void shouldKeepIndexAndTerm() {
     // given
     snapshotController.recover().join();
 
@@ -461,7 +465,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldUseBackupPositionWhenSmallerThanExporter() {
+  void shouldUseBackupPositionWhenSmallerThanExporter() {
     // given
     final var processedPosition = 10L;
     final var exporterPosition = 7L;
@@ -481,7 +485,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldUseExporterPositionWhenSmallerThanBackup() {
+  void shouldUseExporterPositionWhenSmallerThanBackup() {
     // given
     final var processedPosition = 10L;
     final var exporterPosition = 7L;
@@ -501,7 +505,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldIgnoreBackupPositionWhenDisabled() {
+  void shouldIgnoreBackupPositionWhenDisabled() {
     // given
     final var processedPosition = 10L;
     final var exporterPosition = 5L;
@@ -520,7 +524,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldFallbackToZeroWhenBackupPositionIsUnknown() {
+  void shouldFallbackToZeroWhenBackupPositionIsUnknown() {
     // given
     final long processedPosition = 5;
     backupPosition.set(-1L);
@@ -540,7 +544,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldUseProcessedPositionWhenSmallerThanBackupAndExporter() {
+  void shouldUseProcessedPositionWhenSmallerThanBackupAndExporter() {
     // given
     final var processedPosition = 3L;
     final var exporterPos = 10L;
@@ -560,7 +564,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldTakeSnapshotAtPositionZeroWhenForced() {
+  void shouldTakeSnapshotAtPositionZeroWhenForced() {
     // given
     final var processedPosition = 0L;
     final var exporterPos = 100000L; // This only happens if no exporter is configured
@@ -580,7 +584,7 @@ public final class StateControllerImplTest {
   }
 
   @Test
-  public void shouldNotTakeSnapshotAtPositionZeroWhenNotForced() {
+  void shouldNotTakeSnapshotAtPositionZeroWhenNotForced() {
     // given
     final var processedPosition = 0L;
     final var exporterPos = 100000L; // This only happens if no exporter is configured
