@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.cluster.DefaultPhysicalTenantRegistry;
 import io.camunda.cluster.PhysicalTenantHealth;
 import io.camunda.cluster.PhysicalTenantHealth.State;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.PhysicalTenantChangeException.Reason;
 import io.camunda.zeebe.broker.PhysicalTenantRolloutReadiness.NotReadyException;
 import io.camunda.zeebe.dynamic.config.changes.PhysicalTenantConfigChangeExecutor;
@@ -167,19 +166,6 @@ public final class PhysicalTenantConfigExecutor
       }
       record(physicalTenantId, reference, subtree);
       clearDegradation(physicalTenantId);
-      return;
-    }
-    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      LOG.warn(
-          "Version {} of the default physical tenant's configuration differs from the static"
-              + " configuration of this node; the default tenant takes it only with a node restart",
-          reference.version());
-      registry.reportHealth(
-          physicalTenantId,
-          new PhysicalTenantHealth(
-              State.DEGRADED,
-              "runs a configuration that differs from version %d of the cluster"
-                  .formatted(reference.version())));
       return;
     }
     try {

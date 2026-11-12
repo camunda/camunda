@@ -223,7 +223,7 @@ public final class PhysicalTenantLifecycleService {
       final Comparator<MemberId> handoverPreference) {
     return underChangeLock(
         () -> {
-          final var current = requireChangeable(physicalTenantId);
+          final var current = requireExisting(physicalTenantId);
           final var candidate = resolve(physicalTenantId, configuration);
           registry.reportHealth(
               physicalTenantId,
@@ -288,7 +288,7 @@ public final class PhysicalTenantLifecycleService {
   public void remove(final String physicalTenantId) {
     underChangeLock(
         () -> {
-          requireChangeable(physicalTenantId);
+          requireRemovable(physicalTenantId);
           gateway().ifPresent(gateway -> gateway.remove(physicalTenantId));
           stopModule(physicalTenantId);
           releaseResources(physicalTenantId);
@@ -699,14 +699,15 @@ public final class PhysicalTenantLifecycleService {
         });
   }
 
-  private PhysicalTenant requireChangeable(final String physicalTenantId) {
+  private PhysicalTenant requireRemovable(final String physicalTenantId) {
     if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       throw rejected(
-          Reason.CONFLICT,
-          physicalTenantId,
-          "the default tenant is the root configuration and changes only with a node restart",
-          null);
+          Reason.CONFLICT, physicalTenantId, "the default tenant cannot be removed", null);
     }
+    return requireExisting(physicalTenantId);
+  }
+
+  private PhysicalTenant requireExisting(final String physicalTenantId) {
     return registry
         .find(physicalTenantId)
         .orElseThrow(() -> rejected(Reason.CONFLICT, physicalTenantId, "it does not exist", null));
