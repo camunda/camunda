@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -27,6 +27,11 @@ type ListProps = {
   defaultRoleIds: string[];
 };
 
+const addRoleId = <T extends { items: Role[] }>(data: T) => ({
+  ...data,
+  items: data.items.map((role) => ({ ...role, id: role.roleId })),
+});
+
 const List: FC<ListProps> = ({ defaultRoleIds }) => {
   const { t } = useTranslate("roles");
   const navigate = useNavigate();
@@ -40,11 +45,16 @@ const List: FC<ListProps> = ({ defaultRoleIds }) => {
     refetch: reload,
   } = useQuery({
     ...roleQueries.search(pageParams),
-    select: (data) => ({
-      ...data,
-      items: data.items.map((role) => ({ ...role, id: role.roleId })),
-    }),
+    select: addRoleId,
   });
+
+  const headers = useMemo(
+    () => [
+      { header: t("roleId"), key: "roleId" as const, isSortable: true },
+      { header: t("roleName"), key: "name" as const, isSortable: true },
+    ],
+    [t],
+  );
 
   const [addRole, addRoleModal] = useModal(AddModal, noop);
   const [editRole, editRoleModal] = useEntityModal(EditModal, noop);
@@ -82,10 +92,7 @@ const List: FC<ListProps> = ({ defaultRoleIds }) => {
       {pageHeader}
       <EntityList
         data={roles?.items ?? []}
-        headers={[
-          { header: t("roleId"), key: "roleId", isSortable: true },
-          { header: t("roleName"), key: "name", isSortable: true },
-        ]}
+        headers={headers}
         onEntityClick={showDetails}
         addEntityLabel={t("createRole")}
         onAddEntity={addRole}
