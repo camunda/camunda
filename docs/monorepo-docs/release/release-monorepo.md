@@ -228,7 +228,8 @@ Calling and integrating with GitHub Actions workflows:
 
 Scheduling releases:
 
-* When releases are in a rush (e.g. several patch releases in a row), aim to start the release builds in the **morning, CET**. GitHub experiences fewer outages during that time, which reduces the chance of failed or retried release workflows.
+* When releases are in a rush (e.g. several patch releases in a row), aim to start the release builds in the
+**morning, UTC** (roughly 06:00–09:00 UTC). GitHub experiences fewer outages during that time, which reduces the chance of failed or retried release workflows.
 
 ## Change Management & Testing
 
