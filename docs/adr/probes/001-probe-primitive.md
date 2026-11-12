@@ -111,8 +111,9 @@ the Java client can keep the values out of `toString()` and its `ERROR` messages
 ### Records, export and audit
 
 Two value types, `PROBE` and `PROBE_BATCH`, as `JOB` and `JOB_BATCH` (D32, specification
-section 7). `ANSWERED` never carries `data`: the client's response is written from the `ANSWER`
-command, which exporters skip, so a metadata answer never reaches exported records (D42). The
+section 7). `ANSWERED` never carries `data`: the client's response is written by the internal
+`RESPOND` command that `ANSWER` appends, and exporters skip both, so a metadata answer never
+reaches exported records (D42, D74). The
 Elasticsearch and OpenSearch templates are off by default (D56); the Camunda and RDBMS exporters
 write audit log entries only (D16), with the mapping in D70.
 
