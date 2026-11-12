@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.broker.system.partitions.impl.SnapshotIdFinder.NextSnapshotId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -42,7 +43,7 @@ public class StateControllerImpl implements StateController {
   private final Path runtimeDirectory;
   private final ZeebeDbFactory zeebeDbFactory;
   private final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory;
-  private final AtomixRecordEntrySupplier entrySupplier;
+  private final SnapshotIdFinder snapshotIdFinder;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
 
@@ -60,7 +61,7 @@ public class StateControllerImpl implements StateController {
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
-    this.entrySupplier = requireNonNull(entrySupplier);
+    snapshotIdFinder = new SnapshotIdFinder(entrySupplier, constructableSnapshotStore);
     this.positionSupplierFactory = requireNonNull(positionSupplierFactory);
     this.concurrencyControl = requireNonNull(concurrencyControl);
 
@@ -175,7 +176,11 @@ public class StateControllerImpl implements StateController {
                 "Snapshot can be taken at processed position 0 only if forced."));
         return;
       }
-      nextSnapshotId = tryFindNextSnapshotId(lowerBoundSnapshotPosition);
+      nextSnapshotId =
+          snapshotIdFinder.find(
+              lowerBoundSnapshotPosition,
+              positionSupplier.getLowestExportedPosition(),
+              positionSupplier.getHighestBackupPosition());
     } catch (final NoEntryAtSnapshotPosition e) {
       future.completeExceptionally(e);
       return;
@@ -183,10 +188,10 @@ public class StateControllerImpl implements StateController {
 
     final var transientSnapshot =
         constructableSnapshotStore.newTransientSnapshot(
-            nextSnapshotId.index,
-            nextSnapshotId.term,
-            nextSnapshotId.processedPosition,
-            nextSnapshotId.exportedPosition,
+            nextSnapshotId.index(),
+            nextSnapshotId.term(),
+            nextSnapshotId.processedPosition(),
+            nextSnapshotId.exportedPosition(),
             forceSnapshot);
 
     if (transientSnapshot.isLeft()) {
@@ -194,52 +199,6 @@ public class StateControllerImpl implements StateController {
     } else {
       takeSnapshot(transientSnapshot.get(), future);
     }
-  }
-
-  private NextSnapshotId tryFindNextSnapshotId(final long lastProcessedPosition)
-      throws NoEntryAtSnapshotPosition {
-    final var exportedPosition = positionSupplier.getLowestExportedPosition();
-    final var backupPosition = positionSupplier.getHighestBackupPosition();
-    if (exportedPosition == -1 || backupPosition == -1 || lastProcessedPosition == 0) {
-      final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
-      if (latestSnapshot.isPresent()) {
-        // re-use index and term from the latest snapshot to ensure that the records from there are
-        // not compacted until they get exported and backed up.
-        final var persistedSnapshot = latestSnapshot.get();
-        return new NextSnapshotId(
-            persistedSnapshot.getIndex(), persistedSnapshot.getTerm(), lastProcessedPosition, 0);
-      }
-
-      return new NextSnapshotId(0, 0, lastProcessedPosition, 0);
-    }
-
-    final var snapshotPosition =
-        Math.min(Math.min(exportedPosition, backupPosition), lastProcessedPosition);
-    final var logEntry = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
-
-    if (logEntry.isPresent()) {
-      return new NextSnapshotId(
-          logEntry.get().index(), logEntry.get().term(), lastProcessedPosition, exportedPosition);
-    }
-
-    // No log entry for snapshot position - try to use the index and term of the last snapshot to
-    // take new one
-    final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
-    if (latestSnapshot.isPresent()) {
-      LOG.warn(
-          "No log entry for next snapshot position {}, using index and term from previous snapshot",
-          snapshotPosition);
-      return new NextSnapshotId(
-          latestSnapshot.get().getIndex(),
-          latestSnapshot.get().getTerm(),
-          lastProcessedPosition,
-          exportedPosition);
-    }
-
-    throw new NoEntryAtSnapshotPosition(
-        String.format(
-            "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position %d (processedPosition = %d, exportedPosition=%d) or previous snapshot, but found neither.",
-            snapshotPosition, lastProcessedPosition, exportedPosition));
   }
 
   @SuppressWarnings("rawtypes")
@@ -297,7 +256,4 @@ public class StateControllerImpl implements StateController {
           }
         });
   }
-
-  private record NextSnapshotId(
-      long index, long term, long processedPosition, long exportedPosition) {}
 }
