@@ -29,8 +29,9 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link ZeebeDb} that keeps committed state in a write-behind cache and writes it to the storage
- * it wraps in the background. It only uses the storage through the {@link ZeebeDb} API, so it works
- * with any storage.
+ * it wraps in the background. It uses the storage through the {@link ZeebeDb} API, so it works with
+ * any storage. A storage that also implements {@link io.camunda.zeebe.db.RawBatchWriter} gets the
+ * writes as raw batches, with their log positions.
  */
 final class WriteBehindZeebeDb<
         ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>

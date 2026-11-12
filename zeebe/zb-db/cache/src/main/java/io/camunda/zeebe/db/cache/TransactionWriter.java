@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.db.cache;
 
+import io.camunda.zeebe.db.RawBatchWriter;
+import io.camunda.zeebe.db.RawWrite;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +46,10 @@ import org.slf4j.LoggerFactory;
  * them has waited {@code maxWriteDelay}, or when {@link #flushUpTo} asked for it. It takes whole
  * ready transactions from the head of the queue while it stays within {@code batchSize} distinct
  * keys; a larger transaction is written alone.
+ *
+ * <p>A storage that implements {@link RawBatchWriter} gets each group as one batch of raw writes,
+ * with the log position of the transaction that wrote each key and of the group's last transaction.
+ * Any other storage gets it through its column families.
  */
 final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
@@ -50,6 +59,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   private static final Duration INITIAL_BACKOFF = Duration.ofMillis(10);
 
   private final StorageColumnFamilies<ColumnFamilyNames> storageColumnFamilies;
+  private final @Nullable RawBatchWriter rawBatchWriter;
   private final DirtyIndex dirtyIndex;
   private final StampedLock publishLock;
   private final int batchSize;
@@ -86,6 +96,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       final Runnable onFlushed,
       final Consumer<Throwable> onFailure) {
     storageColumnFamilies = new StorageColumnFamilies<>(storage, storage.createContext());
+    rawBatchWriter = storage instanceof final RawBatchWriter writer ? writer : null;
     this.dirtyIndex = dirtyIndex;
     this.publishLock = publishLock;
     batchSize = configuration.batchSize();
@@ -175,29 +186,22 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   }
 
   /**
-   * Writes {@code newest} as one storage transaction. A recoverable error is retried with backoff,
-   * since the group rewrites exactly the same versions; anything else, or running out of attempts,
-   * is thrown.
+   * Writes the newest versions of {@code group} as one storage transaction. A recoverable error is
+   * retried with backoff, since the group rewrites exactly the same versions; anything else, or
+   * running out of attempts, is thrown.
    *
    * @return {@code false} if the writer was closed while waiting to retry
    */
-  private boolean writeToStorage(final TreeMap<CacheKey, CachedValue> newest)
+  private boolean writeToStorage(
+      final List<CommittedTransaction> group, final TreeMap<CacheKey, CachedValue> newest)
       throws InterruptedException {
+    final Runnable storageWrite =
+        rawBatchWriter == null
+            ? () -> writeToColumnFamilies(newest)
+            : rawBatch(rawBatchWriter, group, newest);
     for (int attempt = 1; ; attempt++) {
       try {
-        storageColumnFamilies
-            .context()
-            .runInTransaction(
-                () ->
-                    newest.forEach(
-                        (key, version) -> {
-                          final var value = version.bytes();
-                          if (value == null) {
-                            storageColumnFamilies.deleteIfExists(key);
-                          } else {
-                            storageColumnFamilies.upsert(key, value);
-                          }
-                        }));
+        storageWrite.run();
         return true;
       } catch (final RecoverableException e) {
         if (attempt == MAX_WRITE_ATTEMPTS) {
@@ -217,6 +221,46 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
         }
       }
     }
+  }
+
+  private void writeToColumnFamilies(final TreeMap<CacheKey, CachedValue> newest) {
+    storageColumnFamilies
+        .context()
+        .runInTransaction(
+            () ->
+                newest.forEach(
+                    (key, version) -> {
+                      final var value = version.bytes();
+                      if (value == null) {
+                        storageColumnFamilies.deleteIfExists(key);
+                      } else {
+                        storageColumnFamilies.upsert(key, value);
+                      }
+                    }));
+  }
+
+  /**
+   * Returns the write of {@code newest} as one raw batch, built once so that a retry sends the same
+   * batch. Each key gets the position of the transaction that wrote its newest version, found by
+   * its seq, which all versions of a transaction share.
+   */
+  private static Runnable rawBatch(
+      final RawBatchWriter rawBatchWriter,
+      final List<CommittedTransaction> group,
+      final TreeMap<CacheKey, CachedValue> newest) {
+    final Map<Long, Long> positionBySeq = new HashMap<>();
+    group.forEach(transaction -> positionBySeq.put(transaction.seq(), transaction.position()));
+    final List<RawWrite> writes = new ArrayList<>(newest.size());
+    newest.forEach(
+        (key, version) ->
+            writes.add(
+                new RawWrite(
+                    key.columnFamily(),
+                    key.key(),
+                    version.bytes(),
+                    Objects.requireNonNull(positionBySeq.get(version.seq())))));
+    final long position = group.getLast().position();
+    return () -> rawBatchWriter.write(writes, position);
   }
 
   /** Waits {@code nanos}, or less if the writer is closed. Returns whether it's still open. */
@@ -326,7 +370,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     }
 
     final long writeStart = System.nanoTime();
-    if (!writeToStorage(newest)) {
+    if (!writeToStorage(group, newest)) {
       return;
     }
     final int deletes = (int) newest.values().stream().filter(v -> v.bytes() == null).count();

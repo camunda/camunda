@@ -11,9 +11,18 @@ import static io.camunda.zeebe.db.cache.TestColumnFamily.FIRST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 
+import io.camunda.zeebe.db.RawBatchWriter;
+import io.camunda.zeebe.db.RawWrite;
+import io.camunda.zeebe.db.ZeebeDb;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -194,6 +203,27 @@ final class TransactionWriterTest {
   }
 
   @Test
+  void shouldWriteAGroupAsOneRawBatchWithThePositionsOfItsTransactions() {
+    // given
+    final List<RawBatch> batches = new CopyOnWriteArrayList<>();
+    final var writer = writer(rawBatchStorage(batches), 1_000, STALLED, NoCommitGate.INSTANCE);
+    writer.enqueue(transactionAt(10, version(2, 21, 1), version(1, 11, 1)));
+    writer.enqueue(transactionAt(20, version(2, 22, 2), version(3, null, 2)));
+
+    // when
+    writer.flushUpTo(2);
+
+    // then
+    await().untilAsserted(() -> assertThat(writer.flushedSeq()).isEqualTo(2));
+    assertThat(batches)
+        .containsExactly(
+            new RawBatch(
+                20,
+                List.of(
+                    "FIRST [1]=[11] at 10", "FIRST [2]=[22] at 20", "FIRST [3] deleted at 20")));
+  }
+
+  @Test
   void shouldDropQueuedTransactionsOnClose() {
     // given
     final var writer = writer(1_000, STALLED);
@@ -215,9 +245,17 @@ final class TransactionWriterTest {
 
   private TransactionWriter<TestColumnFamily> writer(
       final int batchSize, final Duration maxWriteDelay, final CommitGate commitGate) {
+    return writer(storage.db(), batchSize, maxWriteDelay, commitGate);
+  }
+
+  private TransactionWriter<TestColumnFamily> writer(
+      final ZeebeDb<TestColumnFamily> db,
+      final int batchSize,
+      final Duration maxWriteDelay,
+      final CommitGate commitGate) {
     final var writer =
         new TransactionWriter<>(
-            storage.db(),
+            db,
             dirtyIndex,
             new StampedLock(),
             new TestConfiguration().batchSize(batchSize).maxWriteDelay(maxWriteDelay).build(),
@@ -227,6 +265,32 @@ final class TransactionWriterTest {
             failures::add);
     writers.add(writer);
     return writer;
+  }
+
+  /** A storage that only takes raw batches, and records them. */
+  @SuppressWarnings("unchecked")
+  private static ZeebeDb<TestColumnFamily> rawBatchStorage(final List<RawBatch> batches) {
+    final ZeebeDb<TestColumnFamily> db =
+        mock(ZeebeDb.class, withSettings().extraInterfaces(RawBatchWriter.class));
+    doAnswer(
+            invocation -> {
+              final List<String> writes = new ArrayList<>();
+              for (final RawWrite write : invocation.<List<RawWrite>>getArgument(0)) {
+                final var value = write.value();
+                writes.add(
+                    write.columnFamily()
+                        + " "
+                        + Arrays.toString(write.key())
+                        + (value == null ? " deleted" : "=" + Arrays.toString(value))
+                        + " at "
+                        + write.position());
+              }
+              batches.add(new RawBatch(invocation.<Long>getArgument(1), writes));
+              return null;
+            })
+        .when((RawBatchWriter) db)
+        .write(any(), anyLong());
+    return db;
   }
 
   @SafeVarargs
@@ -254,4 +318,6 @@ final class TransactionWriterTest {
     }
     return bytes;
   }
+
+  private record RawBatch(long position, List<String> writes) {}
 }
