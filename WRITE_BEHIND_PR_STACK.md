@@ -118,5 +118,14 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     commits nor rolls back, so a failed insert stays visible. Workshop branch had a fix + test
     `shouldRollBackFailedTransactionAfterCount`.
 - [x] PR 2/3 cut plan done; R1 decided (encoded bytes)
-- [ ] PR 2: subagent running on `cs/wb-2-write-behind-store` (based on PR 1, started 2026-11-12)
+- [x] PR 2 pushed: `cs/wb-2-write-behind-store` on PR 1 `b2121d1b6a0`, draft PR camunda/camunda#69234
+  - 11 commits `09c5f875ebe`..`1b77e84a04a`: module, DbEnumValue#getEnumType (additive), held
+    values (R1), store + flusher, ZeebeDb, tests, contract tests, R1 test, R2/R3/R4 fixes.
+  - Deviations: `Backend<K, V, T>` (3 type params); lambda-free column family (begin/commitIfBegun);
+    metrics via agrona Long2ObjectHashMap; cache weight = bytes + 200 overhead.
+  - `RocksDbVsWriteBehindDifferentialTest` parked in `parked/` on this dev branch: needs
+    camunda/camunda#69231 (count() fix, in review, not draft). Add it to PR 2 once #69231 is in the
+    base (either merged to main and stack rebased, or #69231 put under PR 1).
+  - Follow-ups: seek copies dirty range into a TreeMap; put does a full decode, miss decodes twice;
+    weight ignores decoded heap size.
 - [ ] PR 3
