@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 public class ActorFutureCollectorTest {
 
+  private TestConcurrencyControl concurrencyControl;
   private ActorFuture<String> future1;
   private ActorFuture<String> future2;
 
@@ -25,7 +26,7 @@ public class ActorFutureCollectorTest {
 
   @BeforeEach
   public void setUp() {
-    final var concurrencyControl = new TestConcurrencyControl();
+    concurrencyControl = new TestConcurrencyControl();
 
     future1 = concurrencyControl.createFuture();
     future2 = concurrencyControl.createFuture();
@@ -42,6 +43,28 @@ public class ActorFutureCollectorTest {
 
     // then
     assertThat(aggregatedFuture.join()).containsExactly("result1", "result2");
+  }
+
+  @Test
+  public void shouldAggregateFuturesThatAreAlreadyCompleted() {
+    // given - the test concurrency control runs callbacks of completed futures right away
+    final List<ActorFuture<String>> completedFutures =
+        Stream.of("result1", "result2", "result3")
+            .map(
+                result -> {
+                  final ActorFuture<String> future = concurrencyControl.createFuture();
+                  future.complete(result);
+                  return future;
+                })
+            .toList();
+
+    // when
+    final var aggregated =
+        completedFutures.stream().collect(new ActorFutureCollector<>(concurrencyControl));
+
+    // then
+    assertThat(aggregated.isDone()).isTrue();
+    assertThat(aggregated.join()).containsExactly("result1", "result2", "result3");
   }
 
   @Test
