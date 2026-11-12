@@ -218,6 +218,33 @@ final class WriteBehindStoreTest {
   }
 
   @Test
+  void shouldWriteATransactionOnceTheLogCommittedTheRecordsWrittenBeforeIt() {
+    // given - the stream processor wrote up to position 5 before the commit and 6 after it
+    final var gate = new TestCommitGate();
+    try (final var store =
+        new WriteBehindStore<>(
+            storage.db(),
+            new TestConfiguration()
+                .maxWriteDelay(QUICK)
+                .snapshotCatchUpTimeout(Duration.ofMillis(200))
+                .build(),
+            gate)) {
+      gate.write(5);
+      store.commit(Map.of(key(1), new Op(bytes(10))));
+      gate.write(6);
+      assertThatThrownBy(store::catchUp).hasRootCauseInstanceOf(TimeoutException.class);
+      assertThat(storage.get(FIRST, bytes(1))).isNull();
+
+      // when
+      gate.commit(5);
+
+      // then
+      store.catchUp();
+      assertThat(storage.get(FIRST, bytes(1))).containsExactly(10);
+    }
+  }
+
+  @Test
   void shouldFailCommitsOnceAnEnqueueFails() {
     // given
     final var store = store(STALLED, UNLIMITED, UNLIMITED);

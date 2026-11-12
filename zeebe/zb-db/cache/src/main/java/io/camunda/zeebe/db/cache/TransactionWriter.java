@@ -34,10 +34,13 @@ import org.slf4j.LoggerFactory;
  * with its newest version, and never splits a transaction. Each group commits atomically and ends
  * on a transaction boundary, so the storage always holds a prefix of the committed transactions.
  *
- * <p>A group closes when the queued transactions have {@code batchSize} keys, when the oldest of
+ * <p>A transaction is ready once the {@link CommitGate} reports that the log committed its
+ * position. Until then it is held back, and so is every transaction after it.
+ *
+ * <p>A group closes when the ready transactions have {@code batchSize} keys, when the oldest of
  * them has waited {@code maxWriteDelay}, or when {@link #flushUpTo} asked for it. It takes whole
- * transactions from the head of the queue while it stays within {@code batchSize} distinct keys; a
- * larger transaction is written alone.
+ * ready transactions from the head of the queue while it stays within {@code batchSize} distinct
+ * keys; a larger transaction is written alone.
  */
 final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue> & EnumValue>
     implements AutoCloseable {
@@ -51,18 +54,21 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   private final StampedLock publishLock;
   private final int batchSize;
   private final long maxWriteDelayNanos;
+  private final CommitGate commitGate;
+  private final Runnable onLogCommitted = this::signalQueueChanged;
   private final WriteBehindMetrics metrics;
   private final Runnable onFlushed;
   private final Consumer<Throwable> onFailure;
   private final ReentrantLock queueLock = new ReentrantLock();
   private final Condition queueChanged = queueLock.newCondition();
-  private final ArrayDeque<CommittedTransaction> queue = new ArrayDeque<>();
+  private final ArrayDeque<CommittedTransaction> heldBack = new ArrayDeque<>();
+  private final ArrayDeque<CommittedTransaction> ready = new ArrayDeque<>();
   private final AtomicLong queuedBytes = new AtomicLong();
   private volatile long lastQueuedSeq;
   private volatile long flushedSeq;
   private final Thread thread;
 
-  private long queuedKeys; // guarded by queueLock
+  private long readyKeys; // guarded by queueLock
   private long flushRequestedSeq; // guarded by queueLock
   private boolean closed; // guarded by queueLock
 
@@ -75,6 +81,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
       final DirtyIndex dirtyIndex,
       final StampedLock publishLock,
       final WriteBehindConfiguration configuration,
+      final CommitGate commitGate,
       final WriteBehindMetrics metrics,
       final Runnable onFlushed,
       final Consumer<Throwable> onFailure) {
@@ -83,9 +90,11 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     this.publishLock = publishLock;
     batchSize = configuration.batchSize();
     maxWriteDelayNanos = configuration.maxWriteDelay().toNanos();
+    this.commitGate = commitGate;
     this.metrics = metrics;
     this.onFlushed = onFlushed;
     this.onFailure = onFailure;
+    commitGate.addCommitListener(onLogCommitted);
     thread = new Thread(this::run, "zb-db-write-behind");
     thread.setDaemon(true);
     thread.start();
@@ -99,8 +108,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
         throw new IllegalStateException(
             "Expected to queue a transaction for the storage, but the writer is closed");
       }
-      queue.add(transaction);
-      queuedKeys += transaction.versions().size();
+      heldBack.add(transaction);
       queuedBytes.addAndGet(transaction.bytes());
       lastQueuedSeq = transaction.seq();
       queueChanged.signal();
@@ -120,8 +128,8 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
   }
 
   /**
-   * Writes the queued transactions up to {@code seq} without waiting out {@code maxWriteDelay}. The
-   * ones after it are grouped as usual.
+   * Writes the queued transactions up to {@code seq} as soon as they're ready, without waiting out
+   * {@code maxWriteDelay}. The ones after it are grouped as usual.
    */
   void flushUpTo(final long seq) {
     queueLock.lock();
@@ -144,6 +152,7 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
    */
   @Override
   public void close() {
+    commitGate.removeCommitListener(onLogCommitted);
     queueLock.lock();
     try {
       closed = true;
@@ -240,14 +249,15 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     queueLock.lock();
     try {
       while (!closed) {
-        final var oldest = queue.peek();
+        releaseCommitted();
+        final var oldest = ready.peek();
         if (oldest == null) {
           queueChanged.await();
           continue;
         }
 
         final long waitedNanos = System.nanoTime() - oldest.enqueuedNanos();
-        if (queuedKeys >= batchSize
+        if (readyKeys >= batchSize
             || waitedNanos >= maxWriteDelayNanos
             || oldest.seq() <= flushRequestedSeq) {
           return takeGroup();
@@ -260,16 +270,36 @@ final class TransactionWriter<ColumnFamilyNames extends Enum<? extends EnumValue
     }
   }
 
+  /** Moves the held back transactions whose position the log committed to the ready ones. */
+  private void releaseCommitted() {
+    final long committedPosition = commitGate.committedPosition();
+    CommittedTransaction next;
+    while ((next = heldBack.peek()) != null && next.position() <= committedPosition) {
+      heldBack.poll();
+      ready.add(next);
+      readyKeys += next.versions().size();
+    }
+  }
+
+  private void signalQueueChanged() {
+    queueLock.lock();
+    try {
+      queueChanged.signal();
+    } finally {
+      queueLock.unlock();
+    }
+  }
+
   private List<CommittedTransaction> takeGroup() {
     final List<CommittedTransaction> group = new ArrayList<>();
     final Set<CacheKey> keys = new HashSet<>();
     CommittedTransaction next;
-    while ((next = queue.peek()) != null) {
+    while ((next = ready.peek()) != null) {
       if (!group.isEmpty() && distinctKeysWith(keys, next) > batchSize) {
         break;
       }
-      queue.poll();
-      queuedKeys -= next.versions().size();
+      ready.poll();
+      readyKeys -= next.versions().size();
       group.add(next);
       next.versions().forEach(version -> keys.add(version.getKey()));
     }

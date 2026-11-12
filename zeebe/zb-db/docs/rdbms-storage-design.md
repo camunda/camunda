@@ -246,22 +246,33 @@ written once the state contains everything the snapshot stands for.
 **Commit gate.** `WriteBehindZeebeDbFactory` takes an optional `CommitGate`:
 
 ```java
-interface CommitGate {
-  long positionAtCommit();                         // the log's last written position
-  void onCommittedPosition(LongConsumer listener); // Raft commit position updates
+public interface CommitGate {
+  long lastWrittenPosition();  // the log's last written position
+  long committedPosition();    // the log's committed position
+  void addCommitListener(Runnable listener);    // called after the committed position moves
+  void removeCommitListener(Runnable listener);
 }
 ```
 
-- When a cache transaction commits, `CommittedTransaction` stores `positionAtCommit()`.
-- The writer only takes transactions whose stored position is committed. Group size and delay
-  limits apply to those transactions only.
+- When a cache transaction commits, `CommittedTransaction` stores `lastWrittenPosition()`.
+- The writer holds a transaction back until `committedPosition()` reaches its position, and keeps
+  the commit order: a transaction that waits also holds back the ones after it. The batch size
+  counts only released transactions. The write delay runs from the cache commit, so a transaction
+  held back longer than the delay is written as soon as it's released.
+- Held-back transactions count towards `maxPendingBytes`, so when the log stops committing, cache
+  commits eventually wait too.
+- `createSnapshot` waits for the commit as well, up to `snapshotCatchUpTimeout`.
+- The committed position may only move while this replica is the leader that opened the DB. A
+  follower hears committed positions from the new leader, whose records may sit where this
+  replica's uncommitted records were.
 - Without a gate (RocksDB today) nothing changes.
-- `createSnapshot` and close wait for the commit too, and give up when the DB closes, so a partition
-  that can't commit doesn't block forever.
 
 **Fenced writes.** A `StateFencedException` stops the writer and fails the partition, like any
-other write failure. On close, the writer writes what it may, and stops quietly when it's fenced:
-the new leader replays the rest from the log.
+other write failure.
+
+**Close.** Closing drops the transactions the writer hasn't written yet, held back or not; the new
+leader replays them from the log. Writing them on close could shorten the new leader's replay, but
+it delays the step-down; the benchmark decides (§11 risk 2, §12 step 13).
 
 ## 9. Broker changes (Part B, outline)
 
@@ -271,7 +282,10 @@ the new leader replays the rest from the log.
 2. **Term.** `ZeebeDbPartitionTransitionStep` passes its term to the factory's term supplier before
    `StateController.recover()`.
 3. **Leader.** Attaches, replays from the shared processed position, and feeds the commit gate from
-   the log stream's written and committed positions.
+   the log stream's written and committed positions, only while it's the leader. On step-down it
+   must release a commit waiting for `maxPendingBytes` and a snapshot waiting for the log: the
+   transition closes the stream processor and the snapshot director before the DB, so closing
+   the DB comes too late.
 4. **Followers and candidates.** No `ZeebeDb`, no replay, no passive exporter state. A snapshot
    director that writes markers from the processed and exported positions read from the shared
    state, limited to their own log. Each transition step that uses the DB today needs a decision.
@@ -300,8 +314,9 @@ the new leader replays the rest from the log.
   state, the old leader's snapshot and commits fail with `StateFencedException` and none of its
   writes reach the state.
 - **PostgreSQL:** the same suites as `*IT` against Testcontainers.
-- **Cache:** the writer holds back transactions until their position is committed, `createSnapshot`
-  waits for the commit, and close gives up when the DB closes.
+- **Cache:** the writer holds back transactions until their position is committed, keeps their
+  order, and counts only the released ones towards the batch size; the cache records the position
+  when a transaction commits, and a snapshot waits for the commit.
 
 Builds: `./mvnw install -pl zeebe/zb-db/rdbms -am -Dquickly -T1C`, then
 `./mvnw verify -pl zeebe/zb-db/rdbms,zeebe/zb-db/tests -DskipTests=false -Dquickly`. The
@@ -318,7 +333,8 @@ differential and property suites are tagged `randomized`; they only run with
    §8 risk 9). That's a query round trip here.
 4. **Commit gate and snapshots.** A partition that can't reach the Raft commit can't write, so its
    cache fills up and it can't snapshot. That's the same as today's commit wait in
-   `AsyncSnapshotDirector`, but it now also blocks the writer.
+   `AsyncSnapshotDirector`, but it now also blocks the writer and, once `maxPendingBytes` is
+   reached, the stream processor. Part B must release both on step-down (§9 item 3).
 5. **Liquibase lock overlap** with the history migration in the same JVM (§5).
 6. **Binary ordering on other vendors.** SQL Server compares trailing zeros as equal; MySQL and
    Oracle limit key lengths. Each new vendor needs the contract tests.

@@ -80,7 +80,8 @@ final class WriteBehindMetricsTest {
   void shouldCountReadsThatTakeTheReadLock() {
     // given - a store that reads under the lock right away
     try (final var store =
-        new WriteBehindStore<>(storage.db(), new TestConfiguration().build(), 0)) {
+        new WriteBehindStore<>(
+            storage.db(), new TestConfiguration().build(), NoCommitGate.INSTANCE, 0)) {
       // when
       store.get(key(1), reader);
 
@@ -221,6 +222,7 @@ final class WriteBehindMetricsTest {
         new WriteBehindZeebeDb<>(
             storage.db(),
             new TestConfiguration().maxWriteDelay(STALLED).build(),
+            NoCommitGate.INSTANCE,
             new ConsistencyChecksSettings(false, false))) {
       // when
       db.createSnapshot(new File("snapshot"));

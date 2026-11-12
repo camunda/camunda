@@ -45,10 +45,11 @@ final class WriteBehindZeebeDb<
   WriteBehindZeebeDb(
       final ZeebeDb<ColumnFamilyNames> storage,
       final WriteBehindConfiguration configuration,
+      final CommitGate commitGate,
       final ConsistencyChecksSettings consistencyChecksSettings) {
     this.storage = storage;
     this.consistencyChecksSettings = consistencyChecksSettings;
-    store = new WriteBehindStore<>(storage, configuration);
+    store = new WriteBehindStore<>(storage, configuration, commitGate);
     store.addFailureListener(this::reportFailure);
   }
 
@@ -69,9 +70,10 @@ final class WriteBehindZeebeDb<
   }
 
   /**
-   * Waits until the storage holds every transaction committed so far, then snapshots the storage
-   * while the writer keeps writing. Each storage transaction is a group of whole transactions, so
-   * the snapshot holds whole transactions, at or past everything committed before this call.
+   * Waits until the storage holds every transaction committed so far, which includes waiting for
+   * the log to commit their records, then snapshots the storage while the writer keeps writing.
+   * Each storage transaction is a group of whole transactions, so the snapshot holds whole
+   * transactions, at or past everything committed before this call.
    */
   @Override
   public void createSnapshot(final File snapshotDir) {
