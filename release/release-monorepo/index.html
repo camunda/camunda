@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Monorepo Release | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/release/release-monorepo/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Monorepo Release | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/release/release-monorepo/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/release/release-monorepo/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/release/release-monorepo/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/release/"},{"@type":"ListItem","position":2,"name":"Monorepo Release","item":"https://camunda.github.io/camunda/release/release-monorepo"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.0d63a443.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.b864e499.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.b76b3346.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.d5d9acf4.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -27,7 +27,7 @@
 <p>Not in scope of this process are <a class="" href="/camunda/ci/#available-snapshot-artifacts">SNAPSHOT releases</a>.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="release-types">Release Types<a href="#release-types" class="hash-link" aria-label="Direct link to Release Types" title="Direct link to Release Types" translate="no">​</a></h3>
 <ul>
-<li class=""><a href="https://confluence.camunda.com/display/HAN/Product+Releases" target="_blank" rel="noopener noreferrer" class="">Minor</a> (version format is 8.x.0):<!-- -->
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/#1392a98e/product-releases" target="_blank" rel="noopener noreferrer" class="">Minor</a> (version format is 8.x.0):<!-- -->
 <ul>
 <li class="">includes new features, for production use</li>
 <li class="">usually released every 6 months</li>
@@ -36,7 +36,7 @@
 <li class="">source branch is <code>stable/${minor_version}</code></li>
 </ul>
 </li>
-<li class=""><a href="https://confluence.camunda.com/display/HAN/Alpha+Releases" target="_blank" rel="noopener noreferrer" class="">Alpha</a> (version format 8.x.0-alphaN)<!-- -->
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/#23f4cddf/alpha-releases" target="_blank" rel="noopener noreferrer" class="">Alpha</a> (version format 8.x.0-alphaN)<!-- -->
 <ul>
 <li class="">includes new features to get early customer feedback, not for production use</li>
 <li class="">usually released every 1 month</li>
@@ -325,7 +325,7 @@
 <!-- -->
 <h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="0-prerequisites--dates-and-ownership">0. Prerequisites — dates and ownership<a href="#0-prerequisites--dates-and-ownership" class="hash-link" aria-label="Direct link to 0. Prerequisites — dates and ownership" title="Direct link to 0. Prerequisites — dates and ownership" translate="no">​</a></h4>
 <ul class="contains-task-list containsTaskList_mC6p">
-<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the minor release, feature freeze, and code freeze dates from the <a href="https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a> handbook — <strong>not just <code>timeline.json</code></strong>. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See <a href="#feature-freeze-vs-code-freeze-minor-releases" class="">Feature Freeze vs Code Freeze</a>.</li>
+<li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the minor release, feature freeze, and code freeze dates from the <a href="https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a> handbook — <strong>not just <code>timeline.json</code></strong>. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See <a href="#feature-freeze-vs-code-freeze-minor-releases" class="">Feature Freeze vs Code Freeze</a>.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the MRM is available for feature freeze week, the cut / code freeze, and the final RC window. Check for holidays in those weeks — if any, align stakeholders on adjusted ETAs and document it.</li>
 <li class="task-list-item"><input type="checkbox" disabled=""> <!-- -->Confirm the acting MRM (whoever pushes the branch) is in the <code>monorepo-release-manager</code> GitHub team — the bypass actor for creating <code>stable/**/*</code> under the <code>no-persistent-branch-creations-deletions</code> ruleset. Without it the <code>git push</code> is rejected.</li>
 </ul>
@@ -412,8 +412,8 @@
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="minor-release-references">Minor Release References<a href="#minor-release-references" class="hash-link" aria-label="Direct link to Minor Release References" title="Direct link to Minor Release References" translate="no">​</a></h3>
 <ul>
 <li class=""><a class="" href="/camunda/release/">Release process documentation</a></li>
-<li class=""><a href="https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a></li>
-<li class=""><a href="https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze" target="_blank" rel="noopener noreferrer" class="">Minor Release Feature Freeze</a></li>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a></li>
+<li class=""><a href="https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze" target="_blank" rel="noopener noreferrer" class="">Minor Release Feature Freeze</a></li>
 <li class=""><a href="https://github.com/camunda/camunda/issues/46249" target="_blank" rel="noopener noreferrer" class="">Issue #46249</a></li>
 <li class=""><a href="https://github.com/camunda/camunda/issues/40009" target="_blank" rel="noopener noreferrer" class="">Issue #40009</a></li>
 <li class=""><a href="https://github.com/camunda/camunda/issues/37374" target="_blank" rel="noopener noreferrer" class="">Issue #37374</a></li>
@@ -524,8 +524,8 @@
 </ul>
 <p><strong>📅 Important References</strong></p>
 <ul>
-<li class=""><strong>Release Dates</strong>: All upcoming alpha, minor, and feature freeze dates are maintained on the <a href="https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a> page</li>
-<li class=""><strong>Detailed Policy</strong>: See <a href="https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze" target="_blank" rel="noopener noreferrer" class="">Minor Release Feature Freeze</a> for comprehensive guidelines</li>
+<li class=""><strong>Release Dates</strong>: All upcoming alpha, minor, and feature freeze dates are maintained on the <a href="https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train" target="_blank" rel="noopener noreferrer" class="">C8 Release Train</a> page</li>
+<li class=""><strong>Detailed Policy</strong>: See <a href="https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze" target="_blank" rel="noopener noreferrer" class="">Minor Release Feature Freeze</a> for comprehensive guidelines</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="troubleshooting">Troubleshooting<a href="#troubleshooting" class="hash-link" aria-label="Direct link to Troubleshooting" title="Direct link to Troubleshooting" translate="no">​</a></h2>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate">How to correlate <a href="https://github.com/camunda/zeebe-engineering-processes/commits" target="_blank" rel="noopener noreferrer" class="">Git commits</a> with deployed process version in C8 Operate?<a href="#how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" class="hash-link" aria-label="Direct link to how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" title="Direct link to how-to-correlate-git-commits-with-deployed-process-version-in-c8-operate" translate="no">​</a></h3>
