@@ -23,7 +23,6 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 
@@ -64,10 +63,6 @@ final class ElasticsearchClientFactory {
       final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final var defaultHeaders = new ArrayList<Header>();
-    defaultHeaders.add(
-        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=9"));
-    defaultHeaders.add(
-        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=9"));
     // Credentials go out with every request instead of in answer to a 401 challenge. A server
     // that lets anonymous users through for some requests never challenges them, so those
     // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
