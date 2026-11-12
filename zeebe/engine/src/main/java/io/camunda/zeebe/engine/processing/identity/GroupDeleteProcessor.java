@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -38,6 +40,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete group with ID '%s', but a group with this ID does not exist.";
   private final GroupState groupState;
+  private final EntityMembershipsRemover membershipsRemover;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -46,6 +49,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
 
   public GroupDeleteProcessor(
       final ProcessingState processingState,
@@ -59,9 +63,11 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    membershipsRemover = new EntityMembershipsRemover(processingState, stateWriter);
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
@@ -96,10 +102,12 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     record.setGroupKey(groupKey);
 
     removeAssignedEntities(record);
+    membershipsRemover.removeRoleAndTenantMemberships(EntityType.GROUP, record.getGroupId());
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
     responseWriter.writeAcceptedResponseOnCommand(groupKey, GroupIntent.DELETED, record, command);
+    clearAuthorizationsCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -116,8 +124,11 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
         .ifPresentOrElse(
             group -> {
               removeAssignedEntities(command.getValue());
+              membershipsRemover.removeRoleAndTenantMemberships(
+                  EntityType.GROUP, command.getValue().getGroupId());
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+              clearAuthorizationsCache();
             },
             () -> {
               final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
@@ -125,6 +136,19 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Clears the authorization cache of {@link AuthorizationCheckBehavior} after the group deletion
+   * is committed, so that no cached authorization result relies on the memberships that the
+   * deletion removed.
+   */
+  private void clearAuthorizationsCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 
   private void removeAssignedEntities(final GroupRecord record) {

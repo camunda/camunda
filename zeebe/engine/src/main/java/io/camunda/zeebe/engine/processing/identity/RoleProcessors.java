@@ -28,7 +28,7 @@ public class RoleProcessors {
         ValueType.ROLE,
         RoleIntent.CREATE,
         new RoleCreateProcessor(
-            processingState.getRoleState(),
+            processingState,
             authCheckBehavior,
             keyGenerator,
             writers,
