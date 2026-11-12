@@ -43,22 +43,22 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
     this(TypeFactory.defaultInstance().constructType(Object.class));
   }
 
-  private ExporterConfigurationListDeserializer(final JavaType contentType) {
+  ExporterConfigurationListDeserializer(final JavaType contentType) {
     this.contentType = contentType;
   }
 
   @Override
   public JsonDeserializer<?> createContextual(
       final DeserializationContext ctxt, final BeanProperty property) throws JsonMappingException {
-    final JavaType type;
-    if (property == null) {
-      // When property is null, use Object as fallback
-      type = ctxt.getTypeFactory().constructType(Object.class);
-    } else {
-      type = property.getType().getContentType();
-    }
+    return new ExporterConfigurationListDeserializer<>(contentType(ctxt, property));
+  }
 
-    return new ExporterConfigurationListDeserializer<>(type);
+  /** Element type of a list or set property, or {@code Object} when there is no property. */
+  static JavaType contentType(final DeserializationContext ctxt, final BeanProperty property) {
+    if (property == null) {
+      return ctxt.getTypeFactory().constructType(Object.class);
+    }
+    return property.getType().getContentType();
   }
 
   @Override
@@ -67,10 +67,26 @@ final class ExporterConfigurationListDeserializer<E> extends JsonDeserializer<Li
     return switch (p.currentToken()) {
       case START_ARRAY -> deserializeArray(p, ctxt);
       case START_OBJECT -> deserializeMapWithNumericKeys(p, ctxt);
+      // Spring Boot flattens an empty YAML list (`[]`) to an empty string in the args map.
+      // Treat any empty string value as an empty list rather than failing.
+      case VALUE_STRING -> p.getText().isEmpty() ? List.of() : deserializeSingletonList(p, ctxt);
       default ->
           throw new IllegalArgumentException(
-              "Expected START_ARRAY or START_OBJECT, got: " + p.currentToken());
+              "Expected START_ARRAY, START_OBJECT, or VALUE_STRING, got: " + p.currentToken());
     };
+  }
+
+  /**
+   * Wraps a single non-empty string value into a one-element list. Spring Boot may pass a plain
+   * string when only one value is configured without explicit YAML array syntax.
+   */
+  @SuppressWarnings("unchecked")
+  private List<E> deserializeSingletonList(final JsonParser p, final DeserializationContext ctxt)
+      throws IOException {
+    final E value = (E) ctxt.readValue(p, contentType);
+    final List<E> result = new ArrayList<>(1);
+    result.add(value);
+    return result;
   }
 
   /**
