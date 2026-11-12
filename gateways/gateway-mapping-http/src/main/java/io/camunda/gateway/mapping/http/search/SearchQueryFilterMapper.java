@@ -38,6 +38,7 @@ import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequ
 import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
+import io.camunda.gateway.protocol.model.ProcessDefinitionOrFilterFields;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
@@ -633,6 +634,24 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getState())
           .map(state -> ProcessDefinitionState.valueOf(state.name()))
           .ifPresent(builder::state);
+      if (filter.get$Or() != null) {
+        for (final ProcessDefinitionOrFilterFields or : filter.get$Or()) {
+          final var orBuilder = FilterBuilders.processDefinition();
+          ofNullable(or.getName())
+              .map(mapToStringOperations())
+              .ifPresent(orBuilder::nameOperations);
+          ofNullable(or.getProcessDefinitionId())
+              .map(mapToStringOperations())
+              .ifPresent(orBuilder::processDefinitionIdOperations);
+          final var orFilter = orBuilder.build();
+          if (orFilter.nameOperations().isEmpty()
+              && orFilter.processDefinitionIdOperations().isEmpty()) {
+            validationErrors.add(ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted("$or entry fields"));
+          } else {
+            builder.addOrOperation(orFilter);
+          }
+        }
+      }
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

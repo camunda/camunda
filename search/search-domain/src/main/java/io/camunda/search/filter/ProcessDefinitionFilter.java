@@ -13,6 +13,7 @@ import static io.camunda.util.CollectionUtil.collectValues;
 import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +28,8 @@ public record ProcessDefinitionFilter(
     List<String> versionTags,
     List<String> tenantIds,
     Boolean hasStartForm,
-    ProcessDefinitionState state)
+    ProcessDefinitionState state,
+    List<ProcessDefinitionFilter> orFilters)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
@@ -42,6 +44,7 @@ public record ProcessDefinitionFilter(
     private List<String> versionTags;
     private Boolean hasStartForm;
     private ProcessDefinitionState state;
+    private List<ProcessDefinitionFilter> orFilters;
 
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
@@ -134,6 +137,14 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
+    public Builder addOrOperation(final ProcessDefinitionFilter orOperation) {
+      if (orFilters == null) {
+        orFilters = new ArrayList<>();
+      }
+      orFilters.add(orOperation);
+      return this;
+    }
+
     @Override
     public ProcessDefinitionFilter build() {
       return new ProcessDefinitionFilter(
@@ -146,7 +157,8 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           hasStartForm,
-          state);
+          state,
+          Objects.requireNonNullElse(orFilters, Collections.emptyList()));
     }
   }
 }

@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import org.junit.jupiter.api.Test;
 
 class ProcessDefinitionFilterTransformerTest extends AbstractTransformerTest {
@@ -90,5 +92,58 @@ class ProcessDefinitionFilterTransformerTest extends AbstractTransformerTest {
     // only the key filter is present — state contributes nothing when unset
     assertThat(searchRequest.queryOption())
         .isInstanceOfSatisfying(SearchTermQuery.class, t -> assertThat(t.field()).isEqualTo("key"));
+  }
+
+  @Test
+  void shouldMatchIdOrNameCombinedWithTopLevelFilter() {
+    // given
+    final var filter =
+        FilterBuilders.processDefinition(
+            f ->
+                f.tenantIds("tenant-a")
+                    .addOrOperation(
+                        FilterBuilders.processDefinition(
+                            o -> o.processDefinitionIdOperations(Operation.like("*invoice*"))))
+                    .addOrOperation(
+                        FilterBuilders.processDefinition(
+                            o -> o.nameOperations(Operation.like("*invoice*")))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              assertThat(bool.must()).hasSize(2);
+              assertThat(bool.must().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      t -> {
+                        assertThat(t.field()).isEqualTo("tenantId");
+                        assertThat(t.value().stringValue()).isEqualTo("tenant-a");
+                      });
+              assertThat(bool.must().getLast().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      or -> {
+                        assertThat(or.should()).hasSize(2);
+                        assertThat(or.should().get(0).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchWildcardQuery.class,
+                                w -> {
+                                  assertThat(w.field()).isEqualTo("bpmnProcessId");
+                                  assertThat(w.value()).isEqualTo("*invoice*");
+                                });
+                        assertThat(or.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchWildcardQuery.class,
+                                w -> {
+                                  assertThat(w.field()).isEqualTo("name");
+                                  assertThat(w.value()).isEqualTo("*invoice*");
+                                });
+                      });
+            });
   }
 }
