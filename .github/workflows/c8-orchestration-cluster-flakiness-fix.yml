@@ -992,7 +992,7 @@ jobs:
   # Copilot thread already handled. One round only: the human reviewer's own
   # review decides the next cycle, and the point is to make it cheap, not to
   # replace it.
-  review:
+  flaky-review-agent:
     name: Answer the Copilot review
     needs: [prepare, decide]
     if: always() && needs.decide.outputs.pr_url != ''
@@ -1015,6 +1015,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+            .github/scripts/oc-flakiness
             .github/actions
             .ci/scripts/ci/observe-build-status
 
@@ -1165,60 +1166,13 @@ jobs:
           printf '%s' "$review_ids" | jq -e 'type == "array"' >/dev/null 2>&1 || review_ids='[]'
           echo "Copilot review id(s) for this head: ${review_ids}"
 
-          # Paginated and slurped into one flat array: a single first:100 page
-          # could push this round's findings off the end behind resolved ones and
-          # leave thread_count at a false zero.
-          # shellcheck disable=SC2016 # $owner/$repo/$pr/$endCursor are GraphQL variables, bound by -F below
-          gh api graphql --paginate -f query='
-            query($owner:String!,$repo:String!,$pr:Int!,$endCursor:String){
-              repository(owner:$owner,name:$repo){
-                pullRequest(number:$pr){
-                  reviewThreads(first:100, after:$endCursor){
-                    pageInfo{hasNextPage endCursor}
-                    nodes{
-                      id isResolved isOutdated
-                      comments(first:20){nodes{
-                        author{login} path line body url
-                        pullRequestReview{fullDatabaseId}}}}}}}}' \
-            -F owner="${REPO%/*}" -F repo="${REPO#*/}" -F pr="$pr_num" 2>/dev/null \
-            | jq -s '[.[].data.repository.pullRequest.reviewThreads.nodes[]?]' \
-            > /tmp/copilot-threads-raw.json 2>/dev/null \
-            || echo '[]' > /tmp/copilot-threads-raw.json
-
-          # Only threads Copilot opened in THIS review, and nobody has touched.
-          #
-          # A thread carrying ANY non-Copilot comment is dropped outright, and
-          # only Copilot-authored bodies are forwarded even from the threads that
-          # survive. Everything in this file is interpolated into the prompt of
-          # an agent that runs with --dangerously-skip-permissions and push
-          # credentials, and anyone can reply inside a Copilot thread on a public
-          # repository -- so an unfiltered reply is an instruction channel into
-          # that agent. It also keeps a thread this round deliberately left open
-          # out of any later round, with the human's question intact.
-          #
-          # An empty id list means the lookup failed, and then every unresolved
-          # Copilot thread is in scope: answering one twice is a far smaller
-          # failure than skipping the round.
-          jq --arg bot "$COPILOT" --argjson ids "$review_ids" '
-            def is_copilot: . == $bot or . == $bot + "[bot]";
-            [
-            .[]?
-            | select(.isResolved == false)
-            | select(((.comments.nodes[0].author.login) // "") | is_copilot)
-            | select([.comments.nodes[] | (.author.login // "") | is_copilot] | all)
-            | ((.comments.nodes[0].pullRequestReview.fullDatabaseId // "") | tostring) as $rid
-            | select(($ids | length) == 0 or ($ids | index($rid)) != null)
-            | {id,
-               path: .comments.nodes[0].path,
-               line: .comments.nodes[0].line,
-               url: .comments.nodes[0].url,
-               outdated: .isOutdated,
-               comments: [.comments.nodes[]
-                          | select((.author.login // "") | is_copilot)
-                          | {author: (.author.login // "?"), body}]}
-          ]' /tmp/copilot-threads-raw.json > /tmp/copilot-threads.json 2>/dev/null \
-            || { echo "::warning::could not filter the review threads -- treating this round as having none."; \
+          REPO="$REPO" PR="$pr_num" REVIEW_IDS="$review_ids" \
+            bash .github/scripts/oc-flakiness/copilot-threads.sh \
+            > /tmp/copilot-threads.json 2>/dev/null \
+            || { echo "::warning::could not read the review threads -- treating this round as having none."; \
                  echo '[]' > /tmp/copilot-threads.json; }
+          jq -e 'type == "array"' /tmp/copilot-threads.json >/dev/null 2>&1 \
+            || echo '[]' > /tmp/copilot-threads.json
 
           thread_count=$(jq 'length' /tmp/copilot-threads.json 2>/dev/null || echo 0)
           if [ "$thread_count" -eq 0 ]; then
@@ -1384,7 +1338,6 @@ jobs:
           # clean runner.
           git -C pr add -A 2>/dev/null || true
           git -C pr diff --cached --binary > "$out/review.patch" 2>/dev/null || : > "$out/review.patch"
-          cp /tmp/copilot-threads.json "$out/threads.json" 2>/dev/null || echo '[]' > "$out/threads.json"
           cp /tmp/review-response.json "$out/response.json" 2>/dev/null || echo '{}' > "$out/response.json"
           cp /tmp/claude-review-response.md "$out/agent-log.md" 2>/dev/null || : > "$out/agent-log.md"
           echo "patch bytes: $(wc -c < "$out/review.patch")"
@@ -1397,13 +1350,35 @@ jobs:
           path: ${{ runner.temp }}/round
           retention-days: 7
 
+  # The responder runs an agent with a shell, so nothing secret-bearing may run
+  # on its runner after that: the agent can write $GITHUB_ENV, $GITHUB_PATH, or
+  # the checked-out action itself, none of which shows up in the patch the
+  # publisher validates. Its CI Health metric is therefore reported from here,
+  # on a clean runner -- the dependent-observer pattern the policy already
+  # carries for `collect-stale-backports`.
+  flaky-review-observe:
+    name: Observe the Copilot review round
+    needs: [flaky-review-agent]
+    if: always() && needs.flaky-review-agent.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "c8-orchestration-cluster-flakiness-fix/review"
-          build_status: ${{ job.status }}
+          job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-agent"
+          build_status: ${{ needs.flaky-review-agent.result }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -1412,12 +1387,13 @@ jobs:
   # The agent could otherwise leave something behind that runs here while a
   # token is in the environment -- a .git/hooks/pre-commit, a rewritten
   # node_modules/.bin/eslint -- neither of which would appear in the diff being
-  # validated. Only the patch, the agent's manifest and the trusted thread list
-  # cross over, as an artifact.
+  # validated. Only the patch and the agent's manifest cross
+  # over, and the thread list is re-derived here from the PR rather than taken
+  # from a file the agent could rewrite.
   review-publish:
     name: Publish the Copilot review round
-    needs: [prepare, decide, review]
-    if: always() && needs.review.outputs.threads != '' && needs.review.outputs.threads != '0'
+    needs: [prepare, decide, flaky-review-agent]
+    if: always() && needs.flaky-review-agent.outputs.threads != '' && needs.flaky-review-agent.outputs.threads != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -1429,6 +1405,7 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
           sparse-checkout: |
+            .github/scripts/oc-flakiness
             .github/actions
             .ci/scripts/ci/observe-build-status
 
@@ -1532,7 +1509,7 @@ jobs:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ needs.prepare.outputs.branch }}
-          PR_NUMBER: ${{ needs.review.outputs.pr }}
+          PR_NUMBER: ${{ needs.flaky-review-agent.outputs.pr }}
         run: |
           set -uo pipefail
           cd pr
@@ -1559,11 +1536,32 @@ jobs:
             { echo "pushed="; echo "error=the commit could not be pushed"; } >> "$GITHUB_OUTPUT"
           fi
 
-      # Driven by the TRUSTED thread list, never by the agent's manifest: the
-      # ids come from the await step, so a manifest naming someone else's thread
-      # -- another PR, a human's -- reaches nothing. A thread the agent skipped
-      # still gets a reply and stays open, and any verdict outside the three is
-      # read as "left_open", so a malformed answer can never resolve anything.
+      # The set of threads this job may touch is derived HERE, from the PR, and
+      # never read from the artifact: the responder's copy sat on a runner the
+      # agent had shell on, so a rewritten file could have named a human's
+      # thread -- or one on another PR -- and had it replied to and resolved.
+      # Re-fetching also drops anything a person answered while the round ran.
+      - name: Re-derive the threads this round may answer
+        id: trusted
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ needs.flaky-review-agent.outputs.pr }}
+        run: |
+          set -uo pipefail
+          out="${RUNNER_TEMP}/trusted-threads.json"
+          bash .github/scripts/oc-flakiness/copilot-threads.sh > "$out" 2>/dev/null \
+            || echo '[]' > "$out"
+          jq -e 'type == "array"' "$out" >/dev/null 2>&1 || echo '[]' > "$out"
+          echo "$(jq 'length' "$out") eligible thread(s) on #${PR}."
+
+      # Driven by that list, never by the agent's manifest, which is consulted
+      # only by id: a manifest naming a thread the fetch did not return reaches
+      # nothing. A thread the agent skipped still gets a reply and stays open,
+      # and any verdict outside the three is read as "left_open", so a
+      # malformed answer can never resolve anything.
       - name: Reply in each thread
         id: replies
         if: always()
@@ -1574,9 +1572,9 @@ jobs:
           PUSH_ERROR: ${{ steps.push.outputs.error || steps.apply.outputs.error }}
         run: |
           set -uo pipefail
-          threads="${RUNNER_TEMP}/round/threads.json"
+          threads="${RUNNER_TEMP}/trusted-threads.json"
           manifest="${RUNNER_TEMP}/round/response.json"
-          [ -s "$threads" ] || { echo "::warning::no trusted thread list; nothing to reply to."; exit 0; }
+          [ -s "$threads" ] || { echo "::warning::no eligible threads; nothing to reply to."; exit 0; }
           jq -e '.replies | type == "array"' "$manifest" >/dev/null 2>&1 || echo '{"replies":[]}' > "$manifest"
 
           accepted=0; rejected=0; left_open=0; missing=0
@@ -1647,8 +1645,8 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ needs.review.outputs.pr }}
-          MEASURED_SHA: ${{ needs.review.outputs.head }}
+          PR_NUMBER: ${{ needs.flaky-review-agent.outputs.pr }}
+          MEASURED_SHA: ${{ needs.flaky-review-agent.outputs.head }}
           PUSHED: ${{ steps.push.outputs.pushed }}
         run: |
           set -uo pipefail
@@ -1668,7 +1666,7 @@ jobs:
         if: always()
         env:
           PR_URL: ${{ needs.decide.outputs.pr_url }}
-          THREADS: ${{ needs.review.outputs.threads }}
+          THREADS: ${{ needs.flaky-review-agent.outputs.threads }}
           ACCEPTED: ${{ steps.replies.outputs.accepted }}
           REJECTED: ${{ steps.replies.outputs.rejected }}
           LEFT_OPEN: ${{ steps.replies.outputs.left_open }}
