@@ -92,7 +92,7 @@ public final class DelayedTimerSubscription implements TimerSubscription {
 
   @Override
   public long getDeadline(final ActorClock now) {
-    return now.getTimeMillis() + timeUnit.convert(delay, timeUnit);
+    return now.getTimeMillis() + timeUnit.toMillis(delay);
   }
 
   @Override

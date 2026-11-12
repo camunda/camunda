@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,21 @@ final class TimerSubscriptionTest {
 
     // then
     assertThat(subscription.getTimerExpiredAt()).isBetween(before, System.nanoTime());
+  }
+
+  @Test
+  void shouldConvertDelayToMillisecondsForDeadline() {
+    // given
+    final var clock = new ControlledActorClock();
+    clock.setCurrentTime(1_000L);
+    clock.update();
+    final var subscription = new DelayedTimerSubscription(mockJob(), 2, TimeUnit.SECONDS, false);
+
+    // when
+    final var deadline = subscription.getDeadline(clock);
+
+    // then
+    assertThat(deadline).isEqualTo(3_000L);
   }
 
   private ActorJob mockJob() {
