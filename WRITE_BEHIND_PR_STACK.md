@@ -88,7 +88,7 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
 ## Status
 
 - [x] Baseline: main CI green, `./mvnw install -Dquickly -T1C` green on `a0761b3ef` (2026-11-12)
-- [x] PR 1 pushed: `cs/wb-1-zb-db-api` on main `a0761b3ef` (no PR opened yet)
+- [x] PR 1 pushed: `cs/wb-1-zb-db-api` on main `a0761b3ef`, draft PR camunda/camunda#69232
   - `4cc471f9543` refactor: split zeebe-db into an API module and the RocksDB implementation
   - `8ba50341492` refactor: move DbNullKey to the API module
   - `9c1e3f4d5fd` feat: expose the committed RocksDB state through a raw access SPI
