@@ -39,7 +39,7 @@ type TileProps = {
 };
 
 const Tile: React.FC<TileProps> = ({label, children}) => (
-	<div className="min-w-[200px] rounded-md border border-border bg-background p-4">
+	<div className="min-w-[200px] rounded-md border border-border bg-neutral-background-subtle p-4">
 		<Text as="span" variant="label-sm" className="mb-3 block text-neutral-foreground-subtle">
 			{label}
 		</Text>
