@@ -44,4 +44,4 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - `MsgpackBufferValue` is a temporary bridge for classes that still have to be a `DbValue`. It uses
   the per-thread reader and writer of `MsgpackScratch`.
 
-Migrating a class: see the `migrate-state-to-msgpack-pojo` skill. Open work: [TODO.md](TODO.md).
+Benchmark: `microbenchmarks/.../msgpack/StateValueBenchmark`, comparing `UnpackedObject`s with generated codecs.
