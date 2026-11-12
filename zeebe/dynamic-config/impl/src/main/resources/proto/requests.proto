@@ -210,6 +210,8 @@ enum PhysicalTenantConfigChange {
   PHYSICAL_TENANT_CONFIG_CHANGE_UPDATE = 2;
   PHYSICAL_TENANT_CONFIG_CHANGE_DELETE = 3;
   PHYSICAL_TENANT_CONFIG_CHANGE_CANCEL = 4;
+  PHYSICAL_TENANT_CONFIG_CHANGE_DISABLE = 5;
+  PHYSICAL_TENANT_CONFIG_CHANGE_ENABLE = 6;
 }
 
 // Asks a peer for a version of a physical tenant's configuration. The peer answers with the stored

@@ -264,7 +264,9 @@ public final class ClusterConfigurationManagementRequestsHandler
                       if (request.dryRun()) {
                         return current;
                       }
-                      if (request.change() != Change.DELETE && !updated.equals(current)) {
+                      if (request.change() != Change.DELETE
+                          && request.change() != Change.DISABLE
+                          && !updated.equals(current)) {
                         physicalTenantConfigStore.put(
                             request.physicalTenantId(),
                             updated

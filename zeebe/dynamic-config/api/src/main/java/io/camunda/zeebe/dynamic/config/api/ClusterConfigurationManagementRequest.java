@@ -301,6 +301,29 @@ public sealed interface ClusterConfigurationManagementRequest {
           physicalTenantId, Change.DELETE, owner, new byte[0], 0, 0, Set.of(), false);
     }
 
+    /**
+     * Disables a tenant: it stops on every member and serves no requests, while its partitions,
+     * data and configuration stay, so that enabling it resumes where it left off. What a node
+     * restart does with a tenant taken out of the configuration file.
+     */
+    public static PhysicalTenantConfigRequest disable(
+        final String physicalTenantId, final PhysicalTenantConfigReference.Owner owner) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId, Change.DISABLE, owner, new byte[0], 0, 0, Set.of(), false);
+    }
+
+    /**
+     * Enables a disabled tenant again with the given configuration, which becomes the next version
+     * if it differs from the one it had, and starts it on every member.
+     */
+    public static PhysicalTenantConfigRequest enable(
+        final String physicalTenantId,
+        final PhysicalTenantConfigReference.Owner owner,
+        final byte[] configuration) {
+      return new PhysicalTenantConfigRequest(
+          physicalTenantId, Change.ENABLE, owner, configuration, 0, 0, Set.of(), false);
+    }
+
     /** Cancels the rollout of the tenant's update and rolls it back to the version before. */
     public static PhysicalTenantConfigRequest cancel(
         final String physicalTenantId, final PhysicalTenantConfigReference.Owner owner) {
@@ -338,7 +361,9 @@ public sealed interface ClusterConfigurationManagementRequest {
       CREATE,
       UPDATE,
       DELETE,
-      CANCEL
+      CANCEL,
+      DISABLE,
+      ENABLE
     }
   }
 

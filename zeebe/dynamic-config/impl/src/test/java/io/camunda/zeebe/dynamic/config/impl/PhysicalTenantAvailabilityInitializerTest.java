@@ -83,6 +83,25 @@ final class PhysicalTenantAvailabilityInitializerTest {
   }
 
   @Test
+  void shouldLeaveATenantOwnedByTheFileToTheFileInput() {
+    // given
+    final var configuration =
+        configurationWith(Set.of(partition("tenantA", 1, Set.of(member(0)))))
+            .updatePartitionGroupConfig(
+                "tenantA",
+                group ->
+                    group.setTenantConfig(
+                        PhysicalTenantConfigReference.initial("abc", Owner.FILE, "incarnation")));
+    final var initializer = new PhysicalTenantAvailabilityInitializer(staticConfigWith(List.of()));
+
+    // when
+    final var result = initializer.modify(configuration).join();
+
+    // then
+    assertThat(result.partitionGroup("tenantA").isDisabled()).isFalse();
+  }
+
+  @Test
   void shouldRetainPartitionAssignmentWhileDisabling() {
     // given
     final var existing = Set.of(partition("tenantA", 1, Set.of(member(0), member(1))));

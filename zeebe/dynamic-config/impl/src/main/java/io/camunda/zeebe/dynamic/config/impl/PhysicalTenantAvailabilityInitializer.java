@@ -11,7 +11,6 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
-import io.camunda.zeebe.dynamic.config.state.PhysicalTenantConfigReference.Owner;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Set;
@@ -40,8 +39,10 @@ import org.slf4j.LoggerFactory;
  * different failure shapes (provisioning can fail an entire batch on a reassignment computation;
  * toggling a flag cannot fail that way).
  *
- * <p>A tenant owned by the management API is not in any static configuration, so the static
- * configuration says nothing about it and it is left as it is.
+ * <p>A tenant with a configuration reference is left as it is. One owned by the management API is
+ * not in any static configuration, so the static configuration says nothing about it. One owned by
+ * the file is disabled and enabled by the file input once the broker started, which also stops and
+ * starts it on every member, as it does when the file changes at runtime.
  */
 public class PhysicalTenantAvailabilityInitializer
     extends ClusterConfigurationModifier.CoordinatorOnly<CurrentClusterConfiguration> {
@@ -64,7 +65,7 @@ public class PhysicalTenantAvailabilityInitializer
       final CurrentClusterConfiguration configuration) {
     var result = configuration;
     for (final var groupId : configuration.partitionGroups().keySet()) {
-      if (isOwnedByTheApi(configuration.partitionGroup(groupId))) {
+      if (hasConfigurationReference(configuration.partitionGroup(groupId))) {
         continue;
       }
       final boolean isKnownLocally = staticTenantIds.contains(groupId);
@@ -86,7 +87,7 @@ public class PhysicalTenantAvailabilityInitializer
     return CompletableActorFuture.completed(result);
   }
 
-  private static boolean isOwnedByTheApi(final PartitionGroupConfiguration group) {
-    return group.tenantConfig().filter(reference -> reference.owner() == Owner.API).isPresent();
+  private static boolean hasConfigurationReference(final PartitionGroupConfiguration group) {
+    return group.tenantConfig().isPresent();
   }
 }

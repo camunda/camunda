@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.impl;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PhysicalTenantConfigRequest.Change;
@@ -63,7 +64,13 @@ import org.jspecify.annotations.Nullable;
  *       nothing.
  *   <li>Delete: the tenant is disabled, stopped on every member, and then removed. Its data stays
  *       on disk and its id stays reserved.
+ *   <li>Disable: the tenant is disabled and stopped on every member. Its partitions, data and
+ *       configuration stay, as when a node restarts without the tenant in its configuration file.
+ *   <li>Enable: a disabled tenant is enabled again, with the given configuration as the next
+ *       version if it differs, and started on every member.
  * </ul>
+ *
+ * <p>The {@code default} tenant can be changed, but neither disabled nor deleted.
  *
  * <p>A tenant is changed only through the input that owns it. Each tenant has its own rollout: a
  * request for a tenant whose change still runs is rejected, not queued, while changes of different
@@ -104,6 +111,8 @@ public final class PhysicalTenantConfigChanges {
       case UPDATE -> update(configuration, request, sha256);
       case DELETE -> delete(configuration, request);
       case CANCEL -> cancel(configuration, request, sha256);
+      case DISABLE -> disable(configuration, request);
+      case ENABLE -> enable(configuration, request, sha256);
     };
   }
 
@@ -256,6 +265,49 @@ public final class PhysicalTenantConfigChanges {
             operations));
   }
 
+  private Either<Exception, CurrentClusterConfiguration> disable(
+      final CurrentClusterConfiguration configuration, final PhysicalTenantConfigRequest request) {
+    final var current = changeableReference(configuration, request);
+    if (current.isLeft()) {
+      return Either.left(current.getLeft());
+    }
+    final var tenantId = request.physicalTenantId();
+    if (Objects.requireNonNull(configuration.partitionGroup(tenantId)).isDisabled()) {
+      return Either.right(configuration);
+    }
+    return Either.right(
+        startChange(
+            configuration,
+            tenantId,
+            PartitionGroupConfiguration::disable,
+            sortedLiveMembers(configuration).stream()
+                .map(StopPhysicalTenantOperation::new)
+                .toList()));
+  }
+
+  private Either<Exception, CurrentClusterConfiguration> enable(
+      final CurrentClusterConfiguration configuration,
+      final PhysicalTenantConfigRequest request,
+      final String sha256) {
+    final var current = changeableReference(configuration, request);
+    if (current.isLeft()) {
+      return Either.left(current.getLeft());
+    }
+    final var tenantId = request.physicalTenantId();
+    if (!Objects.requireNonNull(configuration.partitionGroup(tenantId)).isDisabled()) {
+      return Either.left(
+          new InvalidRequest("Physical tenant '%s' is not disabled".formatted(tenantId)));
+    }
+    final var reference = current.get();
+    final var enabled = reference.sha256().equals(sha256) ? reference : reference.next(sha256);
+    return Either.right(
+        startChange(
+            configuration,
+            tenantId,
+            group -> group.enable().setTenantConfig(enabled),
+            applyOperations(configuration, enabled.version())));
+  }
+
   private Either<Exception, PhysicalTenantConfigReference> changeableReference(
       final CurrentClusterConfiguration configuration, final PhysicalTenantConfigRequest request) {
     final var tenantId = request.physicalTenantId();
@@ -264,6 +316,12 @@ public final class PhysicalTenantConfigChanges {
       return Either.left(new NotFound("Physical tenant '%s' does not exist".formatted(tenantId)));
     }
     final var reference = group.tenantConfig().get();
+    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+        && (request.change() == Change.DELETE || request.change() == Change.DISABLE)) {
+      return Either.left(
+          new OperationNotAllowed(
+              "The default physical tenant can be changed, but not disabled or deleted"));
+    }
     if (reference.owner() != request.owner()) {
       return Either.left(
           new OperationNotAllowed(

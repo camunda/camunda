@@ -342,6 +342,148 @@ final class PhysicalTenantConfigChangesTest {
             new RemovePhysicalTenantOperation(MEMBER_0));
   }
 
+  @Test
+  void shouldDisableAndStopATenantOnEveryMemberAndKeepItsGroup() {
+    // given
+    final var created = completed(created("tenant", Owner.FILE), "tenant");
+
+    // when
+    final var result =
+        changes
+            .apply(created, PhysicalTenantConfigRequest.disable("tenant", Owner.FILE), "")
+            .get()
+            .partitionGroup("tenant");
+
+    // then
+    assertThat(result.isDisabled()).isTrue();
+    assertThat(result.isRemoved()).isFalse();
+    assertThat(result.members()).isEqualTo(created.partitionGroup("tenant").members());
+    assertThat(result.tenantConfig()).isEqualTo(created.partitionGroup("tenant").tenantConfig());
+    assertThat(result.pendingChanges().orElseThrow().pendingOperations())
+        .containsExactly(
+            new StopPhysicalTenantOperation(MEMBER_0),
+            new StopPhysicalTenantOperation(MEMBER_1),
+            new StopPhysicalTenantOperation(MEMBER_2));
+  }
+
+  @Test
+  void shouldEnableADisabledTenantWithItsVersionAndStartItOnEveryMember() {
+    // given
+    final var disabled = disabled(completed(created("tenant", Owner.FILE), "tenant"));
+
+    // when
+    final var result =
+        changes
+            .apply(
+                disabled,
+                PhysicalTenantConfigRequest.enable("tenant", Owner.FILE, CONFIGURATION),
+                SHA)
+            .get()
+            .partitionGroup("tenant");
+
+    // then
+    assertThat(result.isDisabled()).isFalse();
+    assertThat(result.tenantConfig().orElseThrow().version()).isEqualTo(1);
+    assertThat(result.pendingChanges().orElseThrow().pendingOperations())
+        .containsExactly(
+            new ApplyPhysicalTenantConfigOperation(MEMBER_0, 1),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_1, 1),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_2, 1));
+  }
+
+  @Test
+  void shouldEnableADisabledTenantWithAChangedConfigurationAsTheNextVersion() {
+    // given
+    final var disabled = disabled(completed(created("tenant", Owner.FILE), "tenant"));
+
+    // when
+    final var result =
+        changes
+            .apply(
+                disabled,
+                PhysicalTenantConfigRequest.enable("tenant", Owner.FILE, bytes("a=2")),
+                sha("a=2"))
+            .get()
+            .partitionGroup("tenant");
+
+    // then
+    assertThat(result.tenantConfig().orElseThrow().version()).isEqualTo(2);
+    assertThat(result.tenantConfig().orElseThrow().sha256()).isEqualTo(sha("a=2"));
+    assertThat(result.pendingChanges().orElseThrow().pendingOperations())
+        .containsExactly(
+            new ApplyPhysicalTenantConfigOperation(MEMBER_0, 2),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_1, 2),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_2, 2));
+  }
+
+  @Test
+  void shouldRejectEnablingATenantThatIsNotDisabled() {
+    // given
+    final var created = completed(created("tenant", Owner.FILE), "tenant");
+
+    // when
+    final var result =
+        changes.apply(
+            created, PhysicalTenantConfigRequest.enable("tenant", Owner.FILE, CONFIGURATION), SHA);
+
+    // then
+    assertThat(result.getLeft())
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessageContaining("not disabled");
+  }
+
+  @Test
+  void shouldRejectDisablingOrDeletingTheDefaultTenant() {
+    // given
+    final var registered =
+        completed(changes.apply(cluster(), create("default", Owner.FILE, 0), SHA).get(), "default");
+
+    // when
+    final var disable =
+        changes.apply(registered, PhysicalTenantConfigRequest.disable("default", Owner.FILE), "");
+    final var delete =
+        changes.apply(registered, PhysicalTenantConfigRequest.delete("default", Owner.FILE), "");
+
+    // then
+    assertThat(disable.getLeft())
+        .isInstanceOf(OperationNotAllowed.class)
+        .hasMessageContaining("not disabled or deleted");
+    assertThat(delete.getLeft()).isInstanceOf(OperationNotAllowed.class);
+  }
+
+  @Test
+  void shouldUpdateTheDefaultTenantLikeAnyOtherTenant() {
+    // given
+    final var registered =
+        completed(changes.apply(cluster(), create("default", Owner.FILE, 0), SHA).get(), "default");
+
+    // when
+    final var result =
+        changes
+            .apply(
+                registered,
+                PhysicalTenantConfigRequest.update("default", Owner.FILE, bytes("a=2"), 1),
+                sha("a=2"))
+            .get()
+            .partitionGroup("default");
+
+    // then
+    assertThat(result.tenantConfig().orElseThrow().version()).isEqualTo(2);
+    assertThat(result.pendingChanges().orElseThrow().pendingOperations())
+        .containsExactly(
+            new ApplyPhysicalTenantConfigOperation(MEMBER_0, 2),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_1, 2),
+            new ApplyPhysicalTenantConfigOperation(MEMBER_2, 2));
+  }
+
+  private CurrentClusterConfiguration disabled(final CurrentClusterConfiguration configuration) {
+    return completed(
+        changes
+            .apply(configuration, PhysicalTenantConfigRequest.disable("tenant", Owner.FILE), "")
+            .get(),
+        "tenant");
+  }
+
   private CurrentClusterConfiguration created(final String tenantId, final Owner owner) {
     final var registered = owner == Owner.FILE ? cluster().initPartitionGroup(tenantId) : cluster();
     return changes.apply(registered, create(tenantId, owner, 1), SHA).get();
