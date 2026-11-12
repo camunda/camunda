@@ -38,23 +38,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private static final String DIRECT_BUFFER = "org.agrona.DirectBuffer";
   private static final String LIST = "java.util.List";
 
-  private enum Type {
-    LONG,
-    INT,
-    BOOLEAN,
-    STRING,
-    RAW,
-    BINARY,
-    ENUM,
-    STRING_LIST,
-    LONG_LIST,
-    NESTED
-  }
-
-  private record Property(String key, Type type, String field, String javaType, boolean isFinal) {}
-
-  private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
-
   @Override
   public SourceVersion getSupportedSourceVersion() {
     return SourceVersion.latestSupported();
@@ -281,31 +264,28 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     for (final var p : m.properties()) {
       final var get = "v." + p.field();
       s.append("    n += w.writeString(KEY_%d);\n".formatted(i));
-      switch (p.type()) {
-        case LONG, INT -> s.append("    n += w.writeInteger(%s);\n".formatted(get));
-        case BOOLEAN -> s.append("    n += w.writeBoolean(%s);\n".formatted(get));
-        case STRING -> s.append("    n += w.writeString(%s);\n".formatted(get));
-        case BINARY -> s.append("    n += w.writeBinary(%s);\n".formatted(get));
-        case RAW ->
-            s.append("    n += w.writeRaw(requireRaw(%s, \"%s\"));\n".formatted(get, p.key()));
-        case ENUM ->
-            s.append(
+      s.append(
+          switch (p.type()) {
+            case LONG, INT -> "    n += w.writeInteger(%s);\n".formatted(get);
+            case BOOLEAN -> "    n += w.writeBoolean(%s);\n".formatted(get);
+            case STRING -> "    n += w.writeString(%s);\n".formatted(get);
+            case BINARY -> "    n += w.writeBinary(%s);\n".formatted(get);
+            case RAW -> "    n += w.writeRaw(requireRaw(%s, \"%s\"));\n".formatted(get, p.key());
+            case ENUM ->
                 "    n += w.writeString(ENUM_NAMES_%d[requireEnum(%s, \"%s\").ordinal()]);\n"
-                    .formatted(i, get, p.key()));
-        case STRING_LIST ->
-            s.append(
+                    .formatted(i, get, p.key());
+            case STRING_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeString(%s.get(i));\n".formatted(get)
-                    + "    }\n");
-        case LONG_LIST ->
-            s.append(
+                    + "    }\n";
+            case LONG_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeInteger(%s.get(i));\n".formatted(get)
-                    + "    }\n");
-        case NESTED -> s.append("    n += CODEC_%d.write(w, %s);\n".formatted(i, get));
-      }
+                    + "    }\n";
+            case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
+          });
       i++;
     }
     if (unknown != null) {
@@ -322,39 +302,34 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     for (final var p : m.properties()) {
       final var get = "v." + p.field();
       s.append("    n += MsgPackWriter.getEncodedStringLength(KEY_%d.capacity());\n".formatted(i));
-      switch (p.type()) {
-        case LONG, INT ->
-            s.append("    n += MsgPackWriter.getEncodedLongValueLength(%s);\n".formatted(get));
-        case BOOLEAN -> s.append("    n += MsgPackWriter.getEncodedBooleanValueLength();\n");
-        case STRING ->
-            s.append(
-                "    n += MsgPackWriter.getEncodedStringLength(%s.capacity());\n".formatted(get));
-        case BINARY ->
-            s.append(
+      s.append(
+          switch (p.type()) {
+            case LONG, INT ->
+                "    n += MsgPackWriter.getEncodedLongValueLength(%s);\n".formatted(get);
+            case BOOLEAN -> "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
+            case STRING ->
+                "    n += MsgPackWriter.getEncodedStringLength(%s.capacity());\n".formatted(get);
+            case BINARY ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(%s.capacity());\n"
-                    .formatted(get));
-        case RAW ->
-            s.append("    n += requireRaw(%s, \"%s\").capacity();\n".formatted(get, p.key()));
-        case ENUM ->
-            s.append(
+                    .formatted(get);
+            case RAW -> "    n += requireRaw(%s, \"%s\").capacity();\n".formatted(get, p.key());
+            case ENUM ->
                 "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[requireEnum(%s, \"%s\").ordinal()].capacity());\n"
-                    .formatted(i, get, p.key()));
-        case STRING_LIST ->
-            s.append(
+                    .formatted(i, get, p.key());
+            case STRING_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
                     + "      n += MsgPackWriter.getEncodedStringLength(%s.get(i).capacity());\n"
                         .formatted(get)
-                    + "    }\n");
-        case LONG_LIST ->
-            s.append(
+                    + "    }\n";
+            case LONG_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
                     + "      n += MsgPackWriter.getEncodedLongValueLength(%s.get(i));\n"
                         .formatted(get)
-                    + "    }\n");
-        case NESTED -> s.append("    n += CODEC_%d.getLength(%s);\n".formatted(i, get));
-      }
+                    + "    }\n";
+            case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
+          });
       i++;
     }
     if (unknown != null) {
@@ -491,4 +466,21 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private void error(final Element element, final String message) {
     processingEnv.getMessager().printMessage(Kind.ERROR, message, element);
   }
+
+  private enum Type {
+    LONG,
+    INT,
+    BOOLEAN,
+    STRING,
+    RAW,
+    BINARY,
+    ENUM,
+    STRING_LIST,
+    LONG_LIST,
+    NESTED
+  }
+
+  private record Property(String key, Type type, String field, String javaType, boolean isFinal) {}
+
+  private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }
