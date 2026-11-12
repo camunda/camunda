@@ -31,6 +31,7 @@ import io.camunda.security.core.authz.AuthorizationCheck;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -202,13 +203,18 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
 
   /**
    * Returns the indices to search for the filter. If {@link #matchesOnlyRuntimeData} holds, only
-   * the runtime index is searched, otherwise the alias that also covers the archived indices.
+   * the runtime indices are searched: the main index and its ordinal indices. Otherwise the alias
+   * is searched, which also covers the archived indices.
    */
   public List<String> toIndices(final T filter) {
-    return List.of(
-        matchesOnlyRuntimeData(filter)
-            ? indexDescriptor.getFullQualifiedName()
-            : indexDescriptor.getAlias());
+    if (!matchesOnlyRuntimeData(filter)) {
+      return List.of(indexDescriptor.getAlias());
+    }
+    final var mainIndex = indexDescriptor.getFullQualifiedName();
+    if (indexDescriptor instanceof IndexTemplateDescriptor) {
+      return List.of(mainIndex, mainIndex + IndexTemplateDescriptor.ORDINAL_SUFFIX_START + "*");
+    }
+    return List.of(mainIndex);
   }
 
   /**
