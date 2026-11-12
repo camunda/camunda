@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class RuntimeIndexTargetingTest {
@@ -70,6 +71,54 @@ class RuntimeIndexTargetingTest {
 
     // then
     assertThat(indices).containsExactly(indexDescriptors.get(template).getAlias());
+  }
+
+  @ParameterizedTest
+  @EnumSource(ProcessInstanceState.class)
+  void shouldTargetIndicesForEveryProcessInstanceState(final ProcessInstanceState state) {
+    // given
+    final var query =
+        SearchQueryBuilders.processInstanceSearchQuery(q -> q.filter(f -> f.states(state.name())));
+
+    // when
+    final var indices = transform(query);
+
+    // then - the switch has no default, so a new state does not compile until it is classified
+    final var expected =
+        switch (state) {
+          case ACTIVE, SUSPENDED -> runtimeIndices(ListViewTemplate.class);
+          case COMPLETED, CANCELED -> aliasIndices(ListViewTemplate.class);
+        };
+    assertThat(indices).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @EnumSource(UserTaskState.class)
+  void shouldTargetIndicesForEveryUserTaskState(final UserTaskState state) {
+    // given
+    final var query =
+        SearchQueryBuilders.userTaskSearchQuery(q -> q.filter(f -> f.states(state.name())));
+
+    // when
+    final var indices = transform(query);
+
+    // then - the switch has no default, so a new state does not compile until it is classified
+    final var expected =
+        switch (state) {
+          case CREATING, CREATED, ASSIGNING, UPDATING, COMPLETING, CANCELING ->
+              runtimeIndices(TaskTemplate.class);
+          // FAILED applies only to job-based user tasks; it reads all indices to stay safe
+          case COMPLETED, CANCELED, FAILED -> aliasIndices(TaskTemplate.class);
+        };
+    assertThat(indices).isEqualTo(expected);
+  }
+
+  private List<String> runtimeIndices(final Class<? extends IndexTemplateDescriptor> template) {
+    return List.of(indexDescriptors.get(template).getFullQualifiedName());
+  }
+
+  private List<String> aliasIndices(final Class<? extends IndexTemplateDescriptor> template) {
+    return List.of(indexDescriptors.get(template).getAlias());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
