@@ -39,8 +39,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   generated class is initialized.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
   written back, so a read-modify-write by an older version does not drop them.
-- Strings and raw values are copied out of the source buffer. Nested `BaseValue`s are read by
-  reference to it.
+- Strings, binaries and raw values are read as views on the source buffer, like `StringProperty`,
+  `BinaryProperty` and `PackedProperty`: nothing is copied, so they are only valid while the source
+  buffer is not reused. Nested `BaseValue`s are read by reference to it as well.
 - `MsgpackBufferValue` is a temporary bridge for classes that still have to be a `DbValue`. It uses
   the per-thread reader and writer of `MsgpackScratch`.
 
