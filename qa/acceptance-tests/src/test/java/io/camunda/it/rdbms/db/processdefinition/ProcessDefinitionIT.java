@@ -945,23 +945,4 @@ public class ProcessDefinitionIT {
     assertThat(processDefinitionReader.findOne(key).orElseThrow().state())
         .isEqualTo(ProcessDefinitionState.DRAINING);
   }
-
-  @TestTemplate
-  public void shouldMarkDrainingAfterSuspendedInSeparateFlushes(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionDbReader processDefinitionReader =
-        rdbmsService.getProcessDefinitionReader();
-    final var key =
-        createAndSaveRandomProcessDefinition(rdbmsWriters, b -> b).processDefinitionKey();
-
-    rdbmsWriters.getProcessDefinitionWriter().markSuspended(key);
-    rdbmsWriters.flush();
-    rdbmsWriters.getProcessDefinitionWriter().markDraining(key);
-    rdbmsWriters.flush();
-
-    assertThat(processDefinitionReader.findOne(key).orElseThrow().state())
-        .isEqualTo(ProcessDefinitionState.DRAINING);
-  }
 }

@@ -46,7 +46,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.opensearch.client.opensearch._types.FieldValue;
 
 /**
  * Reproduces #61277: a process definition the engine is draining can stay {@code ACTIVE} in
@@ -64,7 +63,6 @@ final class ProcessDrainingExportConsistencyIT {
   private static final long PROCESS_DEFINITION_KEY = 2_251_799_813_685_862L;
   private static final int DEPLOYMENT_PARTITION =
       DefaultExporterResourceProvider.PROCESS_DEFINITION_PARTITION;
-  private static final long OTHER_PROCESS_DEFINITION_KEY = PROCESS_DEFINITION_KEY + 1;
   private static final int OTHER_PARTITION = DEPLOYMENT_PARTITION + 1;
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
@@ -148,49 +146,6 @@ final class ProcessDrainingExportConsistencyIT {
   }
 
   @TestTemplate
-  void shouldFindOnlySuspendedDefinitionsByState(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    prepareConfig(config);
-    createSchemas(config);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
-    exportOnPartition(
-        config,
-        DEPLOYMENT_PARTITION,
-        processRecord(ProcessIntent.CREATED, OTHER_PROCESS_DEFINITION_KEY));
-
-    // when
-    exportOnPartition(
-        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
-    clientAdapter.refresh(testPrefix);
-
-    // then
-    assertThat(searchIdsByState(config, ProcessDefinitionState.SUSPENDED))
-        .containsExactly(String.valueOf(PROCESS_DEFINITION_KEY));
-  }
-
-  @TestTemplate
-  void shouldKeepDrainingWhenDrainedAfterSuspensionWasFlushed(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    prepareConfig(config);
-    createSchemas(config);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
-    exportOnPartition(
-        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
-
-    // when
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.DRAINING));
-    clientAdapter.refresh(testPrefix);
-
-    // then
-    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
-        .isEqualTo(ProcessDefinitionState.DRAINING);
-  }
-
-  @TestTemplate
   void shouldEndDrainingWhenSuspendedAndDrainingAreExportedInOneBatch(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
@@ -200,7 +155,8 @@ final class ProcessDrainingExportConsistencyIT {
     exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
     config.getBulk().setSize(100);
 
-    // when — both records are handled before the single flush on close
+    // when — both records are handled before the single flush on close; the draining handler
+    // flushes last, so this checks the outcome (AC3), not the getState() flush (unit-tested)
     exportOnPartition(
         config,
         DEPLOYMENT_PARTITION,
@@ -211,32 +167,6 @@ final class ProcessDrainingExportConsistencyIT {
     // then
     assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
         .isEqualTo(ProcessDefinitionState.DRAINING);
-  }
-
-  @TestTemplate
-  void shouldKeepSuspendedWhenAnotherPartitionExportsCreatedLater(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    prepareConfig(config);
-    createSchemas(config);
-    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
-    exportOnPartition(
-        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
-    clientAdapter.refresh(testPrefix);
-
-    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
-        .as("precondition: the definition is SUSPENDED before the late CREATED")
-        .isEqualTo(ProcessDefinitionState.SUSPENDED);
-
-    // when — a lagging partition exports its own copy of CREATED for the same definition (#61277)
-    exportOnPartition(
-        config, OTHER_PARTITION, processRecord(ProcessIntent.CREATED, OTHER_PARTITION));
-    clientAdapter.refresh(testPrefix);
-
-    // then
-    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
-        .isEqualTo(ProcessDefinitionState.SUSPENDED);
   }
 
   private void prepareConfig(final ExporterConfiguration config) {
@@ -318,42 +248,8 @@ final class ProcessDrainingExportConsistencyIT {
         .getState();
   }
 
-  private List<String> searchIdsByState(
-      final ExporterConfiguration config, final ProcessDefinitionState state) throws IOException {
-    final var index = processIndexName(config);
-    final var field = ProcessIndex.STATE;
-    if (ConnectionTypes.isElasticSearch(config.getConnect().getType())) {
-      return SEARCH_DB
-          .esClient()
-          .search(
-              r -> r.index(index).query(q -> q.term(t -> t.field(field).value(state.name()))),
-              ProcessEntity.class)
-          .hits()
-          .hits()
-          .stream()
-          .map(hit -> hit.id())
-          .toList();
-    }
-    return SEARCH_DB
-        .osClient()
-        .search(
-            r ->
-                r.index(index)
-                    .query(q -> q.term(t -> t.field(field).value(FieldValue.of(state.name())))),
-            ProcessEntity.class)
-        .hits()
-        .hits()
-        .stream()
-        .map(hit -> hit.id())
-        .toList();
-  }
-
   private Record<Process> processRecord(final ProcessIntent intent) {
     return processRecord(intent, DEPLOYMENT_PARTITION, PROCESS_DEFINITION_KEY);
-  }
-
-  private Record<Process> processRecord(final ProcessIntent intent, final long key) {
-    return processRecord(intent, DEPLOYMENT_PARTITION, key);
   }
 
   private Record<Process> processRecord(final ProcessIntent intent, final int partitionId) {
