@@ -53,6 +53,16 @@ final class PausingBackend implements Backend<RawKey, HeldValue, DbValue> {
   }
 
   @Override
+  public KeyRange<RawKey> groupRange(final long group) {
+    return delegate.groupRange(group);
+  }
+
+  @Override
+  public RawKey groupLastSeekKey(final long group) {
+    return delegate.groupLastSeekKey(group);
+  }
+
+  @Override
   public @Nullable HeldValue get(final RawKey key) {
     return delegate.get(key);
   }
