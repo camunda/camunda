@@ -14,9 +14,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.web.context.request.RequestContextHolder;
 
@@ -25,28 +22,37 @@ class PhysicalTenantOidcSettingsRegistryTest {
   private static final PhysicalTenantOidcSettings TENANT_A_SETTINGS =
       new PhysicalTenantOidcSettings(null, Map.of(), Map.of());
 
+  private static final PhysicalTenantOidcSettings DEFAULT_SETTINGS =
+      new PhysicalTenantOidcSettings(null, Map.of(), Map.of());
+
   private final PhysicalTenantOidcSettingsRegistry registry =
-      new PhysicalTenantOidcSettingsRegistry(Map.of("tenanta", TENANT_A_SETTINGS));
+      new PhysicalTenantOidcSettingsRegistry(
+          Map.of("tenanta", TENANT_A_SETTINGS, "default", DEFAULT_SETTINGS));
 
   @AfterEach
   void clearTenantContext() {
     RequestContextHolder.resetRequestAttributes();
   }
 
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(strings = "default")
-  void shouldServeTheRootOutsideAnyTenantAndForTheDefaultTenant(final String physicalTenantId) {
-    // given
-    if (physicalTenantId != null) {
-      bindPhysicalTenant(physicalTenantId);
-    }
-
+  @Test
+  void shouldServeTheRootOutsideAnyTenant() {
     // when
     final var settings = registry.current();
 
     // then
     assertThat(settings).isNull();
+  }
+
+  @Test
+  void shouldReturnTheSettingsOfTheDefaultTenantLikeAnyTenant() {
+    // given
+    bindPhysicalTenant("default");
+
+    // when
+    final var settings = registry.current();
+
+    // then
+    assertThat(settings).isSameAs(DEFAULT_SETTINGS);
   }
 
   @Test

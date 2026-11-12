@@ -13,7 +13,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
@@ -26,11 +25,9 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -141,16 +138,11 @@ public class OidcBearerUserInfoClaimGapIT extends AbstractWebSecurityConfigTest 
             .expiresAt(Instant.now().plusSeconds(3600))
             .build();
 
-    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
-        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
+    // The test request belongs to the default physical tenant, whose claim converter is built
+    // from the configuration it is served with.
+    final var result = converter.convert(new JwtAuthenticationToken(jwt));
 
-    converter.convert(new JwtAuthenticationToken(jwt));
-
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(tokenClaimsConverter).convert(claimsCaptor.capture());
-
-    assertThat(claimsCaptor.getValue())
+    assertThat(result.claims())
         .containsEntry("sub", "alice")
         .containsEntry("groups", List.of("engineering"));
 

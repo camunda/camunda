@@ -16,13 +16,11 @@ import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,7 +31,6 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -72,8 +69,6 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
   private static final String CLIENT_REGISTRATION_ID = "oidc";
 
   @Autowired private OidcUserAuthenticationConverter converter;
-
-  @MockitoBean private LazyTokenClaimsConverter tokenClaimsConverter;
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
@@ -122,24 +117,21 @@ public class OidcUserAuthenticationConverterIntegrationTest extends AbstractWebS
     final var response = new MockHttpServletResponse();
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request, response));
 
-    Mockito.when(tokenClaimsConverter.convert(Mockito.any()))
-        .thenReturn(CamundaAuthentication.of(b -> b.user("alice")));
-
+    final CamundaAuthentication result;
     try {
       // when — the converter runs through the real WebSecurityConfig bean graph. With
       // prefer-id-token-claims=true, it must skip access-token decoding and return the
-      // principal attributes directly.
-      converter.convert(authentication);
+      // principal attributes directly. The request belongs to the default physical tenant, whose
+      // claim converter is built from the configuration it is served with.
+      result = converter.convert(authentication);
     } finally {
       RequestContextHolder.resetRequestAttributes();
     }
 
-    // then — LazyTokenClaimsConverter receives the userInfo-merged principal attributes,
-    // including the userInfo-only claim that mapping rules need to match against.
-    @SuppressWarnings("unchecked")
-    final ArgumentCaptor<Map<String, Object>> claimsCaptor = ArgumentCaptor.forClass(Map.class);
-    Mockito.verify(tokenClaimsConverter).convert(claimsCaptor.capture());
-    assertThat(claimsCaptor.getValue())
+    // then — the claim converter receives the userInfo-merged principal attributes, including the
+    // userInfo-only claim that mapping rules need to match against.
+    assertThat(result.authenticatedUsername()).isEqualTo("alice");
+    assertThat(result.claims())
         .containsEntry("sub", "alice")
         .containsEntry("groups", List.of("group-a"));
   }

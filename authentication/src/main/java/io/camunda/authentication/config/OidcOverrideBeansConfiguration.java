@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.authentication.pt.PhysicalTenantAuthentications;
@@ -48,7 +47,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,10 +171,9 @@ public class OidcOverrideBeansConfiguration {
               + " any other issuer fall back to the default provider's claim config",
           perIssuerConverters.byIssuer().keySet());
     }
-    // Cluster/default surface (unprefixed /v2 and /physical-tenants/default): root claim config +
-    // the per-issuer map (#61920). physicalTenantClusterAuthUnification already collapses the
-    // cluster config onto the default tenant, so the default tenant is served by this converter,
-    // not a rebuilt one.
+    // Requests outside any physical tenant: root claim config + the per-issuer map (#61920). The
+    // default tenant, unprefixed and through its alias, uses a converter built from the
+    // configuration it is served with, like every other tenant, so it follows a runtime change.
     final var defaultConverter =
         new OidcTokenAuthenticationConverter(
             tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
@@ -190,19 +187,11 @@ public class OidcOverrideBeansConfiguration {
                     membershipPort,
                     membershipResolutionContextPropagator));
     LOG.info(
-        "Physical-tenant-aware OIDC bearer-token conversion enabled; each physical tenant other"
-            + " than default uses claim converters built from its own configuration, currently"
-            + " for {}",
-        physicalTenantAuthentications.physicalTenantIds().stream()
-            .filter(id -> !DEFAULT_PHYSICAL_TENANT_ID.equals(id))
-            .sorted()
-            .toList());
+        "Physical-tenant-aware OIDC bearer-token conversion enabled; each physical tenant uses"
+            + " claim converters built from its own configuration, currently for {}",
+        physicalTenantAuthentications.physicalTenantIds().stream().sorted().toList());
     return new PhysicalTenantAwareOidcTokenAuthenticationConverter(
-        physicalTenantId ->
-            DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
-                ? Optional.empty()
-                : convertersByPhysicalTenant.get(physicalTenantId),
-        defaultConverter);
+        convertersByPhysicalTenant::get, defaultConverter);
   }
 
   /**
@@ -370,9 +359,9 @@ public class OidcOverrideBeansConfiguration {
   }
 
   /**
-   * The OIDC settings of each non-default physical tenant, for both the ID-token decoder factory
-   * and the user authentication converter, built from the configuration the tenant's HTTP security
-   * serves and built again when it changes.
+   * The OIDC settings of each physical tenant, the default tenant included, for both the ID-token
+   * decoder factory and the user authentication converter, built from the configuration the
+   * tenant's HTTP security serves and built again when it changes.
    */
   @Bean
   public PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings(
@@ -439,8 +428,8 @@ public class OidcOverrideBeansConfiguration {
   /**
    * ID-token decoder factory shared by every oauth2Login chain. Spring caches decoders by
    * registration id, and a registration id can be shared by the root and several physical tenants
-   * with different issuers, so the decoder factory of the request's physical tenant is used. The
-   * default tenant and requests outside any tenant use the root factory.
+   * with different issuers, so the decoder factory of the request's physical tenant is used;
+   * requests outside any tenant use the root factory.
    */
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
