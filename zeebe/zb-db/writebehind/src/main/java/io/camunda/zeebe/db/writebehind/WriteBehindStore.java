@@ -12,10 +12,16 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
+import org.agrona.collections.Long2ObjectHashMap;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Committed state of one write-behind DB, shared by all its transaction contexts.
@@ -34,13 +40,25 @@ import org.jspecify.annotations.Nullable;
  * batch, and taking a read view (a storage cursor plus the batches). Nothing that holds it blocks
  * on anything else.
  *
+ * <p>A column family can have a {@link KeyIndex}: its committed keys, held in memory, which answer
+ * lookups of absent keys without the storage. A commit applies its keys to the index under the same
+ * lock, and records its sequence there first. A reader reads {@link #committedSeq} before it looks
+ * at an index, and doesn't trust an index that a later commit wrote to: that commit may be half
+ * published, and the reader doesn't see its versions.
+ *
  * @param <K> the key type
  * @param <V> the value as the store holds it, see {@link Backend}
  * @param <T> the caller's value objects, which reads fill in
  */
 public final class WriteBehindStore<K extends Comparable<K>, V, T> implements AutoCloseable {
 
+  /** Loads or refills of an index in a row that commits can make obsolete before it is given up. */
+  static final int MAX_DISCARDED_LOADS = 3;
+
+  private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
+
   private final Backend<K, V, T> backend;
+  private final WriteBehindConfiguration config;
   // the unflushed commits: commits go to the active batch, the writer seals it to flush it
   private volatile Batches<K, V> batches =
       new Batches<>(new ConcurrentSkipListMap<K, Version<V>>(), null);
@@ -63,6 +81,9 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   private volatile long committedSeq;
 
+  // filled in the constructor and never changed after, so it is read without a lock
+  private final Long2ObjectHashMap<KeyIndex<K>> keyIndexes = new Long2ObjectHashMap<>();
+
   /** A store whose writer thread has no name that tells it apart from those of other stores. */
   public WriteBehindStore(final Backend<K, V, T> backend, final WriteBehindConfiguration config) {
     this(backend, config, "store");
@@ -75,6 +96,11 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
   public WriteBehindStore(
       final Backend<K, V, T> backend, final WriteBehindConfiguration config, final String name) {
     this.backend = backend;
+    this.config = config;
+    for (final Map.Entry<Long, KeyIndexPolicy> entry : config.keyIndexPolicies().entrySet()) {
+      final long columnFamily = entry.getKey();
+      keyIndexes.put(columnFamily, new KeyIndex<>(columnFamily, entry.getValue()));
+    }
     cache =
         config.cacheMaxBytes() > 0
             ? Caffeine.newBuilder()
@@ -121,6 +147,7 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
         bytes += backend.weigh(keys[i], values[i]);
         active.put(keys[i], version);
       }
+      updateKeyIndexes(keys, values, seq);
       flusher.enqueue(seq, keys, versions, bytes);
       committedSeq = seq;
     } finally {
@@ -136,24 +163,32 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
    */
   public @Nullable V get(final K key) {
     ensureUsable();
-    final var inMemory = lookupInMemory(key);
+    final long seq = committedSeq;
+    final var inMemory = lookupInMemory(key, seq);
     if (inMemory != null) {
       return inMemory.value();
+    }
+    if (absentFromKeyIndex(key, seq)) {
+      return null;
     }
     return readStorage(key);
   }
 
+  /** The sequence of the last commit that readers see whole. */
+  long committedSeq() {
+    return committedSeq;
+  }
+
   /**
-   * The unflushed version of a key as of the last whole commit, or else the cached one; null if the
-   * store has neither.
+   * The unflushed version of a key as of the commit with sequence {@code seq}, or else the cached
+   * one; null if the store has neither.
    *
    * <p>A commit puts its versions into the active batch one by one and sets {@link #committedSeq}
-   * after the last one. So the sequence is read first, and a version of a later commit, which may
-   * be half published, is skipped for the one it replaced. The cache only holds flushed values,
+   * after the last one. So callers read the sequence first, and a version of a later commit, which
+   * may be half published, is skipped for the one it replaced. The cache only holds flushed values,
    * which are whole commits.
    */
-  private @Nullable Version<V> lookupInMemory(final K key) {
-    final long seq = committedSeq;
+  @Nullable Version<V> lookupInMemory(final K key, final long seq) {
     final var unflushed = batches.getAsOf(key, seq);
     if (unflushed != null) {
       metrics.of(backend.groupOf(key)).dirtyHits.increment();
@@ -171,7 +206,7 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
    * read from the storage is cached; a missing one is not, as a cached absence of short-lived state
    * would only fill the cache.
    */
-  private @Nullable V readStorage(final K key) {
+  @Nullable V readStorage(final K key) {
     // A batch only leaves the store after the storage holds it and the cache has it, so a key that
     // isn't in a batch has its latest flushed value in the storage. A value that is loaded while
     // the writer flushes may be older than the one it caches, so it isn't cached then.
@@ -202,9 +237,13 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
   /** Whether the key has a committed value. Doesn't decode or cache what it reads. */
   boolean exists(final K key) {
     ensureUsable();
-    final var inMemory = lookupInMemory(key);
+    final long seq = committedSeq;
+    final var inMemory = lookupInMemory(key, seq);
     if (inMemory != null) {
       return !inMemory.isTombstone();
+    }
+    if (absentFromKeyIndex(key, seq)) {
+      return false;
     }
     final var found = backend.exists(key);
     countStorageGet(key, found);
@@ -217,6 +256,153 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
     if (found) {
       counters.storageGetsFound.increment();
     }
+  }
+
+  /**
+   * Whether the key index of the key's column family shows that the key has no committed value as
+   * of the commit with sequence {@code seq}, which the caller read before it missed the unflushed
+   * versions. Loads the index first if it isn't loaded, as a column family that is only read by key
+   * would otherwise never load.
+   *
+   * <p>No answer if a later commit wrote to the column family: its keys may be in the index while
+   * its versions are hidden from the caller. No answer either if the key is in the index, which
+   * holds no values, or outside the window, or if the key set changed meanwhile.
+   */
+  private boolean absentFromKeyIndex(final K key, final long seq) {
+    if (keyIndexes.isEmpty()) {
+      return false;
+    }
+    final long columnFamily = backend.groupOf(key);
+    final var index = keyIndexes.get(columnFamily);
+    if (index == null) {
+      return false;
+    }
+    if (index.state() == KeyIndex.State.UNLOADED) {
+      loadKeyIndex(index);
+    }
+    final long version = index.version();
+    final var bound = index.bound();
+    final boolean absent =
+        index.isStableAsOf(version, seq)
+            && index.covers(bound, key)
+            && !index.keys().contains(key)
+            && index.version() == version;
+    if (absent) {
+      metrics.of(columnFamily).keyIndexAbsent.increment();
+    }
+    return absent;
+  }
+
+  /**
+   * Call it before a scan of a column family: loads its key index if it has one that isn't loaded
+   * yet. Costs one map lookup when there is nothing to do.
+   */
+  void prepareKeyIndex(final long columnFamily) {
+    final var index = keyIndexes.get(columnFamily);
+    if (index != null && index.state() == KeyIndex.State.UNLOADED) {
+      loadKeyIndex(index);
+    }
+  }
+
+  /**
+   * Reads the keys of the index's column family from a view, then installs them, unless a commit
+   * wrote to the column family after the view was taken; the next read tries again. A column family
+   * with more keys than an index may hold keeps the window at the end its policy names, or gives up
+   * the index if its policy is {@link KeyIndexPolicy#DISABLE}.
+   */
+  private void loadKeyIndex(final KeyIndex<K> index) {
+    final long group = index.group();
+    final int maxKeys = config.keyIndexMaxKeys();
+    final boolean keepLowest = index.policy() != KeyIndexPolicy.KEEP_HIGHEST;
+    final var loaded = new ArrayList<K>();
+    final @Nullable K next;
+    final var view = openView(backend.groupRange(group));
+    try (final var source = new ViewSource<>(backend, view)) {
+      if (keepLowest) {
+        source.seek(backend.groupRange(group).from());
+      } else {
+        source.seekForPrev(backend.groupLastSeekKey(group));
+      }
+      next = collect(source, group, maxKeys, loaded);
+    }
+
+    final long stamp = publishLock.writeLock();
+    try {
+      if (index.state() != KeyIndex.State.UNLOADED) {
+        return;
+      }
+      if (next != null && index.policy() == KeyIndexPolicy.DISABLE) {
+        disableKeyIndex(index, "it has more than " + maxKeys + " keys");
+      } else if (index.lastCommitSeq() > view.viewSeq()) {
+        metrics.keyIndexDiscardedLoads.increment();
+        if (index.recordDiscardedLoad() >= MAX_DISCARDED_LOADS) {
+          disableKeyIndex(index, "commits made " + MAX_DISCARDED_LOADS + " loads obsolete");
+        }
+      } else {
+        index.install(loaded, next);
+        metrics.keyIndexLoads.increment();
+      }
+    } finally {
+      publishLock.unlockWrite(stamp);
+    }
+  }
+
+  /**
+   * Collects up to {@code max} keys of the group from the source's position in its direction.
+   * Returns the first key it didn't collect, or null if the group ended first.
+   */
+  private @Nullable K collect(
+      final ViewSource<K, V, T> source, final long group, final int max, final List<K> into) {
+    while (source.isValid() && backend.groupOf(source.key()) == group) {
+      if (into.size() >= max) {
+        return source.key();
+      }
+      into.add(source.key());
+      source.advance();
+    }
+    return null;
+  }
+
+  /** The key index of a column family, or null if it has none. */
+  @Nullable KeyIndex<K> keyIndex(final long columnFamily) {
+    return keyIndexes.get(columnFamily);
+  }
+
+  /** Under the write lock: applies a commit's keys to the indexes of their column families. */
+  private void updateKeyIndexes(final K[] keys, final @Nullable V[] values, final long seq) {
+    if (keyIndexes.isEmpty()) {
+      return;
+    }
+    final int maxKeys = config.keyIndexMaxKeys();
+    // the keys are sorted, so the keys of a column family are consecutive
+    int from = 0;
+    while (from < keys.length) {
+      final long columnFamily = backend.groupOf(keys[from]);
+      int to = from + 1;
+      while (to < keys.length && backend.groupOf(keys[to]) == columnFamily) {
+        to++;
+      }
+      final var index = keyIndexes.get(columnFamily);
+      if (index != null) {
+        index.recordCommit(seq);
+        if (index.state() == KeyIndex.State.LOADED) {
+          index.apply(keys, values, from, to, maxKeys);
+          if (index.size() > maxKeys) {
+            disableKeyIndex(index, "it has more than " + maxKeys + " keys");
+          }
+        }
+      }
+      from = to;
+    }
+  }
+
+  private void disableKeyIndex(final KeyIndex<K> index, final String reason) {
+    index.disable();
+    metrics.keyIndexDisables.increment();
+    LOG.info(
+        "Disabled the key index of column family {} until the next restart, because {}",
+        index.group(),
+        reason);
   }
 
   /**
