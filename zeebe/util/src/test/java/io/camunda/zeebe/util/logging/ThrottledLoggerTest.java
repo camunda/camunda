@@ -52,11 +52,14 @@ final class ThrottledLoggerTest {
             })
         .when(delegate)
         .debug("message");
+    // the interval only has to outlast the test, so that it cannot expire while the threads race
     final var logger = new ThrottledLogger(delegate, Duration.ofMinutes(1));
 
     final int threads = 32;
+    // one thread wins the interval and stays inside the delegate, all others must return
+    final int callersThatMustNotLog = threads - 1;
     final var start = new CountDownLatch(1);
-    final var returned = new CountDownLatch(threads - 1);
+    final var returned = new CountDownLatch(callersThatMustNotLog);
     final var executor = Executors.newFixedThreadPool(threads);
 
     try {
