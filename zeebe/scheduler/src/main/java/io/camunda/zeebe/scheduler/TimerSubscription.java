@@ -9,7 +9,9 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public interface TimerSubscription extends ActorSubscription, ScheduledTimer, Runnable {
 
   // resolves the clash between ActorSubscription's default and ScheduledTimer's abstract cancel()

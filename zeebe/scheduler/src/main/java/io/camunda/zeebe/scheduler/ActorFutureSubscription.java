@@ -9,7 +9,9 @@ package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class ActorFutureSubscription implements ActorSubscription {
   private final ActorJob callbackJob;
   private final int phaseMask;
