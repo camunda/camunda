@@ -49,9 +49,31 @@ describe('getVisibleProcessInstanceTabs', () => {
 	});
 });
 
+describe('getVisibleProcessInstanceTabs history tab', () => {
+	it.for([
+		{name: 'mobile', isMobile: true, expected: true},
+		{name: 'desktop', isMobile: false, expected: false},
+	])('should set history visibility to $expected on $name', ({isMobile, expected}) => {
+		const tabs = getVisibleProcessInstanceTabs({
+			hasIncidentsTab: false,
+			hasSelection: false,
+			isProcessLevelWaiting: false,
+			isMobile,
+		});
+
+		expect(tabs.includes('history')).toBe(expected);
+	});
+});
+
 describe('getHiddenTabRedirect', () => {
 	const noExtras = getVisibleProcessInstanceTabs({
 		hasIncidentsTab: false,
+		hasSelection: false,
+		isProcessLevelWaiting: false,
+	});
+
+	const withIncidents = getVisibleProcessInstanceTabs({
+		hasIncidentsTab: true,
 		hasSelection: false,
 		isProcessLevelWaiting: false,
 	});
@@ -111,6 +133,28 @@ describe('getHiddenTabRedirect', () => {
 				isWaitStateLoading: false,
 			},
 			expected: 'details',
+		},
+		{
+			name: 'a hidden history tab with an incident',
+			input: {
+				activeTab: 'history',
+				visibleTabs: withIncidents,
+				hasSelection: false,
+				isProcessLevelWaiting: false,
+				isWaitStateLoading: false,
+			},
+			expected: 'incidents',
+		},
+		{
+			name: 'a hidden history tab without an incident',
+			input: {
+				activeTab: 'history',
+				visibleTabs: noExtras,
+				hasSelection: false,
+				isProcessLevelWaiting: false,
+				isWaitStateLoading: false,
+			},
+			expected: 'variables',
 		},
 		{
 			name: 'a hidden details tab while the wait states are loading',
