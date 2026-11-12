@@ -47,8 +47,11 @@ public class RequestAdjustmentSecurityChainIT extends AbstractRequestAdjustmentS
     final Response response = get("/external/api/report");
 
     // then the rewrite did not make it reachable: it maps to /api/external/report, which is a
-    // different path, so the request must not succeed
-    assertThat(response.getStatus()).isGreaterThanOrEqualTo(400);
+    // different path, so the request must not succeed or redirect.
+    // TODO #69125: an unknown path under /api/external/** answers 500 instead of 404, so this
+    // cannot distinguish "not found" from a server error yet. Tighten to 404 once that is fixed.
+    assertThat(response.getStatusInfo().getFamily())
+        .isNotIn(Response.Status.Family.SUCCESSFUL, Response.Status.Family.REDIRECTION);
   }
 
   @Test

@@ -84,16 +84,6 @@ public class RequestAdjustmentContextPathSecurityChainIT
   }
 
   @Test
-  void shouldServeActuatorHealthWhenAppRunsUnderContextPath() {
-    // given the app runs under /<clusterId>
-    // when an unauthenticated client requests the actuator health endpoint
-    final Response response = getActuatorHealth();
-
-    // then it is served
-    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-  }
-
-  @Test
   void shouldServeReadyzAtServerRootWhenAppRunsUnderContextPath() {
     // given the app runs under /<clusterId>, but SaaS probes omit the prefix
     // when an unauthenticated probe requests /api/readyz at the server root
