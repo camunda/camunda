@@ -44,12 +44,10 @@ previous stable version (e.g. `8.10`).
      new version here, or, better, convert it to
      `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), inputs.base)`
      so it stops needing this edit on every future cut.
-   - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): as of the 8.10 cut
-     this still only lists `stable/8.9 || main`. It does not include `stable/8.10`, so 8.10's
-     on-demand ES API tests only ever run in `profiles` mode, never `all-in-one`. This is a
-     pre-existing gap, not something this checklist introduced. Check this line at every cut
-     and decide whether the new branch should be added, or whether the condition should be
-     generalized instead of extended again.
+   - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): it lists the
+     branches that run in both `profiles` and `all-in-one` mode (`stable/8.9`, `stable/8.10`,
+     `main`). Add the new branch here, or it runs `profiles` only, and consider generalizing the
+     condition instead of extending it again.
    - `tasklist_mode` matrix: enumerates `stable/8.6`/`stable/8.7` (v1-only) and
      `stable/8.8`/`stable/8.9` (v1+v2), defaulting everything else to v2-only. Self-updating as
      long as no future branch reintroduces Tasklist v1. No edit needed unless that changes.

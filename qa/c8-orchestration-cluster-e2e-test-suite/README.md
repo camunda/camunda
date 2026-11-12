@@ -217,12 +217,34 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automatic PR Check
 
-When a pull request to `main` or a `stable/*` branch changes non-Markdown files under
-`qa/c8-orchestration-cluster-e2e-test-suite/`,
-`c8-orchestration-cluster-e2e-tests-pr.yml` runs the same matrix as the on-demand workflow for the
-PR's base branch. It is **not** a required check: a red result does not block the merge, but any
-failure must be reviewed and documented in the PR description, the same as for an on-demand run.
-It does not run for pull requests from forks; use the on-demand workflow there.
+When a pull request changes non-Markdown files under `qa/c8-orchestration-cluster-e2e-test-suite/`,
+`c8-orchestration-cluster-e2e-tests-pr.yml` runs the suite's test matrix for the PR's head commit,
+sized for the PR's target branch, as jobs of the check, so each job's result shows on the PR. On
+`main` it uses the PR's own copy of the test workflow, so changes to it are tested too; on the
+stable branches, which have no suite workflows, it uses `main`'s. A newer push cancels the PR's
+run in progress.
+
+The check is **not** required: a red result does not block the merge, but any failure must be
+reviewed and documented in the PR description. It does not run for pull requests from forks; run
+the on-demand workflow by hand there.
+
+When a suite job fails, its failed tests are re-run with the base branch's version of the test
+code, in the same job and environment, and the check comments on the PR and tags the author (for a
+bot PR, its assignees) with what that showed:
+
+- **Regression from this PR's test changes**: observed in that run: failed with the PR's test code
+  in every attempt (including any retry) and passed first time with the base test code. An
+  intermittent test can rarely do this too; re-run the PR check if in doubt.
+- **New tests failing**: the spec does not exist on the base branch.
+- **Also fails with the base test code**: failed with it in every job it failed in, so the PR's test
+  changes are not the cause. The base re-run uses the same Camunda instance, so a test that needs a
+  clean state can also fail there for that reason.
+
+Everything else is listed as **not verified**, with the reason per job; it is not guessed at: more
+than 15 failures in a job, not enough time left in the job, a renamed test, a test that was flaky
+with the base test code or passed in one base run and failed in another, or a job that was not
+compared. Tests in serial specs are compared by re-running the whole spec, since they depend on the
+earlier tests. When a later run passes, it posts one comment saying so.
 
 ### Running the On-Demand Workflow
 
