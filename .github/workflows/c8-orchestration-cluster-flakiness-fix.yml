@@ -1672,7 +1672,14 @@ jobs:
             [ -n "$id" ] && [ "$id" != "null" ] || continue
 
             # First entry naming this thread; a duplicate is ignored.
-            entry=$(jq -c --arg id "$id" '[.replies[] | select(.id == $id)] | first // empty' "$manifest")
+            # `.body` must be a string: jq -r on an object or an array prints
+            # its JSON, which would be posted verbatim as the reply. An entry
+            # that is not shaped like a reply is no entry at all, so the thread
+            # takes the placeholder below and stays open.
+            entry=$(jq -c --arg id "$id" '
+              [.replies[]? | select(type == "object")
+                           | select((.id? // "") == $id)
+                           | select((.body? | type) == "string")] | first // empty' "$manifest")
             [ -n "$entry" ] || entry='{}'
             verdict=$(jq -r '.verdict // ""' <<< "$entry")
             body=$(jq -r '.body // ""' <<< "$entry")
