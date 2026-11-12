@@ -32,6 +32,7 @@ final class WriteBehindZeebeDbTest {
         new WriteBehindZeebeDb<>(
             storage.db(),
             new TestConfiguration().maxWriteDelay(Duration.ofMillis(1)).build(),
+            NoCommitGate.INSTANCE,
             new ConsistencyChecksSettings(true, true))) {
       db.addFailureListener(listener);
       assertThat(db.getHealthReport().isHealthy()).isTrue();

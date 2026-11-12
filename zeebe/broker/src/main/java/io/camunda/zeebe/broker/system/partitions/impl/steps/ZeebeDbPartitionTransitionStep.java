@@ -13,12 +13,27 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import java.util.function.LongConsumer;
 
 public final class ZeebeDbPartitionTransitionStep implements PartitionTransitionStep {
 
   private static final String RECOVERY_FAILED_ERROR_MSG =
       "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d";
+
+  private final LongConsumer openingTerm;
+
+  public ZeebeDbPartitionTransitionStep() {
+    this(term -> {});
+  }
+
+  /**
+   * @param openingTerm gets the transition's term right before the step opens the database
+   */
+  public ZeebeDbPartitionTransitionStep(final LongConsumer openingTerm) {
+    this.openingTerm = openingTerm;
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -65,7 +80,7 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
         || currentRole == Role.INACTIVE
         || context.getZeebeDb() == null) {
 
-      recoverDb(context, transitionFuture);
+      recoverDb(context, term, transitionFuture);
     } else {
       transitionFuture.complete(null);
     }
@@ -79,17 +94,22 @@ public final class ZeebeDbPartitionTransitionStep implements PartitionTransition
 
   private void recoverDb(
       final PartitionTransitionContext context,
+      final long term,
       final CompletableActorFuture<Void> transitionFuture) {
     final ActorFuture<ZeebeDb> recoverFuture;
 
+    openingTerm.accept(term);
     recoverFuture = context.getStateController().recover();
 
     recoverFuture.onComplete(
         (zeebeDb, error) -> {
           if (error != null) {
+            final var message = String.format(RECOVERY_FAILED_ERROR_MSG, context.getPartitionId());
+            // an unrecoverable failure stops the partition, instead of retrying in a new term
             transitionFuture.completeExceptionally(
-                new IllegalStateException(
-                    String.format(RECOVERY_FAILED_ERROR_MSG, context.getPartitionId()), error));
+                error instanceof UnrecoverableException
+                    ? new UnrecoverableException(message, error)
+                    : new IllegalStateException(message, error));
           } else {
             context.setZeebeDb(zeebeDb);
             if (zeebeDb instanceof final HealthMonitorable monitorable) {

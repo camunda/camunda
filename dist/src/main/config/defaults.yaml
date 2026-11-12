@@ -595,6 +595,38 @@ camunda: # Type: io.camunda.configuration.Camunda
         # The size of data log segment files.
         log-segment-size: "128MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE
       
+      rdbms: # Type: io.camunda.configuration.data.primarystorage.PrimaryStorageRdbms  
+        connection-pool: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool  
+          # Maximum time the pool waits for a connection before throwing.
+          connection-timeout: "30000ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_CONNECTIONTIMEOUT
+          # Maximum time a connection is allowed to sit idle in the pool before being evicted.
+          idle-timeout: "600000ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_IDLETIMEOUT
+          # Interval at which the pool probes idle connections for aliveness, evicting dead ones before they are
+          # handed out. Set to {@link Duration#ZERO} (the HikariCP default) to disable. Useful with
+          # failover-aware JDBC drivers (e.g. AWS Aurora) so connections bound to a demoted writer are discarded
+          # proactively instead of only on borrow.
+          keepalive-time: 0 # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_KEEPALIVETIME
+          # Threshold for logging a possible connection leak. Set to {@link Duration#ZERO} (the HikariCP
+          # default) to disable leak detection.
+          leak-detection-threshold: 0 # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_LEAKDETECTIONTHRESHOLD
+          # Maximum lifetime of a connection in the pool.
+          max-lifetime: "1800000ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXLIFETIME
+          # Maximum number of connections kept by the pool.
+          maximum-pool-size: 10 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_MAXIMUMPOOLSIZE
+          # Minimum number of idle connections kept by the pool.
+          minimum-idle: 2 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_MINIMUMIDLE
+          # Maximum time the pool waits for a connection to be validated as alive.
+          validation-timeout: "5000ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_CONNECTIONPOOL_VALIDATIONTIMEOUT
+        
+        # The password to connect to the database with.
+        password: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_PASSWORD
+        # The start of every table name, so several clusters can share one database. May be empty.
+        prefix: "" # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_PREFIX
+        # The JDBC URL of the database. Only PostgreSQL is supported; H2 is only meant for tests.
+        url: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_URL
+        # The user name to connect to the database with.
+        username: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RDBMS_USERNAME
+      
       rocks-db: # Type: io.camunda.configuration.data.primarystorage.RocksDb  
         # Configures which, if any, RocksDB column family access metrics are exposed. Valid values are none
         # (the default), and fine which exposes many metrics covering the read, write, delete and iteration
@@ -674,6 +706,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       # be copied to data directory while taking snapshot. This may impact disk i/o or performance during
       # snapshotting.
       runtime-directory: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RUNTIMEDIRECTORY
+      # Where the partitions keep their state: `rocksdb` on local disk, or `rdbms` in the relational
+      # database configured under `rdbms`. The partitions' logs stay on local disk either way. The `rdbms`
+      # type needs the write-behind cache and no backups.
+      type: "rocksdb" # Type: io.camunda.configuration.data.PrimaryStorage$PrimaryStorageType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_TYPE
       # The number of versioned data directories to retain when garbage collection runs. This only applies
       # when using the S3-based node ID provider with versioned directories enabled. Older versions beyond
       # this count will be deleted after the current version is validated.

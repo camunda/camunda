@@ -133,6 +133,67 @@ final class TransactionWriterTest {
   }
 
   @Test
+  void shouldWriteOnlyTransactionsWhoseRecordsTheLogCommitted() {
+    // given
+    final var gate = new TestCommitGate();
+    final var writer = writer(1_000, STALLED, gate);
+    writer.enqueue(transactionAt(10, version(1, 11, 1)));
+    writer.enqueue(transactionAt(20, version(2, 22, 2)));
+    writer.flushUpTo(2);
+
+    // when
+    gate.commit(10);
+
+    // then
+    await().untilAsserted(() -> assertThat(storage.transactionLog()).hasSize(1));
+    assertThat(storage.transactionLog().getFirst()).containsExactly("FIRST [1]=[11]");
+    assertThat(writer.flushedSeq()).isEqualTo(1);
+
+    // when
+    gate.commit(20);
+
+    // then
+    await().untilAsserted(() -> assertThat(writer.flushedSeq()).isEqualTo(2));
+    assertThat(storage.transactionLog().get(1)).containsExactly("FIRST [2]=[22]");
+    assertThat(writer.queuedBytes()).isZero();
+  }
+
+  @Test
+  void shouldCountOnlyCommittedTransactionsTowardsTheBatchSize() {
+    // given - the writer saw one committed and one held-back transaction, which together have
+    // enough keys to close a group
+    final var gate = new TestCommitGate();
+    gate.commit(10);
+    final var writer = writer(2, STALLED, gate);
+    writer.enqueue(transactionAt(10, version(1, 11, 1)));
+    writer.enqueue(transactionAt(20, version(2, 22, 2)));
+    final int reads = gate.committedPositionReads();
+    await().until(() -> gate.committedPositionReads() > reads);
+
+    // when
+    gate.commit(20);
+
+    // then
+    await().untilAsserted(() -> assertThat(storage.transactionLog()).hasSize(1));
+    assertThat(storage.transactionLog().getFirst())
+        .containsExactly("FIRST [1]=[11]", "FIRST [2]=[22]");
+  }
+
+  @Test
+  void shouldStopListeningToTheLogOnceClosed() {
+    // given
+    final var gate = new TestCommitGate();
+    final var writer = writer(1_000, STALLED, gate);
+    assertThat(gate.listeners()).hasSize(1);
+
+    // when
+    writer.close();
+
+    // then
+    assertThat(gate.listeners()).isEmpty();
+  }
+
+  @Test
   void shouldDropQueuedTransactionsOnClose() {
     // given
     final var writer = writer(1_000, STALLED);
@@ -149,12 +210,18 @@ final class TransactionWriterTest {
 
   private TransactionWriter<TestColumnFamily> writer(
       final int batchSize, final Duration maxWriteDelay) {
+    return writer(batchSize, maxWriteDelay, NoCommitGate.INSTANCE);
+  }
+
+  private TransactionWriter<TestColumnFamily> writer(
+      final int batchSize, final Duration maxWriteDelay, final CommitGate commitGate) {
     final var writer =
         new TransactionWriter<>(
             storage.db(),
             dirtyIndex,
             new StampedLock(),
             new TestConfiguration().batchSize(batchSize).maxWriteDelay(maxWriteDelay).build(),
+            commitGate,
             new WriteBehindMetrics(storage.meterRegistry()),
             flushes::incrementAndGet,
             failures::add);
@@ -165,7 +232,13 @@ final class TransactionWriterTest {
   @SafeVarargs
   private static CommittedTransaction transaction(
       final Map.Entry<CacheKey, CachedValue>... versions) {
-    return CommittedTransaction.of(versions[0].getValue().seq(), List.of(versions));
+    return transactionAt(0, versions);
+  }
+
+  @SafeVarargs
+  private static CommittedTransaction transactionAt(
+      final long position, final Map.Entry<CacheKey, CachedValue>... versions) {
+    return CommittedTransaction.of(versions[0].getValue().seq(), position, List.of(versions));
   }
 
   private static Map.Entry<CacheKey, CachedValue> version(

@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
@@ -127,6 +128,37 @@ final class SystemContextTest {
     // then
     assertThat(systemContext.getBrokerConfiguration().getData().getSnapshotPeriod())
         .isEqualTo(Duration.ofMinutes(1));
+  }
+
+  @Test
+  void shouldRejectRdbmsPrimaryStorageWithoutWhatItNeeds() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.RDBMS);
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+    brokerCfg.getData().getBackup().setContinuous(true);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContainingAll(
+            "camunda.data.primary-storage.rdbms.url must be set",
+            "camunda.data.primary-storage.write-behind-cache.enabled must be true",
+            "camunda.data.primary-storage.backup.store must be NONE",
+            "camunda.data.primary-storage.backup.continuous must be false",
+            "[physical tenant 'default']");
+  }
+
+  @Test
+  void shouldAcceptRdbmsPrimaryStorageWithWhatItNeeds() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.RDBMS);
+    brokerCfg.getData().getRdbms().setUrl("jdbc:postgresql://localhost:5432/camunda");
+    brokerCfg.getData().getWriteBehindCache().setEnabled(true);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg)).doesNotThrowAnyException();
   }
 
   @Test

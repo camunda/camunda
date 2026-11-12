@@ -48,6 +48,7 @@ public class TestLogStream implements LogStream {
   /**
    * @return the current commit position, or a negative value if no entry is committed.
    */
+  @Override
   public long getLastWrittenPosition() {
     return lastWrittenPosition;
   }

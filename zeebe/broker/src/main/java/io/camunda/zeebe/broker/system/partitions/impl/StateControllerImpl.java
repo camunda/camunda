@@ -13,6 +13,7 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
+import io.camunda.zeebe.broker.system.partitions.impl.SnapshotIdFinder.NextSnapshotId;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -24,10 +25,13 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -42,9 +46,10 @@ public class StateControllerImpl implements StateController {
   private final Path runtimeDirectory;
   private final ZeebeDbFactory zeebeDbFactory;
   private final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory;
-  private final AtomixRecordEntrySupplier entrySupplier;
+  private final SnapshotIdFinder snapshotIdFinder;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
+  private final boolean sharedState;
 
   private ZeebeDb db;
   private StatePositionSupplier positionSupplier;
@@ -57,12 +62,36 @@ public class StateControllerImpl implements StateController {
       final AtomixRecordEntrySupplier entrySupplier,
       final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory,
       final ConcurrencyControl concurrencyControl) {
+    this(
+        zeebeDbFactory,
+        constructableSnapshotStore,
+        runtimeDirectory,
+        entrySupplier,
+        positionSupplierFactory,
+        concurrencyControl,
+        false);
+  }
+
+  /**
+   * @param sharedState whether the snapshots only name a state kept in a shared database, instead
+   *     of holding a copy of it. Then recovery checks that the state isn't older than the snapshot,
+   *     because the log may no longer have the records in between.
+   */
+  public StateControllerImpl(
+      final ZeebeDbFactory zeebeDbFactory,
+      final ConstructableSnapshotStore constructableSnapshotStore,
+      final Path runtimeDirectory,
+      final AtomixRecordEntrySupplier entrySupplier,
+      final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory,
+      final ConcurrencyControl concurrencyControl,
+      final boolean sharedState) {
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
-    this.entrySupplier = requireNonNull(entrySupplier);
+    snapshotIdFinder = new SnapshotIdFinder(entrySupplier, constructableSnapshotStore);
     this.positionSupplierFactory = requireNonNull(positionSupplierFactory);
     this.concurrencyControl = requireNonNull(concurrencyControl);
+    this.sharedState = sharedState;
 
     concurrencyControl.execute(this::scheduleDbMetricsExport);
   }
@@ -136,7 +165,7 @@ public class StateControllerImpl implements StateController {
     if (latestSnapshot.isPresent() && !recoverFromSnapshot(future, latestSnapshot.get())) {
       return;
     }
-    openDb(future);
+    openDb(future, latestSnapshot);
   }
 
   private boolean recoverFromSnapshot(
@@ -175,7 +204,11 @@ public class StateControllerImpl implements StateController {
                 "Snapshot can be taken at processed position 0 only if forced."));
         return;
       }
-      nextSnapshotId = tryFindNextSnapshotId(lowerBoundSnapshotPosition);
+      nextSnapshotId =
+          snapshotIdFinder.find(
+              lowerBoundSnapshotPosition,
+              positionSupplier.getLowestExportedPosition(),
+              positionSupplier.getHighestBackupPosition());
     } catch (final NoEntryAtSnapshotPosition e) {
       future.completeExceptionally(e);
       return;
@@ -183,10 +216,10 @@ public class StateControllerImpl implements StateController {
 
     final var transientSnapshot =
         constructableSnapshotStore.newTransientSnapshot(
-            nextSnapshotId.index,
-            nextSnapshotId.term,
-            nextSnapshotId.processedPosition,
-            nextSnapshotId.exportedPosition,
+            nextSnapshotId.index(),
+            nextSnapshotId.term(),
+            nextSnapshotId.processedPosition(),
+            nextSnapshotId.exportedPosition(),
             forceSnapshot);
 
     if (transientSnapshot.isLeft()) {
@@ -196,63 +229,52 @@ public class StateControllerImpl implements StateController {
     }
   }
 
-  private NextSnapshotId tryFindNextSnapshotId(final long lastProcessedPosition)
-      throws NoEntryAtSnapshotPosition {
-    final var exportedPosition = positionSupplier.getLowestExportedPosition();
-    final var backupPosition = positionSupplier.getHighestBackupPosition();
-    if (exportedPosition == -1 || backupPosition == -1 || lastProcessedPosition == 0) {
-      final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
-      if (latestSnapshot.isPresent()) {
-        // re-use index and term from the latest snapshot to ensure that the records from there are
-        // not compacted until they get exported and backed up.
-        final var persistedSnapshot = latestSnapshot.get();
-        return new NextSnapshotId(
-            persistedSnapshot.getIndex(), persistedSnapshot.getTerm(), lastProcessedPosition, 0);
-      }
-
-      return new NextSnapshotId(0, 0, lastProcessedPosition, 0);
-    }
-
-    final var snapshotPosition =
-        Math.min(Math.min(exportedPosition, backupPosition), lastProcessedPosition);
-    final var logEntry = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
-
-    if (logEntry.isPresent()) {
-      return new NextSnapshotId(
-          logEntry.get().index(), logEntry.get().term(), lastProcessedPosition, exportedPosition);
-    }
-
-    // No log entry for snapshot position - try to use the index and term of the last snapshot to
-    // take new one
-    final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
-    if (latestSnapshot.isPresent()) {
-      LOG.warn(
-          "No log entry for next snapshot position {}, using index and term from previous snapshot",
-          snapshotPosition);
-      return new NextSnapshotId(
-          latestSnapshot.get().getIndex(),
-          latestSnapshot.get().getTerm(),
-          lastProcessedPosition,
-          exportedPosition);
-    }
-
-    throw new NoEntryAtSnapshotPosition(
-        String.format(
-            "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position %d (processedPosition = %d, exportedPosition=%d) or previous snapshot, but found neither.",
-            snapshotPosition, lastProcessedPosition, exportedPosition));
-  }
-
   @SuppressWarnings("rawtypes")
-  private void openDb(final ActorFuture<ZeebeDb> future) {
+  private void openDb(
+      final ActorFuture<ZeebeDb> future, final Optional<PersistedSnapshot> recoveredSnapshot) {
     try {
       if (db == null) {
-        db = zeebeDbFactory.createDb(runtimeDirectory.toFile());
+        final var openedDb = zeebeDbFactory.createDb(runtimeDirectory.toFile());
+        if (sharedState && recoveredSnapshot.isPresent()) {
+          try {
+            verifyStateIsNotOlderThan(openedDb, recoveredSnapshot.get());
+          } catch (final RuntimeException e) {
+            CloseHelper.quietClose(openedDb);
+            throw e;
+          }
+        }
+        db = openedDb;
         positionSupplier = positionSupplierFactory.apply(db);
         LOG.debug("Opened database from '{}'.", runtimeDirectory);
         future.complete(db);
       }
+    } catch (final UnrecoverableException error) {
+      future.completeExceptionally(error);
     } catch (final Exception error) {
       future.completeExceptionally(new RuntimeException("Failed to open database", error));
+    }
+  }
+
+  /**
+   * A shared state only moves forward, so it can't be older than a snapshot that names it, unless
+   * its database went back in time, for example after a restore to an earlier point in time. Raft
+   * may delete the log up to the snapshot at any time, so the state can't be trusted to catch up by
+   * replaying the log: the records between the state and the snapshot may be gone.
+   */
+  @SuppressWarnings("unchecked")
+  private static void verifyStateIsNotOlderThan(
+      final ZeebeDb db, final PersistedSnapshot snapshot) {
+    final long processedPosition =
+        new DbLastProcessedPositionState(db, db.createContext())
+            .getLastSuccessfulProcessedRecordPosition();
+    final long snapshotPosition = snapshot.getMetadata().processedPosition();
+    if (processedPosition < snapshotPosition) {
+      throw new UnrecoverableException(
+          ("Expected the shared state to be processed up to at least position %d, like snapshot "
+                  + "%s, but it is processed only up to position %d. The state doesn't belong to "
+                  + "this snapshot and log, for example because its database was restored to an "
+                  + "earlier point in time.")
+              .formatted(snapshotPosition, snapshot.getId(), processedPosition));
     }
   }
 
@@ -297,7 +319,4 @@ public class StateControllerImpl implements StateController {
           }
         });
   }
-
-  private record NextSnapshotId(
-      long index, long term, long processedPosition, long exportedPosition) {}
 }
