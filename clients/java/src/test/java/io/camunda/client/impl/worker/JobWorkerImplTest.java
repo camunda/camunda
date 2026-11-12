@@ -881,20 +881,8 @@ final class JobWorkerImplTest {
 
   @Test
   void shouldKeepPollingWhenTheHandlerExecutorThrows() {
-    // given a handler executor that throws something other than a rejection for the first job. The
-    // client schedules its polls on the same executor, but through schedule, which does not go
-    // through execute.
-    final AtomicBoolean executorThrew = new AtomicBoolean();
-    final ScheduledExecutorService jobHandlingExecutor =
-        new ScheduledThreadPoolExecutor(MAX_JOBS_ACTIVE) {
-          @Override
-          public void execute(final Runnable command) {
-            if (executorThrew.compareAndSet(false, true)) {
-              throw new IllegalStateException("simulated executor failure");
-            }
-            super.execute(command);
-          }
-        };
+    // given a handler executor that throws something other than a rejection for the first job
+    final ScheduledExecutorService jobHandlingExecutor = throwingForTheFirstJob();
     final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
     respondWithJobsAfterAFailingOne();
 
@@ -921,20 +909,13 @@ final class JobWorkerImplTest {
 
   @ParameterizedTest
   @MethodSource("metricsFailures")
-  void shouldKeepPollingWhenJobMetricsAlsoThrowWhileHandingAJobBack(final Runnable failure) {
-    // given metrics that throw for the first job the worker activates, and again when that job is
-    // reported as refused, so that the failure escapes the worker's own handling of it
-    final AtomicBoolean activationThrew = new AtomicBoolean();
+  void shouldKeepPollingWhenJobMetricsThrowWhileHandingAJobBack(final Runnable failure) {
+    // given a handler executor that throws for the first job, and metrics that throw when that job
+    // is reported as refused, so that the failure escapes the worker's own handling of it
+    final ScheduledExecutorService jobHandlingExecutor = throwingForTheFirstJob();
     final AtomicBoolean refusalThrew = new AtomicBoolean();
     final JobWorkerMetrics metrics =
         new JobWorkerMetrics() {
-          @Override
-          public void jobActivated(final int count) {
-            if (activationThrew.compareAndSet(false, true)) {
-              failure.run();
-            }
-          }
-
           @Override
           public void jobRefused(final int count) {
             if (refusalThrew.compareAndSet(false, true)) {
@@ -946,15 +927,21 @@ final class JobWorkerImplTest {
     respondWithJobsAfterAFailingOne();
 
     // when
-    try (final JobWorker ignored =
-        client
-            .newWorker()
-            .jobType("test")
-            .handler((c, job) -> handledJobKeys.add(job.getKey()))
-            .maxJobsActive(MAX_JOBS_ACTIVE)
-            .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
-            .metrics(metrics)
-            .open()) {
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new ExecutorResource(jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler((c, job) -> handledJobKeys.add(job.getKey()))
+                .maxJobsActive(MAX_JOBS_ACTIVE)
+                .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+                .metrics(metrics)
+                .open()) {
 
       // then
       assertWorkerGetsPastTheFailingJob(handledJobKeys);
@@ -1380,6 +1367,24 @@ final class JobWorkerImplTest {
    * The first poll gets jobs 0 and 1, where job 0 is the one that fails to dispatch. Later polls
    * get jobs 10 and 11, so a handled job 1 can only come from the first response.
    */
+  /**
+   * A handler executor that throws something other than a rejection for the first job only. The
+   * client schedules its polls on the same executor, but through schedule, which does not go
+   * through execute.
+   */
+  private static ScheduledExecutorService throwingForTheFirstJob() {
+    final AtomicBoolean threw = new AtomicBoolean();
+    return new ScheduledThreadPoolExecutor(MAX_JOBS_ACTIVE) {
+      @Override
+      public void execute(final Runnable command) {
+        if (threw.compareAndSet(false, true)) {
+          throw new IllegalStateException("simulated executor failure");
+        }
+        super.execute(command);
+      }
+    };
+  }
+
   private void respondWithJobsAfterAFailingOne() {
     gateway.respondOnceWith(TestData.jobs(2));
     gateway.respondWith(Arrays.asList(TestData.job(10), TestData.job(11)));
