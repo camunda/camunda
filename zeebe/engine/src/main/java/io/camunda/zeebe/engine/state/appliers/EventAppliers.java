@@ -187,7 +187,7 @@ public final class EventAppliers implements EventApplier {
     registerSecretReferenceEventAppliers(state);
     registerProcessDefinitionRestoreAppliers(state);
     registerPolicyUpdateAppliers(state);
-    registerProbeAppliers();
+    registerProbeAppliers(state);
     return this;
   }
 
@@ -217,12 +217,12 @@ public final class EventAppliers implements EventApplier {
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerProbeAppliers() {
-    // the engine does not process probes yet; their state comes with the probe processors
-    register(ProbeIntent.CREATED, NOOP_EVENT_APPLIER);
+  private void registerProbeAppliers(final MutableProcessingState state) {
+    register(ProbeIntent.CREATED, new ProbeCreatedApplier(state.getProbeState()));
+    register(ProbeIntent.TIMED_OUT, new ProbeEndedApplier(state.getProbeState()));
+    // the engine does not write these events yet; their state comes with their processors
     register(ProbeIntent.YIELDED, NOOP_EVENT_APPLIER);
     register(ProbeIntent.ANSWERED, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.TIMED_OUT, NOOP_EVENT_APPLIER);
     register(ProbeIntent.CANCELED, NOOP_EVENT_APPLIER);
     register(ProbeBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
   }
