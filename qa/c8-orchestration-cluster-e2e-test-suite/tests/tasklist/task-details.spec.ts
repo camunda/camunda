@@ -19,6 +19,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {expectUserTaskUnassigned, findUserTask} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
 import {defaultAssertionOptions} from 'utils/constants';
+import {sleep} from 'utils/sleep';
 
 test.beforeAll(async () => {
   await deploy([
@@ -494,6 +495,10 @@ test.describe('task details page', () => {
     await taskDetailsPage.incrementUntilValue('1');
     await taskDetailsPage.incrementUntilValue('2');
     await taskDetailsPage.decrementUntilValue('1');
+    // Not a wait for the system: form-js debounces number-field changes into
+    // the form state, and nothing in the DOM signals when that has happened.
+    // Completing earlier submits the stale (empty) value.
+    await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
     // 30s was hit by the May 21 nightly — bump to the 60s budget the
     // other completion tests use.
