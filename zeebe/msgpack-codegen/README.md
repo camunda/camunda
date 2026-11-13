@@ -46,7 +46,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   (`ClassValue`s, by naming convention). Generated code resolves its nested codecs once, when the
   generated class is initialized.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
-  written back, so a read-modify-write by an older version does not drop them.
+  written back, so a read-modify-write by an older version does not drop them. Every
+  `@MsgpackPojo` needs exactly one `final` `@MsgpackUnknownProperties UnknownProperties` field,
+  like `UnpackedObject`, which always keeps them; compilation fails otherwise.
 - Strings, binaries and raw values are read as views on the source buffer, like `StringProperty`,
   `BinaryProperty` and `PackedProperty`: nothing is copied, so they are only valid while the source
   buffer is not reused. Nested `BaseValue`s are read by reference to it as well.

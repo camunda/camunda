@@ -34,6 +34,9 @@ import org.junit.jupiter.api.io.TempDir;
 /** Compiles small classes in memory with the processor and checks what it accepts and rejects. */
 final class MsgpackPojoProcessorTest {
 
+  private static final String UNKNOWN =
+      "\n@MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();";
+
   private static final String IMPORTS =
       """
       package sample;
@@ -102,6 +105,71 @@ final class MsgpackPojoProcessorTest {
 
     // then
     assertThat(result.errors()).anyMatch(e -> e.contains("Unsupported type") && e.contains("key"));
+  }
+
+  @Test
+  void shouldRejectAPojoWithoutUnknownPropertiesField() {
+    // given
+    final var source = pojo(withoutUnknown("long key;"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("needs a final @MsgpackUnknownProperties"));
+  }
+
+  @Test
+  void shouldRejectTwoUnknownPropertiesFields() {
+    // given
+    final var source =
+        pojo(
+            valid(
+                """
+                long key;
+                @MsgpackUnknownProperties final UnknownProperties first = new UnknownProperties();
+                @MsgpackUnknownProperties final UnknownProperties second = new UnknownProperties();
+                """));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("first") && e.contains("second") && e.contains("both"));
+  }
+
+  @Test
+  void shouldRejectAnUnknownPropertiesFieldOfAnotherType() {
+    // given
+    final var source =
+        pojo(
+            valid(
+                "long key; @MsgpackUnknownProperties final List<Long> extra = new ArrayList<>();"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("extra") && e.contains("must be a final UnknownProperties"));
+  }
+
+  @Test
+  void shouldRejectANonFinalUnknownPropertiesField() {
+    // given
+    final var source =
+        pojo(
+            valid(
+                "long key; @MsgpackUnknownProperties UnknownProperties extra = new UnknownProperties();"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("extra") && e.contains("must be a final UnknownProperties"));
   }
 
   @Test
@@ -443,10 +511,17 @@ final class MsgpackPojoProcessorTest {
                     .formatted(field)),
         new Source(
             "sample.Sample",
-            IMPORTS + "@MsgpackPojo public final class Sample extends Base { long key; }"));
+            IMPORTS
+                + "@MsgpackPojo public final class Sample extends Base { long key; %s }"
+                    .formatted(UNKNOWN)));
   }
 
+  /** A valid class with the body, which gets an unknown properties field if it has none. */
   private static String valid(final String body) {
+    return withoutUnknown(body.contains("@MsgpackUnknownProperties") ? body : body + UNKNOWN);
+  }
+
+  private static String withoutUnknown(final String body) {
     return """
     @MsgpackPojo
     public final class Sample extends MsgpackBufferValue<Sample> {

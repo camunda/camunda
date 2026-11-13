@@ -30,7 +30,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code
@@ -45,6 +44,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private static final String LIST = "java.util.List";
   private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
   private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
+  private static final String UNKNOWN_PROPERTIES =
+      "io.camunda.zeebe.msgpack.pojo.UnknownProperties";
   private static final String HEADER =
       """
       /*
@@ -145,6 +146,17 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             "Field " + fieldName + " must not be private, or annotated with @MsgpackIgnore");
       }
       if (field.getAnnotation(MsgpackUnknownProperties.class) != null) {
+        if (unknownField != null) {
+          throw new IllegalArgumentException(
+              "Fields %s and %s are both annotated with @MsgpackUnknownProperties"
+                  .formatted(unknownField, fieldName));
+        }
+        if (!isType(field.asType(), UNKNOWN_PROPERTIES)
+            || !field.getModifiers().contains(Modifier.FINAL)) {
+          throw new IllegalArgumentException(
+              "Field %s annotated with @MsgpackUnknownProperties must be a final UnknownProperties"
+                  .formatted(fieldName));
+        }
         unknownField = fieldName;
         continue;
       }
@@ -169,6 +181,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
+    }
+    if (unknownField == null) {
+      throw new IllegalArgumentException(
+          "@MsgpackPojo class needs a final @MsgpackUnknownProperties UnknownProperties field: "
+              + "it keeps the keys of a newer version, so that writing the value back does not "
+              + "drop them");
     }
     return new Model(pkg, type.getSimpleName().toString(), properties, unknownField);
   }
@@ -288,9 +306,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         default -> s.append("    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
       }
     }
-    if (m.unknownField() != null) {
-      s.append("    target.%s.clear();\n".formatted(m.unknownField()));
-    }
+    s.append("    target.%s.clear();\n".formatted(m.unknownField()));
     s.append("  }\n\n");
     s.append(
         """
@@ -330,8 +346,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("\n  private %sCodec() {}\n\n".formatted(pojo));
 
     final var unknown = m.unknownField();
-    final var count =
-        m.properties().size() + (unknown == null ? "" : " + v." + unknown + ".count()");
+    final var count = m.properties().size() + " + v." + unknown + ".count()";
 
     // write
     s.append(
@@ -365,11 +380,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           });
       i++;
     }
-    if (unknown != null) {
-      s.append(
-          "    if (!v.%1$s.isEmpty()) {\n      n += w.writeRaw(v.%1$s.buffer(), 0, v.%1$s.length());\n    }\n"
-              .formatted(unknown));
-    }
+    s.append(
+        "    if (!v.%1$s.isEmpty()) {\n      n += w.writeRaw(v.%1$s.buffer(), 0, v.%1$s.length());\n    }\n"
+            .formatted(unknown));
     s.append("    return n;\n  }\n\n");
 
     // length
@@ -409,9 +422,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           });
       i++;
     }
-    if (unknown != null) {
-      s.append("    n += v.%s.length();\n".formatted(unknown));
-    }
+    s.append("    n += v.%s.length();\n".formatted(unknown));
     s.append("    return n;\n  }\n\n");
 
     // read
@@ -456,13 +467,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("        case %d -> %s\n".formatted(i, line));
       i++;
     }
-    if (unknown != null) {
-      s.append(
-          "        default -> {\n          r.skipValue();\n          target.%s.append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n"
-              .formatted(unknown));
-    } else {
-      s.append("        default -> r.skipValue();\n");
-    }
+    s.append(
+        "        default -> {\n          r.skipValue();\n          target.%s.append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n"
+            .formatted(unknown));
     s.append("      }\n    }\n  }\n\n");
 
     s.append(
@@ -598,6 +605,5 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    */
   private record Property(String key, Type type, String field, String javaType, boolean inPlace) {}
 
-  private record Model(
-      String pkg, String name, List<Property> properties, @Nullable String unknownField) {}
+  private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

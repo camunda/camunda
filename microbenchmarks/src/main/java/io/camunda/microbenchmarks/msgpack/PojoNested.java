@@ -10,6 +10,8 @@ package io.camunda.microbenchmarks.msgpack;
 import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -19,6 +21,7 @@ public final class PojoNested extends MsgpackBufferValue<PojoNested> {
 
   long id = -1L;
   final UnsafeBuffer label = new UnsafeBuffer(Decoding.EMPTY);
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PojoNested fill(final int seed) {
     id = seed;
