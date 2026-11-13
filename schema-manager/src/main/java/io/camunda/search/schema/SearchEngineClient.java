@@ -60,6 +60,16 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void deleteIndex(final String indexName);
 
+  /**
+   * Deletes the index with the given name if it exists, using a single request rather than a
+   * separate existence check followed by deletion. This avoids any potential race condition between
+   * checking and deleting.
+   *
+   * @param indexName the name of the index to delete
+   * @return {@code true} if the index was deleted, {@code false} if it did not exist
+   */
+  boolean deleteIndexIfExists(final String indexName);
+
   void truncateIndex(final String indexName);
 
   boolean isHealthy();
