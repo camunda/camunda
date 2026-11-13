@@ -15,6 +15,12 @@ const camundaEnv = () => ({
   CAMUNDA_CLIENT_SECRET: "my-secret",
   CAMUNDA_OAUTH_URL: "http://keycloak/token",
   CAMUNDA_TOKEN_AUDIENCE: "my-audience",
+  OPTIMIZE_BASE_URL: "http://optimize",
+  OPTIMIZE_CLIENT_ID: "optimize-client",
+  OPTIMIZE_CLIENT_SECRET: "optimize-secret",
+  OPTIMIZE_OAUTH_URL: "http://keycloak/token",
+  OPTIMIZE_TOKEN_AUDIENCE: "optimize-audience",
+  OPTIMIZE_TOKEN_SCOPE: "openid",
 });
 
 // Mocks the k6 runtime modules, sets the Camunda environment, imports the module and registers the
@@ -45,6 +51,10 @@ export async function loadK6Module(path, { data } = {}) {
     http.request.mock.mockImplementation(() => okResponse);
     http.post.mock.mockImplementation(() => tokenResponse());
     http.file.mock.mockImplementation((content, name) => ({ content, name }));
+    // Like k6: true when every check passes.
+    check.mock.mockImplementation((response, checks) =>
+      Object.values(checks).every((fn) => fn(response)),
+    );
     for (const method of ["log", "debug", "info", "error"]) {
       mock.method(console, method, () => {});
     }

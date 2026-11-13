@@ -528,6 +528,11 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
+    # Evaluates the Optimize dashboards and reports. Needs Optimize, so it is off by default:
+    # enable it with `--set k6.tests.optimize.enabled=true` when Optimize is deployed.
+    optimize:
+      enabled: false
+      script: test.optimize.js
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write

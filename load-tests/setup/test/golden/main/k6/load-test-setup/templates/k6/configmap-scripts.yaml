@@ -259,6 +259,68 @@ data:
       console.log(`Loading data file ${path}...`);
       return open(path);
     }
+  lib.optimize.js: |
+    /* Client for the internal Optimize REST API used by the Optimize web application.
+     *
+     * Authentication uses the `OPTIMIZE_*` environment variables, see `Client`.
+     */
+    import { Client } from "./lib.camunda.js";
+  
+    const HEADERS = {
+      "X-Optimize-Client-Timezone": "UTC",
+      "X-Optimize-Client-Locale": "en",
+    };
+  
+    export class OptimizeClient {
+      #client = new Client("OPTIMIZE");
+  
+      #get(endpoint, params) {
+        return this.#client.get(endpoint, { ...params, headers: HEADERS });
+      }
+  
+      #post(endpoint, payload, params) {
+        return this.#client.post(endpoint, payload, {
+          ...params,
+          headers: HEADERS,
+        });
+      }
+  
+      // Internal API, not part of the public Optimize API specification.
+      managementDashboard() {
+        return this.#get("/api/dashboard/management", {
+          tags: { page: "homepage", phase: "dashboard" },
+        });
+      }
+  
+      instantDashboard(processDefinitionKey) {
+        return this.#get(`/api/dashboard/instant/${processDefinitionKey}`, {
+          tags: {
+            name: "/api/dashboard/instant/{key}",
+            page: "detailed",
+            phase: "dashboard",
+          },
+        });
+      }
+  
+      processOverview() {
+        return this.#get("/api/process/overview");
+      }
+  
+      evaluateReport(reportId, page) {
+        return this.#post(
+          `/api/report/${reportId}/evaluate`,
+          {},
+          {
+            tags: {
+              name: "/api/report/{id}/evaluate",
+              page,
+              phase: "report_evaluate",
+              report_id: reportId,
+            },
+          },
+        );
+      }
+    }
   test.data-read.js: |
     import { check, sleep } from "k6";
   
@@ -383,4 +445,104 @@ data:
        * unchanged resource is deployed on purpose, so Zeebe deduplicates it. */
       const response = client.deploy(FILENAME, bpmn);
       check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  test.optimize.js: |
+    import { check, sleep } from "k6";
+  
+    import { OptimizeClient } from "./lib.optimize.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new OptimizeClient();
+  
+    // Ignore process definitions that are created by k6 itself: they never have instances.
+    const IGNORED_PREFIX = "k6-";
+  
+    /* Opens the Optimize dashboards like the web application does and evaluates every report on them.
+     * Requires Optimize. Latency is in the `http_req_duration` metric, tagged with `page`, `phase`
+     * and `report_id`. */
+    export const options = {
+      // Give enough time for Optimize to import a process definition.
+      setupTimeout: "30m",
+      scenarios: {
+        /* Management dashboard shown after login, and its reports. */
+        homepage: {
+          exec: "evaluateHomepage",
+          executor: "constant-arrival-rate",
+          startTime: "10s",
+          duration: "60d", // As long as the longest benchmark we run
+          rate: 1,
+          timeUnit: "1m",
+          preAllocatedVUs: 1,
+          maxVUs: 2,
+        },
+        /* Instant dashboard of one process definition, and its reports. */
+        detailed: {
+          exec: "evaluateDetailed",
+          executor: "constant-arrival-rate",
+          startTime: "10s",
+          duration: "60d",
+          rate: 1,
+          timeUnit: "1m",
+          preAllocatedVUs: 1,
+          maxVUs: 2,
+        },
+      },
+    };
+  
+    export function setup() {
+      const configured = __ENV.OPTIMIZE_PROCESS_DEFINITION_KEY;
+      if (configured) {
+        console.log(`Will evaluate the process definition ${configured}.`);
+        return { processDefinitionKey: configured };
+      }
+  
+      const waitTime = 10; // seconds
+      let processDefinitionKey;
+      while (processDefinitionKey === undefined) {
+        const response = client.processOverview();
+        if (response.status == 200) {
+          const items = response
+            .json()
+            .filter((i) => !i.processDefinitionKey.startsWith(IGNORED_PREFIX));
+          if (items.length > 0) {
+            processDefinitionKey = items[0].processDefinitionKey;
+            break;
+          }
+          console.info(
+            `No process definition found in Optimize yet (will retry in ${waitTime}s).`,
+          );
+        } else {
+          console.error(
+            `Unable to get the Optimize process overview (will retry in ${waitTime}s), got HTTP status=${response.status}`,
+          );
+        }
+        sleep(waitTime);
+      }
+      console.log(`Will evaluate the process definition ${processDefinitionKey}.`);
+  
+      return { processDefinitionKey };
+    }
+  
+    export function evaluateHomepage() {
+      evaluateReports(client.managementDashboard(), "homepage");
+    }
+  
+    export function evaluateDetailed(data) {
+      evaluateReports(
+        client.instantDashboard(data.processDefinitionKey),
+        "detailed",
+      );
+    }
+  
+    function evaluateReports(dashboard, page) {
+      const ok = check(dashboard, { "status is 200": (r) => r.status === 200 });
+      if (!ok) {
+        return;
+      }
+      // Text and image tiles have no report, so no `id`.
+      const tiles = (dashboard.json("tiles") ?? []).filter((tile) => tile.id);
+      for (const tile of tiles) {
+        const response = client.evaluateReport(tile.id, page);
+        check(response, { "status is 200": (r) => r.status === 200 });
+      }
     }
