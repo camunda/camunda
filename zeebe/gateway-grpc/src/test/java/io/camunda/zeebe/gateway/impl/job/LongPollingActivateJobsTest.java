@@ -1116,6 +1116,43 @@ final class LongPollingActivateJobsTest {
   }
 
   @Test
+  void shouldPassLeaseTokenWhenGivingBackJobsOfAlreadyEndedRequest() throws Exception {
+    // given
+    final var leaseToken = "lease-token";
+    final var activatedJobKey = new AtomicLong();
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    final var request = getLongPollingActivateJobsRequest();
+
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        (final BrokerActivateJobsRequest brokerRequest) -> {
+          final var brokerResponse = activateJobsStub.handle(brokerRequest);
+          brokerResponse.getResponse().jobs().forEach(job -> job.setJobLeaseToken(leaseToken));
+          activatedJobKey.set(brokerResponse.getResponse().jobKeys().iterator().next().getValue());
+          // the long poll ends while the broker is still activating the jobs
+          request.timeout();
+          return brokerResponse;
+        });
+
+    // when
+    handler.internalActivateJobsRetry(request);
+
+    // then
+    verify(failJobStub, timeout(5000)).handle(any());
+    final var failRequest =
+        brokerClient.getBrokerRequests().stream()
+            .filter(BrokerFailJobRequest.class::isInstance)
+            .map(BrokerFailJobRequest.class::cast)
+            .findFirst()
+            .orElseThrow();
+    assertThat(failRequest.getKey()).isEqualTo(activatedJobKey.get());
+    assertThat(failRequest.getRequestWriter().getJobLeaseToken())
+        .describedAs(
+            "giving back a leased job must carry its lease token, or the broker rejects it")
+        .isEqualTo(leaseToken);
+  }
+
+  @Test
   void shouldSetCurrentRetriesAndNoBackoff() {
     // given
     final var activatedJobRef = new AtomicReference<ActivatedJob>();
