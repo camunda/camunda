@@ -54,6 +54,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.NoSecondaryStorageException;
@@ -103,6 +104,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableHistoryItemQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.core.auth.SecurityContext;
@@ -382,6 +384,17 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<VariableHistoryItemEntity> searchVariableHistoryItems(
+      final VariableHistoryItemQuery query) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public VariableHistoryItemEntity getVariableHistoryItem(final long key) {
     throw new NoSecondaryStorageException();
   }
 

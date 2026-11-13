@@ -7,8 +7,10 @@
  */
 package io.camunda.search.clients;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,11 +20,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.reader.VariableHistoryReader;
+import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.ResourceAccessController;
@@ -188,6 +194,66 @@ class CamundaSearchClientsTest {
           .hasCause(cause)
           .extracting(t -> ((CamundaSearchException) t).getReason())
           .isEqualTo(Reason.SEARCH_SERVER_FAILED);
+    }
+  }
+
+  @Nested
+  class VariableHistory {
+
+    private final VariableHistoryReader variableHistoryReader = mock(VariableHistoryReader.class);
+
+    @Test
+    void shouldSearchVariableHistoryItemsThroughTheVariableHistoryReader() {
+      // given
+      final var query = SearchQueryBuilders.variableHistoryItemSearchQuery(b -> b);
+      final SearchQueryResult<VariableHistoryItemEntity> expected = SearchQueryResult.empty();
+      when(readers.variableHistoryReader()).thenReturn(variableHistoryReader);
+      when(variableHistoryReader.search(eq(query), any())).thenReturn(expected);
+
+      // when
+      final var result = camundaSearchClients.searchVariableHistoryItems(query);
+
+      // then
+      assertThat(result).isSameAs(expected);
+    }
+
+    @Test
+    void shouldReturnVariableHistoryItemFromTheReader() {
+      // given
+      final var entity = mock(VariableHistoryItemEntity.class);
+      when(readers.variableHistoryReader()).thenReturn(variableHistoryReader);
+      when(resourceAccessController.doGet(any(), any()))
+          .thenAnswer(
+              invocation -> {
+                final Function<ResourceAccessChecks, Object> applier = invocation.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+      when(variableHistoryReader.getByKey(eq(1L), any())).thenReturn(entity);
+
+      // when
+      final var result = camundaSearchClients.getVariableHistoryItem(1L);
+
+      // then
+      assertThat(result).isSameAs(entity);
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenVariableHistoryItemDoesNotExist() {
+      // given
+      when(readers.variableHistoryReader()).thenReturn(variableHistoryReader);
+      when(resourceAccessController.doGet(any(), any()))
+          .thenAnswer(
+              invocation -> {
+                final Function<ResourceAccessChecks, Object> applier = invocation.getArgument(1);
+                return applier.apply(ResourceAccessChecks.disabled());
+              });
+      when(variableHistoryReader.getByKey(any(long.class), any())).thenReturn(null);
+
+      // when / then
+      assertThatThrownBy(() -> camundaSearchClients.getVariableHistoryItem(1L))
+          .isInstanceOf(CamundaSearchException.class)
+          .extracting(t -> ((CamundaSearchException) t).getReason())
+          .isEqualTo(Reason.NOT_FOUND);
     }
   }
 
