@@ -1124,6 +1124,10 @@
           "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
           "type": "string"
         },
+        "jobReservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
           "type": "object",
@@ -1270,6 +1274,10 @@
         },
         "jobType": {
           "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "type": "string"
+        },
+        "jobReservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
           "type": "string"
         },
         "errorCode": {

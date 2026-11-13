@@ -18,7 +18,9 @@ package io.camunda.process.test.api.testCases.instructions;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to mock a job worker who completes jobs. */
@@ -38,6 +40,16 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
    * @return the job type
    */
   String getJobType();
+
+  /**
+   * The reservation token the jobs of this type were reserved with. Use {@link
+   * TestCaseJobReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run
+   * for it. Optional; required only to mock a reserved job type, so the mock worker can activate
+   * its reserved jobs on a remote cluster.
+   *
+   * @return the job reservation token or empty if not set
+   */
+  Optional<String> getJobReservationToken();
 
   /**
    * The variables to complete the job with. Optional.

@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -51,7 +52,7 @@ public class MockJobWorkerCompleteJobInstructionTest {
   @Mock private JobWorkerMock jobWorkerMock;
 
   private final MockJobWorkerCompleteJobInstructionHandler instructionHandler =
-      new MockJobWorkerCompleteJobInstructionHandler();
+      new MockJobWorkerCompleteJobInstructionHandler(mock(TestRunContext.class));
 
   @BeforeEach
   void setUp() {
