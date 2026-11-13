@@ -49,6 +49,28 @@ export function normalizeSpec(rawPath, rootDir) {
   return p.replace(/^\.?\//, '');
 }
 
+// The gist of a test result's error, for the comment: its first two lines,
+// so a generic matcher header ("Error: expect(received).toMatch(expected)")
+// keeps the line that says what differed. Colour codes are stripped; the call
+// log, stack and code frame that follow are left out; long text is cut.
+const ANSI = /\u001b\[[0-9;]*m/g;
+const ERROR_MAX = 200;
+export function errorSummary(result) {
+  const message = result?.error?.message ?? result?.errors?.[0]?.message;
+  if (!message) return '';
+  const lines = [];
+  for (const raw of String(message).replace(ANSI, '').split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    // "Call log:" (locator timeouts) or "Call Log:" (expect.toPass).
+    if (/^(call log:|at |>|\d+ \|)/i.test(line)) break;
+    lines.push(line);
+    if (lines.length === 2) break;
+  }
+  const text = lines.join(' · ');
+  return text.length > ERROR_MAX ? `${text.slice(0, ERROR_MAX - 1)}…` : text;
+}
+
 // Collect the failed tests of one Playwright JSON report. A test counts as
 // failed when its final status is "unexpected"; "flaky" (failed, then passed
 // on retry) and "skipped" do not. The title includes the enclosing describe
@@ -67,6 +89,7 @@ function allTests(report) {
           parts: [...describes, spec.title],
           project: t.projectName ?? '',
           status: t.status,
+          error: errorSummary(t.results?.at(-1)),
         });
       }
     }
@@ -81,7 +104,7 @@ function allTests(report) {
 export function failedTests(report) {
   return allTests(report)
     .filter((t) => t.status === 'unexpected')
-    .map(({file, title, project}) => ({file, title, project}));
+    .map(({file, title, project, error}) => ({file, title, project, error}));
 }
 
 // Keys of the tests that ran and ended green ("flaky" passed on retry).
@@ -240,6 +263,7 @@ export function classify(prLegs) {
       const k = key(t);
       if (!seen.has(k)) seen.set(k, {...t, legs: [], base: {}, why: []});
       const entry = seen.get(k);
+      if (!entry.error && t.error) entry.error = t.error;
       entry.legs.push(leg);
       const outcome = onBase.get(k);
       if (outcome) entry.base[leg] = outcome;
@@ -291,7 +315,9 @@ const fmt = (t) => {
     notes.push(`not verified: ${t.notVerified.join('; ')}`);
   }
   if (t.passedIn?.length) notes.push(`passed in this run in: ${t.passedIn.join(', ')}`);
-  return `- \`${t.file}\` › ${t.title} _(${t.legs.join(', ')})_${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+  const line = `- \`${t.file}\` › ${t.title} _(${t.legs.join(', ')})_${notes.length ? ` · ${notes.join(' · ')}` : ''}`;
+  // The error in a code span, so its brackets and quotes render as typed.
+  return t.error ? `${line}\n  - \`${t.error.replace(/`/g, "'")}\`` : line;
 };
 
 // GitHub rejects comments over 65,536 characters, and a broad failure can
