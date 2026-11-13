@@ -165,8 +165,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     expect(suspendedActions).toContain('cancel');
     expect(suspendedActions).not.toContain('suspend');
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
-    // Re-read the instance from Operate: the detail view does not refresh
-    // itself (#52021), so the API completion is only visible on a fresh load.
+    // The detail view does not refresh itself (#52021), so reload it.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
@@ -252,8 +251,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       jobType,
       instance.processInstanceKey,
     );
-    // Re-read the instance from Operate: the detail view does not refresh
-    // itself (#52021), so the API completion is only visible on a fresh load.
+    // The detail view does not refresh itself (#52021), so reload it.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
@@ -330,8 +328,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
-    // Re-read the instance from Operate: the detail view does not refresh
-    // itself (#52021), so the API completion is only visible on a fresh load.
+    // The detail view does not refresh itself (#52021), so reload it.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
     });
@@ -377,8 +374,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       ).toBeVisible({timeout: UI_REFRESH_TIMEOUT});
     }
     await resumeAndCompleteServiceTask(request, jobType, processInstanceKey);
-    // Re-read the instance from Operate: the detail view does not refresh
-    // itself (#52021), so the API completion is only visible on a fresh load.
+    // The detail view does not refresh itself (#52021), so reload it.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
@@ -660,8 +656,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
       'COMPLETED',
       extendedAssertionOptions,
     );
-    // Re-read the instance from Operate: the detail view does not refresh
-    // itself (#52021), so the API completion is only visible on a fresh load.
+    // The detail view does not refresh itself (#52021), so reload it.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: parent.processInstanceKey,
     });

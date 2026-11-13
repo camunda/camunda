@@ -113,7 +113,7 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    // Same beforeAll-load reasoning as the tests below.
+    // Created among many tasks in beforeAll, so allow 60s.
     await taskPanelPage.openTask('usertask_to_be_completed', {
       timeout: 60000,
     });
@@ -150,10 +150,7 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    // This task is one of ~24 instances created concurrently in this file's
-    // beforeAll -- give openTask's retry-with-reload a generous per-attempt
-    // timeout, same as the processWithDeployedForm calls below, instead of
-    // the 10s default.
+    // Created among many tasks in beforeAll, so allow 60s.
     await taskPanelPage.openTask('usertask_for_assign_unassign', {
       timeout: 60000,
     });
@@ -188,7 +185,7 @@ test.describe('task details page', () => {
   });
 
   test('complete task', async ({page, taskPanelPage, taskDetailsPage}) => {
-    // Same beforeAll-load reasoning as 'assign and unassign task' above.
+    // Created among many tasks in beforeAll, so allow 60s.
     await taskPanelPage.openTask('usertask_to_be_completed', {
       timeout: 60000,
     });
@@ -372,10 +369,7 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
-    // Both of these are single-instance tasks from the file's shared
-    // beforeAll batch of ~20 processes; give them the same 60s indexing
-    // budget as the other freshly-created tasks in this file (see
-    // 'processWithDeployedForm' below) instead of the default 10s.
+    // Created among many tasks in beforeAll, so allow 60s.
     await taskPanelPage.openTask('User Task with form rerender 1', {
       timeout: 60000,
     });
@@ -439,9 +433,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    // The just-completed task can take a moment to reindex under the
-    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
-    // above).
+    // The completed task can take a while to show under 'Completed'.
     await taskPanelPage.openTask('UserTask_Number_Input', {timeout: 30000});
 
     await taskDetailsPage.assertFieldValue('Number', '4');
@@ -475,9 +467,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    // The just-completed task can take a moment to reindex under the
-    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
-    // above).
+    // The completed task can take a while to show under 'Completed'.
     await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Number', '1');
   });
@@ -497,9 +487,7 @@ test.describe('task details page', () => {
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    // The just-completed task can take a moment to reindex under the
-    // 'Completed' filter (same reasoning as 'Confirm Employee Details'
-    // above).
+    // The completed task can take a while to show under 'Completed'.
     await taskPanelPage.openTask('Date and Time Task', {timeout: 30000});
     await taskDetailsPage.assertFieldValue('Date', '1/1/3000');
     await taskDetailsPage.assertFieldValue('Time', '12:00 PM');
