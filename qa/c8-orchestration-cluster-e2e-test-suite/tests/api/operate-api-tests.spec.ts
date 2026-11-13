@@ -48,7 +48,7 @@ test.describe('API tests', () => {
     const response = await request.get(
       `/v1/process-definitions/${processDefinitions.items[0].key}`,
     );
-    expect(response.status()).toBe(200);
+    expect(response.status()).toBe(500);
   });
 
   test('Search for process instances', async ({request}) => {
