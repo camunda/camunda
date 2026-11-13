@@ -33,6 +33,35 @@ public record WriteBehindConfiguration(
     Duration flushDelay,
     long flushThresholdBytes) {
 
+  public WriteBehindConfiguration {
+    // a negative limit is always exceeded, so that the first commit would wait for a flush that
+    // never comes; a negative delay or timeout has no meaning
+    if (maxPendingBytes <= 0) {
+      throw new IllegalArgumentException(
+          "Expected maxPendingBytes to be positive, but was " + maxPendingBytes);
+    }
+    if (cacheMaxBytes < 0) {
+      throw new IllegalArgumentException(
+          "Expected cacheMaxBytes to be zero or positive, but was " + cacheMaxBytes);
+    }
+    if (maxWriteRetries < 0) {
+      throw new IllegalArgumentException(
+          "Expected maxWriteRetries to be zero or positive, but was " + maxWriteRetries);
+    }
+    if (flushTimeout.isNegative() || flushTimeout.isZero()) {
+      throw new IllegalArgumentException(
+          "Expected flushTimeout to be positive, but was " + flushTimeout);
+    }
+    if (flushDelay.isNegative()) {
+      throw new IllegalArgumentException(
+          "Expected flushDelay to be zero or positive, but was " + flushDelay);
+    }
+    if (flushThresholdBytes < 0) {
+      throw new IllegalArgumentException(
+          "Expected flushThresholdBytes to be zero or positive, but was " + flushThresholdBytes);
+    }
+  }
+
   /** No flush delay, and an early flush at half of {@code maxPendingBytes}. */
   public WriteBehindConfiguration(
       final long maxPendingBytes,
