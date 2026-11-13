@@ -437,7 +437,7 @@ jobs:
       - uses: ./.github/actions/build-frontend
         name: Build Optimize Frontend
         id: build-optimize-fe
-        if: ${{ inputs.build-frontend && inputs.enable-optimize }}
+        if: ${{ inputs.build-frontend && env.ENABLE_OPTIMIZE == 'true' }}
         with:
           directory: ./optimize/client
           package-manager: "yarn"
@@ -445,7 +445,7 @@ jobs:
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild ${{ inputs.enable-optimize && '-Pinclude-optimize' || '-P\!include-optimize' }}
+          maven-extra-args: -PskipFrontendBuild ${{ env.ENABLE_OPTIMIZE == 'true' && '-Pinclude-optimize' || '-P\!include-optimize' }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
@@ -457,7 +457,7 @@ jobs:
           dockerfile: 'camunda.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Optimize Docker Image
-        if: ${{ inputs.enable-optimize }}
+        if: ${{ env.ENABLE_OPTIMIZE == 'true' }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/optimize'
           revision: ${{ inputs.ref }}
