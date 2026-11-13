@@ -18,6 +18,8 @@ package io.camunda.client.api.search.enums;
 public enum PermissionType {
   ACCESS,
 
+  ANSWER,
+
   CANCEL_PROCESS_INSTANCE,
   CLAIM,
   CLAIM_USER_TASK,

@@ -432,6 +432,7 @@ components:
       type: string
       enum:
         - ACCESS
+        - ANSWER
         - CANCEL_PROCESS_INSTANCE
         - CLAIM
         - CLAIM_USER_TASK
@@ -498,6 +499,7 @@ components:
         - GROUP
         - MAPPING_RULE
         - MESSAGE
+        - PROBE
         - PROCESS_DEFINITION
         - RESOURCE
         - ROLE
