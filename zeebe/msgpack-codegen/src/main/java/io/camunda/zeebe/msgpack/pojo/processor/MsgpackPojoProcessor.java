@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -45,6 +46,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private static final String LIST = "java.util.List";
   private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
   private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
+  private static final String REQUIRED_LONG = "io.camunda.zeebe.msgpack.pojo.RequiredLong";
+  private static final String REQUIRED_INT = "io.camunda.zeebe.msgpack.pojo.RequiredInt";
+  private static final String NULLABLE = "org.jspecify.annotations.Nullable";
   private static final String UNKNOWN_PROPERTIES =
       "io.camunda.zeebe.msgpack.pojo.UnknownProperties";
   private static final String HEADER =
@@ -164,7 +168,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var annotation = field.getAnnotation(MsgpackProperty.class);
       final var raw = annotation != null && annotation.raw();
       final var binary = annotation != null && annotation.binary();
-      final var required = annotation != null && annotation.required();
       final var document = annotation != null && annotation.document();
       if (document && (raw || binary)) {
         throw new IllegalArgumentException(
@@ -183,12 +186,29 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             "Field %s: document requires a DirectBuffer or UnsafeBuffer field"
                 .formatted(fieldName));
       }
+      final var nullable = isNullable(field);
+      if (nullable && !kind.nullable) {
+        throw new IllegalArgumentException(
+            ("Field %s must not be @Nullable: only a string, binary, raw, document, enum or Boolean "
+                    + "field can be unset. Use RequiredLong or RequiredInt for a long or int")
+                .formatted(fieldName));
+      }
+      if (!nullable && kind == Type.BOXED_BOOLEAN) {
+        throw new IllegalArgumentException(
+            "Field %s must be @Nullable, null is its unset state. Use boolean for a default"
+                .formatted(fieldName));
+      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
             "Field %s must be final: it is read into and reset in place".formatted(fieldName));
       }
       final var inPlace = isUnsafeBuffer(mirror);
+      if (nullable && inPlace) {
+        throw new IllegalArgumentException(
+            "Field %s must not be @Nullable: an UnsafeBuffer is final and never null"
+                .formatted(fieldName));
+      }
       if (!isFinal && inPlace) {
         throw new IllegalArgumentException(
             ("Field %s must be final: an UnsafeBuffer is wrapped in place, which would modify the "
@@ -211,16 +231,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               fieldName,
               javaType(mirror, kind),
               inPlace,
-              required,
+              nullable,
               sanitized,
               pojo));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
-    }
-    if (properties.stream().filter(Property::required).count() > Long.SIZE) {
-      throw new IllegalArgumentException(
-          "@MsgpackPojo class has more than %d required properties".formatted(Long.SIZE));
     }
     if (unknownField == null) {
       throw new IllegalArgumentException(
@@ -250,6 +266,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : document ? Type.DOCUMENT : Type.STRING;
+        }
+        if (name.equals(REQUIRED_LONG)) {
+          return Type.REQUIRED_LONG;
+        }
+        if (name.equals(REQUIRED_INT)) {
+          return Type.REQUIRED_INT;
+        }
+        if (name.equals("java.lang.Boolean")) {
+          return Type.BOXED_BOOLEAN;
         }
         if (name.equals(INT_ARRAY_LIST)) {
           return Type.INT_ARRAY_LIST;
@@ -333,6 +358,17 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         && types.isSameType(types.erasure(mirror), types.erasure(expected.asType()));
   }
 
+  /** {@code @Nullable} on the field itself, or on its type (jspecify's is a type annotation). */
+  private static boolean isNullable(final Element field) {
+    return Stream.concat(
+            field.getAnnotationMirrors().stream(), field.asType().getAnnotationMirrors().stream())
+        .anyMatch(
+            a ->
+                ((TypeElement) a.getAnnotationType().asElement())
+                    .getQualifiedName()
+                    .contentEquals(NULLABLE));
+  }
+
   private boolean isUnsafeBuffer(final TypeMirror mirror) {
     return mirror.getKind() == TypeKind.DECLARED && isType(mirror, UNSAFE_BUFFER);
   }
@@ -385,6 +421,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("  public static void reset(final %s target) {\n".formatted(pojo));
     for (final var p : m.properties()) {
       final var f = p.field();
+      if (p.isHolder()) {
+        s.append("    target.%s.reset();\n".formatted(f));
+        continue;
+      }
+      if (p.nullable()) {
+        s.append("    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
+        continue;
+      }
       switch (p.type()) {
         case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
             s.append(
@@ -472,7 +516,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var to = "target." + p.field();
       s.append(
           switch (p.type()) {
-            case LONG, INT, BOOLEAN, ENUM -> "    %s = %s;\n".formatted(to, from);
+            case LONG, INT, BOOLEAN, BOXED_BOOLEAN, ENUM -> "    %s = %s;\n".formatted(to, from);
+            case REQUIRED_LONG, REQUIRED_INT ->
+                "    if (%1$s.isSet()) {\n      %2$s.set(%1$s.get());\n    } else {\n      %2$s.reset();\n    }\n"
+                    .formatted(from, to);
             case STRING, BINARY, RAW, DOCUMENT ->
                 p.inPlace()
                     ? "    Decoding.copyInto(%s, %s);\n".formatted(from, to)
@@ -521,6 +568,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var differs =
           switch (p.type()) {
             case LONG, INT, BOOLEAN, ENUM -> "%s != %s".formatted(x, y);
+            case BOXED_BOOLEAN -> "!java.util.Objects.equals(%s, %s)".formatted(x, y);
+            case REQUIRED_LONG, REQUIRED_INT ->
+                "%1$s.isSet() != %2$s.isSet() || %1$s.isSet() && %1$s.get() != %2$s.get()"
+                    .formatted(x, y);
             case STRING, BINARY, RAW, DOCUMENT -> "!Decoding.equalContent(%s, %s)".formatted(x, y);
             case STRING_LIST -> "!Decoding.equalContents(%s, %s)".formatted(x, y);
             case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "!%s.equals(%s)".formatted(x, y);
@@ -583,13 +634,22 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           "    sb.append(\"%s\\\"\").append(%s).append(\"\\\":\");\n"
               .formatted(first ? "{" : ",", p.keyLiteral()));
       first = false;
+      if (p.canBeUnset()) {
+        s.append(
+            "    if (%s) {\n      sb.append(\"\\\"NO VALID WRITEABLE VALUE\\\"\");\n    } else {\n"
+                .formatted(p.unset("v")));
+      }
       if (p.sanitized()) {
         s.append("    sb.append(\"\\\"***\\\"\");\n");
+        if (p.canBeUnset()) {
+          s.append("    }\n");
+        }
         continue;
       }
       s.append(
           switch (p.type()) {
-            case LONG, INT, BOOLEAN -> "    sb.append(%s);\n".formatted(x);
+            case LONG, INT, BOOLEAN, BOXED_BOOLEAN -> "    sb.append(%s);\n".formatted(x);
+            case REQUIRED_LONG, REQUIRED_INT -> "    sb.append(%s.get());\n".formatted(x);
             case STRING -> "    Decoding.appendString(sb, %s);\n".formatted(x);
             case BINARY, DOCUMENT -> "    Decoding.appendBinary(sb, %s);\n".formatted(x);
             case RAW -> "    Decoding.appendRaw(sb, %s);\n".formatted(x);
@@ -612,6 +672,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                             ? "%sOps.appendTo(sb, %s.get(i))".formatted(p.javaType(), x)
                             : "%s.get(i).writeJSON(sb)".formatted(x));
           });
+      if (p.canBeUnset()) {
+        s.append("    }\n");
+      }
     }
     if (m.unknownField() != null) {
       s.append("    v.%s.appendJson(sb);\n".formatted(m.unknownField()));
@@ -631,7 +694,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case LONG -> "Long.hashCode(%s)".formatted(x);
             case INT -> x;
             case BOOLEAN -> "Boolean.hashCode(%s)".formatted(x);
-            case ENUM -> "java.util.Objects.hashCode(%s)".formatted(x);
+            case REQUIRED_LONG -> "(%1$s.isSet() ? Long.hashCode(%1$s.get()) : -1)".formatted(x);
+            case REQUIRED_INT -> "(%1$s.isSet() ? %1$s.get() : -1)".formatted(x);
+            case BOXED_BOOLEAN, ENUM -> "java.util.Objects.hashCode(%s)".formatted(x);
             case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(%s)".formatted(x);
             case STRING_LIST -> "Decoding.contentHash(%s)".formatted(x);
             case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "%s.hashCode()".formatted(x);
@@ -683,22 +748,25 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     // write
     s.append(
         "  @Override\n  public int write(final MsgPackWriter w, final %s v) {\n".formatted(pojo));
+    final var hasUnset = m.properties().stream().anyMatch(Property::canBeUnset);
+    if (hasUnset) {
+      s.append("    verifyFieldsAreSet(v, UNSET_ON_WRITE);\n");
+    }
     s.append("    int n = w.writeMapHeader(%s);\n".formatted(count));
     int i = 0;
     for (final var p : m.properties()) {
-      final var get = "v." + p.field();
+      final var get = p.value("v");
       s.append("    n += w.writeString(KEY_%d);\n".formatted(i));
       s.append(
           switch (p.type()) {
-            case LONG, INT -> "    n += w.writeInteger(%s);\n".formatted(get);
-            case BOOLEAN -> "    n += w.writeBoolean(%s);\n".formatted(get);
+            case LONG, INT, REQUIRED_LONG, REQUIRED_INT ->
+                "    n += w.writeInteger(%s);\n".formatted(get);
+            case BOOLEAN, BOXED_BOOLEAN -> "    n += w.writeBoolean(%s);\n".formatted(get);
             case STRING -> "    n += w.writeString(%s);\n".formatted(get);
             case BINARY -> "    n += w.writeBinary(%s);\n".formatted(get);
             case RAW -> "    n += w.writeRaw(requireRaw(%s, %s));\n".formatted(get, p.keyLiteral());
             case DOCUMENT -> "    n += w.writeBinary(Decoding.document(%s));\n".formatted(get);
-            case ENUM ->
-                "    n += w.writeString(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()]);\n"
-                    .formatted(i, get, p.keyLiteral());
+            case ENUM -> "    n += w.writeString(ENUM_NAMES_%d[%s.ordinal()]);\n".formatted(i, get);
             case STRING_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
@@ -725,16 +793,20 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
     // length
     s.append("  @Override\n  public int getLength(final %s v) {\n".formatted(pojo));
+    if (hasUnset) {
+      s.append("    verifyFieldsAreSet(v, UNSET_ON_LENGTH);\n");
+    }
     s.append("    int n = MsgPackWriter.getEncodedMapHeaderLength(%s);\n".formatted(count));
     i = 0;
     for (final var p : m.properties()) {
-      final var get = "v." + p.field();
+      final var get = p.value("v");
       s.append("    n += MsgPackWriter.getEncodedStringLength(KEY_%d.capacity());\n".formatted(i));
       s.append(
           switch (p.type()) {
-            case LONG, INT ->
+            case LONG, INT, REQUIRED_LONG, REQUIRED_INT ->
                 "    n += MsgPackWriter.getEncodedLongValueLength(%s);\n".formatted(get);
-            case BOOLEAN -> "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
+            case BOOLEAN, BOXED_BOOLEAN ->
+                "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
             case STRING ->
                 "    n += MsgPackWriter.getEncodedStringLength(%s.capacity());\n".formatted(get);
             case BINARY ->
@@ -745,8 +817,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(Decoding.document(%s).capacity());\n"
                     .formatted(get);
             case ENUM ->
-                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()].capacity());\n"
-                    .formatted(i, get, p.keyLiteral());
+                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[%s.ordinal()].capacity());\n"
+                    .formatted(i, get);
             case STRING_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
@@ -772,14 +844,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("    return n;\n  }\n\n");
 
     // read
-    // a bit per required property, set when its key is read
-    final var hasRequired = m.properties().stream().anyMatch(Property::required);
     s.append(
         "  @Override\n  public void read(final MsgPackReader r, final %s target) {\n"
             .formatted(pojo));
     s.append(
         "    final int size = r.readMapHeader();\n"
-            + (hasRequired ? "    long seen = 0;\n" : "")
             + "    for (int i = 0; i < size; i++) {\n"
             + "      final int entryStart = r.getOffset();\n"
             + "      final int keyLength = r.readStringLength();\n"
@@ -788,14 +857,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             + "      try {\n"
             + "      switch (indexOf(r.getBuffer(), keyOffset, keyLength, i)) {\n");
     i = 0;
-    int bit = 0;
     for (final var p : m.properties()) {
       final var f = "target." + p.field();
       final var line =
           switch (p.type()) {
             case LONG -> f + " = r.readInteger();";
             case INT -> f + " = Decoding.readInt(r);";
-            case BOOLEAN -> f + " = r.readBoolean();";
+            case BOOLEAN, BOXED_BOOLEAN -> f + " = r.readBoolean();";
+            case REQUIRED_LONG -> f + ".set(r.readInteger());";
+            case REQUIRED_INT -> f + ".set(Decoding.readInt(r));";
             case STRING ->
                 p.inPlace()
                     ? "Decoding.readString(r, %s);".formatted(f)
@@ -822,13 +892,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final %2$s item = new %2$s();\n            CODEC_%3$d.read(r, item);\n            %1$s.add(item);\n          }\n        }"
                     .formatted(f, p.javaType(), i);
           };
-      if (p.required()) {
-        s.append(
-            "        case %d -> {\n          %s\n          seen |= 1L << %d;\n        }\n"
-                .formatted(i, line, bit++));
-      } else {
-        s.append("        case %d -> %s\n".formatted(i, line));
-      }
+      s.append("        case %d -> %s\n".formatted(i, line));
       i++;
     }
     s.append(
@@ -840,21 +904,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             + "        throw Decoding.propertyFailure(r.getBuffer(), keyOffset, keyLength, e);\n"
             + "      }\n"
             + "    }\n");
-    // like ObjectValue, a property without default must be in the input: an enum field holds no
-    // value if neither the input nor its initializer gave it one
-    bit = 0;
-    for (final var p : m.properties()) {
-      if (p.required()) {
-        s.append(
-            "    if ((seen & 1L << %d) == 0) {\n      throw missing(%s);\n    }\n"
-                .formatted(bit++, p.keyLiteral()));
-      } else if (p.type() == Type.ENUM) {
-        s.append(
-            "    if (target.%s == null) {\n      throw missing(%s);\n    }\n"
-                .formatted(p.field(), p.keyLiteral()));
-      }
+    // like ObjectValue, a property without default must be in the input
+    if (hasUnset) {
+      s.append(
+          "    final String unset = firstUnset(target);\n    if (unset != null) {\n      throw new RuntimeException(\"Property '\" + unset + \"' has no valid value\");\n    }\n");
     }
     s.append("  }\n\n");
+    if (hasUnset) {
+      unsetChecks(s, m);
+    }
 
     s.append(
         """
@@ -878,19 +936,42 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             return value;
           }
 
-          private static IllegalStateException missing(final String key) {
-            return new IllegalStateException("Property '" + key + "' has no valid value");
-          }
-
-          private static <E> E requireEnum(final E value, final String key) {
-            if (value == null) {
-              throw new IllegalStateException("Property '" + key + "' has no value");
-            }
-            return value;
-          }
         }
         """);
     return s.toString();
+  }
+
+  /**
+   * The check of the properties that can be unset, in the order of declaration, with the messages
+   * of {@code ObjectValue}: one for writing, one for the length, and the one used after reading.
+   */
+  private static void unsetChecks(final StringBuilder s, final Model m) {
+    s.append(
+        """
+          private static final String UNSET_ON_WRITE =
+              "Expected a value or default value to be set before writing, but has nothing";
+          private static final String UNSET_ON_LENGTH =
+              "Expected a value or default value to be specified, but has nothing";
+
+          private static void verifyFieldsAreSet(final %1$s v, final String message) {
+            final String unset = firstUnset(v);
+            if (unset != null) {
+              throw new io.camunda.zeebe.msgpack.MsgpackPropertyException(
+                  new io.camunda.zeebe.msgpack.value.StringValue(unset), message);
+            }
+          }
+
+          /** The key of the first property without a value, or null. */
+          private static String firstUnset(final %1$s v) {
+        """
+            .formatted(m.name()));
+    for (final var p : m.properties()) {
+      if (p.canBeUnset()) {
+        s.append(
+            "    if (%s) {\n      return %s;\n    }\n".formatted(p.unset("v"), p.keyLiteral()));
+      }
+    }
+    s.append("    return null;\n  }\n\n");
   }
 
   /** The element getter of a list of numbers; the agrona lists have unboxed ones. */
@@ -966,26 +1047,36 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   private enum Type {
-    LONG(false),
-    INT(false),
-    BOOLEAN(false),
-    STRING(false),
-    RAW(false),
-    BINARY(false),
-    DOCUMENT(false),
-    ENUM(false),
-    STRING_LIST(true),
-    LONG_LIST(true),
-    INT_ARRAY_LIST(true),
-    LONG_ARRAY_LIST(true),
-    NESTED(true),
-    NESTED_LIST(true);
+    LONG(false, false),
+    INT(false, false),
+    BOOLEAN(false, false),
+    /** A {@code @Nullable Boolean}: null is unset, and boxing a Boolean does not allocate. */
+    BOXED_BOOLEAN(false, true),
+    /** A {@link io.camunda.zeebe.msgpack.pojo.RequiredLong}, unset until a value is set. */
+    REQUIRED_LONG(true, false),
+    /** A {@link io.camunda.zeebe.msgpack.pojo.RequiredInt}, unset until a value is set. */
+    REQUIRED_INT(true, false),
+    STRING(false, true),
+    RAW(false, true),
+    BINARY(false, true),
+    DOCUMENT(false, true),
+    ENUM(false, true),
+    STRING_LIST(true, false),
+    LONG_LIST(true, false),
+    INT_ARRAY_LIST(true, false),
+    LONG_ARRAY_LIST(true, false),
+    NESTED(true, false),
+    NESTED_LIST(true, false);
 
     /** Read into the instance the field holds, so the field must be final. */
     private final boolean container;
 
-    Type(final boolean container) {
+    /** The field may be {@code @Nullable}, null meaning that the property is unset. */
+    private final boolean nullable;
+
+    Type(final boolean container, final boolean nullable) {
       this.container = container;
+      this.nullable = nullable;
     }
   }
 
@@ -993,7 +1084,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    * @param keyLiteral the key as an escaped Java string literal, to be pasted into generated code
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
-   * @param required reading fails if the key is missing
+   * @param nullable the field is {@code @Nullable}, null meaning that the property is unset
    * @param sanitized the value must not appear in a string representation
    * @param pojo a nested value, or the items of a nested list, is a generated POJO, whose {@code
    *     <Name>Ops} is called directly; otherwise it is a {@code BaseValue}
@@ -1004,9 +1095,31 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       String field,
       String javaType,
       boolean inPlace,
-      boolean required,
+      boolean nullable,
       boolean sanitized,
-      boolean pojo) {}
+      boolean pojo) {
+
+    /** Holders and {@code @Nullable} fields can be unset, a property without default. */
+    boolean canBeUnset() {
+      return nullable || type == Type.REQUIRED_LONG || type == Type.REQUIRED_INT;
+    }
+
+    boolean isHolder() {
+      return type == Type.REQUIRED_LONG || type == Type.REQUIRED_INT;
+    }
+
+    /** Java condition that is true if the property is unset in the object {@code v}. */
+    String unset(final String v) {
+      return isHolder()
+          ? "!%s.%s.isSet()".formatted(v, field)
+          : "%s.%s == null".formatted(v, field);
+    }
+
+    /** Java expression for the value of the property, which must not be unset. */
+    String value(final String v) {
+      return isHolder() ? "%s.%s.get()".formatted(v, field) : "%s.%s".formatted(v, field);
+    }
+  }
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

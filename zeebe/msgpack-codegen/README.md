@@ -34,7 +34,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - Every non-static field is stored under its field name, in declaration order, unless it is
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
-- Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
+- Supported field types: `long`, `int`, `boolean`, `RequiredLong`/`RequiredInt` and `@Nullable
+  Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
   raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
   not be overridden), `List<DirectBuffer>`, `List<Long>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
@@ -60,13 +61,27 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `DirectBuffer` field gets a new view per read, and so does every element of a list). A non-final
   one would be the shared default after a reset, so wrapping it would change the default.
   Compilation fails if a field breaks these rules.
-- A key missing in the input keeps the default. `@MsgpackProperty(required = true)` makes reading
-  fail instead ("Property 'key' has no valid value"), like a property of an `UnpackedObject`
-  without default. Use it for a property that had no default in the class it replaces: a
-  primitive always has a Java default, so without it a missing key is read as `0` or `false`. An
-  enum field without initializer is required without the annotation, as it holds no value then.
-- String, binary and raw fields need an initializer. `reset` assigns (or wraps) the default of
-  a shared prototype instance, so a default buffer must never be modified in place.
+- A key missing in the input keeps the default.
+- A property without a default, like a legacy property declared without one, has an unset state
+  and no initializer. A `long` or `int` is a `final RequiredLong`/`RequiredInt` field: a small
+  mutable holder with `set(v)`, `get()`, `isSet()` and `reset()`, which does not allocate on read
+  and has no sentinel value that a real value could clash with. A string, binary, raw, document,
+  enum or `Boolean` is a `@Nullable` field (jspecify) that starts as `null`; `null` is unset. A
+  `boolean` with a default stays a primitive: `Boolean` is only for one without a default. The
+  processor rejects `@Nullable` on a primitive, on a holder, on an `UnsafeBuffer` or on a nested
+  value, a holder that is not `final` and a `Boolean` that is not `@Nullable`.
+- The unset properties behave like those of an `UnpackedObject`: `write` and `getLength` fail with
+  the `MsgpackPropertyException` of the first one that is unset ("Expected a value or default
+  value to be set before writing, but has nothing", and "... to be specified, ..." for the
+  length), before anything is written. `read` fails with "Property 'key' has no valid value" if
+  the key is missing (`reset` makes every one unset again), and `get()` of an unset holder fails
+  with an `IllegalStateException` with the message of the legacy `getValue`. `toString` prints
+  `"NO VALID WRITEABLE VALUE"` for it. `copyFrom` copies the unset state too. `equals` treats two
+  unset values as equal and an unset one as different from any set one, and `hashCode` agrees;
+  `UnpackedObject#equals` throws instead if a property is unset.
+- A string, binary and raw field that is not `@Nullable` needs an initializer. `reset` assigns (or
+  wraps) the default of a shared prototype instance, so a default buffer must never be modified in
+  place. An enum that is not `@Nullable` needs one too.
 - Generated code finds the codecs of its nested values with `Codecs.of(Type.class)`
   (a `ClassValue`, by naming convention) once, when the generated class is initialized. A
   `MsgpackBufferValue` does no look-up: it declares abstract `codec()` and `ops()`, which every

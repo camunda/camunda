@@ -327,7 +327,9 @@ public class RecordGoldenFilesTest {
     return switch (type) {
       case "long" -> "LongProperty";
       case "int" -> "IntegerProperty";
-      case "boolean" -> "BooleanProperty";
+      case "RequiredLong" -> "LongProperty";
+      case "RequiredInt" -> "IntegerProperty";
+      case "boolean", "Boolean" -> "BooleanProperty";
       case "DirectBuffer", "UnsafeBuffer" ->
           annotations.matches("(?s).*raw\\s*=\\s*true.*")
               ? "PackedProperty"
@@ -874,6 +876,47 @@ public class RecordGoldenFilesTest {
           @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
           @MsgpackIgnore int cache;
           private static final int LIMIT = 3;
+        }
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+    assertThatCode(() -> validateNew(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptPojoFieldsWithoutDefault() {
+    // given
+    final var golden =
+        """
+        private final LongProperty keyProp = new LongProperty("key");
+        private final IntegerProperty countProp = new IntegerProperty("count");
+        private final BooleanProperty acceptingProp = new BooleanProperty("accepting");
+        private final StringProperty nameProp = new StringProperty("name");
+        private final BinaryProperty payloadProp = new BinaryProperty("payload");
+        private final EnumProperty<Kind> kindProp = new EnumProperty<>("kind", Kind.class);
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
+          final RequiredLong key = new RequiredLong();
+          final RequiredInt count = new RequiredInt();
+          @Nullable Boolean accepting;
+          @Nullable DirectBuffer name;
+          @MsgpackProperty(binary = true) @Nullable DirectBuffer payload;
+          @Nullable Kind kind;
+          @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
         }
         """;
 
