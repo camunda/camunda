@@ -108,7 +108,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable())
-            .setWithLease(request.withLease());
+            .setWithLease(request.withLease())
+            .setJobReservationToken(request.jobReservationToken());
     // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
     // partition group) so job activation round-robins over the tenant's partition group. The
     // handler reads brokerRequest.getPartitionGroup() when selecting partitions.
@@ -304,7 +305,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       String worker,
       List<String> fetchVariable,
       long requestTimeout,
-      boolean withLease) {}
+      boolean withLease,
+      String jobReservationToken) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}
 

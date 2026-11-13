@@ -68,6 +68,7 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private boolean withLease;
+  private String jobReservationToken;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
   private TenantFilter tenantFilter;
@@ -171,6 +172,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 jobReservationToken(final String jobReservationToken) {
+    this.jobReservationToken = jobReservationToken;
+    return this;
+  }
+
+  @Override
   public JobWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
     this.backoffSupplier = backoffSupplier;
     return this;
@@ -241,7 +248,8 @@ public final class JobWorkerBuilderImpl
             getTenantIds(),
             tenantFilter,
             maxJobsActive,
-            withLease);
+            withLease,
+            jobReservationToken);
 
     final JobExecutor jobExecutor;
     if (enableStreaming) {

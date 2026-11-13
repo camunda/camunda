@@ -66,6 +66,11 @@ public final class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBat
     return this;
   }
 
+  public BrokerActivateJobsRequest setJobReservationToken(final String jobReservationToken) {
+    requestDto.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
   @Override
   public JobBatchRecord getRequestWriter() {
     return requestDto;

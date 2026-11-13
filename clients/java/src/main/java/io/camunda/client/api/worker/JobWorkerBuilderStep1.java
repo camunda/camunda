@@ -203,6 +203,20 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 withLease(boolean withLease);
 
     /**
+     * Presents the reservation token of a process instance whose jobs were reserved at creation
+     * (via the {@code RESERVE_JOBS} runtime instruction) on every poll this worker makes. A worker
+     * presenting the matching token activates those reserved jobs, which are withheld from every
+     * other worker; this lets a test drive the reserved job types with an ordinary worker while
+     * real workers keep running the rest. Applies to the poll path.
+     *
+     * <p>If not set, only unreserved jobs are activated.
+     *
+     * @param jobReservationToken the reservation token to present
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 jobReservationToken(String jobReservationToken);
+
+    /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each
      * failed request; the worker then waits until the returned delay has elapsed before sending the
      * next request. Note that this is used <strong>only</strong> when activating jobs - failures in

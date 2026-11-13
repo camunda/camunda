@@ -76,6 +76,15 @@ public interface JobBatchRecordValue extends RecordValue {
   boolean isWithLease();
 
   /**
+   * A worker that holds the reservation token of an instance may activate that instance's reserved
+   * jobs; a worker without it, or with a different token, is served no reserved job. An empty token
+   * means the activation claims no reservation and sees only unreserved jobs.
+   *
+   * @return the reservation token this activation presents, or empty when none
+   */
+  String getJobReservationToken();
+
+  /**
    * Since a job batch contains many jobs, it is possible that the jobs belong to different tenants.
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated

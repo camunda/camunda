@@ -412,6 +412,15 @@ components:
             recommended. Omit or set to false to activate jobs without a lease.
           type: boolean
           nullable: true
+        jobReservationToken:
+          description: >
+            The reservation token of a process instance whose jobs were reserved at creation (see
+            the RESERVE_JOBS runtime instruction). A worker presenting the matching token activates
+            those reserved jobs, which are withheld from every other worker; this lets a test drive
+            the reserved job types while real workers keep running the rest. Omit it to activate
+            only unreserved jobs.
+          type: string
+          nullable: true
       required:
         - type
         - maxJobsToActivate
@@ -421,6 +430,8 @@ components:
           addedInVersion: "8.9"
         - propertyName: withLease
           addedInVersion: "8.10"
+        - propertyName: jobReservationToken
+          addedInVersion: "8.11"
 
     JobActivationResult:
       description: The list of activated jobs

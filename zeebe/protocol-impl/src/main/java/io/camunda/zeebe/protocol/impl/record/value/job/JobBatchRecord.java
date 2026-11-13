@@ -41,6 +41,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
   private static final StringValue WITH_LEASE_KEY = new StringValue("withLease");
+  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
+      new StringValue("jobReservationToken");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
@@ -57,11 +59,13 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
       new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
   private final BooleanProperty withLeaseProp = new BooleanProperty(WITH_LEASE_KEY, false);
+  private final StringProperty jobReservationTokenProp =
+      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
 
   public JobBatchRecord() {
-    super(11);
+    super(12);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -71,6 +75,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
         .declareProperty(withLeaseProp)
+        .declareProperty(jobReservationTokenProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(tenantFilterProp);
   }
@@ -156,6 +161,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   }
 
   @Override
+  public String getJobReservationToken() {
+    return BufferUtil.bufferAsString(jobReservationTokenProp.getValue());
+  }
+
+  @Override
   public List<String> getTenantIds() {
     return StreamSupport.stream(tenantIdsProp.spliterator(), false)
         .map(StringValue::getValue)
@@ -186,6 +196,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
 
   public JobBatchRecord setWithLease(final boolean withLease) {
     withLeaseProp.setValue(withLease);
+    return this;
+  }
+
+  public JobBatchRecord setJobReservationToken(final String jobReservationToken) {
+    jobReservationTokenProp.setValue(jobReservationToken);
     return this;
   }
 

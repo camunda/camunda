@@ -64,6 +64,11 @@ message ActivateJobsRequest {
   // type; a homogeneous fleet per job type is recommended. Defaults to false, which activates
   // jobs without a lease.
   bool withLease = 9;
+  // the reservation token of a process instance whose jobs were reserved at creation (via the
+  // RESERVE_JOBS runtime instruction). A worker presenting the matching token activates those
+  // reserved jobs, which are withheld from every other worker; defaults to empty, which activates
+  // only unreserved jobs.
+  string jobReservationToken = 10;
 }
 
 message ActivateJobsResponse {

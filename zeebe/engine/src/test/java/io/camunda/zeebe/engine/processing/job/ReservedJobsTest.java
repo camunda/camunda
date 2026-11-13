@@ -546,6 +546,78 @@ public final class ReservedJobsTest {
         .isEmpty();
   }
 
+  @Test
+  public void shouldActivateReservedJobForAWorkerPresentingTheMatchingToken() {
+    // given
+    createReservedInstance();
+
+    // when a worker polls with the instance's reservation token, as a mock worker does
+    final var batch =
+        ENGINE.jobs().withType(jobType).withJobReservationToken(RESERVATION_TOKEN).activate();
+
+    // then
+    assertThat(batch.getValue().getJobs())
+        .describedAs("the holder of the reservation token is served the reserved job")
+        .hasSize(1);
+    assertThat(batch.getValue().getJobs().getFirst().getJobReservationToken())
+        .isEqualTo(RESERVATION_TOKEN);
+  }
+
+  @Test
+  public void shouldNotActivateReservedJobForAWorkerPresentingADifferentToken() {
+    // given
+    createReservedInstance();
+
+    // when a worker polls with a different token
+    final var batch =
+        ENGINE.jobs().withType(jobType).withJobReservationToken("someone-elses-token").activate();
+
+    // then
+    assertThat(batch.getValue().getJobs())
+        .describedAs("a reserved job is served only to the holder of its own token")
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldActivateEveryReservedJobOfATypeForTheTokenHolder() {
+    // given two parallel service tasks of one listed type, reserved together: this is the
+    // multi-instance shape where one mock worker must drain every job of the type
+    final String parallelProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parallelProcessId)
+                .startEvent()
+                .parallelGateway("fork")
+                .serviceTask("first", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .moveToNode("fork")
+                .serviceTask("second", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(parallelProcessId)
+        .withReservedJobTypes(jobType)
+        .withJobReservationToken(RESERVATION_TOKEN)
+        .create();
+
+    // when the token holder polls once
+    final var batch =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withMaxJobsToActivate(10)
+            .withJobReservationToken(RESERVATION_TOKEN)
+            .activate();
+
+    // then
+    assertThat(batch.getValue().getJobs())
+        .describedAs("one poll with the token activates both reserved jobs of the type")
+        .hasSize(2);
+  }
+
   private long createReservedInstance() {
     return ENGINE
         .processInstance()
