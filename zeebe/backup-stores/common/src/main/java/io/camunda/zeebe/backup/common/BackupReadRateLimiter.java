@@ -62,41 +62,37 @@ public final class BackupReadRateLimiter {
     return new BackupReadRateLimiter(bytesPerSecond, System::nanoTime, Sleeper.THREAD_SLEEP);
   }
 
-  public long bytesPerSecond() {
-    return bytesPerSecond;
-  }
-
   public boolean isUnlimited() {
     return this == UNLIMITED;
   }
 
+  /** Returns a stream that pays for every byte read from or skipped in the given stream. */
+  public RateLimitedInputStream wrap(final InputStream inputStream) {
+    return new RateLimitedInputStream(inputStream, this);
+  }
+
   /**
-   * Pays for the given number of bytes, waiting until the reads before them fit into the rate.
+   * Pays for the given number of bytes.
    *
-   * @throws InterruptedException if the thread is interrupted while waiting
+   * @return the nanoseconds the caller has to {@link #sleep(long) wait} until the reads before
+   *     these bytes fit into the rate
    */
-  public void acquire(final long bytes) throws InterruptedException {
+  long reserve(final long bytes) {
     if (isUnlimited() || bytes <= 0) {
-      return;
+      return 0;
     }
 
     final long costNanos = (long) ((double) bytes * TimeUnit.SECONDS.toNanos(1) / bytesPerSecond);
-    final long waitNanos;
     synchronized (this) {
       final long now = nanoClock.getAsLong();
       final long start = Math.max(now, nextFreeNanos);
       nextFreeNanos = start + costNanos;
-      waitNanos = start - now;
-    }
-
-    if (waitNanos > 0) {
-      sleeper.sleep(waitNanos);
+      return start - now;
     }
   }
 
-  /** Returns a stream that pays for every byte read from or skipped in the given stream. */
-  public InputStream wrap(final InputStream inputStream) {
-    return isUnlimited() ? inputStream : new RateLimitedInputStream(inputStream, this);
+  void sleep(final long nanos) throws InterruptedException {
+    sleeper.sleep(nanos);
   }
 
   @Override

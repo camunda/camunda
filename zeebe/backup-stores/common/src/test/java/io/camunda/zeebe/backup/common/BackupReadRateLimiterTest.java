@@ -30,9 +30,9 @@ class BackupReadRateLimiterTest {
     // when
     final var read = stream.transferTo(OutputStream.nullOutputStream());
 
-    // then - the stream is not even wrapped, so nothing can wait
+    // then
     assertThat(read).isEqualTo(100 * MIB);
-    assertThat(stream).isInstanceOf(ZeroInputStream.class);
+    assertThat(stream.waited()).isZero();
     assertThat(limiter.isUnlimited()).isTrue();
     assertThat(limiter).hasToString("BackupReadRateLimiter{unlimited}");
   }
@@ -44,7 +44,7 @@ class BackupReadRateLimiterTest {
 
     // when - 30 MiB in chunks of 1 MiB; each chunk is paid for by the next read
     for (int i = 0; i < 30; i++) {
-      limiter.acquire(MIB);
+      acquire(limiter, MIB);
     }
 
     // then - the first chunk is free, the other 29 cost 100ms each
@@ -55,12 +55,12 @@ class BackupReadRateLimiterTest {
   void shouldNotAccumulateCreditWhileIdle() throws InterruptedException {
     // given
     final var limiter = new BackupReadRateLimiter(10 * MIB, clock::nanos, clock::sleep);
-    limiter.acquire(MIB);
+    acquire(limiter, MIB);
 
     // when - idle for a minute, then read a burst
     clock.advance(Duration.ofMinutes(1));
     for (int i = 0; i < 10; i++) {
-      limiter.acquire(MIB);
+      acquire(limiter, MIB);
     }
 
     // then - the idle minute does not allow a burst above the limit
@@ -73,8 +73,8 @@ class BackupReadRateLimiterTest {
     final var limiter = new BackupReadRateLimiter(MIB, clock::nanos, clock::sleep);
 
     // when
-    limiter.acquire(5 * MIB);
-    limiter.acquire(1);
+    acquire(limiter, 5 * MIB);
+    acquire(limiter, 1);
 
     // then
     assertThat(clock.slept()).isEqualTo(Duration.ofSeconds(5));
@@ -102,11 +102,11 @@ class BackupReadRateLimiterTest {
     // given - two limiters of the same rate, as two brokers in one JVM would create them
     final var first = new BackupReadRateLimiter(10 * MIB, clock::nanos, clock::sleep);
     final var second = new BackupReadRateLimiter(10 * MIB, clock::nanos, clock::sleep);
-    first.acquire(10 * MIB);
+    acquire(first, 10 * MIB);
 
     // when
-    second.acquire(10 * MIB);
-    second.acquire(1);
+    acquire(second, 10 * MIB);
+    acquire(second, 1);
 
     // then - the second limiter only waits for its own read
     assertThat(clock.slept()).isEqualTo(Duration.ofSeconds(1));
@@ -120,6 +120,12 @@ class BackupReadRateLimiterTest {
     // then
     assertThat(limiter.isUnlimited()).isFalse();
     assertThat(limiter).hasToString("BackupReadRateLimiter{bytesPerSecond=44040192}");
+  }
+
+  /** Pays for the bytes and waits for them, like a read of a limited stream does. */
+  private static void acquire(final BackupReadRateLimiter limiter, final long bytes)
+      throws InterruptedException {
+    limiter.sleep(limiter.reserve(bytes));
   }
 
   @Test
