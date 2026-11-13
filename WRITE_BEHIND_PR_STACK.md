@@ -202,3 +202,22 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     `zeebe.broker.experimental.rocksdb.writeBehind` binds but is overwritten by unified; unified
     defaults duplicate `WriteBehindConfiguration.DEFAULT_*` (test guards drift); memory per
     partition ~96MB + key indexes on top of RocksDB limit.
+
+## Load test: WB vs baseline (PR 4 `45c423104a0`, 2026-11-13)
+
+Scenario `max`, starter rate 700, secondary storage `none`, Optimize off, 1200s window
+ending 11:54Z. Namespaces `c8-cs-wb700-20261113-1121-wb` / `-base`
+(metrics runs 43420727661 / 43420733261).
+
+| Metric | WB on | Baseline | Delta |
+|---|---:|---:|---:|
+| Throughput (PI/s) | 467.75 | 324.17 | +44% |
+| Completed PI/s | 467.45 | 321.60 | +45% |
+| Completion ratio | 99.97% | 98.82% | +1.15pp |
+| Backpressure | 7.85% | 10.33% | -2.5pp |
+| Starter rate (PI/s) | 467.62 | 325.44 | +44% |
+| Req/resp latency p99 | 5.0 | 5.0 | = (bucket cap) |
+
+Neither run reached 700 PI/s; backpressure throttled the starter in both. Single run
+each, no repeat yet: confirm with a second pair and broker CPU/disk IOPS before
+drawing conclusions. Data-availability p99 not reported (no secondary storage).
