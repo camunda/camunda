@@ -28,8 +28,11 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -87,6 +90,26 @@ final class AuthInfoTest {
 
   private static AuthInfo decode(final DirectBuffer buffer) {
     return AuthInfo.decode(buffer, 0, buffer.capacity());
+  }
+
+  /**
+   * Previous versions exposed binary claim values as {@code byte[]}, which is also all the msgpack
+   * converter can serialize, so the read-only {@link ByteBuffer}s are unwrapped for them.
+   */
+  @SuppressWarnings("unchecked")
+  static <T> T withBinaryAsBytes(final T value) {
+    if (value instanceof final Map<?, ?> map) {
+      final var copy = new LinkedHashMap<Object, Object>();
+      map.forEach((k, v) -> copy.put(k, withBinaryAsBytes(v)));
+      return (T) copy;
+    } else if (value instanceof final List<?> list) {
+      return (T) list.stream().map(AuthInfoTest::withBinaryAsBytes).toList();
+    } else if (value instanceof final ByteBuffer buffer) {
+      final var bytes = new byte[buffer.remaining()];
+      buffer.duplicate().get(bytes);
+      return (T) bytes;
+    }
+    return value;
   }
 
   @Nested
@@ -286,17 +309,41 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldNotReflectChangesToReturnedTokenClaimValues() {
+    void shouldExposeBinaryTokenClaimValuesAsReadOnlyBuffers() {
       // given
       final var authInfo =
           decode(
               encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
 
       // when
-      ((byte[]) authInfo.getTokenClaims().get("key"))[0] = 2;
+      final var value = authInfo.toClaimsMap();
+      final var buffer = (ByteBuffer) authInfo.getTokenClaims().get("key");
+      final var shared = (ByteBuffer) ((Map<?, ?>) value.get(USER_TOKEN_CLAIMS)).get("key");
 
       // then
-      assertThat(authInfo.getTokenClaims()).containsEntry("key", new byte[] {1});
+      assertThat(buffer.isReadOnly()).isTrue();
+      assertThat(shared.isReadOnly()).isTrue();
+      assertThatThrownBy(() -> buffer.put(0, (byte) 2)).isInstanceOf(ReadOnlyBufferException.class);
+      assertThat(shared.duplicate()).isEqualTo(ByteBuffer.wrap(new byte[] {1}));
+    }
+
+    @Test
+    void shouldRebuildFromClaimsMapWithBinaryTokenClaims() {
+      // given
+      final var original =
+          decode(
+              encode(
+                  AuthInfo.ofClaims(
+                      Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1, 2}, "sub", "a")))));
+
+      // when
+      final var rebuilt = AuthInfo.ofClaims(original.toClaimsMap());
+
+      // then
+      assertThat(rebuilt.getTokenClaims()).containsOnlyKeys("key", "sub");
+      assertThat(rebuilt.getTokenClaims()).containsEntry("sub", "a");
+      assertThat(((ByteBuffer) rebuilt.getTokenClaims().get("key")).duplicate())
+          .isEqualTo(ByteBuffer.wrap(new byte[] {1, 2}));
     }
 
     @Test
@@ -316,21 +363,19 @@ final class AuthInfoTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void shouldNotReflectChangesToReturnedBinaryTokenClaimValuesInClaimsMap() {
+    void shouldDecodeTokenClaimsOnlyOnceAndOnlyWhenRead() {
       // given
       final var authInfo =
-          decode(
-              encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
+          decode(encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("sub", "a")))));
+      final var claims = authInfo.toClaimsMap();
 
       // when
-      final var first = authInfo.toClaimsMap();
-      ((byte[]) ((Map<?, ?>) first.get(USER_TOKEN_CLAIMS)).get("key"))[0] = 2;
+      final var first = ((Map<?, ?>) claims.get(USER_TOKEN_CLAIMS)).entrySet();
+      final var second = ((Map<?, ?>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS)).entrySet();
 
       // then
-      assertThat(authInfo.toClaimsMap()).isNotSameAs(first);
-      assertThat((Map<String, Object>) authInfo.toClaimsMap().get(USER_TOKEN_CLAIMS))
-          .containsEntry("key", new byte[] {1});
+      assertThat(second).isSameAs(first);
+      assertThat(claims.get(USER_TOKEN_CLAIMS)).isEqualTo(Map.of("sub", "a"));
     }
 
     @Test
@@ -571,7 +616,8 @@ final class AuthInfoTest {
 
     void set(final LegacyFormat format, final Map<String, Object> claims) {
       this.format.setValue(format);
-      this.claims.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+      this.claims.setValue(
+          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(withBinaryAsBytes(claims))));
     }
   }
 

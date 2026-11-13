@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.common.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.entities.AuditLogEntity.AuditLogActorType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
@@ -17,18 +18,27 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 class AuditLogInfoTest {
@@ -248,6 +258,82 @@ class AuditLogInfoTest {
     final Record<?> record = factory.generateRecord(valueType);
     final AuditLogInfo info = AuditLogInfo.of(record);
     return info.category();
+  }
+
+  /**
+   * Guards the cost of resolving the actor: it must only read the typed claims (username, client
+   * id, anonymous) of the record's {@link AuthInfo}, and never decode its token claims. Decoding
+   * them is expensive (Jackson, freezing, immutability scan) and was the dominant cost of the audit
+   * log export when {@code AuthInfo#toClaimsMap} did it eagerly for every record.
+   *
+   * <p>Whether the token claims are decoded can't be observed directly, so the test gives the
+   * record token claims that can't be decoded at all: they are nested so deeply that the recursive
+   * Jackson decoder overflows the stack, while msgpack can still skip over them. If this test
+   * fails, either the actor resolution decodes the token claims again, or the nesting is no longer
+   * enough to make decoding fail, which the control assertion below tells apart. Adjust the
+   * nesting, or the way decoding is made to fail, in the latter case; it is not a reason to relax
+   * the assertion on the actor.
+   */
+  @Test
+  void shouldResolveActorWithoutDecodingTokenClaims() {
+    final var authInfo = authInfoWithUndecodableTokenClaims("test-user");
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+            .intent(ProcessInstanceCreationIntent.CREATED)
+            .authorization(authInfo);
+    final var record =
+        new CopiedRecord<>(new ProcessInstanceCreationRecord(), metadata, 1L, 1, 1L, -1L, 0L);
+
+    // control: decoding the token claims fails, so the actor below can't have needed them
+    assertThatThrownBy(authInfo::getTokenClaims).isInstanceOf(StackOverflowError.class);
+
+    final var actor = AuditLogInfo.AuditLogActor.of(record);
+
+    assertThat(actor.actorType()).isEqualTo(AuditLogActorType.USER);
+    assertThat(actor.actorId()).isEqualTo("test-user");
+  }
+
+  /**
+   * Builds the msgpack encoding of an auth info by hand, as encoding such claims through the
+   * regular API would overflow the stack as well. Only the few msgpack types needed are written:
+   * short strings (fixstr), small maps (fixmap), single element arrays (fixarray), nil and a binary
+   * with a 32 bit length.
+   */
+  private static AuthInfo authInfoWithUndecodableTokenClaims(final String username) {
+    final int nesting = 100_000;
+
+    final var claims = new ByteArrayOutputStream();
+    claims.write(0x82); // map with 2 entries
+    writeShortString(claims, Authorization.AUTHORIZED_USERNAME);
+    writeShortString(claims, username);
+    writeShortString(claims, Authorization.USER_TOKEN_CLAIMS);
+    claims.write(0x81); // map with 1 entry
+    writeShortString(claims, "nested");
+    for (int i = 0; i < nesting; i++) {
+      claims.write(0x91); // array with 1 element
+    }
+    claims.write(0xc0); // nil
+    final var claimsBytes = claims.toByteArray();
+
+    final var encoded = new ByteArrayOutputStream();
+    encoded.write(0x82); // map with 2 entries
+    writeShortString(encoded, "format");
+    writeShortString(encoded, "UNKNOWN");
+    writeShortString(encoded, "claims");
+    encoded.write(0xc6); // binary with a 32 bit length
+    encoded.writeBytes(ByteBuffer.allocate(Integer.BYTES).putInt(claimsBytes.length).array());
+    encoded.writeBytes(claimsBytes);
+
+    final var bytes = encoded.toByteArray();
+    return AuthInfo.decode(new UnsafeBuffer(bytes), 0, bytes.length);
+  }
+
+  private static void writeShortString(final ByteArrayOutputStream out, final String string) {
+    final var bytes = string.getBytes(StandardCharsets.UTF_8);
+    out.write(0xa0 | bytes.length); // string of up to 31 bytes
+    out.writeBytes(bytes);
   }
 
   private AuditLogEntityType getEntityTypeForValueType(final ValueType valueType) {

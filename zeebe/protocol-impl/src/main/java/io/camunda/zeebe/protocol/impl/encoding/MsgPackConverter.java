@@ -23,6 +23,9 @@ import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
@@ -34,6 +37,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -80,6 +84,8 @@ public final class MsgPackConverter {
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
       new ObjectMapper(MESSAGE_PACK_FACTORY)
           .registerModule(new JavaTimeModule())
+          .registerModule(
+              new SimpleModule().addSerializer(ByteBuffer.class, new BinarySerializer()))
           .addMixIn(CamundaAuthentication.class, CamundaAuthenticationMixin.class);
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory()
@@ -280,5 +286,31 @@ public final class MsgPackConverter {
 
     @JsonProperty("claims")
     abstract java.util.Map<String, Object> claims();
+  }
+
+  /**
+   * Writes the remaining bytes of a {@link ByteBuffer} as a binary value. Jackson's default
+   * serializer streams read-only buffers, which the MessagePack generator does not support. The
+   * buffer's position and limit are left untouched.
+   */
+  private static final class BinarySerializer extends StdSerializer<ByteBuffer> {
+
+    BinarySerializer() {
+      super(ByteBuffer.class);
+    }
+
+    @Override
+    public void serialize(
+        final ByteBuffer value, final JsonGenerator generator, final SerializerProvider provider)
+        throws IOException {
+      if (value.hasArray()) {
+        generator.writeBinary(
+            value.array(), value.arrayOffset() + value.position(), value.remaining());
+      } else {
+        final var bytes = new byte[value.remaining()];
+        value.duplicate().get(bytes);
+        generator.writeBinary(bytes);
+      }
+    }
   }
 }

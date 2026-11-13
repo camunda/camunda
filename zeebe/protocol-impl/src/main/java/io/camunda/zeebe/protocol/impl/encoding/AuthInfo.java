@@ -21,6 +21,8 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.ByteBuffer;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -73,7 +76,7 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
-  /** The claims map, once built, unless it holds mutable values. See {@link #toClaimsMap()}. */
+  /** The claims map, built on first use. See {@link #toClaimsMap()}. */
   private volatile @Nullable Map<String, Object> claimsMap;
 
   private AuthInfo(
@@ -183,8 +186,9 @@ public final class AuthInfo implements BufferWriter {
   /**
    * Returns the claims of the principal's token, or null if not provided. They're decoded from
    * their msgpack encoding on every call, so values have the decoded types, e.g. {@code Integer}
-   * for a small {@code Long} and {@code List} for an array. Each call returns a new copy; prefer
-   * {@link #toClaimsMap()} if the claims are only read.
+   * for a small {@code Long}, {@code List} for an array and a read-only {@code ByteBuffer} for
+   * binary data. Each call returns a new copy; prefer {@link #toClaimsMap()} if the claims are only
+   * read.
    */
   @SuppressWarnings("unchecked")
   public @Nullable Map<String, Object> getTokenClaims() {
@@ -199,9 +203,14 @@ public final class AuthInfo implements BufferWriter {
    * i.e. {@link io.camunda.zeebe.protocol.record.Record#getAuthorizations()} and the security
    * library; use the typed accessors otherwise.
    *
-   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. Only if
-   * the token claims contain binary values, which decode to mutable arrays, every call returns a
-   * fresh map instead.
+   * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. The
+   * token claims, which are by far the most expensive part, are only decoded when the {@link
+   * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
+   * the other claims, e.g. exporters, never pay for them. They are then decoded once, and shared.
+   *
+   * <p>Sharing is safe: the decoded claims are deeply unmodifiable, with binary values exposed as
+   * read-only {@link ByteBuffer}s. Callers must not rely on the buffers' position or limit; use
+   * {@link ByteBuffer#duplicate()} to read them.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -210,22 +219,19 @@ public final class AuthInfo implements BufferWriter {
       return cached;
     }
 
-    final var tokenClaims = getTokenClaims();
     final var claims = new LinkedHashMap<String, Object>();
     putIfPresent(claims, AUTHORIZED_ANONYMOUS_USER, anonymous);
     putIfPresent(claims, AUTHORIZED_USERNAME, username);
     putIfPresent(claims, AUTHORIZED_CLIENT_ID, clientId);
     putIfPresent(claims, AUTHORIZED_TENANTS, tenants);
     putIfPresent(claims, USER_GROUPS_CLAIMS, groups);
-    putIfPresent(claims, USER_TOKEN_CLAIMS, tokenClaims);
+    if (tokenClaims != null) {
+      claims.put(USER_TOKEN_CLAIMS, new LazyTokenClaims());
+    }
     final var result = Collections.unmodifiableMap(claims);
 
-    // binary values decode to mutable arrays, so a shared map would let callers change this
-    // instance
-    if (isImmutableValue(tokenClaims)) {
-      // racing threads build equal maps, so it doesn't matter which one wins
-      claimsMap = result;
-    }
+    // racing threads build equivalent maps, so it doesn't matter which one wins
+    claimsMap = result;
     return result;
   }
 
@@ -336,7 +342,10 @@ public final class AuthInfo implements BufferWriter {
     return type.cast(value);
   }
 
-  /** Makes the freshly decoded value deeply unmodifiable. */
+  /**
+   * Makes the freshly decoded value deeply unmodifiable. Binary values are exposed as read-only
+   * {@link ByteBuffer}s, as a {@code byte[]} cannot be protected from writes.
+   */
   @SuppressWarnings("unchecked")
   private static @Nullable Object freeze(final @Nullable Object value) {
     if (value instanceof final Map<?, ?> map) {
@@ -345,23 +354,50 @@ public final class AuthInfo implements BufferWriter {
     } else if (value instanceof final List<?> list) {
       ((List<Object>) list).replaceAll(AuthInfo::freeze);
       return Collections.unmodifiableList(list);
+    } else if (value instanceof final byte[] bytes) {
+      return ByteBuffer.wrap(bytes).asReadOnlyBuffer();
     }
     return value;
   }
 
-  private static boolean isImmutableValue(final @Nullable Object value) {
-    if (value == null
-        || value instanceof String
-        || value instanceof Boolean
-        || value instanceof Number) {
-      return true;
-    } else if (value instanceof final Map<?, ?> map) {
-      return map.entrySet().stream()
-          .allMatch(e -> isImmutableValue(e.getKey()) && isImmutableValue(e.getValue()));
-    } else if (value instanceof final List<?> list) {
-      return list.stream().allMatch(AuthInfo::isImmutableValue);
+  /** A read-only view of the token claims that decodes them once, on first access. */
+  private final class LazyTokenClaims extends AbstractMap<String, Object> {
+
+    private volatile @Nullable Map<String, Object> decoded;
+
+    @Override
+    public Set<Entry<String, Object>> entrySet() {
+      return delegate().entrySet();
     }
-    return false;
+
+    @Override
+    public int size() {
+      return delegate().size();
+    }
+
+    @Override
+    public boolean containsKey(final Object key) {
+      return delegate().containsKey(key);
+    }
+
+    @Override
+    public @Nullable Object get(final Object key) {
+      return delegate().get(key);
+    }
+
+    private Map<String, Object> delegate() {
+      final var cached = decoded;
+      return cached != null ? cached : decode();
+    }
+
+    private synchronized Map<String, Object> decode() {
+      var claims = decoded;
+      if (claims == null) {
+        claims = Objects.requireNonNull(getTokenClaims());
+        decoded = claims;
+      }
+      return claims;
+    }
   }
 
   public enum AuthDataFormat {
