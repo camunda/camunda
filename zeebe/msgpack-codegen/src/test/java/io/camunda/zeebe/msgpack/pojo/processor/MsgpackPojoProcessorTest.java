@@ -45,7 +45,10 @@ final class MsgpackPojoProcessorTest {
       import io.camunda.zeebe.msgpack.pojo.*;
       import java.util.*;
       import org.agrona.DirectBuffer;
+      import org.agrona.concurrent.UnsafeBuffer;
       """;
+
+  private static final DirectBuffer EMPTY_DOCUMENT = new UnsafeBuffer(new byte[] {(byte) 0x80});
 
   @Test
   void shouldRejectAPojoThatIsNotRecyclable() {
@@ -651,6 +654,171 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldRejectADocumentThatIsNotABuffer() {
+    // given
+    final var source = pojo(valid("@MsgpackProperty(document = true) long doc;"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("doc") && e.contains("document requires a DirectBuffer"));
+  }
+
+  @Test
+  void shouldRejectADocumentThatIsAlsoRawOrBinary() {
+    // given
+    final var raw =
+        pojo(
+            valid(
+                "@MsgpackProperty(document = true, raw = true) DirectBuffer doc = Decoding.EMPTY;"));
+    final var binary =
+        pojo(
+            valid(
+                "@MsgpackProperty(document = true, binary = true) DirectBuffer doc = Decoding.EMPTY;"));
+
+    // when - then
+    for (final var source : List.of(raw, binary)) {
+      assertThat(compile(source).errors())
+          .anyMatch(e -> e.contains("doc") && e.contains("document cannot be combined"));
+    }
+  }
+
+  @Test
+  void shouldRejectAFinalDocumentField() {
+    // given
+    final var source =
+        pojo(valid("@MsgpackProperty(document = true) final DirectBuffer doc = Decoding.EMPTY;"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("doc") && e.contains("must not be final"));
+  }
+
+  @Test
+  void shouldStoreADocumentAsABinaryAndReadItBack() throws Exception {
+    // given
+    final var codec = documentCodec();
+    final var source = codec.newInstance();
+    final var document = mapWithOneEntry("a", 1);
+    set(source, "doc", new UnsafeBuffer(document));
+
+    // when
+    final var bytes = codec.write(source);
+    final var read = codec.newInstance();
+    codec.read(read, bytes);
+
+    // then the document is a binary holding the map
+    assertThat(bytes).isEqualTo(documentMessage(document));
+    assertThat(get(read, "doc")).isEqualTo(new UnsafeBuffer(document));
+  }
+
+  @Test
+  void shouldReadAnEmptyOrNilDocumentAsTheEmptyMap() throws Exception {
+    // given
+    final var codec = documentCodec();
+    final var empty = documentMessage(new byte[0]);
+    final var nil = documentMessage(encoded(MsgPackWriter::writeNil));
+
+    // when - then
+    for (final var message : List.of(empty, nil)) {
+      final var read = codec.newInstance();
+      set(read, "doc", buffer("x"));
+      codec.read(read, message);
+      assertThat(get(read, "doc")).isEqualTo(EMPTY_DOCUMENT);
+    }
+  }
+
+  @Test
+  void shouldRejectADocumentThatIsNotAMap() throws Exception {
+    // given a document holding the integer 1
+    final var codec = documentCodec();
+    final var message = documentMessage(encoded(w -> w.writeInteger(1)));
+
+    // when
+    final ThrowingCallable read = () -> codec.read(codec.newInstance(), message);
+
+    // then
+    assertThatThrownBy(read)
+        .hasMessageContaining("Could not read property 'doc'")
+        .cause()
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("root level object");
+  }
+
+  @Test
+  void shouldRestoreTheDefaultDocumentOnReset() throws Exception {
+    // given
+    final var codec = documentCodec();
+    final var instance = codec.newInstance();
+    set(instance, "doc", new UnsafeBuffer(mapWithOneEntry("a", 1)));
+
+    // when
+    instance.reset();
+
+    // then
+    assertThat(get(instance, "doc")).isEqualTo(EMPTY_DOCUMENT);
+  }
+
+  @Test
+  void shouldWrapAFinalUnsafeDocumentInPlace() throws Exception {
+    // given
+    final var codec =
+        codecOf(
+            valid(
+                "@MsgpackProperty(document = true) final UnsafeBuffer doc = new UnsafeBuffer(new byte[] {(byte) 0x80});"));
+    final var read = codec.newInstance();
+    final var field = get(read, "doc");
+    final var document = mapWithOneEntry("a", 1);
+
+    // when
+    codec.read(read, documentMessage(document));
+
+    // then
+    assertThat(get(read, "doc")).isSameAs(field).isEqualTo(new UnsafeBuffer(document));
+  }
+
+  @Test
+  void shouldKeepUnknownPropertiesNextToADocument() throws Exception {
+    // given a message with a key of a newer version before the document
+    final var codec =
+        codecOf(
+            valid(
+                """
+                @MsgpackProperty(document = true) DirectBuffer doc = new UnsafeBuffer(new byte[] {(byte) 0x80});
+                @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                """));
+    final var message =
+        encoded(
+            w -> {
+              w.writeMapHeader(2);
+              w.writeString(buffer("future"));
+              w.writeInteger(5);
+              w.writeString(buffer("doc"));
+              w.writeBinary(new UnsafeBuffer(mapWithOneEntry("a", 1)));
+            });
+    final var read = codec.newInstance();
+
+    // when
+    codec.read(read, message);
+
+    // then the document is read and the unknown entry is written back after it
+    assertThat(get(read, "doc")).isEqualTo(new UnsafeBuffer(mapWithOneEntry("a", 1)));
+    final var written = codec.write(read);
+    assertThat(written).hasSize(message.length);
+    assertThat(new UnsafeBuffer(written).byteArray())
+        .containsSequence(
+            encoded(
+                w -> {
+                  w.writeString(buffer("future"));
+                  w.writeInteger(5);
+                }));
+  }
+
+  @Test
   void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
     final var result = compile(pojo(valid("DirectBuffer name;")));
@@ -696,6 +864,71 @@ final class MsgpackPojoProcessorTest {
             IMPORTS
                 + "@MsgpackPojo public final class Sample extends Base { long key; %s }"
                     .formatted(UNKNOWN)));
+  }
+
+  /** A compiled sample class with its codec, for tests that read and write bytes. */
+  private record SampleCodec(Class<?> type, MsgpackCodec<Recyclable> codec) {
+
+    Recyclable newInstance() throws ReflectiveOperationException {
+      return (Recyclable) type.getConstructor().newInstance();
+    }
+
+    byte[] write(final Object value) {
+      final var bytes = new ExpandableArrayBuffer();
+      final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), (Recyclable) value);
+      return java.util.Arrays.copyOf(bytes.byteArray(), length);
+    }
+
+    void read(final Object target, final byte[] message) {
+      codec.read(
+          new MsgPackReader().wrap(new UnsafeBuffer(message), 0, message.length),
+          (Recyclable) target);
+    }
+  }
+
+  private static SampleCodec codecOf(final String classSource) {
+    final var result = compile(pojo(classSource));
+    assertThat(result.errors()).isEmpty();
+    try {
+      final var type = result.load("sample.Sample");
+      @SuppressWarnings("unchecked")
+      final var codec = (MsgpackCodec<Recyclable>) Codecs.of(type.asSubclass(Recyclable.class));
+      return new SampleCodec(type, codec);
+    } catch (final ClassNotFoundException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static SampleCodec documentCodec() {
+    return codecOf(
+        valid(
+            "@MsgpackProperty(document = true) DirectBuffer doc = new UnsafeBuffer(new byte[] {(byte) 0x80});"));
+  }
+
+  /** The message {@code {"doc": <binary>}} with the given document bytes. */
+  private static byte[] documentMessage(final byte[] document) {
+    return encoded(
+        w -> {
+          w.writeMapHeader(1);
+          w.writeString(buffer("doc"));
+          w.writeBinary(new UnsafeBuffer(document));
+        });
+  }
+
+  private static byte[] mapWithOneEntry(final String key, final long value) {
+    return encoded(
+        w -> {
+          w.writeMapHeader(1);
+          w.writeString(buffer(key));
+          w.writeInteger(value);
+        });
+  }
+
+  private static byte[] encoded(final java.util.function.Consumer<MsgPackWriter> body) {
+    final var buffer = new ExpandableArrayBuffer();
+    final var writer = new MsgPackWriter().wrap(buffer, 0);
+    body.accept(writer);
+    return java.util.Arrays.copyOf(buffer.byteArray(), writer.getOffset());
   }
 
   /** A valid class with the body, which gets an unknown properties field if it has none. */
