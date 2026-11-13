@@ -169,7 +169,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
       final @Nullable Duration writeTimeout) {
-    final var maxReadRate = config.getMaxReadRate();
     final var builder =
         new Builder()
             .withReadTimeout(readTimeout)
@@ -185,8 +184,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout())
             .withSupportLegacyMd5(config.isSupportLegacyMd5())
             .withSsecKey(config.getSsecKey())
-            .withDefaultsMode(config.getDefaultsMode())
-            .withMaxReadRate(maxReadRate == null ? 0 : maxReadRate.toBytes());
+            .withDefaultsMode(config.getDefaultsMode());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
