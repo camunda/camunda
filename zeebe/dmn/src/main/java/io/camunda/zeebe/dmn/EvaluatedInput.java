@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An evaluated input of a decision table. It contains details of the input and the value of the
@@ -16,9 +17,9 @@ import org.agrona.DirectBuffer;
 public interface EvaluatedInput {
 
   /**
-   * @return the id of the evaluated input
+   * @return the id of the evaluated input, or {@code null} if the DMN does not define one
    */
-  String inputId();
+  @Nullable String inputId();
 
   /**
    * Returns the name of the evaluated input. Note that it uses the label of the input in absence of
@@ -28,7 +29,7 @@ public interface EvaluatedInput {
    *
    * @return the name of the evaluated input
    */
-  String inputName();
+  @Nullable String inputName();
 
   /**
    * Returns the value of the evaluated input expression encoded as MessagePack.

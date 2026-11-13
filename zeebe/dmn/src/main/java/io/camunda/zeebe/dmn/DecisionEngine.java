@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import java.io.InputStream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Parses and evaluates DMN decisions. A DMN resource can be parsed and stored as a {@link
@@ -48,5 +49,5 @@ public interface DecisionEngine {
   DecisionEvaluationResult evaluateDecisionById(
       ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       String decisionId,
-      DecisionContext context);
+      @Nullable DecisionContext context);
 }
