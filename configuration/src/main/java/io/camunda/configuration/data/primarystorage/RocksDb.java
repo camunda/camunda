@@ -155,6 +155,12 @@ public class RocksDb {
    */
   private boolean sstPartitioningEnabled = true;
 
+  /**
+   * Experimental: a write-behind cache in front of each partition's RocksDB state. Disabled by
+   * default.
+   */
+  @NestedConfigurationProperty private WriteBehind writeBehind = new WriteBehind();
+
   public Properties getColumnFamilyOptions() {
     return columnFamilyOptions;
   }
@@ -317,6 +323,14 @@ public class RocksDb {
     this.sstPartitioningEnabled = sstPartitioningEnabled;
   }
 
+  public WriteBehind getWriteBehind() {
+    return writeBehind;
+  }
+
+  public void setWriteBehind(final WriteBehind writeBehind) {
+    this.writeBehind = writeBehind;
+  }
+
   @Override
   public String toString() {
     return "RocksDb{"
@@ -342,6 +356,8 @@ public class RocksDb {
         + walDisabled
         + ", sstPartitioningEnabled="
         + sstPartitioningEnabled
+        + ", writeBehind="
+        + writeBehind
         + '}';
   }
 

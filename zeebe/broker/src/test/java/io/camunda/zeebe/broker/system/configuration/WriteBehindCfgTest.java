@@ -69,9 +69,9 @@ final class WriteBehindCfgTest {
     final var cfg = new WriteBehindCfg();
 
     // when - names as bound from environment variables or YAML
-    cfg.putKeyIndex("variables", KeyIndexPolicy.DISABLE);
-    cfg.putKeyIndex("element.instance.key", KeyIndexPolicy.DISABLE);
-    cfg.putKeyIndex("message-subscription-by-key", KeyIndexPolicy.KEEP_HIGHEST);
+    cfg.putKeyIndex("variables", "DISABLE");
+    cfg.putKeyIndex("element.instance.key", "disable");
+    cfg.putKeyIndex("message-subscription-by-key", "KEEP_HIGHEST");
 
     // then
     assertThat(cfg.getKeyIndex())
@@ -88,9 +88,21 @@ final class WriteBehindCfgTest {
     final var cfg = new WriteBehindCfg();
 
     // when / then
-    assertThatThrownBy(() -> cfg.putKeyIndex("NOT_A_CF", KeyIndexPolicy.DISABLE))
+    assertThatThrownBy(() -> cfg.putKeyIndex("NOT_A_CF", "DISABLE"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("'NOT_A_CF'")
         .hasMessageContaining("VARIABLES");
+  }
+
+  @Test
+  void shouldRejectUnknownPolicy() {
+    // given
+    final var cfg = new WriteBehindCfg();
+
+    // when / then
+    assertThatThrownBy(() -> cfg.putKeyIndex("VARIABLES", "KEEP_SOME"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("'KEEP_SOME'")
+        .hasMessageContaining("KEEP_HIGHEST");
   }
 }

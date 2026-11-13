@@ -18,6 +18,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.util.unit.DataSize;
 
@@ -106,10 +107,13 @@ public final class WriteBehindCfg {
    *
    * @param columnFamily the name of a {@link ZbColumnFamilies} constant; case, dots and dashes are
    *     ignored, so that names bound from environment variables match
-   * @throws IllegalArgumentException if no column family has this name
+   * @param policy the name of a {@link KeyIndexPolicy} constant, case ignored
+   * @throws IllegalArgumentException if no column family or policy has this name
    */
-  public void putKeyIndex(final String columnFamily, final KeyIndexPolicy policy) {
-    keyIndex.put(parseColumnFamily(columnFamily), policy);
+  public void putKeyIndex(final String columnFamily, final String policy) {
+    keyIndex.put(
+        parseEnum(ZbColumnFamilies.class, columnFamily, "column family"),
+        parseEnum(KeyIndexPolicy.class, policy, "key index policy"));
   }
 
   public WriteBehindConfiguration createWriteBehindConfiguration() {
@@ -124,16 +128,35 @@ public final class WriteBehindCfg {
         .withKeyIndexPolicies(policiesById);
   }
 
-  private static ZbColumnFamilies parseColumnFamily(final String name) {
+  private static <E extends Enum<E>> E parseEnum(
+      final Class<E> type, final String name, final String kind) {
     final var normalized = name.trim().toUpperCase(Locale.ROOT).replace('.', '_').replace('-', '_');
     try {
-      return ZbColumnFamilies.valueOf(normalized);
+      return Enum.valueOf(type, normalized);
     } catch (final IllegalArgumentException e) {
       throw new IllegalArgumentException(
-          "Expected a column family name for the write-behind key index, but was '%s'. Valid names: %s"
-              .formatted(name, Arrays.toString(ZbColumnFamilies.values())),
+          "Expected a %s for the write-behind key index, but was '%s'. Valid values: %s"
+              .formatted(kind, name, Arrays.toString(type.getEnumConstants())),
           e);
     }
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    return o instanceof final WriteBehindCfg that
+        && enabled == that.enabled
+        && keyIndexMaxKeys == that.keyIndexMaxKeys
+        && flushDelay.equals(that.flushDelay)
+        && flushThreshold.equals(that.flushThreshold)
+        && maxPending.equals(that.maxPending)
+        && cacheSize.equals(that.cacheSize)
+        && keyIndex.equals(that.keyIndex);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        enabled, flushDelay, flushThreshold, maxPending, cacheSize, keyIndexMaxKeys, keyIndex);
   }
 
   @Override
