@@ -604,5 +604,6 @@ commits.
 10. Benchmark against version 1's single table and against RocksDB, then decide.
 
 Status: steps 1 to 9 are done. The storage's PostgreSQL tests and the broker tests, on H2 and
-PostgreSQL, pass on the new tables. The benchmark (step 10) is still to do.
+PostgreSQL, pass on the new tables. The first benchmark (step 10) is in
+[its results](rdbms-storage-load-test-results-v2.md); the decision is still open.
 
