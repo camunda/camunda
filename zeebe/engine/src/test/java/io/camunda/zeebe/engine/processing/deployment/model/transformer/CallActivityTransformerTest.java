@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTr
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.function.Consumer;
@@ -101,5 +102,53 @@ class CallActivityTransformerTest {
     assertThat(element.getCalledElementBusinessId().isStatic()).isFalse();
     assertThat(element.getCalledElementBusinessId().isValid()).isTrue();
     assertThat(element.getCalledElementBusinessId().getExpression()).isEqualTo("orderId");
+  }
+
+  @Test
+  void shouldSetLiteralVersionTagAsStaticExpression() {
+    // given
+    final var model =
+        processWithCallActivity(
+            c ->
+                c.zeebeProcessId("child")
+                    .zeebeBindingType(ZeebeBindingType.versionTag)
+                    .zeebeVersionTag("v1.0"));
+
+    // when
+    final var element = transform(model);
+
+    // then
+    assertThat(element.getVersionTag().isStatic()).isTrue();
+    assertThat(element.getVersionTag().getExpression()).isEqualTo("v1.0");
+  }
+
+  @Test
+  void shouldSetVersionTagStartingWithEqualsSignAsFeelExpression() {
+    // given
+    final var model =
+        processWithCallActivity(
+            c ->
+                c.zeebeProcessId("child")
+                    .zeebeBindingType(ZeebeBindingType.versionTag)
+                    .zeebeVersionTag("=tag"));
+
+    // when
+    final var element = transform(model);
+
+    // then
+    assertThat(element.getVersionTag().isStatic()).isFalse();
+    assertThat(element.getVersionTag().getExpression()).isEqualTo("tag");
+  }
+
+  @Test
+  void shouldNotSetVersionTagWhenAttributeIsAbsent() {
+    // given
+    final var model = processWithCallActivity(c -> c.zeebeProcessId("child"));
+
+    // when
+    final var element = transform(model);
+
+    // then
+    assertThat(element.getVersionTag()).isNull();
   }
 }
