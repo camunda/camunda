@@ -91,6 +91,12 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     return ops.hashCode(self());
   }
 
+  /** The stored properties as JSON, with {@link MsgpackSanitized} ones masked. */
+  @Override
+  public String toString() {
+    return ops.toString(self());
+  }
+
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {

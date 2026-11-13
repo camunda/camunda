@@ -22,7 +22,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
 - Defaults are the field initializers. The processor also generates a `<Name>Ops` with the other
   operations on the class: `reset`, which copies the defaults from a prototype instance (plain field
-  assignments, no reflection), `copy`, `equals` and `hashCode`. The operations are static methods, so generated
+  assignments, no reflection), `copy`, `equals`, `hashCode` and `toString`. The operations are static methods, so generated
   code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
   for code that is generic in the type. It is separate from the codec.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
@@ -81,6 +81,13 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   consistent with their `equals`, and equal values must hash alike. Unlike `UnpackedObject`, an instance is
   only equal to one of exactly the same class. `@MsgpackIgnore`d fields are not compared: a class with such
   state overrides both methods.
+- `toString` of `MsgpackBufferValue` prints the stored properties as JSON in the format of
+  `UnpackedObject`: `{"key":value,...}` in declaration order, strings and enums quoted, binaries and
+  documents as quoted base64, raw values as `[packed value (length=n)]`, and the entries of unknown
+  properties last, in the same form. Unlike `UnpackedObject`, which leaves out the comma before the
+  first unknown entry, the result is valid JSON. A field annotated `@MsgpackSanitized` prints
+  `"***"` instead of its value, also when its POJO is nested in another one (a nested
+  `UnpackedObject` only masks at the top level). The stored format is not affected.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
   written back, so a read-modify-write by an older version does not drop them. Every
   `@MsgpackPojo` needs exactly one `final` `@MsgpackUnknownProperties UnknownProperties` field,

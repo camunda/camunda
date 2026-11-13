@@ -86,6 +86,30 @@ final class GeneratedOpsTest {
                 }
                 """),
             new Source(
+                "sample.Secret",
+                IMPORTS
+                    + """
+                    @MsgpackPojo
+                    public final class Secret extends MsgpackBufferValue<Secret> {
+                      long id = 1;
+                      @MsgpackSanitized DirectBuffer password = Decoding.EMPTY;
+                      @MsgpackSanitized int pin = 4;
+                      @MsgpackSanitized final List<DirectBuffer> codes = new ArrayList<>();
+                      @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                    }
+                    """),
+            new Source(
+                "sample.Holder",
+                IMPORTS
+                    + """
+                    @MsgpackPojo
+                    public final class Holder extends MsgpackBufferValue<Holder> {
+                      final Secret secret = new Secret();
+                      final List<Secret> secrets = new ArrayList<>();
+                      @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                    }
+                    """),
+            new Source(
                 "sample.Sample",
                 IMPORTS
                     + """
@@ -300,6 +324,126 @@ final class GeneratedOpsTest {
     assertThat(ops.hashCode(a)).isEqualTo(ops.hashCode(b));
     assertThat(ops.equals(a, other)).isFalse();
     assertThat(ops.equals(a, a)).isTrue();
+  }
+
+  @Test
+  void shouldPrintTheStoredPropertiesAsJson() throws Exception {
+    // given
+    final var sample = read(message(0));
+    final var base64 = java.util.Base64.getEncoder();
+
+    // when
+    final var string = sample.toString();
+
+    // then the format of ObjectValue, with the unknown entries last
+    assertThat(string)
+        .isEqualTo(
+            "{\"key\":42,\"count\":8,\"flag\":false,\"name\":\"zeebe\",\"payload\":\""
+                + base64.encodeToString("bin".getBytes(StandardCharsets.UTF_8))
+                + "\",\"raw\":[packed value (length=3)],\"doc\":\""
+                + base64.encodeToString(
+                    encoded(
+                        d -> {
+                          d.writeMapHeader(1);
+                          d.writeString(utf8("a"));
+                          d.writeInteger(1);
+                        }))
+                + "\",\"fixed\":\"fx\",\"kind\":\"ONE\",\"ids\":[\"a\",\"b\"],"
+                + "\"versions\":[1,300,5000000000],\"counts\":[1,70000],"
+                + "\"keys\":[5,-6000000000],"
+                + "\"inner\":{\"value\":9,\"itemFuture\":[packed value (length=1)]},"
+                + "\"legacy\":{\"value\":11},"
+                + "\"items\":[{\"value\":1},{\"value\":2,\"itemFuture\":[packed value (length=1)]}],"
+                + "\"legacyItems\":[{\"value\":5}],"
+                + "\"future\":[packed value (length=1)]}");
+  }
+
+  @Test
+  void shouldPrintTheDefaultsOfANewInstance() throws Exception {
+    // when
+    final var string = instance().toString();
+
+    // then
+    assertThat(string)
+        .startsWith("{\"key\":-1,\"count\":7,\"flag\":true,\"name\":\"\",")
+        .contains("\"doc\":\"gA==\"")
+        .contains("\"kind\":\"TWO\"")
+        .endsWith("\"items\":[],\"legacyItems\":[]}");
+  }
+
+  @Test
+  void shouldMaskSanitizedFieldsInTheString() throws Exception {
+    // given
+    final var secret = secret("hunter2", 1234, "a", "b");
+
+    // when
+    final var string = secret.toString();
+
+    // then
+    assertThat(string)
+        .isEqualTo("{\"id\":7,\"password\":\"***\",\"pin\":\"***\",\"codes\":\"***\"}")
+        .doesNotContain("hunter2");
+  }
+
+  @Test
+  void shouldMaskSanitizedFieldsOfNestedValues() throws Exception {
+    // given a holder of a secret and of a list of secrets
+    final var holder = compiled.load("sample.Holder").getConstructor().newInstance();
+    final var secret = secret("hunter2", 1234);
+    copy(secret, get(holder, "secret"));
+    @SuppressWarnings("unchecked")
+    final var secrets = (List<Object>) get(holder, "secrets");
+    secrets.add(secret);
+
+    // when
+    final var string = holder.toString();
+
+    // then
+    assertThat(string)
+        .isEqualTo(
+            "{\"secret\":{\"id\":7,\"password\":\"***\",\"pin\":\"***\",\"codes\":\"***\"},"
+                + "\"secrets\":[{\"id\":7,\"password\":\"***\",\"pin\":\"***\",\"codes\":\"***\"}]}");
+  }
+
+  @Test
+  void shouldStillStoreSanitizedFields() throws Exception {
+    // given
+    final var secret = secret("hunter2", 1234, "a");
+
+    // when it is written and read back
+    final var read = compiled.load("sample.Secret").getConstructor().newInstance();
+    wrap(read, new UnsafeBuffer(bytes(secret)));
+
+    // then the value is there, only the string hides it
+    assertThat(get(read, "password")).isEqualTo(utf8("hunter2"));
+    assertThat(get(read, "pin")).isEqualTo(1234);
+    assertThat(read).isEqualTo(secret);
+  }
+
+  @Test
+  void shouldPrintThroughTheOpsOfTheClass() throws Exception {
+    // given
+    final var type = compiled.load("sample.Sample");
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final MsgpackOps<Recyclable> ops = (MsgpackOps) Codecs.opsOf((Class) type);
+    final var sample = read(message(0));
+
+    // then
+    assertThat(ops.toString((Recyclable) sample)).isEqualTo(sample.toString());
+  }
+
+  private static Object secret(final String password, final int pin, final String... codes)
+      throws Exception {
+    final var secret = compiled.load("sample.Secret").getConstructor().newInstance();
+    set(secret, "id", 7L);
+    set(secret, "password", utf8(password));
+    set(secret, "pin", pin);
+    @SuppressWarnings("unchecked")
+    final var list = (List<DirectBuffer>) get(secret, "codes");
+    for (final var code : codes) {
+      list.add(utf8(code));
+    }
+    return secret;
   }
 
   /** One change per stored property of the sample, each applied to an instance of message 0. */

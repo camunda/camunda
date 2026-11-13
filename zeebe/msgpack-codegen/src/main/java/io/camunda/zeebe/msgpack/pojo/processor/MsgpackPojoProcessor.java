@@ -390,6 +390,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     copy(s, m);
     equalsMethod(s, m);
     hashCodeMethod(s, m);
+    toStringMethod(s, m);
     s.append(
         """
           /** Items are owned by one list, so a default with items would be shared by every reset. */
@@ -428,6 +429,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             @Override
             public int hashCode(final %1$s value) {
               return %1$sOps.hashCode(value);
+            }
+
+            @Override
+            public String toString(final %1$s value) {
+              return %1$sOps.toString(value);
             }
           }
         }
@@ -544,6 +550,63 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 .formatted(p.field(), p.javaType()));
       }
     }
+  }
+
+  /** The static {@code toString(value)} and {@code appendTo(builder, value)} of the ops class. */
+  private static void toStringMethod(final StringBuilder s, final Model m) {
+    s.append("  /** JSON of the stored properties, see {@link MsgpackOps#toString}. */\n");
+    s.append("  public static String toString(final %s v) {\n".formatted(m.name()));
+    s.append("    final StringBuilder sb = new StringBuilder();\n");
+    s.append("    appendTo(sb, v);\n    return sb.toString();\n  }\n\n");
+    s.append(
+        "  /** Appends {@link #toString} to a builder, for the string of a nested value. */\n");
+    s.append(
+        "  public static void appendTo(final StringBuilder sb, final %s v) {\n"
+            .formatted(m.name()));
+    boolean first = true;
+    for (final var p : m.properties()) {
+      final var x = "v." + p.field();
+      s.append(
+          "    sb.append(\"%s\\\"\").append(%s).append(\"\\\":\");\n"
+              .formatted(first ? "{" : ",", p.keyLiteral()));
+      first = false;
+      if (p.sanitized()) {
+        s.append("    sb.append(\"\\\"***\\\"\");\n");
+        continue;
+      }
+      switch (p.type()) {
+        case LONG, INT, BOOLEAN -> s.append("    sb.append(%s);\n".formatted(x));
+        case STRING -> s.append("    Decoding.appendString(sb, %s);\n".formatted(x));
+        case BINARY, DOCUMENT -> s.append("    Decoding.appendBinary(sb, %s);\n".formatted(x));
+        case RAW -> s.append("    Decoding.appendRaw(sb, %s);\n".formatted(x));
+        case ENUM -> s.append("    Decoding.appendEnum(sb, %s);\n".formatted(x));
+        case STRING_LIST ->
+            s.append(
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      Decoding.appendString(sb, %1$s.get(i));\n    }\n    sb.append(']');\n"
+                    .formatted(x));
+        case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+            s.append(
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append(%1$s.%2$s(i));\n    }\n    sb.append(']');\n"
+                    .formatted(x, getter(p.type())));
+        case NESTED ->
+            s.append(
+                p.pojo()
+                    ? "    %sOps.appendTo(sb, %s);\n".formatted(p.javaType(), x)
+                    : "    %s.writeJSON(sb);\n".formatted(x));
+        case NESTED_LIST ->
+            s.append(
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      %2$s;\n    }\n    sb.append(']');\n"
+                    .formatted(
+                        x,
+                        p.pojo()
+                            ? "%sOps.appendTo(sb, %s.get(i))".formatted(p.javaType(), x)
+                            : "%s.get(i).writeJSON(sb)".formatted(x)));
+      }
+    }
+    if (m.unknownField() != null) {
+      s.append("    v.%s.appendJson(sb);\n".formatted(m.unknownField()));
+    }
+    s.append("    sb.append('}');\n  }\n\n");
   }
 
   /** The static {@code hashCode(value)} of the ops class. */

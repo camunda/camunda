@@ -247,6 +247,15 @@ final class GeneratedCodecPropertyTest {
    * same, and each must read what the other wrote. Both keep unknown keys and write them after the
    * declared ones.
    */
+  /**
+   * ObjectValue prints the properties it does not declare right after the declared ones, without a
+   * separator, which is not valid JSON. The generated string has the comma. The unknown keys of the
+   * scenarios start with {@code u} or, in a nested value, with {@code nu}.
+   */
+  private static String withSeparators(final String objectValueString) {
+    return objectValueString.replaceAll("(?<![,{])(\"(?:u\\d|nu)[^\"]*\":\\[packed)", ",$1");
+  }
+
   private static void assertMatchesAnUnpackedObject(final Scenario scenario) throws Exception {
     final var schema = scenario.schema();
     final var compiled = compiled(schema);
@@ -274,6 +283,8 @@ final class GeneratedCodecPropertyTest {
     final var twinBytes = new byte[twin.getLength()];
     twin.write(new UnsafeBuffer(twinBytes), 0);
     assertThat(generatedBytes).as(schema.source()).isEqualTo(twinBytes);
+    // and print the same JSON, which logs and assertion messages show
+    assertThat(generated.toString()).as(schema.source()).isEqualTo(withSeparators(twin.toString()));
 
     // and each reads what the other wrote, as a rolled back version does
     final var readTwinBytes = compiled.newInstance();

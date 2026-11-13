@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -155,6 +156,43 @@ public final class Decoding {
     source.write(MsgpackScratch.writer(buffer, 0));
     target.reset();
     target.read(MsgpackScratch.reader(buffer, 0, length));
+  }
+
+  /** Appends a string as JSON like {@code StringValue}: quoted, and not escaped. */
+  public static void appendString(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    if (value == null) {
+      builder.append("null");
+    } else {
+      builder.append('"').append(value.getStringWithoutLengthUtf8(0, value.capacity())).append('"');
+    }
+  }
+
+  /** Appends a binary or document as JSON like {@code BinaryValue}: quoted base64. */
+  public static void appendBinary(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    if (value == null) {
+      builder.append("null");
+      return;
+    }
+    final byte[] bytes = new byte[value.capacity()];
+    value.getBytes(0, bytes);
+    builder.append('"').append(Base64.getEncoder().encodeToString(bytes)).append('"');
+  }
+
+  /** Appends a raw value as JSON like {@code PackedValue}: only its length. */
+  public static void appendRaw(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    builder
+        .append("[packed value (length=")
+        .append(value == null ? 0 : value.capacity())
+        .append(")]");
+  }
+
+  /** Appends an enum constant as JSON like {@code EnumValue}: quoted name, or null. */
+  public static void appendEnum(final StringBuilder builder, final @Nullable Enum<?> value) {
+    if (value == null) {
+      builder.append("null");
+    } else {
+      builder.append('"').append(value).append('"');
+    }
   }
 
   /** Reads a string and resolves it to the constant with the same name, without allocating. */
