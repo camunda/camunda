@@ -189,9 +189,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var nullable = isNullable(field);
       if (nullable && !kind.nullable) {
         throw new IllegalArgumentException(
-            ("Field %s must not be @Nullable: only a string, binary, raw, document, enum or Boolean "
-                    + "field can be unset. Use RequiredLong or RequiredInt for a long or int")
+            ("Field %s must not be @Nullable: only a string, binary, raw, document, enum, Boolean, "
+                    + "Long or Integer field can be unset. Use Long, Integer, RequiredLong or "
+                    + "RequiredInt for a long or int")
                 .formatted(fieldName));
+      }
+      if (!nullable && (kind == Type.BOXED_LONG || kind == Type.BOXED_INT)) {
+        throw new IllegalArgumentException(
+            "Field %s must be @Nullable, null is its unset state. Use %s for a default"
+                .formatted(fieldName, kind == Type.BOXED_LONG ? "long" : "int"));
       }
       if (!nullable && kind == Type.BOXED_BOOLEAN) {
         throw new IllegalArgumentException(
@@ -275,6 +281,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         }
         if (name.equals("java.lang.Boolean")) {
           return Type.BOXED_BOOLEAN;
+        }
+        if (name.equals("java.lang.Long")) {
+          return Type.BOXED_LONG;
+        }
+        if (name.equals("java.lang.Integer")) {
+          return Type.BOXED_INT;
         }
         if (name.equals(INT_ARRAY_LIST)) {
           return Type.INT_ARRAY_LIST;
@@ -516,7 +528,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var to = "target." + p.field();
       s.append(
           switch (p.type()) {
-            case LONG, INT, BOOLEAN, BOXED_BOOLEAN, ENUM -> "    %s = %s;\n".formatted(to, from);
+            case LONG, INT, BOOLEAN, BOXED_BOOLEAN, BOXED_LONG, BOXED_INT, ENUM ->
+                "    %s = %s;\n".formatted(to, from);
             case REQUIRED_LONG, REQUIRED_INT ->
                 "    if (%1$s.isSet()) {\n      %2$s.set(%1$s.get());\n    } else {\n      %2$s.reset();\n    }\n"
                     .formatted(from, to);
@@ -568,7 +581,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var differs =
           switch (p.type()) {
             case LONG, INT, BOOLEAN, ENUM -> "%s != %s".formatted(x, y);
-            case BOXED_BOOLEAN -> "!java.util.Objects.equals(%s, %s)".formatted(x, y);
+            case BOXED_BOOLEAN, BOXED_LONG, BOXED_INT ->
+                "!java.util.Objects.equals(%s, %s)".formatted(x, y);
             case REQUIRED_LONG, REQUIRED_INT ->
                 "%1$s.isSet() != %2$s.isSet() || %1$s.isSet() && %1$s.get() != %2$s.get()"
                     .formatted(x, y);
@@ -648,7 +662,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
       s.append(
           switch (p.type()) {
-            case LONG, INT, BOOLEAN, BOXED_BOOLEAN -> "    sb.append(%s);\n".formatted(x);
+            case LONG, INT, BOOLEAN, BOXED_BOOLEAN, BOXED_LONG, BOXED_INT ->
+                "    sb.append(%s);\n".formatted(x);
             case REQUIRED_LONG, REQUIRED_INT -> "    sb.append(%s.get());\n".formatted(x);
             case STRING -> "    Decoding.appendString(sb, %s);\n".formatted(x);
             case BINARY, DOCUMENT -> "    Decoding.appendBinary(sb, %s);\n".formatted(x);
@@ -696,7 +711,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case BOOLEAN -> "Boolean.hashCode(%s)".formatted(x);
             case REQUIRED_LONG -> "(%1$s.isSet() ? Long.hashCode(%1$s.get()) : -1)".formatted(x);
             case REQUIRED_INT -> "(%1$s.isSet() ? %1$s.get() : -1)".formatted(x);
-            case BOXED_BOOLEAN, ENUM -> "java.util.Objects.hashCode(%s)".formatted(x);
+            case BOXED_BOOLEAN, BOXED_LONG, BOXED_INT, ENUM ->
+                "java.util.Objects.hashCode(%s)".formatted(x);
             case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(%s)".formatted(x);
             case STRING_LIST -> "Decoding.contentHash(%s)".formatted(x);
             case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "%s.hashCode()".formatted(x);
@@ -749,7 +765,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append(
         "  @Override\n  public int write(final MsgPackWriter w, final %s v) {\n".formatted(pojo));
     final var hasUnset = m.properties().stream().anyMatch(Property::canBeUnset);
-    if (hasUnset) {
+    final var hasWriteCheck = m.properties().stream().anyMatch(Property::checkedOnWrite);
+    if (hasWriteCheck) {
       s.append("    verifyFieldsAreSet(v, UNSET_ON_WRITE);\n");
     }
     s.append("    int n = w.writeMapHeader(%s);\n".formatted(count));
@@ -759,7 +776,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("    n += w.writeString(KEY_%d);\n".formatted(i));
       s.append(
           switch (p.type()) {
-            case LONG, INT, REQUIRED_LONG, REQUIRED_INT ->
+            case LONG, INT, BOXED_LONG, BOXED_INT, REQUIRED_LONG, REQUIRED_INT ->
                 "    n += w.writeInteger(%s);\n".formatted(get);
             case BOOLEAN, BOXED_BOOLEAN -> "    n += w.writeBoolean(%s);\n".formatted(get);
             case STRING -> "    n += w.writeString(%s);\n".formatted(get);
@@ -793,7 +810,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
     // length
     s.append("  @Override\n  public int getLength(final %s v) {\n".formatted(pojo));
-    if (hasUnset) {
+    if (hasWriteCheck) {
       s.append("    verifyFieldsAreSet(v, UNSET_ON_LENGTH);\n");
     }
     s.append("    int n = MsgPackWriter.getEncodedMapHeaderLength(%s);\n".formatted(count));
@@ -803,7 +820,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("    n += MsgPackWriter.getEncodedStringLength(KEY_%d.capacity());\n".formatted(i));
       s.append(
           switch (p.type()) {
-            case LONG, INT, REQUIRED_LONG, REQUIRED_INT ->
+            case LONG, INT, BOXED_LONG, BOXED_INT, REQUIRED_LONG, REQUIRED_INT ->
                 "    n += MsgPackWriter.getEncodedLongValueLength(%s);\n".formatted(get);
             case BOOLEAN, BOXED_BOOLEAN ->
                 "    n += MsgPackWriter.getEncodedBooleanValueLength();\n";
@@ -861,8 +878,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var f = "target." + p.field();
       final var line =
           switch (p.type()) {
-            case LONG -> f + " = r.readInteger();";
-            case INT -> f + " = Decoding.readInt(r);";
+            case LONG, BOXED_LONG -> f + " = r.readInteger();";
+            case INT, BOXED_INT -> f + " = Decoding.readInt(r);";
             case BOOLEAN, BOXED_BOOLEAN -> f + " = r.readBoolean();";
             case REQUIRED_LONG -> f + ".set(r.readInteger());";
             case REQUIRED_INT -> f + ".set(Decoding.readInt(r));";
@@ -907,10 +924,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     // like ObjectValue, a property without default must be in the input
     if (hasUnset) {
       s.append(
-          "    final String unset = firstUnset(target);\n    if (unset != null) {\n      throw new RuntimeException(\"Property '\" + unset + \"' has no valid value\");\n    }\n");
+          "    final String unset = firstUnset(target, false);\n    if (unset != null) {\n      throw new RuntimeException(\"Property '\" + unset + \"' has no valid value\");\n    }\n");
     }
     s.append("  }\n\n");
-    if (hasUnset) {
+    if (hasWriteCheck) {
       unsetChecks(s, m);
     }
 
@@ -954,21 +971,25 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               "Expected a value or default value to be specified, but has nothing";
 
           private static void verifyFieldsAreSet(final %1$s v, final String message) {
-            final String unset = firstUnset(v);
+            final String unset = firstUnset(v, true);
             if (unset != null) {
               throw new io.camunda.zeebe.msgpack.MsgpackPropertyException(
                   new io.camunda.zeebe.msgpack.value.StringValue(unset), message);
             }
           }
 
-          /** The key of the first property without a value, or null. */
-          private static String firstUnset(final %1$s v) {
+          /**
+           * The key of the first property without a value, or null. A non-nullable enum is only
+           * checked when writing, as it has a default unless it is assigned null.
+           */
+          private static String firstUnset(final %1$s v, final boolean write) {
         """
             .formatted(m.name()));
     for (final var p : m.properties()) {
-      if (p.canBeUnset()) {
-        s.append(
-            "    if (%s) {\n      return %s;\n    }\n".formatted(p.unset("v"), p.keyLiteral()));
+      if (p.checkedOnWrite()) {
+        final var unset =
+            p.canBeUnset() ? p.unset("v") : "write && v.%s == null".formatted(p.field());
+        s.append("    if (%s) {\n      return %s;\n    }\n".formatted(unset, p.keyLiteral()));
       }
     }
     s.append("    return null;\n  }\n\n");
@@ -1052,6 +1073,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     BOOLEAN(false, false),
     /** A {@code @Nullable Boolean}: null is unset, and boxing a Boolean does not allocate. */
     BOXED_BOOLEAN(false, true),
+    /** A {@code @Nullable Long}: null is unset. Allocates when read, unlike RequiredLong. */
+    BOXED_LONG(false, true),
+    /** A {@code @Nullable Integer}: null is unset. Allocates when read, unlike RequiredInt. */
+    BOXED_INT(false, true),
     /** A {@link io.camunda.zeebe.msgpack.pojo.RequiredLong}, unset until a value is set. */
     REQUIRED_LONG(true, false),
     /** A {@link io.camunda.zeebe.msgpack.pojo.RequiredInt}, unset until a value is set. */
@@ -1102,6 +1127,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     /** Holders and {@code @Nullable} fields can be unset, a property without default. */
     boolean canBeUnset() {
       return nullable || type == Type.REQUIRED_LONG || type == Type.REQUIRED_INT;
+    }
+
+    /** A non-nullable enum that is null cannot be written, whatever the reason. */
+    boolean checkedOnWrite() {
+      return canBeUnset() || type == Type.ENUM;
     }
 
     boolean isHolder() {
