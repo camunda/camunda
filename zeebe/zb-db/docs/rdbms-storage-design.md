@@ -2,7 +2,8 @@
 
 **Status**: Proposed (8.11). The decisions and their reasons are in
 [ADR 0015](../../docs/adr/0015-811-shared-rdbms-partition-state.md). This document describes how to
-build them.
+build them. [Version 2](rdbms-storage-design-v2.md) replaces the schema, settings, fencing statement
+and write path described here; where the two differ, version 2 wins.
 
 ## 1. Goal and scope
 

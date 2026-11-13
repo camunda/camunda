@@ -43,8 +43,8 @@ round trip per state access would be far too slow for the stream processor.
 engine doesn't know which storage it runs on.
 
 **D2. A partition has one state in the RDBMS that all its replicas share.**
-- The state is identified by the partition group and partition number. Only the current leader reads
-and writes it, through its cache.
+- The state is identified by the partition number, within the physical tenant's database and table
+prefix, and has a random state id. Only the current leader reads and writes it, through its cache.
 - Followers keep no state and don't replay the log. They keep their Raft log and take snapshots
 (D5) so the log can be compacted.
 - A replica that becomes leader attaches to the shared state, replays the log from the processed
@@ -60,15 +60,17 @@ writer's delay. Uncommitted transactions stay in the cache and count toward its 
 
 **D4. The Raft term fences writes from old leaders.**
 - A row per partition holds the term of the leader that owns the state. A new leader claims it with
-its term before it reads anything (`UPDATE … SET TERM = :term WHERE TERM <= :term`).
-- Every write transaction checks, at its first write, that the row still holds its own term, and
-keeps the row locked until it commits. A leader's claim therefore waits for an old leader's
-write in progress, and after the claim the old leader's writes fail.
+its term before it reads anything (`UPDATE … SET OWNER_TERM = :term WHERE OWNER_TERM <= :term`).
+- Every write transaction starts with one update of that row that only matches its own term, and
+records the log position the state stands at once the transaction commits
+(`UPDATE … SET WRITTEN_POSITION = :position WHERE OWNER_TERM = :term`). No row updated means the
+state is fenced. The update keeps the row locked until the commit, so a leader's claim waits for an
+old leader's write in progress, and after the claim the old leader's writes fail.
 - A fenced writer stops and fails its partition. What it didn't write is in the log and is replayed
 by the new leader.
 
 **D5. A snapshot is a marker, not a copy of the state.**
-- `createSnapshot` writes one small file that names the shared state (group, partition, state id).
+- `createSnapshot` writes one small file that names the shared state (partition, state id).
 The snapshot store accepts it like any other snapshot; it only needs a non-empty directory.
 - Before writing the marker, the cache waits until the writer has written everything committed up
 to the snapshot. The shared state only moves forward, so its processed position stays at or above
@@ -88,17 +90,25 @@ backups keep holding the marker and the log segments, as today.
 checkpoint. The recovery check from D5 validates each partition. The restore also resets the
 ownership terms, because the restored log may start again at a lower term.
 
-**D7. Liquibase owns the schema, MyBatis does the access, without Spring.**
-- The module ships its own changelog, with its own prefixed tracking tables, and runs it at startup
-through Liquibase's core API. The history's `LiquibaseSchemaManager` uses `SpringLiquibase`, but
-zb-db has no Spring.
+**D7. The state shares the history's database and schema management; MyBatis without Spring.**
+- The state lives in the database of the RDBMS secondary storage and uses its settings, with a
+second connection pool per physical tenant. RDBMS state therefore needs RDBMS secondary storage.
+- Its changelog lives next to the history's in `db/rdbms-schema`, and the history's
+`LiquibaseSchemaManager` runs it, under the same lock and tracking tables. Partitions wait until it
+has run.
 - MyBatis runs on a plain `Configuration`, with vendor-specific statements selected by database id
-as in `db/rdbms`. The module owns its connections and transactions.
+as in `db/rdbms`. The module owns its connections and transactions. A read outside a write runs in
+auto-commit, so a cache miss is one round trip.
 - H2 and PostgreSQL first. Other vendors need checks of key length limits and binary ordering.
 
-**D8. One key-value table holds all column families.**
-- Rows are keyed by (state id, column family, key), with the key as a binary column that the
-database orders byte by byte, so scans return the same order as RocksDB.
+**D8. One table per column family, with the binary key as primary key.**
+- Each column family in use gets its own table, named from a registry of short names. Deprecated
+and unknown column families share one fallback table.
+- Rows are keyed by (partition, key), with the key as a binary column that the database orders byte
+by byte, so scans return the same order as RocksDB. Each row also holds the log position that wrote
+it.
+- Nothing else is decoded when writing. Views, generated from key layouts in the registry, decode
+the keys for people at read time.
 - Transactions use the database's READ COMMITTED isolation, which is what `ZeebeDb` promises today.
 
 ## Alternatives considered
@@ -110,10 +120,16 @@ database orders byte by byte, so scans return the same order as RocksDB.
   the stream processor's thread.
 - **The whole RocksDB state as a blob in the database.** Uses the database only as a file store; it
   doesn't remove any of the copying.
-- **Spring Boot's Liquibase and MyBatis integration**, as in the history RDBMS. zb-db has no Spring,
-  and the history setup scans `mapper/*.xml` on the classpath, which would pick up our mappers.
-- **Reusing the history RDBMS module.** Couples the runtime state to the exporter's schema and
-  release cycle. We reuse its patterns, not its code.
+- **The history's MyBatis factories.** They use Spring's managed transactions, while the state
+  opens, commits and closes its connections itself, and they load every `mapper/*.xml` on the
+  classpath.
+- **Own settings and Liquibase run for the state** (the proof of concept). A second set of settings
+  for what is usually the same database, and two Liquibase runs that must not overlap in one JVM.
+- **One key-value table for all column families** (the proof of concept). Simpler to create, but
+  one huge table with mixed statistics, no size per column family, and rows nobody can read without
+  zdb.
+- **Decoded key columns filled by the writer.** Readable with plain SQL, but they cost every write,
+  and a wrong key layout needs a backfill. Views give the same at read time.
 
 ## Consequences
 
@@ -128,7 +144,9 @@ database orders byte by byte, so scans return the same order as RocksDB.
   need a follower mode without a `ZeebeDb`.
 - Under the Minimal External Dependencies principle, the RDBMS stays optional and RocksDB stays the
   default. It needs a Product Architecture review before it goes beyond a proof of concept.
-- If the history RDBMS uses the same database, one database backup covers both.
+- State and history share one database: one database backup covers both, and an outage stops both.
+- A new column family needs a registry entry and a changeset. Until it has them, its rows go to the
+  fallback table.
 
 ## Open questions
 
