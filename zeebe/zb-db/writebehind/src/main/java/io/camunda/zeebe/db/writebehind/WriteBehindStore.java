@@ -13,7 +13,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.StampedLock;
 import org.jspecify.annotations.Nullable;
@@ -32,8 +31,8 @@ import org.jspecify.annotations.Nullable;
  * the storage.
  *
  * <p>{@link #publishLock} makes three things atomic: publishing a transaction, sealing the active
- * batch, and taking a read view (a storage cursor plus a copy of the batches). Nothing that holds
- * it blocks on anything else.
+ * batch, and taking a read view (a storage cursor plus the batches). Nothing that holds it blocks
+ * on anything else.
  *
  * @param <K> the key type
  * @param <V> the value as the store holds it, see {@link Backend}
@@ -206,7 +205,8 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   /**
    * Takes a point-in-time view of the committed state for the keys of a range: a storage cursor and
-   * a copy of the matching unflushed versions, taken together.
+   * the unflushed versions of the same instant, taken together. The view reads the unflushed
+   * versions from the batches when it is used, so opening it copies nothing.
    */
   View<K, V, T> openView(final KeyRange<K> range) {
     ensureUsable();
@@ -220,17 +220,21 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
       final var storageCursor = backend.newCursor();
       metrics.iteratorsOpened.increment();
       metrics.of(backend.groupOf(from)).iterators.increment();
-      final var dirtyRange = new TreeMap<K, Version<V>>();
       final var sealed = current.sealed();
-      if (sealed != null) {
-        dirtyRange.putAll(to == null ? sealed.tailMap(from) : sealed.subMap(from, to));
-      }
-      dirtyRange.putAll(
-          to == null ? current.active().tailMap(from) : current.active().subMap(from, to));
+      final var dirtyRange =
+          new DirtyRange<>(
+              inRange(current.active(), from, to),
+              sealed == null ? null : inRange(sealed, from, to),
+              lastSeq);
       return new View<>(storageCursor, dirtyRange, lastSeq);
     } finally {
       publishLock.unlockRead(stamp);
     }
+  }
+
+  private static <K extends Comparable<K>, V> NavigableMap<K, Version<V>> inRange(
+      final NavigableMap<K, Version<V>> batch, final K from, final @Nullable K to) {
+    return to == null ? batch.tailMap(from, true) : batch.subMap(from, true, to, false);
   }
 
   /**
@@ -385,6 +389,6 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
    *
    * @param viewSeq the sequence of the last commit that the view includes
    */
-  record View<K, V, T>(
-      Backend.Cursor<K, T> storageCursor, NavigableMap<K, Version<V>> dirty, long viewSeq) {}
+  record View<K extends Comparable<K>, V, T>(
+      Backend.Cursor<K, T> storageCursor, DirtyRange<K, V> dirty, long viewSeq) {}
 }

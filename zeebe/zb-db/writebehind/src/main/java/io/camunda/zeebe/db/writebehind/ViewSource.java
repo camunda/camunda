@@ -8,13 +8,12 @@
 package io.camunda.zeebe.db.writebehind;
 
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The committed state at one instant, a sorted forward or reverse walk over it: a copy of the
- * unflushed versions merged with a storage cursor. On equal keys the unflushed version wins; a
- * delete hides the key.
+ * The committed state at one instant, a sorted forward or reverse walk over it: the unflushed
+ * versions merged with a storage cursor. On equal keys the unflushed version wins; a delete hides
+ * the key.
  *
  * <p>Values from memory are copied out of the held values; only values from the storage are
  * decoded, and only when {@link #readValue} asks for them.
@@ -22,7 +21,7 @@ import org.jspecify.annotations.Nullable;
 final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
 
   private final Backend<K, V, T> backend;
-  private final NavigableMap<K, Version<V>> dirty;
+  private final DirtyRange<K, V> dirty;
   private final Backend.Cursor<K, T> stored;
 
   private boolean forward = true;
