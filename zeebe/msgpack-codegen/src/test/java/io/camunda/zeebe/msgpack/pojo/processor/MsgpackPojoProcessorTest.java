@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.msgpack.pojo.Codecs;
 import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -246,6 +247,78 @@ final class MsgpackPojoProcessorTest {
     // then the key is read and the raw key is named as it is stored
     assertThat(get(target, "key")).isEqualTo(42L);
     assertThatThrownBy(writeEmptyRaw).hasMessageContaining("'r\"aw'");
+  }
+
+  @Test
+  void shouldRejectAMessageWithoutARequiredProperty() throws Exception {
+    // given
+    final var result =
+        compile(pojo(valid("@MsgpackProperty(required = true) long key; int count = 1;")));
+    assertThat(result.errors()).isEmpty();
+    final var message = message("count", 2);
+
+    // when
+    final ThrowingCallable read = () -> read(result, message);
+
+    // then
+    assertThatThrownBy(read).hasMessageContaining("Property 'key' has no valid value");
+  }
+
+  @Test
+  void shouldReadAMessageWithARequiredProperty() throws Exception {
+    // given
+    final var result =
+        compile(pojo(valid("@MsgpackProperty(required = true) long key; int count = 1;")));
+    assertThat(result.errors()).isEmpty();
+
+    // when
+    final var read = read(result, message("key", 7));
+
+    // then
+    assertThat(get(read, "key")).isEqualTo(7L);
+    assertThat(get(read, "count")).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRejectMoreRequiredPropertiesThanItCanTrack() {
+    // given
+    final var fields = new StringBuilder();
+    for (int i = 0; i <= Long.SIZE; i++) {
+      fields.append("@MsgpackProperty(required = true) long f%d;%n".formatted(i));
+    }
+
+    // when
+    final var result = compile(pojo(valid(fields.toString())));
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("more than 64 required properties"));
+  }
+
+  @Test
+  void shouldRejectAMessageWithoutAnEnumThatHasNoDefault() throws Exception {
+    // given
+    final var result = compile(enumKind(), pojo(valid("Kind kind; int count = 1;")));
+    assertThat(result.errors()).isEmpty();
+    final var message = message("count", 2);
+
+    // when
+    final ThrowingCallable read = () -> read(result, message);
+
+    // then
+    assertThatThrownBy(read).hasMessageContaining("Property 'kind' has no valid value");
+  }
+
+  @Test
+  void shouldKeepTheDefaultOfAMissingEnum() throws Exception {
+    // given
+    final var result = compile(enumKind(), pojo(valid("Kind kind = Kind.TWO; int count = 1;")));
+    assertThat(result.errors()).isEmpty();
+
+    // when
+    final var read = read(result, message("count", 2));
+
+    // then
+    assertThat(get(read, "kind")).hasToString("TWO");
   }
 
   @Test
@@ -627,6 +700,29 @@ final class MsgpackPojoProcessorTest {
 
   private static Source enumKind() {
     return new Source("sample.Kind", "package sample; public enum Kind { ONE, TWO }");
+  }
+
+  /** A message with a single integer entry. */
+  private static DirectBuffer message(final String key, final long value) {
+    final var bytes = new ExpandableArrayBuffer();
+    final var writer = new MsgPackWriter().wrap(bytes, 0);
+    writer.writeMapHeader(1);
+    writer.writeString(buffer(key));
+    writer.writeInteger(value);
+    return new UnsafeBuffer(bytes, 0, writer.getOffset());
+  }
+
+  /** Reads the message into a new, reset sample, the way MsgpackBufferValue does. */
+  private static Recyclable read(final Result result, final DirectBuffer message)
+      throws ReflectiveOperationException {
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var target = (Recyclable) sampleClass.getConstructor().newInstance();
+    target.reset();
+    codec.read(new MsgPackReader().wrap(message, 0, message.capacity()), target);
+    return target;
   }
 
   private static DirectBuffer buffer(final String s) {
