@@ -99,6 +99,15 @@ public final class Decoding {
                 buffer.getStringWithoutLengthUtf8(offset, length)));
   }
 
+  /** Names the property whose value could not be read, like {@code ObjectValue} does. */
+  public static RuntimeException propertyFailure(
+      final DirectBuffer buffer, final int keyOffset, final int keyLength, final Throwable cause) {
+    return new RuntimeException(
+        "Could not read property '%s'"
+            .formatted(buffer.getStringWithoutLengthUtf8(keyOffset, keyLength)),
+        cause);
+  }
+
   public static boolean keyEquals(
       final UnsafeBuffer key, final DirectBuffer buffer, final int offset, final int length) {
     return key.capacity() == length && equalBytes(key, buffer, offset, length);

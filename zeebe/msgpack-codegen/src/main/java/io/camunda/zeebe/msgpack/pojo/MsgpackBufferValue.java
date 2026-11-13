@@ -46,7 +46,16 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
-    codec.read(MsgpackScratch.reader(buffer, offset, length), self());
+    final var reader = MsgpackScratch.reader(buffer, offset, length);
+    try {
+      codec.read(reader, self());
+    } catch (final RuntimeException e) {
+      // the same context as UnpackedObject, which this replaces
+      throw new RuntimeException(
+          "Could not deserialize object [%s]. Deserialization stuck at offset %d of length %d"
+              .formatted(getClass().getSimpleName(), reader.getOffset(), length),
+          e);
+    }
   }
 
   /** Restores the field initializers. Override to also reset state that is not stored. */
