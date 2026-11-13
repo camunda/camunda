@@ -135,7 +135,7 @@ the state, and then the cache fills up and slows down processing.
 
 ### 6.1 One Liquibase manager
 
-- The state's changelog, `db/changelog/zeebe-state/changelog-master.xml`, moves to
+- The state's changelog, `db/changelog/zeebe-state/changelog-master.xml`, lives in
   `db/rdbms-schema`, next to the history's changelog. The Zeebe team owns those files (CODEOWNERS).
 - `LiquibaseSchemaManager` runs it right after the history changelog, the same way it already runs
   `schema-version-seed.xml` before it: under the same JVM-wide lock (#61009), with the same tracking
@@ -143,8 +143,10 @@ the state, and then the cache fills up and slows down processing.
   retries, `ddl-lock-wait-timeout` and schema version check.
 - It runs only for tenants whose state is in the RDBMS, so a cluster with RocksDB state doesn't get
   ~145 empty tables. Turning RDBMS state on later applies it at the next start.
-- With `auto-ddl: false`, `LiquibaseScriptGenerator` writes a separate state script per vendor,
-  next to the history scripts, for the database administrators to run.
+- With `auto-ddl: false`, the database administrators run the scripts instead. Next to the
+  history's `<vendor>_master.sql`, `LiquibaseScriptGenerator` writes a separate
+  `liquibase/sql/create/<vendor>/<vendor>_zeebe_state.sql`, for H2 and PostgreSQL (§14).
+- `RdbmsStorage` only opens the tables; it no longer creates them.
 - `RdbmsSchemaManagerRegistry.isInitialized(tenant)` reports a tenant as ready only once both
   changelogs have run. Partitions wait for it (§12).
 
@@ -153,10 +155,10 @@ Liquibase runs overlapping in one JVM (version 1 §11 risk 5). Liquibase keeps i
 for the whole JVM, so when two runs with different locks overlap, one of them can leave its
 database lock taken, and the next start waits for it.
 
-Until the changelog moves (§19 step 8), version 1's `StateSchemaManager` runs it when the state's
-storage opens, so the storage itself could be built and measured first. The partitions already wait
-for the history's schema before they open the storage (§12), so within a tenant the two runs no
-longer overlap. Two tenants with RDBMS state in one JVM still can.
+On a database where version 1's manager already created the state's tables, its
+`ZEEBE_STATE_DATABASECHANGELOG` tracking tables stay behind. The changesets find the tables and mark
+themselves as run (`MARK_RAN`), and nothing reads the old tracking tables any more. A proof of
+concept has no installations to upgrade, so we leave them.
 
 ### 6.2 Generated changesets
 
@@ -488,6 +490,8 @@ change.
     through `RawBatchWriter`.
   - A test checks that every live column family is in the registry, the names (§7.2), and that the
     committed changelog matches the registry (§6.2).
+  - A test checks that the state scripts for `auto-ddl: false` create the same tables, views,
+    columns and primary keys as the changelog, on H2 and PostgreSQL (§6.1).
   - For every layout, a test writes keys with the engine's own key types and reads them back through
     the view, on H2 and PostgreSQL.
 
@@ -594,10 +598,11 @@ commits.
    source comes from `RdbmsDataSources` and reaches the broker as an `RdbmsStateDatabase`; the
    `primary-storage.rdbms` settings go.
 8. **feat:** partitions wait until the schema is ready; the state's changelog moves to
-   `db/rdbms-schema` and `LiquibaseSchemaManager` runs it.
+   `db/rdbms-schema`, `LiquibaseSchemaManager` runs it, and the generator writes the state scripts
+   for `auto-ddl: false`.
 9. **test:** the PostgreSQL and broker tests on the new tables.
 10. Benchmark against version 1's single table and against RocksDB, then decide.
 
-Status: steps 1 to 7 are done, and so is the wait in step 8. Moving the changelog, the state
-scripts for `auto-ddl: false` and the PostgreSQL runs of the broker tests are still to do.
+Status: steps 1 to 9 are done. The storage's PostgreSQL tests and the broker tests, on H2 and
+PostgreSQL, pass on the new tables. The benchmark (step 10) is still to do.
 
