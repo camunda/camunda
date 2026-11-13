@@ -225,8 +225,9 @@ stable branches, which have no suite workflows, it uses `main`'s. A newer push c
 run in progress.
 
 The check is **not** required: a red result does not block the merge, but any failure must be
-reviewed and documented in the PR description. It does not run for pull requests from forks; run
-the on-demand workflow by hand there.
+reviewed and documented in the PR description. It does not run for pull requests from forks, which
+get no secrets: for those, a maintainer reviews the PR, pushes its head commit to a branch in `camunda/camunda` and runs the
+on-demand workflow against that branch.
 
 When a suite job fails, its failed tests are re-run with the base branch's version of the test
 code, in the same job and environment, and the check comments on the PR and tags the author (for a
@@ -285,7 +286,7 @@ We welcome contributions! To contribute:
 > [!IMPORTANT]
 > **Do not request a review until the suite has run and the results have been verified.**
 > Before assigning reviewers to your PR:
-> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch instead.
+> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against that branch instead; wait for it to complete. A PR that changes only Markdown files does not trigger the check and needs no run.
 > 2. Wait for the workflow to complete.
 > 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
 > 4. Only then request a review.
