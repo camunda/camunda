@@ -26,12 +26,22 @@ import {fileURLToPath} from 'node:url';
 
 export const COMMENT_MARKER = '<!-- c8-e2e-suite-triage -->';
 
-// Reduce a spec path to the part that is stable across Playwright report
-// formats (relative to rootDir, or absolute on the runner) and PR file paths:
-// the tail starting at the test root.
+// Reduce a spec path to its path inside the suite directory, the same on every
+// branch and runner: e.g. tests/api/a.spec.ts. Playwright reports a spec
+// relative to the config's rootDir (its testDir), which differs by branch:
+// main uses the suite directory ("tests/api/a.spec.ts") but stable/8.7 and
+// stable/8.8 use ./tests/ ("api/a.spec.ts"). So the path is first resolved
+// against the report's rootDir, then cut after the suite directory. A path
+// without the suite directory falls back to the tail from the test root.
+const SUITE_DIR = 'c8-orchestration-cluster-e2e-test-suite/';
 const ROOTS = ['v2-stateless-tests/', 'tests/'];
-export function normalizeSpec(rawPath) {
-  const p = String(rawPath ?? '').replace(/\\/g, '/');
+export function normalizeSpec(rawPath, rootDir) {
+  let p = String(rawPath ?? '').replace(/\\/g, '/');
+  if (rootDir && !p.startsWith('/')) {
+    p = path.posix.join(String(rootDir).replace(/\\/g, '/'), p);
+  }
+  const suite = p.lastIndexOf(SUITE_DIR);
+  if (suite !== -1) return p.slice(suite + SUITE_DIR.length);
   for (const root of ROOTS) {
     const idx = p.indexOf(root);
     if (idx !== -1) return p.slice(idx);
@@ -46,12 +56,13 @@ export function normalizeSpec(rawPath) {
 // report's top-level suites are files, whose titles are not part of it.
 function allTests(report) {
   const out = [];
+  const rootDir = report?.config?.rootDir;
   const walk = (suite, file, describes) => {
     const f = suite?.file ?? file;
     for (const spec of suite?.specs ?? []) {
       for (const t of spec.tests ?? []) {
         out.push({
-          file: normalizeSpec(spec.file ?? f),
+          file: normalizeSpec(spec.file ?? f, rootDir),
           title: [...describes, spec.title].join(' › '),
           parts: [...describes, spec.title],
           project: t.projectName ?? '',
