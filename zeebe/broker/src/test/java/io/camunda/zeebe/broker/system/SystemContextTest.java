@@ -157,7 +157,7 @@ final class SystemContextTest {
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.RDBMS);
     brokerCfg.getData().getWriteBehindCache().setEnabled(true);
-    final var stateDatabase = new RdbmsStateDatabase(mock(DataSource.class), "");
+    final var stateDatabase = new RdbmsStateDatabase(mock(DataSource.class), "", () -> true);
 
     // when - then
     assertThatCode(() -> initSystemContextWithStateDatabase(brokerCfg, stateDatabase))

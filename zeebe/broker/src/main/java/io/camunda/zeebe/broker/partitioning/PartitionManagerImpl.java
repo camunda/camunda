@@ -76,6 +76,7 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
+  private static final Duration SCHEMA_READY_CHECK_INTERVAL = Duration.ofMillis(250);
 
   private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
@@ -374,15 +375,63 @@ public final class PartitionManagerImpl
           partitionGroup);
       return CompletableActorFuture.completed();
     }
-    if (rdbmsStateStorage != null) {
-      try {
-        rdbmsStateStorage.open();
-      } catch (final RuntimeException e) {
-        LOGGER.error(
-            "Failed to open the database for the state of partition group {}", partitionGroup, e);
-        return CompletableActorFuture.completedExceptionally(e);
-      }
+    if (rdbmsStateStorage == null) {
+      return bootstrapPartitions(configuration);
     }
+    final var result = concurrencyControl.<Void>createFuture();
+    startPartitionsOnceTheSchemaIsReady(rdbmsStateStorage, configuration, result, true);
+    return result;
+  }
+
+  /**
+   * The application brings the tenant's schema up to date only after the broker has started, and
+   * the state's own schema changes must not run at the same time: Liquibase shares its lock
+   * bookkeeping across the JVM, and the history's lock would never be released. So the partitions
+   * wait for it, checking again later rather than blocking the actor.
+   */
+  private void startPartitionsOnceTheSchemaIsReady(
+      final RdbmsStateStorage storage,
+      final CurrentClusterConfiguration configuration,
+      final ActorFuture<Void> result,
+      final boolean firstCheck) {
+    if (stopped) {
+      LOGGER.info(
+          "Not starting the partitions of partition group {}, the manager was stopped",
+          partitionGroup);
+      result.complete(null);
+      return;
+    }
+    if (!storage.isSchemaReady()) {
+      if (firstCheck) {
+        LOGGER.info(
+            "Waiting for the schema of partition group {} before starting its partitions",
+            partitionGroup);
+      }
+      concurrencyControl.schedule(
+          SCHEMA_READY_CHECK_INTERVAL,
+          () -> startPartitionsOnceTheSchemaIsReady(storage, configuration, result, false));
+      return;
+    }
+    try {
+      storage.open();
+    } catch (final RuntimeException e) {
+      LOGGER.error(
+          "Failed to open the database for the state of partition group {}", partitionGroup, e);
+      result.completeExceptionally(e);
+      return;
+    }
+    concurrencyControl.runOnCompletion(
+        bootstrapPartitions(configuration),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+  }
+
+  private ActorFuture<Void> bootstrapPartitions(final CurrentClusterConfiguration configuration) {
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions(configuration);
 

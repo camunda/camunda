@@ -15,6 +15,7 @@ import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.apache.commons.lang3.StringUtils;
@@ -110,6 +112,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       @Autowired(required = false) final RdbmsDataSources rdbmsDataSources,
+      @Autowired(required = false) final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
@@ -130,7 +133,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
-    rdbmsStateDatabases = rdbmsStateDatabases(rdbmsDataSources, physicalTenantResolver);
+    rdbmsStateDatabases =
+        rdbmsStateDatabases(rdbmsDataSources, rdbmsSchemaManagerRegistry, physicalTenantResolver);
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
@@ -210,8 +214,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     return Map.copyOf(suppliers);
   }
 
+  /**
+   * @param rdbmsSchemaManagerRegistry tells when a tenant's schema is ready; without one, the
+   *     schema counts as ready
+   */
   private static Map<String, RdbmsStateDatabase> rdbmsStateDatabases(
       final @Nullable RdbmsDataSources rdbmsDataSources,
+      final @Nullable RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
       final PhysicalTenantResolver physicalTenantResolver) {
     if (rdbmsDataSources == null) {
       return Map.of();
@@ -229,9 +238,14 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                         .getSecondaryStorage()
                         .getRdbms()
                         .getPrefix();
+                final BooleanSupplier schemaReady =
+                    rdbmsSchemaManagerRegistry == null
+                        ? () -> true
+                        : () -> rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId);
                 databases.put(
                     physicalTenantId,
-                    new RdbmsStateDatabase(dataSource, StringUtils.trimToEmpty(prefix)));
+                    new RdbmsStateDatabase(
+                        dataSource, StringUtils.trimToEmpty(prefix), schemaReady));
               });
     }
     return Map.copyOf(databases);
