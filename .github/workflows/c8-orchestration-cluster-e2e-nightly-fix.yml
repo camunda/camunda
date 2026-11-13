@@ -740,7 +740,7 @@ jobs:
             for attempt in 1 2 3 4; do
               if files=$(gh pr view "$1" --repo "$REPO" --json files --jq '.files[].path'); then
                 awk '/^qa\/c8-orchestration-cluster-e2e-test-suite\// && !/\.md$/ {found = 1}
-                     /^\.github\/workflows\/c8-orchestration-cluster-e2e-tests-(pr|reusable)\.yml$/ {found = 1}
+                     /^\.github\/workflows\/c8-orchestration-cluster-e2e-tests-(pr|pr-reusable|reusable)\.yml$/ {found = 1}
                      /^\.github\/scripts\/c8-e2e-suite-(report\.sh|triage\.(mjs|sh)|base-rerun\.sh)$/ {found = 1}
                      END {exit !found}' <<<"$files"
                 return

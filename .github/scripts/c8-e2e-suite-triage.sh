@@ -41,13 +41,14 @@ retry() {
 }
 
 # 1. Legs that were expected to produce a report: this run's suite jobs that
-#    actually ran (the caller job id is "tests", so their names start with
-#    "tests / "), as "<leg>\t<attempt>". The leg label is the job name without
-#    that prefix and with "/" replaced by "-", matching the leg.txt each job
+#    actually ran (the calling job's id is "tests", so their names start with
+#    "tests / ", behind the outer caller's own prefix, e.g. "suite / tests / "),
+#    as "<leg>\t<attempt>". The leg label is the job name without those
+#    prefixes and with "/" replaced by "-", matching the leg.txt each job
 #    uploads with its report; the attempt is the one the job last ran in, so
 #    a report left over from an earlier attempt can be rejected.
 retry gh api --paginate "repos/${REPO}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100" \
-  --jq '.jobs[] | select(.name | startswith("tests / ")) | select(.conclusion != "skipped") | "\(.name | sub("^tests / "; "") | gsub("/"; "-"))\t\(.run_attempt)"' \
+  --jq '.jobs[] | select(.name | test("^(.+? / )?tests / ")) | select(.conclusion != "skipped") | "\(.name | sub("^(.+? / )?tests / "; "") | gsub("/"; "-"))\t\(.run_attempt)"' \
   > "$work/expected-legs.txt"
 EXPECTED_LEGS="$(cat "$work/expected-legs.txt")"
 export EXPECTED_LEGS

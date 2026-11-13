@@ -1,0 +1,99 @@
+# description: The C8 Orchestration Cluster E2E suite PR check: runs the suite's test matrix for the calling PR and comments on its failures. Reusable; called by c8-orchestration-cluster-e2e-tests-pr.yml on main and on every stable branch.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# called by: c8-orchestration-cluster-e2e-tests-pr.yml (main: the PR's own copy; stable branches: main's copy)
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster E2E Tests PR Check (reusable)
+
+# All of the suite PR check's logic lives here, on main, so that the
+# c8-orchestration-cluster-e2e-tests-pr.yml file each branch needs (a
+# pull_request workflow runs from the PR's target branch) is a thin caller
+# that never has to change: a change to the check is one PR on main, with
+# no backports. It reads everything it needs from the calling PR's event.
+on:
+  workflow_call:
+
+permissions: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: "@camunda/test-automation-team"
+  TEST_PRODUCT: Orchestration Cluster
+  TEST_TYPE: E2E
+
+jobs:
+  # The triage comment finds this job's sub-jobs by their "tests / " prefix:
+  # keep the job id.
+  tests:
+    # Fork PRs get no secrets; for those, a maintainer runs the on-demand
+    # workflow on a copy of the branch in camunda/camunda.
+    if: github.event.pull_request.head.repo.fork != true
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
+      base: ${{ github.base_ref }}
+      compare-base-sha: ${{ github.event.pull_request.base.sha }}
+      # The base re-run and triage scripts: a PR into main tests its own
+      # copy; the stable branches carry none, so they take main's.
+      scripts-ref: ${{ github.base_ref == 'main' && github.event.pull_request.head.sha || 'main' }}
+
+  # Per failed test, what re-running it with the base test code showed. A
+  # problem here never changes the suite's result.
+  triage:
+    name: Triage comment
+    needs: tests
+    if: ${{ !cancelled() && github.event.pull_request.head.repo.fork != true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      actions: read # list this run's jobs
+      contents: read
+      pull-requests: write # post the triage comment
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Check out the suite triage scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.base_ref == 'main' && github.event.pull_request.head.sha || 'main' }}
+          path: .suite-ci
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Download the suite reports
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: c8-e2e-suite-json-*
+          path: pr-reports
+
+      - name: Post the triage comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TEST_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_CONCLUSION: ${{ needs.tests.result }}
+          PR_REPORTS_DIR: pr-reports
+        run: .suite-ci/.github/scripts/c8-e2e-suite-report.sh
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

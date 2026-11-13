@@ -9,9 +9,13 @@ name: C8 Orchestration Cluster E2E Tests PR Check
 # run, which was often skipped, so PRs with red suite tests got merged
 # (camunda/team-test-automation#188). This runs the same test matrix on every
 # PR that changes the suite, as jobs of this check, so each job's result shows
-# on the PR. It calls the PR's own copy of the reusable test workflow, so a PR
-# that changes the suite's workflows tests its own version of them; the
-# stable branches' checks call main's copy instead, as they have none.
+# on the PR.
+#
+# A pull_request workflow runs from the PR's target branch, so every branch
+# needs this file. It is kept to a thin caller: the check itself is
+# c8-orchestration-cluster-e2e-tests-pr-reusable.yml on main. Here on main it
+# calls the PR's own copy, so a PR that changes the check tests its own
+# version; the stable branches' copy of this file calls main's, by ref.
 #
 # It stays outside ci.yml and is not a required check: it never blocks a
 # merge, and so is exempt from the Unified CI rules, including their
@@ -20,8 +24,7 @@ on:
   pull_request:
     # The test matrix is sized by base branch and only knows main and
     # stable/X.Y; release-* branches are irregularly named and validated by
-    # the release workflow instead. A PR always runs its target branch's copy
-    # of this file.
+    # the release workflow instead.
     branches:
       - main
       - "stable/**"
@@ -29,6 +32,7 @@ on:
       - "qa/c8-orchestration-cluster-e2e-test-suite/**"
       - "!qa/c8-orchestration-cluster-e2e-test-suite/**/*.md"
       - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml"
+      - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml"
       - ".github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml"
       - ".github/scripts/c8-e2e-suite-report.sh"
       - ".github/scripts/c8-e2e-suite-triage.mjs"
@@ -42,74 +46,11 @@ concurrency:
 
 permissions: {}
 
-env:
-  GHA_BEST_PRACTICES_LINTER: enabled
-  TEST_OWNER: "@camunda/test-automation-team"
-  TEST_PRODUCT: Orchestration Cluster
-  TEST_TYPE: E2E
-
 jobs:
-  # The triage comment lists this job's sub-jobs by their "tests / " prefix:
-  # keep the job id.
-  tests:
-    # Fork PRs get no secrets; run the on-demand workflow for those by hand.
-    if: github.event.pull_request.head.repo.fork != true
-    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml
+  suite:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml
     secrets: inherit
     permissions:
+      actions: read # the triage job lists this run's jobs
       contents: read
-    with:
-      ref: ${{ github.event.pull_request.head.sha }}
-      base: ${{ github.base_ref }}
-      compare-base-sha: ${{ github.event.pull_request.base.sha }}
-      scripts-ref: ${{ github.event.pull_request.head.sha }}
-
-  # Per failed test, what re-running it with the base test code showed. A
-  # problem here never changes the suite's result.
-  triage:
-    name: Triage comment
-    needs: tests
-    if: ${{ !cancelled() && github.event.pull_request.head.repo.fork != true }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    continue-on-error: true
-    permissions:
-      actions: read # list this run's jobs
-      contents: read
-      pull-requests: write # post the triage comment
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout: .github
-      - name: Print metadata
-        uses: ./.github/actions/print-metadata
-
-      - name: Download the suite reports
-        continue-on-error: true
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: c8-e2e-suite-json-*
-          path: pr-reports
-
-      - name: Post the triage comment
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          TEST_SHA: ${{ github.event.pull_request.head.sha }}
-          RUN_ID: ${{ github.run_id }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          RUN_CONCLUSION: ${{ needs.tests.result }}
-          PR_REPORTS_DIR: pr-reports
-        run: .github/scripts/c8-e2e-suite-report.sh
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      pull-requests: write # the triage job posts its comment
