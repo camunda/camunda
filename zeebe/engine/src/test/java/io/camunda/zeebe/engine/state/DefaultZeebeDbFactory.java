@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.Properties;
 
 public final class DefaultZeebeDbFactory {
@@ -39,12 +40,15 @@ public final class DefaultZeebeDbFactory {
       Boolean.parseBoolean(System.getenv("ZEEBE_DB_ROCKSDB_STATISTICS"));
 
   /**
-   * Flush delay of the write-behind writer in milliseconds, default 0. The writer also flushes
-   * early at the flush threshold, so raise {@code ZEEBE_DB_WRITE_BEHIND_MAX_PENDING_MB} as well for
-   * the delay to take effect on a busy engine.
+   * Flush delay of the write-behind writer in milliseconds, default {@link
+   * WriteBehindConfiguration#DEFAULT_FLUSH_DELAY}. The writer also flushes early at the flush
+   * threshold, so raise {@code ZEEBE_DB_WRITE_BEHIND_MAX_PENDING_MB} as well for a long delay to
+   * take effect on a busy engine.
    */
-  private static final long WRITE_BEHIND_FLUSH_DELAY_MS =
-      Long.parseLong(System.getenv().getOrDefault("ZEEBE_DB_WRITE_BEHIND_FLUSH_DELAY_MS", "0"));
+  private static final Duration WRITE_BEHIND_FLUSH_DELAY =
+      Optional.ofNullable(System.getenv("ZEEBE_DB_WRITE_BEHIND_FLUSH_DELAY_MS"))
+          .map(millis -> Duration.ofMillis(Long.parseLong(millis)))
+          .orElse(WriteBehindConfiguration.DEFAULT_FLUSH_DELAY);
 
   /** Sets the pending bytes limit and the early flush threshold of the write-behind writer. */
   private static final long WRITE_BEHIND_MAX_PENDING_MB =
@@ -96,7 +100,7 @@ public final class DefaultZeebeDbFactory {
     }
     var writeBehindConfig =
         WriteBehindConfiguration.defaults()
-            .withFlushDelay(Duration.ofMillis(WRITE_BEHIND_FLUSH_DELAY_MS))
+            .withFlushDelay(WRITE_BEHIND_FLUSH_DELAY)
             .withKeyIndexPolicies(EngineKeyIndexPolicies.fromEnvironment().byId())
             .withKeyIndexMaxKeys(keyIndexMaxKeys());
     if (WRITE_BEHIND_MAX_PENDING_MB > 0) {
