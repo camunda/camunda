@@ -127,4 +127,11 @@ public @interface JobWorker {
 
   /** Set the tenant filter mode for job activation */
   TenantFilter[] tenantFilter() default {};
+
+  /**
+   * If set to true, jobs will be activated with a lease. This ensures that operations on the job
+   * (complete, fail, throw error, etc.) are only accepted if the worker still holds a valid lease.
+   * Can only be used as a singleton.
+   */
+  boolean[] withLease() default {};
 }
