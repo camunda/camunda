@@ -147,9 +147,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final String actorSchedulerName;
 
   // flag for passing heartbeats down the pipeline
-  private boolean forwardHeartbeats = false;
-  private boolean sendHeartbeatPayload = true;
-  private boolean heartbeatsEnabled = true;
+  private volatile boolean forwardHeartbeats = false;
+  private volatile boolean sendHeartbeatPayload = true;
+  private volatile boolean heartbeatsEnabled = true;
 
   public NettyMessagingService(
       final String cluster,
