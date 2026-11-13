@@ -169,5 +169,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43225015469",
     "updated_at": "2026-11-12T13:46:42Z",
     "cooldown_until": "2026-11-15T13:46:42Z"
+  },
+  "a2406976": {
+    "version": "8.7",
+    "file": "operate/childProcessInstanceMigration.spec.ts",
+    "titlePath": [
+      "Child Process Instance Migration",
+      "Migrate Child Process Instances"
+    ],
+    "last_action": "delete_branch",
+    "last_reason": "iter2 100% vs baseline 95% (+5pp); needs at least +10pp",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43378258233",
+    "updated_at": "2026-11-13T07:12:10Z",
+    "cooldown_until": "2026-11-20T07:12:10Z"
   }
 }
