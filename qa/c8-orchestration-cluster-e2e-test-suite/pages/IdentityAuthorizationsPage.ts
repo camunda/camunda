@@ -117,10 +117,6 @@ export class IdentityAuthorizationsPage {
     await this.page.goto(relativizePath(Paths.authorizations()));
   }
 
-  async clickResourceType(resourceType: string) {
-    await this.selectResourceType(resourceType);
-  }
-
   async clickCreateAuthorizationButton() {
     await this.createAuthorizationButton.click();
   }

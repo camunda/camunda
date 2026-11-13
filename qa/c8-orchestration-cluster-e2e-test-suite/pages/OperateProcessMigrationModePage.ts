@@ -42,7 +42,7 @@ export class OperateProcessMigrationModePage {
     this.summaryNotification = page.getByRole('main').getByRole('status');
   }
 
-  async clickTargetVersionCombo(): Promise<void> {
+  async clickTargetVersionDropdown(): Promise<void> {
     await this.targetVersionDropdown.click();
   }
 
@@ -71,7 +71,7 @@ export class OperateProcessMigrationModePage {
   }
 
   async migrateProcessToVersion(version: string): Promise<void> {
-    await this.clickTargetVersionCombo();
+    await this.clickTargetVersionDropdown();
     await this.selectTargetVersion(version);
     await this.clickNextButton();
     await this.clickConfirmButton();

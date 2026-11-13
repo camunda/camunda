@@ -14,13 +14,9 @@ import {waitForAssertion} from 'utils/waitForAssertion';
 
 export async function navigateToApp(
   page: Page,
-  appName: string,
+  appName: 'operate' | 'tasklist' | 'admin',
 ): Promise<void> {
-  if (['operate', 'tasklist', 'admin'].includes(appName)) {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  }
+  await page.goto(`${process.env.CORE_APPLICATION_URL}/${appName}/login`);
 }
 
 export async function navigateToAppHome(

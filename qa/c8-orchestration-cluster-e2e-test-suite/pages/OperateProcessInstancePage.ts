@@ -70,7 +70,6 @@ class OperateProcessInstancePage {
   readonly operationsLogTableActorHeader: Locator;
   readonly operationsLogTableSortByDateHeader: Locator;
   readonly operationsLogTableProcessInstanceCell: Locator;
-  readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
@@ -251,7 +250,6 @@ class OperateProcessInstancePage {
       this.operationsLogTable.getByRole('cell', {
         name: /process instance/i,
       });
-    this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = this.instanceHeader.getByRole('button', {
       name: /modify instance/i,
     });

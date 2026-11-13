@@ -342,7 +342,7 @@ test.describe('Identity User Flows', () => {
 
     await test.step('Verify authorization was created', async () => {
       await identityHeader.navigateToAuthorizations();
-      await identityAuthorizationsPage.clickResourceType('Component');
+      await identityAuthorizationsPage.selectResourceType('Component');
 
       const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
         TEST_GROUP.groupId,
@@ -400,7 +400,7 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step('Verify authorization was created', async () => {
-      await identityAuthorizationsPage.clickResourceType('Authorization');
+      await identityAuthorizationsPage.selectResourceType('Authorization');
       await identityAuthorizationsPage.assertAuthorizationExists(
         TEST_GROUP.groupId,
         'Group',

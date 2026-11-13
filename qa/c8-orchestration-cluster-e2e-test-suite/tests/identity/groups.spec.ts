@@ -197,7 +197,7 @@ test.describe('Groups functionalities', () => {
     });
 
     await test.step('Verify authorization was created', async () => {
-      await identityAuthorizationsPage.clickResourceType('AUDIT_LOG');
+      await identityAuthorizationsPage.selectResourceType('AUDIT_LOG');
       await identityAuthorizationsPage.assertAuthorizationExists(
         TEST_GROUP.groupId,
         'Group',
