@@ -23,6 +23,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
+import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.zeebe.util.function.TriFunction;
 import java.net.SocketTimeoutException;
 import java.time.Duration;

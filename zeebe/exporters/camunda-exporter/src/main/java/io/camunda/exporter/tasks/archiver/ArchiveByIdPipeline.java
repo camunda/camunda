@@ -13,6 +13,7 @@ import io.camunda.exporter.tasks.util.AsyncDocumentPipeline;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.BatchSupplier;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.PipelineStats;
+import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.zeebe.util.function.TriFunction;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;

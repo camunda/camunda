@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository.SearchAfterImpl;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
+import io.camunda.exporter.tasks.util.SearchAfterOS;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.exporter.utils.CamundaExporterSchemaUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -1109,7 +1109,7 @@ final class OpenSearchArchiverRepositoryIT {
     }
     assertThat(batch.searchAfter())
         .isInstanceOfSatisfying(
-            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
+            SearchAfterOS.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
 
     // when searching for process instance key 999
     // then - we expect no documents to be returned
@@ -1142,7 +1142,7 @@ final class OpenSearchArchiverRepositoryIT {
         .containsExactlyInAnyOrder("1", "2");
     assertThat(batchPg1.searchAfter())
         .isInstanceOfSatisfying(
-            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "2"));
+            SearchAfterOS.class, searchAfter -> verifyFieldValues(searchAfter.values(), "2"));
 
     // when searching for process instance key 111 with searchAfter from page 1
     // then - we expect document with ID 4 to be returned
@@ -1158,7 +1158,7 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batchPg2.documents()).extracting(IdWithRouting::id).containsExactlyInAnyOrder("4");
     assertThat(batchPg2.searchAfter())
         .isInstanceOfSatisfying(
-            SearchAfterImpl.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
+            SearchAfterOS.class, searchAfter -> verifyFieldValues(searchAfter.values(), "4"));
 
     // when searching for process instance key 111 with searchAfter from page 2
     // then - we expect no documents to be returned
