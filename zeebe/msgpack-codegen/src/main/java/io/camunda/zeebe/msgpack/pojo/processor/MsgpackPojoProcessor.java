@@ -34,8 +34,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
 /**
- * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code
- * <Pojo>Resetter}.
+ * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code <Pojo>Ops}.
  */
 @SupportedAnnotationTypes("io.camunda.zeebe.msgpack.pojo.MsgpackPojo")
 public final class MsgpackPojoProcessor extends AbstractProcessor {
@@ -79,7 +78,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         requireNoInheritedFields((TypeElement) element);
         final var model = buildModel((TypeElement) element);
         write(model.pkg(), model.name() + "Codec", codec(model), element);
-        write(model.pkg(), model.name() + "Resetter", resetter(model), element);
+        write(model.pkg(), model.name() + "Ops", ops(model), element);
       } catch (final IllegalArgumentException e) {
         error(element, String.valueOf(e.getMessage()));
       }
@@ -334,23 +333,23 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
   // --------------------------------------------------------------------- codec
 
-  private static String resetter(final Model m) {
+  private static String ops(final Model m) {
     final var pojo = m.name();
     final var s = new StringBuilder();
     s.append(HEADER);
     s.append("package %s;\n\n".formatted(m.pkg()));
-    s.append("import io.camunda.zeebe.msgpack.pojo.MsgpackResetter;\n\n");
+    s.append("import io.camunda.zeebe.msgpack.pojo.MsgpackOps;\n\n");
     s.append(
-        "/** Generated and stateless. Restores the field initializers of {@link %s}. */\n"
+        "/** Generated and stateless. The operations on {@link %s} besides reading and writing. */\n"
             .formatted(pojo));
+    s.append("public final class %1$sOps {\n".formatted(pojo));
     s.append(
-        "public final class %1$sResetter implements MsgpackResetter<%1$s> {\n".formatted(pojo));
-    s.append(
-        "  public static final %1$sResetter INSTANCE = new %1$sResetter();\n\n".formatted(pojo));
+        "  public static final MsgpackOps<%1$s> INSTANCE = new Instance();\n\n".formatted(pojo));
     // INSTANCE must be initialized before DEFAULTS: the constructor of the POJO may resolve it
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
-    s.append("  private %sResetter() {}\n\n".formatted(pojo));
-    s.append("  @Override\n  public void reset(final %s target) {\n".formatted(pojo));
+    s.append("  private %sOps() {}\n\n".formatted(pojo));
+    s.append("  /** Restores the field initializers. */\n");
+    s.append("  public static void reset(final %s target) {\n".formatted(pojo));
     for (final var p : m.properties()) {
       final var f = p.field();
       switch (p.type()) {
@@ -387,7 +386,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           private static <T> T requireDefault(final T value, final String field) {
             if (value == null) {
               throw new IllegalStateException(
-                  "Field " + field + " of %s has no default: give it an initializer");
+                  "Field " + field + " of %1$s has no default: give it an initializer");
+            }
+          }
+
+          /** For code that is generic in the type; it delegates to the static methods. */
+          private static final class Instance implements MsgpackOps<%1$s> {
+            @Override
+            public void reset(final %1$s target) {
+              %1$sOps.reset(target);
             }
             return value;
           }

@@ -18,8 +18,8 @@ import org.agrona.MutableDirectBuffer;
  * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
  * MsgpackScratch}.
  *
- * <p>The generated codec and resetter of the concrete class are found with {@link Codecs}, so the
- * class does not have to mention them. {@link #reset()} is called before every read.
+ * <p>The generated codec and ops of the concrete class are found with {@link Codecs}, so the class
+ * does not have to mention them. {@link #reset()} is called before every read.
  *
  * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
  * scratch state.
@@ -31,7 +31,7 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
 
   // resolved once per instance, so that reads and writes do not look them up
   private final MsgpackCodec<T> codec = Codecs.of(type());
-  private final MsgpackResetter<T> resetter = Codecs.resetterOf(type());
+  private final MsgpackOps<T> ops = Codecs.opsOf(type());
 
   @Override
   public int getLength() {
@@ -61,7 +61,7 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {
-    resetter.reset(self());
+    ops.reset(self());
   }
 
   @SuppressWarnings("unchecked")

@@ -428,7 +428,7 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
-  void shouldGenerateAResetterThatRestoresTheFieldInitializers() throws Exception {
+  void shouldGenerateOpsThatRestoreTheFieldInitializers() throws Exception {
     // given
     final var result =
         compile(

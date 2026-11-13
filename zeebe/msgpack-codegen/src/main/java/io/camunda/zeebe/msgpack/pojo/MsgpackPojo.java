@@ -14,17 +14,17 @@ import java.lang.annotation.Target;
 
 /**
  * Marks a plain, top-level data class for which a stateless {@code <Name>Codec} and {@code
- * <Name>Resetter} are generated in the same package. Its superclasses must not declare stored
- * fields: only the fields of the annotated class are stored.
+ * <Name>Ops} are generated in the same package. Its superclasses must not declare stored fields:
+ * only the fields of the annotated class are stored.
  *
  * <p>Retained in the class file, so a {@code @MsgpackPojo} of another module can be nested.
  *
  * <p>The class needs a no-arg constructor that is accessible from the same package. Defaults are
  * the field initializers, and the class must be {@link io.camunda.zeebe.msgpack.Recyclable}: its
  * {@code reset()} is called before a value is read, so properties missing in the input keep their
- * default. Compilation fails otherwise. The generated {@code <Name>Resetter.reset(target)} restores
- * all defaults, so {@code reset()} is normally just that call. The generated code reads and writes
- * the fields directly, so they must not be private; scalar, string, enum and raw fields must not be
+ * default. Compilation fails otherwise. The generated {@code <Name>Ops.reset(target)} restores all
+ * defaults, so {@code reset()} is normally just that call. The generated code reads and writes the
+ * fields directly, so they must not be private; scalar, string, enum and raw fields must not be
  * final, except for an {@code UnsafeBuffer}, which must be final as it is wrapped in place instead
  * of being replaced by a new view on every read. Nested objects and lists must be final. Every
  * non-static field is stored unless annotated with {@link MsgpackIgnore}. Properties are written in
