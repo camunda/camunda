@@ -57,7 +57,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -187,7 +186,10 @@ public final class ZeebePartitionFactory {
     final StateController stateController =
         createStateController(
             raftPartition,
-            selectDbFactory(zeebeFactory, databaseCfg, consistencyChecks.getSettings()),
+            selectDbFactory(
+                zeebeFactory,
+                databaseCfg,
+                "%s-%d".formatted(partitionId.group(), partitionId.number())),
             snapshotStore,
             snapshotStore);
 
@@ -251,18 +253,20 @@ public final class ZeebePartitionFactory {
   /**
    * Puts the write-behind cache in front of the partition's runtime DB if it is enabled. Snapshot
    * copies keep the RocksDB factory: they run as one bulk transaction.
+   *
+   * @param partitionName names the writer thread of the partition's DB
    */
   @VisibleForTesting
   static ZeebeDbFactory<ZbColumnFamilies> selectDbFactory(
       final ZeebeRocksDbFactory<ZbColumnFamilies> rocksDbFactory,
       final RocksdbCfg databaseCfg,
-      final ConsistencyChecksSettings consistencyChecks) {
+      final String partitionName) {
     final var writeBehind = databaseCfg.getWriteBehind();
     if (!writeBehind.isEnabled()) {
       return rocksDbFactory;
     }
     return new WriteBehindZeebeDbFactory<>(
-        rocksDbFactory, writeBehind.createWriteBehindConfiguration(), consistencyChecks);
+        rocksDbFactory, writeBehind.createWriteBehindConfiguration(), partitionName);
   }
 
   private StateController createStateController(

@@ -132,8 +132,7 @@ class ZeebePartitionFactoryTest {
 
     // when
     final var factory =
-        ZeebePartitionFactory.selectDbFactory(
-            rocksDbFactory, databaseCfg, new ConsistencyChecksSettings());
+        ZeebePartitionFactory.selectDbFactory(rocksDbFactory, databaseCfg, "partition-1");
 
     // then
     assertThat(factory).isSameAs(rocksDbFactory);
@@ -148,8 +147,7 @@ class ZeebePartitionFactoryTest {
 
     // when
     final var factory =
-        ZeebePartitionFactory.selectDbFactory(
-            rocksDbFactory, databaseCfg, new ConsistencyChecksSettings());
+        ZeebePartitionFactory.selectDbFactory(rocksDbFactory, databaseCfg, "partition-1");
 
     // then
     assertThat(factory).isInstanceOf(WriteBehindZeebeDbFactory.class);
