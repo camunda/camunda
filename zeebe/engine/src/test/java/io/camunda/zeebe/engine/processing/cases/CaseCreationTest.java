@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CaseIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -666,6 +667,30 @@ public final class CaseCreationTest {
 
     // then
     assertCaseCreatedBeforeProcessInstanceIsActivated(awaitProcessInstanceKey(processId));
+  }
+
+  @Test
+  public void shouldWriteLateBusinessIdAssignmentOfCaseWithRecordVersion2() {
+    // given
+    final var processId = deployUserTaskCaseProcess();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final var businessId = Strings.newRandomValidBpmnId();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .businessIdAssignment()
+        .withBusinessId(businessId)
+        .assign();
+
+    // then
+    final var assigned =
+        RecordingExporter.processInstanceBusinessIdRecords(ProcessInstanceBusinessIdIntent.ASSIGNED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(assigned.getRecordVersion()).isEqualTo(2);
+    assertThat(assigned.getValue().getBusinessId()).isEqualTo(businessId);
   }
 
   private static String deployUserTaskCaseProcess() {
