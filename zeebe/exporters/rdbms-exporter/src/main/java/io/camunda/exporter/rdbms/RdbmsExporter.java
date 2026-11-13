@@ -304,16 +304,7 @@ public final class RdbmsExporter {
           resetIntervalFlush(exportStartNanos);
         }
       } catch (final ExporterPositionMismatchException e) {
-        log(
-            WARN,
-            "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
-        throw new ExporterException(
-            String.format(
-                "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
-                    + " exporter will reopen to re-sync.",
-                partitionId, physicalTenantId),
-            e,
-            ExporterException.Compensation.REOPEN);
+        throw reopenOnPositionMismatch(e);
       } catch (final Exception e) {
         log(
             WARN,
@@ -430,6 +421,8 @@ public final class RdbmsExporter {
     final long workStartNanos = nanoClock.getAsLong();
     try {
       flushExecutionQueue();
+    } catch (final ExporterPositionMismatchException e) {
+      throw reopenOnPositionMismatch(e);
     } catch (final Exception e) {
       log(
           WARN,
@@ -439,6 +432,19 @@ public final class RdbmsExporter {
     } finally {
       scheduleIntervalFlush(workStartNanos);
     }
+  }
+
+  private ExporterException reopenOnPositionMismatch(final ExporterPositionMismatchException e) {
+    log(
+        WARN,
+        "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
+    return new ExporterException(
+        String.format(
+            "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
+                + " exporter will reopen to re-sync.",
+            partitionId, physicalTenantId),
+        e,
+        ExporterException.Compensation.REOPEN);
   }
 
   @VisibleForTesting(

@@ -84,6 +84,11 @@ class RdbmsExporterPositionRecoveryIT {
 
   private MeterRegistry meterRegistry;
 
+  /** Flushes after each record, so a record-triggered flush detects the position mismatch. */
+  String flushInterval() {
+    return "PT0S";
+  }
+
   @BeforeAll
   void beforeAll() {
     postgres.start();
@@ -95,7 +100,7 @@ class RdbmsExporterPositionRecoveryIT {
             .withProperty("camunda.data.secondary-storage.rdbms.url", postgres.getJdbcUrl())
             .withProperty("camunda.data.secondary-storage.rdbms.username", postgres.getUsername())
             .withProperty("camunda.data.secondary-storage.rdbms.password", postgres.getPassword())
-            .withProperty("camunda.data.secondary-storage.rdbms.flush-interval", "PT0S")
+            .withProperty("camunda.data.secondary-storage.rdbms.flush-interval", flushInterval())
             .withBasicAuth();
 
     testInstance.start();
