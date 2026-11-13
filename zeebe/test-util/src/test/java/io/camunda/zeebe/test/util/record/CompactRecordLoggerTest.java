@@ -105,7 +105,7 @@ class CompactRecordLoggerTest {
               .withValue(
                   ImmutableProcessDefinitionSuspensionRecordValue.builder()
                       .withProcessDefinitionKey(123L)
-                      .withCascade(true)
+                      .withIncludeProcessInstances(true)
                       .withResolvedVersions(
                           List.of(
                               ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
@@ -120,7 +120,7 @@ class CompactRecordLoggerTest {
       final var summary = compactRecordLogger.summarizeProcessDefinitionSuspension(record);
 
       // then
-      assertThat(summary).isEqualTo("pdKey:K123 cascade resolved:1");
+      assertThat(summary).isEqualTo("pdKey:K123 includeProcessInstances resolved:1");
     }
 
     @Test

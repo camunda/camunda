@@ -2346,8 +2346,8 @@ public class CompactRecordLogger {
     } else {
       result.append(formatId(value.getBpmnProcessId())).append(" v").append(value.getVersion());
     }
-    if (value.isCascade()) {
-      result.append(" cascade");
+    if (value.isIncludeProcessInstances()) {
+      result.append(" includeProcessInstances");
     }
     result.append(" resolved:").append(value.getResolvedVersions().size());
 

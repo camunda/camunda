@@ -34,8 +34,8 @@ public interface ProcessDefinitionSuspensionRecordValue extends RecordValue, Ten
   /** The version of the process definition, or -1 for all versions. */
   int getVersion();
 
-  /** Whether the suspension is cascaded to the process instances. */
-  boolean isCascade();
+  /** Whether the running process instances of the process definition are suspended too. */
+  boolean isIncludeProcessInstances();
 
   /** The process definition versions the command resolved to, with the outcome for each. */
   List<ProcessDefinitionSuspensionResolvedVersionValue> getResolvedVersions();

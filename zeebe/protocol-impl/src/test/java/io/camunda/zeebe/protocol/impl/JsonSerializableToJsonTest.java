@@ -5770,7 +5770,7 @@ final class JsonSerializableToJsonTest {
                     .setBpmnProcessId("process-1")
                     .setVersion(3)
                     .setTenantId("tenant-1")
-                    .setCascade(true)
+                    .setIncludeProcessInstances(true)
                     .addResolvedVersion(
                         new ProcessDefinitionSuspensionResolvedVersion()
                             .setProcessDefinitionKey(1L)
@@ -5788,7 +5788,7 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "process-1",
           "version": 3,
           "tenantId": "tenant-1",
-          "cascade": true,
+          "includeProcessInstances": true,
           "resolvedVersions": [
             {
               "processDefinitionKey": 1,
@@ -5814,7 +5814,7 @@ final class JsonSerializableToJsonTest {
           "bpmnProcessId": "",
           "version": -1,
           "tenantId": "<default>",
-          "cascade": false,
+          "includeProcessInstances": false,
           "resolvedVersions": [],
           "batchOperationKey": -1
         }

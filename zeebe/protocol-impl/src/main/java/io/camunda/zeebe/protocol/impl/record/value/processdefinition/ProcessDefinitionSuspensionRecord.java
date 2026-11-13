@@ -29,7 +29,8 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final BooleanProperty cascadeProp = new BooleanProperty("cascade", false);
+  private final BooleanProperty includeProcessInstancesProp =
+      new BooleanProperty("includeProcessInstances", false);
   private final ArrayProperty<ProcessDefinitionSuspensionResolvedVersion> resolvedVersionsProp =
       new ArrayProperty<>("resolvedVersions", ProcessDefinitionSuspensionResolvedVersion::new);
   private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey", -1);
@@ -40,7 +41,7 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(cascadeProp)
+        .declareProperty(includeProcessInstancesProp)
         .declareProperty(resolvedVersionsProp)
         .declareProperty(batchOperationKeyProp);
   }
@@ -86,12 +87,13 @@ public final class ProcessDefinitionSuspensionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public boolean isCascade() {
-    return cascadeProp.getValue();
+  public boolean isIncludeProcessInstances() {
+    return includeProcessInstancesProp.getValue();
   }
 
-  public ProcessDefinitionSuspensionRecord setCascade(final boolean cascade) {
-    cascadeProp.setValue(cascade);
+  public ProcessDefinitionSuspensionRecord setIncludeProcessInstances(
+      final boolean includeProcessInstances) {
+    includeProcessInstancesProp.setValue(includeProcessInstances);
     return this;
   }
 

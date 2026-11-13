@@ -27,7 +27,7 @@ final class ProcessDefinitionSuspensionRecordTest {
             .setBpmnProcessId("process-a")
             .setVersion(3)
             .setTenantId("tenant-a")
-            .setCascade(true)
+            .setIncludeProcessInstances(true)
             .addResolvedVersion(
                 new ProcessDefinitionSuspensionResolvedVersion()
                     .setProcessDefinitionKey(1L)
@@ -51,7 +51,7 @@ final class ProcessDefinitionSuspensionRecordTest {
     assertThat(copy.getBpmnProcessId()).isEqualTo("process-a");
     assertThat(copy.getVersion()).isEqualTo(3);
     assertThat(copy.getTenantId()).isEqualTo("tenant-a");
-    assertThat(copy.isCascade()).isTrue();
+    assertThat(copy.isIncludeProcessInstances()).isTrue();
     assertThat(copy.getBatchOperationKey()).isEqualTo(99L);
     assertThat(copy.getResolvedVersions())
         .extracting(
@@ -77,7 +77,7 @@ final class ProcessDefinitionSuspensionRecordTest {
     assertThat(record.getBpmnProcessId()).isEmpty();
     assertThat(record.getVersion()).isEqualTo(-1);
     assertThat(record.getTenantId()).isEqualTo("<default>");
-    assertThat(record.isCascade()).isFalse();
+    assertThat(record.isIncludeProcessInstances()).isFalse();
     assertThat(record.getResolvedVersions()).isEmpty();
     assertThat(record.getBatchOperationKey()).isEqualTo(-1L);
   }
