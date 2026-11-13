@@ -66,7 +66,7 @@ Open the class and every property it declares.
 | `IntegerProperty(key, default)`                | `int field = default;`                                                    |
 | `BooleanProperty(key, default)`                | `boolean field = default;`                                                |
 | `StringProperty(key, default)`                 | `DirectBuffer field = Decoding.EMPTY;` (non-empty default: step 3)        |
-| `BinaryProperty(key)`                          | `@MsgpackProperty(binary = true) DirectBuffer field = Decoding.EMPTY;`    |
+| `BinaryProperty(key)`                          | `@MsgpackProperty(binary = true, required = true) DirectBuffer field = Decoding.EMPTY;` |
 | `EnumProperty<E>(key)` without default         | `E field;` (null until set, writing null fails like before)               |
 | `EnumProperty<E>(key, default)`                | `E field = default;`                                                      |
 | `ObjectProperty<X>(key, new X())`              | `final X field = new X();` (X is a `@MsgpackPojo` or a `BaseValue`)       |
@@ -124,16 +124,19 @@ Also check, and STOP if any of these is true:
    class-specific or ignored state must participate, stop and report the behavior that needs to be
    preserved rather than claiming value equality is lost.
 5. Reading differences: `UnpackedObject` throws when a declared property is missing from the
-   input (`verifyAllDeclaredPropertiesAreSet`), the generated class keeps the default. That is more
-   lenient and acceptable, but say so in the commit body.
+   input (`verifyAllDeclaredPropertiesAreSet`). Properties with a default never throw there (they
+   always have a value), so the generated class keeps the same default: no difference. Properties
+   WITHOUT a default keep the throw through `@MsgpackProperty(required = true)` (see below).
 
 Properties WITHOUT a default (`new LongProperty("k")`, `BooleanProperty`, `StringProperty`,
-`BinaryProperty`) throw when written before being set. Use the Java default (`0L`, `false`,
-`Decoding.EMPTY`) as initializer; the bytes are identical for everything the old class could write.
-In the serde tests set such a value explicitly on both objects, also in the "defaults" tests (the
-old class cannot write while unset), and say so in the commit body. An enum without default is the
-same: the new class throws `IllegalStateException` instead of `MsgpackPropertyException` when
-written unset; mention it in the commit body.
+`BinaryProperty`) throw when written before being set and when missing on read. Map them to
+`@MsgpackProperty(required = true)` and use the Java default (`0L`, `false`, `Decoding.EMPTY`) as
+initializer: `required` keeps the read guard, the initializer gives the field a value to write. The
+bytes are identical for everything the old class could write. The new class writes the Java default
+where the old one threw on write: in the serde tests set such a value explicitly on both objects,
+also in the "defaults" tests (the old class cannot write while unset), and say so in the commit
+body. An enum without default is the same: the new class throws `IllegalStateException` instead of
+`MsgpackPropertyException` when written unset; mention it in the commit body.
 
 ## Step 1: write down the stored layout
 
@@ -179,7 +182,8 @@ Edit the class in place:
    `MsgpackRecordValue` needs (`getLength`, `write`, `wrap(buffer, offset, length)`, `reset`).
 2. Replace each `XxxProperty` field by a plain package-private field from the table in step 0.
    Generator rules: fields must NOT be `private`; scalar, string and enum fields must NOT be
-   `final` and carry their default as initializer; nested objects and lists must be `final` and
+   `final` and carry their default as initializer (plus `required = true` if the old property had
+   no default, see step 0); nested objects and lists must be `final` and
    initialized inline; initializers must be side-effect free. Declare the fields in the stored
    order from step 1. Field name = key string; if you want a different Java name add
    `@MsgpackProperty("theKey")`. A `final UnsafeBuffer` field is wrapped in place on read and
@@ -202,16 +206,18 @@ Edit the class in place:
    - `prop.increment()` -> `field++`; `prop.decrement()` -> `field--` (if the old code used the
      returned value, keep using it: `final int c = --field;`)
    - `prop.reset()` -> `field = <default>`
-   - `StringProperty.setValue(DirectBuffer v)` -> `field = BufferUtil.cloneBuffer(v)` (the old
-     code copied into its own storage; the caller may reuse its buffer)
+   - `StringProperty.setValue(DirectBuffer v)` -> `field = v` (the old code only wrapped the buffer,
+     no copy; the field references it as before, never use `BufferUtil.cloneBuffer`)
    - `DocumentProperty.setValue(v)` -> `field = Decoding.document(v)` to retain its normalization
      and validation; use `@MsgpackProperty(document = true)` on the field
    - `PackedProperty` maps to a `@MsgpackProperty(raw = true)` field; preserve its default and keep
      the old no-copy behavior when assigning buffers
    - setting a string to "" -> `field = Decoding.EMPTY`
    - decoding needs no code: strings, binaries, raw values and documents are read as views on the
-     input buffer, exactly like the old properties. Never add a copy on read to a class that had none.
-   - `ArrayProperty.add().wrap(buf)` -> `list.add(BufferUtil.cloneBuffer(buf))`; for
+     input buffer, exactly like the old properties. Never add a copy on read or in a setter to a class
+     that had none; a setter keeps a copy only where the legacy setter copied explicitly.
+   - `ArrayProperty.add().wrap(buf)` -> `list.add(buf)` (`StringValue.wrap` only creates a view, no
+     copy); for
      `IntArrayList`/`LongArrayList` use `addInt(v)` / `addLong(v)`. For nested-object arrays, use a
      `List<X>` as in step 0 and preserve the existing public getter/mutation behavior.
    - methods that returned a stream/list of the array property: keep the return type and return
@@ -271,9 +277,9 @@ the same module and package, and fill it in. It must contain, for the new class 
 4. is read by `NameV1`,
 5. unknown properties of a newer version survive read, modify, write,
 6. kind B only: `toJson()` equals that of `NameV1` for a fully populated value,
-7. a decoded value does not reference the buffer it was read from: only for classes that cloned on
-   read or copy the input in `wrap` (typically kind A with string/array properties). Skip it for
-   classes that only had views before.
+7. a decoded value does not reference the buffer it was read from: only for classes that copy the
+   input in `wrap`, or whose legacy setters copied explicitly. Skip it for classes that only had
+   views before.
 
 Every property from step 1 must be set to a non-default value in test 1. Use a checklist.
 
