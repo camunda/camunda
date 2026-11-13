@@ -7,17 +7,17 @@
  */
 
 import {HttpResponse} from 'msw';
-import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
+import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockDeleteUserEndpoint, mockGetUserEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 import {AdminUserDetailPage} from './AdminUserDetailPage';
 
-async function renderPage(user: ReturnType<typeof createUser>, onDeleted = vi.fn()) {
+async function renderPage(user: User, onDeleted = vi.fn()) {
 	return renderWithRouter(
 		() => (
 			<>
@@ -30,16 +30,13 @@ async function renderPage(user: ReturnType<typeof createUser>, onDeleted = vi.fn
 }
 
 describe('<AdminUserDetailPage />', () => {
-	afterEach(async () => {
-		await cleanup();
+	afterEach(() => {
 		toast.dismiss();
 	});
 
 	it('should show the user details', async () => {
 		const user = createUser({username: 'john.doe', name: 'John Doe', email: 'john.doe@example.com'});
-		const onDeleted = vi.fn();
-
-		const screen = await renderPage(user, onDeleted);
+		const screen = await renderPage(user);
 
 		await expect.element(screen.getByRole('heading', {name: 'john.doe'})).toBeVisible();
 		await expect.element(screen.getByText('John Doe')).toBeVisible();
@@ -55,7 +52,7 @@ describe('<AdminUserDetailPage />', () => {
 		await userEvent.click(screen.getByRole('link', {name: 'Users'}));
 
 		// then
-		await vi.waitFor(() => expect(screen.router.state.location.pathname).toBe('/admin/users'));
+		await expect.poll(() => screen.router.state.location.pathname).toBe('/admin/users');
 	});
 
 	it('should delete the user and notify the caller', async ({worker}) => {
