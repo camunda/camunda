@@ -9,10 +9,12 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule;
+import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
@@ -182,15 +184,31 @@ public class BackupCfg implements ConfigurationEntry {
   }
 
   public interface BackupStoreFactory {
-    /** Returns {@code null} for {@link BackupCfg.BackupStoreType#NONE}. */
+    /**
+     * Creates a store that does not limit how fast it reads the files of a backup. Use it for
+     * stores that do not take backups.
+     *
+     * @return {@code null} for {@link BackupCfg.BackupStoreType#NONE}
+     */
     @Nullable
     static BackupStore createStore(final BackupCfg backupCfg) {
+      return createStore(backupCfg, BackupReadRateLimiter.unlimited());
+    }
+
+    /**
+     * @param readRateLimiter the limiter of this broker, see {@link #createReadRateLimiter}
+     * @return {@code null} for {@link BackupCfg.BackupStoreType#NONE}
+     */
+    @Nullable
+    static BackupStore createStore(
+        final BackupCfg backupCfg, final BackupReadRateLimiter readRateLimiter) {
       return switch (backupCfg.getStore()) {
         case NONE -> null;
         case S3 ->
             S3BackupStore.of(
                 S3BackupStoreConfig.toStoreConfig(
-                    backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()));
+                    backupCfg.getS3(), backupCfg.getReadTimeout(), backupCfg.getWriteTimeout()),
+                readRateLimiter);
         case GCS ->
             GcsBackupStore.of(
                 GcsBackupStoreConfig.toStoreConfig(
@@ -203,6 +221,22 @@ public class BackupCfg implements ConfigurationEntry {
             FilesystemBackupStore.of(
                 FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem()));
       };
+    }
+
+    /**
+     * Creates the limiter for {@link S3BackupStoreConfig#getMaxReadRate()}. All partitions of a
+     * broker read from the same disk, so create it once per broker and pass it to every store the
+     * broker creates; each call returns a limiter with its own budget.
+     */
+    static BackupReadRateLimiter createReadRateLimiter(final BackupCfg backupCfg) {
+      final var maxReadRate = backupCfg.getS3().getMaxReadRate();
+      if (maxReadRate == null) {
+        return BackupReadRateLimiter.unlimited();
+      }
+      final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
+      Loggers.SYSTEM_LOGGER.info(
+          "Limiting the backup reads of this broker to {} per second", maxReadRate);
+      return limiter;
     }
   }
 

@@ -102,6 +102,7 @@ public interface PartitionManager {
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
+        brokerStartupContext.getBackupReadRateLimiter(),
         physicalTenantContext.securityConfig(),
         brokerStartupContext.getSearchClientsProxy(),
         physicalTenantContext.authorizationConverter(),

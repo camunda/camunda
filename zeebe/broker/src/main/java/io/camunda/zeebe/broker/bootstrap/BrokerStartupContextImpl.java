@@ -16,6 +16,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -88,6 +90,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Map<String, PartitionManager> partitionManagers = new ConcurrentHashMap<>();
   private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
+  private final BackupReadRateLimiter backupReadRateLimiter;
   private ClusterConfigurationService clusterConfigurationService;
   private CheckpointSchedulingService checkpointSchedulingService;
 
@@ -131,6 +134,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
+    backupReadRateLimiter =
+        BackupStoreFactory.createReadRateLimiter(configuration.getData().getBackup());
   }
 
   @Override
@@ -306,6 +311,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
     this.sharedRocksDbResources = sharedRocksDbResources;
+  }
+
+  @Override
+  public BackupReadRateLimiter getBackupReadRateLimiter() {
+    return backupReadRateLimiter;
   }
 
   @Override

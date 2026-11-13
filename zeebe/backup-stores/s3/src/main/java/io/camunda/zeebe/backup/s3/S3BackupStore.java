@@ -35,6 +35,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.ListOptions;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
@@ -132,9 +133,16 @@ public final class S3BackupStore implements BackupStore {
   }
 
   S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
+    this(config, client, BackupReadRateLimiter.unlimited());
+  }
+
+  S3BackupStore(
+      final S3BackupConfig config,
+      final S3AsyncClient client,
+      final BackupReadRateLimiter readRateLimiter) {
     this.config = config;
     this.client = client;
-    fileSetManager = new FileSetManager(client, config);
+    fileSetManager = new FileSetManager(client, config, readRateLimiter);
     basePath = formatBasePath(config.basePath());
     final var quotedBasePath = Pattern.quote(basePath);
     final var identifierSuffix =
@@ -147,6 +155,15 @@ public final class S3BackupStore implements BackupStore {
 
   public static BackupStore of(final S3BackupConfig config) {
     return new S3BackupStore(config);
+  }
+
+  /**
+   * @param readRateLimiter limits how fast the store reads the files of a backup from the local
+   *     disk; pass the same limiter to all stores that read from the same disk
+   */
+  public static BackupStore of(
+      final S3BackupConfig config, final BackupReadRateLimiter readRateLimiter) {
+    return new S3BackupStore(config, buildClient(config), readRateLimiter);
   }
 
   private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {

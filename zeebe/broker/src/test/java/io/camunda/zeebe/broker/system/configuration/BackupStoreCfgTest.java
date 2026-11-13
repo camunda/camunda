@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
@@ -214,6 +215,58 @@ final class BackupStoreCfgTest {
     assertThatThrownBy(() -> s3StoreConfig(backup))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("maxReadRate");
+  }
+
+  @Test
+  void shouldNotLimitReadRateByDefault() {
+    // given
+    final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+
+    // when
+    final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+
+    // then
+    assertThat(limiter.isUnlimited()).isTrue();
+  }
+
+  @Test
+  void shouldLimitReadRateWhenMaxReadRateIsSet() {
+    // given
+    final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.getS3().setMaxReadRate(DataSize.ofMegabytes(50));
+
+    // when
+    final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
+
+    // then
+    assertThat(limiter.isUnlimited()).isFalse();
+    assertThat(limiter).hasToString("BackupReadRateLimiter{bytesPerSecond=52428800}");
+  }
+
+  @Test
+  void shouldCreateReadRateLimitersWithSeparateBudgets() {
+    // given - each broker creates its limiter once and shares that instance between its stores
+    final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.getS3().setMaxReadRate(DataSize.ofMegabytes(50));
+
+    // when
+    final var first = BackupStoreFactory.createReadRateLimiter(backup);
+    final var second = BackupStoreFactory.createReadRateLimiter(backup);
+
+    // then
+    assertThat(first).isNotSameAs(second);
+  }
+
+  @Test
+  void shouldRejectMaxReadRateThatIsNotPositive() {
+    // given
+    final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
+    backup.getS3().setMaxReadRate(DataSize.ofBytes(0));
+
+    // when - then
+    assertThatThrownBy(() -> BackupStoreFactory.createReadRateLimiter(backup))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("positive");
   }
 
   /** The S3 and GCS store configs reject a missing bucket name, which is unset by default. */

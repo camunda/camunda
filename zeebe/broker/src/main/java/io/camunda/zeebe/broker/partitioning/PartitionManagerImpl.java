@@ -20,6 +20,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -111,6 +112,7 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
+      final BackupReadRateLimiter backupReadRateLimiter,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -159,6 +161,7 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
+            backupReadRateLimiter,
             secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
