@@ -284,10 +284,6 @@ data:
     # versions for now, so the configurations for retention are duplicated
     zeebe.broker.exporters.camundaexporter.args.history.retention.enabled: "true"
     zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
-    # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-    zeebe.broker.flowControl.write.enabled: "true"
-    zeebe.broker.flowControl.write.limit: 10000
-    zeebe.broker.flowControl.write.throttling.enabled: "true"
     # Disable the importers
     camunda.tasklist.importerEnabled: "false"
     camunda.operate.importerEnabled: "false"

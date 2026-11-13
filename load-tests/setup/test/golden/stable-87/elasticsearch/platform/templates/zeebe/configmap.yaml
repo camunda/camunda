@@ -97,7 +97,3 @@ data:
     zeebe.broker.executionMetricsExporterEnabled: "true"
     zeebe.broker.data.diskUsageCommandWatermark: "0.8"
     zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
-    
-    # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-    zeebe.broker.flowControl.write.enabled: "true"
-    zeebe.broker.flowControl.write.limit: 4000
