@@ -23,6 +23,7 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
@@ -253,6 +254,13 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           if (isType(argument, "java.lang.Long")) {
             return Type.LONG_LIST;
           }
+          if (argument.getKind() == TypeKind.DECLARED) {
+            final var item = (TypeElement) ((DeclaredType) argument).asElement();
+            if (item.getAnnotation(MsgpackPojo.class) != null || isBaseValue(item)) {
+              requirePublicConstructor(item, field);
+              return Type.NESTED_LIST;
+            }
+          }
         }
         if (element.getKind() == ElementKind.ENUM) {
           return Type.ENUM;
@@ -268,6 +276,22 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         break;
     }
     throw new IllegalArgumentException("Unsupported type " + mirror + " of field " + field);
+  }
+
+  /** Items are created while reading, so the generated codec must be able to call {@code new}. */
+  private static void requirePublicConstructor(final TypeElement item, final String field) {
+    final boolean found =
+        item.getEnclosedElements().stream()
+            .anyMatch(
+                e ->
+                    e.getKind() == ElementKind.CONSTRUCTOR
+                        && e.getModifiers().contains(Modifier.PUBLIC)
+                        && ((ExecutableElement) e).getParameters().isEmpty());
+    if (!found) {
+      throw new IllegalArgumentException(
+          "Items of the list %s are created while reading, so %s needs a public constructor without parameters"
+              .formatted(field, item.getQualifiedName()));
+    }
   }
 
   private boolean isType(final TypeMirror mirror, final String qualifiedName) {
@@ -296,6 +320,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   private String javaType(final TypeMirror mirror, final Type kind) {
+    if (kind == Type.NESTED_LIST) {
+      final var item = ((DeclaredType) mirror).getTypeArguments().get(0);
+      return ((TypeElement) ((DeclaredType) item).asElement()).getQualifiedName().toString();
+    }
     return kind == Type.ENUM || kind == Type.NESTED
         ? ((TypeElement) ((DeclaredType) mirror).asElement()).getQualifiedName().toString()
         : mirror.toString();
@@ -329,6 +357,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
         // checked on every reset: an exception in the static initializer is not reliably
         // propagated, as the class is initialized while Codecs resolves this resetter
+        case NESTED_LIST ->
+            s.append(
+                "    requireEmpty(DEFAULTS.%1$s, \"%1$s\");\n    target.%1$s.clear();\n"
+                    .formatted(f));
         case STRING, BINARY, RAW, DOCUMENT ->
             s.append(
                 p.inPlace()
@@ -341,6 +373,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("  }\n\n");
     s.append(
         """
+          /** Items are owned by one list, so a default with items would be shared by every reset. */
+          private static void requireEmpty(final java.util.List<?> value, final String field) {
+            if (!value.isEmpty()) {
+              throw new IllegalStateException(
+                  "List " + field + " of %1$s must start empty: its items are created while reading");
+            }
+          }
+
           private static <T> T requireDefault(final T value, final String field) {
             if (value == null) {
               throw new IllegalStateException(
@@ -409,6 +449,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += w.writeInteger(%s.%s(i));\n".formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
+            case NESTED_LIST ->
+                "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
+                    + "      n += CODEC_%d.write(w, %s.get(i));\n".formatted(i, get)
+                    + "    }\n";
           });
       i++;
     }
@@ -454,6 +499,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                         .formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
+            case NESTED_LIST ->
+                "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
+                    + "      n += CODEC_%d.getLength(%s.get(i));\n".formatted(i, get)
+                    + "    }\n";
           });
       i++;
     }
@@ -507,6 +557,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.%2$s;\n          }\n        }"
                     .formatted(f, addElement(p.type()));
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
+            case NESTED_LIST ->
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final %2$s item = new %2$s();\n            CODEC_%3$d.read(r, item);\n            %1$s.add(item);\n          }\n        }"
+                    .formatted(f, p.javaType(), i);
           };
       if (p.required()) {
         s.append(
@@ -628,7 +681,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               }
             """
                 .formatted(p.javaType(), i));
-      } else if (p.type() == Type.NESTED) {
+      } else if (p.type() == Type.NESTED || p.type() == Type.NESTED_LIST) {
         s.append(
             "  private static final MsgpackCodec<%1$s> CODEC_%2$d = Codecs.of(%1$s.class);\n"
                 .formatted(p.javaType(), i));
@@ -664,7 +717,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     LONG_LIST(true),
     INT_ARRAY_LIST(true),
     LONG_ARRAY_LIST(true),
-    NESTED(true);
+    NESTED(true),
+    NESTED_LIST(true);
 
     /** Read into the instance the field holds, so the field must be final. */
     private final boolean container;

@@ -360,6 +360,15 @@ final class GeneratedCodecPropertyTest {
               .ofMaxSize(20)
               .map(v -> (Object) v);
       case LONG_LIST -> longs().list().ofMaxSize(20).map(v -> (Object) v);
+      case POJO_LIST, VALUE_LIST ->
+          Combinators.combine(
+                  Arbitraries.integers().injectNull(0.3),
+                  stringBytes(Arbitraries.integers().between(0, 40)).injectNull(0.3),
+                  Arbitraries.just(false))
+              .as(NestedValue::new)
+              .list()
+              .ofMaxSize(6)
+              .map(v -> (Object) v);
       case NESTED ->
           Combinators.combine(
                   Arbitraries.integers().injectNull(0.3),
@@ -434,12 +443,18 @@ final class GeneratedCodecPropertyTest {
       case ENUM -> DEFAULT_KIND;
       case STRING_LIST -> emptyLists ? List.of() : List.of(new byte[] {'x'});
       case LONG_LIST -> emptyLists ? List.of() : List.of(9L);
+      case POJO_LIST, VALUE_LIST -> List.of();
       case NESTED -> new NestedValue(null, null, false);
     };
   }
 
   /** The value with its missing nested parts replaced by their defaults. */
+  @SuppressWarnings("unchecked")
   private static Object complete(final FieldSpec field, final Object value) {
+    if (field.type() == Type.POJO_LIST || field.type() == Type.VALUE_LIST) {
+      return ((List<NestedValue>) value)
+          .stream().map(item -> (NestedValue) complete(nestedField(), item)).toList();
+    }
     if (field.type() == Type.NESTED) {
       final var nested = (NestedValue) value;
       return new NestedValue(
@@ -448,6 +463,10 @@ final class GeneratedCodecPropertyTest {
           false);
     }
     return value;
+  }
+
+  private static FieldSpec nestedField() {
+    return new FieldSpec(0, Type.NESTED, null);
   }
 
   // ------------------------------------------------------------------ encoding
@@ -490,6 +509,11 @@ final class GeneratedCodecPropertyTest {
               list.forEach(w::writeInteger);
             }
             case NESTED -> writeNested(w, (NestedValue) value, random, declaredOrder);
+            case POJO_LIST, VALUE_LIST -> {
+              final var list = (List<NestedValue>) value;
+              w.writeArrayHeader(list.size());
+              list.forEach(item -> writeNested(w, item, random, declaredOrder));
+            }
             default -> throw new IllegalStateException(field.type().toString());
           }
         });
@@ -642,6 +666,8 @@ final class GeneratedCodecPropertyTest {
       case STRING, BINARY, RAW, DOCUMENT -> ByteBuffer.wrap((byte[]) value);
       case ENUM -> KIND_NAMES[(Integer) value];
       case STRING_LIST -> ((List<byte[]>) value).stream().map(ByteBuffer::wrap).toList();
+      case POJO_LIST, VALUE_LIST ->
+          ((List<NestedValue>) value).stream().map(item -> comparable(Type.NESTED, item)).toList();
       case NESTED -> {
         final var nested = (NestedValue) value;
         yield List.of(
@@ -666,6 +692,38 @@ final class GeneratedCodecPropertyTest {
           List.of(
               compiled.innerValue().get(value),
               bytes((DirectBuffer) compiled.innerText().get(value)));
+      case POJO_LIST ->
+          ((List<Object>) value)
+              .stream()
+                  .map(
+                      item -> {
+                        try {
+                          return (Object)
+                              List.of(
+                                  compiled.innerValue().get(item),
+                                  bytes((DirectBuffer) compiled.innerText().get(item)));
+                        } catch (final ReflectiveOperationException e) {
+                          throw new IllegalStateException(e);
+                        }
+                      })
+                  .toList();
+      case VALUE_LIST ->
+          ((List<Object>) value)
+              .stream()
+                  .map(
+                      item -> {
+                        try {
+                          return (Object)
+                              List.of(
+                                  compiled.legacy().getMethod("value").invoke(item),
+                                  bytes(
+                                      (DirectBuffer)
+                                          compiled.legacy().getMethod("text").invoke(item)));
+                        } catch (final ReflectiveOperationException e) {
+                          throw new IllegalStateException(e);
+                        }
+                      })
+                  .toList();
     };
   }
 
@@ -705,6 +763,23 @@ final class GeneratedCodecPropertyTest {
           final var inner = target.get(instance);
           compiled.innerValue().set(inner, nested.value());
           compiled.innerText().set(inner, new UnsafeBuffer(nested.text()));
+        }
+        case POJO_LIST, VALUE_LIST -> {
+          final var list = (List<Object>) target.get(instance);
+          list.clear();
+          for (final var item : (List<NestedValue>) value) {
+            final var bytes = encoded(w -> writeNested(w, item, null, true));
+            if (field.type() == Type.POJO_LIST) {
+              final var created =
+                  compiled.innerValue().getDeclaringClass().getConstructor().newInstance();
+              ((MsgpackBufferValue<?>) created).wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+              list.add(created);
+            } else {
+              final var created = compiled.legacy().getConstructor().newInstance();
+              ((UnpackedObject) created).wrap(new UnsafeBuffer(bytes));
+              list.add(created);
+            }
+          }
         }
         default -> throw new IllegalStateException(field.type().toString());
       }
@@ -749,6 +824,25 @@ final class GeneratedCodecPropertyTest {
                             @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                           }
                           """),
+                  new Source(
+                      "sample.Legacy",
+                      """
+                      package sample;
+                      import io.camunda.zeebe.msgpack.UnpackedObject;
+                      import io.camunda.zeebe.msgpack.property.IntegerProperty;
+                      import io.camunda.zeebe.msgpack.property.StringProperty;
+                      import org.agrona.DirectBuffer;
+                      public final class Legacy extends UnpackedObject {
+                        private final IntegerProperty value = new IntegerProperty("value", 3);
+                        private final StringProperty text = new StringProperty("text", "");
+                        public Legacy() {
+                          super(2);
+                          declareProperty(value).declareProperty(text);
+                        }
+                        public int value() { return value.getValue(); }
+                        public DirectBuffer text() { return text.getValue(); }
+                      }
+                      """),
                   new Source("sample.Sample", source));
           assertThat(result.errors()).as(source).isEmpty();
           try {
@@ -763,7 +857,8 @@ final class GeneratedCodecPropertyTest {
                 result.load("sample.Kind"),
                 fields,
                 accessible(inner, "value"),
-                accessible(inner, "text"));
+                accessible(inner, "text"),
+                result.load("sample.Legacy"));
           } catch (final ReflectiveOperationException e) {
             throw new IllegalStateException(e);
           }
@@ -790,6 +885,8 @@ final class GeneratedCodecPropertyTest {
     ENUM,
     STRING_LIST,
     LONG_LIST,
+    POJO_LIST,
+    VALUE_LIST,
     NESTED
   }
 
@@ -844,6 +941,8 @@ final class GeneratedCodecPropertyTest {
                     + " = new ArrayList<>("
                     + (emptyLists ? "" : "List.of(9L)")
                     + ");";
+            case POJO_LIST -> "final List<Inner> " + name() + " = new ArrayList<>();";
+            case VALUE_LIST -> "final List<Legacy> " + name() + " = new ArrayList<>();";
             case NESTED -> "final Inner " + name() + " = new Inner();";
           };
     }
@@ -887,7 +986,8 @@ final class GeneratedCodecPropertyTest {
       Class<?> kind,
       Map<String, Field> fields,
       Field innerValue,
-      Field innerText) {
+      Field innerText,
+      Class<?> legacy) {
 
     Object newInstance() throws ReflectiveOperationException {
       return sample.getConstructor().newInstance();
@@ -914,6 +1014,7 @@ final class GeneratedCodecPropertyTest {
               case ENUM -> new EnumProperty<>(key, TwinKind.class, TwinKind.TWO);
               case STRING_LIST -> new ArrayProperty<>(key, StringValue::new);
               case LONG_LIST -> new ArrayProperty<>(key, LongValue::new);
+              case POJO_LIST, VALUE_LIST -> new ArrayProperty<>(key, TwinInner::new);
               case NESTED -> new ObjectProperty<>(key, new TwinInner());
             };
         properties.put(field.name(), property);
@@ -946,6 +1047,12 @@ final class GeneratedCodecPropertyTest {
         case NESTED -> {
           final var inner = ((ObjectProperty<TwinInner>) property).getValue();
           yield List.of(inner.value.getValue(), bytes(inner.text.getValue()));
+        }
+        case POJO_LIST, VALUE_LIST -> {
+          final var values = new ArrayList<Object>();
+          ((ArrayProperty<TwinInner>) property)
+              .forEach(v -> values.add(List.of(v.value.getValue(), bytes(v.text.getValue()))));
+          yield values;
         }
       };
     }

@@ -97,7 +97,8 @@ final class MsgpackPojoProcessorTest {
             "List<Long> key = new ArrayList<>();",
             "org.agrona.collections.IntArrayList key = new org.agrona.collections.IntArrayList();",
             "org.agrona.collections.LongArrayList key = new org.agrona.collections.LongArrayList();",
-            "Inner key = new Inner();");
+            "Inner key = new Inner();",
+            "List<Inner> key = new ArrayList<>();");
 
     for (final var field : fields) {
       // when
@@ -819,6 +820,164 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldRoundTripAListOfNestedPojos() throws Exception {
+    // given
+    final var codec = codecOf(valid("final List<Inner> items = new ArrayList<>();"), inner());
+    final var source = codec.newInstance();
+    final var items = (List<Object>) get(source, "items");
+    for (final int value : new int[] {7, 9}) {
+      final var item = codec.newInstance("sample.Inner");
+      set(item, "value", value);
+      items.add(item);
+    }
+
+    // when
+    final var bytes = codec.write(source);
+    final var read = codec.newInstance();
+    final var stale = codec.newInstance("sample.Inner");
+    ((List<Object>) get(read, "items")).add(stale);
+    ((Recyclable) read).reset();
+    codec.read(read, bytes);
+
+    // then the items are a msgpack array of maps
+    assertThat(bytes).isEqualTo(itemsMessage(7, 9));
+    assertThat(codec.codec().getLength(source)).isEqualTo(bytes.length);
+    final var readItems = (List<Object>) get(read, "items");
+    assertThat(readItems).hasSize(2).doesNotContain(stale);
+    assertThat(get(readItems.get(0), "value")).isEqualTo(7);
+    assertThat(get(readItems.get(1), "value")).isEqualTo(9);
+  }
+
+  @Test
+  void shouldRoundTripAListOfBaseValues() throws Exception {
+    // given
+    final var codec = codecOf(valid("final List<Legacy> items = new ArrayList<>();"), legacy());
+    final var read = codec.newInstance();
+
+    // when
+    codec.read(read, itemsMessage(7, 9));
+
+    // then
+    final var items = (List<Object>) get(read, "items");
+    assertThat(items).hasSize(2);
+    assertThat(codec.write(read)).isEqualTo(itemsMessage(7, 9));
+    assertThat(codec.codec().getLength(read)).isEqualTo(itemsMessage(7, 9).length);
+  }
+
+  @Test
+  void shouldReadAnEmptyAndAMissingListOfNestedObjects() throws Exception {
+    // given
+    final var codec = codecOf(valid("final List<Inner> items = new ArrayList<>();"), inner());
+    final var read = codec.newInstance();
+    ((List<Object>) get(read, "items")).add(codec.newInstance("sample.Inner"));
+
+    // when an empty array is read
+    codec.read(read, itemsMessage());
+
+    // then
+    assertThat((List<?>) get(read, "items")).isEmpty();
+
+    // when the list is missing and the instance is reset first, as wrap does
+    ((List<Object>) get(read, "items")).add(codec.newInstance("sample.Inner"));
+    read.reset();
+    codec.read(read, encoded(w -> w.writeMapHeader(0)));
+
+    // then
+    assertThat((List<?>) get(read, "items")).isEmpty();
+  }
+
+  @Test
+  void shouldKeepUnknownPropertiesOfItemsAndOfTheListOwner() throws Exception {
+    // given an item and the owner with keys of a newer version
+    final var codec =
+        codecOf(
+            valid(
+                """
+                final List<Inner> items = new ArrayList<>();
+                @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                """),
+            inner());
+    final var message =
+        encoded(
+            w -> {
+              w.writeMapHeader(2);
+              w.writeString(buffer("items"));
+              w.writeArrayHeader(1);
+              w.writeMapHeader(2);
+              w.writeString(buffer("value"));
+              w.writeInteger(7);
+              w.writeString(buffer("itemFuture"));
+              w.writeInteger(1);
+              w.writeString(buffer("future"));
+              w.writeInteger(2);
+            });
+    final var read = codec.newInstance();
+
+    // when
+    codec.read(read, message);
+
+    // then both are written back
+    assertThat(codec.write(read)).isEqualTo(message);
+  }
+
+  @Test
+  void shouldRejectAListItemWithoutAPublicConstructor() {
+    // given
+    final var hidden =
+        new Source(
+            "sample.Hidden",
+            IMPORTS
+                + """
+                @MsgpackPojo
+                public final class Hidden extends MsgpackBufferValue<Hidden> {
+                  int value;
+                  Hidden() {}
+                }
+                """);
+
+    // when
+    final var result =
+        compile(hidden, pojo(valid("final List<Hidden> items = new ArrayList<>();")));
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("items") && e.contains("public constructor without parameters"));
+  }
+
+  @Test
+  void shouldRejectAListOfAnUnsupportedItemType() {
+    // given
+    final var source = pojo(valid("final List<String> items = new ArrayList<>();"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(e -> e.contains("Unsupported type") && e.contains("items"));
+  }
+
+  @Test
+  void shouldFailToResetAListOfNestedObjectsThatDoesNotStartEmpty() throws Exception {
+    // given
+    final var result =
+        compile(
+            inner(),
+            pojo(valid("final List<Inner> items = new ArrayList<>(List.of(new Inner()));")));
+    assertThat(result.errors()).isEmpty();
+    final var sample = (Recyclable) result.load("sample.Sample").getConstructor().newInstance();
+
+    // when
+    final ThrowingCallable reset = sample::reset;
+
+    // then
+    assertThatThrownBy(reset)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("items")
+        .hasMessageContaining("must start empty");
+  }
+
+  @Test
   void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
     final var result = compile(pojo(valid("DirectBuffer name;")));
@@ -867,7 +1026,12 @@ final class MsgpackPojoProcessorTest {
   }
 
   /** A compiled sample class with its codec, for tests that read and write bytes. */
-  private record SampleCodec(Class<?> type, MsgpackCodec<Recyclable> codec) {
+  private record SampleCodec(
+      InMemoryCompiler.Result result, Class<?> type, MsgpackCodec<Recyclable> codec) {
+
+    Recyclable newInstance(final String className) throws ReflectiveOperationException {
+      return (Recyclable) result.load(className).getConstructor().newInstance();
+    }
 
     Recyclable newInstance() throws ReflectiveOperationException {
       return (Recyclable) type.getConstructor().newInstance();
@@ -886,14 +1050,16 @@ final class MsgpackPojoProcessorTest {
     }
   }
 
-  private static SampleCodec codecOf(final String classSource) {
-    final var result = compile(pojo(classSource));
+  private static SampleCodec codecOf(final String classSource, final Source... others) {
+    final var sources = new java.util.ArrayList<>(List.of(others));
+    sources.add(pojo(classSource));
+    final var result = compile(sources.toArray(Source[]::new));
     assertThat(result.errors()).isEmpty();
     try {
       final var type = result.load("sample.Sample");
       @SuppressWarnings("unchecked")
       final var codec = (MsgpackCodec<Recyclable>) Codecs.of(type.asSubclass(Recyclable.class));
-      return new SampleCodec(type, codec);
+      return new SampleCodec(result, type, codec);
     } catch (final ClassNotFoundException e) {
       throw new IllegalStateException(e);
     }
@@ -913,6 +1079,38 @@ final class MsgpackPojoProcessorTest {
           w.writeString(buffer("doc"));
           w.writeBinary(new UnsafeBuffer(document));
         });
+  }
+
+  /** The message {@code {"items": [{"value": v}, ...]}}. */
+  private static byte[] itemsMessage(final int... values) {
+    return encoded(
+        w -> {
+          w.writeMapHeader(1);
+          w.writeString(buffer("items"));
+          w.writeArrayHeader(values.length);
+          for (final int value : values) {
+            w.writeMapHeader(1);
+            w.writeString(buffer("value"));
+            w.writeInteger(value);
+          }
+        });
+  }
+
+  private static Source legacy() {
+    return new Source(
+        "sample.Legacy",
+        """
+        package sample;
+        import io.camunda.zeebe.msgpack.UnpackedObject;
+        import io.camunda.zeebe.msgpack.property.IntegerProperty;
+        public final class Legacy extends UnpackedObject {
+          private final IntegerProperty value = new IntegerProperty("value", 3);
+          public Legacy() {
+            super(1);
+            declareProperty(value);
+          }
+        }
+        """);
   }
 
   private static byte[] mapWithOneEntry(final String key, final long value) {
