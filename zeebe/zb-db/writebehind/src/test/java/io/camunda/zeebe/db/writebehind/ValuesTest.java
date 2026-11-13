@@ -36,21 +36,6 @@ final class ValuesTest {
   }
 
   @Test
-  void shouldHoldNewObjectOfTheValueClassWithTheSameContent() {
-    // given
-    final var value = TestRecord.of("job", 3);
-
-    // when
-    final var held = Values.hold(value, scratch);
-
-    // then
-    assertThat(held.object()).isInstanceOf(TestRecord.class).isNotSameAs(value);
-    final var object = (TestRecord) held.object();
-    assertThat(object.name()).isEqualTo("job");
-    assertThat(object.counter()).isEqualTo(3);
-  }
-
-  @Test
   void shouldNotSeeLaterChangesOfTheCallersValue() {
     // given
     final var value = TestRecord.of("job", 3);
@@ -64,7 +49,6 @@ final class ValuesTest {
     Values.copyInto(held, copy);
     assertThat(copy.name()).isEqualTo("job");
     assertThat(copy.counter()).isEqualTo(3);
-    assertThat(((TestRecord) held.object()).name()).isEqualTo("job");
   }
 
   @Test
@@ -79,7 +63,6 @@ final class ValuesTest {
 
     // then
     assertThat(copy.name()).isEqualTo("first");
-    assertThat(((TestRecord) first.object()).name()).isEqualTo("first");
   }
 
   @Test
@@ -113,28 +96,11 @@ final class ValuesTest {
   }
 
   @Test
-  void shouldDecodeStorageBytesIntoNewInstanceOfThePrototypesClass() {
-    // given
-    final var bytes = Values.hold(TestRecord.of("job", 3), scratch).bytes();
-    final var prototype = new TestRecord();
-
-    // when
-    final var held = Values.decode(bytes, prototype);
-
-    // then
-    assertThat(held.bytes()).isSameAs(bytes);
-    assertThat(held.object()).isInstanceOf(TestRecord.class).isNotSameAs(prototype);
-    assertThat(((TestRecord) held.object()).name()).isEqualTo("job");
-    assertThat(prototype.name()).isEmpty();
-  }
-
-  @Test
-  void shouldHoldSharedNil() {
+  void shouldHoldNil() {
     // when
     final var held = Values.hold(DbNil.INSTANCE, scratch);
 
     // then
-    assertThat(held.object()).isSameAs(DbNil.INSTANCE);
     assertThat(held.bytes()).hasSize(DbNil.INSTANCE.getLength());
   }
 
@@ -156,7 +122,6 @@ final class ValuesTest {
     Values.copyInto(held, copy);
     assertThat(copy.first().toString()).isEqualTo("tenant");
     assertThat(copy.second().getValue()).isEqualTo(7);
-    assertThat(held.object()).isInstanceOf(DbCompositeKey.class).isNotSameAs(value);
   }
 
   @Test
@@ -170,10 +135,9 @@ final class ValuesTest {
     final var held = Values.hold(value, scratch);
 
     // then
-    assertThat(held.object()).isInstanceOf(DbForeignKey.class).isNotSameAs(value);
-    final var object = (DbForeignKey<?>) held.object();
-    assertThat(object.columnFamily()).isEqualTo(TestColumnFamily.TARGET);
-    assertThat(((DbLong) object.inner()).getValue()).isEqualTo(7);
+    final var copy = new DbForeignKey<>(new DbLong(), TestColumnFamily.TARGET, MatchType.Full);
+    Values.copyInto(held, copy);
+    assertThat(copy.inner().getValue()).isEqualTo(7);
   }
 
   @Test
@@ -190,6 +154,5 @@ final class ValuesTest {
     final var copy = new DbEnumValue<>(MatchType.class);
     Values.copyInto(held, copy);
     assertThat(copy.getValue()).isEqualTo(MatchType.Prefix);
-    assertThat(held.object()).isInstanceOf(DbEnumValue.class).isNotSameAs(value);
   }
 }

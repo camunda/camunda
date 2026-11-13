@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.DbLong;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
@@ -115,7 +114,7 @@ final class StoreInterleavingTest {
     pause.awaitReached();
 
     // when
-    final var value = store.get(key(1), new DbLong());
+    final var value = store.get(key(1));
     final var exists = store.exists(key(1));
     pause.release();
     committer.join();
@@ -173,7 +172,7 @@ final class StoreInterleavingTest {
   }
 
   private @Nullable Long longOf(final RawKey key) {
-    return TestValues.longOf(store.get(key, new DbLong()));
+    return TestValues.longOf(store.get(key));
   }
 
   private void commit(

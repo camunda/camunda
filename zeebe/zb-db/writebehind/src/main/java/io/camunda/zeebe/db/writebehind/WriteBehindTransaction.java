@@ -44,15 +44,13 @@ final class WriteBehindTransaction implements ZeebeDbTransaction {
 
   /**
    * The value that this transaction sees, or null if there is none. Shared: callers must copy it.
-   *
-   * @param prototype decides the class that a value read from the storage is decoded into
    */
-  @Nullable HeldValue get(final RawKey key, final DbValue prototype) {
+  @Nullable HeldValue get(final RawKey key) {
     final var own = writes.get(key);
     if (own != null) {
       return own.value();
     }
-    return store.get(key, prototype);
+    return store.get(key);
   }
 
   boolean exists(final RawKey key) {

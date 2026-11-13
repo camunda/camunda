@@ -14,7 +14,6 @@ import static io.camunda.zeebe.db.writebehind.TestValues.longOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,7 @@ final class FlushedValueCacheTest {
     store.awaitFlushed();
 
     // when
-    final var value = store.get(key(1), new DbLong());
+    final var value = store.get(key(1));
 
     // then
     assertThat(longOf(value)).isEqualTo(5);
@@ -57,10 +56,10 @@ final class FlushedValueCacheTest {
     store.awaitFlushed();
     store.close();
     store = new WriteBehindStore<>(new RawBackend(storage), WriteBehindConfiguration.defaults());
-    store.get(key(1), new DbLong());
+    store.get(key(1));
 
     // when
-    final var value = store.get(key(1), new DbLong());
+    final var value = store.get(key(1));
 
     // then
     assertThat(longOf(value)).isEqualTo(5);
@@ -92,7 +91,7 @@ final class FlushedValueCacheTest {
     store.awaitFlushed();
 
     // when
-    final var value = store.get(key(1), new DbLong());
+    final var value = store.get(key(1));
 
     // then
     assertThat(value).isNull();

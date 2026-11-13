@@ -30,11 +30,8 @@ public interface Backend<K extends Comparable<K>, V, T> {
   /** The group that the key belongs to. */
   long groupOf(K key);
 
-  /**
-   * Reads the committed value, or returns null if there is none. {@code prototype} only decides how
-   * to decode it.
-   */
-  @Nullable V get(K key, T prototype);
+  /** Reads the committed value, or returns null if there is none. */
+  @Nullable V get(K key);
 
   /** Whether the key has a committed value. */
   boolean exists(K key);

@@ -72,8 +72,8 @@ final class ConcurrentCopyOutTest {
     }
     for (int id = 0; id < KEYS; id++) {
       final var bytes = key(id).bytes();
-      final var stored =
-          (TestRecord) Values.decode(storage.get(bytes, bytes.length), new TestRecord()).object();
+      final var stored = new TestRecord();
+      Values.copyInto(new HeldValue(storage.get(bytes, bytes.length)), stored);
       assertWhole(stored);
       assertThat(stored.counter() % KEYS).isEqualTo(id);
     }
@@ -85,7 +85,7 @@ final class ConcurrentCopyOutTest {
     long found = 0;
     while (!done.get()) {
       for (int id = 0; id < KEYS; id++) {
-        final var held = store.get(key(id), target);
+        final var held = store.get(key(id));
         if (held != null) {
           Values.copyInto(held, target);
           assertWhole(target);

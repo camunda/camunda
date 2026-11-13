@@ -7,35 +7,22 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.DbValue;
-
 /**
- * A value as the store holds it: its encoded form and an object of the caller's value class that
- * wraps exactly these bytes.
+ * A value as the store holds it: its encoded form.
  *
- * <p>Nobody changes either after creation, so the writer thread and any number of readers can use a
- * held value at the same time. The writer writes the bytes as they are and readers copy out of
- * them; nobody calls {@link DbValue#write} on the object, as an encoder may keep shared scratch
- * state. The object stays here so that a faster copy out of it can replace the copy from the bytes
- * later.
+ * <p>Nobody changes the bytes after creation, so the writer thread and any number of readers can
+ * use a held value at the same time. The writer writes the bytes as they are and readers copy out
+ * of them.
  */
 final class HeldValue {
 
-  private final DbValue object;
   private final byte[] bytes;
 
   /**
-   * @param object wraps {@code bytes}; the held value takes ownership of both
-   * @param bytes exactly the encoded value, nothing more
+   * @param bytes exactly the encoded value, nothing more; the held value takes ownership
    */
-  HeldValue(final DbValue object, final byte[] bytes) {
-    this.object = object;
+  HeldValue(final byte[] bytes) {
     this.bytes = bytes;
-  }
-
-  /** The decoded value. Shared: callers must not change it, nor hand it out. */
-  DbValue object() {
-    return object;
   }
 
   /** The encoded value. Shared: callers must not change it. */
@@ -49,6 +36,6 @@ final class HeldValue {
 
   @Override
   public String toString() {
-    return "HeldValue{" + object + ", " + bytes.length + " bytes}";
+    return "HeldValue{" + bytes.length + " bytes}";
   }
 }

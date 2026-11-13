@@ -24,22 +24,13 @@ final class Values {
 
   /**
    * A held copy of {@code value}, which later changes to {@code value} don't reach. Encodes it
-   * once, using {@code scratch} as scratch space, into an array of the exact length, and wraps a
-   * new instance of its class around that array.
+   * once, using {@code scratch} as scratch space, into an array of the exact length.
    */
   static HeldValue hold(final DbValue value, final ExpandableArrayBuffer scratch) {
     final int length = value.write(scratch, 0);
     final var bytes = new byte[length];
     scratch.getBytes(0, bytes);
-    return wrapNew(value, bytes);
-  }
-
-  /**
-   * A held value of the bytes that the storage returned, decoded into a new instance of the
-   * prototype's class. Takes ownership of {@code bytes}.
-   */
-  static HeldValue decode(final byte[] bytes, final DbValue prototype) {
-    return wrapNew(prototype, bytes);
+    return new HeldValue(bytes);
   }
 
   /**
@@ -50,11 +41,5 @@ final class Values {
   static void copyInto(final HeldValue held, final DbValue target) {
     final var bytes = held.bytes();
     target.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
-  }
-
-  private static HeldValue wrapNew(final DbValue template, final byte[] bytes) {
-    final var object = ValueInstances.newInstance(template);
-    object.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
-    return new HeldValue(object, bytes);
   }
 }

@@ -115,17 +115,17 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   /**
    * Reads the latest committed value, or null if there is none. A value read from the storage is
-   * decoded as {@code prototype} says and cached.
+   * cached.
    *
    * <p>The result is shared with the store: callers must copy it before handing it out.
    */
-  public @Nullable V get(final K key, final T prototype) {
+  public @Nullable V get(final K key) {
     ensureUsable();
     final var inMemory = lookupInMemory(key);
     if (inMemory != null) {
       return inMemory.value();
     }
-    return readStorage(key, prototype);
+    return readStorage(key);
   }
 
   /**
@@ -153,9 +153,9 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   /**
    * Reads the latest committed value from the storage, or returns null if there is none. A value
-   * read from the storage is decoded as {@code prototype} says and cached.
+   * read from the storage is cached.
    */
-  private @Nullable V readStorage(final K key, final T prototype) {
+  private @Nullable V readStorage(final K key) {
     if (backend.knownAbsent(key)) {
       metrics.of(backend.groupOf(key)).knownAbsent.increment();
       return null;
@@ -164,7 +164,7 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
     // isn't in a batch has its latest flushed value in the storage. A value that is loaded while
     // the writer flushes may be older than the one it caches, so it isn't cached then.
     final long epoch = flushEpoch;
-    final var value = backend.get(key, prototype);
+    final var value = backend.get(key);
     countStorageGet(key, value != null);
     if (cache != null && (epoch & 1) == 0 && flushEpoch == epoch) {
       cacheLoaded(cache, key, new Version<>(value, 0), epoch);

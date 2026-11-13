@@ -53,8 +53,8 @@ final class PausingBackend implements Backend<RawKey, HeldValue, DbValue> {
   }
 
   @Override
-  public @Nullable HeldValue get(final RawKey key, final DbValue prototype) {
-    return delegate.get(key, prototype);
+  public @Nullable HeldValue get(final RawKey key) {
+    return delegate.get(key);
   }
 
   @Override

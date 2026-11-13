@@ -14,7 +14,6 @@ import static io.camunda.zeebe.db.writebehind.TestValues.key;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -112,10 +111,10 @@ final class MetricsExportTest {
   void shouldCountWherePointReadsWereAnswered() {
     // given
     put(1);
-    store.get(key(1), new DbLong());
+    store.get(key(1));
     store.awaitFlushed();
-    store.get(key(1), new DbLong());
-    store.get(key(2), new DbLong());
+    store.get(key(1));
+    store.get(key(2));
 
     // when
     store.exportMetrics(registry, STORE);

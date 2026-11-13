@@ -22,8 +22,7 @@ final class RawBackend implements Backend<RawKey, HeldValue, DbValue> {
 
   /**
    * Heap of an entry besides the key and value bytes: the cache or map node, the key, version and
-   * held value objects, the array headers and the buffer that the held object wraps. The decoded
-   * held object itself is not counted, as its size depends on the value class.
+   * held value objects and the array headers.
    */
   static final int ENTRY_OVERHEAD = 200;
 
@@ -44,9 +43,9 @@ final class RawBackend implements Backend<RawKey, HeldValue, DbValue> {
   }
 
   @Override
-  public @Nullable HeldValue get(final RawKey key, final DbValue prototype) {
+  public @Nullable HeldValue get(final RawKey key) {
     final var bytes = storage.get(key.bytes(), key.bytes().length);
-    return bytes == null ? null : Values.decode(bytes, prototype);
+    return bytes == null ? null : new HeldValue(bytes);
   }
 
   @Override

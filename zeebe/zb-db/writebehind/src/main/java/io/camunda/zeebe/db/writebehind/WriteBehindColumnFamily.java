@@ -136,7 +136,7 @@ final class WriteBehindColumnFamily<
     final @Nullable HeldValue held;
     final boolean begun = context.begin();
     try {
-      held = context.currentTransaction().get(rawKey(key), valueInstance);
+      held = context.currentTransaction().get(rawKey(key));
       context.commitIfBegun(begun);
     } finally {
       context.endIfBegun(begun);

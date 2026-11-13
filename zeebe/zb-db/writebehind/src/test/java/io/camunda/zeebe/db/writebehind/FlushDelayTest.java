@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.DbLong;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +50,7 @@ final class FlushDelayTest {
 
     // then
     assertThat(inStorage(1)).isFalse();
-    assertThat(store.get(key(1), new DbLong())).isNotNull();
+    assertThat(store.get(key(1))).isNotNull();
   }
 
   @Test
