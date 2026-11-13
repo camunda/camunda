@@ -107,6 +107,16 @@ public final class SearchQueryBuilders {
     return fn.apply(formSearchQuery()).build();
   }
 
+  public static VariableHistoryItemQuery.Builder variableHistoryItemSearchQuery() {
+    return new VariableHistoryItemQuery.Builder();
+  }
+
+  public static VariableHistoryItemQuery variableHistoryItemSearchQuery(
+      final Function<VariableHistoryItemQuery.Builder, ObjectBuilder<VariableHistoryItemQuery>>
+          fn) {
+    return fn.apply(variableHistoryItemSearchQuery()).build();
+  }
+
   public static VariableQuery.Builder variableSearchQuery() {
     return new VariableQuery.Builder();
   }
