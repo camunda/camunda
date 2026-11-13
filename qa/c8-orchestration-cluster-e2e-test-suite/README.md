@@ -170,8 +170,9 @@ this version's test matrix for the PR's head commit, as jobs of the check, so ea
 shows on the PR. This branch has no suite workflows of its own: the check uses `main`'s test
 workflow. A newer push cancels the PR's run in progress. The check is **not** required: a red
 result does not block the merge, but any failure must be reviewed and documented in the PR
-description. It does not run for pull requests from forks; run the on-demand workflow for those by
-hand.
+description. It does not run for pull requests from forks, which get no secrets: for those,
+a maintainer reviews the PR, pushes its head commit to a branch in `camunda/camunda` and runs the
+on-demand workflow against that branch.
 
 When a suite job fails, its failed tests are also re-run with the base branch's test code, and a
 comment on the PR tags the author with the result for each test: a regression from the PR's test
