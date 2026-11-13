@@ -528,6 +528,31 @@ k6:
     data-read:
       enabled: true
       script: test.data-read.js
+    # Deploys a custom model from `k6/data`, completes its user tasks, and sends a mix of
+    # read requests. Enabled by the `custom-model` scenario. `env` sets extra environment
+    # variables for this test only (see the script for the supported names). Each test can
+    # also set `resources`, which replaces `k6.resources` for this test only.
+    custom-model:
+      enabled: false
+      script: test.custom-model.js
+      env: {}
+
+  # -- Images of the k6-operator starter pod and the k6 runner pods. The defaults use the
+  # GAR pull-through cache of the benchmark cluster. Other clusters can use the upstream
+  # images (ghcr.io/grafana/k6-operator, docker.io/grafana/k6).
+  images:
+    starter: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.7.0
+    runner: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:2.3.0
+
+  # -- Enable the Go pprof endpoints of the k6 runners, for example to find the cause of high
+  # memory use. Get a heap profile with:
+  #   kubectl port-forward <runner pod> 6565
+  #   curl -o heap.pprof localhost:6565/debug/pprof/heap
+  profiling: false
+
+  # -- k6 DNS resolution (K6_DNS). A short TTL makes k6 follow broker pod IP changes.
+  # See https://grafana.com/docs/k6/latest/using-k6/k6-options/reference/#dns
+  dns: "ttl=10s,select=random,policy=preferIPv4"
 
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write

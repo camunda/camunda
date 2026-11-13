@@ -23,8 +23,20 @@ export async function loadK6Module(path, { data } = {}) {
   const http = { request: mock.fn(), post: mock.fn(), file: mock.fn() };
   const check = mock.fn();
   const sleep = mock.fn();
+  // name -> list of `add()` calls as [value, tags].
+  const counters = {};
+  class Counter {
+    constructor(name) {
+      this.name = name;
+      counters[name] = [];
+    }
+    add(value, tags) {
+      counters[this.name].push([value, tags]);
+    }
+  }
   mock.module("k6/http", { exports: { default: http } });
   mock.module("k6", { exports: { check, sleep } });
+  mock.module("k6/metrics", { exports: { Counter } });
   if (data) {
     mock.module(new URL("../scripts/lib.data.js", import.meta.url).href, {
       exports: { loadData: data },
@@ -40,6 +52,9 @@ export async function loadK6Module(path, { data } = {}) {
     http.request.mock.resetCalls();
     http.post.mock.resetCalls();
     http.file.mock.resetCalls();
+    for (const name of Object.keys(counters)) {
+      counters[name].length = 0;
+    }
     check.mock.resetCalls();
     sleep.mock.resetCalls();
     http.request.mock.mockImplementation(() => okResponse);
@@ -55,6 +70,7 @@ export async function loadK6Module(path, { data } = {}) {
     http,
     sleep,
     check,
+    counters,
     respondWith: (...responses) =>
       http.request.mock.mockImplementation(() => responses.shift()),
     checkResults: () => statusCheckResults(check),
