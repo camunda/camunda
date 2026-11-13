@@ -34,8 +34,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - Every non-static field is stored under its field name, in declaration order, unless it is
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
-- Supported field types: `long`, `int`, `boolean`, `RequiredLong`/`RequiredInt` and `@Nullable
-  Long`/`Integer`/`Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
+- Supported field types: `long`, `int`, `boolean`, `@MsgpackRequired long`/`int`,
+  `RequiredLong`/`RequiredInt` and `@Nullable Long`/`Integer`/`Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
   raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
   not be overridden), `List<DirectBuffer>`, `List<Long>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
@@ -69,7 +69,14 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   enum or `Boolean` is a `@Nullable` field (jspecify) that starts as `null`; `null` is unset. A
   `@Nullable Long` or `Integer` is supported as well, an alternative to the holders that is written
   like a `long`/`int` but allocates when it is read (the holders do not). A `boolean`, `long` or
-  `int` with a default stays a primitive: the boxed types are only for one without a default. The
+  `int` with a default stays a primitive: the boxed types are only for one without a default.
+- `@MsgpackRequired` is a third alternative for a `long` or `int` without a default: the field
+  stays a primitive and its initializer is a sentinel meaning unset, `0` without one
+  (`@MsgpackRequired long processInstanceKey;`, as no key is 0, or
+  `@MsgpackRequired long priority = Long.MIN_VALUE;` where 0 is a real value). A new instance and
+  one after `reset` hold the sentinel, so both are unset. The generated code compares with a
+  `static final` copy of each sentinel. The sentinel must be outside the values of the property:
+  writing it fails like an unset property, and so does reading a message that holds it. The
   processor rejects `@Nullable` on a primitive, on a holder, on an `UnsafeBuffer` or on a nested
   value, a holder that is not `final`, and a `Boolean`, `Long` or `Integer` that is not
   `@Nullable`.

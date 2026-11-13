@@ -10,6 +10,7 @@ package io.camunda.zeebe.msgpack.pojo.processor;
 import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackRequired;
 import io.camunda.zeebe.msgpack.pojo.MsgpackSanitized;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import java.io.IOException;
@@ -204,6 +205,13 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             "Field %s must be @Nullable, null is its unset state. Use boolean for a default"
                 .formatted(fieldName));
       }
+      final var sentinel = field.getAnnotation(MsgpackRequired.class) != null;
+      if (sentinel && kind != Type.LONG && kind != Type.INT) {
+        throw new IllegalArgumentException(
+            ("Field %s: @MsgpackRequired only applies to a long or int, whose initializer is the "
+                    + "sentinel for unset. Use a @Nullable field for the other types")
+                .formatted(fieldName));
+      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
@@ -238,6 +246,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               javaType(mirror, kind),
               inPlace,
               nullable,
+              sentinel,
               sanitized,
               pojo));
     }
@@ -428,6 +437,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append(
         "  public static final MsgpackOps<%1$s> INSTANCE = new Instance();\n\n".formatted(pojo));
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
+    sentinels(s, m, true);
     s.append("  private %sOps() {}\n\n".formatted(pojo));
     s.append("  /** Restores the field initializers. */\n");
     s.append("  public static void reset(final %s target) {\n".formatted(pojo));
@@ -756,6 +766,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("public final class %sCodec implements MsgpackCodec<%s> {\n".formatted(pojo, pojo));
     s.append("  public static final %sCodec INSTANCE = new %sCodec();\n\n".formatted(pojo, pojo));
     constants(s, m);
+    sentinels(s, m, false);
     s.append("\n  private %sCodec() {}\n\n".formatted(pojo));
 
     final var unknown = m.unknownField();
@@ -1015,6 +1026,27 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     };
   }
 
+  /**
+   * The initializers of the {@link MsgpackRequired} fields, the values that mean unset, as static
+   * finals: the JIT folds them into the comparison like a literal.
+   */
+  private static void sentinels(final StringBuilder s, final Model m, final boolean inOps) {
+    boolean any = false;
+    for (final var p : m.properties()) {
+      if (p.sentinel()) {
+        final var source =
+            inOps ? "DEFAULTS." + p.field() : "%sOps.%s".formatted(m.name(), p.sentinelName());
+        s.append(
+            "  static final %s %s = %s;\n"
+                .formatted(p.type() == Type.LONG ? "long" : "int", p.sentinelName(), source));
+        any = true;
+      }
+    }
+    if (any) {
+      s.append("\n");
+    }
+  }
+
   private static void constants(final StringBuilder s, final Model m) {
     int i = 0;
     for (final var p : m.properties()) {
@@ -1110,6 +1142,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
    * @param nullable the field is {@code @Nullable}, null meaning that the property is unset
+   * @param sentinel a {@code @MsgpackRequired} long or int, unset while it holds its initializer
    * @param sanitized the value must not appear in a string representation
    * @param pojo a nested value, or the items of a nested list, is a generated POJO, whose {@code
    *     <Name>Ops} is called directly; otherwise it is a {@code BaseValue}
@@ -1121,12 +1154,18 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       String javaType,
       boolean inPlace,
       boolean nullable,
+      boolean sentinel,
       boolean sanitized,
       boolean pojo) {
 
     /** Holders and {@code @Nullable} fields can be unset, a property without default. */
     boolean canBeUnset() {
-      return nullable || type == Type.REQUIRED_LONG || type == Type.REQUIRED_INT;
+      return nullable || sentinel || type == Type.REQUIRED_LONG || type == Type.REQUIRED_INT;
+    }
+
+    /** The constant holding the initializer of a {@code @MsgpackRequired} field. */
+    String sentinelName() {
+      return "SENTINEL_" + field;
     }
 
     /** A non-nullable enum that is null cannot be written, whatever the reason. */
@@ -1140,6 +1179,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
     /** Java condition that is true if the property is unset in the object {@code v}. */
     String unset(final String v) {
+      if (sentinel) {
+        return "%s.%s == %s".formatted(v, field, sentinelName());
+      }
       return isHolder()
           ? "!%s.%s.isSet()".formatted(v, field)
           : "%s.%s == null".formatted(v, field);
