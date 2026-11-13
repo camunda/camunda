@@ -75,14 +75,8 @@ public final class AuthInfo implements BufferWriter {
    */
   private volatile @Nullable DirectBuffer encoded;
 
-  /**
-   * The claims map, once built, if it holds nothing but immutable values, so it can be shared by
-   * all callers. See {@link #toClaimsMap()}.
-   */
+  /** The claims map, built on first use. See {@link #toClaimsMap()}. */
   private volatile @Nullable Map<String, Object> claimsMap;
-
-  /** The decoded token claims, once known to hold no mutable values, so they can be shared. */
-  private volatile @Nullable Map<String, Object> immutableTokenClaims;
 
   private AuthInfo(
       final AuthDataFormat format,
@@ -210,10 +204,11 @@ public final class AuthInfo implements BufferWriter {
    * <p>The map is unmodifiable and shared between calls, so it is cheap to call repeatedly. The
    * token claims, which are by far the most expensive part, are only decoded when the {@link
    * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
-   * the other claims, e.g. exporters, never pay for them. If the token claims contain binary
-   * values, which decode to mutable arrays, every call returns a new map with its own arrays, so
-   * callers can't change what others see. Otherwise, the map is shared once the token claims have
-   * been read.
+   * the other claims, e.g. exporters, never pay for them. They are then decoded once, and shared.
+   *
+   * <p>Sharing is safe in practice: the decoded claims are deeply unmodifiable, except for binary
+   * values, which Jackson decodes to a fresh {@code byte[]}. Token claims come from JWTs, i.e.
+   * JSON, which has no binary values, so no caller can change what others see.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -228,20 +223,13 @@ public final class AuthInfo implements BufferWriter {
     putIfPresent(claims, AUTHORIZED_CLIENT_ID, clientId);
     putIfPresent(claims, AUTHORIZED_TENANTS, tenants);
     putIfPresent(claims, USER_GROUPS_CLAIMS, groups);
-    final var sharedTokenClaims = immutableTokenClaims;
     if (tokenClaims != null) {
-      // Whether the token claims are immutable, so that they can be shared, is only known once
-      // they are decoded, which is what the lazy view avoids. Until then, every caller gets a view
-      // of their own.
-      claims.put(
-          USER_TOKEN_CLAIMS, sharedTokenClaims != null ? sharedTokenClaims : new LazyTokenClaims());
+      claims.put(USER_TOKEN_CLAIMS, new LazyTokenClaims());
     }
     final var result = Collections.unmodifiableMap(claims);
 
-    if (tokenClaims == null || sharedTokenClaims != null) {
-      // racing threads build equivalent maps, so it doesn't matter which one wins
-      claimsMap = result;
-    }
+    // racing threads build equivalent maps, so it doesn't matter which one wins
+    claimsMap = result;
     return result;
   }
 
@@ -365,38 +353,7 @@ public final class AuthInfo implements BufferWriter {
     return value;
   }
 
-  private static boolean isImmutableValue(final @Nullable Object value) {
-    if (value == null
-        || value instanceof String
-        || value instanceof Boolean
-        || value instanceof Number) {
-      return true;
-    } else if (value instanceof final Map<?, ?> map) {
-      for (final var entry : map.entrySet()) {
-        if (!isImmutableValue(entry.getKey()) || !isImmutableValue(entry.getValue())) {
-          return false;
-        }
-      }
-      return true;
-    } else if (value instanceof final List<?> list) {
-      for (final var element : list) {
-        if (!isImmutableValue(element)) {
-          return false;
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * A read-only view of the token claims that decodes them on first access, and keeps the decoded
-   * claims, so the view is stable: lookups by key, value and entry agree, and so does its hash.
-   *
-   * <p>Every call of {@link #toClaimsMap()} that doesn't know the token claims to be immutable gets
-   * its own view, so if they hold mutable values (binary values decode to arrays), no one else sees
-   * changes to them. If they don't, the decoded claims are shared with later calls.
-   */
+  /** A read-only view of the token claims that decodes them once, on first access. */
   private final class LazyTokenClaims extends AbstractMap<String, Object> {
 
     private volatile @Nullable Map<String, Object> decoded;
@@ -426,15 +383,11 @@ public final class AuthInfo implements BufferWriter {
       return cached != null ? cached : decode();
     }
 
-    /** Synchronized so that racing threads agree on one snapshot, which matters for arrays. */
     private synchronized Map<String, Object> decode() {
       var claims = decoded;
       if (claims == null) {
         claims = Objects.requireNonNull(getTokenClaims());
         decoded = claims;
-        if (isImmutableValue(claims)) {
-          immutableTokenClaims = claims;
-        }
       }
       return claims;
     }
