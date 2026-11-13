@@ -110,12 +110,16 @@ public class HttpClientFactory {
   }
 
   public HttpClient createClient() {
+    return createClient(createConnectionManager());
+  }
+
+  /** Lets tests keep a handle on the connection pool to observe it. */
+  HttpClient createClient(final PoolingAsyncClientConnectionManager connectionManager) {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
-    final PoolingAsyncClientConnectionManager connectionManager = createConnectionManager();
     final CloseableHttpAsyncClient client =
         defaultClientBuilder(credentialsProvider, connectionManager)
             .setDefaultRequestConfig(defaultRequestConfig)
@@ -135,7 +139,7 @@ public class HttpClientFactory {
         credentialsProvider);
   }
 
-  private PoolingAsyncClientConnectionManager createConnectionManager() {
+  PoolingAsyncClientConnectionManager createConnectionManager() {
     final HttpClientHostnameVerifier hostnameVerifier =
         new HostnameVerifier(config.getOverrideAuthority());
     final TlsStrategy tlsStrategy =
