@@ -103,14 +103,17 @@ public class ProcessingScheduleServiceImpl
   public void runAtFixedRate(final Duration delay, final Runnable task) {
     runDelayed(
         delay,
-        guardRunnable(
-            () -> {
-              try {
-                task.run();
-              } finally {
-                runAtFixedRate(delay, task);
-              }
-            }));
+        () -> {
+          if (abortCondition.getAsBoolean()) {
+            return;
+          }
+
+          try {
+            guardRunnable(task).run();
+          } finally {
+            runAtFixedRate(delay, task);
+          }
+        });
   }
 
   @Override
