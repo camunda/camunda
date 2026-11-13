@@ -24,16 +24,15 @@ import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Buffers a chunk of a policy update. Chunks may arrive in any order. Once the last missing chunk
- * is buffered, the processor starts applying the update with its first chunk. It applies the update
- * with the identifiers and chunk count that are buffered with the update, which is the same count
- * that decides whether every chunk is buffered.
+ * Buffers a chunk of a policy update. An update starts with its first chunk; the other chunks may
+ * arrive in any order. Once the last missing chunk is buffered, the processor starts applying the
+ * update with its first chunk. It applies the update with the identifiers and chunk count that are
+ * buffered with the update, which is the same count that decides whether every chunk is buffered.
  *
- * <p>A chunk that is already buffered makes the update invalid: the processor fails the update,
- * which removes all its chunks, and rejects the chunk. Otherwise the processor does not validate
- * the chunks yet: it assumes that the broker sends every chunk of an update with the update's
- * identifiers, and one update at a time. The processor checks no user authorization; see {@link
- * PolicyUpdateGuard}.
+ * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
+ * update if it cannot belong to it.
+ *
+ * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -66,19 +65,33 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     final var chunk = command.getValue();
-    if (policyUpdateState.hasChunk(chunk.getUpdateId(), chunk.getChunkIndex())) {
-      failUpdate(command, chunk);
+    final var openUpdate = policyUpdateState.getOpenUpdate().map(PersistedPolicyUpdate::getUpdate);
+    if (openUpdate.isEmpty()) {
+      if (!isChunkIndexInRange(chunk)) {
+        rejectionWriter.appendRejection(
+            command, RejectionType.INVALID_ARGUMENT, chunkIndexOutOfRange(chunk));
+        return;
+      }
+      if (chunk.getChunkIndex() != 0) {
+        rejectionWriter.appendRejection(
+            command,
+            RejectionType.INVALID_STATE,
+            "Expected policy update '%s' to start with chunk 0, but chunk %d was received first"
+                .formatted(chunk.getUpdateId(), chunk.getChunkIndex()));
+        return;
+      }
+    } else if (!rejectOrFailForOpenUpdate(command, openUpdate.get())) {
       return;
     }
 
-    final boolean wasComplete = completeUpdate(chunk.getUpdateId()).isPresent();
+    final boolean wasComplete = completeUpdate().isPresent();
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, PolicyUpdateIntent.CHUNK_APPENDED, chunk);
     if (wasComplete) {
       return;
     }
 
-    completeUpdate(chunk.getUpdateId())
+    completeUpdate()
         .ifPresent(
             update ->
                 commandWriter.appendFollowUpCommand(
@@ -87,24 +100,84 @@ public final class PolicyUpdateAppendChunkProcessor
                     PolicyUpdateRecords.withoutPolicyData(update.getUpdate(), 0)));
   }
 
-  private void failUpdate(
-      final TypedRecord<PolicyUpdateRecord> command, final PolicyUpdateRecord chunk) {
-    final var reason =
-        "Expected chunk %d of policy update '%s' to be received once, but it was received again"
-            .formatted(chunk.getChunkIndex(), chunk.getUpdateId());
-    final var update =
-        policyUpdateState.getUpdate(chunk.getUpdateId()).map(PersistedPolicyUpdate::getUpdate);
-    final var failed =
-        PolicyUpdateRecords.withoutPolicyData(update.orElse(chunk), chunk.getChunkIndex())
-            .setErrorMessage(reason);
-    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
-    rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, reason);
+  /**
+   * Checks the chunk against the open update. Returns {@code true} if the chunk may be buffered;
+   * otherwise it has rejected the chunk, and failed the update if the chunk belongs to it.
+   */
+  private boolean rejectOrFailForOpenUpdate(
+      final TypedRecord<PolicyUpdateRecord> command, final PolicyUpdateRecord openUpdate) {
+    final var chunk = command.getValue();
+    if (!openUpdate.getUpdateId().equals(chunk.getUpdateId())) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          ("Expected no other policy update to be open when chunk %d of policy update '%s' is"
+                  + " received, but policy update '%s' is open")
+              .formatted(chunk.getChunkIndex(), chunk.getUpdateId(), openUpdate.getUpdateId()));
+      return false;
+    }
+
+    final var differences = PolicyUpdateRecords.differingIdentifiers(openUpdate, chunk);
+    if (!differences.isEmpty()) {
+      failUpdate(
+          command,
+          openUpdate,
+          RejectionType.INVALID_ARGUMENT,
+          "Expected chunk %d of policy update '%s' to have the identifiers of the update, but it has %s"
+              .formatted(
+                  chunk.getChunkIndex(), chunk.getUpdateId(), String.join(", ", differences)));
+      return false;
+    }
+
+    if (!isChunkIndexInRange(chunk)) {
+      failUpdate(command, openUpdate, RejectionType.INVALID_ARGUMENT, chunkIndexOutOfRange(chunk));
+      return false;
+    }
+
+    if (policyUpdateState.hasChunk(chunk.getUpdateId(), chunk.getChunkIndex())) {
+      failUpdate(
+          command,
+          openUpdate,
+          RejectionType.ALREADY_EXISTS,
+          "Expected chunk %d of policy update '%s' to be received once, but it was received again"
+              .formatted(chunk.getChunkIndex(), chunk.getUpdateId()));
+      return false;
+    }
+    return true;
   }
 
-  /** The update, if every one of its chunks is buffered. */
-  private Optional<PersistedPolicyUpdate> completeUpdate(final String updateId) {
-    return policyUpdateState
-        .getUpdate(updateId)
-        .filter(PersistedPolicyUpdate::hasAllChunksBuffered);
+  /**
+   * Whether the index is one of the chunk's update. Together with the check for chunks that are
+   * received twice, this makes sure that an update whose buffered chunk count equals its chunk
+   * count has every one of its chunks buffered.
+   */
+  private static boolean isChunkIndexInRange(final PolicyUpdateRecord chunk) {
+    return chunk.getChunkIndex() >= 0 && chunk.getChunkIndex() < chunk.getChunkCount();
+  }
+
+  private static String chunkIndexOutOfRange(final PolicyUpdateRecord chunk) {
+    return ("Expected the chunk index of policy update '%s' to be at least 0 and less than the"
+            + " chunk count %d, but it is %d")
+        .formatted(chunk.getUpdateId(), chunk.getChunkCount(), chunk.getChunkIndex());
+  }
+
+  private void failUpdate(
+      final TypedRecord<PolicyUpdateRecord> command,
+      final PolicyUpdateRecord openUpdate,
+      final RejectionType rejectionType,
+      final String reason) {
+    final var failed =
+        PolicyUpdateRecords.withoutPolicyData(openUpdate, command.getValue().getChunkIndex())
+            .setErrorMessage(reason);
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
+    rejectionWriter.appendRejection(command, rejectionType, reason);
+  }
+
+  /**
+   * The open update, if every one of its chunks is buffered. After the checks, the chunk belongs to
+   * the open update, or opens it.
+   */
+  private Optional<PersistedPolicyUpdate> completeUpdate() {
+    return policyUpdateState.getOpenUpdate().filter(PersistedPolicyUpdate::hasAllChunksBuffered);
   }
 }

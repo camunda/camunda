@@ -160,23 +160,37 @@ sequenceDiagram
 
 - **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
   applied before the last chunk arrives, so a partially received update never changes identity
-  data. Chunks may arrive in any order. A chunk that is already buffered makes the update
-  invalid: the update ends with `FAILED`, which removes its chunks, and the chunk is rejected.
+  data. An update starts with chunk 0; the other chunks may arrive in any order. Partition 1 checks
+  each chunk against the open update:
+
+  - No update is open and the chunk's index is not at least 0 and less than its `chunkCount`, or
+    the chunk is not chunk 0: the chunk is rejected.
+  - Another update is open: the chunk is rejected. The open update is not changed.
+  - The chunk has a different `policyId`, `policyVersion`, `basePolicyVersion`, `seqNo` or
+    `chunkCount` than its update, its index is out of range, or it is already buffered: the update
+    ends with `FAILED`, which removes its chunks, and the chunk is rejected.
+
+  So every buffered chunk has a distinct index from 0 to `chunkCount - 1`, and an update has all its
+  chunks once as many chunks are buffered as its `chunkCount`.
+
 - **One chunk per `APPLY_CHUNK`.** Each `APPLY_CHUNK` command applies exactly one chunk and then writes the next
   `APPLY_CHUNK`. This bounds the batch of the `APPLY_CHUNK` command itself. Each identity command it writes is
   processed in its own batch, which includes its cascades: deleting a role, for example, also
   removes its memberships and owned authorizations. The chunk budget does not bound those.
+
 - **Reuse of identity commands.** A chunk becomes the existing identity commands, for example
   `RoleIntent.CREATE` or `UPDATE`, `GroupIntent.ADD_ENTITY` or `AuthorizationIntent.DELETE`. An
   upsert of an existing entity becomes an update, and an authorization upsert is reconciled to the
   exact permission set of its key. The commands are internal commands without request metadata, so
   they bypass the authorization check of the requesting user. They carry the update's
   `policyVersion`, so every exported identity record shows which policy version it belongs to.
+
 - **Distribution.** The identity processors distribute each command to all other partitions on the
   `IDENTITY` distribution queue, as they do for commands from the identity APIs. A queue delivers in
   order to each partition.
+
 - **One update at a time.** The Hub client does not hand over a new change set while an update is
-  open.
+  open. Partition 1 rejects a chunk of another update while one is open.
 
 The buffer uses two column families on partition 1:
 
