@@ -196,7 +196,7 @@ public final class LookupUserTaskTest extends ClientRestTest {
   @ParameterizedTest
   @EnumSource(
       value = UserTaskLookupStateEnum.class,
-      names = {"UNKNOWN_DEFAULT_OPEN_API", "CLAIMING"},
+      names = "UNKNOWN_DEFAULT_OPEN_API",
       mode = Mode.EXCLUDE)
   void shouldReturnState(final UserTaskLookupStateEnum state) {
     // given
@@ -208,20 +208,6 @@ public final class LookupUserTaskTest extends ClientRestTest {
 
     // then
     assertThat(response.getState()).isEqualTo(UserTaskState.valueOf(state.name()));
-  }
-
-  @Test
-  void shouldReturnAssigningWhileTaskIsClaimed() {
-    // given
-    gatewayService.onLookupUserTaskRequest(
-        USER_TASK_KEY, lookupResult().state(UserTaskLookupStateEnum.CLAIMING));
-
-    // when
-    final LookupUserTaskResponse response =
-        client.newLookupUserTaskCommand(USER_TASK_KEY).send().join();
-
-    // then
-    assertThat(response.getState()).isEqualTo(UserTaskState.ASSIGNING);
   }
 
   @Test

@@ -22,7 +22,6 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskLookupResult;
-import io.camunda.client.protocol.rest.UserTaskLookupStateEnum;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +60,7 @@ public final class LookupUserTaskResponseImpl implements LookupUserTaskResponse 
       final JsonMapper jsonMapper, final UserTaskLookupResult response) {
     this.jsonMapper = jsonMapper;
     userTaskKey = ParseUtil.parseLongOrNull(response.getUserTaskKey());
-    state = toUserTaskState(response.getState());
+    state = EnumUtil.convert(response.getState(), UserTaskState.class);
     assignee = response.getAssignee();
     elementId = response.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(response.getElementInstanceKey());
@@ -220,13 +219,5 @@ public final class LookupUserTaskResponseImpl implements LookupUserTaskResponse 
       throw new ClientException(String.format("The variable %s is not available", name));
     }
     return variablesAsMap.get(name);
-  }
-
-  private static UserTaskState toUserTaskState(final UserTaskLookupStateEnum state) {
-    // TODO(#68590): remove once the lookup endpoint reports a claim in progress as ASSIGNING
-    if (state == UserTaskLookupStateEnum.CLAIMING) {
-      return UserTaskState.ASSIGNING;
-    }
-    return EnumUtil.convert(state, UserTaskState.class);
   }
 }

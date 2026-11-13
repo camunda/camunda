@@ -1388,13 +1388,13 @@ components:
       description: |
         The lifecycle state of an active user task. A state ending in `-ING` means a change to the
         task is in progress, for example waiting for task listeners; the task fields still hold
-        the values from before the change.
+        the values from before the change. A claim in progress is reported as `ASSIGNING`, as in
+        the user task search.
       type: string
       enum:
         - CREATING
         - CREATED
         - ASSIGNING
-        - CLAIMING
         - UPDATING
         - COMPLETING
         - CANCELING

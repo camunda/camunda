@@ -304,6 +304,32 @@ public final class UserTaskLookupTest {
   }
 
   @Test
+  public void shouldReturnAssigningWhileClaiming() {
+    // given
+    final long processInstanceKey =
+        createInstance(
+            process(
+                t ->
+                    t.zeebeTaskListener(
+                        l -> l.eventType(ZeebeTaskListenerEventType.assigning).type(listenerType))),
+            Map.of());
+    final long userTaskKey =
+        awaitUserTask(processInstanceKey, UserTaskIntent.CREATED).getUserTaskKey();
+    ENGINE.userTask().withKey(userTaskKey).withAssignee("claimer").claim();
+
+    // when
+    final var response = lookup(userTaskKey);
+
+    // then
+    assertThat(response.getLifecycleState())
+        .describedAs("a claim in progress is reported as ASSIGNING, like in secondary storage")
+        .isEqualTo(UserTaskLifecycleState.ASSIGNING);
+    assertThat(response.getUserTask().getAssignee())
+        .describedAs("the claim is applied only after the listener completes")
+        .isEmpty();
+  }
+
+  @Test
   public void shouldNotReturnPendingVariableUpdate() {
     // given
     final long processInstanceKey =
