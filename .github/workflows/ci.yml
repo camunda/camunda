@@ -3037,6 +3037,8 @@ jobs:
 
       - name: Run Renovate assignee alignment tests
         run: node --test .github/scripts/align-renovate-assignees.test.mjs
+      - name: Run ESUP backport warning tests
+        run: node --test .github/scripts/esup-backport-warning.test.mjs
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests
