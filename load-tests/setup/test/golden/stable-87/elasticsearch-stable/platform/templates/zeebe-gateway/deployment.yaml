@@ -177,4 +177,4 @@ spec:
         - effect: NoSchedule
           key: nodepool
           operator: Equal
-          value: n2-standard-4-stable
+          value: n2-standard-8-stable
