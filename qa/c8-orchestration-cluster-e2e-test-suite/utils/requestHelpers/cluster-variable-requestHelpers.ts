@@ -98,9 +98,6 @@ export async function createTenantClusterVariable(
   }).toPass(defaultAssertionOptions);
 }
 
-/**
- * Creates multiple global cluster variables and stores their info in state
- */
 export async function createGlobalClusterVariablesAndStoreResponseFields(
   request: APIRequestContext,
   count: number,
@@ -117,9 +114,6 @@ export async function createGlobalClusterVariablesAndStoreResponseFields(
   }
 }
 
-/**
- * Deletes a global cluster variable
- */
 export async function deleteGlobalClusterVariable(
   request: APIRequestContext,
   name: string,
@@ -135,9 +129,6 @@ export async function deleteGlobalClusterVariable(
   }).toPass(defaultAssertionOptions);
 }
 
-/**
- * Deletes a tenant-scoped cluster variable
- */
 export async function deleteTenantClusterVariable(
   request: APIRequestContext,
   tenantId: string,
@@ -157,9 +148,6 @@ export async function deleteTenantClusterVariable(
   }).toPass(defaultAssertionOptions);
 }
 
-/**
- * Asserts that a cluster variable exists in a search response
- */
 export function assertClusterVariableInResponse(
   json: {items: Record<string, unknown>[]},
   expectedBody: Record<string, unknown>,
@@ -247,7 +235,6 @@ export async function assertClusterVariableUpdate(
 
     await assertStatusCode(res, 200);
 
-    // Determine the correct path for validation based on scope
     const path =
       expectedScope === 'GLOBAL'
         ? ('/cluster-variables/global/{name}' as const)

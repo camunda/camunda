@@ -18,8 +18,6 @@ class TasklistHeader {
 
   constructor(page: Page) {
     this.page = page;
-    // The shadcn AccountMenu button's accessible name is driven by
-    // `headerSettingsLabel` ("Settings"), not the old Carbon "Open Settings".
     this.openSettingsButton = page.getByRole('button', {name: 'Settings'});
     // The old Carbon combobox+listbox is gone; the settings dropdown now
     // renders language options as a Radix radio group
@@ -42,8 +40,6 @@ class TasklistHeader {
   async changeLanguage(option: 'Français' | 'English' | 'Deutsch' | 'Español') {
     await this.openSettingsButton.click();
     await expect(this.languageSelector).toBeVisible();
-    // Selecting a language is a direct click on its radio item (no separate
-    // listbox/option step like the old Carbon combobox required).
     const languageOption = this.page.getByRole('radio', {
       name: option,
       exact: true,

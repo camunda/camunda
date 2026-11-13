@@ -502,7 +502,6 @@ test.describe.serial('Agent Instance API', () => {
     request,
   }) => {
     const {agentInstanceKey} = state.withLimits!;
-    // Ensure the THINKING status is indexed before asserting on the filter.
     await waitForAgentInstance(request, agentInstanceKey, 'THINKING');
 
     await expect(async () => {

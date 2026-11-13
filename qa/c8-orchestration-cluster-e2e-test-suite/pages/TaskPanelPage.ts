@@ -43,8 +43,6 @@ class TaskPanelPage {
       name: 'Filters',
       exact: true,
     });
-    // The header logo's accessible name is now just "Camunda logo" (the old
-    // Carbon header appended the product name, "Camunda logo Tasklist").
     this.taskListPageBanner = page.getByRole('link', {
       name: 'Camunda logo',
     });
@@ -225,9 +223,6 @@ class TaskPanelPage {
     const maxRetries = 5;
     while (retryCount < maxRetries) {
       try {
-        // Open the filter dropdown, then pick the option from the menu that
-        // appears. Unlike the old Carbon sidebar, the trigger is always
-        // visible — there's no separate expand/collapse step.
         await expect(this.filterSelectButton).toBeVisible({timeout: 10000});
         await this.filterSelectButton.click();
 
@@ -255,7 +250,6 @@ class TaskPanelPage {
               ? 'assigned-to-me'
               : option.toLowerCase().replace(/\s+/g, '-');
 
-          // Use regex to match the filter parameter to avoid matcher function issues
           const filterRegex = new RegExp(`filter=${expectedSegment}(?:&|$)`);
           await expect(this.page).toHaveURL(filterRegex, {timeout: 15000});
         }
