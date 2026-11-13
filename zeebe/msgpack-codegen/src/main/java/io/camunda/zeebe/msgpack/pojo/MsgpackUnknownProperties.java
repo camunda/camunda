@@ -15,7 +15,8 @@ import java.lang.annotation.Target;
 /**
  * Marks the single {@link UnknownProperties} field of a {@link MsgpackPojo}. Keys the POJO does not
  * declare are kept there on read and written back after the declared ones, so that a read-modify-
- * write by an older version does not drop properties of a newer one.
+ * write by an older version does not drop properties of a newer one. Every {@link MsgpackPojo}
+ * needs exactly one such field, and it must be final.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)

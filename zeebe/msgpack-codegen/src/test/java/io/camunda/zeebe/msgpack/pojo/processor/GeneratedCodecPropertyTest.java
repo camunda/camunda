@@ -52,9 +52,9 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Generates random POJO shapes (any mix of the supported field types, custom keys, with and without
- * an unknown-properties field), compiles them with the processor and checks the generated codec
- * against an independent model of the msgpack format.
+ * Generates random POJO shapes (any mix of the supported field types and custom keys), compiles
+ * them with the processor and checks the generated codec against an independent model of the
+ * msgpack format.
  *
  * <p>Shapes whose lists start empty are also checked against an equivalent {@link UnpackedObject},
  * the implementation the codec replaces.
@@ -139,23 +139,21 @@ final class GeneratedCodecPropertyTest {
       assertField(scenario, compiled, instance, field, value);
     }
 
-    // and the unknown entries are written back untouched, if the class keeps them
+    // and the unknown entries are written back untouched
     final var written = new ExpandableArrayBuffer();
     final int length = write(instance, written, scenario.offset());
     final var writtenEntries = entriesOf(written, scenario.offset(), length);
-    final int expectedUnknown = scenario.schema().keepsUnknown() ? scenario.unknowns().size() : 0;
+    final int expectedUnknown = scenario.unknowns().size();
     assertThat(writtenEntries)
         .as(
             "every declared key and the unknown ones are written once%n%s",
             scenario.schema().source())
         .hasSize(scenario.schema().fields().size() + expectedUnknown);
-    if (scenario.schema().keepsUnknown()) {
-      for (int i = 0; i < scenario.unknowns().size(); i++) {
-        final var unknown = scenario.unknowns().get(i);
-        assertThat(writtenEntries.get(unknownKey(i, unknown)))
-            .as("unknown entry %d%n%s", i, scenario.schema().source())
-            .isEqualTo(unknown.value());
-      }
+    for (int i = 0; i < scenario.unknowns().size(); i++) {
+      final var unknown = scenario.unknowns().get(i);
+      assertThat(writtenEntries.get(unknownKey(i, unknown)))
+          .as("unknown entry %d%n%s", i, scenario.schema().source())
+          .isEqualTo(unknown.value());
     }
     for (final var field : scenario.schema().fields()) {
       if (field.type() == Type.NESTED && scenario.present().get(field.index())) {
@@ -232,9 +230,7 @@ final class GeneratedCodecPropertyTest {
             generatedOut.byteArray(), scenario.offset(), scenario.offset() + generatedLength);
     final var twinBytes = new byte[twin.getLength()];
     twin.write(new UnsafeBuffer(twinBytes), 0);
-    if (schema.keepsUnknown()) {
-      assertThat(generatedBytes).as(schema.source()).isEqualTo(twinBytes);
-    }
+    assertThat(generatedBytes).as(schema.source()).isEqualTo(twinBytes);
 
     // and each reads what the other wrote, as a rolled back version does
     final var readTwinBytes = compiled.newInstance();
@@ -333,10 +329,7 @@ final class GeneratedCodecPropertyTest {
               return Combinators.combine(fields)
                   .as(list -> list)
                   .flatMap(
-                      list ->
-                          Combinators.combine(
-                                  Arbitraries.of(true, false), Arbitraries.of(true, false))
-                              .as((keeps, empty) -> new Schema(list, keeps, empty)));
+                      list -> Arbitraries.of(true, false).map(empty -> new Schema(list, empty)));
             });
   }
 
@@ -830,10 +823,9 @@ final class GeneratedCodecPropertyTest {
   }
 
   /**
-   * @param keepsUnknown whether the class has an unknown properties field
    * @param emptyLists whether list fields start empty, as an UnpackedObject's ArrayProperty does
    */
-  private record Schema(List<FieldSpec> fields, boolean keepsUnknown, boolean emptyLists) {
+  private record Schema(List<FieldSpec> fields, boolean emptyLists) {
 
     String source() {
       final var s = new StringBuilder(IMPORTS);
@@ -841,10 +833,8 @@ final class GeneratedCodecPropertyTest {
       for (final var field : fields) {
         s.append("  ").append(field.declaration(emptyLists)).append('\n');
       }
-      if (keepsUnknown) {
-        s.append(
-            "  @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();\n");
-      }
+      s.append(
+          "  @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();\n");
       return s.append("}\n").toString();
     }
   }
