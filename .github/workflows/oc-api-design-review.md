@@ -79,6 +79,39 @@ steps:
         -o /tmp/gh-aw/api-review/styleguide.md \
         https://raw.githubusercontent.com/camunda/camunda-docs/main/howtos/technical-writing-styleguide.md \
         || echo "::warning::Could not fetch the Camunda style guide; reviewing without it"
+  # The merge commit of the pull request, in a worktree of its own so the agent's checkout stays
+  # untouched: HEAD is the merge, HEAD^1 the base branch tip, HEAD^2 the pull request head. The
+  # fetch depth of 2 brings in both parents. A failure here does not block the review: the next
+  # step then writes a note.
+  - name: Check out the pull request merge commit
+    continue-on-error: true
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    run: |
+      git fetch --no-tags --depth=2 origin "refs/pull/${PR_NUMBER}/merge"
+      git worktree add --detach "${RUNNER_TEMP}/pr-merge" FETCH_HEAD
+  # A deterministic list of the new contract surface (operations, schemas, properties, parameters,
+  # response codes, enum values), so the agent checks every item instead of what stands out in the
+  # diff. Properties are found at any depth, in named schemas and in the inline schemas of request
+  # bodies, responses and parameters, and in those of the reusable parameters, responses and request
+  # bodies under components, which an operation only references. A reusable parameter is listed
+  # under parameters, a reusable response or request body under schemas (`responses.NotFound`). A
+  # member of allOf, oneOf or anyOf is part of a property's identity (`Request.oneOf[1].token`), so
+  # a property added to one member is listed even when another member has it. It compares the spec
+  # files at the two parents of the merge commit in the worktree of the previous step: HEAD^1, the
+  # base branch tip, with HEAD^2, the pull request head. Reading the merge commit instead would
+  # give the wrong line numbers: when the base branch added lines to the same file, they are not
+  # the lines of the head file that the diff and the review comments use. Runs outside the sandbox
+  # on parsed YAML only: the spec is parsed, never executed, and ruamel's round-trip loader builds
+  # plain containers, no arbitrary objects. Without the worktree it writes a note, and on any
+  # other failure no file: the prompt then has the agent list the added elements from the diff
+  # itself.
+  - name: List what the spec change adds
+    continue-on-error: true
+    run: |
+      python3 -m pip install --quiet --disable-pip-version-check -r .github/scripts/oc-api-design-review/requirements.txt
+      python3 .github/scripts/oc-api-design-review/new_surface.py \
+        --worktree "${RUNNER_TEMP}/pr-merge" --out /tmp/gh-aw/api-review/new-surface.md
 safe-outputs:
   create-pull-request-review-comment:
     side: RIGHT
@@ -110,14 +143,19 @@ You have 10 minutes in total. Work in four phases, in this order. The rules are 
 1. **Read.** Read exactly these and nothing else: the skill; the whole guideline in one go;
    `zeebe/gateway-protocol/.spectral.yaml`, to know what Spectral already reports (guideline
    section 3 describes the custom rules and the skill covers oasdiff, so nothing else needs
-   reading); `/tmp/gh-aw/pr-review/changed-lines.txt`; `/tmp/gh-aw/pr-review/pr.diff`; the style
-   guide copy if present. Do not look at the pull request body, earlier pull request comments or
-   `gh pr diff` yet. Earlier reviews by this workflow are read in phase 4 only, to decide on
-   superseding and repeats. Read the diff once. Use the line numbers from `changed-lines.txt`
-   directly; never re-derive or re-confirm them.
+   reading); `/tmp/gh-aw/pr-review/changed-lines.txt`; `/tmp/gh-aw/pr-review/pr.diff`;
+   `/tmp/gh-aw/api-review/new-surface.md` if present; the style guide copy if present. Do not look
+   at the pull request body, earlier pull request comments or `gh pr diff` yet. Earlier reviews by
+   this workflow are read in phase 4 only, to decide on superseding and repeats. Read the diff
+   once. Use the line numbers from `changed-lines.txt` directly; never re-derive or re-confirm
+   them.
 2. **Draft.** Before running any further command, write every candidate finding in your reply
-   text: location, blocking or non-blocking, guideline section. Stop at 10 candidates, blocking
-   findings first.
+   text: location, blocking or non-blocking, guideline section. First go through every item in
+   `new-surface.md`, the list of what the change adds, and check each against the guideline
+   sections that govern it. Then go through the rest of the diff: descriptions and changes to
+   existing elements. If `new-surface.md` is missing or only holds a note, enumerate the added
+   elements from the diff yourself. Stop at 10 candidates, blocking findings first, but check every
+   new-surface item before choosing which 10 to report.
 3. **Check.** Make at most 5 tool calls in total, and only for blocking findings you are unsure
    about. Run `date +%s` and compare it with `/tmp/gh-aw/api-review/started-at`. If 6 minutes have
    passed, skip this phase.

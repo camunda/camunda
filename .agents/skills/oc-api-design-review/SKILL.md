@@ -31,6 +31,9 @@ in a pull request, or a design proposal.
 ### Every review
 
 - **Read the whole guideline.**
+- **List every element the change or proposal adds** (paths and operations, schemas, properties,
+  parameters, response codes, enum values) and check each against the guideline sections that
+  govern it. Use a list the caller provides if there is one.
 - **Grep the unchanged spec for context**, for example whether a shared schema already exists or
   where a resource's paths live: grep across `zeebe/gateway-protocol/src/main/proto/v2/`. Don't
   read whole files: some are 90 KB or more.
