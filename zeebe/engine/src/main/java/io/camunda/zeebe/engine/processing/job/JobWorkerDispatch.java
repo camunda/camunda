@@ -25,17 +25,29 @@ public final class JobWorkerDispatch {
    *
    * <p>A job stands in for the process a stubbed call activity calls: no worker could run it, and
    * whoever created the process instance completes it. A job carrying a reservation token belongs
-   * to an instance whose creator claimed that job type: that creator drives it.
+   * to an instance whose creator claimed that job type: that creator drives it — but a worker that
+   * presents the matching {@code requesterReservationToken} is that creator (for example CPT's mock
+   * worker, which replays the reserved jobs), so the job is served to it and to no one else.
    *
    * <p>Returns a {@link JobAction} rather than a boolean because both callers count the reason, and
    * {@code null} rather than an {@link java.util.Optional} because the poll asks this once per
    * activatable job.
+   *
+   * @param job the activatable job being considered
+   * @param requesterReservationToken the reservation token the activation presents, or {@code null}
+   *     / empty when it presents none
    */
-  public static @Nullable JobAction withheldFromWorkersReason(final JobRecord job) {
+  public static @Nullable JobAction withheldFromWorkersReason(
+      final JobRecord job, final @Nullable String requesterReservationToken) {
     if (job.isCallActivityStub()) {
       return JobAction.SKIPPED_CALL_ACTIVITY_STUB;
     }
     if (job.hasJobReservationToken()) {
+      if (requesterReservationToken != null
+          && job.getJobReservationToken().equals(requesterReservationToken)) {
+        // the activation holds this job's reservation token, so its owner is claiming it
+        return null;
+      }
       return JobAction.SKIPPED_RESERVED;
     }
     return null;

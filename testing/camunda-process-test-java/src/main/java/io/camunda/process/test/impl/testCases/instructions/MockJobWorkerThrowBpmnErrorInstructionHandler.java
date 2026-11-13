@@ -21,9 +21,16 @@ import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class MockJobWorkerThrowBpmnErrorInstructionHandler
     implements TestCaseInstructionHandler<MockJobWorkerThrowBpmnErrorInstruction> {
+
+  private final TestRunContext runContext;
+
+  public MockJobWorkerThrowBpmnErrorInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -33,6 +40,10 @@ public class MockJobWorkerThrowBpmnErrorInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final JobWorkerMockBuilder mockBuilder = context.mockJobWorker(instruction.getJobType());
+    instruction
+        .getJobReservationToken()
+        .map(runContext::resolveJobReservationToken)
+        .ifPresent(mockBuilder::withJobReservationToken);
 
     if (instruction.getErrorMessage().isPresent()) {
       mockBuilder.thenThrowBpmnError(

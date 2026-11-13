@@ -150,6 +150,15 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
+  public ActivateJobsCommandStep3 jobReservationToken(final String jobReservationToken) {
+    if (jobReservationToken != null) {
+      grpcRequestObjectBuilder.setJobReservationToken(jobReservationToken);
+      httpRequestObject.setJobReservationToken(jobReservationToken);
+    }
+    return this;
+  }
+
+  @Override
   public ActivateJobsCommandStep3 requestTimeout(final Duration requestTimeout) {
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());

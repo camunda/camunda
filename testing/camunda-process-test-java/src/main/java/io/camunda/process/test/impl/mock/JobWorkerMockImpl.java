@@ -16,8 +16,10 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +33,10 @@ public class JobWorkerMockImpl implements JobWorkerMock {
   private final List<ActivatedJob> activatedJobs = new ArrayList<>();
 
   public JobWorkerMockImpl(
-      final String jobType, final CamundaClient camundaClient, final JobHandler jobHandler) {
+      final String jobType,
+      final CamundaClient camundaClient,
+      final JobHandler jobHandler,
+      final String jobReservationToken) {
 
     final JobHandler loggingJobHandler =
         (jobClient, job) -> {
@@ -56,11 +61,20 @@ public class JobWorkerMockImpl implements JobWorkerMock {
             System.err.println(failureMessage);
             e.printStackTrace();
 
-            client.newFailCommand(job.getKey()).retries(0).send().join();
+            final FailJobCommandStep2 failCommand = client.newFailCommand(job.getKey()).retries(0);
+            if (jobReservationToken != null) {
+              failCommand.withJobReservationToken(jobReservationToken);
+            }
+            failCommand.send().join();
           }
         };
 
-    camundaClient.newWorker().jobType(jobType).handler(safeLoggingJobHandler).open();
+    final JobWorkerBuilderStep3 workerBuilder =
+        camundaClient.newWorker().jobType(jobType).handler(safeLoggingJobHandler);
+    if (jobReservationToken != null) {
+      workerBuilder.jobReservationToken(jobReservationToken);
+    }
+    workerBuilder.open();
   }
 
   @Override

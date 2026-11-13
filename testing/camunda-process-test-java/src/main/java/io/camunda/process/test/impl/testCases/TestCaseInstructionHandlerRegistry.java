@@ -102,8 +102,8 @@ public class TestCaseInstructionHandlerRegistry {
     register(new IncreaseTimeInstructionHandler());
     register(new MockChildProcessInstructionHandler());
     register(new MockDmnDecisionInstructionHandler());
-    register(new MockJobWorkerCompleteJobInstructionHandler());
-    register(new MockJobWorkerThrowBpmnErrorInstructionHandler());
+    register(new MockJobWorkerCompleteJobInstructionHandler(runContext));
+    register(new MockJobWorkerThrowBpmnErrorInstructionHandler(runContext));
     register(new PublishMessageInstructionHandler(runContext));
     register(new CorrelateMessageInstructionHandler(runContext));
     register(new ResolveIncidentInstructionHandler(runContext));

@@ -340,7 +340,8 @@ public final class JobPollerImplTest extends ClientTest {
         Collections.singletonList("test-tenant"),
         TenantFilter.PROVIDED,
         10,
-        false);
+        false,
+        null);
   }
 
   private JobPoller getJobPollerWithTenantFilter(
@@ -355,7 +356,8 @@ public final class JobPollerImplTest extends ClientTest {
         tenantIds,
         tenantFilter,
         10,
-        false);
+        false,
+        null);
   }
 
   private JobPoller getJobPollerWithLease(final boolean withLease) {
@@ -369,7 +371,8 @@ public final class JobPollerImplTest extends ClientTest {
         Collections.singletonList("test-tenant"),
         TenantFilter.PROVIDED,
         10,
-        withLease);
+        withLease,
+        null);
   }
 
   private static final class TestData {

@@ -31,6 +31,18 @@ import java.util.Map;
  */
 public interface JobWorkerMockBuilder {
 
+  /**
+   * Presents the given reservation token on this mock worker, so it can activate and complete the
+   * jobs a process instance reserved at creation (via the {@code RESERVE_JOBS} runtime
+   * instruction). Without it, reserved jobs are withheld from every worker, including this mock.
+   * Use it to mock a reserved job type on a shared/remote cluster while real workers keep running
+   * the unreserved types — one mock drains every job of the type, multi-instance included.
+   *
+   * @param jobReservationToken the reservation token the instance was created with.
+   * @return this builder.
+   */
+  JobWorkerMockBuilder withJobReservationToken(final String jobReservationToken);
+
   /** Configures the mock worker to complete jobs without any variables. */
   JobWorkerMock thenComplete();
 

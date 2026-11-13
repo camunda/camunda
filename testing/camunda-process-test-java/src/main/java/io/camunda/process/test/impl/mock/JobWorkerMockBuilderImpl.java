@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
@@ -40,6 +41,8 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
 
+  private String jobReservationToken;
+
   public JobWorkerMockBuilderImpl(
       final String jobType,
       final CamundaClient client,
@@ -54,6 +57,12 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   }
 
   @Override
+  public JobWorkerMockBuilder withJobReservationToken(final String jobReservationToken) {
+    this.jobReservationToken = jobReservationToken;
+    return this;
+  }
+
+  @Override
   public JobWorkerMock thenComplete() {
     return thenComplete(new HashMap<>());
   }
@@ -65,7 +74,9 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
           LOGGER.debug(
               "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
 
-          jobClient.newCompleteCommand(job).variables(variables).send().join();
+          applyReservationToken(jobClient.newCompleteCommand(job).variables(variables))
+              .send()
+              .join();
         });
   }
 
@@ -81,12 +92,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
                     job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
 
             LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
-            jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+            applyReservationToken(jobClient.newCompleteCommand(job).variables(exampleDataVariables))
+                .send()
+                .join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn(
                 "{} without example data due to errors. {}", logMessagePrefix, e.getMessage());
-            jobClient.newCompleteCommand(job).send().join();
+            applyReservationToken(jobClient.newCompleteCommand(job)).send().join();
           }
         });
   }
@@ -116,6 +129,9 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
           final ThrowErrorCommandStep2 command =
               jobClient.newThrowErrorCommand(job).errorCode(errorCode).variables(variables);
+          if (jobReservationToken != null) {
+            command.withJobReservationToken(jobReservationToken);
+          }
 
           if (errorMessage != null) {
             command.errorMessage(errorMessage);
@@ -127,6 +143,13 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   @Override
   public JobWorkerMock withHandler(final JobHandler jobHandler) {
-    return new JobWorkerMockImpl(jobType, client, jobHandler);
+    return new JobWorkerMockImpl(jobType, client, jobHandler, jobReservationToken);
+  }
+
+  private CompleteJobCommandStep1 applyReservationToken(final CompleteJobCommandStep1 command) {
+    if (jobReservationToken != null) {
+      command.withJobReservationToken(jobReservationToken);
+    }
+    return command;
   }
 }

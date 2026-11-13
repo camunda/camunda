@@ -824,7 +824,8 @@ public class RequestMapper {
         getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
         getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
         getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
-        getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false));
+        getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false),
+        getStringOrEmpty(activationRequest, JobActivationRequest::getJobReservationToken));
   }
 
   public static <R> Map<String, Object> getMapOrEmpty(

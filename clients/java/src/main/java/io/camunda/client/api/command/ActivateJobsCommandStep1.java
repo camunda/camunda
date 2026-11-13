@@ -124,6 +124,20 @@ public interface ActivateJobsCommandStep1
     ActivateJobsCommandStep3 withLease(boolean withLease);
 
     /**
+     * Presents the reservation token of a process instance whose jobs were reserved at creation
+     * (via the {@code RESERVE_JOBS} runtime instruction). A worker presenting the matching token
+     * activates those reserved jobs, which are withheld from every other worker; this lets a test
+     * drive the reserved job types while real workers keep running the rest.
+     *
+     * <p>If not set, only unreserved jobs are activated.
+     *
+     * @param jobReservationToken the reservation token to present
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ActivateJobsCommandStep3 jobReservationToken(String jobReservationToken);
+
+    /**
      * Sets the request timeout for the command.
      *
      * <p>Additionally, it sets the HTTP response timeout to the specified value, incremented by the

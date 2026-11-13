@@ -17,12 +17,20 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class MockJobWorkerCompleteJobInstructionHandler
     implements TestCaseInstructionHandler<MockJobWorkerCompleteJobInstruction> {
+
+  private final TestRunContext runContext;
+
+  public MockJobWorkerCompleteJobInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -31,10 +39,16 @@ public class MockJobWorkerCompleteJobInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
+    final JobWorkerMockBuilder mockBuilder = context.mockJobWorker(instruction.getJobType());
+    instruction
+        .getJobReservationToken()
+        .map(runContext::resolveJobReservationToken)
+        .ifPresent(mockBuilder::withJobReservationToken);
+
     if (instruction.getUseExampleData()) {
-      context.mockJobWorker(instruction.getJobType()).thenCompleteWithExampleData();
+      mockBuilder.thenCompleteWithExampleData();
     } else {
-      context.mockJobWorker(instruction.getJobType()).thenComplete(instruction.getVariables());
+      mockBuilder.thenComplete(instruction.getVariables());
     }
   }
 
