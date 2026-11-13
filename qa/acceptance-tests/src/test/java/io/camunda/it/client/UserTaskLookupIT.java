@@ -19,6 +19,8 @@ import io.camunda.client.api.response.LookupUserTaskResponse;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -202,6 +204,65 @@ final class UserTaskLookupIT {
         .isTrue();
   }
 
+  @Test
+  void shouldReportClaimInProgressAsAssigning() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var listenerType = Strings.newRandomValidBpmnId();
+    deploy(
+        singleUserTaskProcessWithListener(
+            processId, ZeebeTaskListenerEventType.assigning, listenerType));
+    final long processInstanceKey = createInstance(processId, Map.of());
+    final long userTaskKey = awaitUserTaskKey(processInstanceKey, "task");
+
+    // when
+    final var claim =
+        client
+            .newAssignUserTaskCommand(userTaskKey)
+            .assignee("claimer")
+            .allowOverride(false)
+            .send();
+    final long listenerJobKey = awaitListenerJobKey(processInstanceKey, listenerType);
+    final var duringClaim = client.newLookupUserTaskCommand(userTaskKey).send().join();
+    client.newCompleteCommand(listenerJobKey).send().join();
+    claim.join();
+    final var afterClaim = client.newLookupUserTaskCommand(userTaskKey).send().join();
+
+    // then
+    assertThat(duringClaim.getState()).isEqualTo(UserTaskState.ASSIGNING);
+    assertThat(duringClaim.getAssignee())
+        .describedAs("the claim is applied only once the listener completes")
+        .isNull();
+    assertThat(afterClaim.getState()).isEqualTo(UserTaskState.CREATED);
+    assertThat(afterClaim.getAssignee()).isEqualTo("claimer");
+  }
+
+  @Test
+  void shouldNotReturnCompletionVariablesWhileCompleting() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var listenerType = Strings.newRandomValidBpmnId();
+    deploy(
+        singleUserTaskProcessWithListener(
+            processId, ZeebeTaskListenerEventType.completing, listenerType));
+    final long processInstanceKey = createInstance(processId, Map.of("var", "committed"));
+    final long userTaskKey = awaitUserTaskKey(processInstanceKey, "task");
+
+    // when
+    final var completion =
+        client.newCompleteUserTaskCommand(userTaskKey).variables(Map.of("var", "pending")).send();
+    final long listenerJobKey = awaitListenerJobKey(processInstanceKey, listenerType);
+    final var duringCompletion = client.newLookupUserTaskCommand(userTaskKey).send().join();
+    client.newCompleteCommand(listenerJobKey).send().join();
+    completion.join();
+
+    // then
+    assertThat(duringCompletion.getState()).isEqualTo(UserTaskState.COMPLETING);
+    assertThat(duringCompletion.getVariablesAsMap())
+        .describedAs("the completion's variables are applied only once the listener completes")
+        .containsOnly(entry("var", "committed"));
+  }
+
   /**
    * The task sits in a subprocess that overrides {@code shadowed} with an input mapping, so the
    * task sees {@code shadowed = "inner"} and the process-level {@code outerOnly}.
@@ -236,6 +297,21 @@ final class UserTaskLookupIT {
         .done();
   }
 
+  /** The listener's job is never picked up by a worker, so it holds the task until completed. */
+  private static BpmnModelInstance singleUserTaskProcessWithListener(
+      final String processId,
+      final ZeebeTaskListenerEventType eventType,
+      final String listenerType) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .userTask(
+            "task",
+            t ->
+                t.zeebeUserTask().zeebeTaskListener(l -> l.eventType(eventType).type(listenerType)))
+        .endEvent()
+        .done();
+  }
+
   private static void deploy(final BpmnModelInstance process) {
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
   }
@@ -255,6 +331,16 @@ final class UserTaskLookupIT {
     return RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .withElementId(elementId)
+        .getFirst()
+        .getKey();
+  }
+
+  /** The listener job is created once the engine has moved the task into the held state. */
+  private static long awaitListenerJobKey(
+      final long processInstanceKey, final String listenerType) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(listenerType)
         .getFirst()
         .getKey();
   }
