@@ -162,3 +162,15 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     delete; PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY and CROSS_PARTITION_MESSAGE_START_HOLDER_ORIGIN
     still read storage; JOB_DEADLINES lookups above the low window; much higher block-cache
     misses with write-behind under revisit (unverified hypothesis: cold reads only).
+  - `c7498c74312` test: let engine tests override RocksDB column family options
+    (`ZEEBE_DB_ROCKSDB_CF_OPTIONS="name=value;..."`, test scope only).
+  - Memtable whole-key bloom (`memtable_whole_key_filtering=true`), paired runs, inst/s
+    off/on: 50k: rocksdb 458/505, wb-none 524/499, wb-default 651/669. Prefill+revisit:
+    rocksdb 426/419, wb-none 423/440, wb-default (24 CF) 542/573. Cuts get time 20-40%
+    at equal get count; throughput change within noise. Not proposed for production.
+  - `2eebe385e6e` test: JOB_ACTIVATABLE_BY_PRIORITY:KEEP_LOWEST added to the default set
+    (24 CFs). It caused ~500 of the 606 remaining storage seeks (tombstone scans, puts
+    and deletes land in separate flush batches). 50k wb-default: seeks 606 -> 100,
+    skipped keys 14.6M -> 0, seek time 2691 -> 2, 651 -> 694 inst/s.
+  - Remaining: flush delay defaults to 0 in engine tests (no coalescing, ~700k real
+    deletes); PR 4 candidate: in-memory Bloom filter over all CFs (design open).
