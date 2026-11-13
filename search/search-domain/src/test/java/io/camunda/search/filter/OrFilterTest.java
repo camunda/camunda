@@ -40,6 +40,17 @@ class OrFilterTest {
   }
 
   @Test
+  void shouldConsiderUserTaskSuspensionACriterion() {
+    assertThat(new UserTaskFilter.Builder().isSuspended(false).build().isEmpty()).isFalse();
+  }
+
+  @Test
+  void shouldConsiderUserTaskFilterEmptyIgnoringType() {
+    // no search backend filters on type, so a group carrying only type matches everything
+    assertThat(new UserTaskFilter.Builder().type("type").build().isEmpty()).isTrue();
+  }
+
+  @Test
   void shouldConsiderProcessDefinitionStatisticsFilterEmptyIgnoringProcessDefinitionKey() {
     // processDefinitionKey is the mandatory join key shared by every $or group, not a filter
     // criterion, so a filter carrying only that field must still be considered empty.

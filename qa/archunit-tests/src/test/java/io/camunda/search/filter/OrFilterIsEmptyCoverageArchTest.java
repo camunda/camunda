@@ -54,7 +54,11 @@ class OrFilterIsEmptyCoverageArchTest {
           // processDefinitionKey is the mandatory join key shared by every $or group, not a
           // filter criterion.
           "ProcessDefinitionStatisticsFilter",
-          Set.of("orFilters", "processDefinitionKey"));
+          Set.of("orFilters", "processDefinitionKey"),
+          // type is never applied by the search backends (neither the ES/OS transformer nor the
+          // RDBMS mapper filters on it), so a group carrying only type matches everything.
+          "UserTaskFilter",
+          Set.of("orFilters", "type"));
 
   @ArchTest
   static final ArchRule EVERY_CRITERIA_COMPONENT_IS_CHECKED_BY_IS_EMPTY =

@@ -47,6 +47,8 @@ public record UserTaskFilter(
     List<UserTaskFilter> orFilters)
     implements OrFilter<UserTaskFilter> {
 
+  // type is not applied by any search backend, so it is not a filter criterion and is
+  // intentionally excluded here.
   @Override
   public boolean isEmpty() {
     return !FilterUtil.hasAnyNonEmpty(
@@ -71,7 +73,7 @@ public record UserTaskFilter(
         followUpDateOperations,
         dueDateOperations,
         tags,
-        type);
+        isSuspended);
   }
 
   public static final class Builder implements ObjectBuilder<UserTaskFilter> {
