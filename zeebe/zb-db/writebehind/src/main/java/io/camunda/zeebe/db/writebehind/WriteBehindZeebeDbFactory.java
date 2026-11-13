@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.writebehind;
 
-import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.RawAccessibleDb;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -27,19 +26,11 @@ public final class WriteBehindZeebeDbFactory<
 
   private final ZeebeDbFactory<ColumnFamilyType> delegate;
   private final WriteBehindConfiguration config;
-  private final ConsistencyChecksSettings consistencyChecks;
 
-  /**
-   * @param consistencyChecks the checks that the write-behind column families run; pass the same
-   *     settings as the wrapped factory's
-   */
   public WriteBehindZeebeDbFactory(
-      final ZeebeDbFactory<ColumnFamilyType> delegate,
-      final WriteBehindConfiguration config,
-      final ConsistencyChecksSettings consistencyChecks) {
+      final ZeebeDbFactory<ColumnFamilyType> delegate, final WriteBehindConfiguration config) {
     this.delegate = delegate;
     this.config = config;
-    this.consistencyChecks = consistencyChecks;
   }
 
   @Override
@@ -62,7 +53,7 @@ public final class WriteBehindZeebeDbFactory<
       }
       throw failure;
     }
-    return new WriteBehindZeebeDb<>(rawAccessibleDb, config, consistencyChecks);
+    return new WriteBehindZeebeDb<>(rawAccessibleDb, config);
   }
 
   @Override
