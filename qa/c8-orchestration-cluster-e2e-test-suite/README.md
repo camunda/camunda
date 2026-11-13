@@ -285,7 +285,7 @@ We welcome contributions! To contribute:
 > [!IMPORTANT]
 > **Do not request a review until the suite has run and the results have been verified.**
 > Before assigning reviewers to your PR:
-> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch instead.
+> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch instead. A PR that changes only Markdown files does not trigger the check and needs no run.
 > 2. Wait for the workflow to complete.
 > 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
 > 4. Only then request a review.

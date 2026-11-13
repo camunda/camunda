@@ -277,7 +277,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **If your PR changes non-Markdown files of the suite, wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** A Markdown-only PR does not trigger the check and needs no run. PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
