@@ -10,6 +10,8 @@ package io.camunda.zeebe.protocol.record.value;
 public enum PermissionType {
   ACCESS(true),
 
+  ANSWER,
+
   CANCEL_PROCESS_INSTANCE,
   CLAIM,
   CLAIM_USER_TASK,
