@@ -47,4 +47,4 @@ keys.
 
 ## Source
 
-[`README.md`](../../README.md) of this module (Key index); PR #69254.
+[`README.md`](../../README.md) of this module (Key index). PR #69254.
