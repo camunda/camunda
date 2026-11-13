@@ -59,6 +59,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private double memoryFraction = 0.1;
   private DataSize memoryMinimum = DataSize.ofBytes(RocksDbConfiguration.DEFAULT_MEMORY_MINIMUM);
   private double maxMemoryFraction = -1;
+  private WriteBehindCfg writeBehind = new WriteBehindCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -69,6 +70,11 @@ public final class RocksdbCfg implements ConfigurationEntry {
       // Since (some of) the columnFamilyOptions may have been provided as environment variables,
       // we must do some transformations on the entries of this properties object.
       columnFamilyOptions = initColumnFamilyOptions(columnFamilyOptions);
+    }
+    if (writeBehind.isEnabled()) {
+      // fail the start of the broker on a setting that the write-behind DB rejects, instead of the
+      // start of a partition
+      writeBehind.createWriteBehindConfiguration();
     }
   }
 
@@ -301,6 +307,14 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.accessMetrics = accessMetrics;
   }
 
+  public WriteBehindCfg getWriteBehind() {
+    return writeBehind;
+  }
+
+  public void setWriteBehind(final WriteBehindCfg writeBehind) {
+    this.writeBehind = writeBehind;
+  }
+
   public RocksDbConfiguration createRocksDbConfiguration() {
     return new RocksDbConfiguration()
         .setColumnFamilyOptions(columnFamilyOptions)
@@ -348,6 +362,8 @@ public final class RocksdbCfg implements ConfigurationEntry {
         + disableWal
         + ", enableSstPartitioning="
         + enableSstPartitioning
+        + ", writeBehind="
+        + writeBehind
         + '}';
   }
 
