@@ -1,5 +1,5 @@
 // Run with: node --test .github/scripts/c8-e2e-suite-triage.test.mjs
-import {test} from 'node:test';
+import {after, test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,9 +31,21 @@ const rep = (...tests) => ({
   })),
 });
 
+// Temporary directories made by the tests, removed when the file's tests end,
+// whether they passed or failed.
+const tempDirs = [];
+const tempDir = () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
+  tempDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of tempDirs) fs.rmSync(dir, {recursive: true, force: true});
+});
+
 // A base suite where tests/a.spec.ts exists and tests/new.spec.ts does not.
 function baseSuite() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
+  const root = tempDir();
   fs.mkdirSync(path.join(root, 'tests'));
   fs.writeFileSync(path.join(root, 'tests/a.spec.ts'), '');
   return root;
@@ -360,9 +372,8 @@ test('normalizeSpec resolves a path against the report rootDir, whatever the tes
   assert.equal(normalizeSpec('tests/api/a.spec.ts'), 'tests/api/a.spec.ts');
 });
 
-test('a report with testDir ./tests/ is matched to the base suite, not read as a new test', (t) => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
-  t.after(() => fs.rmSync(root, {recursive: true, force: true}));
+test('a report with testDir ./tests/ is matched to the base suite, not read as a new test', () => {
+  const root = tempDir();
   const base = path.join(root, 'qa/c8-orchestration-cluster-e2e-test-suite');
   fs.mkdirSync(path.join(base, 'tests/api'), {recursive: true});
   fs.writeFileSync(path.join(base, 'tests/api/operate-api-tests.spec.ts'), '');
