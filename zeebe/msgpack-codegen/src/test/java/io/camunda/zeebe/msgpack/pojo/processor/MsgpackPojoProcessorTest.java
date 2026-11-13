@@ -84,6 +84,45 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldRejectNonFinalContainerFields() {
+    // given
+    final var fields =
+        List.of(
+            "List<DirectBuffer> key = new ArrayList<>();",
+            "List<Long> key = new ArrayList<>();",
+            "org.agrona.collections.IntArrayList key = new org.agrona.collections.IntArrayList();",
+            "org.agrona.collections.LongArrayList key = new org.agrona.collections.LongArrayList();",
+            "Inner key = new Inner();");
+
+    for (final var field : fields) {
+      // when
+      final var result = compile(inner(), pojo(valid(field)));
+
+      // then
+      assertThat(result.errors())
+          .as(field)
+          .anyMatch(e -> e.contains("key") && e.contains("must be final"));
+    }
+  }
+
+  @Test
+  void shouldRejectANonFinalUnsafeBuffer() {
+    // given
+    final var source =
+        pojo(
+            valid(
+                "org.agrona.concurrent.UnsafeBuffer key = new org.agrona.concurrent.UnsafeBuffer(0, 0);"));
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors())
+        .anyMatch(
+            e -> e.contains("key") && e.contains("must be final") && e.contains("DirectBuffer"));
+  }
+
+  @Test
   void shouldRejectAnUnsupportedFieldType() {
     // given
     final var source = pojo(valid("java.util.Map<String, String> key;"));
