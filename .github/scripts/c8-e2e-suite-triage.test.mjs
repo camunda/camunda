@@ -484,7 +484,8 @@ test('passing with identical base test code is intermittent, not a regression', 
   assert.equal(same.intermittent.length, 1);
   assert.equal(same.regression.length, 0);
   const body = render({...baseArgs, buckets: same});
-  assert.match(body, /\*\*Intermittent, not caused by this PR \(1\)\*\*/);
+  assert.match(body, /\*\*Intermittent, not caused by this PR's test changes \(1\)\*\*/);
+  assert.match(body, /A product or workflow change in this PR can still be the cause/);
   assert.match(body, /1 failing test/);
   assert.doesNotMatch(body, /Regression from this PR/);
 

@@ -256,8 +256,10 @@ export function classify(prLegs) {
   const buckets = {regression: [], intermittent: [], newTest: [], baseFails: [], unverified: []};
   const seen = new Map();
   // Jobs whose base re-run ran the very same test code as the PR's (the PR
-  // does not change the suite): there, passing with the base code can only
-  // mean the test is intermittent, as both runs share the job's Camunda stack.
+  // does not change the suite): there, passing with the base code shows the
+  // failure is intermittent and not caused by the PR's test changes. It does
+  // not rule out a product or workflow change in the PR: both runs share the
+  // job's Camunda stack, which the H2/RDBMS jobs build from the PR.
   const sameTestCode = new Set(
     prLegs.filter(({rerun}) => rerun?.sameTestCode === true).map(({leg}) => leg),
   );
@@ -380,7 +382,7 @@ export function render({buckets, missingLegs, errorLegs = [], base, runUrl, ment
   }
   if (buckets.intermittent.length) {
     lines.push(
-      `**Intermittent, not caused by this PR (${buckets.intermittent.length})**: these tests failed with this PR's test code in every attempt and passed first time with the \`${base}\` test code, re-run in the same job and environment. This PR does not change the suite's test code, so both runs used the same code against the same Camunda instance: the test is flaky.`,
+      `**Intermittent, not caused by this PR's test changes (${buckets.intermittent.length})**: these tests failed with this PR's test code in every attempt and passed first time with the \`${base}\` test code, re-run in the same job and environment. This PR does not change the suite's test code, so both runs used the same test code against the same Camunda instance: the test or the product behaves intermittently. A product or workflow change in this PR can still be the cause, notably in the H2/RDBMS jobs, which build Camunda from this PR.`,
       ...listed(buckets.intermittent, runUrl),
       '',
     );
