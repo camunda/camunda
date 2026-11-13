@@ -121,7 +121,9 @@ public class JobThrowErrorProcessor
             List.of(JobLeaseFencingCheck.forLifecycleCommand()),
             tenantCheck);
 
-    stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
+    stateAnalyzer =
+        new CatchEventAnalyzer(
+            state.getProcessState(), elementInstanceState, eventScopeInstanceState);
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
