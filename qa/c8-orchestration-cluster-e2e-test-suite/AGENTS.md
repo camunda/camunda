@@ -287,7 +287,7 @@ This file lives on `stable/8.8`. Each supported version has its own branch:
 - Follow the Page Object Model: page interactions belong in `pages/`, not in spec files.
 - Every test must involve at least one core component (Operate, Tasklist, Identity, Zeebe).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`, which runs this version's test matrix for your branch through main's test workflow) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **If your PR changes non-Markdown files of the suite, wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`, which runs this version's test matrix for your branch through main's test workflow) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** A Markdown-only PR does not trigger the check and needs no run. PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - For V2-only tests, **tag the test title with `@v2-only`** so the default UI projects exclude it. Without the tag, the test will run in V1 mode and likely fail.
