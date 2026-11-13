@@ -172,7 +172,17 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var mirror = field.asType();
       final var kind = typeOf(mirror, raw, binary, fieldName);
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
-      final var inPlace = isFinal && isUnsafeBuffer(mirror);
+      if (!isFinal && kind.container) {
+        throw new IllegalArgumentException(
+            "Field %s must be final: it is read into and reset in place".formatted(fieldName));
+      }
+      final var inPlace = isUnsafeBuffer(mirror);
+      if (!isFinal && inPlace) {
+        throw new IllegalArgumentException(
+            ("Field %s must be final: an UnsafeBuffer is wrapped in place, which would modify the "
+                    + "shared default. Declare it as DirectBuffer to replace it on every read")
+                .formatted(fieldName));
+      }
       final var mutable = !kind.container && !inPlace;
       if (isFinal && mutable) {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");

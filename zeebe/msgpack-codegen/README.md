@@ -37,9 +37,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - The class must be top-level, its superclasses must not declare stored fields, and keys must be
   unique; compilation fails otherwise.
 - Fields are read and written directly, so they must not be `private`. Scalars, strings and enums
-  must not be `final`, nested objects and lists must be. A `final UnsafeBuffer` is the exception:
-  it is wrapped in place on read, so reading does not allocate (a `DirectBuffer` field gets a new
-  view per read, and so does every element of a list).
+  must not be `final`, nested objects and lists must be. An `UnsafeBuffer` is the exception: it
+  must be `final`, as it is wrapped in place on read, so reading does not allocate (a
+  `DirectBuffer` field gets a new view per read, and so does every element of a list). A non-final
+  one would be the shared default after a reset, so wrapping it would change the default.
+  Compilation fails if a field breaks these rules.
 - String, binary and raw fields need an initializer. The resetter assigns (or wraps) the default of
   a shared prototype instance, so a default buffer must never be modified in place.
 - Codecs and resetters are found with `Codecs.of(Type.class)` and `Codecs.resetterOf(Type.class)`
