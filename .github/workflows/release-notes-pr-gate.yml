@@ -17,6 +17,11 @@
 #   * Enforcing (enforce=true): a failing check fails the job. The merge button
 #     is blocked where `PR-issue link` is a required status check in the branch
 #     rulesets.
+#   * Merge queue: main and stable/** merge through a queue, and a required
+#     check must also report on the queue's `merge_group` run or every queued
+#     PR waits forever. There is no PR body to judge there and the verdict was
+#     already given on the PR, so on `merge_group` the lint step is skipped and
+#     the job passes.
 #
 # The gate is deliberately NOT part of Unified CI: ci.yml does not listen to
 # `edited`, and a PR body edit is the primary way an author fixes a gate
@@ -36,10 +41,12 @@ on:
     # failure, and it is also how a passing PR could silently lose its issue
     # link. Without it the gate's verdict can go stale against the current body.
     types: [opened, edited, synchronize, reopened]
+  merge_group: {}
 
-# One run per PR; a newer event supersedes an in-flight one.
+# One run per PR (or per merge-queue group); a newer event supersedes an
+# in-flight one.
 concurrency:
-  group: release-notes-pr-gate-${{ github.event.pull_request.number }}
+  group: release-notes-pr-gate-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions: {}
@@ -67,6 +74,7 @@ jobs:
         uses: ./.github/actions/print-metadata
 
       - name: Lint PR-issue link
+        if: github.event_name == 'pull_request'
         uses: ./.github/actions/release-notes/lint
         with:
           token: ${{ github.token }}
