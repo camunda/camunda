@@ -451,34 +451,29 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     for (final var p : m.properties()) {
       final var from = "source." + p.field();
       final var to = "target." + p.field();
-      switch (p.type()) {
-        case LONG, INT, BOOLEAN, ENUM -> s.append("    %s = %s;\n".formatted(to, from));
-        case STRING, BINARY, RAW, DOCUMENT ->
-            s.append(
+      s.append(
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN, ENUM -> "    %s = %s;\n".formatted(to, from);
+            case STRING, BINARY, RAW, DOCUMENT ->
                 p.inPlace()
                     ? "    Decoding.copyInto(%s, %s);\n".formatted(from, to)
-                    : "    %s = Decoding.copy(%s);\n".formatted(to, from));
-        case STRING_LIST ->
-            s.append(
+                    : "    %s = Decoding.copy(%s);\n".formatted(to, from);
+            case STRING_LIST ->
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.add(Decoding.copy(%2$s.get(i)));\n    }\n"
-                    .formatted(to, from));
-        case LONG_LIST ->
-            s.append("    %1$s.clear();\n    %1$s.addAll(%2$s);\n".formatted(to, from));
-        case INT_ARRAY_LIST, LONG_ARRAY_LIST ->
-            s.append(
+                    .formatted(to, from);
+            case LONG_LIST -> "    %1$s.clear();\n    %1$s.addAll(%2$s);\n".formatted(to, from);
+            case INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.%3$s(%2$s.%4$s(i));\n    }\n"
                     .formatted(
                         to,
                         from,
                         p.type() == Type.INT_ARRAY_LIST ? "addInt" : "addLong",
-                        getter(p.type())));
-        case NESTED ->
-            s.append(
+                        getter(p.type()));
+            case NESTED ->
                 p.pojo()
                     ? "    %sOps.copy(%s, %s);\n".formatted(p.javaType(), from, to)
-                    : "    Decoding.copyValue(%s, %s);\n".formatted(from, to));
-        case NESTED_LIST ->
-            s.append(
+                    : "    Decoding.copyValue(%s, %s);\n".formatted(from, to);
+            case NESTED_LIST ->
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      final %3$s item = new %3$s();\n      %4$s;\n      %1$s.add(item);\n    }\n"
                     .formatted(
                         to,
@@ -486,8 +481,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                         p.javaType(),
                         p.pojo()
                             ? "%sOps.copy(%s.get(i), item)".formatted(p.javaType(), from)
-                            : "Decoding.copyValue(%s.get(i), item)".formatted(from)));
-      }
+                            : "Decoding.copyValue(%s.get(i), item)".formatted(from));
+          });
     }
     if (m.unknownField() != null) {
       s.append("    target.%1$s.copyFrom(source.%1$s);\n".formatted(m.unknownField()));
@@ -574,34 +569,31 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         s.append("    sb.append(\"\\\"***\\\"\");\n");
         continue;
       }
-      switch (p.type()) {
-        case LONG, INT, BOOLEAN -> s.append("    sb.append(%s);\n".formatted(x));
-        case STRING -> s.append("    Decoding.appendString(sb, %s);\n".formatted(x));
-        case BINARY, DOCUMENT -> s.append("    Decoding.appendBinary(sb, %s);\n".formatted(x));
-        case RAW -> s.append("    Decoding.appendRaw(sb, %s);\n".formatted(x));
-        case ENUM -> s.append("    Decoding.appendEnum(sb, %s);\n".formatted(x));
-        case STRING_LIST ->
-            s.append(
+      s.append(
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN -> "    sb.append(%s);\n".formatted(x);
+            case STRING -> "    Decoding.appendString(sb, %s);\n".formatted(x);
+            case BINARY, DOCUMENT -> "    Decoding.appendBinary(sb, %s);\n".formatted(x);
+            case RAW -> "    Decoding.appendRaw(sb, %s);\n".formatted(x);
+            case ENUM -> "    Decoding.appendEnum(sb, %s);\n".formatted(x);
+            case STRING_LIST ->
                 "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      Decoding.appendString(sb, %1$s.get(i));\n    }\n    sb.append(']');\n"
-                    .formatted(x));
-        case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
-            s.append(
+                    .formatted(x);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append(%1$s.%2$s(i));\n    }\n    sb.append(']');\n"
-                    .formatted(x, getter(p.type())));
-        case NESTED ->
-            s.append(
+                    .formatted(x, getter(p.type()));
+            case NESTED ->
                 p.pojo()
                     ? "    %sOps.appendTo(sb, %s);\n".formatted(p.javaType(), x)
-                    : "    %s.writeJSON(sb);\n".formatted(x));
-        case NESTED_LIST ->
-            s.append(
+                    : "    %s.writeJSON(sb);\n".formatted(x);
+            case NESTED_LIST ->
                 "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      %2$s;\n    }\n    sb.append(']');\n"
                     .formatted(
                         x,
                         p.pojo()
                             ? "%sOps.appendTo(sb, %s.get(i))".formatted(p.javaType(), x)
-                            : "%s.get(i).writeJSON(sb)".formatted(x)));
-      }
+                            : "%s.get(i).writeJSON(sb)".formatted(x));
+          });
     }
     if (m.unknownField() != null) {
       s.append("    v.%s.appendJson(sb);\n".formatted(m.unknownField()));
