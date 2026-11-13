@@ -20,8 +20,10 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -49,6 +51,26 @@ public final class DbProbeState implements MutableProbeState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       deadlinesColumnFamily;
 
+  // [probeKey | [storeId | secretReference]] and [[storeId | secretReference] | probeKey]: what a
+  // parked probe waits for, and which probes wait for a reference
+  private final DbLong parkedProbeKey = new DbLong();
+  private final DbForeignKey<DbLong> fkParkedProbe =
+      new DbForeignKey<>(parkedProbeKey, ZbColumnFamilies.PROBES);
+  private final DbString parkedStoreId = new DbString();
+  private final DbString parkedSecretReference = new DbString();
+  private final DbCompositeKey<DbString, DbString> parkedReference =
+      new DbCompositeKey<>(parkedStoreId, parkedSecretReference);
+  private final DbCompositeKey<DbForeignKey<DbLong>, DbCompositeKey<DbString, DbString>>
+      referenceByProbeKey = new DbCompositeKey<>(fkParkedProbe, parkedReference);
+  private final ColumnFamily<
+          DbCompositeKey<DbForeignKey<DbLong>, DbCompositeKey<DbString, DbString>>, DbNil>
+      secretReferencesByProbeColumnFamily;
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>
+      probeByReferenceKey = new DbCompositeKey<>(parkedReference, fkParkedProbe);
+  private final ColumnFamily<
+          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbForeignKey<DbLong>>, DbNil>
+      probesBySecretReferenceColumnFamily;
+
   public DbProbeState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     probesColumnFamily =
@@ -75,6 +97,19 @@ public final class DbProbeState implements MutableProbeState {
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROBE_DEADLINES, transactionContext, deadlineKey, DbNil.INSTANCE);
+
+    secretReferencesByProbeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.SECRET_REFERENCES_BY_PROBE,
+            transactionContext,
+            referenceByProbeKey,
+            DbNil.INSTANCE);
+    probesBySecretReferenceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROBES_BY_SECRET_REFERENCE,
+            transactionContext,
+            probeByReferenceKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -115,6 +150,27 @@ public final class DbProbeState implements MutableProbeState {
     probesColumnFamily.update(probeKey, probe);
     wrapActivatableKey(key, probe.getRecord());
     activatableColumnFamily.insert(activatableKey, DbNil.INSTANCE);
+    unpark(key);
+  }
+
+  @Override
+  public void park(final long key, final String storeId, final String secretReference) {
+    probeKey.wrapLong(key);
+    final var probe = probesColumnFamily.get(probeKey);
+    if (probe == null) {
+      return;
+    }
+    // a probe parked on several references leaves the activatable index with the first one
+    wrapActivatableKey(key, probe.getRecord());
+    activatableColumnFamily.deleteIfExists(activatableKey);
+    probe.setState(State.WAITING_FOR_SECRET_RESOLUTION);
+    probesColumnFamily.update(probeKey, probe);
+
+    parkedProbeKey.wrapLong(key);
+    parkedStoreId.wrapString(storeId);
+    parkedSecretReference.wrapString(secretReference);
+    secretReferencesByProbeColumnFamily.upsert(referenceByProbeKey, DbNil.INSTANCE);
+    probesBySecretReferenceColumnFamily.upsert(probeByReferenceKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -129,6 +185,8 @@ public final class DbProbeState implements MutableProbeState {
     activatableColumnFamily.deleteIfExists(activatableKey);
     wrapDeadlineKey(key, record);
     deadlinesColumnFamily.deleteExisting(deadlineKey);
+    // before the probe itself: the parking entries hold a foreign key to it
+    unpark(key);
     probesColumnFamily.deleteExisting(probeKey);
   }
 
@@ -184,6 +242,45 @@ public final class DbProbeState implements MutableProbeState {
           final var probe = getProbe(activatableKey);
           return probe == null || visitor.test(activatableKey, probe);
         });
+  }
+
+  @Override
+  public void forEachProbeParkedOn(
+      final String storeId, final String secretReference, final LongPredicate visitor) {
+    parkedStoreId.wrapString(storeId);
+    parkedSecretReference.wrapString(secretReference);
+    probesBySecretReferenceColumnFamily.whileEqualPrefix(
+        parkedReference,
+        (key, nil) -> {
+          return visitor.test(key.second().inner().getValue());
+        });
+  }
+
+  @Override
+  public void forEachSecretReferenceParkedOn(
+      final long key, final BiPredicate<String, String> visitor) {
+    parkedProbeKey.wrapLong(key);
+    secretReferencesByProbeColumnFamily.whileEqualPrefix(
+        fkParkedProbe,
+        (entry, nil) -> {
+          final var reference = entry.second();
+          return visitor.test(reference.first().toString(), reference.second().toString());
+        });
+  }
+
+  /** Removes the parking entries of the probe, if it has any. */
+  private void unpark(final long key) {
+    // collected first: deleting while iterating would rewrap the key being iterated
+    final List<String[]> references = new ArrayList<>();
+    forEachSecretReferenceParkedOn(
+        key, (storeId, secretReference) -> references.add(new String[] {storeId, secretReference}));
+    for (final String[] reference : references) {
+      parkedProbeKey.wrapLong(key);
+      parkedStoreId.wrapString(reference[0]);
+      parkedSecretReference.wrapString(reference[1]);
+      secretReferencesByProbeColumnFamily.deleteExisting(referenceByProbeKey);
+      probesBySecretReferenceColumnFamily.deleteExisting(probeByReferenceKey);
+    }
   }
 
   private void wrapActivatableKey(final long key, final ProbeRecord probe) {

@@ -78,6 +78,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.probe.ProbeProcessors;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
@@ -574,6 +575,9 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck);
 
+    // shared with the secret reference processors, which announce and cancel parked probes
+    final var probeBehavior =
+        new ProbeBehavior(probeNotifier, processingState.getAsyncRequestState(), writers);
     ProbeProcessors.addProbeProcessors(
         typedRecordProcessors,
         processingState,
@@ -585,7 +589,9 @@ public final class EngineProcessors {
         cslCheck,
         tenantCheck,
         asyncRequestBehavior,
-        probeNotifier,
+        probeBehavior,
+        secretStoreRegistry,
+        secretResolutionScheduler,
         clock);
 
     JobMetricsProcessors.addJobMetricsProcessors(
@@ -613,6 +619,7 @@ public final class EngineProcessors {
         incidentMetrics,
         secretResolutionScheduler,
         bpmnBehaviors.jobActivationBehavior(),
+        probeBehavior,
         secretStoreRegistry.isConfigured(SecretStoreRegistry.DEFAULT_STORE_ID));
 
     return typedRecordProcessors;

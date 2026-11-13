@@ -8,11 +8,13 @@
 package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -33,11 +35,20 @@ public final class SecretReferenceResolutionFailProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final SecretReferenceState secretReferenceState;
+  private final ProbeState probeState;
+  private final ProbeBehavior probeBehavior;
+  private final boolean defaultSecretStoreConfigured;
 
   public SecretReferenceResolutionFailProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final SecretReferenceState secretReferenceState) {
+      final SecretReferenceState secretReferenceState,
+      final ProbeState probeState,
+      final ProbeBehavior probeBehavior,
+      final boolean defaultSecretStoreConfigured) {
+    this.probeState = probeState;
+    this.probeBehavior = probeBehavior;
+    this.defaultSecretStoreConfigured = defaultSecretStoreConfigured;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -78,6 +89,31 @@ public final class SecretReferenceResolutionFailProcessor
       }
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_CREATE_INCIDENTS, nextRecord);
+    }
+
+    cancelParkedProbes(storeId, secretReference);
+  }
+
+  /**
+   * A probe has no process to raise an incident in: it is canceled right away, with the job
+   * incident's message without the incident part, so the client learns which secret to fix (D13).
+   * Not batched as jobs are: only the probes in flight wait for a reference, a few at most.
+   */
+  private void cancelParkedProbes(final String storeId, final String secretReference) {
+    // collected first: the CANCELED applier removes the probes from the visited index
+    final List<Long> parkedProbes = new ArrayList<>();
+    probeState.forEachProbeParkedOn(storeId, secretReference, parkedProbes::add);
+    if (parkedProbes.isEmpty()) {
+      return;
+    }
+    final var message =
+        SecretResolutionFailureMessage.of(
+            storeId, secretReference, defaultSecretStoreConfigured, "retry");
+    for (final long probeKey : parkedProbes) {
+      final var probe = probeState.getProbe(probeKey);
+      if (probe != null) {
+        probeBehavior.cancelForSecretResolutionError(probeKey, probe, message);
+      }
     }
   }
 
