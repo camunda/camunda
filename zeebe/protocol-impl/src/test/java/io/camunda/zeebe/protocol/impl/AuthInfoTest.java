@@ -28,6 +28,8 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -286,17 +288,22 @@ final class AuthInfoTest {
     }
 
     @Test
-    void shouldNotReflectChangesToReturnedTokenClaimValues() {
+    void shouldExposeBinaryTokenClaimValuesAsReadOnlyBuffers() {
       // given
       final var authInfo =
           decode(
               encode(AuthInfo.ofClaims(Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1})))));
 
       // when
-      ((byte[]) authInfo.getTokenClaims().get("key"))[0] = 2;
+      final var value = authInfo.toClaimsMap();
+      final var buffer = (ByteBuffer) authInfo.getTokenClaims().get("key");
+      final var shared = (ByteBuffer) ((Map<?, ?>) value.get(USER_TOKEN_CLAIMS)).get("key");
 
       // then
-      assertThat(authInfo.getTokenClaims()).containsEntry("key", new byte[] {1});
+      assertThat(buffer.isReadOnly()).isTrue();
+      assertThat(shared.isReadOnly()).isTrue();
+      assertThatThrownBy(() -> buffer.put(0, (byte) 2)).isInstanceOf(ReadOnlyBufferException.class);
+      assertThat(shared.duplicate()).isEqualTo(ByteBuffer.wrap(new byte[] {1}));
     }
 
     @Test

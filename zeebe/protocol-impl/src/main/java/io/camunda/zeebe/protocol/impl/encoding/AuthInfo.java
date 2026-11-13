@@ -21,6 +21,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.ByteBuffer;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -185,8 +186,9 @@ public final class AuthInfo implements BufferWriter {
   /**
    * Returns the claims of the principal's token, or null if not provided. They're decoded from
    * their msgpack encoding on every call, so values have the decoded types, e.g. {@code Integer}
-   * for a small {@code Long} and {@code List} for an array. Each call returns a new copy; prefer
-   * {@link #toClaimsMap()} if the claims are only read.
+   * for a small {@code Long}, {@code List} for an array and a read-only {@code ByteBuffer} for
+   * binary data. Each call returns a new copy; prefer {@link #toClaimsMap()} if the claims are only
+   * read.
    */
   @SuppressWarnings("unchecked")
   public @Nullable Map<String, Object> getTokenClaims() {
@@ -206,9 +208,9 @@ public final class AuthInfo implements BufferWriter {
    * io.camunda.zeebe.auth.Authorization#USER_TOKEN_CLAIMS} value is actually read, so consumers of
    * the other claims, e.g. exporters, never pay for them. They are then decoded once, and shared.
    *
-   * <p>Sharing is safe in practice: the decoded claims are deeply unmodifiable, except for binary
-   * values, which Jackson decodes to a fresh {@code byte[]}. Token claims come from JWTs, i.e.
-   * JSON, which has no binary values, so no caller can change what others see.
+   * <p>Sharing is safe: the decoded claims are deeply unmodifiable, with binary values exposed as
+   * read-only {@link ByteBuffer}s. Callers must not rely on the buffers' position or limit; use
+   * {@link ByteBuffer#duplicate()} to read them.
    */
   @JsonGetter("claims")
   public Map<String, Object> toClaimsMap() {
@@ -340,7 +342,10 @@ public final class AuthInfo implements BufferWriter {
     return type.cast(value);
   }
 
-  /** Makes the freshly decoded value deeply unmodifiable. */
+  /**
+   * Makes the freshly decoded value deeply unmodifiable. Binary values are exposed as read-only
+   * {@link ByteBuffer}s, as a {@code byte[]} cannot be protected from writes.
+   */
   @SuppressWarnings("unchecked")
   private static @Nullable Object freeze(final @Nullable Object value) {
     if (value instanceof final Map<?, ?> map) {
@@ -349,6 +354,8 @@ public final class AuthInfo implements BufferWriter {
     } else if (value instanceof final List<?> list) {
       ((List<Object>) list).replaceAll(AuthInfo::freeze);
       return Collections.unmodifiableList(list);
+    } else if (value instanceof final byte[] bytes) {
+      return ByteBuffer.wrap(bytes).asReadOnlyBuffer();
     }
     return value;
   }
