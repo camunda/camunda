@@ -40,10 +40,10 @@ final class VoteErrorStatusTest {
               VoteErrorStatus.NO_SUCH_MEMBER),
           Arguments.of(
               Named.of("connection refused", new ConnectException("connection refused")),
-              VoteErrorStatus.NO_SUCH_MEMBER),
+              VoteErrorStatus.MEMBER_UNREACHABLE),
           Arguments.of(
               Named.of("partition handler not registered", new NoRemoteHandler("vote-subject")),
-              VoteErrorStatus.NO_SUCH_MEMBER),
+              VoteErrorStatus.MEMBER_NOT_READY),
           Arguments.of(
               Named.of(
                   "no response within the request timeout",
@@ -73,6 +73,19 @@ final class VoteErrorStatusTest {
 
       // then
       assertThat(status).isEqualTo(expected);
+    }
+
+    @Test
+    void shouldClassifyTransportFailureWrappedMoreThanOnce() {
+      // given
+      final var error =
+          new CompletionException(new CompletionException(new ConnectException("refused")));
+
+      // when
+      final var status = VoteErrorStatus.of(error);
+
+      // then
+      assertThat(status).isEqualTo(VoteErrorStatus.MEMBER_UNREACHABLE);
     }
   }
 
