@@ -54,6 +54,19 @@
       <artifactId>liquibase-core</artifactId>
     </dependency>
 
+    <!-- holds the changelog of the state tables, next to the history's -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <scope>runtime</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
     <dependency>
       <groupId>org.mybatis</groupId>
       <artifactId>mybatis</artifactId>
@@ -100,4 +113,19 @@
     </dependency>
 
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- only its resources are used, which the analyzer can't see -->
+          <ignoredUnusedDeclaredDependencies>
+            <dep>io.camunda:camunda-db-rdbms-schema</dep>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -118,6 +118,7 @@
 /zeebe/stream-platform @camunda/zeebe-distributed-platform
 /zeebe/transport @camunda/zeebe-distributed-platform
 /zeebe/dynamic-node-id-provider @camunda/zeebe-distributed-platform
+/db/rdbms-schema/src/main/resources/db/changelog/zeebe-state/ @camunda/zeebe-distributed-platform
 /.github/workflows/mutation-testing-pr-review.md @camunda/zeebe-distributed-platform
 /.github/workflows/mutation-testing-pr-review.lock.yml @camunda/zeebe-distributed-platform
 

@@ -9,6 +9,9 @@ dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.liquibase.liquibase.core)
+  runtimeOnly(project(":camunda-db-rdbms-schema")) {
+    exclude(group = "com.github.vertical-blank", module = "sql-formatter")
+  }
   implementation(libs.org.mybatis.mybatis)
   implementation(libs.org.slf4j.slf4j.api)
   testImplementation(libs.com.h2database.h2)

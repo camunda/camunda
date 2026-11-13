@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
  */
 final class StateChangelogTest {
 
-  private static final Path TABLES =
-      Path.of("src/main/resources/db/changelog/zeebe-state/changesets/8.11.0.xml");
-  private static final Path VIEWS =
-      Path.of("src/main/resources/db/changelog/zeebe-state/views.xml");
+  /** The changelog lives next to the history's, in db/rdbms-schema; tests run in this module. */
+  private static final Path CHANGELOG =
+      Path.of("../../../db/rdbms-schema/src/main/resources/db/changelog/zeebe-state");
+
+  private static final Path TABLES = CHANGELOG.resolve("changesets/8.11.0.xml");
+  private static final Path VIEWS = CHANGELOG.resolve("views.xml");
   private static final String REGENERATE = "zeebe.state.regenerate-changelog";
 
   private static final String PROLOGUE =
