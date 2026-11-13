@@ -179,10 +179,11 @@
       "Child Process Instance Migration",
       "Migrate Child Process Instances"
     ],
-    "last_action": "delete_branch",
-    "last_reason": "iter2 100% vs baseline 95% (+5pp); needs at least +10pp",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43378258233",
-    "updated_at": "2026-11-13T07:12:10Z",
-    "cooldown_until": "2026-11-20T07:12:10Z"
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 95% (+5pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43414305641",
+    "updated_at": "2026-11-13T11:44:46Z",
+    "cooldown_until": "2026-11-27T11:44:46Z",
+    "pr": "https://github.com/camunda/camunda/pull/69337"
   }
 }
