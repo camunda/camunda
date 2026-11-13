@@ -126,7 +126,7 @@ load-tester:
   optimize:
     report-evaluation-enabled: ${LOAD_TESTER_OPTIMIZE_ENABLED:false}
     base-url: ${OPTIMIZE_BASE_URL:http://optimize}
-    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://keycloak}
+    keycloak-url: ${OPTIMIZE_KEYCLOAK_URL:http://keycloak:18080}
     realm: ${OPTIMIZE_REALM:camunda-platform}
     client-id: ${OPTIMIZE_CLIENT_ID:optimize-loadtest}
     client-secret: ${OPTIMIZE_LOADTEST_CLIENT_SECRET:demo-client-secret}

@@ -63,6 +63,7 @@ type scenario struct {
 	PlatformOnly        bool
 	PathFilter          []string
 	ExtraArgs           []string // extra newLoadTest.sh flags, e.g. "--use-pgbouncer"
+	MakeVars            []string // extra make variable assignments, e.g. "enable_optimize_report_metrics=true"
 	OnlyVersions        []string // when set, the scenario runs on these versions only
 }
 
@@ -111,6 +112,8 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
+	{Name: "optimize-report-metrics", Storage: "elasticsearch", Optimize: true, SetupTarget: "template-load-test-setup",
+		MakeVars: []string{"enable_optimize_report_metrics=true"}, PathFilter: []string{"charts/load-tester/templates"}},
 	// The only scenario that snapshots the k6 manifests (templates/k6). It runs on main only to
 	// limit the size of the golden files; remove OnlyVersions to cover other versions.
 	{Name: "k6", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup", PathFilter: []string{"templates/k6"}, OnlyVersions: []string{"main"}},
@@ -217,7 +220,7 @@ func TestGoldenFiles(t *testing.T) {
 			// via their dedicated Makefile target. They render only that
 			// chart to avoid duplicating the full platform/load-tester matrix.
 			if s.SetupTarget != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "", s.PathFilter)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "", s.PathFilter, s.MakeVars...)
 				return
 			}
 

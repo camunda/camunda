@@ -70,6 +70,9 @@ additional_platform_configuration ?=
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
+# Run the load-tester Optimize report evaluation meter. Only applies when enable_optimize=true.
+# Pass directly: make install enable_optimize_report_metrics=true
+enable_optimize_report_metrics ?= false
 
 helm_chart_platform = charts/camunda-platform
 
@@ -207,6 +210,10 @@ platform_values_stable = $(platform_values) -f values-stable.yaml
 
 ifeq ($(chaos),true)
 	_load_test_setup_flags += --set chaosKiller.enabled=true
+endif
+
+ifeq ($(enable_optimize)$(enable_optimize_report_metrics),truetrue)
+	_load_test_setup_flags += --set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true
 endif
 
 # Shared helm flags for the load-test-setup chart, used by both install and template targets.
