@@ -579,6 +579,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
     unifiedConfig.getCluster().getRaft().setFlushDelay(Duration.ZERO);
+    // the first leader is only elected after a randomized timeout in [electionTimeout, 2 *
+    // electionTimeout], so the 2.5s default adds 2.5-5s to every cluster start; the heartbeat
+    // interval (250ms by default) still leaves several heartbeats per timeout
+    unifiedConfig.getCluster().getRaft().setElectionTimeout(Duration.ofSeconds(1));
 
     // Set data defaults - smaller segments for tests
     unifiedConfig.getData().setSnapshotPeriod(Duration.ofMinutes(5));
