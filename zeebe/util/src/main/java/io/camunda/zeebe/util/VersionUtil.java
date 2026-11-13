@@ -24,9 +24,9 @@ public final class VersionUtil {
   private static final String LAST_VERSION_PROPERTY_NAME = "zeebe.last.version";
   private static final String VERSION_DEV = "development";
 
-  private static @Nullable String version;
-  private static @Nullable String versionLowerCase;
-  private static @Nullable String lastVersion;
+  private static volatile @Nullable String version;
+  private static volatile @Nullable String versionLowerCase;
+  private static volatile @Nullable String lastVersion;
 
   private VersionUtil() {}
 
@@ -43,15 +43,17 @@ public final class VersionUtil {
             .or(
                 () ->
                     Optional.ofNullable(VersionUtil.class.getPackage().getImplementationVersion()));
+    final String resolved;
     if (foundVersion.isPresent()) {
-      version = foundVersion.get();
+      resolved = foundVersion.get();
     } else {
       LOG.warn(
           "Version is not found in env, version file or package, using '%s' instead"
               .formatted(VERSION_DEV));
-      version = VERSION_DEV;
+      resolved = VERSION_DEV;
     }
-    return version;
+    version = resolved;
+    return resolved;
   }
 
   /**
@@ -62,10 +64,12 @@ public final class VersionUtil {
   }
 
   public static String getVersionLowerCase() {
-    if (versionLowerCase == null) {
-      versionLowerCase = getVersion().toLowerCase();
+    @Nullable String result = versionLowerCase;
+    if (result == null) {
+      result = getVersion().toLowerCase();
+      versionLowerCase = result;
     }
-    return versionLowerCase;
+    return result;
   }
 
   /**
