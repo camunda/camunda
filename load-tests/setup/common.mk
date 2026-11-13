@@ -77,6 +77,7 @@ additional_platform_configuration ?=
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
+enable_optimize_report_metrics ?= false
 
 helm_chart_platform = charts/camunda-platform
 
@@ -197,6 +198,10 @@ else ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
 else
 	platform_values += -f camunda-platform-values-optimize.yaml
+
+    ifeq ($(enable_optimize_report_metrics),true)
+        _load_test_setup_flags += --set global.extraConfig.load-tester.optimize.report-evaluation-enabled=true
+    endif
 
     ifeq ($(secondary_storage),opensearch)
         # When deploying the OpenSearch secondary storage, Optimize needs the
