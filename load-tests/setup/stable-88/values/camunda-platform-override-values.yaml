@@ -3,3 +3,7 @@
 # when scenario=max, to disable checks that would add overhead during maximum-load tests.
 zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
 zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+
+# CUSTOMIZATION: archive after 1 minute so the 45 minute stress test exercises the archiver,
+# the default of 1 hour would never archive within the test.
+zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"

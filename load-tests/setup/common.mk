@@ -38,6 +38,12 @@
 #   Set to `false` for versions without the `/v2/process-definitions/search` endpoint (8.7),
 #   which disables the k6 `data-read` test.
 #
+# - scenario_max_archive_wait_flag
+#   Helm flag the `max` scenario uses to archive after 1 minute instead of the Camunda default
+#   of 1 hour. A stress test lasts 45 minutes, so with the default it would never archive.
+#   Set it empty for versions without the Camunda Exporter helm value (8.8 sets it in its
+#   override file, 8.7 has no Camunda Exporter).
+#
 # - cluster_rebalance_supported
 #   Set to `false` for versions without the `/cluster/v2/rebalance` endpoint (before 8.10),
 #   so the `leader-balancer` CronJob falls back to the deprecated actuator endpoint.
@@ -50,6 +56,7 @@ physical_tenants_supported ?= true
 prefer_rest ?= true
 cluster_rebalance_supported ?= true
 k6_data_read_supported ?= true
+scenario_max_archive_wait_flag ?= --set orchestration.history.waitPeriodBeforeArchiving=1m
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -98,7 +105,9 @@ _scenario_load_test_flags = --set load-tester.starter.rate=650
 else
 _scenario_load_test_flags = --set load-tester.starter.rate=300
 endif
-_scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
+# CUSTOMIZATION: archive after 1 minute so the 45 minute stress test exercises the archiver, the
+# default of 1 hour would never archive within the test.
+_scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml' $(scenario_max_archive_wait_flag)
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
@@ -124,6 +133,13 @@ _load_test_setup_flags =
 # override when a version opts out of the REST default (e.g. 8.7, which keeps gRPC).
 ifneq ($(prefer_rest),true)
 _load_test_setup_flags += --set global.preferRest.enabled=$(prefer_rest)
+endif
+
+# The leader-balancer CronJob is off by default, so the long running tests run without periodic
+# leader rebalancing. The max scenario (regression and performance tests) turns it on, because
+# unbalanced leaders skew throughput numbers.
+ifeq ($(scenario),max)
+_load_test_setup_flags += --set leaderBalancer.enabled=true
 endif
 
 # charts/load-test-setup/values.yaml defaults leaderBalancer.endpoint to the new "v2" endpoint.

@@ -92,6 +92,9 @@ data:
   application-override.yml: |
     # no overrides
   application.yml: |
+    # CUSTOMIZATION: the experimental consistency checks are off by default because they slow processing down.
+    # On for the long running endurance tests to find consistency issues early, off for the max stress scenario
+    # (see camunda-platform-override-values.yaml).
     zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
     zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
     zeebe.broker.executionMetricsExporterEnabled: "true"
