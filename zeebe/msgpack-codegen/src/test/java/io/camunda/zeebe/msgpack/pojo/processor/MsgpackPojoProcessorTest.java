@@ -401,19 +401,20 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
-  void shouldFailToInitializeABufferFieldWithoutDefault() throws Exception {
+  void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
     final var result = compile(pojo(valid("DirectBuffer name;")));
     assertThat(result.errors()).isEmpty();
-    final var sampleClass = result.load("sample.Sample");
+    final var sample = (Recyclable) result.load("sample.Sample").getConstructor().newInstance();
 
     // when
-    final ThrowingCallable instantiate = () -> sampleClass.getConstructor().newInstance();
+    final ThrowingCallable reset = sample::reset;
 
     // then
-    assertThatThrownBy(instantiate)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
-        .hasStackTraceContaining("has no default");
+    assertThatThrownBy(reset)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("name")
+        .hasMessageContaining("has no default");
   }
 
   @Test
