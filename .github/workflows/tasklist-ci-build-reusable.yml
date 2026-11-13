@@ -56,7 +56,8 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    # GCP runner: image pushes to Harbor from GitHub-hosted runners can stall until the job times out (INC-9159).
+    runs-on: gcp-core-4-default
     timeout-minutes: 30
     needs: [ utils-get-snapshot-docker-tag ]
     steps:
