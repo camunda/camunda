@@ -60,10 +60,9 @@ final class PolicyUpdateVersionCommittedApplierTest {
     applier.applyState(1L, chunk("update-1", 1, 2));
 
     // then
-    assertThat(policyUpdateState.getUpdate("update-1")).isEmpty();
+    assertThat(policyUpdateState.getOpenUpdate()).isEmpty();
     assertThat(policyUpdateState.getChunk("update-1", 0)).isEmpty();
     assertThat(policyUpdateState.getChunk("update-1", 1)).isEmpty();
-    assertThat(policyUpdateState.getUpdate("update-0")).isEmpty();
     assertThat(policyUpdateState.getChunk("update-0", 0)).isEmpty();
   }
 
