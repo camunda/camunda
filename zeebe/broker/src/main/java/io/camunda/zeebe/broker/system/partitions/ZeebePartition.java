@@ -62,6 +62,7 @@ public final class ZeebePartition extends Actor
   private PartitionContext context;
   private PartitionStartupContext startupContext;
   private final PartitionAdminAccess adminAccess;
+  private final PolicyStateReader policyStateReader;
   private final PartitionTransition transition;
   private PartitionConfigurationManager partitionConfigurationManager;
 
@@ -94,6 +95,7 @@ public final class ZeebePartition extends Actor
     adminAccess =
         new ZeebePartitionAdminAccess(
             actor, getPartitionId(), transitionContext.getPartitionAdminControl());
+    policyStateReader = new PolicyStateReader(actor, transitionContext.getPartitionAdminControl());
 
     this.transition = transition;
     startupContext = transitionContext;
@@ -135,6 +137,11 @@ public final class ZeebePartition extends Actor
 
   public PartitionAdminAccess getAdminAccess() {
     return adminAccess;
+  }
+
+  /** Reads the policy state of this partition for the Hub receiver. */
+  public PolicyStateReader getPolicyStateReader() {
+    return policyStateReader;
   }
 
   @Override
