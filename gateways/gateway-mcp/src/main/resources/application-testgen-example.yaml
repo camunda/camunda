@@ -1,0 +1,56 @@
+# Example Configuration for Test Case Generator Agent
+# Copy this file to application.yaml or application-testgen.yaml
+
+camunda:
+  mcp:
+    # GitHub Configuration (Optional)
+    # Provides access to camunda/product-hub repository
+    # Without a token: 60 requests/hour limit
+    # With token: 5000 requests/hour limit
+    github:
+      # Get token from: https://github.com/settings/tokens
+      # Required scope: repo (or public_repo for public repos only)
+      token: ${GITHUB_TOKEN:}
+    
+    # TestRail Configuration (Required)
+    # Provides access to TestRail for test case creation
+    testrail:
+      # Your TestRail instance URL
+      # Example: https://yourcompany.testrail.com
+      # Do NOT include trailing slash
+      url: ${TESTRAIL_URL}
+      
+      # Your TestRail username (usually your email)
+      # Example: john.doe@company.com
+      username: ${TESTRAIL_USERNAME}
+      
+      # Your TestRail API key
+      # Get from: TestRail > My Settings > API Keys
+      api-key: ${TESTRAIL_API_KEY}
+
+# Spring Boot MCP Server Configuration
+spring:
+  ai:
+    mcp:
+      server:
+        enabled: true
+        name: Camunda 8 Orchestration API MCP Server
+        type: sync
+        protocol: stateless
+        annotation-scanner:
+          enabled: true
+        streamable-http:
+          mcp-endpoint: /mcp
+        capabilities:
+          tool: true
+
+# Example: Using environment variables
+# Set these in your shell or .env file:
+#
+# export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+# export TESTRAIL_URL="https://yourcompany.testrail.com"
+# export TESTRAIL_USERNAME="your.email@company.com"
+# export TESTRAIL_API_KEY="your-api-key"
+#
+# Then run:
+# ./mvnw spring-boot:run -pl dist
