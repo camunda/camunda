@@ -64,7 +64,7 @@ Open the class and every property it declares.
 | Old property                                   | New field                                                                 |
 | ---------------------------------------------- | ------------------------------------------------------------------------- |
 | `LongProperty(key, default)`                   | `long field = default;`                                                   |
-| `LongProperty(key)` without default            | `final RequiredLong field = new RequiredLong();` (unset until `set(v)`)   |
+| `LongProperty(key)` without default            | `final RequiredLong field = new RequiredLong();` (unset until `set(v)`; `@Nullable Long field;` is under evaluation) |
 | `IntegerProperty(key)` without default         | `final RequiredInt field = new RequiredInt();`                            |
 | `BooleanProperty(key)` without default         | `@Nullable Boolean field;` (null = unset)                                 |
 | `IntegerProperty(key, default)`                | `int field = default;`                                                    |
@@ -96,8 +96,9 @@ allocated while reading rather than recycled like `ArrayProperty` items.
 
 Type-use annotations such as `@Nullable` on list elements and nested types are fine, the generator
 compares erasures. Nested objects: a nested `@MsgpackPojo` or `BaseValue` is a `final` field.
-Do not add `@NullMarked` to the package in the migration commit; the repository asks for
-nullness annotations in a separate `refactor:` commit.
+A migrated class is `@NullMarked`. Its fields without a default are `@Nullable` and its getters are
+non-null: they return `Decoding.required(field, "key")`, so NullAway forces the check and the
+legacy exception is kept (never return the `@Nullable` field directly).
 
 STOP and report which one, if the class uses:
 
@@ -143,10 +144,12 @@ else to a `@Nullable` field without initializer (`org.jspecify.annotations.Nulla
 getting the length while one is unset throws the same `MsgpackPropertyException`, reading a map
 without the key throws "Property 'k' has no valid value", `reset()` makes it unset again, and
 `toString` prints `"NO VALID WRITEABLE VALUE"`. The bytes are identical. Translate the accessors:
-`prop.getValue()` -> `field.get()` (holder, throws if unset) or `field` (check for `null`),
+`prop.getValue()` -> `field.get()` (holder, throws if unset) or `Decoding.required(field, "k")`
+(`@Nullable` field),
 `prop.setValue(v)` -> `field.set(v)` or `field = v`, `prop.hasValue()` -> `field.isSet()` or
 `field != null`. A legacy getter that threw while unset keeps doing so for a holder; for a
-`@Nullable` field it now returns `null`: if callers rely on the throw, STOP. Differences to
+`@Nullable` field it keeps doing so with `return Decoding.required(field, "k");`, whose exception
+is that of the legacy `getValue()`. Differences to
 mention in the commit body: `get()` of an unset holder throws `IllegalStateException` (the legacy
 one a `MsgpackPropertyException` with the key), and `equals` of two objects with unset properties
 does not throw (the legacy one does). In the serde tests, cover the unset write and read like the

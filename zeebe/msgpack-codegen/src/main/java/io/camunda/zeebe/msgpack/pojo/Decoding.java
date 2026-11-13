@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -26,6 +28,22 @@ public final class Decoding {
   public static final DirectBuffer EMPTY = new UnsafeBuffer(new byte[0]);
 
   private Decoding() {}
+
+  /**
+   * Returns the value of a property without a default, for the non-null getter of a
+   * {@code @Nullable} field: {@code return Decoding.required(field, "key");}. Fails like the {@code
+   * getValue()} of a legacy property that was never set.
+   *
+   * @throws MsgpackPropertyException if the value is null, which means that it is unset
+   */
+  public static <T> T required(final @Nullable T value, final String key) {
+    if (value == null) {
+      throw new MsgpackPropertyException(
+          new StringValue(key),
+          "Expected a value or default value to be specified, but has nothing");
+    }
+    return value;
+  }
 
   /**
    * Compares two buffers by their bytes, whatever their class, like the {@code StringValue}, {@code

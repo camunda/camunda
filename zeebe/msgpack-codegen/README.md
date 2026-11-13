@@ -35,7 +35,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
 - Supported field types: `long`, `int`, `boolean`, `RequiredLong`/`RequiredInt` and `@Nullable
-  Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
+  Long`/`Integer`/`Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
   raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
   not be overridden), `List<DirectBuffer>`, `List<Long>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
@@ -67,9 +67,17 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   mutable holder with `set(v)`, `get()`, `isSet()` and `reset()`, which does not allocate on read
   and has no sentinel value that a real value could clash with. A string, binary, raw, document,
   enum or `Boolean` is a `@Nullable` field (jspecify) that starts as `null`; `null` is unset. A
-  `boolean` with a default stays a primitive: `Boolean` is only for one without a default. The
+  `@Nullable Long` or `Integer` is supported as well, an alternative to the holders that is written
+  like a `long`/`int` but allocates when it is read (the holders do not). A `boolean`, `long` or
+  `int` with a default stays a primitive: the boxed types are only for one without a default. The
   processor rejects `@Nullable` on a primitive, on a holder, on an `UnsafeBuffer` or on a nested
-  value, a holder that is not `final` and a `Boolean` that is not `@Nullable`.
+  value, a holder that is not `final`, and a `Boolean`, `Long` or `Integer` that is not
+  `@Nullable`.
+- A class that has properties without a default is `@NullMarked`, and the fields of those properties
+  are `@Nullable`. Their getters are non-null and return `Decoding.required(field, "key")`, so
+  NullAway forces the check and an unset value fails with the `MsgpackPropertyException` of the
+  `getValue()` of a legacy property ("Expected a value or default value to be specified, but has
+  nothing").
 - The unset properties behave like those of an `UnpackedObject`: `write` and `getLength` fail with
   the `MsgpackPropertyException` of the first one that is unset ("Expected a value or default
   value to be set before writing, but has nothing", and "... to be specified, ..." for the
@@ -81,7 +89,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `UnpackedObject#equals` throws instead if a property is unset.
 - A string, binary and raw field that is not `@Nullable` needs an initializer. `reset` assigns (or
   wraps) the default of a shared prototype instance, so a default buffer must never be modified in
-  place. An enum that is not `@Nullable` needs one too.
+  place. An enum that is not `@Nullable` needs one too; if it is `null` anyway, `write` and
+  `getLength` fail like for an unset property.
 - Generated code finds the codecs of its nested values with `Codecs.of(Type.class)`
   (a `ClassValue`, by naming convention) once, when the generated class is initialized. A
   `MsgpackBufferValue` does no look-up: it declares abstract `codec()` and `ops()`, which every
