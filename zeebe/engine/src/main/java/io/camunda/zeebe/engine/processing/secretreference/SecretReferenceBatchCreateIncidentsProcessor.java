@@ -39,12 +39,6 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
 
   private static final int MAX_BATCH_SIZE = 100;
 
-  private static final String INCIDENT_MESSAGE =
-      "Failed to resolve secret '%s' from %s. Ensure the secret exists and the store is available, then resolve the incident to retry.";
-
-  private static final String INCIDENT_MESSAGE_NO_STORE_CONFIGURED =
-      "Failed to resolve secret '%s'. No secret store is configured. Configure a secret store, then resolve the incident to retry.";
-
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
@@ -173,30 +167,9 @@ public final class SecretReferenceBatchCreateIncidentsProcessor
     return incidentState.getJobIncidentKey(jobKey) != IncidentState.MISSING_INCIDENT;
   }
 
-  /**
-   * The {@code camunda.secrets.<name>} syntax carries no store id yet (store selection is tracked
-   * under <a href="https://github.com/camunda/camunda/issues/56563">#56563</a>), so every reference
-   * names the default store. Naming it in the incident message would tell the reader nothing while
-   * it is the only store there is.
-   */
-  private static String describeStore(final String storeId) {
-    return SecretStoreRegistry.DEFAULT_STORE_ID.equals(storeId)
-        ? "the configured secret store"
-        : "secret store '%s'".formatted(storeId);
-  }
-
-  /**
-   * Only the default store can be unconfigured: a non-default id is not reachable yet (store
-   * selection is tracked under #56563), so no reference is ever raised against one.
-   */
-  private boolean isNoStoreConfigured(final String storeId) {
-    return SecretStoreRegistry.DEFAULT_STORE_ID.equals(storeId) && !defaultSecretStoreConfigured;
-  }
-
   private String buildErrorMessage(final String storeId, final String secretReference) {
-    return isNoStoreConfigured(storeId)
-        ? INCIDENT_MESSAGE_NO_STORE_CONFIGURED.formatted(secretReference)
-        : INCIDENT_MESSAGE.formatted(secretReference, describeStore(storeId));
+    return SecretResolutionFailureMessage.of(
+        storeId, secretReference, defaultSecretStoreConfigured, "resolve the incident to retry");
   }
 
   private IncidentRecord buildIncident(
