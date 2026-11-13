@@ -19,10 +19,25 @@ import javax.sql.DataSource;
  * higher-level modules ({@code dist}, {@code configuration}) that own the tenant-discovery and
  * data-source registry code. Callers in those modules (e.g. {@code MyBatisConfiguration}) build the
  * map keyed by physical-tenant id and hand it to {@link LiquibaseSchemaManager}.
+ *
+ * @param partitionState whether the tenant also keeps its partitions' state in this database, which
+ *     then needs the state's tables too
  */
 public record PerTenantSchemaConfig(
     DataSource dataSource,
     VendorDatabaseProperties vendorDatabaseProperties,
     String prefix,
     boolean autoDdl,
-    Duration ddlLockWaitTimeout) {}
+    Duration ddlLockWaitTimeout,
+    boolean partitionState) {
+
+  /** For a tenant that keeps its partitions' state elsewhere, for example in RocksDB. */
+  public PerTenantSchemaConfig(
+      final DataSource dataSource,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final String prefix,
+      final boolean autoDdl,
+      final Duration ddlLockWaitTimeout) {
+    this(dataSource, vendorDatabaseProperties, prefix, autoDdl, ddlLockWaitTimeout, false);
+  }
+}
