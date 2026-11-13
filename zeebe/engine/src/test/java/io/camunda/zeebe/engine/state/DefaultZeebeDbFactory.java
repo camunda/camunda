@@ -87,6 +87,6 @@ public final class DefaultZeebeDbFactory {
       writeBehindConfig =
           writeBehindConfig.withMaxPendingBytes(bytes).withFlushThresholdBytes(bytes);
     }
-    return new WriteBehindZeebeDbFactory<>(rocksDbFactory, writeBehindConfig, consistencyChecks);
+    return new WriteBehindZeebeDbFactory<>(rocksDbFactory, writeBehindConfig, "engine-test");
   }
 }
