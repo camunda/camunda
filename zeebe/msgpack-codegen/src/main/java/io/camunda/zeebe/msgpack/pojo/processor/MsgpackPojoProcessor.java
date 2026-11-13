@@ -269,13 +269,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         "  public static final %1$sResetter INSTANCE = new %1$sResetter();\n\n".formatted(pojo));
     // INSTANCE must be initialized before DEFAULTS: the constructor of the POJO may resolve it
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
-    s.append("  static {\n");
-    for (final var p : m.properties()) {
-      if (p.type() == Type.STRING || p.type() == Type.BINARY || p.type() == Type.RAW) {
-        s.append("    requireDefault(DEFAULTS.%1$s, \"%1$s\");\n".formatted(p.field()));
-      }
-    }
-    s.append("  }\n\n");
     s.append("  private %sResetter() {}\n\n".formatted(pojo));
     s.append("  @Override\n  public void reset(final %s target) {\n".formatted(pojo));
     for (final var p : m.properties()) {
@@ -285,11 +278,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
-        default ->
+        // checked on every reset: an exception in the static initializer is not reliably
+        // propagated, as the class is initialized while Codecs resolves this resetter
+        case STRING, BINARY, RAW ->
             s.append(
                 p.inPlace()
                     ? "    target.%1$s.wrap(DEFAULTS.%1$s);\n".formatted(f)
-                    : "    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
+                    : "    target.%1$s = requireDefault(DEFAULTS.%1$s, \"%1$s\");\n".formatted(f));
+        default -> s.append("    target.%1$s = DEFAULTS.%1$s;\n".formatted(f));
       }
     }
     if (m.unknownField() != null) {
@@ -298,11 +294,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("  }\n\n");
     s.append(
         """
-          private static void requireDefault(final Object value, final String field) {
+          private static <T> T requireDefault(final T value, final String field) {
             if (value == null) {
               throw new IllegalStateException(
                   "Field " + field + " of %s has no default: give it an initializer");
             }
+            return value;
           }
         }
         """
