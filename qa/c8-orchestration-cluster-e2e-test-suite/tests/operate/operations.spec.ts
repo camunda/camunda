@@ -18,9 +18,6 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {jsonHeaders} from 'utils/http';
-import {logInViaApi} from 'utils/logInViaApi';
-
-const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
 
 type ProcessInstance = {
   processInstanceKey: string;
