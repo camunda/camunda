@@ -10,11 +10,16 @@ package io.camunda.secretstore.azure;
 import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
+import com.azure.identity.CredentialUnavailableException;
 import reactor.core.publisher.Mono;
 
 /**
  * One credential of the store's {@link AzureCredentialChain chain}, reporting to the store's {@link
- * SignInMonitor} when it obtains a token.
+ * SignInMonitor} when it obtains a token and when it fails to.
+ *
+ * <p>A {@link CredentialUnavailableException} is not reported: it only says this sign-in method is
+ * not configured here, and the chain moves on to the next. When every method is unavailable the
+ * chain itself reports it, so each failed token request is counted once.
  *
  * <p>Errors pass through unchanged: {@link com.azure.identity.ChainedTokenCredential} moves on to
  * the next credential only on a {@link com.azure.identity.CredentialUnavailableException}, so
@@ -30,16 +35,31 @@ record SignInCredential(
 
   @Override
   public Mono<AccessToken> getToken(final TokenRequestContext request) {
-    return delegate.getToken(request).doOnNext(token -> monitor.succeeded(description));
+    return delegate
+        .getToken(request)
+        .doOnNext(token -> monitor.succeeded(description))
+        .doOnError(this::report);
   }
 
   // overridden so the synchronous SecretClient keeps the SDK's synchronous path, rather than the
   // default, which blocks on getToken
   @Override
   public AccessToken getTokenSync(final TokenRequestContext request) {
-    final var token = delegate.getTokenSync(request);
+    final AccessToken token;
+    try {
+      token = delegate.getTokenSync(request);
+    } catch (final RuntimeException e) {
+      report(e);
+      throw e;
+    }
     monitor.succeeded(description);
     return token;
+  }
+
+  private void report(final Throwable failure) {
+    if (!(failure instanceof CredentialUnavailableException)) {
+      monitor.failed(description, failure);
+    }
   }
 
   @Override

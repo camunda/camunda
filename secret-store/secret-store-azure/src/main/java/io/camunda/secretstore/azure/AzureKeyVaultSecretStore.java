@@ -14,6 +14,7 @@ import com.azure.security.keyvault.secrets.SecretClient;
 import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,29 +38,41 @@ import org.jspecify.annotations.Nullable;
  * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then {@link #resolve}
  * reports every name as not found and {@link #list} returns no names.
  *
- * <p>This class is thread-safe: it and its resolvers keep no mutable state.
+ * <p>This class is thread-safe: its resolvers keep no mutable state, and its {@link SignInMonitor}
+ * is thread-safe.
  */
 public final class AzureKeyVaultSecretStore implements SecretStore {
 
   private final AzureSecretResolver resolver;
   private final SecretClient client;
   private final ExecutorService credentialExecutor;
+  private final SignInMonitor signInMonitor;
 
   AzureKeyVaultSecretStore(
       final AzureSecretResolver resolver,
       final SecretClient client,
-      final ExecutorService credentialExecutor) {
+      final ExecutorService credentialExecutor,
+      final SignInMonitor signInMonitor) {
     this.resolver = resolver;
     this.client = client;
     this.credentialExecutor = credentialExecutor;
+    this.signInMonitor = signInMonitor;
   }
 
   /**
    * Builds a store from configuration, with the resolver its container secret setting selects. It
    * signs in with the {@code AZURE_*} variables of this process's environment.
+   *
+   * @param storeId the ID the store is configured under, tagging its meters
+   * @param meterRegistry where the store publishes {@link
+   *     io.camunda.secretstore.SecretStoreMetricsDoc#SIGNIN_FAILURES}; the caller tags it with the
+   *     physical tenant. The meter is removed again on {@link #close()}.
    */
-  public static AzureKeyVaultSecretStore fromConfig(final AzureKeyVaultStoreConfig config) {
-    return fromConfig(config, Configuration.getGlobalConfiguration(), null);
+  public static AzureKeyVaultSecretStore fromConfig(
+      final String storeId,
+      final AzureKeyVaultStoreConfig config,
+      final MeterRegistry meterRegistry) {
+    return fromConfig(storeId, config, meterRegistry, Configuration.getGlobalConfiguration(), null);
   }
 
   /**
@@ -68,7 +81,9 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
    *     null} for the SDK default
    */
   static AzureKeyVaultSecretStore fromConfig(
+      final String storeId,
       final AzureKeyVaultStoreConfig config,
+      final MeterRegistry meterRegistry,
       final Configuration environment,
       final @Nullable HttpClient httpClient) {
     final AzureSecretResolver resolver =
@@ -76,18 +91,16 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
             ? new ContainerSecretResolver()
             : new OneByOneSecretResolver();
     final var credentialExecutor = newCredentialExecutor();
+    final var signInMonitor = new SignInMonitor(storeId, config.vaultUrl(), meterRegistry);
     try {
       final var credential =
           AzureCredentialChain.build(
-              config,
-              environment,
-              httpClient,
-              credentialExecutor,
-              new SignInMonitor(config.vaultUrl()));
+              config, environment, httpClient, credentialExecutor, signInMonitor);
       return new AzureKeyVaultSecretStore(
-          resolver, buildClient(config, credential, httpClient), credentialExecutor);
+          resolver, buildClient(config, credential, httpClient), credentialExecutor, signInMonitor);
     } catch (final RuntimeException e) {
       credentialExecutor.shutdownNow();
+      signInMonitor.close();
       throw e;
     }
   }
@@ -145,5 +158,6 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   @Override
   public void close() {
     credentialExecutor.shutdownNow();
+    signInMonitor.close();
   }
 }

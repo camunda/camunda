@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockConstruction;
@@ -34,6 +35,8 @@ import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreMetricsDoc;
+import io.camunda.secretstore.SecretStoreMetricsDoc.SecretStoreKeyNames;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
@@ -664,6 +667,40 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldTagEachAzureStoresSignInFailuresWithItsPhysicalTenant() {
+    // given an azure store for the default tenant and for pt1, both under the store ID "default"
+    final var properties = new HashMap<String, Object>();
+    properties.put(
+        "camunda.secrets.stores.azure.default.vault-url", "https://default.vault.azure.net");
+    properties.putAll(tenantWithAzureStore("pt1", "vault-url", "https://pt1.vault.azure.net"));
+    final var resolver = resolverFor(properties);
+    // nested as in production, see shouldKeepTheCacheMetersOfTwoPhysicalTenantsApart
+    final var backend = new SimpleMeterRegistry();
+    final var clusterRegistry = new CompositeMeterRegistry();
+    clusterRegistry.add(backend);
+
+    // when
+    final var registries = CONFIG.secretStoreRegistries(resolver, CLOCK_SERVICE, clusterRegistry);
+
+    // then each tenant's store has its own series, which closing the registries removes again
+    assertThat(signInFailureTenants(backend))
+        .containsExactlyInAnyOrder(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "pt1");
+    registries.close();
+    assertThat(signInFailureTenants(backend)).isEmpty();
+  }
+
+  private static List<String> signInFailureTenants(final MeterRegistry meterRegistry) {
+    return meterRegistry
+        .find(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName())
+        .tag(SecretStoreKeyNames.STORE.asString(), SecretStoreRegistry.DEFAULT_STORE_ID)
+        .tag(SecretStoreKeyNames.STORE_TYPE.asString(), "azure")
+        .counters()
+        .stream()
+        .map(counter -> counter.getId().getTag(PartitionKeyNames.PHYSICAL_TENANT.asString()))
+        .toList();
+  }
+
+  @Test
   void shouldBuildAzureKeyVaultStoreOnlyForThePhysicalTenantThatConfiguresIt() {
     // given an azure store configured for pt1 alone
     final var resolver =
@@ -700,7 +737,8 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+      factory.verify(
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
     }
 
     // then the default tenant's store gets every setting, unchanged by pt1's overrides
@@ -738,7 +776,7 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()));
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
     }
 
     // then the two modules' defaults have not drifted apart
@@ -780,7 +818,7 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()));
+      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()));
     }
 
     // then
@@ -834,7 +872,8 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+      factory.verify(
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
     }
 
     // then pt1's store gets the merged timeouts
@@ -856,7 +895,8 @@ class SecretStoreConfigurationTest {
     // when
     try (var factory = mockStatic(AzureKeyVaultSecretStore.class, CALLS_REAL_METHODS)) {
       registries(resolver);
-      factory.verify(() -> AzureKeyVaultSecretStore.fromConfig(built.capture()), times(2));
+      factory.verify(
+          () -> AzureKeyVaultSecretStore.fromConfig(any(), built.capture(), any()), times(2));
     }
 
     // then startup succeeds, pt1's attempt bound follows its call bound and the root keeps 2s

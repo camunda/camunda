@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -38,16 +39,31 @@ final class StubAzureHttpClient implements HttpClient {
 
   private final List<Request> requests = new CopyOnWriteArrayList<>();
   private final Function<Request, Mono<HttpResponse>> router;
+  private final AtomicBoolean rejectingSignIn;
 
   private StubAzureHttpClient(final Function<Request, Mono<HttpResponse>> router) {
+    this(router, new AtomicBoolean());
+  }
+
+  private StubAzureHttpClient(
+      final Function<Request, Mono<HttpResponse>> router, final AtomicBoolean rejectingSignIn) {
     this.router = router;
+    this.rejectingSignIn = rejectingSignIn;
   }
 
   /**
-   * Answers Entra ID and IMDS with a token valid for {@code tokenLifetimeSeconds}, and the vault.
+   * Answers Entra ID and IMDS with a token valid for {@code tokenLifetimeSeconds}, and the vault,
+   * until {@link #rejectSignIn(boolean) told} to reject sign-in.
    */
   static StubAzureHttpClient signingIn(final long tokenLifetimeSeconds) {
-    return new StubAzureHttpClient(request -> Mono.just(answer(request, tokenLifetimeSeconds)));
+    final var rejecting = new AtomicBoolean();
+    return new StubAzureHttpClient(
+        request ->
+            Mono.just(
+                rejecting.get() && request.isTokenRequest()
+                    ? invalidClient(request)
+                    : answer(request, tokenLifetimeSeconds)),
+        rejecting);
   }
 
   /** Refuses every connection, as on a machine with no IMDS and no network route to Azure. */
@@ -58,15 +74,12 @@ final class StubAzureHttpClient implements HttpClient {
 
   /** Rejects every sign-in with {@code invalid_client}, as Entra ID does for a wrong secret. */
   static StubAzureHttpClient rejecting() {
-    return new StubAzureHttpClient(
-        request ->
-            Mono.just(
-                json(
-                    request,
-                    401,
-                    """
-                    {"error":"invalid_client","error_description":"AADSTS7000215: Invalid client secret provided."}
-                    """)));
+    return new StubAzureHttpClient(request -> Mono.just(invalidClient(request)));
+  }
+
+  /** From now on rejects, or again answers, every sign-in of a {@link #signingIn} stub. */
+  void rejectSignIn(final boolean reject) {
+    rejectingSignIn.set(reject);
   }
 
   /** An environment holding only {@code variables}, isolated from this process's. */
@@ -147,6 +160,15 @@ final class StubAzureHttpClient implements HttpClient {
         {"value":"secret-value","id":"%s/1","attributes":{"enabled":true}}
         """
             .formatted(request.url().replaceAll("\\?.*", "")));
+  }
+
+  private static HttpResponse invalidClient(final Request request) {
+    return json(
+        request,
+        401,
+        """
+        {"error":"invalid_client","error_description":"AADSTS7000215: Invalid client secret provided."}
+        """);
   }
 
   private static HttpResponse json(final Request request, final int status, final String body) {

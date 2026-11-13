@@ -46,7 +46,9 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -66,13 +68,26 @@ public class SecretStoreConfiguration {
    */
   private static final List<StoreBinding<?>> STORE_BINDINGS =
       List.of(
-          new StoreBinding<>("file", "file", Stores::getFile, SecretStoreConfiguration::fileStore),
           new StoreBinding<>(
-              "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
+              "file",
+              "file",
+              Stores::getFile,
+              StoreFactory.unmetered(SecretStoreConfiguration::fileStore)),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+              "aws",
+              "AWS Secrets Manager",
+              Stores::getAws,
+              StoreFactory.unmetered(SecretStoreConfiguration::awsStore)),
           new StoreBinding<>(
-              "env", "environment variable", Stores::getEnv, SecretStoreConfiguration::envStore),
+              "gcp",
+              "GCP Secret Manager",
+              Stores::getGcp,
+              StoreFactory.unmetered(SecretStoreConfiguration::gcpStore)),
+          new StoreBinding<>(
+              "env",
+              "environment variable",
+              Stores::getEnv,
+              StoreFactory.unmetered(SecretStoreConfiguration::envStore)),
           new StoreBinding<>(
               "azure", "Azure Key Vault", Stores::getAzure, SecretStoreConfiguration::azureStore));
 
@@ -171,7 +186,11 @@ public class SecretStoreConfiguration {
           e);
     }
     final Map<String, SecretStore> stores = new LinkedHashMap<>();
-    STORE_BINDINGS.forEach(binding -> binding.registerAll(config, stores, resources, tenantId));
+    // created lazily, so a tenant that configures no store never leaves a registry behind, and
+    // before the stores, since a store that signs in publishes its own meters to it
+    final var tenantMeterRegistry = new TenantMeterRegistry(meterRegistry, tenantId, resources);
+    STORE_BINDINGS.forEach(
+        binding -> binding.registerAll(config, stores, resources, tenantId, tenantMeterRegistry));
     if (stores.isEmpty()) {
       stores.put(SecretStoreRegistry.DEFAULT_STORE_ID, NOOP_STORE);
       LOG.info("No secret stores configured for physical tenant '{}', using noop store", tenantId);
@@ -206,14 +225,8 @@ public class SecretStoreConfiguration {
                   ? new ConcurrentSecretStore(store, pool, semaphore)
                   : store);
     }
-    // wrapped only now that the tenant is known to have a store worth measuring, so a tenant that
-    // fails the rules above never leaves a registry behind either
-    final var tenantMeterRegistry =
-        MicrometerUtil.wrap(
-            meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
-    resources.addMeterRegistry(tenantMeterRegistry);
     return new SecretStoreRegistry(
-        Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry));
+        Map.copyOf(stores), cacheFactory(cacheConfig, timeSource, tenantMeterRegistry.get()));
   }
 
   /**
@@ -336,7 +349,10 @@ public class SecretStoreConfiguration {
   }
 
   private static SecretStore azureStore(
-      final String storeId, final String tenantId, final AzureKeyVaultStore config) {
+      final String storeId,
+      final String tenantId,
+      final AzureKeyVaultStore config,
+      final Supplier<MeterRegistry> meterRegistry) {
     final var property = storesProperty(tenantId, "azure") + "." + storeId;
     final var vaultUrl = config.getVaultUrl();
     if (vaultUrl == null || vaultUrl.isEmpty()) {
@@ -351,6 +367,7 @@ public class SecretStoreConfiguration {
         storeId,
         tenantId);
     return AzureKeyVaultSecretStore.fromConfig(
+        storeId,
         new AzureKeyVaultStoreConfig(
             vaultUrl,
             config.getPathPrefix(),
@@ -359,7 +376,8 @@ public class SecretStoreConfiguration {
             config.getAuthorityHost(),
             config.getMaxRetries(),
             config.getCallTimeout(),
-            config.getAttemptTimeout()));
+            config.getAttemptTimeout()),
+        meterRegistry.get());
   }
 
   private static SecretStore envStore(
@@ -442,7 +460,8 @@ public class SecretStoreConfiguration {
         final Stores config,
         final Map<String, SecretStore> stores,
         final SecretStoreResources resources,
-        final String tenantId) {
+        final String tenantId,
+        final Supplier<MeterRegistry> meterRegistry) {
       selector
           .apply(config)
           .forEach(
@@ -455,13 +474,64 @@ public class SecretStoreConfiguration {
                       displayName,
                       // the raw id is what the operator wrote, so it is what a factory names in its
                       // own validation errors
-                      factory.create(storeId, tenantId, entry)));
+                      factory.create(storeId, tenantId, entry, meterRegistry)));
     }
   }
 
-  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
+  /**
+   * Builds one {@link SecretStore} from a single configured entry of a given store type.
+   *
+   * <p>{@code meterRegistry} is the tenant's registry, already tagged with its physical tenant ID,
+   * for a store that publishes meters of its own; asking for it creates it.
+   */
   @FunctionalInterface
   private interface StoreFactory<C> {
+    SecretStore create(
+        String storeId, String tenantId, C config, Supplier<MeterRegistry> meterRegistry);
+
+    /** Adapts the factory of a store type that publishes no meters of its own. */
+    static <C> StoreFactory<C> unmetered(final UnmeteredStoreFactory<C> factory) {
+      return (storeId, tenantId, config, meterRegistry) ->
+          factory.create(storeId, tenantId, config);
+    }
+  }
+
+  @FunctionalInterface
+  private interface UnmeteredStoreFactory<C> {
     SecretStore create(String storeId, String tenantId, C config);
+  }
+
+  /**
+   * The tenant's view of the cluster-wide registry, tagging every meter with its {@link
+   * PartitionKeyNames#PHYSICAL_TENANT}, as {@code RdbmsDataSources} does for its pools: a store ID
+   * is unique only within a tenant. Created on first use and closed with the tenant's resources.
+   * Not thread-safe: a tenant's stores are built on one thread.
+   */
+  private static final class TenantMeterRegistry implements Supplier<MeterRegistry> {
+
+    private final MeterRegistry meterRegistry;
+    private final String tenantId;
+    private final SecretStoreResources resources;
+    private @Nullable MeterRegistry tenantMeterRegistry;
+
+    private TenantMeterRegistry(
+        final MeterRegistry meterRegistry,
+        final String tenantId,
+        final SecretStoreResources resources) {
+      this.meterRegistry = meterRegistry;
+      this.tenantId = tenantId;
+      this.resources = resources;
+    }
+
+    @Override
+    public MeterRegistry get() {
+      if (tenantMeterRegistry == null) {
+        tenantMeterRegistry =
+            MicrometerUtil.wrap(
+                meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), tenantId));
+        resources.addMeterRegistry(tenantMeterRegistry);
+      }
+      return tenantMeterRegistry;
+    }
   }
 }

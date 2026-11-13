@@ -15,8 +15,10 @@ import com.azure.core.credential.TokenCredential;
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.core.exception.ClientAuthenticationException;
 import com.azure.core.util.Configuration;
+import io.camunda.secretstore.SecretStoreMetricsDoc;
 import io.camunda.secretstore.azure.StubAzureHttpClient.Request;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -35,6 +37,7 @@ final class AzureCredentialChainTest {
       new TokenRequestContext().addScopes("https://vault.azure.net/.default");
 
   private final ExecutorService executor = AzureKeyVaultSecretStore.newCredentialExecutor();
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @TempDir private Path tempDir;
 
@@ -55,7 +58,7 @@ final class AzureCredentialChainTest {
             environment(Map.of()),
             StubAzureHttpClient.offline(),
             executor,
-            new SignInMonitor(VAULT_URL));
+            new SignInMonitor("default", VAULT_URL, new SimpleMeterRegistry()));
 
     // then — no developer login (Azure CLI, IDEs, PowerShell, Azure Developer CLI) is ever tried
     assertThat(credentials)
@@ -233,6 +236,8 @@ final class AzureCredentialChainTest {
     assertThat(http.requests())
         .isNotEmpty()
         .allSatisfy(request -> assertThat(request.isImdsRequest()).isTrue());
+    // counted once by the chain, not once per unavailable method
+    assertThat(signInFailures()).isEqualTo(1);
   }
 
   @Test
@@ -249,6 +254,8 @@ final class AzureCredentialChainTest {
     assertThatThrownBy(() -> credential.getTokenSync(VAULT_SCOPE))
         .isInstanceOf(ClientAuthenticationException.class);
     assertThat(http.requests()).noneMatch(Request::isImdsRequest);
+    // counted once by the rejected credential, not again by the chain it ended
+    assertThat(signInFailures()).isEqualTo(1);
   }
 
   @Test
@@ -283,7 +290,15 @@ final class AzureCredentialChainTest {
       final Configuration environment,
       final StubAzureHttpClient http) {
     return AzureCredentialChain.build(
-        config, environment, http, executor, new SignInMonitor(config.vaultUrl()));
+        config,
+        environment,
+        http,
+        executor,
+        new SignInMonitor("default", config.vaultUrl(), meterRegistry));
+  }
+
+  private double signInFailures() {
+    return meterRegistry.get(SecretStoreMetricsDoc.SIGNIN_FAILURES.getName()).counter().count();
   }
 
   private static AzureKeyVaultStoreConfig config(

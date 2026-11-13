@@ -7,7 +7,9 @@
  */
 package io.camunda.secretstore.azure;
 
+import com.azure.core.credential.AccessToken;
 import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
 import com.azure.core.http.HttpClient;
 import com.azure.core.util.Configuration;
 import com.azure.identity.ChainedTokenCredentialBuilder;
@@ -74,7 +76,7 @@ final class AzureCredentialChain {
       final SignInMonitor monitor) {
     final var chain = new ChainedTokenCredentialBuilder();
     credentials(config, environment, httpClient, executor, monitor).forEach(chain::addLast);
-    return chain.build();
+    return new NoSignInMethodReporting(chain.build(), monitor);
   }
 
   /** The chain's credentials, in the order they are tried. */
@@ -176,5 +178,41 @@ final class AzureCredentialChain {
 
   private static String clientIdSuffix(final @Nullable String clientId) {
     return clientId == null || clientId.isBlank() ? "" : ", client ID " + clientId;
+  }
+
+  /**
+   * Reports to the monitor when the chain fails because none of its credentials was available. A
+   * credential that is available but fails is reported by its own {@link SignInCredential}, and the
+   * chain then fails with a plain {@link com.azure.core.exception.ClientAuthenticationException}
+   * that this ignores, so a failed token request is counted once either way.
+   */
+  private record NoSignInMethodReporting(TokenCredential chain, SignInMonitor monitor)
+      implements TokenCredential {
+
+    private static final String DESCRIPTION =
+        "any production sign-in method ("
+            + String.join(", ", ENVIRONMENT, WORKLOAD_IDENTITY, MANAGED_IDENTITY)
+            + "), none of which is available";
+
+    @Override
+    public Mono<AccessToken> getToken(final TokenRequestContext request) {
+      return chain.getToken(request).doOnError(this::report);
+    }
+
+    @Override
+    public AccessToken getTokenSync(final TokenRequestContext request) {
+      try {
+        return chain.getTokenSync(request);
+      } catch (final RuntimeException e) {
+        report(e);
+        throw e;
+      }
+    }
+
+    private void report(final Throwable failure) {
+      if (failure instanceof CredentialUnavailableException) {
+        monitor.failed(DESCRIPTION, failure);
+      }
+    }
   }
 }
