@@ -10,6 +10,8 @@ package io.atomix.raft.roles;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -133,6 +135,47 @@ final class PassiveRoleInstallTest {
     verify(log).reset(SNAPSHOT_INDEX + 1);
     // the reset removes every entry, so a configuration of a removed entry must not survive
     verify(cluster).reloadStoredConfiguration();
+  }
+
+  @Test
+  void shouldPersistSnapshotWhenConfigurationReloadChangesRole() {
+    // given - the reload reverts to a configuration with another type for this member, and the
+    // transition to the new role stops this one, which aborts a pending snapshot
+    doAnswer(
+            ignored -> {
+              role.abortPendingSnapshots();
+              return null;
+            })
+        .when(cluster)
+        .reloadStoredConfiguration();
+
+    // when
+    final var response = install(onlyChunk());
+
+    // then
+    assertThat(response.status()).isEqualTo(Status.OK);
+    verify(receivedSnapshot, never()).abort();
+    final var inOrder = inOrder(log, receivedSnapshot, cluster);
+    inOrder.verify(log).reset(SNAPSHOT_INDEX + 1);
+    inOrder.verify(receivedSnapshot).persist();
+    inOrder.verify(cluster).reloadStoredConfiguration();
+  }
+
+  @Test
+  void shouldReloadConfigurationWhenSnapshotFailsToPersistAfterLogReset() {
+    // given
+    when(receivedSnapshot.persist())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("fail")));
+
+    // when
+    final var response = install(onlyChunk());
+
+    // then - the log is reset anyway, so a configuration of a removed entry must not survive
+    assertThat(response.status()).isEqualTo(Status.ERROR);
+    final var inOrder = inOrder(log, receivedSnapshot, cluster);
+    inOrder.verify(log).reset(SNAPSHOT_INDEX + 1);
+    inOrder.verify(receivedSnapshot).abort();
+    inOrder.verify(cluster).reloadStoredConfiguration();
   }
 
   @Test
