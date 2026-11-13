@@ -23,6 +23,8 @@ public class EngineMessages {
       Set.of("zeebe.broker.experimental.engine.messages.ttlCheckerBatchLimit");
   private static final Set<String> LEGACY_TTL_CHECKER_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.messages.ttlCheckerInterval");
+  private static final Set<String> LEGACY_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.messages.pendingSubscriptionRecoveryBatchLimit");
 
   /**
    * Configures how many message subscriptions a new leader scans per chunk when it rebuilds the
@@ -38,7 +40,12 @@ public class EngineMessages {
   private Duration ttlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
 
   public int getPendingSubscriptionRecoveryBatchLimit() {
-    return pendingSubscriptionRecoveryBatchLimit;
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".pending-subscription-recovery-batch-limit",
+        pendingSubscriptionRecoveryBatchLimit,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT_PROPERTIES);
   }
 
   public void setPendingSubscriptionRecoveryBatchLimit(
