@@ -328,6 +328,25 @@ final class AuthInfoTest {
     }
 
     @Test
+    void shouldRebuildFromClaimsMapWithBinaryTokenClaims() {
+      // given
+      final var original =
+          decode(
+              encode(
+                  AuthInfo.ofClaims(
+                      Map.of(USER_TOKEN_CLAIMS, Map.of("key", new byte[] {1, 2}, "sub", "a")))));
+
+      // when
+      final var rebuilt = AuthInfo.ofClaims(original.toClaimsMap());
+
+      // then
+      assertThat(rebuilt.getTokenClaims()).containsOnlyKeys("key", "sub");
+      assertThat(rebuilt.getTokenClaims()).containsEntry("sub", "a");
+      assertThat(((ByteBuffer) rebuilt.getTokenClaims().get("key")).duplicate())
+          .isEqualTo(ByteBuffer.wrap(new byte[] {1, 2}));
+    }
+
+    @Test
     void shouldReuseClaimsMapWithoutBinaryTokenClaims() {
       // given
       final var authInfo =
