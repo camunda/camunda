@@ -139,7 +139,7 @@ export class IdentityRolesPage {
     await this.createRoleButton.click();
   }
 
-  async fillRoleId(rowName: string) {
+  async clickEditRoleButton(rowName: string) {
     await this.editRoleButton(rowName).click();
   }
 
