@@ -170,7 +170,7 @@ The test is based on [a blueprint we provide in our Marketplace](https://marketp
 
 ### Max / Stress load test
 
-A load test where we run some artificial load, ensuring that the system behaves reliably under stress (max-load).
+A load test where we run some artificial load, ensuring that the system behaves reliably under stress. It serves two purposes: a regression test at the SLO load, and a maximum test at a load above the capacity (see below).
 
 ![normal](assets/normal.png)
 
@@ -183,10 +183,30 @@ Reducing the used feature set to a small amount allows easy comparison between t
 
 **The expected load is:**
 
-* 300 process instances per second (PI/s) completed.
-* 300 task instances per second (TI/s) completed
+* With secondary storage:
+  * 300 process instances per second (PI/s) completed.
+  * 300 task instances per second (TI/s) completed
+* Without secondary storage (`none`):
+  * 650 process instances per second (PI/s) completed.
+  * 650 task instances per second (TI/s) completed
 
-_Intrinsic SLO to always be able to satisfy such a load, and perform reliably._
+_SLO: the system sustains this load and performs reliably. Without secondary storage the load is deliberately a little below the capacity of the setup, so that the result is stable (see below)._
+
+#### Regression test vs maximum test
+
+The stress workload serves two different questions, and they need a different load:
+
+|          |                 Regression test                 |                        Maximum test                        |
+|----------|-------------------------------------------------|------------------------------------------------------------|
+| Question | Did we get slower?                              | How much can the setup sustain, did a change improve it?   |
+| Load     | The SLO load above, a little below the capacity | Well above the capacity                                    |
+| Result   | Completed PI/s hold the load, no backpressure   | Completed PI/s equal the capacity, the surplus is rejected |
+| Shows    | A regression larger than the headroom           | Regressions and improvements                               |
+| Runs     | Daily and on PRs                                | From time to time, or to judge a specific change           |
+
+**Why the regression test runs below the maximum:** the test runs a little below the capacity of the setup, with a headroom of roughly 7%. A test at the limit is unstable, because the result then depends on small differences between clusters (identical clusters differ by about 5% around the median). The rate is below the lowest capacity measured on identical clusters, so each of them sustains it. The result is stable, and a regression larger than the headroom shows as lower PI/s or as backpressure. We prioritize detecting such regressions over finding the actual maximum, so a faster build is not a finding and this test cannot show an improvement. The current rates per setup are listed in the [load-tests README](../../load-tests/README.md).
+
+**Finding the maximum:** run a test with a rate well above the capacity. Run several clusters, because identical clusters differ, and compare medians. Repeat this now and then, and raise the regression rate if the limit moved up.
 
 ### Latency load test
 
