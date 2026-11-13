@@ -1,12 +1,11 @@
 # Release-notes PR-gate (epic #53605, work unit #53593).
 #   * On `pull_request` this workflow and the local action resolve from the PR
 #     head, so a PR can edit the code that judges it. That is the same trust
-#     model as every other lint in ci.yml (actionlint, spotless, commitlint), and
-#     it is acceptable while this check is not a REQUIRED status check, so it is
-#     not a security boundary. `.github/**` is CODEOWNERS-gated, so a tampering
-#     diff still needs review.
-#     ⚠ BEFORE MAKING THIS CHECK REQUIRED, resolve that: a PR could then pass
-#     itself by editing the action. See epic #53605.
+#     model as every other lint in ci.yml (actionlint, spotless, commitlint),
+#     and it is accepted with this check required too: engineers are trusted,
+#     and `.github/**` is CODEOWNERS-gated, so a tampering diff still needs
+#     review. pull_request_target would close the gap but is denied repo-wide
+#     by .github/conftest-gha-best-practices.rego.
 #   * No privileged token. The gate itself runs on GITHUB_TOKEN alone — no Vault,
 #     no App token. (The observe-build-status step reads Vault for CI health
 #     metrics, like every other job in the repo; it is continue-on-error and
@@ -15,9 +14,9 @@
 #     and skips its two writes rather than 403-ing.
 #   * Metadata-only: the action reads the PR through the API. Nothing checks out
 #     or executes PR code, on any trigger.
-#   * Enforcing (enforce=true): a failing check fails the job. It is still NOT a
-#     required status check, so the merge button is not blocked by branch
-#     protection until it is added there (see the trust note above).
+#   * Enforcing (enforce=true): a failing check fails the job. The merge button
+#     is blocked where `PR-issue link` is a required status check in the branch
+#     rulesets.
 #
 # The gate is deliberately NOT part of Unified CI: ci.yml does not listen to
 # `edited`, and a PR body edit is the primary way an author fixes a gate
