@@ -7,7 +7,6 @@
  */
 package io.camunda.microbenchmarks.msgpack;
 
-import io.camunda.zeebe.msgpack.Recyclable;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -71,10 +70,9 @@ public class StateValueBenchmark {
   }
 
   @Benchmark
-  public BufferReader resetAndReadIntoReusedInstance(final BenchmarkState state) {
+  public BufferReader readIntoReusedInstance(final BenchmarkState state) {
     final int i = state.nextIndex();
     final var result = state.reused;
-    state.reusedReset.reset();
     result.wrap(state.buffers[i], 0, state.lengths[i]);
     return result;
   }
@@ -96,7 +94,6 @@ public class StateValueBenchmark {
     int[] lengths;
     Supplier<BufferReader> factory;
     BufferReader reused;
-    Recyclable reusedReset;
     int index;
 
     @Setup
@@ -118,12 +115,11 @@ public class StateValueBenchmark {
       }
     }
 
-    private <T extends BufferReader & BufferWriter & Recyclable> void init(
+    private <T extends BufferReader & BufferWriter> void init(
         final Supplier<T> newInstance, final IntFunction<T> filled) {
       factory = newInstance::get;
       final T instance = newInstance.get();
       reused = instance;
-      reusedReset = instance;
       for (int i = 0; i < BATCH_SIZE; i++) {
         final T writer = filled.apply(i);
         writers[i] = writer;
@@ -133,7 +129,9 @@ public class StateValueBenchmark {
     }
 
     int nextIndex() {
-      return index++ % BATCH_SIZE;
+      final int current = index;
+      index = (current + 1) % BATCH_SIZE;
+      return current;
     }
 
     private static org.agrona.DirectBuffer json(final int seed) {
