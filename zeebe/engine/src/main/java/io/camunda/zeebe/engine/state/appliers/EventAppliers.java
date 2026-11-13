@@ -197,8 +197,18 @@ public final class EventAppliers implements EventApplier {
         new SecretReferenceResolutionRequestedApplier(
             state.getSecretReferenceState(), state.getJobState()));
     register(
+        SecretReferenceIntent.RESOLUTION_REQUESTED,
+        2,
+        new SecretReferenceResolutionRequestedV2Applier(
+            state.getSecretReferenceState(), state.getJobState(), state.getProbeState()));
+    register(
         SecretReferenceIntent.RESOLUTION_COMPLETED,
         new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
+    register(
+        SecretReferenceIntent.RESOLUTION_COMPLETED,
+        2,
+        new SecretReferenceResolutionCompletedV2Applier(
+            state.getSecretReferenceState(), state.getProbeState()));
     register(
         SecretReferenceIntent.RESOLUTION_FAILED,
         new SecretReferenceResolutionFailedApplier(state.getSecretReferenceState()));
@@ -223,8 +233,7 @@ public final class EventAppliers implements EventApplier {
     register(ProbeIntent.YIELDED, new ProbeYieldedApplier(state.getProbeState()));
     register(ProbeIntent.ANSWERED, new ProbeEndedApplier(state.getProbeState()));
     register(ProbeBatchIntent.ACTIVATED, new ProbeBatchActivatedApplier(state.getProbeState()));
-    // the engine does not write this event yet; its state comes with its processor (#68866)
-    register(ProbeIntent.CANCELED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.CANCELED, new ProbeEndedApplier(state.getProbeState()));
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

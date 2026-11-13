@@ -57,6 +57,20 @@ public final class ProbeBehavior {
   }
 
   /**
+   * Ends the probe with {@code CANCELED} because its secrets cannot be injected, and answers the
+   * client that waits for it. The message names the secret, never its value.
+   */
+  public void cancelForSecretResolutionError(
+      final long probeKey, final ProbeRecord probe, final String message) {
+    final var canceled =
+        withoutInput(probe)
+            .setEndReason(ProbeEndReason.SECRET_RESOLUTION_ERROR)
+            .setMessage(message);
+    stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.CANCELED, canceled);
+    respondToClient(probeKey, ProbeIntent.CANCELED, canceled);
+  }
+
+  /**
    * Answers the client request held since {@code CREATE}, if the client still waits: a client that
    * is gone, e.g. because the gateway restarted, gets no answer, as for any other async request.
    */

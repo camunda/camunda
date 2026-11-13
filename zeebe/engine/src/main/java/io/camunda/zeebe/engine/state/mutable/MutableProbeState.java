@@ -25,11 +25,17 @@ public interface MutableProbeState extends ProbeState {
   void activate(long probeKey, DirectBuffer worker);
 
   /**
-   * Makes the activated probe activatable again, without a worker: the next poll of its probe ID
-   * may collect it.
+   * Makes the activated or parked probe activatable again, without a worker and parked on nothing:
+   * the next poll of its probe ID may collect it.
    */
   void makeActivatable(long probeKey);
 
-  /** Removes the probe and its index entries: the probe ended. */
+  /**
+   * Parks the probe on a secret reference that a poll found uncached: no poll collects it until
+   * {@link #makeActivatable(long)}. A probe may be parked on several references.
+   */
+  void park(long probeKey, String storeId, String secretReference);
+
+  /** Removes the probe and its index entries, its parking included: the probe ended. */
   void remove(long probeKey);
 }

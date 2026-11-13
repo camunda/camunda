@@ -13,6 +13,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingProbeNotifier;
+import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
@@ -34,7 +35,11 @@ public final class ProbeBatchActivateTest {
   private static final RecordingProbeNotifier NOTIFIER = new RecordingProbeNotifier();
 
   @ClassRule
-  public static final EngineRule ENGINE = EngineRule.singlePartition().withProbeNotifier(NOTIFIER);
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withProbeNotifier(NOTIFIER)
+          // every secret cached: the parking on an uncached secret is covered by ProbeSecretTest
+          .withSecretStoreRegistry(SecretStoreRegistries.resolveAll("s3cr3t"));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

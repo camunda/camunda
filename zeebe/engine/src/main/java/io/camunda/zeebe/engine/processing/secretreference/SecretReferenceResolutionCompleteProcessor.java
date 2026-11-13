@@ -8,11 +8,14 @@
 package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProbeState;
+import io.camunda.zeebe.engine.state.immutable.ProbeState.State;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -20,7 +23,9 @@ import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public final class SecretReferenceResolutionCompleteProcessor
@@ -33,11 +38,17 @@ public final class SecretReferenceResolutionCompleteProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final SecretReferenceState secretReferenceState;
+  private final ProbeState probeState;
+  private final ProbeBehavior probeBehavior;
 
   public SecretReferenceResolutionCompleteProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final SecretReferenceState secretReferenceState) {
+      final SecretReferenceState secretReferenceState,
+      final ProbeState probeState,
+      final ProbeBehavior probeBehavior) {
+    this.probeState = probeState;
+    this.probeBehavior = probeBehavior;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -64,8 +75,15 @@ public final class SecretReferenceResolutionCompleteProcessor
       return;
     }
 
+    // collected before the event: its applier unparks the probes, which removes them from this
+    // index
+    final List<Long> parkedProbes = new ArrayList<>();
+    probeState.forEachProbeParkedOn(storeId, secretReference, parkedProbes::add);
+
     stateWriter.appendFollowUpEvent(
         record.getKey(), SecretReferenceIntent.RESOLUTION_COMPLETED, value);
+
+    announceActivatableProbes(parkedProbes);
 
     final List<Long> nextBatch = buildBatch(storeId, secretReference);
 
@@ -78,6 +96,22 @@ public final class SecretReferenceResolutionCompleteProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_REACTIVATE_JOBS, nextRecord);
     }
+  }
+
+  /**
+   * Announces the probe IDs of the probes the event made activatable, once per probe ID, as waiting
+   * jobs are announced. A probe still parked on another reference is announced when that one
+   * resolves.
+   */
+  private void announceActivatableProbes(final List<Long> parkedProbes) {
+    final Set<String> probeIds = new LinkedHashSet<>();
+    for (final long probeKey : parkedProbes) {
+      final var probe = probeState.getProbe(probeKey);
+      if (probe != null && probeState.getState(probeKey) == State.ACTIVATABLE) {
+        probeIds.add(probe.getProbeId());
+      }
+    }
+    probeIds.forEach(probeBehavior::notifyProbesAvailable);
   }
 
   private List<Long> buildBatch(final String storeId, final String secretReference) {

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.immutable;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import java.util.List;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -40,6 +41,18 @@ public interface ProbeState {
    */
   void forEachActivatableProbe(
       DirectBuffer probeId, List<String> tenantIds, BiPredicate<Long, ProbeRecord> visitor);
+
+  /**
+   * Visits the keys of the probes parked on the secret reference, until the visitor returns {@code
+   * false}.
+   */
+  void forEachProbeParkedOn(String storeId, String secretReference, LongPredicate visitor);
+
+  /**
+   * Visits the secret references the probe is parked on, as store ID and reference, until the
+   * visitor returns {@code false}.
+   */
+  void forEachSecretReferenceParkedOn(long probeKey, BiPredicate<String, String> visitor);
 
   enum State {
     /** Waiting for a poll of its probe ID to collect it. */
