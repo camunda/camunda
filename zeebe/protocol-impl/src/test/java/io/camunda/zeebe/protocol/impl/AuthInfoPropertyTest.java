@@ -85,7 +85,7 @@ final class AuthInfoPropertyTest {
     assertThat(BufferUtil.bufferAsString(legacy.authData.getValue())).isEmpty();
     assertThat(MsgPackConverter.convertToMap(legacy.claims.getValue()))
         .usingRecursiveComparison()
-        .isEqualTo(authInfo.toClaimsMap());
+        .isEqualTo(AuthInfoTest.withBinaryAsBytes(authInfo.toClaimsMap()));
   }
 
   @Property
