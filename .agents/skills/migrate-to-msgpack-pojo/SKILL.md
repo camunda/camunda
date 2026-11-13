@@ -74,11 +74,19 @@ Open the class and every property it declares.
 | `ArrayProperty<IntegerValue>`                  | `final IntArrayList field = new IntArrayList();` (agrona, no boxing)      |
 | `ArrayProperty<LongValue>`                     | `final LongArrayList field = new LongArrayList();` (agrona, no boxing)    |
 
+Use `@MsgpackProperty(document = true) DirectBuffer field = DocumentValue.EMPTY_DOCUMENT;` for a
+`DocumentProperty`, and `@MsgpackProperty(raw = true) DirectBuffer field = Decoding.EMPTY;` for a
+`PackedProperty` (preserve any explicit default). For `ArrayProperty<X>` where X is a `@MsgpackPojo`
+or `BaseValue`, use `final List<X> field = new ArrayList<>();`; X needs a public no-arg constructor.
+
 `IntArrayList`/`LongArrayList` store the same msgpack array of integers as the old arrays (and as
 `List<Long>`), so the bytes are identical. `IntArrayList` rejects values outside the int range on
 read. Use `List<Long>` only when a public getter must keep returning `List<Long>` and converting
 inside the getter would be wasteful or impossible. If a getter would have to change its return
-type, ask the user first (public API).
+type, ask the user first (public API). A property declared with `.sanitized()` is supported: put
+`@MsgpackSanitized` on its replacement field to mask it in the generated string representation;
+this does not affect the stored bytes. Nested-object lists are supported, but their items are
+allocated while reading rather than recycled like `ArrayProperty` items.
 
 Type-use annotations such as `@Nullable` on list elements and nested types are fine, the generator
 compares erasures. Nested objects: a nested `@MsgpackPojo` or `BaseValue` is a `final` field.
@@ -87,10 +95,8 @@ nullness annotations in a separate `refactor:` commit.
 
 STOP and report which one, if the class uses:
 
-- `DocumentProperty`, `PackedProperty`, `PropertyGroup`, a property with `.sanitized()`, a computed
-  default;
-- `ArrayProperty` of anything but `StringValue`, `IntegerValue`, `LongValue` (lists of nested
-  objects are not supported yet);
+- `PropertyGroup`, a computed default, or an unsupported property type;
+- an `ArrayProperty` whose item type is not one of the supported types in the table above;
 - an inner/nested class or any non-top-level class.
 
 Also check, and STOP if any of these is true:
@@ -110,12 +116,13 @@ Also check, and STOP if any of these is true:
    on this class (`grep -rn "<method>(" zeebe/ --include=*.java`, check the receiver type).
    Unused: drop. Used: STOP. (`wrap(DirectBuffer)` is provided by `MsgpackRecordValue` for B; for A
    see step 3.6.)
-4. Value equality. `UnpackedObject` gives content based `equals`, `hashCode` and `toString`; the
-   generated class uses identity. If the old class did not override them and tests or code rely on
-   them (`assertThat(x).isEqualTo(`, `equals(`, sets/map keys, `toString` in messages) STOP and
-   report; do not hand-write `equals` unless the user asks. This is common for kind B (records are
-   compared a lot in tests) and rare for kind A. If nothing uses it, say in the commit body that
-   value equality is gone.
+4. Equality and string representation. `MsgpackBufferValue` delegates `equals`, `hashCode` and
+   `toString` to the generated `NameOps`; equality and hashing are content-based over stored
+   properties, not identity-based. Do not stop just because tests or code rely on value equality.
+   Check callers and tests for assumptions about the old behavior: generated equality requires the
+   same concrete class, and generated hashing has special handling for nested `BaseValue`s. If
+   class-specific or ignored state must participate, stop and report the behavior that needs to be
+   preserved rather than claiming value equality is lost.
 5. Reading differences: `UnpackedObject` throws when a declared property is missing from the
    input (`verifyAllDeclaredPropertiesAreSet`), the generated class keeps the default. That is more
    lenient and acceptable, but say so in the commit body.
@@ -185,10 +192,11 @@ Edit the class in place:
 4. Delete the `declareProperty` calls and `super(n)`. Keep all constructors; the no-arg
    constructor must remain, reachable from the same package. Constructors do NOT call `reset()`,
    the initializers set the defaults.
-5. Do NOT write `reset()` or a `codec()` method. `MsgpackBufferValue` provides `reset()` (it calls
-   the generated `NameResetter`, which restores initializers, clears lists, resets nested objects
-   and clears `unknownProperties`) and finds the generated `NameCodec` itself. Only if the class
-   has `@MsgpackIgnore`d state, override `reset()` as `{ super.reset(); /* reset ignored state */ }`.
+5. Do NOT write `reset()` or a `codec()` method. `MsgpackBufferValue` provides `reset()` by
+   delegating to the generated `NameOps`, which restores initializers, clears lists, resets nested
+   fields and clears `unknownProperties`; it finds the generated `NameCodec` itself. Only if the
+   class has `@MsgpackIgnore`d state, override `reset()` as
+   `{ super.reset(); /* reset ignored state */ }`.
 6. Rewrite every method that used a property. Mechanical translations:
    - `prop.getValue()` -> `field`; `prop.setValue(v)` -> `field = v`
    - `prop.increment()` -> `field++`; `prop.decrement()` -> `field--` (if the old code used the
@@ -196,11 +204,16 @@ Edit the class in place:
    - `prop.reset()` -> `field = <default>`
    - `StringProperty.setValue(DirectBuffer v)` -> `field = BufferUtil.cloneBuffer(v)` (the old
      code copied into its own storage; the caller may reuse its buffer)
+   - `DocumentProperty.setValue(v)` -> `field = Decoding.document(v)` to retain its normalization
+     and validation; use `@MsgpackProperty(document = true)` on the field
+   - `PackedProperty` maps to a `@MsgpackProperty(raw = true)` field; preserve its default and keep
+     the old no-copy behavior when assigning buffers
    - setting a string to "" -> `field = Decoding.EMPTY`
-   - decoding needs no code: strings, binaries and raw values are read as views on the input
-     buffer, exactly like the old properties. Never add a copy on read to a class that had none.
+   - decoding needs no code: strings, binaries, raw values and documents are read as views on the
+     input buffer, exactly like the old properties. Never add a copy on read to a class that had none.
    - `ArrayProperty.add().wrap(buf)` -> `list.add(BufferUtil.cloneBuffer(buf))`; for
-     `IntArrayList`/`LongArrayList` use `addInt(v)` / `addLong(v)`
+     `IntArrayList`/`LongArrayList` use `addInt(v)` / `addLong(v)`. For nested-object arrays, use a
+     `List<X>` as in step 0 and preserve the existing public getter/mutation behavior.
    - methods that returned a stream/list of the array property: keep the return type and return
      a copy or an unmodifiable view as the old code did (check what it did)
    - nested object `prop.getValue()` -> the final nested field
@@ -218,11 +231,12 @@ Edit the class in place:
      (`toJson()`, exporters): keep `@JsonIgnore` on every non-record-value getter you keep
      (property-tree helpers, `isEmpty()`). `getLength` is covered, `MsgpackRecordValue`
      redeclares it with `@JsonIgnore`.
-7. Dependencies: the module must have `implementation(project(":zeebe-msgpack-codegen"))` and
-   `annotationProcessor(project(":zeebe-msgpack-codegen"))` in its `build.gradle.kts`, and in its
-   `pom.xml` the `zeebe-msgpack-codegen` dependency plus the `annotationProcessorPaths` block
-   (copy it from `zeebe/engine/pom.xml`). `zeebe/engine` has them. `zeebe/protocol-impl` and any
-   other module: add them in the first migrated class's commit and say so in the commit body.
+7. Codegen dependencies: verify the module has `implementation(project(":zeebe-msgpack-codegen"))`
+   and `annotationProcessor(project(":zeebe-msgpack-codegen"))` in its `build.gradle.kts`, plus a
+   `zeebe-msgpack-codegen` dependency and its annotation-processor path in `pom.xml`. The engine is
+   not wired for this yet; do not assume either build is already configured. Add the wiring to both
+   build systems in the first migrated class's commit and mention it in the commit body. The
+   `microbenchmarks` Gradle and Maven files show the current configuration pattern.
 
 ## Step 4: compile and inspect the generated codec
 
@@ -242,8 +256,8 @@ up here). For B:
 
 The generated code is in
 `<module>/build/generated/sources/annotationProcessor/java/main/<package path>/NameCodec.java`;
-check that its `KEY_n` constants appear in the stored order from step 1. The resetter is next to
-it as `NameResetter.java`.
+check that its `KEY_n` constants appear in the stored order from step 1. The generated `NameOps.java`
+is next to it. Inspect its `reset`, `equals`, `hashCode` and `toString` operations as needed.
 
 ## Step 5: write the byte comparison test
 
@@ -305,14 +319,16 @@ the property type the field replaces) and finds a renamed field by its key.
 Then `git add` only the files you changed (the class, `NameV1`, `NameSerdeTest`, build files for the
 first class of a module, nothing under the goldens), commit and push. Header example:
 `refactor: replace UnpackedObject based Foo with a generated codec`. The body must say that the
-stored format is unchanged and that the V1 comparison tests prove it, and list what the class lost
-or changed (final class, no value equality, unset-property behavior). Gradle may regenerate
+stored format is unchanged and that the V1 comparison tests prove it, and list actual behavior
+changes (for example, final class or unset-property behavior). Generated `NameOps` provides
+content-based equality, hashing and string output. Gradle may regenerate
 `dist/src/main/config/defaults.yaml`; revert it with `git checkout`.
 
 ## When to STOP and report
 
 - Unsupported property type, subclass, nested class, or a holder that is not migrated (step 0).
-- A lost `UnpackedObject` member or value equality is used (step 0).
+- A lost `UnpackedObject` member is used, or step 0 identifies an equality/string behavior mismatch
+  that the migration cannot preserve as written.
 - Kind B: `RecordGoldenFilesTest` fails and the cause is not a changed key or type (step 6).
 - Any V1 comparison fails and the cause is not obvious after one fix attempt.
 - The class is used by code outside its module in a way that needs a signature change.
