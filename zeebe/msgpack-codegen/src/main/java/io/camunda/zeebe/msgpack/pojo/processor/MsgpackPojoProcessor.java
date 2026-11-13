@@ -10,6 +10,7 @@ package io.camunda.zeebe.msgpack.pojo.processor;
 import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackSanitized;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import java.io.IOException;
 import java.io.Writer;
@@ -200,8 +201,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
+      final var sanitized = field.getAnnotation(MsgpackSanitized.class) != null;
       properties.add(
-          new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required));
+          new Property(
+              keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required, sanitized));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -733,6 +736,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
    * @param required reading fails if the key is missing
+   * @param sanitized the value must not appear in a string representation
    */
   private record Property(
       String keyLiteral,
@@ -740,7 +744,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       String field,
       String javaType,
       boolean inPlace,
-      boolean required) {}
+      boolean required,
+      boolean sanitized) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }
