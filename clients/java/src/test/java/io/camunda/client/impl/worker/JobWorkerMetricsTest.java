@@ -37,16 +37,14 @@ import java.util.function.LongSupplier;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
 final class JobWorkerMetricsTest {
 
   private static final int AUTO_COMPLETE_ALL_JOBS = 0;
   private static final Duration JOB_TIMEOUT = Duration.ofSeconds(30);
-  private static final JobExecutor REFUSING_EXECUTOR =
-      command -> {
-        throw new RejectedExecutionException("The executor has no capacity");
-      };
   // A clock frozen in time: a job measured against a positive timeout is always still within it.
   private static final LongSupplier WITHIN_ACTIVATION = () -> 0L;
   private final DeterministicScheduler executor = new AlwaysRunningDeterministicScheduler();
@@ -121,6 +119,24 @@ final class JobWorkerMetricsTest {
    * The worker asks the scheduler whether it is still running when the executor refuses a job.
    * {@link DeterministicScheduler} answers both questions by throwing.
    */
+  /** Handler executors that take no job at all, one for each way of turning a job down. */
+  private enum TakesNoJob {
+    REFUSES(
+        command -> {
+          throw new RejectedExecutionException("The executor has no capacity");
+        }),
+    THROWS(
+        command -> {
+          throw new IllegalStateException("The executor is broken");
+        });
+
+    private final JobExecutor executor;
+
+    TakesNoJob(final JobExecutor executor) {
+      this.executor = executor;
+    }
+  }
+
   private static final class AlwaysRunningDeterministicScheduler extends DeterministicScheduler {
     @Override
     public boolean isShutdown() {
@@ -262,8 +278,9 @@ final class JobWorkerMetricsTest {
       }
     }
 
-    @Test
-    void shouldCountARefusedJobAsRefused() {
+    @ParameterizedTest
+    @EnumSource(TakesNoJob.class)
+    void shouldCountAJobTheExecutorTurnsDownAsRefused(final TakesNoJob takesNoJob) {
       // given a worker whose handler executor takes no job at all
       final TestJobStreamer streamer = new TestJobStreamer();
       final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
@@ -274,7 +291,7 @@ final class JobWorkerMetricsTest {
               createNoopJobPoller(),
               streamer,
               metrics,
-              REFUSING_EXECUTOR)) {
+              takesNoJob.executor)) {
         // when the broker pushes two jobs to it
         streamer.streamJob();
         streamer.streamJob();
@@ -357,15 +374,16 @@ final class JobWorkerMetricsTest {
       }
     }
 
-    @Test
-    void shouldCountARefusedJobAsRefused() {
+    @ParameterizedTest
+    @EnumSource(TakesNoJob.class)
+    void shouldCountAJobTheExecutorTurnsDownAsRefused(final TakesNoJob takesNoJob) {
       // given a worker whose handler executor takes no job at all
       final TestJobPoller poller = new TestJobPoller();
       final TestJobWorkerMetrics metrics = new TestJobWorkerMetrics();
 
       try (final JobWorkerImpl ignored =
           createWorker(
-              AUTO_COMPLETE_ALL_JOBS, poller, JobStreamer.noop(), metrics, REFUSING_EXECUTOR)) {
+              AUTO_COMPLETE_ALL_JOBS, poller, JobStreamer.noop(), metrics, takesNoJob.executor)) {
         // when the poller hands over two jobs
         executor.tick(1, TimeUnit.MINUTES);
         poller.produceJob();
