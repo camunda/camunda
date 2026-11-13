@@ -180,7 +180,8 @@ public final class EngineErrorHandlingTest {
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
 
     // error response
-    verify(mockCommandResponseWriter).tryWriteResponse(eq(99), eq(255L));
+    Awaitility.await("until the error response is sent")
+        .untilAsserted(() -> verify(mockCommandResponseWriter).tryWriteResponse(eq(99), eq(255L)));
 
     final Record<DeploymentRecord> deploymentRejection =
         new RecordStream(streams.events(STREAM_NAME))
@@ -670,7 +671,8 @@ public final class EngineErrorHandlingTest {
     assertThat(rejection.getValue().getProcessInstanceKey()).isEqualTo(1);
 
     // verify response was sent to client
-    verify(mockCommandResponseWriter).tryWriteResponse(eq(1), eq(100L));
+    Awaitility.await("until the rejection response is sent")
+        .untilAsserted(() -> verify(mockCommandResponseWriter).tryWriteResponse(eq(1), eq(100L)));
 
     // verify the processor was called only once (for the first command that failed)
     assertThat(processor.getProcessCount()).isEqualTo(1);
