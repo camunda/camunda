@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.util.unit.DataSize;
 
 @NullMarked
 public class BackupCfg implements ConfigurationEntry {
@@ -39,6 +40,7 @@ public class BackupCfg implements ConfigurationEntry {
   private long offset = 0L;
   private @Nullable Duration readTimeout;
   private @Nullable Duration writeTimeout;
+  private @Nullable DataSize maxReadRate;
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -115,6 +117,8 @@ public class BackupCfg implements ConfigurationEntry {
         .append(readTimeout)
         .append(", writeTimeout=")
         .append(writeTimeout)
+        .append(", maxReadRate=")
+        .append(maxReadRate)
         .append('}');
     return sb.toString();
   }
@@ -183,6 +187,14 @@ public class BackupCfg implements ConfigurationEntry {
     this.writeTimeout = writeTimeout;
   }
 
+  public @Nullable DataSize getMaxReadRate() {
+    return maxReadRate;
+  }
+
+  public void setMaxReadRate(final @Nullable DataSize maxReadRate) {
+    this.maxReadRate = maxReadRate;
+  }
+
   public interface BackupStoreFactory {
     /**
      * Creates a store that does not limit how fast it reads the files of a backup. Use it for
@@ -224,18 +236,25 @@ public class BackupCfg implements ConfigurationEntry {
     }
 
     /**
-     * Creates the limiter for {@link S3BackupStoreConfig#getMaxReadRate()}. All partitions of a
-     * broker read from the same disk, so create it once per broker and pass it to every store the
-     * broker creates; each call returns a limiter with its own budget.
+     * Creates the limiter for {@link BackupCfg#getMaxReadRate()}. All partitions of a broker read
+     * from the same disk, so create it once per broker and pass it to every store the broker
+     * creates; each call returns a limiter with its own budget.
      */
     static BackupReadRateLimiter createReadRateLimiter(final BackupCfg backupCfg) {
-      final var maxReadRate = backupCfg.getS3().getMaxReadRate();
+      final var maxReadRate = backupCfg.getMaxReadRate();
       if (maxReadRate == null) {
         return BackupReadRateLimiter.unlimited();
       }
       final var limiter = BackupReadRateLimiter.of(maxReadRate.toBytes());
-      Loggers.SYSTEM_LOGGER.info(
-          "Limiting the backup reads of this broker to {} per second", maxReadRate);
+      if (backupCfg.getStore() == BackupStoreType.S3) {
+        Loggers.SYSTEM_LOGGER.info(
+            "Limiting the backup reads of this broker to {} per second", maxReadRate);
+      } else {
+        Loggers.SYSTEM_LOGGER.warn(
+            "Backup maxReadRate is set to {} per second, but only the S3 backup store limits its reads. Backups to store {} are not limited.",
+            maxReadRate,
+            backupCfg.getStore());
+      }
       return limiter;
     }
   }

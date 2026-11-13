@@ -26,6 +26,8 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.properties.bind.Bindable;
@@ -35,6 +37,7 @@ import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.unit.DataSize;
 
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
@@ -201,6 +204,64 @@ public class PrimaryStorageBackupPropertiesTest {
     void shouldLeaveTimeoutsUnsetSoThatStoreDefaultsApply() {
       assertThat(backupCfg.getReadTimeout()).isNull();
       assertThat(backupCfg.getWriteTimeout()).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = "camunda.data.primary-storage.backup.max-read-rate=100MB")
+  class MaxReadRateConfiguration {
+    final BackupCfg backupCfg;
+
+    MaxReadRateConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupCfg = brokerCfg.getData().getBackup();
+    }
+
+    @Test
+    void shouldSetMaxReadRate() {
+      assertThat(backupCfg.getMaxReadRate()).isEqualTo(DataSize.ofMegabytes(100));
+    }
+  }
+
+  @Nested
+  class DefaultMaxReadRateConfiguration {
+    final BackupCfg backupCfg;
+
+    DefaultMaxReadRateConfiguration(@Autowired final BrokerBasedProperties brokerCfg) {
+      backupCfg = brokerCfg.getData().getBackup();
+    }
+
+    @Test
+    void shouldLeaveMaxReadRateUnsetSoThatReadsAreNotLimited() {
+      assertThat(backupCfg.getMaxReadRate()).isNull();
+    }
+  }
+
+  @Nested
+  class MaxReadRateStartupValidation {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1MB"})
+    void shouldFailToStartWithMaxReadRateThatIsNotPositive(final String maxReadRate) {
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.secondary-storage.type",
+              "rdbms",
+              "camunda.data.primary-storage.backup.max-read-rate",
+              maxReadRate);
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("BackupStore maxReadRate must be positive");
     }
   }
 

@@ -185,6 +185,7 @@ final class BackupStoreCfgTest {
     final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
 
     // then
+    assertThat(backup.getMaxReadRate()).isNull();
     assertThat(limiter.isUnlimited()).isTrue();
   }
 
@@ -192,7 +193,7 @@ final class BackupStoreCfgTest {
   void shouldLimitReadRateWhenMaxReadRateIsSet() {
     // given
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
-    backup.getS3().setMaxReadRate(DataSize.ofMegabytes(50));
+    backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
     final var limiter = BackupStoreFactory.createReadRateLimiter(backup);
@@ -206,7 +207,7 @@ final class BackupStoreCfgTest {
   void shouldCreateReadRateLimitersWithSeparateBudgets() {
     // given - each broker creates its limiter once and shares that instance between its stores
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
-    backup.getS3().setMaxReadRate(DataSize.ofMegabytes(50));
+    backup.setMaxReadRate(DataSize.ofMegabytes(50));
 
     // when
     final var first = BackupStoreFactory.createReadRateLimiter(backup);
@@ -220,7 +221,7 @@ final class BackupStoreCfgTest {
   void shouldRejectMaxReadRateThatIsNotPositive() {
     // given
     final var backup = TestConfigReader.readConfig("empty", Map.of()).getData().getBackup();
-    backup.getS3().setMaxReadRate(DataSize.ofBytes(0));
+    backup.setMaxReadRate(DataSize.ofBytes(0));
 
     // when - then
     assertThatThrownBy(() -> BackupStoreFactory.createReadRateLimiter(backup))
