@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.http;
 
+import static io.camunda.client.impl.http.HttpClientFactory.DEFAULT_CONNECTION_TIME_TO_LIVE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
@@ -134,7 +135,9 @@ class SilentHttp2ServerRequestTimeoutTest {
     return new CamundaClientImpl(
         configuration,
         CamundaClientImpl.buildChannel(configuration),
-        new HttpClientFactory(configuration, RESPONSE_DEADLINE_MARGIN).createClient());
+        new HttpClientFactory(
+                configuration, RESPONSE_DEADLINE_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE)
+            .createClient());
   }
 
   private CamundaClientBuilder clientBuilder() throws Exception {
