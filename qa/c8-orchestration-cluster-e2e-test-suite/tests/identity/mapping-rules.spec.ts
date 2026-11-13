@@ -121,7 +121,7 @@ test.describe.serial('mapping rules CRUD', () => {
       clickNext: true,
       emptyStateLocator: identityMappingRulesPage.emptyStateLocator,
       onAfterReload: async () => {
-        await page.goto(relativizePath(Paths.mappingRules()));
+        await identityMappingRulesPage.navigateToMappingRules();
         await Promise.race([
           identityMappingRulesPage.mappingRulesList.waitFor({timeout: 15000}),
           identityMappingRulesPage.emptyStateLocator.waitFor({timeout: 15000}),
