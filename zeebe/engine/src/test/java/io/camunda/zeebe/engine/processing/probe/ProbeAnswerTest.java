@@ -156,8 +156,29 @@ public final class ProbeAnswerTest {
   }
 
   @Test
-  public void shouldRejectAnOkAnswerWithoutData() {
-    assertRejectedEnvelope(new ProbeRecord().setOutcome(ProbeOutcome.OK));
+  public void shouldAnswerTheClientWithEmptyData() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequest(13, 131L)
+            .create()
+            .getKey();
+    ENGINE.probe().activate(List.of(probeId), "worker", 1);
+
+    // when the worker's data is an empty object, as its probe ID may define it (D9)
+    final var answered = ENGINE.probe().answer(probeKey, ok(Map.of()));
+
+    // then
+    assertThat(answered.getIntent()).isEqualTo(ProbeIntent.ANSWERED);
+    assertThat(answered.getValue().getOutcome()).isEqualTo(ProbeOutcome.OK);
+    final var respond =
+        RecordingExporter.probeRecords(ProbeIntent.RESPOND).withRecordKey(probeKey).getFirst();
+    assertThat(respond.getValue().getOutcome()).isEqualTo(ProbeOutcome.OK);
+    assertThat(respond.getValue().getData()).isEmpty();
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(13, 131L);
   }
 
   @Test
@@ -294,8 +315,8 @@ public final class ProbeAnswerTest {
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason())
         .startsWith(
-            "Expected an answer of outcome OK with data, UNSUPPORTED with neither data nor"
-                + " message, or ERROR with a message of at most 500 characters");
+            "Expected an answer of outcome OK without message, UNSUPPORTED with neither data"
+                + " nor message, or ERROR with a message of at most 500 characters");
     // the probe stays activated: a valid answer is still accepted
     assertThat(ENGINE.probe().answer(probeKey, unsupported()).getIntent())
         .isEqualTo(ProbeIntent.ANSWERED);

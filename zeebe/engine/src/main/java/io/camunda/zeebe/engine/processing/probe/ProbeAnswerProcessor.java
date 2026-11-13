@@ -118,15 +118,16 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
   }
 
   /**
-   * The envelope only (D48): the data is opaque. The engine cannot tell an empty data object from
-   * no data, as the record's default is an empty document, so an empty one counts as none.
+   * The envelope only (D48): the data is opaque, and an empty object is a valid OK answer. The
+   * engine cannot tell an empty data object from no data, as the record's default is an empty
+   * document, so the REST layer checks that an OK answer has data (D59).
    */
   private static Either<Rejection, ProbeRecord> validateEnvelope(final ProbeRecord answer) {
     final boolean hasData = !isEmptyDocument(answer);
     final boolean hasMessage = !answer.getMessage().isEmpty();
     final var valid =
         switch (answer.getOutcome()) {
-          case OK -> hasData && !hasMessage;
+          case OK -> !hasMessage;
           case UNSUPPORTED -> !hasData && !hasMessage;
           case ERROR ->
               !hasData && hasMessage && answer.getMessage().length() <= MAX_MESSAGE_LENGTH;
@@ -138,7 +139,7 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
     return Either.left(
         new Rejection(
             RejectionType.INVALID_ARGUMENT,
-            ("Expected an answer of outcome OK with data, UNSUPPORTED with neither data nor message,"
+            ("Expected an answer of outcome OK without message, UNSUPPORTED with neither data nor message,"
                     + " or ERROR with a message of at most %d characters, but got outcome '%s'"
                     + " %s data and %s message of %d characters.")
                 .formatted(
