@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -209,6 +210,18 @@ final class ProbeTimeoutCheckSchedulerTest {
         final List<String> tenantIds,
         final BiPredicate<Long, ProbeRecord> visitor) {
       delegate.forEachActivatableProbe(probeId, tenantIds, visitor);
+    }
+
+    @Override
+    public void forEachProbeParkedOn(
+        final String storeId, final String secretReference, final LongPredicate visitor) {
+      delegate.forEachProbeParkedOn(storeId, secretReference, visitor);
+    }
+
+    @Override
+    public void forEachSecretReferenceParkedOn(
+        final long probeKey, final BiPredicate<String, String> visitor) {
+      delegate.forEachSecretReferenceParkedOn(probeKey, visitor);
     }
   }
 }

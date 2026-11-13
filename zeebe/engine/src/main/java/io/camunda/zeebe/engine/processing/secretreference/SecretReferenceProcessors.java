@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -28,17 +29,27 @@ public final class SecretReferenceProcessors {
       final IncidentMetrics incidentMetrics,
       final SecretResolutionScheduler secretResolutionScheduler,
       final BpmnJobActivationBehavior jobActivationBehavior,
+      final ProbeBehavior probeBehavior,
       final boolean defaultSecretStoreConfigured) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
         new SecretReferenceResolutionCompleteProcessor(
-            writers, keyGenerator, processingState.getSecretReferenceState()));
+            writers,
+            keyGenerator,
+            processingState.getSecretReferenceState(),
+            processingState.getProbeState(),
+            probeBehavior));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_FAIL,
         new SecretReferenceResolutionFailProcessor(
-            writers, keyGenerator, processingState.getSecretReferenceState()));
+            writers,
+            keyGenerator,
+            processingState.getSecretReferenceState(),
+            processingState.getProbeState(),
+            probeBehavior,
+            defaultSecretStoreConfigured));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_REACTIVATE_JOBS,
