@@ -320,7 +320,7 @@ jobs:
     env:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
-      TEST_OWNER: '@camunda/optimize-frontend'
+      TEST_OWNER: '@camunda/optimize'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - name: Checkout repository
