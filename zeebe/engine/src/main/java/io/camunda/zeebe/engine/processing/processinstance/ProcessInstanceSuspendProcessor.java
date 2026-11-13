@@ -204,7 +204,6 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
-    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   @Override

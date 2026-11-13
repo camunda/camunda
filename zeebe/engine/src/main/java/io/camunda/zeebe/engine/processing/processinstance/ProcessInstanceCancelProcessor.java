@@ -204,7 +204,6 @@ public final class ProcessInstanceCancelProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
-    command.getValue().setStorageOrdinal(processInstanceRecord.getStorageOrdinal());
   }
 
   private long getRootProcessInstanceKey(long instanceKey) {

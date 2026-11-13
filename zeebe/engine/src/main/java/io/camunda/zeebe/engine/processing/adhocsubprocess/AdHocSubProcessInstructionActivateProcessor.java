@@ -107,9 +107,6 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    final int storageOrdinal = adHocSubProcessElementInstance.getValue().getStorageOrdinal();
-    command.getValue().setStorageOrdinal(storageOrdinal);
-
     final var activateElements =
         command.getValue().activateElements().stream()
             .map(AdHocSubProcessActivateElementInstruction::getElementId)
