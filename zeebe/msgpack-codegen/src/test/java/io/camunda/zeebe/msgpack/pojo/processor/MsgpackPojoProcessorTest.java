@@ -978,6 +978,36 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldNotChangeTheStoredFormatOfSanitizedFields() throws Exception {
+    // given the same fields with and without the mark
+    final var fields =
+        """
+        %1$slong a = 3;
+        %1$sDirectBuffer b = new UnsafeBuffer(new byte[] {1});
+        %1$s@MsgpackProperty(document = true) DirectBuffer c = new UnsafeBuffer(new byte[] {(byte) 0x80});
+        %1$sfinal List<DirectBuffer> d = new ArrayList<>();
+        %1$sfinal List<Inner> e = new ArrayList<>();
+        """;
+    final var plain = codecOf(valid(fields.formatted("")), inner());
+    final var sanitized = codecOf(valid(fields.formatted("@MsgpackSanitized ")), inner());
+    final var source = plain.newInstance();
+    final var marked = sanitized.newInstance();
+    for (final var value : List.of(source, marked)) {
+      set(value, "a", 42L);
+      ((List<DirectBuffer>) get(value, "d")).add(buffer("x"));
+    }
+
+    // when
+    final var bytes = plain.write(source);
+
+    // then
+    assertThat(sanitized.write(marked)).isEqualTo(bytes);
+    final var read = sanitized.newInstance();
+    sanitized.read(read, bytes);
+    assertThat(get(read, "a")).isEqualTo(42L);
+  }
+
+  @Test
   void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
     final var result = compile(pojo(valid("DirectBuffer name;")));
