@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.ProcessInstanceArchiveBatch;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,17 +65,15 @@ final class TestRepository extends NoopArchiverRepository {
   public CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
-      final Map<String, List<String>> keysByField,
-      final Map<String, String> inclusionFilters,
-      final Map<String, String> exclusionFilters,
+      final FilterByKeysQuery filter,
       final Executor executor) {
     moves.add(
         new DocumentMove(
             sourceIndexName,
             destinationIndexName,
-            keysByField,
-            inclusionFilters,
-            exclusionFilters,
+            filter.keysByField(),
+            filter.inclusionFilters(),
+            filter.exclusionFilters(),
             executor));
     return CompletableFuture.completedFuture(null);
   }

@@ -29,6 +29,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.Pro
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository.SearchAfterImpl;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
+import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -652,9 +653,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             batchOperationIndex,
             destIndexName,
-            Map.of("id", List.of("1", "2")),
-            Map.of(),
-            Map.of(),
+            FilterByKeysQuery.of(Map.of("id", List.of("1", "2"))),
             Runnable::run)
         .join();
 
@@ -681,9 +680,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             batchOperationIndex,
             destIndexName,
-            Map.of("id", List.of("3", "4")),
-            Map.of(),
-            Map.of(),
+            FilterByKeysQuery.of(Map.of("id", List.of("3", "4"))),
             Runnable::run)
         .join();
 
@@ -996,9 +993,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of(),
-                Map.of(),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 null,
                 config.getReindexBatchSize())
             .join();
@@ -1022,9 +1017,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("999")),
-                Map.of(),
-                Map.of(),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("999"))),
                 null,
                 config.getReindexBatchSize())
             .join();
@@ -1039,9 +1032,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of(),
-                Map.of(),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 null,
                 2)
             .join();
@@ -1059,9 +1050,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of(),
-                Map.of(),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 batchPg1.searchAfter(),
                 2)
             .join();
@@ -1077,9 +1066,7 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of(),
-                Map.of(),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111"))),
                 batchPg2.searchAfter(),
                 2)
             .join();
@@ -1094,9 +1081,8 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of(),
-                Map.of("joinRelation", "activity"),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111")))
+                    .exclusion("joinRelation", "activity"),
                 null,
                 100)
             .join();
@@ -1112,9 +1098,9 @@ final class ElasticsearchArchiverRepositoryIT {
         repository
             .getArchiveDocIdsBatch(
                 processInstanceIndex,
-                Map.of("processInstanceKey", List.of("111")),
-                Map.of("joinRelation", "variable"),
-                Map.of("joinRelation", "activity"),
+                FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111")))
+                    .inclusion("joinRelation", "variable")
+                    .exclusion("joinRelation", "activity"),
                 null,
                 100)
             .join();
@@ -1315,9 +1301,7 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocumentsById(
             processInstanceIndex,
             processInstanceIndex + "_dest",
-            Map.of("processInstanceKey", List.of("111", "333")),
-            Map.of(),
-            Map.of(),
+            FilterByKeysQuery.of(Map.of("processInstanceKey", List.of("111", "333"))),
             executor)
         .join(); // wait for completion
 
