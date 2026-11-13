@@ -14,6 +14,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_OR_GROUP;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
@@ -35,16 +36,12 @@ import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
-import io.camunda.gateway.protocol.model.GroupFilterFields;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
-import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
-import io.camunda.gateway.protocol.model.RoleFilterFields;
 import io.camunda.gateway.protocol.model.RoleUserFilterRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
-import io.camunda.gateway.protocol.model.UserFilterFields;
 import io.camunda.gateway.protocol.model.UserTaskAuditLogFilter;
 import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
@@ -100,6 +97,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -120,22 +118,65 @@ public class SearchQueryFilterMapper {
       validationErrors.addAll(builder.getLeft());
     }
 
-    if (filter != null) {
-      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-        for (final BaseProcessInstanceFilterFields or : filter.get$Or()) {
-          final var orBuilder = toBaseProcessInstanceFilterFields(processDefinitionKey, or);
-          if (orBuilder.isLeft()) {
-            validationErrors.addAll(orBuilder.getLeft());
-          } else if (builder.isRight()) {
-            builder.get().addOrOperation(orBuilder.get().build());
-          }
-        }
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or ->
+                toBaseProcessInstanceFilterFields(processDefinitionKey, or)
+                    .map(ProcessDefinitionStatisticsFilter.Builder::build),
+            FilterBuilders.processDefinitionStatisticsFilter(processDefinitionKey).build(),
+            validationErrors);
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+    orFilters.forEach(builder.get()::addOrOperation);
+    return Either.right(builder.get().build());
+  }
+
+  /**
+   * Maps each {@code $or} group and rejects groups without any filter criterion, i.e. groups that
+   * map to the same domain filter as no filter at all. Comparing the mapped group (rather than the
+   * raw request) also rejects groups whose fields carry no operators, such as {@code {"elementId":
+   * {}}}.
+   *
+   * <p>An empty group is rejected instead of being treated as "matches everything" because batch
+   * operations share these filters: a silently dropped {@code $or} clause would let a batch act on
+   * every instance the caller is authorized for.
+   */
+  private static <G, F> List<F> toOrFilters(
+      final @Nullable List<G> orGroups,
+      final Function<G, Either<List<String>, F>> groupMapper,
+      final F emptyFilter,
+      final List<String> validationErrors) {
+    final List<F> orFilters = new ArrayList<>();
+    if (orGroups == null) {
+      return orFilters;
+    }
+    for (int index = 0; index < orGroups.size(); index++) {
+      final var orFilter = groupMapper.apply(orGroups.get(index));
+      if (orFilter.isLeft()) {
+        validationErrors.addAll(orFilter.getLeft());
+      } else if (orFilter.get().equals(emptyFilter)) {
+        validationErrors.add(ERROR_MESSAGE_EMPTY_OR_GROUP.formatted(index));
+      } else {
+        orFilters.add(orFilter.get());
       }
     }
+    return orFilters;
+  }
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.get().build())
-        : Either.left(validationErrors);
+  /**
+   * Identity filter builders keep an unset field as {@code null} but an operator-less one (e.g.
+   * {@code {"groupId": {}}}) as an empty list. Both mean "no criterion" to every backend, so the
+   * empty list is dropped here; otherwise an empty {@code $or} group would not compare equal to the
+   * empty filter in {@link #toOrFilters}.
+   */
+  private static Optional<List<Operation<String>>> toNonEmptyStringOperations(
+      final @Nullable Object filter) {
+    return ofNullable(filter)
+        .map(mapToStringOperations())
+        .filter(operations -> !operations.isEmpty());
   }
 
   private static Either<List<String>, ProcessDefinitionStatisticsFilter.Builder>
@@ -682,22 +723,18 @@ public class SearchQueryFilterMapper {
       validationErrors.addAll(builder.getLeft());
     }
 
-    if (filter != null) {
-      if (filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-        for (final ProcessInstanceFilterFields or : filter.get$Or()) {
-          final var orBuilder = toProcessInstanceFilterFields(or);
-          if (orBuilder.isLeft()) {
-            validationErrors.addAll(orBuilder.getLeft());
-          } else if (builder.isRight()) {
-            builder.get().addOrOperation(orBuilder.get().build());
-          }
-        }
-      }
-    }
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> toProcessInstanceFilterFields(or).map(Builder::build),
+            FilterBuilders.processInstance().build(),
+            validationErrors);
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.get().build())
-        : Either.left(validationErrors);
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+    orFilters.forEach(builder.get()::addOrOperation);
+    return Either.right(builder.get().build());
   }
 
   public static Either<List<String>, Builder> toProcessInstanceFilterFields(
@@ -811,48 +848,58 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static GroupFilter toGroupFilter(
+  static Either<List<String>, GroupFilter> toGroupFilter(
       final io.camunda.gateway.protocol.model.@Nullable GroupFilter filter) {
     final var builder = toGroupFilterFields(filter);
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final GroupFilterFields or : filter.get$Or()) {
-        builder.addOrOperation(toGroupFilterFields(or).build());
-      }
+    final List<String> validationErrors = new ArrayList<>();
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> Either.<List<String>, GroupFilter>right(toGroupFilterFields(or).build()),
+            FilterBuilders.group().build(),
+            validationErrors);
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
     }
-    return builder.build();
+    orFilters.forEach(builder::addOrOperation);
+    return Either.right(builder.build());
   }
 
   static GroupFilter.Builder toGroupFilterFields(
       final io.camunda.gateway.protocol.model.@Nullable GroupFilterFields filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
-      ofNullable(filter.getGroupId())
-          .map(mapToStringOperations())
-          .ifPresent(builder::groupIdOperations);
-      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      toNonEmptyStringOperations(filter.getGroupId()).ifPresent(builder::groupIdOperations);
+      toNonEmptyStringOperations(filter.getName()).ifPresent(builder::nameOperations);
     }
     return builder;
   }
 
-  static RoleFilter toRoleFilter(
+  static Either<List<String>, RoleFilter> toRoleFilter(
       final io.camunda.gateway.protocol.model.@Nullable RoleFilter filter) {
     final var builder = toRoleFilterFields(filter);
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final RoleFilterFields or : filter.get$Or()) {
-        builder.addOrOperation(toRoleFilterFields(or).build());
-      }
+    final List<String> validationErrors = new ArrayList<>();
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> Either.<List<String>, RoleFilter>right(toRoleFilterFields(or).build()),
+            FilterBuilders.role().build(),
+            validationErrors);
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
     }
-    return builder.build();
+    orFilters.forEach(builder::addOrOperation);
+    return Either.right(builder.build());
   }
 
   static RoleFilter.Builder toRoleFilterFields(
       final io.camunda.gateway.protocol.model.@Nullable RoleFilterFields filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
-      ofNullable(filter.getRoleId())
-          .map(mapToStringOperations())
-          .ifPresent(builder::roleIdOperations);
-      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+      toNonEmptyStringOperations(filter.getRoleId()).ifPresent(builder::roleIdOperations);
+      toNonEmptyStringOperations(filter.getName()).ifPresent(builder::nameOperations);
     }
     return builder;
   }
@@ -867,15 +914,24 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static MappingRuleFilter toMappingRuleFilter(
+  static Either<List<String>, MappingRuleFilter> toMappingRuleFilter(
       final io.camunda.gateway.protocol.model.@Nullable MappingRuleFilter filter) {
     final var builder = toMappingRuleFilterFields(filter);
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final MappingRuleFilterFields or : filter.get$Or()) {
-        builder.addOrOperation(toMappingRuleFilterFields(or).build());
-      }
+    final List<String> validationErrors = new ArrayList<>();
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or ->
+                Either.<List<String>, MappingRuleFilter>right(
+                    toMappingRuleFilterFields(or).build()),
+            FilterBuilders.mappingRule().build(),
+            validationErrors);
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
     }
-    return builder.build();
+    orFilters.forEach(builder::addOrOperation);
+    return Either.right(builder.build());
   }
 
   static MappingRuleFilter.Builder toMappingRuleFilterFields(
@@ -884,9 +940,8 @@ public class SearchQueryFilterMapper {
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
-      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
-      ofNullable(filter.getMappingRuleId())
-          .map(mapToStringOperations())
+      toNonEmptyStringOperations(filter.getName()).ifPresent(builder::nameOperations);
+      toNonEmptyStringOperations(filter.getMappingRuleId())
           .ifPresent(builder::mappingRuleIdOperations);
     }
     return builder;
@@ -952,20 +1007,18 @@ public class SearchQueryFilterMapper {
       validationErrors.addAll(builder.getLeft());
     }
 
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final ElementInstanceFilterFields or : filter.get$Or()) {
-        final var orBuilder = toElementInstanceFilterFields(or);
-        if (orBuilder.isLeft()) {
-          validationErrors.addAll(orBuilder.getLeft());
-        } else if (builder.isRight()) {
-          builder.get().addOrOperation(orBuilder.get().build());
-        }
-      }
-    }
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> toElementInstanceFilterFields(or).map(FlowNodeInstanceFilter.Builder::build),
+            FilterBuilders.flowNodeInstance().build(),
+            validationErrors);
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.get().build())
-        : Either.left(validationErrors);
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+    orFilters.forEach(builder.get()::addOrOperation);
+    return Either.right(builder.get().build());
   }
 
   static Either<List<String>, FlowNodeInstanceFilter.Builder> toElementInstanceFilterFields(
@@ -1050,20 +1103,18 @@ public class SearchQueryFilterMapper {
       validationErrors.addAll(builder.getLeft());
     }
 
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final io.camunda.gateway.protocol.model.UserTaskFilterFields or : filter.get$Or()) {
-        final var orBuilder = toUserTaskFilterFields(or);
-        if (orBuilder.isLeft()) {
-          validationErrors.addAll(orBuilder.getLeft());
-        } else if (builder.isRight()) {
-          builder.get().addOrOperation(orBuilder.get().build());
-        }
-      }
-    }
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> toUserTaskFilterFields(or).map(UserTaskFilter.Builder::build),
+            FilterBuilders.userTask().build(),
+            validationErrors);
 
-    return validationErrors.isEmpty()
-        ? Either.right(builder.get().build())
-        : Either.left(validationErrors);
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
+    }
+    orFilters.forEach(builder.get()::addOrOperation);
+    return Either.right(builder.get().build());
   }
 
   static Either<List<String>, UserTaskFilter.Builder> toUserTaskFilterFields(
@@ -1156,30 +1207,31 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  static UserFilter toUserFilter(
+  static Either<List<String>, UserFilter> toUserFilter(
       final io.camunda.gateway.protocol.model.@Nullable UserFilter filter) {
     final var builder = toUserFilterFields(filter);
-    if (filter != null && filter.get$Or() != null && !filter.get$Or().isEmpty()) {
-      for (final UserFilterFields or : filter.get$Or()) {
-        builder.addOrOperation(toUserFilterFields(or).build());
-      }
+    final List<String> validationErrors = new ArrayList<>();
+    final var orFilters =
+        toOrFilters(
+            filter == null ? null : filter.get$Or(),
+            or -> Either.<List<String>, UserFilter>right(toUserFilterFields(or).build()),
+            FilterBuilders.user().build(),
+            validationErrors);
+
+    if (!validationErrors.isEmpty()) {
+      return Either.left(validationErrors);
     }
-    return builder.build();
+    orFilters.forEach(builder::addOrOperation);
+    return Either.right(builder.build());
   }
 
   static UserFilter.Builder toUserFilterFields(
       final io.camunda.gateway.protocol.model.@Nullable UserFilterFields filter) {
     final var builder = FilterBuilders.user();
     if (filter != null) {
-      Optional.ofNullable(filter.getUsername())
-          .map(mapToStringOperations())
-          .ifPresent(builder::usernameOperations);
-      Optional.ofNullable(filter.getName())
-          .map(mapToStringOperations())
-          .ifPresent(builder::nameOperations);
-      Optional.ofNullable(filter.getEmail())
-          .map(mapToStringOperations())
-          .ifPresent(builder::emailOperations);
+      toNonEmptyStringOperations(filter.getUsername()).ifPresent(builder::usernameOperations);
+      toNonEmptyStringOperations(filter.getName()).ifPresent(builder::nameOperations);
+      toNonEmptyStringOperations(filter.getEmail()).ifPresent(builder::emailOperations);
     }
     return builder;
   }

@@ -1061,6 +1061,63 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             eq(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build()), any());
   }
 
+  @ParameterizedTest
+  @MethodSource("emptyOrGroups")
+  void shouldReturnBadRequestForEmptyOrGroup(final String orClause, final String expectedDetail) {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": %s
+          }
+        }"""
+            .formatted(orClause);
+    final var expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "INVALID_ARGUMENT",
+          "status": 400,
+          "detail": "%s",
+          "instance": "%s"
+        }"""
+            .formatted(expectedDetail, PROCESS_INSTANCES_SEARCH_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class), any());
+  }
+
+  static Stream<Arguments> emptyOrGroups() {
+    return Stream.of(
+        Arguments.of("[{}]", "$or[0] must contain at least one filter criterion."),
+        Arguments.of(
+            "[{}, {\"processDefinitionId\": \"process_v1\"}]",
+            "$or[0] must contain at least one filter criterion."),
+        Arguments.of(
+            "[{\"processDefinitionId\": \"process_v1\"}, {}]",
+            "$or[1] must contain at least one filter criterion."),
+        Arguments.of("[{\"elementId\": {}}]", "$or[0] must contain at least one filter criterion."),
+        Arguments.of(
+            "[{}, {}]",
+            "$or[0] must contain at least one filter criterion. "
+                + "$or[1] must contain at least one filter criterion."));
+  }
+
   @Test
   void shouldReturnBadRequestForInvalidRootFilterWithValidOrClause() {
     // given

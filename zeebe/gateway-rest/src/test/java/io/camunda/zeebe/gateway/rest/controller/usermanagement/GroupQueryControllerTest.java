@@ -475,6 +475,48 @@ public class GroupQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldRejectSearchGroupsWithEmptyOrGroup() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": [
+              { "groupId": "group-a" },
+              { "groupId": {} }
+            ]
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "$or[1] must contain at least one filter criterion.",
+              "instance": "%s"
+            }"""
+                .formatted(GROUP_SEARCH_URL),
+            JsonCompareMode.STRICT);
+
+    verify(groupServices, never()).search(any(GroupQuery.class), any());
+  }
+
+  @Test
   void shouldSearchGroupsWithNameLikeFilter() {
     // given
     when(groupServices.search(any(GroupQuery.class), any()))
