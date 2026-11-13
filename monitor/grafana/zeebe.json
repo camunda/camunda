@@ -775,7 +775,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -873,7 +873,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -971,7 +971,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -1810,6 +1810,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": true
                 },
                 "rowsFrame": {
@@ -1828,7 +1829,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -1935,6 +1936,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -1953,7 +1955,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -5072,7 +5074,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6955,7 +6957,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7176,7 +7178,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7260,6 +7262,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -7278,7 +7281,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7360,6 +7363,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -7378,7 +7382,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7460,6 +7464,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -7478,7 +7483,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7706,7 +7711,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8817,6 +8822,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -8835,7 +8841,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9089,7 +9095,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9447,6 +9453,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -9465,7 +9472,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -11208,6 +11215,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -11221,7 +11229,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "red",
@@ -11247,7 +11256,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -11382,6 +11391,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -11395,7 +11405,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "red",
@@ -11421,7 +11432,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -12235,7 +12246,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -14757,7 +14768,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -15859,6 +15870,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -15876,7 +15888,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -15957,6 +15969,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -15974,7 +15987,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -17390,7 +17403,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -19804,7 +19817,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -20990,7 +21003,8 @@
                         "value": 80
                       }
                     ]
-                  }
+                  },
+                  "unit": "s"
                 },
                 "overrides": []
               },
@@ -21008,7 +21022,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -23208,6 +23222,14 @@
                 "overrides": []
               },
               "options": {
+                "barShape": "flat",
+                "barWidthFactor": 0.5,
+                "effects": {
+                  "barGlow": false,
+                  "centerGlow": false,
+                  "gradient": false
+                },
+                "endpointMarker": "point",
                 "minVizHeight": 75,
                 "minVizWidth": 75,
                 "orientation": "auto",
@@ -23218,12 +23240,17 @@
                   "fields": "",
                   "values": false
                 },
+                "segmentCount": 1,
+                "segmentSpacing": 0.3,
+                "shape": "gauge",
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true,
-                "sizing": "auto"
+                "sizing": "auto",
+                "sparkline": false,
+                "textMode": "auto"
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -23858,7 +23885,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -24102,7 +24129,7 @@
                 }
               }
             },
-            "version": ""
+            "version": "13.2.3"
           }
         }
       },
@@ -25712,7 +25739,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -27486,7 +27513,7 @@
                 "sortBy": []
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -28874,6 +28901,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -28892,7 +28920,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -28976,6 +29004,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": false
                 },
                 "rowsFrame": {
@@ -28994,7 +29023,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -29076,6 +29105,7 @@
                   "le": 1e-9
                 },
                 "legend": {
+                  "placement": "bottom",
                   "show": true
                 },
                 "rowsFrame": {
@@ -29093,7 +29123,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -29262,7 +29292,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -30894,7 +30924,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -31036,6 +31066,7 @@
                       "type": "log"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -31049,7 +31080,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "red",
@@ -31075,7 +31107,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -31239,6 +31271,7 @@
                       "type": "log"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -31252,7 +31285,8 @@
                     "mode": "absolute",
                     "steps": [
                       {
-                        "color": "green"
+                        "color": "green",
+                        "value": 0
                       },
                       {
                         "color": "red",
@@ -31301,7 +31335,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -34377,7 +34411,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -43678,7 +43712,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "collapse": true,
+              "collapse": false,
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
