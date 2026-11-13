@@ -61,8 +61,8 @@ flowchart TD
 
 1. `ColumnFamily.insert/update/upsert/deleteExisting` run the same precondition and foreign-key
    checks as the RocksDB column family. The value is encoded once into an exact-size `byte[]`
-   ([`Values.hold`](src/main/java/io/camunda/zeebe/db/writebehind/Values.java)) and wrapped by a new
-   instance, so the store never shares an object with the caller.
+   ([`Values.hold`](src/main/java/io/camunda/zeebe/db/writebehind/Values.java)). The store holds
+   only these bytes, so it never shares an object with the caller.
 2. The write goes into the transaction's own writes (`ConcurrentSkipListMap<RawKey, HeldValue>`,
    `null` value = tombstone). Raw keys are the RocksDB format: 8-byte big-endian column family id
    followed by the key.
@@ -84,13 +84,12 @@ flowchart TD
 |---|---|---|
 | 1 | transaction's own writes | own tombstone hides the key |
 | 2 | active, then sealed batch | `Version.asOf(committedSeq)`: newest version at or below the read seq |
-| 3 | read cache | holds flushed values and negative entries |
+| 3 | read cache | holds flushed values only |
 | 4 | key index of the CF | key inside the index window and not in the set: absent, no storage read |
-| 5 | `Backend.knownAbsent` | hook, always `false` for `RawBackend` |
-| 6 | RocksDB `get` | result cached only if no flush ran during the read |
+| 5 | RocksDB `get` | a value is cached only if no flush ran during the read; a miss is not cached |
 
-Step 6 reads `flushEpoch` (odd while a batch is being sealed or released) before the storage read and
-caches the result, including a "not found", only if the epoch was even and unchanged afterwards. A
+Step 5 reads `flushEpoch` (odd while a batch is being sealed or released) before the storage read and
+caches a value that it found only if the epoch was even and unchanged afterwards. A
 value loaded while a flush was in progress could otherwise overwrite a newer flushed value in the
 cache. A read copies into the caller's instance by wrapping the held bytes.
 
@@ -103,7 +102,7 @@ tombstones hide keys. The committed source is one of:
 
 | Source | When | What it reads |
 |---|---|---|
-| [`ViewSource`](src/main/java/io/camunda/zeebe/db/writebehind/ViewSource.java) | default | a fixed view: a storage iterator plus a copy of the sealed and active entries in the range, taken under the read lock. Never stale. |
+| [`ViewSource`](src/main/java/io/camunda/zeebe/db/writebehind/ViewSource.java) | default | a fixed view: a storage iterator plus the sealed and active batch, taken together under the read lock. It reads the entries of the batches when you use it, up to the last commit that it includes, and copies nothing. Never stale. |
 | [`IndexSource`](src/main/java/io/camunda/zeebe/db/writebehind/IndexSource.java) | CF has a loaded key index, stable as of the read seq, whose window covers the seek key | walks the live key set; values come from memory, else from `get` on storage |
 | [`HandoverSource`](src/main/java/io/camunda/zeebe/db/writebehind/HandoverSource.java) | wraps an `IndexSource` when the scan direction leaves the window | opens a view at the window bound once the window is exhausted |
 
@@ -115,7 +114,7 @@ as in RocksDB.
 ### Flush lifecycle
 
 [`AsyncFlusher`](src/main/java/io/camunda/zeebe/db/writebehind/AsyncFlusher.java) runs one daemon
-thread named `zb-db-write-behind` per DB.
+thread per DB. The thread name is `zb-db-write-behind-` and the name of the DB, for example the partition.
 
 1. **Wait.** Commits do not wake the writer. It parks for `max(flush-delay, 1ms)` and is unparked
    only when pending bytes cross `flush-threshold`, a snapshot asks for a flush, or the DB closes.
@@ -133,7 +132,8 @@ thread named `zb-db-write-behind` per DB.
    and snapshots are signalled.
 
 A `ZeebeDbException` from the write is retried up to 10 times, backing off from 10 ms, doubling up
-to 1 s. Any other error, or the last retry failing, marks the store failed (see
+to 1 s. Any other error, or the last retry failing, marks the store failed. An error that ends the
+writer thread outside the write, for example an `OutOfMemoryError`, marks it failed too (see
 [Caveats](#limitations-caveats-and-open-questions)).
 
 ## Key concepts
@@ -228,8 +228,7 @@ All bounds are per partition and come on top of the RocksDB memory limit.
 | `cache-size` | Caffeine maximum weight; `0` disables the cache. |
 | `key-index-max-keys` | Keys per CF index. Bounded by count, not bytes (roughly 100 to 150 B per key measured). |
 
-Pending bytes and cache weight use `200 + key length + value length` per entry. The decoded Java
-object held next to the bytes is not counted. With defaults, expect roughly 96 MB per partition
+Pending bytes and cache weight use `200 + key length + value length` per entry. With defaults, expect roughly 96 MB per partition
 (32 MB pending + 64 MB cache) plus key indexes.
 
 ## Configuration
@@ -275,6 +274,9 @@ CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_KEYINDEX_VARIABLES=DISABLE
 Fixed in `WriteBehindConfiguration.defaults()` and not exposed by the broker: 10 write retries and
 the 30 s flush/stop timeout.
 
+The broker rejects a value that the DB cannot use, for example a `max-pending` of zero or less, when
+it starts, if `enabled` is `true`.
+
 ## Metrics
 
 Micrometer meters, prefix `zeebe.writebehind.`, tag `store=rocksdb`. They are registered when the
@@ -287,9 +289,8 @@ Per column family (extra tag `columnFamily=<numeric id>`):
 |---|---|
 | `committed.puts`, `committed.deletes` | writes and deletes committed, before coalescing |
 | `lookup.dirty.hits` | point reads answered by unflushed versions |
-| `lookup.cache.hits` | point reads answered by the read cache (including negative entries) |
+| `lookup.cache.hits` | point reads answered by the read cache |
 | `lookup.keyindex.absent` | point reads answered "absent" by the key index |
-| `lookup.known.absent` | point reads answered by `Backend.knownAbsent` (always 0 on RocksDB) |
 | `lookup.storage.gets`, `lookup.storage.found` | point reads that went to RocksDB, and hits among them |
 | `scan.storage.iterators` | storage iterators opened for scans |
 | `flushed.puts`, `flushed.deletes` | writes and deletes sent to RocksDB after coalescing |
@@ -319,7 +320,8 @@ Useful signals: `pending.age` well above `flush-delay` means the writer is behin
 
 ## Limitations, caveats and open questions
 
-- **Writer failure is permanent.** After a non-retryable error or 10 failed retries the store logs
+- **Writer failure is permanent.** After a non-retryable error, an error that ends the writer
+  thread, or 10 failed retries the store logs
   an ERROR and every later operation throws `IllegalStateException` until the DB is reopened.
   Unverified: how the broker reacts (health status, partition transition).
 - **Unflushed state is heap-only.** Up to `flush-delay` / `max-pending` of commits is lost on a
@@ -333,11 +335,12 @@ Useful signals: `pending.age` well above `flush-delay` means the writer is behin
 - **Key-index loads and refills run on the calling thread**, normally the stream processor. A load
   reads up to `key-index-max-keys` keys; a refill `max/4`.
 - **`count()` and `countEqualPrefix` are O(n)**: a full merged scan, without decoding values.
-- **Memory accounting is approximate**: fixed 200-byte overhead, decoded objects not counted,
+- **Memory accounting is approximate**: fixed 200-byte overhead,
   key-index memory bounded by key count only, and everything multiplies by the partition count.
-- **Negative cache entries**: a storage miss is cached as an absent entry and counts toward
-  `cache-size`.
-- **`Backend.knownAbsent` is a hook only**; `RawBackend` never overrides it.
+- **No cache for absent keys**: a lookup of a key that RocksDB does not have goes to RocksDB each
+  time, unless a key index answers it. A small filter per column family can replace this later.
+- **A writer that cannot stop is left behind**: if the writer ignores the interrupt for a second
+  flush timeout, close logs an error and closes RocksDB anyway.
 - **`columnFamily` metric tag is the numeric CF id**, not the name.
 - **Not configurable from the broker**: retry count and the 30 s flush/stop timeout.
 - **Delete skipping costs a read**: each flushed tombstone calls `keyMayExist`, which shows up as
@@ -358,16 +361,15 @@ Useful signals: `pending.age` well above `flush-delay` means the writer is behin
 | [`WriteBehindStore`](src/main/java/io/camunda/zeebe/db/writebehind/WriteBehindStore.java) | Batches, versions, read cache, key indexes, views; the commit and read paths. |
 | [`AsyncFlusher`](src/main/java/io/camunda/zeebe/db/writebehind/AsyncFlusher.java) | Writer thread, queue, backpressure, retries, `awaitFlushed`. |
 | [`Version`](src/main/java/io/camunda/zeebe/db/writebehind/Version.java) | Versioned value or tombstone with its predecessor. |
-| [`HeldValue`](src/main/java/io/camunda/zeebe/db/writebehind/HeldValue.java) | A value object plus its encoded bytes. |
+| [`HeldValue`](src/main/java/io/camunda/zeebe/db/writebehind/HeldValue.java) | The encoded bytes of a value. |
 | [`Values`](src/main/java/io/camunda/zeebe/db/writebehind/Values.java) | Encode-once and copy-out helpers. |
-| [`ValueInstances`](src/main/java/io/camunda/zeebe/db/writebehind/ValueInstances.java) | Creates new value instances per class. |
 | [`RawKey`](src/main/java/io/camunda/zeebe/db/writebehind/RawKey.java) | Immutable key bytes, unsigned bytewise order, cached hash. |
 | [`KeyRange`](src/main/java/io/camunda/zeebe/db/writebehind/KeyRange.java) | Key range of a scan or view. |
 | [`Backend`](src/main/java/io/camunda/zeebe/db/writebehind/Backend.java) | SPI to the backing store: get, cursor, batch write, weigh, groups. |
 | [`RawBackend`](src/main/java/io/camunda/zeebe/db/writebehind/RawBackend.java) | `Backend` over `RawDbAccess`; groups are column families. |
 | [`MergingCursor`](src/main/java/io/camunda/zeebe/db/writebehind/MergingCursor.java) | Merges own writes with a committed source; picks and swaps sources. |
 | [`CommittedSource`](src/main/java/io/camunda/zeebe/db/writebehind/CommittedSource.java) | Interface for the committed side of a scan. |
-| [`ViewSource`](src/main/java/io/camunda/zeebe/db/writebehind/ViewSource.java) | Fixed view: dirty copy merged with a storage cursor. |
+| [`ViewSource`](src/main/java/io/camunda/zeebe/db/writebehind/ViewSource.java) | Fixed view: the unflushed batches up to one commit, merged with a storage cursor. |
 | [`IndexSource`](src/main/java/io/camunda/zeebe/db/writebehind/IndexSource.java) | Scan over the key index set. |
 | [`HandoverSource`](src/main/java/io/camunda/zeebe/db/writebehind/HandoverSource.java) | Continues an indexed scan past the window bound. |
 | [`KeyIndex`](src/main/java/io/camunda/zeebe/db/writebehind/KeyIndex.java) | Per-CF key set, window bound, seqlock state. |
