@@ -280,6 +280,96 @@ class ResponseMapperTest {
     }
 
     @Test
+    void shouldCarryLeaseTokenOnActivatedJobs() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L,
+              buildJobBatchRecord(jobWithLeaseToken("lease-token-1")),
+              1024 * 1024L,
+              "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isEqualTo("lease-token-1"));
+      assertThat(result.getJobsToDefer()).isEmpty();
+    }
+
+    @Test
+    void shouldCarryLeaseTokenOnJobsToDefer() {
+      // given - the max response size is too small for any job
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("lease-token-1")), 0L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs()).isEmpty();
+      assertThat(result.getJobsToDefer())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isEqualTo("lease-token-1"));
+    }
+
+    @Test
+    void shouldHaveNoLeaseTokenOnActivatedJobsWithoutLease() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("")), 1024 * 1024L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isNullOrEmpty());
+    }
+
+    @Test
+    void shouldHaveNoLeaseTokenOnJobsToDeferWithoutLease() {
+      // given
+      final var activationResponse =
+          new JobActivationResponse(
+              123L, buildJobBatchRecord(jobWithLeaseToken("")), 0L, "default");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getJobsToDefer())
+          .singleElement()
+          .satisfies(job -> assertThat(job.jobLeaseToken()).isNullOrEmpty());
+    }
+
+    private static JobRecord jobWithLeaseToken(final String leaseToken) {
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setJobLeaseToken(leaseToken)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      jobRecord.setVariables(
+          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Collections.emptyMap())));
+      return jobRecord;
+    }
+
+    @Test
     void shouldMapPriorityToActivatedJobResult() {
       // given
       final JobRecord jobRecord =

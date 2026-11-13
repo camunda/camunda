@@ -55,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,6 +68,15 @@ import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+
+  private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
+      "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
+          + "'monitor' cluster privilege required to verify cluster health during startup. "
+          + "The Camunda readiness probe will not pass until this is resolved. "
+          + "To fix: grant the 'monitor' cluster privilege to the service account, "
+          + "or disable the check by setting "
+          + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.";
+
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
   private static final Slices AUTO_SLICES =
@@ -433,6 +443,45 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public void awaitActivePrimaries(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return;
+    }
+    final var timeout = Duration.ofSeconds(10);
+    try {
+      for (final String batch :
+          SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var existing = getIndexNames(batch);
+        if (existing.isEmpty()) {
+          continue;
+        }
+        final var response =
+            client
+                .cluster()
+                .health(
+                    r ->
+                        r.index(List.copyOf(existing))
+                            .waitForStatus(HealthStatus.Yellow)
+                            .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
+        if (response.timedOut()) {
+          throw new SearchEngineException(
+              "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                  .formatted(batch, timeout, response.status()));
+        }
+      }
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    }
+  }
+
+  @Override
   public boolean isHealthy() {
     try {
       final var response = client.cluster().health(r -> r.timeout(Time.of(t -> t.time("500ms"))));
@@ -441,14 +490,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           && !response.status().equals(HealthStatus.Red);
     } catch (final ElasticsearchException e) {
       if (e.status() == 403) {
-        throw new SearchEngineHealthCheckPermissionException(
-            "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
-                + "'monitor' cluster privilege required to verify cluster health during startup. "
-                + "The Camunda readiness probe will not pass until this is resolved. "
-                + "To fix: grant the 'monitor' cluster privilege to the service account, "
-                + "or disable the check by setting "
-                + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.",
-            e);
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
       }
       LOG.warn(
           "Elasticsearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);

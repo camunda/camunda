@@ -30,14 +30,21 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.ST
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TREE_PATH;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.Set;
 
 public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
   public IncidentFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(final IncidentFilter filter) {
+    return restrictsTo(filter.stateOperations(), Set.of(IncidentState.ACTIVE.name()));
   }
 
   @Override

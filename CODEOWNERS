@@ -237,3 +237,6 @@
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-es.yml               @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
+
+# C8 Orchestration Cluster E2E test suite PR check (a thin caller of main's reusable PR check)
+/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml @camunda/test-automation-team
