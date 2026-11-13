@@ -108,7 +108,6 @@ class OperateProcessInstancePage {
   readonly viewParentInstanceLink: Locator;
   readonly incidentIconsInHistory: Locator;
   readonly modifyDialog: Locator;
-  readonly incidentErrorIndicators: Locator;
   readonly modifyDialogContinueButton: Locator;
   readonly editButton: Locator;
   readonly openButtonLast: Locator;
@@ -409,7 +408,6 @@ class OperateProcessInstancePage {
         },
       },
     });
-    this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
     this.editor = page
       .getByRole('group')
       .filter({has: page.getByRole('textbox')});
@@ -417,20 +415,6 @@ class OperateProcessInstancePage {
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
     this.editButton = page.getByRole('button', {name: 'Edit'});
     this.applyVariableButton = page.getByRole('button', {name: 'Apply'});
-  }
-
-  async checkExistingVariableErrorMessageText(
-    variableName: string,
-    message:
-      | 'Name should be unique'
-      | 'Value has to be filled'
-      | 'Name has to be filled'
-      | 'Value has to be JSON',
-  ) {
-    const errorMessage =
-      this.existingVariableByName(variableName).editVariableModal
-        .valueErrorMessage;
-    await expect(errorMessage!).toHaveText(message);
   }
 
   private async waitForIconWithRetry(
@@ -547,15 +531,6 @@ class OperateProcessInstancePage {
 
   getDialogCancelButton() {
     return this.modalDialog.getByRole('button', {name: 'Cancel'});
-  }
-
-  getMoveInstanceModificationText(
-    sourceFlowNode: string,
-    targetFlowNode: string,
-  ) {
-    return this.page.getByText(
-      new RegExp(`move "${sourceFlowNode}" to "${targetFlowNode}"`, 'i'),
-    );
   }
 
   async clickDialogDeleteVariableModification(index?: number) {
@@ -840,10 +815,6 @@ class OperateProcessInstancePage {
     return this.page.getByRole('treeitem', {name, exact});
   }
 
-  getSelectedTreeItem(name: string | RegExp, exact?: boolean): Locator {
-    return this.page.getByRole('treeitem', {name, exact, selected: true});
-  }
-
   findTreeItemInHistory(name: string | RegExp, exact?: boolean): Locator {
     return this.instanceHistory.getByRole('treeitem', {name, exact});
   }
@@ -889,12 +860,6 @@ class OperateProcessInstancePage {
 
   getIncidentRowOperationSpinner(incidentType: string | RegExp): Locator {
     return this.getIncidentRow(incidentType).getByTestId('operation-spinner');
-  }
-
-  async retryIncident(incidentType: string | RegExp): Promise<void> {
-    await this.getIncidentRow(incidentType)
-      .getByRole('button', {name: 'Retry Incident'})
-      .click();
   }
 
   async navigateToFailingElementForIncident(
@@ -1154,10 +1119,6 @@ class OperateProcessInstancePage {
     expect(states).toEqual(
       expectedStatus.map((status) => `${status.toLowerCase()} state`),
     );
-  }
-
-  async countIncidentErrorIndicators(): Promise<number> {
-    return await this.incidentErrorIndicators.count();
   }
 
   async clickOnElementInDiagram(elementId: string): Promise<void> {
