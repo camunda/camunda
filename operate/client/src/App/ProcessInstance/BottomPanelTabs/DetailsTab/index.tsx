@@ -601,6 +601,7 @@ const DetailsTab: React.FC = () => {
               {cellContent: 'Property', width: '30%'},
               {cellContent: 'Value', width: '70%'},
             ]}
+            valueCellLeftPadding="var(--cds-spacing-03)"
             rows={rows}
           />
         )}
