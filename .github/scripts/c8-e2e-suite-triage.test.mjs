@@ -473,3 +473,36 @@ test('the comment shows each failed test with its error', () => {
   const body = render({...baseArgs, buckets: b});
   assert.match(body, /- `tests\/a\.spec\.ts` › g › x _\(API\)_\n  - `Error: Response shape errors · \[ENUM\] value "PROBE" not in \['A'\]`/);
 });
+
+// --- identical test code on both sides: intermittent, not a regression -------
+
+test('passing with identical base test code is intermittent, not a regression', () => {
+  const t = {file: 'tests/a.spec.ts', title: 'x', project: ''};
+  const same = classify([
+    {leg: 'E2E', failures: [t], rerun: {status: 'done', sameTestCode: true, results: [{...t, base: 'passed'}]}},
+  ]);
+  assert.equal(same.intermittent.length, 1);
+  assert.equal(same.regression.length, 0);
+  const body = render({...baseArgs, buckets: same});
+  assert.match(body, /\*\*Intermittent, not caused by this PR \(1\)\*\*/);
+  assert.match(body, /1 failing test/);
+  assert.doesNotMatch(body, /Regression from this PR/);
+
+  // The PR changes the suite (or it is not known): a regression, as before.
+  for (const rerun of [
+    {status: 'done', sameTestCode: false, results: [{...t, base: 'passed'}]},
+    {status: 'done', results: [{...t, base: 'passed'}]},
+  ]) {
+    const b = classify([{leg: 'E2E', failures: [t], rerun}]);
+    assert.equal(b.regression.length, 1);
+    assert.equal(b.intermittent.length, 0);
+  }
+
+  // Passed with the base code in a job with the same code and in one without:
+  // the second is still evidence against the PR.
+  const mixed = classify([
+    {leg: 'A', failures: [t], rerun: {status: 'done', sameTestCode: true, results: [{...t, base: 'passed'}]}},
+    {leg: 'B', failures: [t], rerun: {status: 'done', sameTestCode: false, results: [{...t, base: 'passed'}]}},
+  ]);
+  assert.equal(mixed.regression.length, 1);
+});

@@ -88,6 +88,25 @@ if ! (
 fi
 base_suite="${base_root}/${suite_rel}"
 
+# Whether this PR changes the suite's test code at all: if the suite
+# directory is the same at the PR's commit and at the base commit, a test
+# that passes on the base re-run ran the very same code, in the same job,
+# against the same Camunda stack, so the difference is intermittent, not
+# caused by the PR. Compared by git's tree of the directory, so generated
+# files in the job's checkout (node_modules, reports) do not count. Unknown
+# (false) if the PR's commit cannot be fetched.
+head_sha="$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD 2>/dev/null || true)"
+RERUN_SAME_TEST_CODE=false
+if [[ -n "$head_sha" ]] && (
+  cd "$base_root" &&
+    timeout "$(left)s" git fetch -q --no-tags --depth=1 --filter=blob:none origin "$head_sha" &&
+    git diff --quiet HEAD "$head_sha" -- "$suite_rel"
+); then
+  RERUN_SAME_TEST_CODE=true
+  echo "This PR does not change the suite's test code."
+fi
+export RERUN_SAME_TEST_CODE
+
 plan="$(node "$triage" rerun-plan "$report" "$base_suite")"
 failed="$(jq -r '.failed' <<<"$plan")"
 if (( failed == 0 )); then
