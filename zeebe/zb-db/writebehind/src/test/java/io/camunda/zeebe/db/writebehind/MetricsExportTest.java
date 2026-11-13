@@ -124,7 +124,6 @@ final class MetricsExportTest {
     assertThat(columnFamilyCounter("lookup.cache.hits")).isEqualTo(1);
     assertThat(columnFamilyCounter("lookup.storage.gets")).isEqualTo(1);
     assertThat(columnFamilyCounter("lookup.storage.found")).isZero();
-    assertThat(columnFamilyCounter("lookup.known.absent")).isZero();
     assertThat(storage.gets()).isEqualTo(1);
   }
 

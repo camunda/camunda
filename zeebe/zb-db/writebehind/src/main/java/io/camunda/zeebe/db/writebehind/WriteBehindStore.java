@@ -153,20 +153,17 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   /**
    * Reads the latest committed value from the storage, or returns null if there is none. A value
-   * read from the storage is cached.
+   * read from the storage is cached; a missing one is not, as a cached absence of short-lived state
+   * would only fill the cache.
    */
   private @Nullable V readStorage(final K key) {
-    if (backend.knownAbsent(key)) {
-      metrics.of(backend.groupOf(key)).knownAbsent.increment();
-      return null;
-    }
     // A batch only leaves the store after the storage holds it and the cache has it, so a key that
     // isn't in a batch has its latest flushed value in the storage. A value that is loaded while
     // the writer flushes may be older than the one it caches, so it isn't cached then.
     final long epoch = flushEpoch;
     final var value = backend.get(key);
     countStorageGet(key, value != null);
-    if (cache != null && (epoch & 1) == 0 && flushEpoch == epoch) {
+    if (value != null && cache != null && (epoch & 1) == 0 && flushEpoch == epoch) {
       cacheLoaded(cache, key, new Version<>(value, 0), epoch);
     }
     return value;
@@ -193,10 +190,6 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
     final var inMemory = lookupInMemory(key);
     if (inMemory != null) {
       return !inMemory.isTombstone();
-    }
-    if (backend.knownAbsent(key)) {
-      metrics.of(backend.groupOf(key)).knownAbsent.increment();
-      return false;
     }
     final var found = backend.exists(key);
     countStorageGet(key, found);

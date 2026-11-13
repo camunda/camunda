@@ -113,9 +113,6 @@ final class WriteBehindMetrics {
     /** Point lookups answered by the read cache. */
     final LongAdder cacheHits = new LongAdder();
 
-    /** Point lookups answered "absent" without the storage, see {@link Backend#knownAbsent}. */
-    final LongAdder knownAbsent = new LongAdder();
-
     /** Point lookups that went to the storage, and how many of them found a value. */
     final LongAdder storageGets = new LongAdder();
 
@@ -138,7 +135,6 @@ final class WriteBehindMetrics {
       all.put("committed.deletes", committedDeletes);
       all.put("lookup.dirty.hits", dirtyHits);
       all.put("lookup.cache.hits", cacheHits);
-      all.put("lookup.known.absent", knownAbsent);
       all.put("lookup.storage.gets", storageGets);
       all.put("lookup.storage.found", storageGetsFound);
       all.put("scan.storage.iterators", iterators);

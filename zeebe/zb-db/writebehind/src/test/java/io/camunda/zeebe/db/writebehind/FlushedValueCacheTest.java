@@ -98,6 +98,23 @@ final class FlushedValueCacheTest {
     assertThat(storage.gets()).isEqualTo(1);
   }
 
+  @Test
+  void shouldNotCacheKeyThatTheStorageDoesNotHave() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    store.exportMetrics(registry, "test");
+
+    // when
+    final var first = store.get(key(1));
+    final var second = store.get(key(1));
+
+    // then
+    assertThat(first).isNull();
+    assertThat(second).isNull();
+    assertThat(cacheEntries(registry)).isZero();
+    assertThat(storage.gets()).isEqualTo(2);
+  }
+
   private static double cacheEntries(final SimpleMeterRegistry registry) {
     return registry.get("zeebe.writebehind.cache.entries").gauge().value();
   }

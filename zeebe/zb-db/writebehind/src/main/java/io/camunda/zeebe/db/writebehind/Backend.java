@@ -43,14 +43,6 @@ public interface Backend<K extends Comparable<K>, V, T> {
   boolean mayExist(K key);
 
   /**
-   * Whether the key is certainly not stored, so that a read can skip the storage. A cheap, in
-   * memory answer only; false means that the storage must be asked.
-   */
-  default boolean knownAbsent(final K key) {
-    return false;
-  }
-
-  /**
    * Starts a batch. Only the writer thread uses batches, one at a time, so a backend can reuse
    * scratch space between them.
    */
