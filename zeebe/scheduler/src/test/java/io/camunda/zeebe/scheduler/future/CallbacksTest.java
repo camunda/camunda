@@ -87,6 +87,53 @@ final class CallbacksTest {
     assertThat(order).containsExactlyElementsOf(expected);
   }
 
+  @ParameterizedTest
+  @ValueSource(ints = {2, 3, 6, 7, 8, 50})
+  void shouldRunAllCallbacksAndReturnFirstExceptionWhenSomeThrow(final int count) {
+    // given -- the first and the last callback throw, in array and in chain form
+    final List<Integer> order = new ArrayList<>();
+    final var first = new IllegalStateException("first");
+    final var last = new IllegalArgumentException("last");
+    var callbacks =
+        Callbacks.<String>of(
+            (value, error) -> {
+              order.add(0);
+              throw first;
+            },
+            recording(1, order));
+    for (int i = 2; i < count - 1; i++) {
+      callbacks = callbacks.add(recording(i, order));
+    }
+    final int lastIndex = Math.max(count - 1, 2);
+    callbacks =
+        callbacks.add(
+            (value, error) -> {
+              order.add(lastIndex);
+              throw last;
+            });
+
+    // when
+    final var thrown = callbacks.run("value", null);
+
+    // then
+    assertThat(order).containsExactlyElementsOf(range(lastIndex + 1));
+    assertThat(thrown).isSameAs(first);
+    assertThat(thrown.getSuppressed()).containsExactly(last);
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {2, 7})
+  void shouldReturnNoExceptionWhenNoCallbackThrows(final int count) {
+    // given
+    final var callbacks = callbacks(count, new ArrayList<>());
+
+    // when
+    final var thrown = callbacks.run("value", null);
+
+    // then
+    assertThat(thrown).isNull();
+  }
+
   private static Callbacks<String> callbacks(final int count, final List<Integer> order) {
     var callbacks = Callbacks.<String>of(recording(0, order), recording(1, order));
     for (int i = 2; i < count; i++) {

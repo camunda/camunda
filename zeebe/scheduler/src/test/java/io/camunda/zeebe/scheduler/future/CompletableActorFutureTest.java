@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -299,10 +300,79 @@ public class CompletableActorFutureTest {
       // then
       assertThat(received).containsExactly("again");
     }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 7})
+    void shouldNotifyRemainingCallbacksWhenOneThrows(final int others) {
+      // given -- a throwing callback registered first, as onComplete without an executor runs the
+      // consumer on the completing thread
+      final var future = new CompletableActorFuture<String>();
+      final var failure = new IllegalStateException("callback failed");
+      final var notified = new AtomicInteger();
+      future.onComplete(
+          (value, error) -> {
+            throw failure;
+          },
+          Runnable::run);
+      for (int i = 0; i < others; i++) {
+        future.onComplete((value, error) -> notified.incrementAndGet(), Runnable::run);
+      }
+
+      // when
+      assertThatThrownBy(() -> future.complete("done")).isSameAs(failure);
+
+      // then
+      assertThat(notified).hasValue(others);
+      assertThat(future.pendingCallbackCount()).isZero();
+    }
+
+    @Test
+    void shouldRethrowFirstExceptionWithLaterOnesSuppressed() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var first = new IllegalStateException("first");
+      final var second = new IllegalArgumentException("second");
+      future.onComplete(
+          (value, error) -> {
+            throw first;
+          },
+          Runnable::run);
+      future.onComplete(
+          (value, error) -> {
+            throw second;
+          },
+          Runnable::run);
+
+      // when - then
+      assertThatThrownBy(() -> future.complete("done"))
+          .isSameAs(first)
+          .hasSuppressedException(second);
+    }
   }
 
   @Nested
   public class BlockingGet {
+
+    @Test
+    @Timeout(30)
+    void shouldWakeUpWaiterWhenAnotherCallbackThrows() throws Exception {
+      // given -- a throwing callback registered before the waiter's latch callback
+      final var future = new CompletableActorFuture<String>();
+      future.onComplete(
+          (value, error) -> {
+            throw new IllegalStateException("callback failed");
+          },
+          Runnable::run);
+      final Future<String> waiter = EXECUTOR.submit(() -> future.get(1, TimeUnit.MINUTES));
+      Awaitility.await("waiter registered its latch callback")
+          .until(() -> future.pendingCallbackCount() == 2);
+
+      // when
+      assertThatThrownBy(() -> future.complete("done")).isInstanceOf(IllegalStateException.class);
+
+      // then
+      assertThat(waiter.get(10, TimeUnit.SECONDS)).isEqualTo("done");
+    }
 
     @Test
     void shouldNotRetainCallbacksForRepeatedTimeouts() {

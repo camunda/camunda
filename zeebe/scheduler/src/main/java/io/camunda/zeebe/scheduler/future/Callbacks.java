@@ -40,8 +40,48 @@ abstract sealed class Callbacks<V extends @Nullable Object> {
   /** Returns these callbacks followed by the given one, this value is not modified. */
   abstract Callbacks<V> add(BiConsumer<V, @Nullable Throwable> callback);
 
-  /** Runs the callbacks in the order they were added. */
-  abstract void run(@Nullable V value, @Nullable Throwable error);
+  /**
+   * Runs the callbacks in the order they were added. A callback that throws does not keep the
+   * following ones from running.
+   *
+   * @return the first exception thrown by a callback, with any later ones added as suppressed, or
+   *     null if none threw
+   */
+  abstract @Nullable Throwable run(@Nullable V value, @Nullable Throwable error);
+
+  /**
+   * Runs a single callback, see {@link #run(Object, Throwable)}.
+   *
+   * @param thrown the exception thrown by an earlier callback of the same notification, if any
+   * @return {@code thrown}, or the exception of this callback if it is the first one
+   */
+  static <V extends @Nullable Object> @Nullable Throwable accept(
+      final BiConsumer<V, @Nullable Throwable> callback,
+      final @Nullable V value,
+      final @Nullable Throwable error,
+      final @Nullable Throwable thrown) {
+    try {
+      callback.accept(value, error);
+      return thrown;
+    } catch (final Throwable t) {
+      return merge(thrown, t);
+    }
+  }
+
+  /**
+   * Returns the first of two exceptions thrown by callbacks of the same notification, with the
+   * second one added to it as suppressed.
+   */
+  static @Nullable Throwable merge(
+      final @Nullable Throwable first, final @Nullable Throwable next) {
+    if (first == null) {
+      return next;
+    }
+    if (next != null && next != first) {
+      first.addSuppressed(next);
+    }
+    return first;
+  }
 
   abstract int size();
 
@@ -68,10 +108,12 @@ abstract sealed class Callbacks<V extends @Nullable Object> {
     }
 
     @Override
-    void run(final @Nullable V value, final @Nullable Throwable error) {
+    @Nullable Throwable run(final @Nullable V value, final @Nullable Throwable error) {
+      Throwable thrown = null;
       for (final var callback : callbacks) {
-        callback.accept(value, error);
+        thrown = accept(callback, value, error, thrown);
       }
+      return thrown;
     }
 
     @Override
@@ -99,7 +141,7 @@ abstract sealed class Callbacks<V extends @Nullable Object> {
 
     @Override
     @SuppressWarnings("unchecked")
-    void run(final @Nullable V value, final @Nullable Throwable error) {
+    @Nullable Throwable run(final @Nullable V value, final @Nullable Throwable error) {
       // the chain is in reverse order of registration, and must not be modified to reverse it
       final BiConsumer<V, @Nullable Throwable>[] inOrder = new BiConsumer[size];
       int index = size;
@@ -107,9 +149,11 @@ abstract sealed class Callbacks<V extends @Nullable Object> {
         inOrder[--index] = node.callback;
       }
 
+      Throwable thrown = null;
       for (final var callback : inOrder) {
-        callback.accept(value, error);
+        thrown = accept(callback, value, error, thrown);
       }
+      return thrown;
     }
 
     @Override

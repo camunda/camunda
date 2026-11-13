@@ -477,6 +477,12 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     return current;
   }
 
+  @SuppressWarnings("unchecked")
+  private static <T extends Throwable> void sneakyThrow(final Throwable throwable) throws T {
+    // rethrows what a callback threw unchanged, which may be a checked exception thrown sneakily
+    throw (T) throwable;
+  }
+
   /** Visible for testing: the number of callbacks waiting for this future to complete. */
   int pendingCallbackCount() {
     return switch (callbacks) {
@@ -514,18 +520,31 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     } while (!CALLBACKS.compareAndSet(this, current, next));
   }
 
+  /**
+   * Runs every registered callback. Once detached, callbacks are only reachable from this thread,
+   * so a callback that throws must not keep the others from running: they could be waiters that are
+   * never woken up otherwise. The first exception is rethrown once all callbacks ran, with any
+   * later ones added as suppressed.
+   */
   @SuppressWarnings("unchecked")
   private void notifyAllBlocked() {
-    // The callbacks are detached atomically, so they are only reachable from this thread. Callbacks
-    // added by other callbacks, or concurrently by other threads, start a new value that is picked
-    // up by the next iteration. A plain read decides whether the atomic swap is needed at all.
+    // Callbacks added by other callbacks, or concurrently by other threads, start a new value that
+    // is picked up by the next iteration. A plain read decides whether the atomic swap is needed.
+    Throwable thrown = null;
     while (callbacks != null) {
-      switch (CALLBACKS.getAndSet(this, null)) {
-        case null -> {}
-        case Callbacks<?> several -> ((Callbacks<V>) several).run(value, failureCause);
-        case Object single ->
-            ((BiConsumer<V, @Nullable Throwable>) single).accept(value, failureCause);
-      }
+      thrown =
+          switch (CALLBACKS.getAndSet(this, null)) {
+            case null -> thrown;
+            case Callbacks<?> several ->
+                Callbacks.merge(thrown, ((Callbacks<V>) several).run(value, failureCause));
+            case Object single ->
+                Callbacks.accept(
+                    (BiConsumer<V, @Nullable Throwable>) single, value, failureCause, thrown);
+          };
+    }
+
+    if (thrown != null) {
+      sneakyThrow(thrown);
     }
   }
 
