@@ -15,9 +15,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Method;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.ibatis.executor.parameter.ParameterHandler;
 import org.apache.ibatis.mapping.BoundSql;
@@ -91,6 +93,25 @@ class ParameterMetaDataInterceptorTest {
     // then the parameter is bound and the driver's metadata was never consulted
     verify(driverStatement).setLong(1, 7L);
     verify(driverStatement, never()).getParameterMetaData();
+  }
+
+  @Test
+  void shouldBeRemovedOnceMyBatisSupportsIgnoreParameterMetaData() {
+    // given MyBatis 3.6.0, which has no setting to skip the driver's parameter metadata lookup
+    // when the setting appears (mybatis-3#3844, since 3.6.1) this workaround is obsolete
+    final var hasSetting =
+        Arrays.stream(Configuration.class.getMethods())
+            .map(Method::getName)
+            .anyMatch("setIgnoreParameterMetaData"::equals);
+
+    // then
+    assertThat(hasSetting)
+        .as(
+            "MyBatis now supports ignoreParameterMetaData (mybatis-3#3844). Remove"
+                + " ParameterMetaDataInterceptor and call"
+                + " configuration.setIgnoreParameterMetaData(true) in MyBatisConfiguration."
+                + " See camunda/camunda#69167.")
+        .isFalse();
   }
 
   private static ParameterHandler intercepted(final StatementBinder binder) {
