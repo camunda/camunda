@@ -596,7 +596,12 @@ jobs:
     # success() keeps the implicit needs-succeeded gate that a custom `if` would
     # otherwise drop (on merge_group build-and-push is continue-on-error, so it
     # still reports success and only the empty-tag check applies there).
-    if: success() && needs.build-and-push.outputs.image-tag != ''
+    # Temporarily disabled. camunda/camunda#68738 dropped the Elasticsearch 8
+    # compatibility layer, but camunda-platform-8.11 still deploys an ES 8.18.0
+    # companion, which answers every request with 400 and leaves orchestration
+    # stuck in schema initialization. Drop the `false &&` once
+    # camunda/camunda-platform-helm#7917 (ES 9.5.6 companion) has merged.
+    if: false && success() && needs.build-and-push.outputs.image-tag != ''
     uses: camunda/camunda-platform-helm/.github/workflows/test-integration-template.yaml@main
     secrets: inherit
     with:
