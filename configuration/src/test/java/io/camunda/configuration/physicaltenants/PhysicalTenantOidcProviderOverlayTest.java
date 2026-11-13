@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,8 +52,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "tenanta", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment).getProviders();
 
     // then all root fields survive unchanged
     final var provider = providers.getOidc().get("tenanta");
@@ -78,8 +78,7 @@ class PhysicalTenantOidcProviderOverlayTest {
     // when / then resolving a tenant does not throw and yields no named providers
     // (the flat default slot itself is outside this overlay — covered by the resolver test)
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "tenanta", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment).getProviders();
     assertThat(providers.getOidc()).isEmpty();
   }
 
@@ -107,8 +106,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "default", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", environment).getProviders();
 
     // then both inherited providers survive the empty overlay
     assertThat(providers.getOidc()).containsKeys("tenanta", "tenantb");
@@ -148,8 +146,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "tenanta", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment).getProviders();
 
     // then root fields are preserved despite the PT overlay
     final var provider = providers.getOidc().get("tenanta");
@@ -182,8 +179,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "tenanta", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment).getProviders();
 
     // then
     final var provider = providers.getOidc().get("AzureAd");
@@ -209,8 +205,7 @@ class PhysicalTenantOidcProviderOverlayTest {
 
     // when
     final OidcProvidersConfiguration providers =
-        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
-            "tenanta", environment);
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", environment).getProviders();
 
     // then both root and PT-private providers are present
     assertThat(providers.getOidc()).containsKey("sharedprovider");

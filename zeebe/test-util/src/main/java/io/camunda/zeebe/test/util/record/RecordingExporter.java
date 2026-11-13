@@ -44,7 +44,12 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartCorrelationKeyLockRel
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -109,6 +114,11 @@ import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockRele
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -126,6 +136,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -489,6 +500,26 @@ public final class RecordingExporter implements Exporter {
     return elementInstanceWalkRecords().withIntent(intent);
   }
 
+  public static PolicyUpdateRecordStream policyUpdateRecords() {
+    return new PolicyUpdateRecordStream(
+        records(ValueType.POLICY_UPDATE, PolicyUpdateRecordValue.class));
+  }
+
+  public static PolicyUpdateRecordStream policyUpdateRecords(final PolicyUpdateIntent intent) {
+    return policyUpdateRecords().withIntent(intent);
+  }
+
+  public static ProcessDefinitionSuspensionRecordStream processDefinitionSuspensionRecords() {
+    return new ProcessDefinitionSuspensionRecordStream(
+        records(
+            ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionRecordValue.class));
+  }
+
+  public static ProcessDefinitionSuspensionRecordStream processDefinitionSuspensionRecords(
+      final ProcessDefinitionSuspensionIntent intent) {
+    return processDefinitionSuspensionRecords().withIntent(intent);
+  }
+
   public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords() {
     return new ProcessDefinitionRestoreRecordStream(
         records(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreRecordValue.class));
@@ -497,6 +528,22 @@ public final class RecordingExporter implements Exporter {
   public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords(
       final ProcessDefinitionRestoreIntent intent) {
     return processDefinitionRestoreRecords().withIntent(intent);
+  }
+
+  public static ProbeRecordStream probeRecords() {
+    return new ProbeRecordStream(records(ValueType.PROBE, ProbeRecordValue.class));
+  }
+
+  public static ProbeRecordStream probeRecords(final ProbeIntent intent) {
+    return probeRecords().withIntent(intent);
+  }
+
+  public static ProbeBatchRecordStream probeBatchRecords() {
+    return new ProbeBatchRecordStream(records(ValueType.PROBE_BATCH, ProbeBatchRecordValue.class));
+  }
+
+  public static ProbeBatchRecordStream probeBatchRecords(final ProbeBatchIntent intent) {
+    return probeBatchRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {
@@ -513,6 +560,15 @@ public final class RecordingExporter implements Exporter {
 
   public static EscalationRecordStream escalationRecords(final EscalationIntent intent) {
     return escalationRecords().withIntent(intent);
+  }
+
+  public static MultiInstanceRecordStream multiInstanceRecords() {
+    return new MultiInstanceRecordStream(
+        records(ValueType.MULTI_INSTANCE, MultiInstanceRecordValue.class));
+  }
+
+  public static MultiInstanceRecordStream multiInstanceRecords(final MultiInstanceIntent intent) {
+    return multiInstanceRecords().withIntent(intent);
   }
 
   public static VariableRecordStream variableRecords() {
@@ -685,6 +741,11 @@ public final class RecordingExporter implements Exporter {
 
   public static UserTaskRecordStream userTaskRecords(final UserTaskIntent intent) {
     return userTaskRecords().withIntent(intent);
+  }
+
+  public static UserTaskLookupRecordStream userTaskLookupRecords() {
+    return new UserTaskLookupRecordStream(
+        records(ValueType.USER_TASK_LOOKUP, UserTaskLookupRecordValue.class));
   }
 
   public static CompensationSubscriptionRecordStream compensationSubscriptionRecords() {

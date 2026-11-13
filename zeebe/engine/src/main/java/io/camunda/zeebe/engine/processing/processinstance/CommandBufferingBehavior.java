@@ -10,12 +10,14 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -29,20 +31,23 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
  * the log verbatim once the process instance is drained during resume. No client response is
  * written here: buffered commands are (or become, via distribution) internal commands and are
  * re-issued once the process instance resumes, at which point the normal command lifecycle produces
- * the response.
+ * the response. The buffered record carries the storage ordinal of the process instance.
  */
 public final class CommandBufferingBehavior {
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
+  private final ElementInstanceState elementInstanceState;
   private final SuspensionMetrics suspensionMetrics;
 
   public CommandBufferingBehavior(
       final KeyGenerator keyGenerator,
       final Writers writers,
+      final ElementInstanceState elementInstanceState,
       final SuspensionMetrics suspensionMetrics) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
+    this.elementInstanceState = elementInstanceState;
     this.suspensionMetrics = suspensionMetrics;
   }
 
@@ -73,6 +78,7 @@ public final class CommandBufferingBehavior {
             .setProcessInstanceKey(processInstanceKey)
             .setProcessDefinitionKey(processDefinitionKey)
             .setTenantId(tenantId)
+            .setStorageOrdinal(resolveStorageOrdinal(commandValue, processInstanceKey))
             .setCommandKey(commandKey)
             .setValueType(valueType)
             .setIntent(intent)
@@ -84,5 +90,23 @@ public final class CommandBufferingBehavior {
         .appendFollowUpEvent(
             bufferedCommandKey, BufferedCommandIntent.BUFFERED, bufferedCommandRecord);
     suspensionMetrics.commandBuffered();
+  }
+
+  /**
+   * Returns the ordinal of the process instance, read from its root element instance. The command
+   * value is not used first, because clients send JOB, USER_TASK and INCIDENT commands without an
+   * ordinal, so they arrive with the default 0 even when the instance has a real ordinal.
+   */
+  private int resolveStorageOrdinal(
+      final UnifiedRecordValue commandValue, final long processInstanceKey) {
+    final var root = elementInstanceState.getInstance(processInstanceKey);
+    if (root != null) {
+      return root.getValue().getStorageOrdinal();
+    }
+    // The instance is gone, so its ordinal is unknown. Use the ordinal on the command if it has
+    // one. Otherwise, use the main index, where these records were written before ordinals.
+    return commandValue instanceof final StorageOrdinalRelated related
+        ? related.getStorageOrdinal()
+        : StorageOrdinalRelated.MAIN_INDEX;
   }
 }

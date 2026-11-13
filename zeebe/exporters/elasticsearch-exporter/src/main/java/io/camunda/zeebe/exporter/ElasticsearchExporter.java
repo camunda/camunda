@@ -164,6 +164,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  @SuppressWarnings("ReturnValueIgnored")
   private void validate(final ElasticsearchExporterConfiguration configuration) {
     final String prefix = configuration.index.prefix;
     IndexPrefixValidation.validateIndexPrefix("Elasticsearch prefix", prefix, true);

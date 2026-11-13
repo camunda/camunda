@@ -177,7 +177,7 @@ zeebe:
   image:
     registry: docker.io
     repository: camunda/zeebe
-    tag: 8.7.43
+    tag: 8.7.45
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -189,22 +189,25 @@ zeebe:
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  # CUSTOMIZATION: cluster sizing baseline, 4 CPU and 4Gi with request = limit (a Guaranteed pod, as customers run it).
+  # 3 CPU is throttled 50 to 90% and reaches about 450 PI/s, 4 CPU reaches about 695 PI/s (as fast as 6 CPU).
+  # 4 CPU do not fit on n2-standard-4 nodes, so the brokers run on n2-standard-8 nodes.
   resources:
     requests:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
     limits:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
@@ -243,9 +246,6 @@ zeebe:
       zeebe.broker.data.diskUsageCommandWatermark: "0.8"
       zeebe.broker.data.diskUsageReplicationWatermark: "0.9"
 
-      # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max)
     # to change settings like disabling consistency checks without duplicating the full application.yml content.
@@ -299,7 +299,7 @@ zeebeGateway:
     # Image.registry defines which image registry to use
     registry: docker.io
     # Image.tag defines the tag / version which should be used in the chart
-    tag: 8.7.43
+    tag: 8.7.45
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 

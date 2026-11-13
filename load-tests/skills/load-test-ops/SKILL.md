@@ -296,7 +296,7 @@ make max additional_platform_configuration="\
 
 ## Profile a running cluster
 
-Profiles all 3 broker pods in parallel (cpu / wall / alloc):
+Profiles all 3 broker pods in parallel (cpu / alloc):
 
 ```bash
 gh workflow run profile-load-test.yml --repo camunda/camunda \
@@ -317,7 +317,7 @@ After ~5 min, download flamegraph artifacts:
 gh run download <run-id> --repo camunda/camunda
 ```
 
-Artifact names: one per pod (each contains the cpu/wall/alloc reports for that pod), e.g. `flamegraph-<name>-<date>-camunda-0`, `flamegraph-<name>-<date>-camunda-1`, `flamegraph-<name>-<date>-camunda-2`
+Artifact names: one per pod (each contains the cpu and alloc reports for that pod), e.g. `flamegraph-<name>-<date>-camunda-0`, `flamegraph-<name>-<date>-camunda-1`, `flamegraph-<name>-<date>-camunda-2`
 
 ---
 

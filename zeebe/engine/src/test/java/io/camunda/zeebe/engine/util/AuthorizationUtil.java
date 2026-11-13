@@ -15,57 +15,45 @@ import java.util.Map;
 public class AuthorizationUtil {
 
   /**
-   * Creates an {@link AuthInfo} instance that contains an encoded authorization string that can be
-   * set on the record metadata.
+   * Creates an {@link AuthInfo} that can be set on the record metadata.
    *
    * @param authorizedTenantIds the authorized tenant IDs
-   * @return an encoded authorization string that can be set on the record metadata
+   * @return the auth info authorizing the given tenants
    */
   public static AuthInfo getAuthInfo(final String... authorizedTenantIds) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
-    return auth;
+    return AuthInfo.ofClaims(
+        Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
   }
 
   public static AuthInfo getUsernameAuthInfo(
       final String username, final String... authorizedTenantIds) {
-    final var auth = new AuthInfo();
-    auth.setClaims(
+    return AuthInfo.ofClaims(
         Map.of(
             Authorization.AUTHORIZED_USERNAME,
             username,
             Authorization.AUTHORIZED_TENANTS,
             List.of(authorizedTenantIds)));
-    return auth;
   }
 
   public static AuthInfo getAuthInfo(final String username) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_USERNAME, username));
-    return auth;
+    return AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, username));
   }
 
   public static AuthInfo getAuthInfoWithClaim(final String claim, final Object claimValue) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(claim, claimValue));
-    return auth;
+    return AuthInfo.ofClaims(Map.of(claim, claimValue));
   }
 
   public static AuthInfo getClientIdAuthInfo(
       final String clientId, final String... authorizedTenantIds) {
-    final var auth = new AuthInfo();
-    auth.setClaims(
+    return AuthInfo.ofClaims(
         Map.of(
             Authorization.AUTHORIZED_CLIENT_ID,
             clientId,
             Authorization.AUTHORIZED_TENANTS,
             List.of(authorizedTenantIds)));
-    return auth;
   }
 
   public static AuthInfo getClaimsFreeAuthInfo() {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of());
-    return auth;
+    return AuthInfo.ofClaims(Map.of());
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.starter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -17,25 +18,27 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.springframework.context.ApplicationContext;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 class StarterTest {
 
@@ -52,16 +55,11 @@ class StarterTest {
 
     // when
     new Starter(
-        mock(CamundaClient.class),
-        mock(CamundaClient.class),
         properties,
         registry,
-        mock(PayloadReader.class),
-        mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
-        mock(WebClient.Builder.class),
-        new ObjectMapper(),
-        mock(ApplicationContext.class));
+        mock(TaskScheduler.class),
+        mock(ApplicationEventPublisher.class));
 
     // then
     final var gauge = registry.find(StarterMetricsDoc.CLIENT_INFO.getName()).gauge();
@@ -100,23 +98,45 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.initialize();
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var deployer =
+        new ProcessDeployer(
+            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
+    // Spring calls this @PostConstruct method, but there is no Spring context in this test.
+    deployer.deployProcess();
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient, properties, registry, payloadReader, livenessIndicator);
+    final var availabilityMeter =
+        new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
     final var starter =
         new Starter(
-            loaderClient,
-            queryClient,
             properties,
-            new SimpleMeterRegistry(),
-            payloadReader,
-            mock(ConnectionMonitor.class),
-            mock(StarterLivenessIndicator.class),
-            mock(WebClient.Builder.class),
-            new ObjectMapper(),
-            mock(ApplicationContext.class));
+            registry,
+            livenessIndicator,
+            scheduler,
+            event -> {
+              creator.close();
+              availabilityMeter.close();
+            });
 
     // when
-    starter.run();
+    availabilityMeter.start();
+    creator.start();
+    starter.scheduleFinish();
 
     // then
+    await()
+        .atMost(Duration.ofSeconds(20))
+        .until(
+            () -> {
+              final var gauge = registry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
+              return gauge != null && gauge.value() == 1.0;
+            });
+    scheduler.shutdown();
     verify(loaderClient, atLeastOnce()).newCreateInstanceCommand();
     verify(loaderClient, never()).newProcessInstanceSearchRequest();
     verify(queryClient, atLeastOnce()).newProcessInstanceSearchRequest();

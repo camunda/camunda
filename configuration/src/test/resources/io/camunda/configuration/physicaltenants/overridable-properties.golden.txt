@@ -35,6 +35,7 @@ data.primary-storage.backup.azure.base-path
 data.primary-storage.backup.azure.connection-string
 data.primary-storage.backup.azure.create-container
 data.primary-storage.backup.azure.endpoint
+data.primary-storage.backup.azure.retry.max-attempts
 data.primary-storage.backup.azure.sas-token.type
 data.primary-storage.backup.azure.sas-token.value
 data.primary-storage.backup.checkpoint-interval
@@ -46,6 +47,8 @@ data.primary-storage.backup.gcs.bucket-name
 data.primary-storage.backup.gcs.buffer-size
 data.primary-storage.backup.gcs.host
 data.primary-storage.backup.gcs.max-concurrent-transfers
+data.primary-storage.backup.gcs.retry.max-attempts
+data.primary-storage.backup.gcs.retry.total-timeout
 data.primary-storage.backup.offset
 data.primary-storage.backup.read-timeout
 data.primary-storage.backup.required
@@ -56,6 +59,7 @@ data.primary-storage.backup.s3.base-path
 data.primary-storage.backup.s3.bucket-name
 data.primary-storage.backup.s3.compression
 data.primary-storage.backup.s3.connection-acquisition-timeout
+data.primary-storage.backup.s3.defaults-mode
 data.primary-storage.backup.s3.endpoint
 data.primary-storage.backup.s3.force-path-style-access
 data.primary-storage.backup.s3.max-concurrent-connections
@@ -419,6 +423,7 @@ processing.engine.mappings.input-mode
 processing.engine.mappings.output-comparison-mode
 processing.engine.mappings.output-mode
 processing.engine.max-process-depth
+processing.engine.messages.pending-subscription-recovery-batch-limit
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
 processing.engine.secrets.batch-resolution-limit
@@ -473,6 +478,7 @@ secrets.cache.max-size
 secrets.cache.ttl
 secrets.max-concurrency
 secrets.stores.aws
+secrets.stores.env
 secrets.stores.file
 secrets.stores.gcp
 security.authentication
@@ -511,6 +517,8 @@ security.authentication.oidc.prefer-username-claim
 security.authentication.oidc.redirect-uri
 security.authentication.oidc.registration-id
 security.authentication.oidc.resource
+security.authentication.oidc.revocation-enabled
+security.authentication.oidc.revocation-endpoint-uri
 security.authentication.oidc.scope
 security.authentication.oidc.token-uri
 security.authentication.oidc.user-info-augmentation.cache-max-size
@@ -534,9 +542,6 @@ security.initialization.mapping-rules
 security.initialization.roles
 security.initialization.tenants
 security.initialization.users
-security.saas
-security.saas.cluster-id
-security.saas.organization-id
 system.clock-controlled
 system.legacy-query-api.enabled
 webapps.identity.enabled

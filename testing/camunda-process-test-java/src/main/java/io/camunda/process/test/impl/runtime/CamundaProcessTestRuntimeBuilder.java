@@ -81,7 +81,8 @@ public class CamundaProcessTestRuntimeBuilder {
   private final Map<String, String> connectorsSecrets =
       new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
 
-  private final Map<String, String> clusterSecrets = new HashMap<>();
+  private final Map<String, String> clusterSecrets =
+      new HashMap<>(CamundaProcessTestRuntimeDefaults.CLUSTER_SECRETS);
 
   private final List<CamundaProcessTestContainerProvider> containerProviders = new ArrayList<>();
   private boolean containerProvidersServiceLoaderEnabled = true;

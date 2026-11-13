@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, stripSearchParams, type SearchMiddleware} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {BatchOperations} from '#/operate/pages/BatchOperations/BatchOperations';
 import {
@@ -14,8 +14,16 @@ import {
 	batchOperationsSearchSchema,
 } from '#/operate/pages/BatchOperations/batchOperations.queries';
 
+const lowercaseSortOrder: SearchMiddleware<ReturnType<typeof batchOperationsSearchSchema.parse>> = ({search, next}) => {
+	const result = next(search);
+	return result.sort === undefined
+		? result
+		: {...result, sort: result.sort.replace(/\+(ASC|DESC)$/, (order) => order.toLowerCase())};
+};
+
 export const Route = createFileRoute('/_carbon/_auth/operate/batch-operations/')({
 	validateSearch: batchOperationsSearchSchema,
+	search: {middlewares: [lowercaseSortOrder, stripSearchParams(batchOperationsSearchSchema.parse({}))]},
 	loaderDeps: ({search}) => ({...search}),
 	loader: ({context: {queryClient}, deps}) => {
 		void queryClient.prefetchQuery(batchOperationsOptions(deps));

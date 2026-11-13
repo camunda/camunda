@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -22,11 +24,14 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import org.apache.logging.log4j.Level;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -36,7 +41,8 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   public void shouldExecuteBatchOperationForCancelProcessInstance() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims =
+        Map.of(AUTHORIZED_USERNAME, "user", USER_GROUPS_CLAIMS, List.of("group"));
     final var batchOperationKey =
         createNewCancelProcessInstanceBatchOperation(processInstanceKeys, claims);
 
@@ -75,6 +81,34 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   }
 
   @Test
+  public void shouldLogPartitionIdInHeartbeat() {
+    try (final var logs =
+        LogCapturer.capturing(BatchOperationExecutionExecuteProcessor.class, Level.DEBUG)) {
+      // given - the heartbeat is logged every 1000 executed items
+      final var processInstanceKeys =
+          LongStream.rangeClosed(1, 1000).boxed().collect(Collectors.toSet());
+      final var batchOperationKey =
+          createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+      // when
+      RecordingExporter.batchOperationLifecycleRecords(BatchOperationIntent.COMPLETED)
+          .withBatchOperationKey(batchOperationKey)
+          .await();
+
+      final var executeCommand =
+          RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+              .withBatchOperationKey(batchOperationKey)
+              .getFirst();
+
+      // then
+      assertThat(logs.messagesAt(Level.DEBUG))
+          .contains(
+              "Batch operation %d on partition %d has executed 1000 of 1000 items."
+                  .formatted(batchOperationKey, executeCommand.getPartitionId()));
+    }
+  }
+
+  @Test
   public void shouldFailBatchOperationWhenRetriesAreExhausted() {
     // given
     when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
@@ -92,6 +126,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
             .create(DEFAULT_USER.getUsername())
             .getValue()
             .getBatchOperationKey();
+    engine.increaseTime(SCHEDULER_INTERVAL);
 
     // then we have failed event
     assertThat(
@@ -138,6 +173,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   @Test
   public void shouldRejectExecuteWhenBatchOperationIsSuspended() {
     // given
+    autoStartScheduler = false;
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 

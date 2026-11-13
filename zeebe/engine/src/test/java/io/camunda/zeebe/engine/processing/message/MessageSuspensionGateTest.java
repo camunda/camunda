@@ -8,12 +8,12 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -85,9 +85,14 @@ public final class MessageSuspensionGateTest {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
-    ((MutableProcessingState) ENGINE.getProcessingState())
-        .getSuspensionState()
-        .setSuspensionState(processInstanceKey, State.RESUMING);
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.RESUMING, new ProcessInstanceRecord()));
+    ENGINE.start();
 
     // when
     final Record<MessageCorrelationRecordValue> rejection =
@@ -298,6 +303,51 @@ public final class MessageSuspensionGateTest {
   }
 
   @Test
+  public void shouldIgnoreDuplicateReopenOfOpenSubscription() {
+    // given - a suspend and resume cycle reopened the subscription
+    final String processId = Strings.newRandomValidBpmnId();
+    final String messageName = Strings.newRandomValidBpmnId();
+    final String correlationKey = Strings.newRandomValidBpmnId();
+    final long processInstanceKey =
+        deployAndStartProcessWithMessageCatchEvent(processId, messageName, correlationKey);
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+    final var reopened =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3) // initial open, restore after the close ack, reopen ack
+            .getLast();
+
+    // when - the second REOPEN that a double close for suspend leaves behind
+    ENGINE.writeCommandOnPartition(
+        1,
+        reopened.getKey(),
+        ProcessMessageSubscriptionIntent.REOPEN,
+        (ProcessMessageSubscriptionRecord) reopened.getValue());
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .skip(3)
+        .await();
+    ENGINE.message().withName(messageName).withCorrelationKey(correlationKey).publish();
+
+    // then - the message correlates once and the instance completes
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .processMessageSubscriptionRecords()
+                .withIntent(ProcessMessageSubscriptionIntent.CORRELATED))
+        .hasSize(1);
+  }
+
+  @Test
   public void shouldPickUpMessageWithTTLOnResume() {
     // given - suspend the instance (removing message-side subscription), publish a message while
     // suspended so it buffers, then resume; reopenMessageSubscriptions re-creates the subscription
@@ -355,9 +405,13 @@ public final class MessageSuspensionGateTest {
   }
 
   private static void seedSuspending(final long processInstanceKey) {
-    await().until(ENGINE::hasReachedEnd);
-    ((MutableProcessingState) ENGINE.getProcessingState())
-        .getSuspensionState()
-        .setSuspensionState(processInstanceKey, State.SUSPENDING);
+    // a written event is only applied on replay, so restart the engine around the write
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()));
+    ENGINE.start();
   }
 }

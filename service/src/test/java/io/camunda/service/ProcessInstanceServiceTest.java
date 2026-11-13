@@ -61,6 +61,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
@@ -390,8 +391,15 @@ public final class ProcessInstanceServiceTest {
 
     assertThat(
             MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthorizationCheckBuffer(), RequiredAuthorization.class))
-        .isEqualTo(authorizationCheck);
+                enrichedRecord.getAuthorizationCheckBuffer(),
+                BatchOperationAuthorizationCheck.class))
+        .isEqualTo(
+            new BatchOperationAuthorizationCheck(
+                authorizationCheck.resourceType(),
+                authorizationCheck.permissionType(),
+                authorizationCheck.resourceIds(),
+                authorizationCheck.resourcePropertyNames(),
+                authorizationCheck.transitive()));
   }
 
   @Test
@@ -412,6 +420,35 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
+
+    // when
+    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+
+    // then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
+    assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+  }
+
+  @Test
+  public void shouldReturnOrderedProcessHierarchyWhenSearchReturnsDuplicateInstance() {
+    // given
+    final var childProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 789L)
+            .set(field(ProcessInstanceEntity::treePath), "PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654")
+            .create();
+
+    final var parentProcess =
+        Instancio.of(ProcessInstanceEntity.class)
+            .set(field(ProcessInstanceEntity::processInstanceKey), 123L)
+            .create();
+
+    when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1, false, List.of(childProcess, parentProcess, parentProcess), null, null));
 
     // when
     final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);

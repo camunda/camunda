@@ -38,6 +38,8 @@ import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from './processInstanceSearch';
 import {initialModificationState} from './modifications/modificationReducer';
 
+vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
+
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
 afterEach(async () => {

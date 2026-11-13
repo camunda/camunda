@@ -25,7 +25,7 @@ defaults:
 env:
   TEST_OWNER: '@camunda/engineering-operations'
   # renovate: datasource=node-version depName=node
-  NODE_VERSION: '26.10.0'
+  NODE_VERSION: '26.13.1'
   DOCS_DIR: monorepo-docs-site
 
 jobs:
@@ -53,7 +53,8 @@ jobs:
     name: Build and Deploy Documentation
     needs: detect-changes
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Covers build/deploy plus up to two Pages runs (TIMEOUT_SECONDS each) in "Verify Pages build"
+    timeout-minutes: 30
     # Serializes every writer to the gh-pages branch. The group name must stay identical
     # in docs-preview.yml and docs-preview-cleanup.yml, or the mutual exclusion breaks.
     concurrency:
@@ -62,7 +63,10 @@ jobs:
       queue: max
     permissions:
       contents: write
-      pages: read
+      # write is needed to request a Pages rebuild in "Verify Pages build"
+      pages: write
+      # read is needed to watch GitHub's pages-build-deployment run in "Verify Pages build"
+      actions: read
     environment:
       name: github-pages
       url: https://camunda.github.io/camunda/
@@ -89,56 +93,123 @@ jobs:
         working-directory: ${{ env.DOCS_DIR }}
         run: npm run build
 
+      # The deploy below replaces the whole gh-pages branch, so files from earlier builds
+      # (moved pages, timestamped search indexes, old bundles) don't pile up and slow every
+      # Pages build (INC-9073). PR previews share the branch, so the live ones are carried
+      # into the build output first. The gh-pages-write lock held by this job guarantees no
+      # preview is written between this checkout and the deploy push.
+      - name: Checkout live PR previews from gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages-previews
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: /pr-preview/
+          sparse-checkout-cone-mode: false
+
+      - name: Carry PR previews into the deploy
+        run: |
+          set -euo pipefail
+          # The committed tree is the source of truth; a sparse-checkout mismatch must fail
+          # here rather than silently drop previews in the deploy.
+          expected=$(git -C gh-pages-previews ls-tree -d --name-only HEAD pr-preview/ | sed 's#^pr-preview/##' | sort)
+          if [[ -z "${expected}" ]]; then
+            echo "No PR previews on gh-pages"
+            exit 0
+          fi
+          cp -a gh-pages-previews/pr-preview "${DOCS_DIR}/build/"
+          carried=$(find "${DOCS_DIR}/build/pr-preview" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+          if [[ "${carried}" != "${expected}" ]]; then
+            echo "::error::PR previews carried into the deploy don't match gh-pages; refusing to deploy."
+            diff <(echo "${expected}") <(echo "${carried}") || true
+            exit 1
+          fi
+          echo "Carried $(wc -l <<< "${carried}") PR previews into the deploy"
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./monorepo-docs-site/build
-          keep_files: true
+          keep_files: false
           enable_jekyll: false
 
-      # The deploy step above only confirms the push to gh-pages — the server-side Pages
-      # build runs separately and its outcome is not surfaced anywhere in the Actions UI
-      # (legacy Pages mode). Poll the Pages build API so a failed build becomes a visible
-      # job failure rather than a green workflow with a dead docs site.
+      # GitHub publishes gh-pages with its own `pages-build-deployment` run (legacy Pages mode).
+      # Watch that run, not the Pages builds API, which misreports it (INC-9073). Behaviour and
+      # troubleshooting: docs/monorepo-docs/ci-runbooks.md, "Monorepo Docs Site Pages Build Failure".
       - name: Verify Pages build
         env:
           GH_TOKEN: ${{ github.token }}
+          # GitHub's run builds for ~1-2 min, and its deploy step gives up after 10 min.
+          TIMEOUT_SECONDS: 780
+          MAX_ATTEMPTS: 2
         run: |
           set -euo pipefail
           expected_sha=$(gh api "repos/${GITHUB_REPOSITORY}/branches/gh-pages" --jq '.commit.sha')
-          echo "Expecting Pages build for gh-pages HEAD: ${expected_sha}"
-          deadline=$(( $(date +%s) + 300 ))
-          while :; do
-            response=$(gh api "repos/${GITHUB_REPOSITORY}/pages/builds/latest")
-            status=$(jq -r '.status' <<< "${response}")
-            commit=$(jq -r '.commit' <<< "${response}")
-            error=$(jq -r '.error.message // ""' <<< "${response}")
-            if [[ "${commit}" != "${expected_sha}" ]]; then
-              echo "Latest build is for ${commit:0:12} (status=${status}); waiting for ${expected_sha:0:12}..."
-            else
-              echo "Pages build for ${commit:0:12}: status=${status}"
-              case "${status}" in
-                built)
-                  echo "::notice::Pages build succeeded for ${commit}"
-                  exit 0 ;;
-                errored)
-                  echo "::error::Pages build FAILED for ${commit}: ${error}"
-                  echo "::error::The API only exposes the generic message above; check Settings → Pages in the repo UI for any additional detail."
-                  exit 1 ;;
-                building|queued|"")
-                  : ;;
-                *)
-                  echo "::warning::Unknown Pages build status: ${status} — treating as failure"
-                  exit 1 ;;
-              esac
+          echo "Expecting a pages-build-deployment run for gh-pages HEAD: ${expected_sha}"
+
+          # Polls the newest pages-build-deployment run of expected_sha not listed in seen_ids until it
+          # completes or TIMEOUT_SECONDS pass; sets run_id, run_url and run_conclusion (timeout if not done).
+          seen_ids=""
+          wait_for_run() {
+            local deadline=$(( $(date +%s) + TIMEOUT_SECONDS )) runs run status
+            run_id="" run_url="" run_conclusion=""
+            while (( $(date +%s) < deadline )); do
+              # A failed API call is retried on the next poll rather than failing the job.
+              if ! runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${expected_sha}&per_page=50"); then
+                echo "Listing Actions runs failed; retrying..."
+              else
+                run=$(jq -r --argjson seen "[${seen_ids}]" '
+                    [.workflow_runs[]
+                     | select(.path == "dynamic/pages/pages-build-deployment")
+                     | select(.id as $id | $seen | index($id) | not)]
+                    | max_by(.created_at) // empty
+                    | [.id, .status, (.conclusion // "none"), .html_url] | @tsv' <<< "${runs}")
+                if [[ -n "${run}" ]]; then
+                  IFS=$'\t' read -r run_id status run_conclusion run_url <<< "${run}"
+                  echo "Pages run ${run_id}: status=${status} conclusion=${run_conclusion}"
+                  [[ "${status}" == completed ]] && return 0
+                else
+                  echo "Waiting for GitHub to start a pages-build-deployment run for ${expected_sha:0:12}..."
+                fi
+              fi
+              sleep 10
+            done
+            run_conclusion=timeout
+          }
+
+          for (( attempt = 1; attempt <= MAX_ATTEMPTS; attempt++ )); do
+            wait_for_run
+            case "${run_conclusion}" in
+              success)
+                echo "::notice::Pages deployed ${expected_sha} (attempt ${attempt}/${MAX_ATTEMPTS}): ${run_url}"
+                exit 0 ;;
+              timeout)
+                if [[ -z "${run_id}" ]]; then
+                  echo "::error::GitHub didn't start a pages-build-deployment run for ${expected_sha} within ${TIMEOUT_SECONDS}s (attempt ${attempt}/${MAX_ATTEMPTS})."
+                else
+                  echo "::error::Pages run ${run_url} didn't finish within ${TIMEOUT_SECONDS}s (attempt ${attempt}/${MAX_ATTEMPTS}); a rebuild request would only queue behind it."
+                fi
+                exit 1 ;;
+            esac
+            echo "::warning::Pages run for ${expected_sha} ended with ${run_conclusion} (attempt ${attempt}/${MAX_ATTEMPTS}): ${run_url}"
+            # GitHub's own error lines, e.g. "Deployment failed, try again later." or "Timeout reached, aborting!"
+            for job_id in $(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.conclusion == "failure") | .id' || true); do
+              gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${job_id}/logs" | grep -F '##[error]' | sed 's/^[^ ]* /  /' | sort -u | head -5 || true
+            done
+            if (( attempt < MAX_ATTEMPTS )); then
+              # Ignore every run that exists now, so attempt 2 only accepts the run this request starts.
+              seen_ids+="${seen_ids:+,}${run_id}"
+              if runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${expected_sha}&per_page=50"); then
+                seen_ids+=$(jq -r '[.workflow_runs[] | select(.path == "dynamic/pages/pages-build-deployment") | ",\(.id)"] | join("")' <<< "${runs}")
+              fi
+              gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" > /dev/null
+              echo "Requested a Pages rebuild of ${expected_sha:0:12}"
             fi
-            if (( $(date +%s) >= deadline )); then
-              echo "::error::Timed out after 300s waiting for Pages build to complete."
-              exit 1
-            fi
-            sleep 10
           done
+          echo "::error::Pages deploy FAILED for ${expected_sha} after ${MAX_ATTEMPTS} attempts; last run: ${run_url}"
+          exit 1
 
       - name: Observe build status
         if: always()

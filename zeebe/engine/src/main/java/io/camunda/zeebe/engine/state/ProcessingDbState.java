@@ -90,6 +90,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyState;
+import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -105,6 +107,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyState;
+import io.camunda.zeebe.engine.state.policy.DbPolicyUpdateState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
@@ -155,6 +159,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
   private final MutableClockState clockState;
+  private final MutablePolicyState policyState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
   private final MutableTenantState tenantState;
@@ -171,6 +176,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
   private final MutableSecretReferenceState secretReferenceState;
+  private final MutablePolicyUpdateState policyUpdateState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -234,6 +240,7 @@ public class ProcessingDbState implements MutableProcessingState {
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
     userState = new DbUserState(zeebeDb, transactionContext);
     clockState = new DbClockState(zeebeDb, transactionContext);
+    policyState = new DbPolicyState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
@@ -249,6 +256,7 @@ public class ProcessingDbState implements MutableProcessingState {
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
     secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+    policyUpdateState = new DbPolicyUpdateState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -258,8 +266,6 @@ public class ProcessingDbState implements MutableProcessingState {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    messageSubscriptionState.onRecovered(context);
-    processMessageSubscriptionState.onRecovered(context);
     bannedInstanceState.onRecovered(context);
     messageState.onRecovered(context);
     messageStartProcessInstanceAskState.onRecovered(context);
@@ -432,6 +438,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutablePolicyState getPolicyState() {
+    return policyState;
+  }
+
+  @Override
   public MutableRoleState getRoleState() {
     return roleState;
   }
@@ -494,6 +505,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableSecretReferenceState getSecretReferenceState() {
     return secretReferenceState;
+  }
+
+  @Override
+  public MutablePolicyUpdateState getPolicyUpdateState() {
+    return policyUpdateState;
   }
 
   @Override

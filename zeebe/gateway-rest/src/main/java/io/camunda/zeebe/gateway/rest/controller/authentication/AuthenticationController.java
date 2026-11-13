@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
+import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toAnonymousCamundaUser;
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
@@ -23,6 +24,7 @@ import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.spi.WebAppAuthorizationEnabledPort;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -30,7 +32,9 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,23 +50,34 @@ public class AuthenticationController {
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final CamundaSecurityLibraryProperties securityProperties;
+  private final WebAppAuthorizationEnabledPort authorizationEnabled;
 
   public AuthenticationController(
       final CamundaUserPort camundaUserPort,
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final CamundaSecurityLibraryProperties securityProperties) {
+      final CamundaSecurityLibraryProperties securityProperties,
+      final ObjectProvider<WebAppAuthorizationEnabledPort> authorizationEnabled) {
     this.camundaUserPort = camundaUserPort;
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
     this.securityProperties = securityProperties;
+    this.authorizationEnabled =
+        authorizationEnabled.getIfAvailable(
+            () -> request -> securityProperties.getAuthorizations().isEnabled());
   }
 
+  /**
+   * Returns the current user. A caller without an identity gets 401 on a protected API. On an
+   * unprotected API no credentials can authenticate it, so it gets an anonymous result instead.
+   */
   @CamundaGetMapping(path = "/me")
   public ResponseEntity<CamundaUserResult> getCurrentUser() {
     final var authenticatedUser = camundaUserPort.getCurrentUser();
     if (authenticatedUser == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+      return isAnonymousOnUnprotectedApi()
+          ? ResponseEntity.ok(toAnonymousCamundaUser())
+          : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     final var tenants = resolveTenants(authenticatedUser.tenants());
     return ResponseEntity.ok(toCamundaUser(authenticatedUser, tenants));
@@ -77,11 +92,15 @@ public class AuthenticationController {
    * AUTHORIZATION:READ} permission: seeing which authorizations apply to yourself is always
    * allowed. On a protected API it returns 401 for anonymous/unauthenticated callers, mirroring
    * {@link #getCurrentUser()}. On an unprotected API anonymous callers get an empty result instead.
+   *
+   * <p>{@code authorizationsEnabled} is the flag of the request's physical tenant, the same one the
+   * web app access check uses.
    */
   @CamundaPostMapping(path = "/me/authorizations/search")
   public ResponseEntity<OwnAuthorizationSearchResult> searchOwnAuthorizations(
       @PhysicalTenantId final String physicalTenantId,
-      @RequestBody(required = false) final AuthorizationSearchQuery query) {
+      @RequestBody(required = false) final AuthorizationSearchQuery query,
+      final HttpServletRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     if (authentication == null
         || (authentication.isAnonymous() && securityProperties.isApiProtected())) {
@@ -90,13 +109,26 @@ public class AuthenticationController {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> searchOwn(physicalTenantId, q, authentication));
+            q ->
+                searchOwn(
+                    physicalTenantId,
+                    q,
+                    authentication,
+                    authorizationEnabled.isAuthorizationEnabled(request)));
+  }
+
+  private boolean isAnonymousOnUnprotectedApi() {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return authentication != null
+        && authentication.isAnonymous()
+        && !securityProperties.isApiProtected();
   }
 
   private ResponseEntity<OwnAuthorizationSearchResult> searchOwn(
       final String physicalTenantId,
       final AuthorizationQuery query,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final boolean authorizationsEnabled) {
     try {
       final var result =
           serviceRegistry
@@ -104,7 +136,7 @@ public class AuthenticationController {
               .searchOwnAuthorizations(query, authentication);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toOwnAuthorizationSearchQueryResponse(
-              result, securityProperties.getAuthorizations().isEnabled()));
+              result, authorizationsEnabled));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

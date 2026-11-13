@@ -355,7 +355,18 @@ public final class MSSQLReplicationClusterContainer
             )
           """);
       stmt.execute("ALTER AVAILABILITY GROUP [" + AG_NAME + "] JOIN WITH (CLUSTER_TYPE = NONE)");
-      stmt.execute("ALTER AVAILABILITY GROUP [" + AG_NAME + "] GRANT CREATE ANY DATABASE");
+      // JOIN returns before the AG is initialized locally; until then, the GRANT fails with
+      // "Attempt to access non-existent or uninitialized availability group"
+      await()
+          .atMost(Duration.ofSeconds(60))
+          .pollInterval(Duration.ofMillis(500))
+          .ignoreExceptions()
+          .until(
+              () -> {
+                stmt.execute(
+                    "ALTER AVAILABILITY GROUP [" + AG_NAME + "] GRANT CREATE ANY DATABASE");
+                return true;
+              });
 
     } catch (final Exception e) {
       throw new RuntimeException("Failed to initialize MSSQL replica", e);

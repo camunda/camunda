@@ -142,7 +142,7 @@ class SnapshotInitializationUtilTest {
   }
 
   @Test
-  void shouldHandleNoSnapshotFromLeader() {
+  void shouldFailWhenLeaderReturnsNoSnapshot() {
     // given - no snapshot available from sender
     when(snapshotTransfer.getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION))
         .thenReturn(CompletableActorFuture.completed(null));
@@ -152,8 +152,11 @@ class SnapshotInitializationUtilTest {
         SnapshotInitializationUtil.initializeFromSnapshot(
             receiverSnapshotStore, snapshotTransfer, concurrencyControl);
 
-    // then
-    assertThat(result.join()).isNull();
+    // then - starting without the state of partition 1 must not be possible
+    assertThatThrownBy(result::join)
+        .isInstanceOf(ExecutionException.class)
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("no snapshot");
     assertThat(receiverSnapshotStore.getLatestSnapshot()).isEmpty();
   }
 

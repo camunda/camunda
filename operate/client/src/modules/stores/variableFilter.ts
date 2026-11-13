@@ -77,6 +77,14 @@ class VariableFilter {
   get hasActiveFilters() {
     return this.state.conditions.length > 0;
   }
+
+  get inlineCondition() {
+    const [condition] = this.state.conditions;
+    return this.state.conditions.length === 1 &&
+      condition?.operator === 'equals'
+      ? condition
+      : undefined;
+  }
 }
 
 const variableFilterStore = new VariableFilter();

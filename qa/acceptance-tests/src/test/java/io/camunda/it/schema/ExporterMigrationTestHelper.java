@@ -189,7 +189,7 @@ public class ExporterMigrationTestHelper {
     int count = 0;
     if (esClient != null) {
       final var response = esClient.cat().indices(b -> b.index(ZEEBE_RECORD_INDEXES));
-      for (final var record : response.valueBody()) {
+      for (final var record : response.indices()) {
         log.debug("{}. ES index: {}, docs: {}", ++count, record.index(), record.docsCount());
       }
     } else {

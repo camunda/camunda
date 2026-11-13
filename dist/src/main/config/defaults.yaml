@@ -267,11 +267,11 @@ camunda: # Type: io.camunda.configuration.Camunda
       # The heartbeat interval for Raft. The leader sends a heartbeat to a follower every heartbeatInterval.
       # This is an advanced setting.
       heartbeat-interval: "250ms" # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_HEARTBEATINTERVAL
-      # Sets how long a member joining a partition is given to catch up to the entry that admitted it. A
-      # join is only complete once the joiner has replicated that entry; until then it is a non-voting
-      # learner. If the joiner does not get there in time, the attempt fails and is retried from scratch, so
-      # a value below the time a joiner needs to replicate the backlog makes joins fail repeatedly. On slow
-      # networks or with large logs, raise it.
+      # Sets how long a member joining a partition may go without making progress towards the entry that
+      # admitted it. A join is only complete once the joiner has replicated that entry; until then it is a
+      # non-voting learner. If the joiner's commit index does not advance for this long, the attempt fails
+      # and is retried. Raise it if a joiner can go this long without committing anything, for example while
+      # receiving a very large snapshot.
       join-catch-up-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_JOINCATCHUPTIMEOUT
       # Sets the maximum batch size, which is send per append request to a follower.
       max-append-batch-size: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_CLUSTER_RAFT_MAXAPPENDBATCHSIZE
@@ -446,6 +446,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           create-container: true # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_CREATECONTAINER
           # Azure endpoint to connect to. Required unless a connection string is specified.
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_ENDPOINT
+          retry: # Type: io.camunda.configuration.data.primarystorage.backup.Azure$Retry  
+            # Maximum number of attempts the client makes for a failing request.
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_RETRY_MAXATTEMPTS
+          
           sas-token: # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken  
             # The SAS token must be of the following types: "delegation", "service" or "account".
             type: null # Type: io.camunda.configuration.data.primarystorage.backup.azure.SasToken$SasTokenType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_AZURE_SASTOKEN_TYPE
@@ -466,8 +470,9 @@ camunda: # Type: io.camunda.configuration.Camunda
           # that no authentication is attempted which is only applicable for testing with emulated GCS.
           auth: "auto" # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$GcsBackupStoreAuth, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_AUTH
           # When set, all blobs in the bucket will use this prefix. Useful for using the same bucket for
-          # multiple Zeebe clusters. In this case, basePath must be unique. Should not start or end with '/'
-          # character. Must be non-empty and not consist of only '/' characters.
+          # multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/' characters
+          # are removed, and a blank value or a single '/' means no prefix. A value consisting only of '/'
+          # characters is rejected.
           base-path: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_BASEPATH
           # Name of the bucket where the backup will be stored. The bucket must already exist. The bucket must
           # not be shared with other Zeebe clusters unless basePath is also set.
@@ -479,6 +484,11 @@ camunda: # Type: io.camunda.configuration.Camunda
           host: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_HOST
           # Maximum number of concurrent file transfers (uploads and downloads) using virtual threads.
           max-concurrent-transfers: 8 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_MAXCONCURRENTTRANSFERS
+          retry: # Type: io.camunda.configuration.data.primarystorage.backup.Gcs$Retry  
+            # Maximum number of attempts the client makes for a failing request.
+            max-attempts: null # Type: Optional<Integer>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_MAXATTEMPTS
+            # Maximum total time the client keeps retrying a failing request.
+            total-timeout: null # Type: Optional<Duration>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_GCS_RETRY_TOTALTIMEOUT
         
         offset: 0 # Type: Long, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_OFFSET
         read-timeout: null # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_READTIMEOUT
@@ -497,9 +507,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           # https://github.com/aws/aws-sdk-java-v2/blob/master/docs/BestPractices.md#utilize-timeout-configurati
           # ons
           api-call-timeout: "180s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_APICALLTIMEOUT
-          # When set, all objects in the bucket will use this prefix. Must be non-empty and not start or end
-          # with '/'. Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must
-          # be unique.
+          # When set, all objects in the bucket will use this prefix. Useful for using the same bucket for
+          # multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/' characters
+          # are removed, and a blank value or a single '/' means no prefix. A value consisting only of '/'
+          # characters is rejected.
           base-path: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_BASEPATH
           # Name of the bucket where the backup will be stored. The bucket must be already created. The bucket
           # must not be shared with other zeebe clusters. bucketName must not be empty.
@@ -510,6 +521,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           compression: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_COMPRESSION
           # Timeout for acquiring an already-established connection from a connection pool to a remote service.
           connection-acquisition-timeout: "45s" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_CONNECTIONACQUISITIONTIMEOUT
+          # Defaults mode of the AWS SDK S3 client, e.g. 'standard' or 'in-region'. When not set, the SDK uses
+          # 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment and can
+          # block for a couple of seconds when not running on AWS.
+          defaults-mode: null # Type: io.camunda.zeebe.backup.s3.S3BackupConfig$DefaultsMode, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_DEFAULTSMODE
           # Configure URL endpoint for the store. If no endpoint is provided, it will be determined based on the
           # configured region.
           endpoint: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_S3_ENDPOINT
@@ -596,11 +611,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         # predictable read rates.
         io-rate-bytes-per-second: 0 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_IORATEBYTESPERSECOND
         # Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a safety
-        # cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}. Only checked
-        # when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total memory directly,
-        # via {@link #memoryFraction}, so this cap does not apply there). The value must be greater than 0 and
-        # at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means RocksDB is
-        # never allowed to use more than 50% of total system memory.
+        # cap on top of the memory configured via {@link #memoryAllocationStrategy}. The value must be greater
+        # than 0 and at most 1, or -1 to disable the check (the default). For example, a value of 0.5 means
+        # RocksDB is never allowed to use more than 50% of total system memory.
         max-memory-fraction: -1 # Type: Double, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MAXMEMORYFRACTION
         # Configures how many files are kept open by RocksDB, per default it is unlimited (-1). This is a
         # performance optimization: if you set a value greater than zero, it will keep track and cap the
@@ -629,6 +642,10 @@ camunda: # Type: io.camunda.configuration.Camunda
         # all partitions in a broker. The memory allocation strategy depends on the memoryAllocationStrategy
         # setting.
         memory-limit: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYLIMIT
+        # Configures the minimum memory to allocate to RocksDB when using the 'FRACTION' memory allocation
+        # strategy. If memoryFraction of total system memory is less than this value, this value is allocated
+        # instead. Defaults to 0, which disables the minimum.
+        memory-minimum: null # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYMINIMUM
         # Configures how many write buffers should be full before they are merged and flushed to disk. Having
         # a higher number here means you may flush less often, but will flush more data at once. Have a lower
         # one means flushing more often, but flushing less data at once.
@@ -1710,6 +1727,9 @@ camunda: # Type: io.camunda.configuration.Camunda
       # guard against unbounded process recursion.
       max-process-depth: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MAXPROCESSDEPTH
       messages: # Type: io.camunda.configuration.processing.engine.EngineMessages  
+        # Configures how many message subscriptions a new leader scans per chunk when it rebuilds the pending
+        # subscriptions after recovery.
+        pending-subscription-recovery-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_PENDINGSUBSCRIPTIONRECOVERYBATCHLIMIT
         # Configures the maximum number of expired messages processed per Time-To-Live check.
         ttl-checker-batch-limit: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
         # Configures the interval at which buffered messages are checked for expiry.
@@ -1910,6 +1930,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     max-concurrency: null # Type: Integer, Env: CAMUNDA_SECRETS_MAXCONCURRENCY
     stores: # Type: io.camunda.configuration.Secrets$Stores  
       aws: null # Type: Map<String,io.camunda.configuration.Secrets$AwsSecretsManagerStore>, Env: CAMUNDA_SECRETS_STORES_AWS
+      env: null # Type: Map<String,io.camunda.configuration.Secrets$EnvStore>, Env: CAMUNDA_SECRETS_STORES_ENV
       file: null # Type: Map<String,io.camunda.configuration.Secrets$FileStore>, Env: CAMUNDA_SECRETS_STORES_FILE
       gcp: null # Type: Map<String,io.camunda.configuration.Secrets$GcpSecretManagerStore>, Env: CAMUNDA_SECRETS_STORES_GCP
   
@@ -2033,6 +2054,7 @@ zeebe: # Type:
     gateway: null # Type: io.camunda.zeebe.broker.system.configuration.EmbeddedGatewayCfg, Env: ZEEBE_BROKER_GATEWAY
     license-key: null # Type: String, Env: ZEEBE_BROKER_LICENSEKEY
     network: null # Type: io.camunda.zeebe.broker.system.configuration.NetworkCfg, Env: ZEEBE_BROKER_NETWORK
+    processing: null # Type: io.camunda.zeebe.broker.system.configuration.ProcessingCfg, Env: ZEEBE_BROKER_PROCESSING
     threads: null # Type: io.camunda.zeebe.broker.system.configuration.ThreadsCfg, Env: ZEEBE_BROKER_THREADS
   
   gateway: # Type: io.camunda.configuration.beans.LegacyGatewayBasedProperties  

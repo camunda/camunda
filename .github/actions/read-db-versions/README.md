@@ -14,8 +14,7 @@ multiple workflow files.
 
 |        Output        |                                    Description                                     |
 |----------------------|------------------------------------------------------------------------------------|
-| `elasticsearch-8`    | Latest supported ES 8 minor version (last entry in `es8` list)                     |
-| `elasticsearch-9`    | Latest supported ES 9 minor version                                                |
+| `elasticsearch-9`    | Latest supported ES 9 minor version (last entry in `es9` list)                     |
 | `opensearch-2`       | Latest supported OpenSearch 2 minor version                                        |
 | `opensearch-3`       | Latest supported OpenSearch 3 minor version                                        |
 | `saas`               | Elasticsearch version that should be deployed to SaaS environments for this branch |
@@ -32,7 +31,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
       es-os-matrix: ${{ steps.db-versions.outputs.es-os-matrix }}
     steps:
       - uses: actions/checkout@v6
@@ -52,7 +51,7 @@ jobs:
 ## How to update a version
 
 Edit `.ci/db-versions.yml`. The YAML anchor on the SaaS entry (`&saas`) ensures
-`saas` always references a version that is also present in the `es8` test list —
+`saas` always references a version that is also present in the `es9` test list —
 update the anchor value when promoting SaaS to a new minor.
 
 A trailing `# LTS` comment flags longer upstream support (human-readable only,

@@ -16,7 +16,7 @@
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "camunda-bpmn-js": "^5.27.0",
-    "camunda-dmn-js": "^3.7.0"
+    "camunda-dmn-js": "^4.0.0"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^14.0.0",
@@ -30,5 +30,5 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "npm@12.2.1"
+  "packageManager": "npm@12.2.2"
 }

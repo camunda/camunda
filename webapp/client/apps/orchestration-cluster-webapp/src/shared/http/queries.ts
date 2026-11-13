@@ -8,7 +8,7 @@
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
-	CurrentUser,
+	AuthenticatedCurrentUser,
 	License,
 	Form,
 	UserTask,
@@ -74,6 +74,7 @@ import type {
 	QueryRolesRequestBody,
 	QueryRolesResponseBody,
 	Role,
+	MappingRule,
 	QueryUsersByRoleRequestBody,
 	QueryUsersByRoleResponseBody,
 	QueryGroupsByRoleRequestBody,
@@ -128,6 +129,7 @@ const queryKeys = {
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	mappingRule: (mappingRuleId: string) => ['mappingRule', mappingRuleId] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
 	groups: (body: QueryGroupsRequestBody) => ['groups', body] as const,
@@ -141,7 +143,10 @@ const queryKeys = {
 		['groupMembers', groupId, 'roles', body] as const,
 	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
 		['groupMembers', groupId, 'mappingRules', body] as const,
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		options === undefined
+			? (['queryClusterVariables', body] as const)
+			: (['queryClusterVariables', body, options] as const),
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
@@ -178,7 +183,7 @@ const queries = {
 	getCurrentUser: () =>
 		queryOptions({
 			queryKey: queryKeys.currentUser(),
-			queryFn: async (): Promise<CurrentUser> => {
+			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
 				const {response, error} = await request(endpoints.getCurrentUser());
 				if (error !== null) {
 					throw mapQueryError(error);
@@ -626,6 +631,18 @@ const queries = {
 			},
 		}),
 
+	getMappingRule: (mappingRuleId: string) =>
+		queryOptions({
+			queryKey: queryKeys.mappingRule(mappingRuleId),
+			queryFn: async (): Promise<MappingRule> => {
+				const {response, error} = await request(endpoints.getMappingRule({mappingRuleId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	queryMappingRules: (body: QueryMappingRulesRequestBody) =>
 		queryOptions({
 			queryKey: queryKeys.queryMappingRules(body),
@@ -638,11 +655,11 @@ const queries = {
 			},
 		}),
 
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
 		queryOptions({
-			queryKey: queryKeys.queryClusterVariables(body),
+			queryKey: queryKeys.queryClusterVariables(body, options),
 			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
-				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				const {response, error} = await request(endpoints.queryClusterVariables(body, options));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

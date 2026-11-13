@@ -16,8 +16,10 @@ import {
 	type DataTableRowAction,
 	type SortingConfig,
 } from '@camunda/design-system';
+import {AssignEmptyState} from '#/admin/modules/shared/AssignEmptyState';
 import {AssignMembersModal} from './AssignMembersModal';
 import {UnassignMemberModal} from './UnassignMemberModal';
+import {getMemberKind} from './getMemberKind';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES} from './searchSchema';
 import type {TenantDetailSearch, TenantDetailSearchChange, TenantTab} from './detailSearchSchema';
 
@@ -49,6 +51,7 @@ function TenantMembersTab<T>({
 	onSearchChange,
 }: Props<T>) {
 	const {t} = useTranslation();
+	const kind = getMemberKind(tab);
 	const [isAssigning, setIsAssigning] = useState(false);
 	const [unassigningId, setUnassigningId] = useState<string | null>(null);
 
@@ -70,61 +73,74 @@ function TenantMembersTab<T>({
 		() => [
 			{
 				id: 'unassign',
-				label: t('admin.tenants.unassignButton'),
+				label: t(`admin.tenants.members.${kind}.remove`),
 				icon: <Trash2 aria-hidden />,
 				variant: 'destructive',
 				onClick: (row) => setUnassigningId(getMemberId(row)),
 			},
 		],
-		[getMemberId, t],
+		[getMemberId, kind, t],
 	);
+
+	const isEmpty = totalItems === 0;
 
 	return (
 		<div className="flex flex-col gap-4">
-			<div className="flex justify-end">
-				<Button onClick={() => setIsAssigning(true)}>
-					<Plus aria-hidden />
-					{t(`admin.tenants.assignButton_${tab}`)}
-				</Button>
-			</div>
-			<DataTable
-				aria-label={t(`admin.tenants.tab_${tab}`)}
-				className="**:data-[slot=data-table-actions-trigger]:ms-auto"
-				columns={columns}
-				data={rows}
-				getRowId={getMemberId}
-				rowActions={rowActions}
-				sorting={{
-					manual: true,
-					sortState,
-					onSortingChange: ([sorted]) =>
-						onSearchChange({sortOrder: sorted?.desc ? 'DESC' : undefined, page: undefined}),
-				}}
-				pagination={{
-					manual: true,
-					pageSizes: [...PAGE_SIZES],
-					defaultPageSize: DEFAULT_PAGE_SIZE,
-					pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
-					pageIndex: (search.page ?? 1) - 1,
-					rowCount: totalItems,
-					onPaginationChange: ({pageIndex, pageSize}) => {
-						const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
-						onSearchChange({
-							pageSize: pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as TenantDetailSearch['pageSize']),
-							page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
-						});
-					},
-				}}
-				emptyState={t(`admin.tenants.empty_${tab}`)}
-			/>
-			<AssignMembersModal
-				tab={tab}
-				tenantId={tenantId}
-				isOpen={isAssigning}
-				isFreeText={isFreeText}
-				assignedIds={rows.map(getMemberId)}
-				onClose={() => setIsAssigning(false)}
-			/>
+			{isEmpty ? (
+				<AssignEmptyState
+					parent="tenants"
+					kind={kind}
+					description={t('admin.tenants.emptyStateDisclaimer')}
+					onAssign={() => setIsAssigning(true)}
+				/>
+			) : (
+				<>
+					<div className="flex justify-end">
+						<Button onClick={() => setIsAssigning(true)}>
+							<Plus aria-hidden />
+							{t(`admin.tenants.members.${kind}.assign`)}
+						</Button>
+					</div>
+					<DataTable
+						aria-label={t(`admin.tenants.members.${kind}.tab`)}
+						className="**:data-[slot=data-table-actions-trigger]:ms-auto"
+						columns={columns}
+						data={rows}
+						getRowId={getMemberId}
+						rowActions={rowActions}
+						sorting={{
+							manual: true,
+							sortState,
+							onSortingChange: ([sorted]) =>
+								onSearchChange({sortOrder: sorted?.desc ? 'DESC' : undefined, page: undefined}),
+						}}
+						pagination={{
+							manual: true,
+							pageSizes: [...PAGE_SIZES],
+							defaultPageSize: DEFAULT_PAGE_SIZE,
+							pageSize: search.pageSize ?? DEFAULT_PAGE_SIZE,
+							pageIndex: (search.page ?? 1) - 1,
+							rowCount: totalItems,
+							onPaginationChange: ({pageIndex, pageSize}) => {
+								const hasPageSizeChanged = pageSize !== (search.pageSize ?? DEFAULT_PAGE_SIZE);
+								onSearchChange({
+									pageSize: pageSize === DEFAULT_PAGE_SIZE ? undefined : (pageSize as TenantDetailSearch['pageSize']),
+									page: hasPageSizeChanged || pageIndex === 0 ? undefined : pageIndex + 1,
+								});
+							},
+						}}
+					/>
+				</>
+			)}
+			{isAssigning && (
+				<AssignMembersModal
+					tab={tab}
+					tenantId={tenantId}
+					isOpen
+					isFreeText={isFreeText}
+					onClose={() => setIsAssigning(false)}
+				/>
+			)}
 			<UnassignMemberModal
 				tab={tab}
 				tenantId={tenantId}

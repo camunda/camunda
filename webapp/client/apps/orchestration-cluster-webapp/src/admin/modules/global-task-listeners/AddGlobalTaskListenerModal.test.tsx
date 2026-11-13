@@ -16,7 +16,7 @@ import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockCreateGlobalTaskListenerEndpoint,
-	mockGetGlobalTaskListenerEndpoint,
+	mockSearchGlobalTaskListenersEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createGlobalTaskListener} from '#/shared-test-modules/api-mocks/global-task-listeners';
 import {AddGlobalTaskListenerModal} from './AddGlobalTaskListenerModal';
@@ -49,7 +49,9 @@ describe('<AddGlobalTaskListenerModal />', () => {
 				successResponse: HttpResponse.json(createdGlobalTaskListener, {status: 201}),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalTaskListenerEndpoint({successResponse: HttpResponse.json(createdGlobalTaskListener)}),
+			mockSearchGlobalTaskListenersEndpoint({
+				successResponse: HttpResponse.json({items: [createdGlobalTaskListener], page: {totalItems: 1}}),
+			}),
 		);
 
 		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={mockOnClose} />, {wrapper: getWrapper()});
@@ -152,7 +154,7 @@ describe('<AddGlobalTaskListenerModal />', () => {
 					status: 201,
 				}),
 			}),
-			mockGetGlobalTaskListenerEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockSearchGlobalTaskListenersEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const screen = await render(<AddGlobalTaskListenerModal isOpen onClose={() => {}} />, {wrapper: getWrapper()});
 

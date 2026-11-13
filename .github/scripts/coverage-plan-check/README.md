@@ -12,7 +12,7 @@ status back when a case lands, and until this check nothing verified one, so a
 case still marked `automated` after its test was deleted or renamed was reported
 as coverage that exists.
 
-See camunda/camunda#65183 and camunda/team-test-automation#83.
+See camunda/camunda#65183.
 
 ## Used by
 

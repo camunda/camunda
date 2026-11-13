@@ -2,8 +2,8 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.sbe-conventions")
-  id("buildlogic.serial-test-conventions")
   id("buildlogic.test-jar-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 sbe {
@@ -25,6 +25,8 @@ dependencies {
   implementation(libs.com.google.guava.guava)
   implementation(libs.org.rocksdb.rocksdbjni)
   implementation(libs.com.netflix.concurrency.limits.concurrency.limits.core)
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-db"))
@@ -43,6 +45,7 @@ dependencies {
   implementation(project(":zeebe-transport"))
   implementation(project(":zeebe-broker-client"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-backup"))
@@ -97,6 +100,7 @@ dependencies {
   testImplementation(libs.com.fasterxml.jackson.dataformat.jackson.dataformat.yaml)
   testImplementation(libs.org.openjdk.jmh.jmh.core)
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
+  testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
 }
 
 tasks.withType<Test>().configureEach { jvmArgs("-Xmx2g") }

@@ -146,7 +146,6 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
-import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -179,7 +178,6 @@ import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
-import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -969,6 +967,7 @@ public final class SearchQueryResponseMapper {
         .errorMessage(job.errorMessage())
         .isDenied(job.isDenied())
         .lastUpdateTime(formatDateOrNull(job.lastUpdateTime()))
+        .storageOrdinal(job.storageOrdinal())
         .build();
   }
 
@@ -996,6 +995,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
+        .storageOrdinal(p.storageOrdinal())
         .build();
   }
 
@@ -1458,6 +1458,28 @@ public final class SearchQueryResponseMapper {
         .displayName(camundaUser.displayName())
         .email(camundaUser.email())
         .username(camundaUser.username())
+        .isAnonymous(false)
+        .build();
+  }
+
+  /**
+   * The current user of a caller without an identity, which only an unprotected API serves: no
+   * username, no memberships and nothing to log out of. Access is not restricted there, so every
+   * component is authorized, as when authorizations are disabled.
+   */
+  public static CamundaUserResult toAnonymousCamundaUser() {
+    return CamundaUserResult.Builder.create()
+        .authorizedComponents(List.of("*"))
+        .tenants(List.of())
+        .groups(List.of())
+        .roles(List.of())
+        .salesPlanType(null)
+        .c8Links(Map.of())
+        .canLogout(false)
+        .displayName(null)
+        .email(null)
+        .username(null)
+        .isAnonymous(true)
         .build();
   }
 
@@ -1488,6 +1510,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .build();
   }
@@ -1515,6 +1538,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .evaluatedInputs(
             requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))
@@ -1620,7 +1644,6 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .metadata(toVariableMetadata(variableEntity))
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
@@ -1652,27 +1675,7 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .metadata(toVariableMetadata(variableEntity))
         .value(getFullValueIfPresent(variableEntity))
-        .build();
-  }
-
-  private static @Nullable VariableMetadata toVariableMetadata(
-      final VariableEntity variableEntity) {
-    final var protectionModes = variableEntity.protectionModes();
-    if (protectionModes == null || protectionModes.isEmpty()) {
-      return null;
-    }
-    return VariableMetadata.Builder.create()
-        .protectionModes(
-            protectionModes.stream()
-                .sorted()
-                .map(
-                    mode ->
-                        switch (mode) {
-                          case REDACT -> ProtectionModeEnum.REDACT;
-                        })
-                .toList())
         .build();
   }
 

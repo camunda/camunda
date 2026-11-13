@@ -28,7 +28,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -414,7 +413,7 @@ public final class JobCompleteProcessor
       final JobRecord completingJobRecord, final ElementInstance targetAdHocSubProcess) {
     final var targetAdHocSubProcessInstanceValue = targetAdHocSubProcess.getValue();
     try {
-      variableBehavior.mergeDocument(
+      variableBehavior.mergeDocumentWithPropagationOfUnmodifiedVariable(
           targetAdHocSubProcess.getKey(),
           targetAdHocSubProcessInstanceValue.getProcessDefinitionKey(),
           targetAdHocSubProcessInstanceValue.getProcessInstanceKey(),
@@ -422,8 +421,7 @@ public final class JobCompleteProcessor
           targetAdHocSubProcessInstanceValue.getStorageOrdinal(),
           targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
           targetAdHocSubProcessInstanceValue.getTenantId(),
-          completingJobRecord.getVariablesBuffer(),
-          VariableMetadataLookup.NONE);
+          completingJobRecord.getVariablesBuffer());
     } catch (final ValidationException e) {
       throw new IllegalArgumentException(
           "Failed to propagate job variables to ad-hoc sub-process instance %d"
@@ -644,6 +642,13 @@ public final class JobCompleteProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    // UPDATING user task listeners can deny actions. If we allow the listener through, the listener
+    // will be unable to complete and variable updates will not reflect until resumption
+    return isTaskListenerJob(record.getKey()) ? SuspensionAction.REJECT : SuspensionAction.PROCESS;
+  }
+
+  private boolean isTaskListenerJob(final long jobKey) {
+    final var job = processState.getJobState().getJob(jobKey);
+    return job != null && job.getJobKind() == JobKind.TASK_LISTENER;
   }
 }

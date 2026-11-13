@@ -14,7 +14,6 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.Protocol;
@@ -24,7 +23,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.ScaleRecordStream;
-import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -170,8 +168,9 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectRedundantScaleUp() {
     // given - a scale up from 2 to 3 was already requested
-    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState())
-        .setDesiredPartitions(Set.of(1, 2, 3), 999L);
+    engine.writeRecords(
+        RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3)).key(key));
+    RecordingExporter.scaleRecords(ScaleIntent.SCALING_UP).withPartitionId(1).await();
 
     // when
     engine.writeRecords(

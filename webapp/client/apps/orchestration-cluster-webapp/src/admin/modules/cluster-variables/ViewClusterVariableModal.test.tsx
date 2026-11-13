@@ -10,14 +10,13 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi, beforeAll} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {mockGetGlobalClusterVariableEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
 import {ViewClusterVariableModal} from './ViewClusterVariableModal';
-
-const MONACO_LOAD = {timeout: 15_000};
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -33,6 +32,8 @@ function getWrapper() {
 }
 
 describe('<ViewClusterVariableModal />', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(async () => {
 		await cleanup();
 		toast.dismiss();
@@ -62,7 +63,7 @@ describe('<ViewClusterVariableModal />', () => {
 		);
 
 		await expect.element(screen.getByRole('heading', {name: 'my-variable'})).toBeVisible();
-		await expect.element(screen.getByText('"the full value"'), MONACO_LOAD).toBeInTheDocument();
+		await expect.element(screen.getByText('"the full value"')).toBeInTheDocument();
 	});
 
 	it('should show an error when the value cannot be loaded', async ({worker}) => {
@@ -84,7 +85,7 @@ describe('<ViewClusterVariableModal />', () => {
 			<ViewClusterVariableModal clusterVariable={createClusterVariable()} onClose={onClose} />,
 			{wrapper: getWrapper()},
 		);
-		await expect.element(screen.getByRole('textbox', {name: 'Value'}), MONACO_LOAD).toBeInTheDocument();
+		await expect.element(screen.getByRole('textbox', {name: 'Value'})).toBeInTheDocument();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Close'}).last());
 

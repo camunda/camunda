@@ -19,6 +19,7 @@ import io.camunda.service.registry.DefaultServiceRegistry;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -65,7 +66,8 @@ public class WebSecurityOidcTestContext {
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
-      final CamundaSecurityLibraryProperties cslProperties) {
+      final CamundaSecurityLibraryProperties cslProperties,
+      final Environment environment) {
     final var serviceRegistry =
         DefaultServiceRegistry.of(
             b ->
@@ -74,6 +76,6 @@ public class WebSecurityOidcTestContext {
                     .tenantServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, tenantServices)
                     .roleServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, roleServices)
                     .groupServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, groupServices));
-    return new DefaultMembershipService(serviceRegistry, cslProperties);
+    return new DefaultMembershipService(serviceRegistry, cslProperties, environment);
   }
 }

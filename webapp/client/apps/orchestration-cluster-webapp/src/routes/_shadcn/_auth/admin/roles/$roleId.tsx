@@ -9,10 +9,14 @@
 import {useCallback} from 'react';
 import {createFileRoute, notFound, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
-import {z} from 'zod';
 import {PageLayout} from '@camunda/design-system';
 import {assertAdminSectionAvailable, canManageMappingRuleMembers, getAdminSectionConfig} from '#/admin/adminSections';
-import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/roles/members';
+import {
+	getRoleMembersRequestBody,
+	roleDetailSearchSchema,
+	type RoleDetailSearch,
+} from '#/admin/modules/roles/detailSearchSchema';
+import {getActiveMemberKind, getMembersQuery, getVisibleMemberKinds} from '#/admin/modules/roles/members';
 import {AdminRoleDetailPage} from '#/admin/pages/AdminRoleDetailPage';
 import {ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
@@ -22,13 +26,25 @@ import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPag
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
-	validateSearch: z.object({tab: z.enum(MEMBER_KINDS).optional()}),
+	validateSearch: roleDetailSearchSchema,
 	beforeLoad: () => {
 		assertAdminSectionAvailable('roles');
 	},
-	loader: async ({context: {queryClient}, params: {roleId}}) => {
+	loaderDeps: ({search}) => ({search}),
+	loader: async ({context: {queryClient}, params: {roleId}, deps: {search}}) => {
 		try {
-			await Promise.all([queryClient.query(queries.getRole(roleId)), queryClient.query(queries.adminClientConfig())]);
+			await Promise.all([
+				queryClient.query(queries.getRole(roleId)),
+				queryClient.query(queries.adminClientConfig()).then((clientConfig) => {
+					const sectionConfig = getAdminSectionConfig();
+					const visibleKinds = getVisibleMemberKinds({
+						isOidc: sectionConfig.isOidc,
+						canManageMappingRules: canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured),
+					});
+					const kind = getActiveMemberKind(visibleKinds, search.tab);
+					return queryClient.query(getMembersQuery(kind, roleId, getRoleMembersRequestBody(search)));
+				}),
+			]);
 		} catch (error) {
 			const result = requestErrorSchema.safeParse(error);
 
@@ -58,17 +74,22 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 	component: function AdminRoleDetailRoute() {
 		const {roleId} = Route.useParams();
 		const navigate = useNavigate();
-		const {tab} = Route.useSearch();
+		const search = Route.useSearch();
 		const {data: role} = useSuspenseQuery(queries.getRole(roleId));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 		const sectionConfig = getAdminSectionConfig();
 		const {isOidc, isCamundaGroupsEnabled} = sectionConfig;
 
-		const handleTabChange = useCallback(
-			(nextTab: MemberKind) => {
-				navigate({to: '.', search: {tab: nextTab === 'users' ? undefined : nextTab}, replace: true});
+		const handleSearchChange = useCallback(
+			(next: Partial<RoleDetailSearch>, options?: {replace?: boolean}) => {
+				navigate({
+					to: '/admin/roles/$roleId',
+					params: {roleId},
+					search: {...search, ...next},
+					replace: options?.replace ?? true,
+				});
 			},
-			[navigate],
+			[navigate, search, roleId],
 		);
 
 		const handleDeleted = useCallback(() => {
@@ -82,8 +103,8 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
 				isCamundaGroupsEnabled={isCamundaGroupsEnabled}
 				defaultRoleIds={clientConfig.defaultRoleIds}
-				activeTab={tab ?? 'users'}
-				onTabChange={handleTabChange}
+				search={search}
+				onSearchChange={handleSearchChange}
 				onDeleted={handleDeleted}
 			/>
 		);

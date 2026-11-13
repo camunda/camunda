@@ -2,13 +2,13 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
-  id("buildlogic.serial-test-conventions")
   id("buildlogic.test-jar-conventions")
 }
 
 dependencies {
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":camunda-security-core"))
   implementation(project(":camunda-security-protocol"))
@@ -30,8 +30,6 @@ dependencies {
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-auth"))
   api(libs.org.camunda.bpm.model.camunda.xml.model)
-  api(libs.org.camunda.bpm.model.camunda.dmn.model)
-  api(libs.org.camunda.bpm.extension.dmn.scala.dmn.engine)
   implementation(libs.org.apache.commons.commons.lang3)
   implementation(libs.com.cronutils.cron.utils)
   implementation(libs.com.github.ben.manes.caffeine.caffeine)
@@ -64,6 +62,7 @@ dependencies {
   testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.openjdk.jmh.jmh.core)
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
+  testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
   testImplementation(libs.org.instancio.instancio.core)
   compileOnly(libs.net.jcip.jcip.annotations)
 }

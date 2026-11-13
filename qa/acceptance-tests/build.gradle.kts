@@ -11,6 +11,8 @@ plugins {
 }
 
 dependencies {
+  testImplementation(project(":zeebe-micrometer"))
+  testImplementation(project(":zeebe-workflow-engine"))
   testImplementation(project(":camunda-cluster"))
   testImplementation(libs.org.jspecify.jspecify)
   testImplementation(project(":camunda-authentication"))
@@ -90,7 +92,7 @@ dependencies {
   testImplementation(libs.org.testcontainers.testcontainers.mariadb)
   testImplementation(libs.org.testcontainers.testcontainers.oracle.free)
   testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
-  testImplementation(libs.org.elasticsearch.client.elasticsearch.rest.client)
+  testImplementation(libs.co.elastic.clients.elasticsearch.rest5.client)
   testImplementation(libs.org.apache.httpcomponents.httpcore)
   testImplementation(libs.org.apache.httpcomponents.core5.httpcore5)
   testImplementation(libs.org.testcontainers.testcontainers.jdbc)
@@ -102,7 +104,6 @@ dependencies {
   testImplementation(libs.com.oracle.database.jdbc.ojdbc8)
   testImplementation(libs.com.microsoft.sqlserver.mssql.jdbc)
   testImplementation(libs.com.github.docker.java.docker.java.api)
-  testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-elasticsearch-exporter"))
   testImplementation(project(":zeebe-opensearch-exporter"))
   testImplementation(libs.co.elastic.clients.elasticsearch.java)

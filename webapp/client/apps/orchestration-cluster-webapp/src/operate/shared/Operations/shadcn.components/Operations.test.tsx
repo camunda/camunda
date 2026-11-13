@@ -226,7 +226,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('status')).toBeVisible();
 	});
 
 	it('should hide loading state', async () => {
@@ -239,7 +239,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		expect(screen.getByTestId('operation-spinner').elements()).toHaveLength(0);
+		expect(screen.getByRole('status').elements()).toHaveLength(0);
 	});
 
 	it('should show cancel confirmation modal', async ({worker}) => {
@@ -349,7 +349,9 @@ describe('<Operations />', () => {
 
 		await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
 		await expect.element(screen.getByText(/to cancel this instance, the root instance/i)).toBeVisible();
-		await expect.element(screen.getByRole('link', {name: '3'})).toHaveAttribute('href', '/operate/processes/3');
+		await expect
+			.element(screen.getByRole('link', {name: '3'}))
+			.toHaveAttribute('href', expect.stringMatching(/\/processes\/3$/));
 		expect(screen.getByRole('button', {name: 'Cancel', exact: true}).elements()).toHaveLength(0);
 		expect(screen.getByRole('button', {name: 'Apply', exact: true}).elements()).toHaveLength(0);
 	});

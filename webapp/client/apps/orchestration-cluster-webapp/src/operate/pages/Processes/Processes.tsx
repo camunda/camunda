@@ -45,6 +45,8 @@ import {useDiagramXml} from './useDiagramXml';
 import {latestDefinitionsQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
+import {getInlineCondition} from './VariablesFilter/variableConditions';
+import {useHideOptionalFiltersRequest} from '#/operate/shared/hooks/useHideOptionalFiltersRequest';
 
 type FiltersFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
 
@@ -160,7 +162,8 @@ const Processes: React.FC<Props> = ({
 		disabled: mode !== 'batch-modification',
 	});
 	const variable = useVariableConditions();
-	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
+	const inlineVariableCondition = getInlineCondition(variable);
+	useHideOptionalFiltersRequest(() => setVisibleFilters(variable.length > 0 ? ['variable'] : []));
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({
@@ -431,7 +434,7 @@ const Processes: React.FC<Props> = ({
 									setVariableConditions([]);
 									form.reset();
 									setVisibleFilters([]);
-									void navigate({to: '.', search: {}});
+									void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
 								}}
 							>
 								<Stack gap={5}>

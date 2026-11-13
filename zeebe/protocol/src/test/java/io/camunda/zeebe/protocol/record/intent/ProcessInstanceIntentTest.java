@@ -28,6 +28,9 @@ final class ProcessInstanceIntentTest {
         .isTrue();
     assertThat(ProcessInstanceIntent.isProcessInstanceCommand(ProcessInstanceIntent.RESUME))
         .isTrue();
+    assertThat(
+            ProcessInstanceIntent.isProcessInstanceCommand(ProcessInstanceIntent.RESUME_USER_TASKS))
+        .isTrue();
   }
 
   @Test
@@ -65,5 +68,7 @@ final class ProcessInstanceIntentTest {
         .isEqualTo(ProcessInstanceIntent.COMPLETE_RESUMING);
     assertThat(ProcessInstanceIntent.from((short) 23)).isEqualTo(ProcessInstanceIntent.RESUME_JOBS);
     assertThat(ProcessInstanceIntent.from((short) 24)).isEqualTo(ProcessInstanceIntent.SUSPENDING);
+    assertThat(ProcessInstanceIntent.from((short) 25))
+        .isEqualTo(ProcessInstanceIntent.RESUME_USER_TASKS);
   }
 }

@@ -283,6 +283,45 @@ gh api "/repos/camunda/camunda/activity?ref=refs/heads/<branch>&per_page=20" \
 **What to do:** check that the later same-commit runs succeeded, then close the incident as L2.
 No workflow change is needed.
 
+##### Re-run of an old workflow run in the deploy jobs
+
+**Symptom:** `deploy-snapshots`, `deploy-camunda-docker-snapshot` and/or
+`deploy-optimize-docker-snapshot` fail together on one `stable/*` or `main` run. The run was
+created days ago and the failed attempt is a manual re-run (attempt 2 or later). Typically the job
+fails at the `Check whether to deploy the snapshot` step, or, on branches without that step,
+`actions/download-artifact` reports that `fe-*-<run_id>` is not found.
+
+**Cause:** the deploy jobs download frontend bundles that are kept for only 2 days
+(`retention-days: 2`), so a re-run of an older run cannot get them. The
+[`check-snapshot-deploy`](https://github.com/camunda/camunda/tree/main/.github/actions/check-snapshot-deploy)
+action handles re-runs early:
+
+- If the run's commit is no longer the branch head, it skips the deploy and the job stays green.
+  Deploying it would roll the snapshot back
+  ([#67319](https://github.com/camunda/camunda/issues/67319)).
+- If the run is a re-run of the branch head and its `fe-*` artifacts have expired, the job fails
+  with a clear message and is reported to CI analytics with `user_reason: stale-rerun`, so the
+  alert can exclude it by that reason. "Re-run all jobs" uploads the artifacts again, so it
+  deploys.
+
+Branches without that action still fail and raise this alert (e.g. INC-8805, INC-8806, INC-8807),
+and can roll the snapshot back if the re-run is within 2 days.
+
+**How to confirm:** the run's `created_at` is days before its `run_started_at`, `run_attempt` is
+greater than 1, and the `fe-*` artifacts have `expired: true`:
+
+```bash
+gh api repos/camunda/camunda/actions/runs/<run_id> \
+  --jq '{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}'
+gh api "repos/camunda/camunda/actions/runs/<run_id>/artifacts?per_page=100" \
+  --jq '.artifacts[] | select(.name | startswith("fe-")) | {name, expired, expires_at}'
+```
+
+**What to do:** check that the latest run on the branch deployed successfully, then close the
+incident as L2. If a fresh snapshot is needed, start a new run (push or `workflow_dispatch` on the
+branch) instead of re-running the old one. If a branch without the action rolled its snapshot back,
+re-run CI for the current branch tip to rebuild it.
+
 ---
 
 ### Selfhosted Runner High Disconnect Rate
@@ -591,19 +630,28 @@ e.g. by eliminating bottlenecks, caching, or splitting it into multiple parallel
 
 ### Monorepo Docs Site Pages Build Failure
 
-The `Docs Build and Deploy` workflow includes a `Verify Pages build` step that polls the GitHub
-Pages build API after pushing to `gh-pages`. If this step fails, the deploy commit landed but
-GitHub Pages was unable to publish it, leaving https://camunda.github.io/camunda/ stale or broken.
-The Pages build outcome is otherwise not surfaced anywhere in the Actions UI (legacy Pages mode),
-so without this step a failed build leaves no trace in CI. (For PR previews, `Docs PR Preview`
+The `Docs Build and Deploy` workflow includes a `Verify Pages build` step that watches GitHub's
+`pages-build-deployment` run for the commit it pushed to `gh-pages`. If this step fails, the deploy
+commit landed but GitHub Pages was unable to publish it, leaving https://camunda.github.io/camunda/
+stale or broken. GitHub publishes the branch with that run (legacy Pages mode); it shows up in the
+Actions tab, not in our workflow, so without this step a failed deploy leaves no trace on the docs
+workflow. (For PR previews, `Docs PR Preview`
 relies on `rossjrw/pr-preview-action`'s built-in `wait-for-pages-deployment`, which provides the
 same guarantee.)
 
 #### Troubleshooting
 
-1. Check the failed step's log — it prints the gh-pages commit SHA and the API status (`errored`
-   or `building` timeout). Note: the API only exposes the generic `"Page build failed."` message;
-   the underlying reason is not surfaced through the API.
-2. Inspect recent Pages build history
-3. Verify the `gh-pages` branch only contains build artifacts.
+1. Check the failed step's log — it prints the gh-pages commit SHA, the link to GitHub's
+   `pages-build-deployment` run, and GitHub's own error line, e.g. `Deployment failed, try again
+   later.` or `Timeout reached, aborting!` (GitHub's deploy step gives up after 10 minutes). The
+   step already requests one Pages rebuild after a failed or cancelled run and waits up to 780s per
+   attempt, so a failure means two failed runs, a run that didn't finish in time, or GitHub not
+   starting a run at all. Open the run link for the full log. Don't rely on the Pages builds API
+   (`pages/builds`) here: it has shown `building` for runs that had already failed, and `errored`
+   for runs that succeeded. To retry, re-run the failed job: the re-run pushes a new `gh-pages`
+   commit, which starts a new Pages run.
+2. Inspect recent runs: `gh run list --workflow pages-build-deployment -R camunda/camunda`
+3. Verify the `gh-pages` branch only contains build artifacts. Each docs deploy replaces
+   everything outside `pr-preview/`, so files from earlier builds (moved pages, old search
+   indexes, old bundles) don't accumulate.
 

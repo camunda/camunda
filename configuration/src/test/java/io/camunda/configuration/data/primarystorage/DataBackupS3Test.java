@@ -13,6 +13,7 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -746,6 +747,26 @@ public class DataBackupS3Test {
     @Test
     void shouldSetSupportLegacyMd5FromPrimaryStorage() {
       assertThat(brokerCfg.getData().getBackup().getS3().isSupportLegacyMd5()).isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.s3.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.s3.defaults-mode=standard",
+      })
+  class WithDefaultsMode {
+    final BrokerBasedProperties brokerCfg;
+
+    WithDefaultsMode(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetDefaultsMode() {
+      assertThat(brokerCfg.getData().getBackup().getS3().getDefaultsMode())
+          .isEqualTo(DefaultsMode.STANDARD);
     }
   }
 }

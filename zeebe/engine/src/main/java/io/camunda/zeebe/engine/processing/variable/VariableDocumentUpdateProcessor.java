@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -100,6 +101,7 @@ public final class VariableDocumentUpdateProcessor
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());
+    value.setStorageOrdinal(resolveStorageOrdinal(scope));
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
@@ -161,7 +163,8 @@ public final class VariableDocumentUpdateProcessor
       }
 
       final var asyncRequest =
-          asyncRequestBehavior.writeAsyncRequestReceived(value.getScopeKey(), record);
+          asyncRequestBehavior.writeAsyncRequestReceived(
+              value.getScopeKey(), scope.getValue().getStorageOrdinal(), record);
       final long variableDocKey = keyGenerator.nextKey();
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATING, value);
 
@@ -223,7 +226,6 @@ public final class VariableDocumentUpdateProcessor
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final long rootProcessInstanceKey = scope.getValue().getRootProcessInstanceKey();
-    final var metadataLookup = VariableMetadataLookup.of(value.getVariablesMetadata());
     final int storageOrdinal = scope.getValue().getStorageOrdinal();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();
 
@@ -237,8 +239,7 @@ public final class VariableDocumentUpdateProcessor
             storageOrdinal,
             bpmnProcessId,
             tenantId,
-            value.getVariablesBuffer(),
-            metadataLookup);
+            value.getVariablesBuffer());
       } else {
         variableBehavior.mergeDocument(
             scope.getKey(),
@@ -248,8 +249,7 @@ public final class VariableDocumentUpdateProcessor
             storageOrdinal,
             bpmnProcessId,
             tenantId,
-            value.getVariablesBuffer(),
-            metadataLookup);
+            value.getVariablesBuffer());
       }
     } catch (final MsgpackReaderException e) {
       final String reason =
@@ -310,7 +310,6 @@ public final class VariableDocumentUpdateProcessor
       final UserTaskRecord userTaskRecord,
       final VariableBehavior variableBehavior)
       throws VariableValidationException {
-    final var metadataLookup = VariableMetadataLookup.of(value.getVariablesMetadata());
     switch (value.getUpdateSemantics()) {
       case LOCAL ->
           variableBehavior.mergeLocalDocument(
@@ -321,8 +320,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
-              value.getVariablesBuffer(),
-              metadataLookup);
+              value.getVariablesBuffer());
       case PROPAGATE ->
           variableBehavior.mergeDocument(
               userTaskRecord.getElementInstanceKey(),
@@ -332,8 +330,7 @@ public final class VariableDocumentUpdateProcessor
               userTaskRecord.getStorageOrdinal(),
               userTaskRecord.getBpmnProcessIdBuffer(),
               userTaskRecord.getTenantId(),
-              value.getVariablesBuffer(),
-              metadataLookup);
+              value.getVariablesBuffer());
       default ->
           throw new IllegalStateException(
               "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
@@ -354,5 +351,11 @@ public final class VariableDocumentUpdateProcessor
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
+  }
+
+  private static int resolveStorageOrdinal(final ElementInstance scope) {
+    return scope == null
+        ? StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED
+        : scope.getValue().getStorageOrdinal();
   }
 }

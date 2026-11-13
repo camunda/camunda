@@ -24,10 +24,10 @@ footer="Triggered by GitHub Actions${run_url:+ • <${run_url}|view workflow run
 
 doc="$(if [ -n "$triage_json_file" ]; then cat "$triage_json_file"; else cat; fi)"
 
-# Blocks that are always present regardless of conflict volume: header + intro section + truncation
-# notice + footer. Reserved out of the 50-block budget so the actionable sections can never push the
-# message over Slack's limit.
-reserved_blocks=4
+# Blocks that are always present regardless of conflict volume: header + intro section + disclosure
+# note + truncation notice + footer. Reserved out of the 50-block budget so the actionable sections
+# can never push the message over Slack's limit.
+reserved_blocks=5
 
 jq -c --arg footer "$footer" --arg run_url "$run_url" \
   --argjson max_paths 20 --argjson max_commits 5 --argjson max_blocks 50 \
@@ -78,7 +78,17 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
   # whole message within max_blocks.
   | ( actionable_list(":blob_detective:"; "Source changes maybe missing on target or release"; .source_missing)
       + actionable_list(":package:"; "Dependency/build changes maybe missing on target"; .version_build_gap)
-      + actionable_list(":mag:"; "Conflicts needing manual review — no commit to attribute; resolve at merge-back"; (.needs_review // [])) ) as $actionable
+      + actionable_list(":mag:"; "Conflicts needing manual review — cause not identified; resolve at merge-back"; (.needs_review // [])) ) as $actionable
+  | (((.version_build // []) | length) + ((.source_drift // []) | length)) as $unlisted
+  # The list is never the full merge-back picture: quiet buckets are hidden, attribution is
+  # best-effort, and the branches keep moving after this run. Say so, so the release manager
+  # expects more conflicts at merge-back instead of trusting the count.
+  | ( ":information_source: This list may be incomplete."
+      + (if $unlisted > 0
+         then " " + ($unlisted | tostring) + " more conflicting path(s) (version bumps, text drift) are not shown."
+         else "" end)
+      + " Late backports and the release version bump can add conflicts after this run."
+      + " Conflicts without a clear action are left to the release manager to resolve at merge-back." ) as $disclosure
   | ($max_blocks - $reserved_blocks) as $actionable_budget
   | ($actionable | length > $actionable_budget) as $block_overflow
   # $truncated also fires on a global block clip, so the notice ships whenever ANYTHING is cut.
@@ -91,6 +101,7 @@ jq -c --arg footer "$footer" --arg run_url "$run_url" \
             text: { type: "mrkdwn", text: ("*`" + (.release_ref | slack_safe) + "`* → *`" + (.target_ref | slack_safe) + "`*\n:cta: " + (.verdict | slack_safe)
               + "\nReview both branches: act now on a missing required change; otherwise record the later merge resolution or escalate to the owner.") } } ]
         + $actionable[:$actionable_budget]
+        + [ { type: "context", elements: [ { type: "mrkdwn", text: $disclosure } ] } ]
         + (if $truncated
            then [ { type: "context", elements: [ { type: "mrkdwn",
                   text: (":warning: Too many changes to fit one Slack message — this is a partial list. The complete, untruncated detail is in the "

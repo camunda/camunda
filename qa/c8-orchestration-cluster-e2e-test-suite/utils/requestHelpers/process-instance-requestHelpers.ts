@@ -8,17 +8,23 @@
 
 import type {APIRequestContext, APIResponse} from 'playwright-core';
 import {expect} from '@playwright/test';
-import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
+import {
+  assertInvalidState,
+  assertStatusCode,
+  buildUrl,
+  jsonHeaders,
+} from '../http';
 import {
   DEFAULT_PAGE_LIMIT,
   defaultAssertionOptions,
   extendedAssertionOptions,
+  suspensionAssertionOptions,
 } from '../constants';
 import {activateSingleJob, completeJob} from './job-requestHelpers';
 import {expectNoIncidents} from './incident-requestHelpers';
 import {cancelProcessInstance} from '../zeebeClient';
 import {validateResponse} from 'json-body-assertions';
-import {expectBatchState} from './batch-operation-requestHelpers';
+import {runBatchAndWaitForCompletion} from './batch-operation-requestHelpers';
 import {sleep} from '../sleep';
 
 // Starting many instances in parallel can make the gateway transiently shed a
@@ -311,7 +317,10 @@ export async function expectProcessInstanceCanBeFound(
     const json = await statusRes.json();
     expect(json.processInstanceKey).toBe(processInstanceKey);
   }).toPass({
-    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    intervals: [
+      1_000, 2_000, 3_000, 4_000, 5_000, 6_000, 7_000, 8_000, 9_000, 10_000,
+      15_000, 25_000, 35_000,
+    ],
     timeout: 180_000,
   });
 }
@@ -327,31 +336,6 @@ async function countProcessInstances(
   await assertStatusCode(res, 200);
   const json = await res.json();
   return json.page.totalItems as number;
-}
-
-async function runBatchAndWaitForCompletion(
-  request: APIRequestContext,
-  endpoint: '/process-instances/cancellation' | '/process-instances/deletion',
-  filter: Record<string, unknown>,
-): Promise<void> {
-  const res = await request.post(buildUrl(endpoint), {
-    headers: jsonHeaders(),
-    data: {filter},
-  });
-
-  await assertStatusCode(res, 200);
-  await validateResponse(
-    {
-      path: endpoint,
-      method: 'POST',
-      status: '200',
-    },
-    res,
-  );
-  const json = await res.json();
-  const batchKey = json.batchOperationKey;
-
-  await expectBatchState(request, batchKey, 'COMPLETED');
 }
 
 export type SuspendableProcessInstance = ProcessInstanceItem & {
@@ -382,6 +366,27 @@ export async function resumeProcessInstance(
     }),
     {headers: jsonHeaders(), ...(data !== undefined && {data})},
   );
+}
+
+export async function resumeProcessInstanceAfterSuspension(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  const response = await resumeProcessInstance(request, processInstanceKey);
+  if (response.status() !== 409) {
+    return response;
+  }
+  await assertInvalidState(response);
+  expect((await response.json()).detail).toContain(
+    'it is still suspending; retry once it is suspended',
+  );
+  await expectProcessState(
+    request,
+    processInstanceKey,
+    'SUSPENDED',
+    extendedAssertionOptions,
+  );
+  return resumeProcessInstance(request, processInstanceKey);
 }
 
 export async function getProcessInstance(
@@ -425,7 +430,7 @@ export async function expectSuspendedDate(
 export async function suspendAndExpectSuspended(
   request: APIRequestContext,
   processInstanceKey: string,
-  assertionOptions = defaultAssertionOptions,
+  assertionOptions = suspensionAssertionOptions,
 ): Promise<void> {
   await assertStatusCode(
     await suspendProcessInstance(request, processInstanceKey),

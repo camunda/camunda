@@ -94,6 +94,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
    */
   public static final Duration PENDING_SIDE_EFFECTS_STALL_THRESHOLD = Duration.ofSeconds(30);
 
+  public static final Duration SLOW_ON_RECOVERED_LISTENER_THRESHOLD = Duration.ofSeconds(1);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -350,10 +352,33 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream.registerAppendedRecordAvailableListener(this);
 
     // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
+    lifecycleAwareListeners.forEach(this::notifyRecovered);
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
+    }
+  }
+
+  // Listeners run synchronously on the actor before the first command is read, so a slow one
+  // delays processing without any other trace. Log the ones that exceed the threshold.
+  private void notifyRecovered(final StreamProcessorLifecycleAware listener) {
+    final var clock = streamProcessorContext.getMeterRegistry().config().clock();
+    final long startNanos = clock.monotonicTime();
+    try {
+      listener.onRecovered(streamProcessorContext);
+    } finally {
+      // Recorded in finally so a listener that throws still shows up as slow, if it was.
+      final var duration = Duration.ofNanos(clock.monotonicTime() - startNanos);
+      metrics.observeOnRecoveredListenerDuration(listener.getClass().getName(), duration);
+      if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
+        LOG.warn(
+            "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
+                + " until all listeners return",
+            listener.getClass().getName(),
+            partitionId,
+            duration,
+            SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
+      }
     }
   }
 
@@ -443,34 +468,39 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
 
-    requireNonNull(asyncScheduleServiceContext)
-        .closeActors(actor)
-        .onComplete(
-            (v, t) -> {
-              actor.fail(throwable);
-              final var actorClock = ActorClock.current();
-              final var instant = actorClock != null ? actorClock.instant() : Instant.now();
-              final var future = requireNonNull(openFuture);
-              if (!future.isDone()) {
-                future.completeExceptionally(throwable);
-              }
+    // The context does not exist yet if we fail while recovering from the snapshot; there are no
+    // async actors to close then, but we must still fail the actor and notify everyone waiting.
+    final ActorFuture<Void> actorsClosed =
+        asyncScheduleServiceContext != null
+            ? asyncScheduleServiceContext.closeActors(actor)
+            : CompletableActorFuture.completed();
 
-              if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
-                  && !(throwable instanceof UnrecoverableException)) {
-                // If the stream processor is in replay mode, we do not want to report it as dead
-                // because it is not critical. The leaders are still active and able to process
-                // requests.
-                final var report = HealthReport.unhealthy(this).withIssue(throwable, instant);
-                failureListeners.forEach(l -> l.onFailure(report));
-              } else {
+    actorsClosed.onComplete(
+        (v, t) -> {
+          actor.fail(throwable);
+          final var actorClock = ActorClock.current();
+          final var instant = actorClock != null ? actorClock.instant() : Instant.now();
+          final var future = requireNonNull(openFuture);
+          if (!future.isDone()) {
+            future.completeExceptionally(throwable);
+          }
 
-                // If it is a leader, we always want to report it as dead so that all related
-                // services
-                // are shutdown. (https://github.com/camunda/camunda/issues/16180)
-                final var report = HealthReport.dead(this).withIssue(throwable, instant);
-                failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-              }
-            });
+          if (streamProcessorContext.getProcessorMode().equals(StreamProcessorMode.REPLAY)
+              && !(throwable instanceof UnrecoverableException)) {
+            // If the stream processor is in replay mode, we do not want to report it as dead
+            // because it is not critical. The leaders are still active and able to process
+            // requests.
+            final var report = HealthReport.unhealthy(this).withIssue(throwable, instant);
+            failureListeners.forEach(l -> l.onFailure(report));
+          } else {
+
+            // If it is a leader, we always want to report it as dead so that all related
+            // services
+            // are shutdown. (https://github.com/camunda/camunda/issues/16180)
+            final var report = HealthReport.dead(this).withIssue(throwable, instant);
+            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
+          }
+        });
   }
 
   public boolean isOpened() {

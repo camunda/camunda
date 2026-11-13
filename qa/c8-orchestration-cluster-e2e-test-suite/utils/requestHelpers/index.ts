@@ -58,6 +58,7 @@ export {
 export {
   searchVariableByNameAndProcessInstanceKey,
   expectVariableValue,
+  expectVariableValues,
 } from './variable-requestHelpers';
 export {assertRoleInResponse} from './role-requestHelpers';
 export {assertClientsInResponse} from './clients-requestHelpers';

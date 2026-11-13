@@ -244,7 +244,9 @@ class PhysicalTenantOverridePolicyValidationTest {
         "security.csrf.cookie-name",
         "security.http-headers.content-security-policy",
         "security.cluster-admin.user-id",
-        "security.multi-tenancy.enabled"
+        "security.multi-tenancy.enabled",
+        "security.saas.organization-id",
+        "security.saas.cluster-id"
       })
   void shouldRejectTenantOverridingNonOverridableSecuritySubpath(final String relativeKey) {
     // given a tenant overriding a specific sub-key under a non-overridable security path

@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.security.EngineSecurityConfigFactory;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -98,16 +99,7 @@ public class GatewayModuleConfiguration implements CloseableSilently {
     this.configuration = configuration;
     engineSecurityConfigsByPhysicalTenant =
         physicalTenantResolver.mapValues(
-            camunda -> {
-              final var s = camunda.getSecurity();
-              return new EngineSecurityConfig(
-                  s.getAuthentication(),
-                  s.getAuthorizations().isEnabled(),
-                  s.getMultiTenancy().isChecksEnabled(),
-                  s.getInitialization(),
-                  s.getCompiledIdValidationPattern(),
-                  s.getCompiledGroupIdValidationPattern());
-            });
+            camunda -> EngineSecurityConfigFactory.create(camunda.getSecurity()));
     this.springGatewayBridge = springGatewayBridge;
     this.actorScheduler = actorScheduler;
     this.atomixCluster = atomixCluster;

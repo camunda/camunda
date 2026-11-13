@@ -103,7 +103,31 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void start() {
+    deleteLeftoverBootstrapSnapshots();
     setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
+  }
+
+  /**
+   * A bootstrap snapshot is only tracked in memory, so one found on disk at startup was left behind
+   * by a previous process (e.g. a crash during or after the copy). It is never reused, and if kept
+   * it would block every later {@link #copyForBootstrap}.
+   */
+  private void deleteLeftoverBootstrapSnapshots() {
+    try {
+      if (isEmptyDirectory(bootstrapSnapshotsDirectory)) {
+        return;
+      }
+      LOGGER.info("Deleting leftover bootstrap snapshots in {}", bootstrapSnapshotsDirectory);
+      FileUtil.deleteFolderContents(bootstrapSnapshotsDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete leftover bootstrap snapshots", e);
+    }
+  }
+
+  private static boolean isEmptyDirectory(final Path directory) throws IOException {
+    try (final var stream = Files.list(directory)) {
+      return stream.findAny().isEmpty();
+    }
   }
 
   public void close() {
@@ -527,19 +551,26 @@ public final class FileBasedSnapshotStoreImpl {
               metadataSizeBytes,
               this::onSnapshotDeleted,
               actor);
-      final var failed =
-          !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
-      if (failed) {
-        // we moved already the snapshot but we expected that this will be cleaned up by the next
-        // successful snapshot
-        final var errorMessage =
-            "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
-        throw new ConcurrentModificationException(
-            String.format(
-                errorMessage,
-                currentPersistedSnapshot,
-                newPersistedSnapshot.getSnapshotId(),
-                currentSnapshot.get()));
+
+      // a copy for bootstrap must never become the latest snapshot: it only contains part of the
+      // state and is deleted independently, e.g. when the partition leader steps down. A received
+      // snapshot with bootstrap metadata is the full state of a scaled up partition, so it must.
+      final var isCopyForBootstrap = destination.startsWith(bootstrapSnapshotsDirectory);
+      if (!isCopyForBootstrap) {
+        final var failed =
+            !currentSnapshot.compareAndSet(currentPersistedSnapshot, newPersistedSnapshot);
+        if (failed) {
+          // we moved already the snapshot but we expected that this will be cleaned up by the next
+          // successful snapshot
+          final var errorMessage =
+              "Expected that last snapshot is '%s', which should be replace with '%s', but last snapshot was '%s'.";
+          throw new ConcurrentModificationException(
+              String.format(
+                  errorMessage,
+                  currentPersistedSnapshot,
+                  newPersistedSnapshot.getSnapshotId(),
+                  currentSnapshot.get()));
+        }
       }
 
       if (!isBootstrap) {

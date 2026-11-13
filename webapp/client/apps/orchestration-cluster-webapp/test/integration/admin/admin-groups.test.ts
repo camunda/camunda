@@ -441,7 +441,6 @@ test.describe('Admin group detail', () => {
 
 		await expect(page).toHaveURL('/admin/groups');
 		await expect(adminGroupsPage.cell('engineering')).toBeHidden();
-		// 1 is the gone-check; a second read means the mounted detail page refetched the deleted group.
-		expect(groupReads).toHaveLength(1);
+		expect(groupReads).toHaveLength(0);
 	});
 });

@@ -19,8 +19,6 @@ import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
@@ -30,20 +28,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 
 public class ESClient implements DocumentClient {
 
-  final RestClient restClient;
   final ElasticsearchClient esClient;
   private final Executor executor;
 
   public ESClient(final String url, final Executor executor) {
-    restClient = RestClient.builder(HttpHost.create(url)).build();
     this.executor = executor;
-    esClient =
-        new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
+    esClient = ElasticsearchClient.of(b -> b.host(url));
   }
 
   @Override
@@ -115,7 +108,7 @@ public class ESClient implements DocumentClient {
 
   @Override
   public List<String> cat(final String indexPrefix) throws IOException {
-    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).valueBody().stream()
+    return esClient.cat().indices(r -> r.index(indexPrefix + "*")).indices().stream()
         .map(IndicesRecord::index)
         .toList();
   }
@@ -195,6 +188,6 @@ public class ESClient implements DocumentClient {
 
   @Override
   public void close() throws Exception {
-    restClient.close();
+    esClient.close();
   }
 }

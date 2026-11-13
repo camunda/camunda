@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.exception.DatabaseExceptionTranslator;
 import io.camunda.db.rdbms.sql.AgentDefinitionMapper;
 import io.camunda.db.rdbms.sql.AgentHistoryMapper;
 import io.camunda.db.rdbms.sql.AgentInstanceMapper;
@@ -98,43 +99,47 @@ public record RdbmsMapperBundle(
     return new RdbmsMapperBundle(
         sqlSessionFactory,
         vendorDatabaseProperties,
-        sqlSession.getMapper(AgentDefinitionMapper.class),
-        sqlSession.getMapper(AgentHistoryMapper.class),
-        sqlSession.getMapper(AgentInstanceMapper.class),
-        sqlSession.getMapper(AuditLogMapper.class),
-        sqlSession.getMapper(AuthorizationMapper.class),
-        sqlSession.getMapper(BatchOperationMapper.class),
-        sqlSession.getMapper(ClusterVariableMapper.class),
-        sqlSession.getMapper(CorrelatedMessageSubscriptionMapper.class),
-        sqlSession.getMapper(DecisionDefinitionMapper.class),
-        sqlSession.getMapper(DecisionInstanceMapper.class),
-        sqlSession.getMapper(DecisionRequirementsMapper.class),
-        sqlSession.getMapper(DeployedResourceMapper.class),
-        sqlSession.getMapper(ExporterPositionMapper.class),
-        sqlSession.getMapper(FlowNodeInstanceMapper.class),
-        sqlSession.getMapper(FormMapper.class),
-        sqlSession.getMapper(GlobalListenerMapper.class),
-        sqlSession.getMapper(GroupMapper.class),
-        sqlSession.getMapper(HistoryDeletionMapper.class),
-        sqlSession.getMapper(IncidentMapper.class),
-        sqlSession.getMapper(JobMapper.class),
-        sqlSession.getMapper(JobMetricsBatchMapper.class),
-        sqlSession.getMapper(MappingRuleMapper.class),
-        sqlSession.getMapper(MessageSubscriptionMapper.class),
-        sqlSession.getMapper(PersistentWebSessionMapper.class),
-        sqlSession.getMapper(ProcessDefinitionMapper.class),
-        sqlSession.getMapper(ProcessInstanceMapper.class),
-        sqlSession.getMapper(PurgeMapper.class),
-        sqlSession.getMapper(ReplicationStatusMapper.class),
-        sqlSession.getMapper(RoleMapper.class),
-        sqlSession.getMapper(SequenceFlowMapper.class),
-        sqlSession.getMapper(TableMetricsMapper.class),
-        sqlSession.getMapper(TenantMapper.class),
-        sqlSession.getMapper(UsageMetricMapper.class),
-        sqlSession.getMapper(UsageMetricTUMapper.class),
-        sqlSession.getMapper(UserMapper.class),
-        sqlSession.getMapper(UserTaskMapper.class),
-        sqlSession.getMapper(VariableMapper.class),
-        sqlSession.getMapper(WaitStateMapper.class));
+        getMapper(sqlSession, AgentDefinitionMapper.class),
+        getMapper(sqlSession, AgentHistoryMapper.class),
+        getMapper(sqlSession, AgentInstanceMapper.class),
+        getMapper(sqlSession, AuditLogMapper.class),
+        getMapper(sqlSession, AuthorizationMapper.class),
+        getMapper(sqlSession, BatchOperationMapper.class),
+        getMapper(sqlSession, ClusterVariableMapper.class),
+        getMapper(sqlSession, CorrelatedMessageSubscriptionMapper.class),
+        getMapper(sqlSession, DecisionDefinitionMapper.class),
+        getMapper(sqlSession, DecisionInstanceMapper.class),
+        getMapper(sqlSession, DecisionRequirementsMapper.class),
+        getMapper(sqlSession, DeployedResourceMapper.class),
+        getMapper(sqlSession, ExporterPositionMapper.class),
+        getMapper(sqlSession, FlowNodeInstanceMapper.class),
+        getMapper(sqlSession, FormMapper.class),
+        getMapper(sqlSession, GlobalListenerMapper.class),
+        getMapper(sqlSession, GroupMapper.class),
+        getMapper(sqlSession, HistoryDeletionMapper.class),
+        getMapper(sqlSession, IncidentMapper.class),
+        getMapper(sqlSession, JobMapper.class),
+        getMapper(sqlSession, JobMetricsBatchMapper.class),
+        getMapper(sqlSession, MappingRuleMapper.class),
+        getMapper(sqlSession, MessageSubscriptionMapper.class),
+        getMapper(sqlSession, PersistentWebSessionMapper.class),
+        getMapper(sqlSession, ProcessDefinitionMapper.class),
+        getMapper(sqlSession, ProcessInstanceMapper.class),
+        getMapper(sqlSession, PurgeMapper.class),
+        getMapper(sqlSession, ReplicationStatusMapper.class),
+        getMapper(sqlSession, RoleMapper.class),
+        getMapper(sqlSession, SequenceFlowMapper.class),
+        getMapper(sqlSession, TableMetricsMapper.class),
+        getMapper(sqlSession, TenantMapper.class),
+        getMapper(sqlSession, UsageMetricMapper.class),
+        getMapper(sqlSession, UsageMetricTUMapper.class),
+        getMapper(sqlSession, UserMapper.class),
+        getMapper(sqlSession, UserTaskMapper.class),
+        getMapper(sqlSession, VariableMapper.class),
+        getMapper(sqlSession, WaitStateMapper.class));
+  }
+
+  private static <T> T getMapper(final SqlSession sqlSession, final Class<T> type) {
+    return DatabaseExceptionTranslator.wrap(type, sqlSession.getMapper(type));
   }
 }

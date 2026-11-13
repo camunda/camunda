@@ -40,6 +40,13 @@
 @source inline("[&_[data-slot=data-table]>div.rounded-xl]:{rounded-none!,border-0!}");
 
 /*
+ * Same scanner limitation for the stronger hover background on row action
+ * icon buttons in the Processes InstancesTable.tsx; the DS ghost hover (unlayered, so it needs important) matches
+ * the table row hover, so without it the button shows no hover cue.
+ */
+@source inline("[&_[data-slot=icon-button]:hover:not(:disabled)]:bg-[var(--neutral-background-strong)]!");
+
+/*
  * Maps the DS tokens onto the CSS variables dmn-js reads, so DecisionViewer
  * does not carry ~20 arbitrary-variant classes. Kept as plain unlayered rules
  * (not `@utility`, which lands in the `utilities` layer) so they win over the
@@ -78,6 +85,19 @@
 		border-width: 1px;
 	}
 
+	.tjs-table-container tbody tr[data-highlighted],
+	.tjs-table-container tbody tr[data-highlighted] td {
+		background-color: var(--info-background-subtle);
+		color: var(--neutral-foreground-subtle);
+	}
+
+	@media (forced-colors: active) {
+		.tjs-table-container tbody tr[data-highlighted] td {
+			border-top: 2px solid Highlight;
+			border-bottom: 2px solid Highlight;
+		}
+	}
+
 	.tjs-table-container {
 		background-color: var(--viewer-layer);
 		border-width: 1px;
@@ -86,9 +106,12 @@
 	.dmn-literal-expression-container {
 		--literal-expression-font-family: inherit;
 		--literal-expression-font-family-monospace: var(--font-mono);
+		--decision-properties-background-color: var(--viewer-layer);
 		--decision-properties-border-color: var(--neutral-border-strong);
 		--decision-properties-color: var(--neutral-foreground-subtle);
+		--textarea-border-color: var(--neutral-border-strong);
 		--textarea-color: var(--neutral-foreground-subtle);
+		--literal-expression-properties-border-color: var(--neutral-border-strong);
 		--literal-expression-properties-color: var(--neutral-foreground-subtle);
 
 		table {
@@ -114,5 +137,241 @@
 		background-color: var(--viewer-layer);
 		border-color: var(--neutral-border-strong);
 		border-width: 1px 2px 2px 2px;
+	}
+}
+
+/*
+ * dmn-js falls back to hard-coded light `--bio-*` tokens on `.bio-theme-parent` for
+ * every variable the themes below do not set, which renders light surfaces in dark mode.
+ */
+.dmn-viewer-theme .bio-theme-parent,
+.drd-viewer-theme .bio-theme-parent {
+	--bio-surface: var(--neutral-background-subtle);
+	--bio-surface-subtle: var(--neutral-background-subtle);
+	--bio-surface-medium: var(--neutral-background-medium);
+	--bio-text: var(--neutral-foreground-strong);
+	--bio-text-subtle: var(--neutral-foreground-subtle);
+	--bio-text-subtlest: var(--neutral-foreground-subtle);
+	--bio-border: var(--neutral-border-strong);
+	--bio-primary: var(--primary-action-default);
+	--bio-primary-hover: var(--primary-action-hover);
+	--bio-focus: var(--ring);
+
+	.dark & {
+		--bio-surface: var(--neutral-background-medium);
+		--bio-surface-subtle: var(--neutral-background-medium);
+	}
+}
+
+/*
+ * Same approach as .dmn-viewer-theme for the DRD viewer: plain unlayered rules
+ * beat the unlayered dmn-js-drd stylesheet by specificity, with no `!important`.
+ */
+.drd-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.dmn-drd-container {
+		--drd-font-family: inherit;
+	}
+
+	.dmn-drd-container svg:not(.lucide) {
+		background-color: var(--viewer-layer);
+	}
+
+	.ope-selectable {
+		cursor: pointer;
+	}
+
+	.ope-selectable.hover .djs-outline,
+	.ope-selectable:focus-visible .djs-outline,
+	.ope-selected .djs-outline {
+		stroke: var(--primary-action-default);
+		stroke-width: 2px;
+	}
+
+	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
+	.ope-selected .djs-visual rect {
+		fill: var(--info-background-strong) !important;
+	}
+}
+
+/* Pending state pills emit a ring in their own colour (--pulse) instead of changing opacity. */
+@keyframes state-overlay-ring {
+	0% {
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse) 55%, transparent);
+	}
+	100% {
+		box-shadow: 0 0 0 6px transparent;
+	}
+}
+
+.state-overlay-pending-ring {
+	animation: state-overlay-ring 1.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.state-overlay-pending-ring {
+		animation: none;
+	}
+}
+
+@keyframes instance-agent-shine {
+	0%,
+	100% {
+		background-position: 0% 0%;
+	}
+	50% {
+		background-position: 100% 100%;
+	}
+}
+
+.instance-agent-shine {
+	background-image: linear-gradient(120deg, transparent, var(--primary-action-default), transparent);
+	background-size: 300% 300%;
+	animation: instance-agent-shine 8s linear infinite;
+	mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask:
+		linear-gradient(#fff 0 0) content-box,
+		linear-gradient(#fff 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.instance-agent-shine {
+		animation: none;
+	}
+}
+
+/*
+ * The shared BpmnJS renderer emits Carbon variable names, so they are mapped to DS tokens here.
+ * Same approach as .dmn-viewer-theme for the BPMN diagram: plain unlayered rules
+ * beat the unlayered bpmn-js and diagram-js-minimap stylesheets by specificity.
+ */
+.bpmn-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+	--cds-layer-01: var(--viewer-layer);
+	--cds-highlight: var(--info-background-subtle);
+	--cds-icon-secondary: var(--neutral-foreground-subtle);
+	--cds-text-primary: var(--neutral-foreground-strong);
+	--cds-background-brand: var(--info-action-default);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
+		stroke: var(--info-action-default) !important;
+	}
+
+	.op-selectable:hover {
+		cursor: pointer;
+	}
+
+	.op-selectable:focus {
+		outline: none;
+	}
+
+	.op-selectable:hover .djs-outline {
+		stroke-width: 1px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-selectable:focus-visible .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-selected-frame .djs-outline,
+	.op-selected-frame:focus-visible .djs-outline {
+		stroke-width: 2px;
+		stroke: var(--info-action-default);
+	}
+
+	.op-non-selectable {
+		cursor: not-allowed;
+	}
+
+	/* The sunken fill carries the state beyond a stroke shade that is too close to a selectable one. Highlight wins. */
+	.op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
+		stroke: color-mix(in srgb, var(--neutral-foreground-subtle) 75%, transparent) !important;
+		fill: var(--neutral-background-medium) !important;
+	}
+
+	.dark & .op-non-selectable:not(.op-highlighted).djs-shape .djs-visual > :nth-child(1) {
+		fill: var(--neutral-background-subtle) !important;
+	}
+
+	.op-drilldown {
+		user-select: none;
+	}
+
+	.op-drilldown-loading,
+	.op-drilldown-loading * {
+		cursor: wait;
+	}
+
+	/* The renderer sets the shape fill inline, which only `!important` can override. */
+	.op-selected .djs-visual {
+		rect,
+		circle,
+		polygon {
+			fill: var(--info-background-strong) !important;
+		}
+	}
+
+	.djs-minimap {
+		top: auto;
+		bottom: 4.5rem;
+		right: 1rem;
+		z-index: 10;
+		background-color: var(--viewer-layer);
+		border-color: var(--neutral-border-subtle);
+	}
+
+	.djs-minimap.open {
+		width: auto;
+		height: auto;
+	}
+
+	.djs-minimap .map {
+		width: min(240px, 45vw);
+		height: auto;
+		aspect-ratio: 16 / 9;
+	}
+
+	@media (max-width: 640px) {
+		.djs-minimap {
+			display: none;
+		}
+	}
+
+	.djs-minimap .toggle:before {
+		content: '';
+	}
+
+	.djs-minimap:not(.open) .toggle {
+		display: none;
+	}
+
+	.djs-minimap.open .overlay {
+		background: var(--neutral-background-strong);
+		opacity: 0.2;
+	}
+
+	.djs-minimap .viewport-dom {
+		border-color: var(--primary-action-default);
+	}
+}
+
+@media (forced-colors: active) {
+	[role='tab'][data-state='active'] {
+		border-bottom: 2px solid Highlight;
 	}
 }

@@ -32,7 +32,7 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME = "camunda/connectors-bundle";
   public static final String DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION = "8.11-SNAPSHOT";
-  public static final String DEFAULT_ELASTICSEARCH_VERSION = "8.19.16";
+  public static final String DEFAULT_ELASTICSEARCH_VERSION = "9.5.6";
 
   public static final String DEFAULT_ELASTICSEARCH_DOCKER_IMAGE_NAME = "elasticsearch";
 
@@ -76,6 +76,7 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsEnvVars();
   public static final Map<String, String> CONNECTORS_SECRETS =
       PROPERTIES_UTIL.getConnectorsSecrets();
+  public static final Map<String, String> CLUSTER_SECRETS = PROPERTIES_UTIL.getClusterSecrets();
   public static final List<Integer> CONNECTORS_EXPOSED_PORTS =
       PROPERTIES_UTIL.getConnectorsExposedPorts();
 

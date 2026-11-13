@@ -38,8 +38,10 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskLookupRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.ArrayList;
@@ -235,6 +237,14 @@ public final class UserTaskServices
       final CamundaAuthentication authentication) {
     return sendBrokerRequest(
         new BrokerUserTaskUpdateRequest(userTaskKey, changeset, action), authentication);
+  }
+
+  public CompletableFuture<UserTaskLookupRecord> lookupUserTask(
+      final long userTaskKey,
+      final List<String> fetchVariables,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerUserTaskLookupRequest(userTaskKey, fetchVariables), authentication);
   }
 
   public UserTaskEntity getByKey(

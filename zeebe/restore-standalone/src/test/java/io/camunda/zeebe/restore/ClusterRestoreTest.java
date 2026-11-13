@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -705,6 +706,19 @@ final class ClusterRestoreTest {
       assertThatThrownBy(() -> clusterRestore.restore(Map.of(), REQUIRE_EMPTY, false, List.of()))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("at least one physical tenant");
+    }
+
+    @Test
+    void shouldRejectASelectionOfBackupIdsTogetherWithATimeRange() {
+      // when / then
+      assertThatThrownBy(
+              () -> new RestoreSelection(List.of(7L), Instant.parse("2026-01-01T10:00:00Z"), null))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected either backup ids or a time range, but got both");
+      assertThatThrownBy(
+              () -> new RestoreSelection(List.of(7L), null, Instant.parse("2026-01-01T12:00:00Z")))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected either backup ids or a time range, but got both");
     }
 
     @Test

@@ -28,11 +28,11 @@ import org.springframework.core.env.Environment;
  * <p>Spring's {@code MapBinder} merges maps at the entry level only: entries the tenant overlay
  * does not touch survive, but a touched entry is rebuilt from just the tenant's sub-keys — a tenant
  * overriding one field of a shared entry would silently lose every root field it did not restate.
- * Worse, Spring Boot 4.1 surfaces an empty YAML map ({@code providers: {}}) as an empty property
- * value, and binding that resets the whole map — dropping every inherited root entry. The engine
- * repairs both: bind root → snapshot each registered map → bind the tenant overlay onto the same
- * instance → re-establish the root ∪ overlay union by re-binding, for <em>every</em> key the root
- * declared (whether or not it survived the overlay bind), the tenant sub-prefix onto {@code
+ * Worse, Spring Boot 4.1 surfaces an empty YAML map ({@code aws: {}}) as an empty property value,
+ * and binding that resets the whole map — dropping every inherited root entry. The engine repairs
+ * both: bind root → snapshot each registered map → bind the tenant overlay onto the same instance →
+ * re-establish the root ∪ overlay union by re-binding, for <em>every</em> key the root declared
+ * (whether or not it survived the overlay bind), the tenant sub-prefix onto {@code
  * Bindable.ofInstance(rootValue)} so Spring layers only the tenant's delta onto the fully-populated
  * root POJO, and putting it back.
  *
@@ -44,9 +44,9 @@ import org.springframework.core.env.Environment;
 final class PhysicalTenantMapOverlay {
 
   /**
-   * Spring Boot 4.1 surfaces an empty YAML map ({@code providers: {}}) as an empty-string property
-   * at the map's own path. Because a spec's overlay bind is rooted at the config root itself, that
-   * value sits at the top level of the bind and a raw {@link Binder#bind} fails with a {@code
+   * Spring Boot 4.1 surfaces an empty YAML map ({@code aws: {}}) as an empty-string property at the
+   * map's own path. Because a spec's overlay bind is rooted at the config root itself, that value
+   * sits at the top level of the bind and a raw {@link Binder#bind} fails with a {@code
    * ConverterNotFoundException}. Production {@code @ConfigurationProperties} binding tolerates
    * exactly this via {@link IgnoreTopLevelConverterNotFoundBindHandler} — use the same handler so
    * an empty tenant overlay means "nothing to overlay" instead of a startup crash.

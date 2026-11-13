@@ -12,11 +12,12 @@ import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockAssignUserToTenantEndpoint,
 	mockDeleteTenantEndpoint,
-	mockGetTenantEndpoint,
+	mockQueryTenantsEndpoint,
 	mockQueryClientsByTenantEndpoint,
 	mockQueryGroupsByTenantEndpoint,
 	mockQueryRolesByTenantEndpoint,
@@ -141,7 +142,7 @@ describe('<AdminTenantDetailPage />', () => {
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Groups'}), 'external-group');
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign group'}));
 
 		// then
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
@@ -169,7 +170,7 @@ describe('<AdminTenantDetailPage />', () => {
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Client ID'}), 'constructor');
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign client'}));
 
 		// then
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
@@ -210,7 +211,12 @@ describe('<AdminTenantDetailPage />', () => {
 
 		const {screen} = await renderPage({search: {tab: 'roles'}});
 
-		await expect.element(screen.getByText('No roles assigned to this tenant.')).toBeVisible();
+		await expect.element(screen.getByText('No roles assigned to this tenant yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about roles'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign role'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 	});
 
 	it('should assign a user picked from the user search', async ({worker}) => {
@@ -231,9 +237,42 @@ describe('<AdminTenantDetailPage />', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Users'}));
 		await userEvent.click(screen.getByRole('option', {name: 'jane'}));
 		await userEvent.click(screen.getByRole('heading', {name: 'Assign user'}));
-		await userEvent.click(screen.getByRole('button', {name: 'Assign', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Assign user'}));
 
 		await expect.element(screen.getByText('Assignment saved')).toBeVisible();
+	});
+
+	it('should still offer users when the first candidates are all assigned on the current page', async ({worker}) => {
+		// given
+		const everyone = Array.from({length: 102}, (_, index) => `user-${String(index).padStart(3, '0')}`);
+		worker.use(
+			mockQueryUsersByTenantEndpoint({
+				successResponse: HttpResponse.json(createQueryUsersByTenantResponse(everyone.slice(0, 100))),
+			}),
+			http.post(decodeURIComponent(endpoints.queryUsers.getUrl()), async ({request}) => {
+				const body = (await request.json()) as {
+					filter?: {username?: {$notIn?: string[]}};
+					page: {limit: number};
+				};
+				const excluded = body.filter?.username?.$notIn ?? [];
+				const matching = everyone.filter((username) => !excluded.includes(username));
+				return HttpResponse.json({
+					items: matching.slice(0, body.page.limit).map((username) => ({username})),
+					page: {totalItems: matching.length},
+				});
+			}),
+		);
+		const {screen} = await renderPage({search: {pageSize: 100}});
+		await expect.element(screen.getByRole('cell', {name: 'user-099'})).toBeVisible();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Users'}));
+
+		// then
+		await expect.element(screen.getByRole('option', {name: 'user-100'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-101'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'user-000'})).not.toBeInTheDocument();
 	});
 
 	it('should keep the user options in alphabetical order while users are picked', async ({worker}) => {
@@ -268,8 +307,8 @@ describe('<AdminTenantDetailPage />', () => {
 		const {screen} = await renderPage();
 
 		await userEvent.click(screen.getByRole('button', {name: /row actions/i}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Remove'}));
-		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Remove'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Remove user'}));
+		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Remove user'}));
 
 		await expect.element(screen.getByText('Removed from tenant')).toBeVisible();
 	});
@@ -278,7 +317,7 @@ describe('<AdminTenantDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByTenantEndpoint({successResponse: HttpResponse.json(createQueryUsersByTenantResponse())}),
 			mockDeleteTenantEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 
 		const {screen, onDeleted} = await renderPage();

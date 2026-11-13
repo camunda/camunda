@@ -17,6 +17,7 @@ import {
 	mockCreateMappingRuleEndpoint,
 	mockUpdateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
+	mockGetMappingRuleEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -56,13 +57,23 @@ test.describe('Admin mapping rules', () => {
 	});
 
 	test('should create a mapping rule', async ({adminMappingRulesPage, network}) => {
-		network.use(mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}));
+		network.use(
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json(createQueryMappingRulesResponse({items: [createMappingRule()]})),
+			}),
+		);
 
 		await adminMappingRulesPage.goto();
 		await adminMappingRulesPage.addButton.click();
 
 		await expect(adminMappingRulesPage.addModal.dialog).toBeVisible();
 
+		const createdMappingRule = createMappingRule({
+			mappingRuleId: 'my-rule',
+			name: 'My rule',
+			claimName: 'email',
+			claimValue: 'demo@example.com',
+		});
 		network.use(
 			mockCreateMappingRuleEndpoint({
 				schema: z.object({
@@ -71,9 +82,10 @@ test.describe('Admin mapping rules', () => {
 					claimName: z.literal('email'),
 					claimValue: z.literal('demo@example.com'),
 				}),
-				successResponse: HttpResponse.json({}),
+				successResponse: HttpResponse.json(createdMappingRule),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
+			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(createdMappingRule)}),
 			mockQueryMappingRulesEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryMappingRulesResponse({
@@ -111,12 +123,14 @@ test.describe('Admin mapping rules', () => {
 		await expect(adminMappingRulesPage.editModal.dialog).toBeVisible();
 		await expect(adminMappingRulesPage.editModal.nameInput).toHaveValue('My rule');
 
+		const updatedMappingRule = createMappingRule({mappingRuleId: 'my-rule', name: 'Updated name', claimName: 'email'});
 		network.use(
 			mockUpdateMappingRuleEndpoint({
 				schema: z.object({name: z.literal('Updated name'), claimName: z.string(), claimValue: z.string()}),
-				successResponse: HttpResponse.json({}),
+				successResponse: HttpResponse.json(updatedMappingRule),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
+			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(updatedMappingRule)}),
 			mockQueryMappingRulesEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryMappingRulesResponse({
@@ -152,6 +166,7 @@ test.describe('Admin mapping rules', () => {
 
 		network.use(
 			mockDeleteMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
+			mockGetMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
 			mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}),
 		);
 
@@ -162,7 +177,11 @@ test.describe('Admin mapping rules', () => {
 	});
 
 	test('should search mapping rules by ID', async ({adminMappingRulesPage, network}) => {
-		network.use(mockQueryMappingRulesEndpoint({successResponse: HttpResponse.json(createQueryMappingRulesResponse())}));
+		network.use(
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json(createQueryMappingRulesResponse({items: [createMappingRule()]})),
+			}),
+		);
 
 		await adminMappingRulesPage.goto();
 		await expect(adminMappingRulesPage.searchInput).toBeVisible();

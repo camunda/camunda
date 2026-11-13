@@ -35,6 +35,7 @@ import {DeleteTenantModal} from '#/admin/modules/tenants/DeleteTenantModal';
 import {TenantTabContent} from '#/admin/modules/tenants/TenantTabContent';
 import {isDefaultTenant} from '#/admin/modules/tenants/defaultTenant';
 import {getActiveTenantTab} from '#/admin/modules/tenants/getAvailableTenantTabs';
+import {getMemberKind} from '#/admin/modules/tenants/getMemberKind';
 import type {TenantDetailSearch, TenantDetailSearchChange, TenantTab} from '#/admin/modules/tenants/detailSearchSchema';
 
 type ModalState = 'edit' | 'delete' | null;
@@ -124,7 +125,7 @@ const AdminTenantDetailPage: React.FC<AdminTenantDetailPageProps> = ({
 					<TabsList variant="line">
 						{tabs.map((tab) => (
 							<TabsTrigger key={tab} value={tab}>
-								{t(`admin.tenants.tab_${tab}`)}
+								{t(`admin.tenants.members.${getMemberKind(tab)}.tab`)}
 							</TabsTrigger>
 						))}
 					</TabsList>

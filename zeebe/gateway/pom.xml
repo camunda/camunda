@@ -28,6 +28,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-utils</artifactId>
     </dependency>
 
@@ -113,7 +118,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
     </dependency>
 
     <dependency>

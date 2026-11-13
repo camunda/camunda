@@ -820,8 +820,8 @@ public final class TimerCatchEventTest {
         .hasElementId("timer")
         .hasErrorMessage(
             """
-            Expected result of the expression 'today() + duration("P1D")' \
-            to be one of '[DURATION, PERIOD, STRING]', \
+            Expected result of the timer duration expression 'today() + duration("P1D")' \
+            of event 'timer' to be one of '[DURATION, PERIOD, STRING]', \
             but was 'DATE'.""");
   }
 }

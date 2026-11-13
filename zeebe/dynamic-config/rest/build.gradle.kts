@@ -1,9 +1,13 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+}
 
 dependencies {
   implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-cluster-config-openapi"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-util"))
   implementation(libs.org.springframework.boot.spring.boot.actuator)
   implementation(libs.org.springframework.spring.beans)

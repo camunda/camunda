@@ -24,12 +24,15 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumedWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -48,13 +51,15 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   private final AsyncRequestState asyncRequestState;
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
+  private final ProcessInstanceResumedWriter resumedWriter;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
       final AsyncRequestState asyncRequestState,
       final SuspensionState suspensionState,
-      final SuspensionMetrics suspensionMetrics) {
+      final SuspensionMetrics suspensionMetrics,
+      final StateWriter stateWriter) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
@@ -68,6 +73,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     this.asyncRequestState = asyncRequestState;
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
+    resumedWriter = new ProcessInstanceResumedWriter(stateWriter, asyncRequestState);
   }
 
   @Override
@@ -102,17 +108,16 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
+    final var droppedCommands = writeResumedIfStillResuming(context);
     final var result =
         transitionTo(
             element,
             context,
             completing -> stateTransitionBehavior.transitionToCompleted(element, completing));
 
-    // a completing instance may have been RESUMING (a buffered command drained straight to
-    // completion, superseding the RESUME_JOBS/COMPLETE_RESUMING chain — see those processors'
-    // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
-    // sample so it doesn't stay in the map forever. The same goes for a SUSPENDING instance whose
-    // walk never reached SUSPENDED.
+    droppedCommands.ifPresent(count -> recordResumed(context.getElementInstanceKey(), count));
+    // a SUSPENDING instance whose walk never reached SUSPENDED leaves a sample behind; discard it
+    // so it doesn't stay in the map forever
     suspensionMetrics.discardDurations(context.getElementInstanceKey());
     return result;
   }
@@ -136,6 +141,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   public void finalizeTermination(
       final ExecutableProcess element, final BpmnElementContext terminationContext) {
     final long piKey = terminationContext.getElementInstanceKey();
+    final var resumeDroppedCommands = writeResumedIfStillResuming(terminationContext);
 
     // capture suspension state before finalization — the applier clears it
     final boolean wasSuspended = suspensionState.getSuspensionState(piKey) != null;
@@ -151,10 +157,38 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
                     context, element.getEventType(), getAsyncRequest(context))));
 
     // metrics after all writes
+    resumeDroppedCommands.ifPresent(count -> recordResumed(piKey, count));
     if (droppedCommands > 0) {
       suspensionMetrics.commandsDropped(droppedCommands);
     }
     suspensionMetrics.discardDurations(piKey);
+  }
+
+  /**
+   * Writes {@code RESUMED} if the instance ends while {@code RESUMING}. The rest of the resume
+   * chain is then rejected, so without this no record would mark the resume as finished (e.g. for
+   * batch resume items).
+   *
+   * @return the number of buffered commands dropped with the marker, or empty if not resuming
+   */
+  private OptionalInt writeResumedIfStillResuming(final BpmnElementContext context) {
+    final long piKey = context.getElementInstanceKey();
+    if (suspensionState.getSuspensionState(piKey) != SuspensionState.State.RESUMING) {
+      return OptionalInt.empty();
+    }
+
+    final int droppedCommands = suspensionState.countBufferedCommands(piKey);
+    resumedWriter.writeResumed(piKey, context.getRecordValue());
+    return OptionalInt.of(droppedCommands);
+  }
+
+  /** Called after all writes, so a failed batch does not leave the metrics updated. */
+  private void recordResumed(final long piKey, final int droppedCommands) {
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
+    }
+    suspensionMetrics.stopResumeDuration(piKey);
+    suspensionMetrics.instanceResumed();
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {

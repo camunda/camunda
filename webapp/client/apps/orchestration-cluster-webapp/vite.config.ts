@@ -63,6 +63,12 @@ const config = defineConfig(({mode}) => ({
 
 	optimizeDeps: {
 		include: [
+			'@monaco-editor/react',
+			'monaco-editor',
+			'monaco-editor/language/json/monaco.contribution.js',
+			'monaco-editor/editor/browser/coreCommands.js',
+			'monaco-editor/editor/contrib/find/browser/findController.js',
+			'monaco-editor/editor/contrib/gotoError/browser/gotoError.js',
 			'@tanstack/react-devtools',
 			'@tanstack/react-query-devtools',
 			'@tanstack/react-router-devtools',
@@ -77,6 +83,9 @@ const config = defineConfig(({mode}) => ({
 		proxy: {
 			'/v2': 'http://localhost:8080',
 			'/admin/config.js': 'http://localhost:8080',
+			'/operate/client-config.js': 'http://localhost:8080',
+			'/oauth2': {target: 'http://localhost:8080'},
+			'/sso-callback': {target: 'http://localhost:8080'},
 			'/login': {
 				target: 'http://localhost:8080',
 				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),

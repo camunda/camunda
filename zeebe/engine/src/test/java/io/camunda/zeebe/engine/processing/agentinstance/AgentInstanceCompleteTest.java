@@ -66,20 +66,24 @@ public class AgentInstanceCompleteTest {
   }
 
   @Test
-  public void shouldDeleteAgentInstanceFromStateOnCompleted() {
+  public void shouldRejectUpdateOfAgentInstanceAfterCompleted() {
     // given
     final var fixture = deployAndCreateAgentInstance();
-
-    // when
     ENGINE.agentInstances().withProcessInstanceKey(fixture.processInstanceKey()).complete();
 
-    // then
-    assertThat(
-            ENGINE
-                .getProcessingState()
-                .getAgentInstanceState()
-                .getRecord(fixture.agentInstanceKey()))
-        .isNull();
+    // when
+    final var rejection =
+        ENGINE
+            .agentInstances()
+            .withAgentInstanceKey(fixture.agentInstanceKey())
+            .withStatus(AgentInstanceStatus.THINKING)
+            .withChangedAttributes(List.of("status"))
+            .expectRejection()
+            .update();
+
+    // then - the COMPLETED event removed the agent instance, so it can no longer be found
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason()).contains(String.valueOf(fixture.agentInstanceKey()));
   }
 
   @Test

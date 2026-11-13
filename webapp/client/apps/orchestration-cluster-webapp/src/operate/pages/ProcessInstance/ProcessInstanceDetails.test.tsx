@@ -642,7 +642,7 @@ describe('<ProcessInstanceDetails />', () => {
 			await expect.element(screen.getByText('75')).toBeVisible();
 			await expect
 				.element(screen.getByRole('link', {name: 'Open Tasklist'}))
-				.toHaveAttribute('href', expect.stringContaining('/tasklist/2251799813685555'));
+				.toHaveAttribute('href', expect.stringMatching(/\/tasklist\/2251799813685555\?filter=all-open$/));
 		});
 
 		it('should not show the Tasklist link when Tasklist is not active', async ({worker}) => {

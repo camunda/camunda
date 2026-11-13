@@ -15,6 +15,7 @@ import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -66,6 +67,7 @@ import org.springframework.core.env.Environment;
  *   <li>Among the effective provider set (the {@code assigned} list, or all providers for the
  *       default tenant without a selection), no two providers may carry the same {@code
  *       issuer-uri}: identical issuers produce an ambiguous token-validation chain at runtime.
+ *       Issuers that differ only by a trailing slash are the same issuer, as at runtime.
  * </ul>
  */
 @NullMarked
@@ -340,8 +342,8 @@ final class PhysicalTenantAssignedProvidersValidation {
 
   /**
    * Fails if any two provider ids in {@code providerIds} resolve to the same {@code issuer-uri}
-   * under {@code tenantId}. Provider ids whose issuer is {@code null} are skipped (not yet
-   * configured, or set elsewhere).
+   * under {@code tenantId}, a trailing slash ignored. Provider ids whose issuer is {@code null} are
+   * skipped (not yet configured, or set elsewhere).
    */
   private static void checkIssuerCollisions(
       final Environment environment,
@@ -349,6 +351,7 @@ final class PhysicalTenantAssignedProvidersValidation {
       final String tenantId,
       final Collection<String> providerIds) {
     final Map<String, List<String>> byIssuer = new LinkedHashMap<>();
+    final Map<String, Set<String>> declaredIssuers = new HashMap<>();
     // Deduplicate by provider config: a repeated id in `assigned`, or two map keys that Spring
     // binds from the same config (`azure-ad` from yaml and `azuread` from an env var), carry the
     // same issuer and would otherwise appear as a false collision. Ids whose declared names Spring
@@ -366,13 +369,25 @@ final class PhysicalTenantAssignedProvidersValidation {
     for (final String id : distinctIds) {
       final String issuer = resolveIssuerUri(environment, binder, tenantId, id);
       if (issuer != null) {
-        byIssuer.computeIfAbsent(issuer, k -> new ArrayList<>()).add(id);
+        // The runtime treats issuers that differ only by a trailing slash as one issuer.
+        final String sameIssuer = OidcIssuerUris.withoutTrailingSlash(issuer);
+        byIssuer.computeIfAbsent(sameIssuer, k -> new ArrayList<>()).add(id);
+        declaredIssuers.computeIfAbsent(sameIssuer, k -> new HashSet<>()).add(issuer);
       }
     }
     final List<String> collisions =
         byIssuer.entrySet().stream()
             .filter(e -> e.getValue().size() > 1)
-            .map(e -> "issuer '%s' is claimed by providers %s".formatted(e.getKey(), e.getValue()))
+            .map(
+                e ->
+                    "issuer '%s' is claimed by providers %s%s"
+                        .formatted(
+                            e.getKey(),
+                            e.getValue(),
+                            declaredIssuers.getOrDefault(e.getKey(), Set.of()).size() > 1
+                                ? " (issuers that differ only by a trailing slash are the same"
+                                    + " issuer)"
+                                : ""))
             .toList();
     if (!collisions.isEmpty()) {
       throw fail(

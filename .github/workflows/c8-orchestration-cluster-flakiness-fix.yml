@@ -1,0 +1,1815 @@
+# description: OC flakiness fix agent. Daily, ranks the flaky tests of the last
+#              nightlies (E2E and API on Elasticsearch, every version) and dispatches
+#              one run of itself per test. Each run measures the test on sharded,
+#              fresh docker-compose stacks of every cell it was flaky in, lets Claude
+#              Code fix it on a flaky-fix/* branch (at most two attempts), re-measures,
+#              and opens a PR only when the fix clears the pass-rate thresholds. A fix
+#              that does not is deleted with its branch. The pick posts one Slack
+#              message listing every dispatched test, and each run rewrites its own
+#              row there when it reaches a verdict.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster Flakiness Fix Agent
+
+run-name: >-
+  ${{ (github.event_name == 'workflow_dispatch' && inputs.spec != '')
+      && format('Flakiness fix — {0} {1}', inputs.version, inputs.spec)
+      || 'Flakiness fix — pick and dispatch' }}
+
+on:
+  schedule:
+    # After the last E2E/API nightly (main, 02:15 UTC) has finished.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "8.7, 8.8, 8.9, 8.10 or main. Leave spec empty to run the daily pick instead."
+        required: false
+        type: string
+      spec:
+        description: "Spec file relative to the suite root, e.g. tests/operate/operations.spec.ts"
+        required: false
+        type: string
+      title_path:
+        description: 'JSON array: describe titles then the test title, e.g. ["Operations","Retry and cancel single instance"]'
+        required: false
+        type: string
+      project:
+        description: "Playwright project the nightly ran the test under (chromium, api-tests, ...)"
+        required: false
+        type: string
+      cells:
+        description: 'JSON array of cells: e2e-v1, e2e-v2, e2e (main), api-profiles, api-all-in-one'
+        required: false
+        type: string
+      shards:
+        description: "Shards per cell, each on its own stack running the nightly's whole test selection"
+        required: false
+        default: '20'
+        type: string
+      repeat_each:
+        description: "Runs of the nightly selection per shard"
+        required: false
+        default: '1'
+        type: string
+      max_targets:
+        description: "Pick mode: tests dispatched per day"
+        required: false
+        default: '3'
+        type: string
+      dispatch:
+        description: "Pick mode: dispatch the picked tests (false = only list them)"
+        required: false
+        default: true
+        type: boolean
+      board_date:
+        description: "Set by the pick job: the daily Slack board this run reports its verdict to. Empty = no Slack update."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    oc-flakiness-${{ inputs.spec != '' && format('{0}-{1}-{2}', inputs.version, inputs.spec, inputs.title_path) || 'pick' }}
+  cancel-in-progress: false
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+  STATE_BRANCH: oc-flakiness-state
+  # The OC suite's own channel, where the nightly triage message already lands.
+  SLACK_CHANNEL: c8-orchestration-cluster-e2e-test-results
+  # A PR needs every cell at MIN_PASS_RATE and the pooled rate up by
+  # MIN_IMPROVEMENT_PP over the baseline: the floor alone cannot tell a real fix
+  # from a no-op on a test that was already near it.
+  MIN_PASS_RATE: '80'
+  MIN_IMPROVEMENT_PP: '5'
+
+jobs:
+  # ─── Pick mode ────────────────────────────────────────────────────────────
+  pick:
+    name: Pick flaky tests
+    if: github.event_name == 'schedule' || inputs.spec == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      # Nightly runs per workflow that are read. Older runs say little about
+      # the test as it is today.
+      WINDOW: '7'
+      # workflow | version | kind. RDBMS is not covered yet.
+      NIGHTLIES: |
+        c8-orchestration-cluster-nightly-8.7-e2e.yml|8.7|e2e
+        c8-orchestration-cluster-nightly-8.7-api-es.yml|8.7|api
+        c8-orchestration-cluster-nightly-8.8-e2e.yml|8.8|e2e
+        c8-orchestration-cluster-nightly-8.8-api-es.yml|8.8|api
+        c8-orchestration-cluster-nightly-8.9-e2e.yml|8.9|e2e
+        c8-orchestration-cluster-nightly-8.9-api-es.yml|8.9|api
+        c8-orchestration-cluster-nightly-8.10-e2e.yml|8.10|e2e
+        c8-orchestration-cluster-nightly-8.10-api-es.yml|8.10|api
+        c8-orchestration-cluster-nightly-main-e2e.yml|main|e2e
+        c8-orchestration-cluster-nightly-main-api-es.yml|main|api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Download nightly reports
+        run: |
+          set -euo pipefail
+          reports="$RUNNER_TEMP/reports"
+          mkdir -p "$reports"
+          while IFS='|' read -r workflow version kind; do
+            [[ -z "$workflow" ]] && continue
+            [[ "$version" == "main" ]] && safe="main" || safe="stable-${version}"
+            gh run list --repo "$REPO" --workflow "$workflow" --status completed \
+              --limit "$WINDOW" --json databaseId,createdAt \
+              --jq '.[] | "\(.databaseId) \(.createdAt)"' |
+            while read -r run_id created_at; do
+              gh api "repos/${REPO}/actions/runs/${run_id}/artifacts" --paginate \
+                --jq '.artifacts[] | select(.expired | not) | .name' |
+              while read -r name; do
+                cell=""
+                if [[ "$kind" == "e2e" ]]; then
+                  case "$name" in
+                    "json-report-nightly-e2e-${safe}-v1") cell=e2e-v1 ;;
+                    "json-report-nightly-e2e-${safe}-v2") cell=e2e-v2 ;;
+                    "json-report-nightly-e2e-${safe}") cell=e2e ;;
+                  esac
+                else
+                  case "$name" in
+                    "json-report-nightly-api-${safe}-all-in-one") cell=api-all-in-one ;;
+                    "json-report-nightly-api-${safe}-profiles"|"json-report-nightly-api-${safe}") cell=api-profiles ;;
+                  esac
+                fi
+                [[ -z "$cell" ]] && continue
+                dir="${reports}/${version}/${cell}/${run_id}"
+                mkdir -p "$dir"
+                jq -n --arg c "$created_at" '{created_at: $c}' > "${dir}/meta.json"
+                gh run download "$run_id" --repo "$REPO" --name "$name" --dir "$dir" \
+                  || echo "::warning::could not download ${name} from run ${run_id}"
+              done
+            done
+          done <<< "$NIGHTLIES"
+          find "$reports" -name results.json | wc -l | xargs echo "reports downloaded:"
+
+      - name: Read the ledger
+        run: |
+          gh api "repos/${REPO}/contents/ledger.json?ref=${STATE_BRANCH}" --jq '.content' 2>/dev/null \
+            | base64 -d > "$RUNNER_TEMP/ledger.json" 2>/dev/null || true
+          jq -e 'type == "object"' "$RUNNER_TEMP/ledger.json" > /dev/null 2>&1 \
+            || echo '{}' > "$RUNNER_TEMP/ledger.json"
+
+      - name: Rank flaky tests
+        id: rank
+        env:
+          MAX_TARGETS: ${{ inputs.max_targets || '3' }}
+        run: |
+          set -euo pipefail
+          # Ask for extra candidates: some are dropped below because a fix branch
+          # for them already exists.
+          node .github/scripts/oc-flakiness/pick.mjs \
+            --reports "$RUNNER_TEMP/reports" --ledger "$RUNNER_TEMP/ledger.json" \
+            --max $(( MAX_TARGETS * 3 )) > "$RUNNER_TEMP/candidates.json"
+
+          gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" --jq '.[].ref' \
+            | sed 's#^refs/heads/##' > "$RUNNER_TEMP/branches.txt" || true
+          jq -c --rawfile branches "$RUNNER_TEMP/branches.txt" --argjson max "$MAX_TARGETS" '
+            ($branches | split("\n")) as $taken
+            | [.[] | select(("flaky-fix/" + .version + "-" + .fp) as $b | $taken | index($b) | not)]
+            | .[0:$max]
+          ' "$RUNNER_TEMP/candidates.json" > "$RUNNER_TEMP/targets.json"
+
+          {
+            echo "### Flaky tests picked"
+            echo
+            echo "| version | test | cells | flaky | failed | passed |"
+            echo "|---|---|---|---|---|---|"
+            jq -r '.[] | "| \(.version) | `\(.file)` › \(.titlePath | join(" › ")) | \(.cells | join(", ")) | \(.flaky) | \(.failed) | \(.passed) |"' \
+              "$RUNNER_TEMP/targets.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+          jq . "$RUNNER_TEMP/targets.json"
+
+      - name: Import Vault secrets
+        id: slack-secret
+        if: github.event_name == 'schedule' || inputs.dispatch
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        if: github.event_name == 'schedule' || inputs.dispatch
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # Posted before the dispatch, so a run that finishes unusually fast still
+      # finds the board it is meant to update.
+      - name: Post the daily board to Slack
+        id: board
+        if: github.event_name == 'schedule' || inputs.dispatch
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          # No `-e`: the board is a report on the work, not the work. Every
+          # failure here is handled in place, so that a Slack outage or a state
+          # branch that will not take a push cannot stop the run from
+          # dispatching the fix agents it picked.
+          set -uo pipefail
+          s=.github/scripts/oc-flakiness
+          date_key=$(date -u +%Y-%m-%d)
+          if ! node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
+            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"; then
+            echo "::warning::could not build the daily board; dispatching without it"
+            exit 0
+          fi
+
+          # Store first, post second. A re-run of the pick on the same day
+          # merges into the board already in the channel instead of posting a
+          # second message and orphaning the runs reporting to the first.
+          if ! board=$(BOARD_JSON=$(cat "$RUNNER_TEMP/board-init.json") \
+            bash "$s/board-store.sh" init "$date_key"); then
+            echo "::warning::could not store the daily board; dispatching without it"
+            exit 0
+          fi
+          # Only once the board is stored, so a run that could not store one
+          # dispatches with an empty board_date and its agents skip the update.
+          echo "date=${date_key}" >> "$GITHUB_OUTPUT"
+
+          if [[ -n "$(jq -r '.ts // ""' <<< "$board")" ]]; then
+            bash "$s/board-store.sh" publish "$date_key" > /dev/null \
+              || echo "::warning::could not rewrite the daily board message"
+            exit 0
+          fi
+
+          printf '%s' "$board" > "$RUNNER_TEMP/board.json"
+          posted=$(node "$s/board.mjs" --render "$RUNNER_TEMP/board.json" \
+            | bash "$s/board-slack.sh" post "$SLACK_CHANNEL") || {
+            echo "::warning::could not post the daily board; the runs will still report in the ledger"
+            exit 0
+          }
+          # chat.update needs the conversation ID Slack resolved the name to,
+          # not the name.
+          bash "$s/board-store.sh" ts "$date_key" \
+            "$(jq -r .ts <<< "$posted")" "$(jq -r .channel <<< "$posted")" > /dev/null \
+            || echo "::warning::posted the board but could not store its message id"
+
+      - name: Dispatch one run per test
+        if: github.event_name == 'schedule' || inputs.dispatch
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          BOARD_DATE: ${{ steps.board.outputs.date }}
+        run: |
+          set -euo pipefail
+          s=.github/scripts/oc-flakiness
+          since=$(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%SZ)
+          claimed=""
+
+          # Not a `while read` over a pipe: that body runs in a subshell, and
+          # `claimed` has to survive from one dispatch to the next.
+          for i in $(seq 0 $(( $(jq length "$RUNNER_TEMP/targets.json") - 1 ))); do
+            t=$(jq -c ".[$i]" "$RUNNER_TEMP/targets.json")
+            version=$(jq -r .version <<< "$t")
+            spec=$(jq -r .file <<< "$t")
+            gh workflow run c8-orchestration-cluster-flakiness-fix.yml --repo "$REPO" --ref "$GITHUB_REF_NAME" \
+              -f version="$version" \
+              -f spec="$spec" \
+              -f title_path="$(jq -c .titlePath <<< "$t")" \
+              -f project="$(jq -r .project <<< "$t")" \
+              -f cells="$(jq -c .cells <<< "$t")" \
+              -f board_date="$BOARD_DATE"
+            echo "Dispatched ${version} ${spec}"
+
+            [[ -n "$BOARD_DATE" ]] || continue
+            # Linking the row now is what makes the board usable while the runs
+            # are still going; without it the first clickable link appears
+            # hours later, at the verdict.
+            run_url=$(VERSION="$version" SPEC="$spec" SINCE_TS="$since" CLAIMED="$claimed" \
+              bash "$s/resolve-dispatched-run.sh") || true
+            [[ -n "$run_url" ]] || continue
+            claimed="${claimed:+${claimed},}${run_url##*/}"
+            # Never fatal: losing a row's link must not stop the dispatches
+            # that come after it.
+            bash "$s/board-store.sh" set "$BOARD_DATE" \
+              "$(jq -r .fp <<< "$t")" dispatched "" "" "$run_url" "" > /dev/null \
+              || echo "::warning::could not link ${version} ${spec} on the board"
+          done
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/pick"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  janitor:
+    name: Delete abandoned flaky-fix branches
+    if: github.event_name == 'schedule' || inputs.spec == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # A run that crashed before its decide job leaves its branch behind. Two
+      # days is far longer than any run, and a branch with an open PR is kept.
+      - name: Delete stale branches
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cutoff=$(date -u -d '2 days ago' +%s)
+          gh api "repos/${REPO}/git/matching-refs/heads/flaky-fix/" \
+            --jq '.[] | "\(.ref) \(.object.sha)"' |
+          while read -r ref sha; do
+            branch="${ref#refs/heads/}"
+            committed=$(gh api "repos/${REPO}/commits/${sha}" --jq '.commit.committer.date')
+            [[ $(date -u -d "$committed" +%s) -gt "$cutoff" ]] && continue
+            open=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq 'length')
+            [[ "$open" -gt 0 ]] && continue
+            gh api -X DELETE "repos/${REPO}/git/refs/heads/${branch}"
+            echo "Deleted ${branch} (last commit ${committed})"
+          done
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/janitor"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ─── Fix mode: one test ───────────────────────────────────────────────────
+  prepare:
+    name: Prepare
+    if: github.event_name == 'workflow_dispatch' && inputs.spec != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.prep.outputs.skip }}
+      target_ref: ${{ steps.prep.outputs.target_ref }}
+      fp: ${{ steps.prep.outputs.fp }}
+      branch: ${{ steps.prep.outputs.branch }}
+      shard_ids: ${{ steps.prep.outputs.shard_ids }}
+      repeat_each: ${{ steps.prep.outputs.repeat_each }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Validate inputs and resolve the target
+        id: prep
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PROJECT: ${{ inputs.project }}
+          CELLS: ${{ inputs.cells }}
+          SHARDS: ${{ inputs.shards }}
+          REPEAT_EACH: ${{ inputs.repeat_each }}
+        run: |
+          set -euo pipefail
+          case "$VERSION" in
+            main) target_ref=main; allowed='["e2e","api-profiles","api-all-in-one"]' ;;
+            8.7)  target_ref=stable/8.7; allowed='["e2e-v1","api-profiles"]' ;;
+            8.8)  target_ref=stable/8.8; allowed='["e2e-v1","e2e-v2","api-profiles"]' ;;
+            8.9)  target_ref=stable/8.9; allowed='["e2e-v1","e2e-v2","api-profiles","api-all-in-one"]' ;;
+            8.10) target_ref=stable/8.10; allowed='["e2e-v2","api-profiles","api-all-in-one"]' ;;
+            *) echo "::error::version must be 8.7, 8.8, 8.9, 8.10 or main"; exit 1 ;;
+          esac
+          jq -e 'type == "array" and length > 0 and all(type == "string")' <<< "$TITLE_PATH" > /dev/null \
+            || { echo "::error::title_path must be a non-empty JSON array of strings"; exit 1; }
+          jq -e --argjson allowed "$allowed" 'type == "array" and length > 0 and all(. as $c | $allowed | index($c))' <<< "$CELLS" > /dev/null \
+            || { echo "::error::cells must be a non-empty subset of ${allowed} for ${VERSION}"; exit 1; }
+          [[ -n "$PROJECT" ]] || { echo "::error::project is required"; exit 1; }
+          [[ "$SPEC" =~ ^[A-Za-z0-9_./-]+\.spec\.ts$ ]] || { echo "::error::spec must be a .spec.ts path"; exit 1; }
+          for n in "$SHARDS" "$REPEAT_EACH"; do
+            [[ "$n" =~ ^[1-9][0-9]?$ ]] || { echo "::error::shards and repeat_each must be 1-99"; exit 1; }
+          done
+
+          title=$(jq -r '.[-1]' <<< "$TITLE_PATH")
+          fp=$(printf '%s::%s::%s' "$VERSION" "$SPEC" "$title" | sha256sum | cut -c1-8)
+          branch="flaky-fix/${VERSION}-${fp}"
+          skip=false
+          if gh api "repos/${REPO}/git/ref/heads/${branch}" > /dev/null 2>&1; then
+            echo "::notice::${branch} already exists; another run or an open PR covers this test."
+            skip=true
+          fi
+          {
+            echo "skip=${skip}"
+            echo "target_ref=${target_ref}"
+            echo "fp=${fp}"
+            echo "branch=${branch}"
+            echo "shard_ids=$(jq -cn --argjson n "$SHARDS" '[range(1; $n + 1)]')"
+            echo "repeat_each=${REPEAT_EACH}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/prepare"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  baseline:
+    name: Baseline
+    needs: [prepare]
+    if: needs.prepare.outputs.skip == 'false'
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.prepare.outputs.target_ref }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: baseline
+
+  fix1:
+    name: Fix attempt 1
+    needs: [prepare, baseline]
+    if: ${{ !cancelled() && needs.baseline.outputs.verdict == 'scored' }}
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      target_ref: ${{ needs.prepare.outputs.target_ref }}
+      branch: ${{ needs.prepare.outputs.branch }}
+      base: target
+      iteration: 1
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      cells: ${{ inputs.cells }}
+      evidence: '["baseline"]'
+
+  validate1:
+    name: Validate attempt 1
+    needs: [prepare, fix1]
+    if: ${{ !cancelled() && needs.fix1.outputs.changed == 'true' }}
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.fix1.outputs.sha }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: iter1
+
+  plan-iter2:
+    name: Plan attempt 2
+    needs: [validate1]
+    if: ${{ !cancelled() && needs.validate1.outputs.verdict != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run_iter2: ${{ steps.next.outputs.run_iter2 }}
+      base: ${{ steps.next.outputs.base }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+      - name: Download scores
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-score-*
+          path: ${{ runner.temp }}/scores
+          merge-multiple: true
+      - name: Decide
+        id: next
+        run: |
+          set -euo pipefail
+          s="$RUNNER_TEMP/scores"
+          result=$(node .github/scripts/oc-flakiness/decide.mjs --mode next \
+            --baseline "$s/flaky-score-baseline/score.json" --iter1 "$s/flaky-score-iter1/score.json")
+          echo "$result"
+          {
+            echo "run_iter2=$(jq -r .run_iter2 <<< "$result")"
+            echo "base=$(jq -r .base <<< "$result")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/plan-iter2"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  fix2:
+    name: Fix attempt 2
+    needs: [prepare, plan-iter2]
+    if: ${{ !cancelled() && needs.plan-iter2.outputs.run_iter2 == 'true' }}
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-agent.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      target_ref: ${{ needs.prepare.outputs.target_ref }}
+      branch: ${{ needs.prepare.outputs.branch }}
+      base: ${{ needs.plan-iter2.outputs.base }}
+      iteration: 2
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      cells: ${{ inputs.cells }}
+      evidence: '["baseline","iter1"]'
+
+  validate2:
+    name: Validate attempt 2
+    needs: [prepare, fix2]
+    if: ${{ !cancelled() && needs.fix2.outputs.changed == 'true' }}
+    uses: ./.github/workflows/c8-orchestration-cluster-flakiness-shards.yml
+    secrets:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_ROLE_ID: ${{ secrets.VAULT_ROLE_ID }}
+      VAULT_SECRET_ID: ${{ secrets.VAULT_SECRET_ID }}
+    with:
+      version: ${{ inputs.version }}
+      test_ref: ${{ needs.fix2.outputs.sha }}
+      cells: ${{ inputs.cells }}
+      shards: ${{ needs.prepare.outputs.shard_ids }}
+      repeat_each: ${{ fromJSON(needs.prepare.outputs.repeat_each) }}
+      spec: ${{ inputs.spec }}
+      title_path: ${{ inputs.title_path }}
+      project: ${{ inputs.project }}
+      label: iter2
+
+  decide:
+    name: Decide — PR or delete
+    needs: [prepare, baseline, fix1, validate1, fix2, validate2]
+    if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.skip == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      action: ${{ steps.final.outputs.action }}
+      reason: ${{ steps.final.outputs.reason }}
+      rate: ${{ steps.final.outputs.rate }}
+      pr_url: ${{ steps.act.outputs.pr_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Download scores and agent summaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-{score,agent}-*
+          path: ${{ runner.temp }}/out
+          merge-multiple: true
+
+      - name: Decide
+        id: final
+        env:
+          # success: the attempt completed, including a patch the publish
+          # checks rejected. failure: it broke for any other reason.
+          FIX_RESULTS: >-
+            ${{ format('{0},{1}',
+              needs.fix1.result != 'skipped' && ((needs.fix1.result == 'success' || needs.fix1.outputs.rejected == 'true') && 'success' || 'failure') || '',
+              needs.fix2.result != 'skipped' && ((needs.fix2.result == 'success' || needs.fix2.outputs.rejected == 'true') && 'success' || 'failure') || '') }}
+        run: |
+          set -euo pipefail
+          o="$RUNNER_TEMP/out"
+          result=$(node .github/scripts/oc-flakiness/decide.mjs --mode final \
+            --baseline "$o/flaky-score-baseline/score.json" \
+            --iter1 "$o/flaky-score-iter1/score.json" \
+            --iter2 "$o/flaky-score-iter2/score.json" \
+            --fix-results "$FIX_RESULTS" \
+            --min-rate "$MIN_PASS_RATE" --min-improvement "$MIN_IMPROVEMENT_PP")
+          echo "$result"
+          {
+            echo "action=$(jq -r .action <<< "$result")"
+            echo "best=$(jq -r '.best // ""' <<< "$result")"
+            echo "rate=$(jq -r '.rate // ""' <<< "$result")"
+            echo "reason=$(jq -r .reason <<< "$result")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Open the PR or delete the branch
+        id: act
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          ACTION: ${{ steps.final.outputs.action }}
+          BEST: ${{ steps.final.outputs.best }}
+          REASON: ${{ steps.final.outputs.reason }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          TARGET_REF: ${{ needs.prepare.outputs.target_ref }}
+          ITER1_SHA: ${{ needs.fix1.outputs.sha }}
+          ITER2_SHA: ${{ needs.fix2.outputs.sha }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          CELLS: ${{ inputs.cells }}
+        run: |
+          set -euo pipefail
+          o="$RUNNER_TEMP/out"
+          branch_exists=false
+          gh api "repos/${REPO}/git/ref/heads/${BRANCH}" > /dev/null 2>&1 && branch_exists=true
+          pr_url=""
+
+          if [[ "$ACTION" == "open_pr" ]]; then
+            best_sha="$ITER1_SHA"
+            [[ "$BEST" == "iter2" ]] && best_sha="$ITER2_SHA"
+            # Attempt 2 may have moved the branch past (or away from) the better attempt 1.
+            gh api -X PATCH "repos/${REPO}/git/refs/heads/${BRANCH}" -f sha="$best_sha" -F force=true > /dev/null
+
+            gh label create flaky-test-fix --repo "$REPO" --color FBCA04 \
+              --description "Bot-opened fix for a flaky orchestration cluster E2E/API test" 2>/dev/null || true
+            title=$(jq -r '.[-1]' <<< "$TITLE_PATH" | cut -c1-70)
+            summary_file="$o/flaky-agent-${BEST}/flaky-fix-summary.md"
+            {
+              echo "## Description"
+              echo
+              echo "Stabilizes the flaky test \`${SPEC}\` › $(jq -r 'join(" › ")' <<< "$TITLE_PATH") on \`${TARGET_REF}\`."
+              echo
+              echo "**Result:** ${REASON}. Each pass ran the matching nightly's whole test selection on fresh docker-compose stacks per cell (\`$(jq -r 'join(", ")' <<< "$CELLS")\`), one stack per shard; a run counts as failed when its first attempt failed."
+              echo
+              echo "| pass | verdict | pooled | per cell |"
+              echo "|---|---|---|---|"
+              for label in baseline iter1 iter2; do
+                f="$o/flaky-score-${label}/score.json"
+                [[ -f "$f" ]] || continue
+                jq -r --arg l "$label" '"| \($l) | \(.verdict) | \(.pooled.rate)% (\(.pooled.passed)/\(.pooled.passed + .pooled.failed)) | \([.cells | to_entries[] | "\(.key) \(.value.rate)%"] | join(", ")) |"' "$f"
+              done
+              echo
+              if [[ -f "$summary_file" ]]; then
+                echo "### Root cause and fix (agent)"
+                echo
+                cat "$summary_file"
+                echo
+              fi
+              echo "Run: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+              echo
+              echo "## Checklist"
+              echo
+              echo "- [x] The changed test was re-run on fresh stacks of every affected cell (see the table above)."
+              echo
+              echo "## Related issues"
+              echo
+              echo "- [x] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)"
+            } > "$RUNNER_TEMP/pr-body.md"
+            pr_url=$(gh pr create --repo "$REPO" --base "$TARGET_REF" --head "$BRANCH" \
+              --title "test: stabilize flaky \"${title}\" (${VERSION})" \
+              --body-file "$RUNNER_TEMP/pr-body.md" --label flaky-test-fix)
+            echo "Opened ${pr_url}"
+          elif [[ "$branch_exists" == "true" ]]; then
+            gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
+            echo "Deleted ${BRANCH}: ${REASON}"
+          fi
+          echo "pr_url=${pr_url}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### ${ACTION}"
+            echo
+            echo "${REASON}"
+            if [[ -n "$pr_url" ]]; then
+              echo
+              echo "PR: ${pr_url}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The ledger keeps the pick job from spending a slot on the same test
+      # every day: a cooldown after every attempt. A baseline that did not
+      # reproduce the flake gets a short one and keeps the nightly hits: the
+      # flake may depend on conditions the shards do not recreate.
+      - name: Record the outcome in the ledger
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          ACTION: ${{ steps.final.outputs.action }}
+          REASON: ${{ steps.final.outputs.reason }}
+          PR_URL: ${{ steps.act.outputs.pr_url }}
+          FP: ${{ needs.prepare.outputs.fp }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+        run: |
+          set -euo pipefail
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          case "$ACTION" in
+            open_pr)        cooldown=$(date -u -d '14 days' +%Y-%m-%dT%H:%M:%SZ) ;;
+            delete_branch)  cooldown=$(date -u -d '7 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
+            not_reproduced) cooldown=$(date -u -d '3 days'  +%Y-%m-%dT%H:%M:%SZ) ;;
+            blocked)        cooldown=$(date -u -d '1 day'   +%Y-%m-%dT%H:%M:%SZ) ;;
+            *)              cooldown="" ;;
+          esac
+          run_url="${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID}"
+
+          state="$RUNNER_TEMP/state"
+          remote="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          git init -q "$state"
+          git -C "$state" config user.name  "qa-processes[bot]"
+          git -C "$state" config user.email "qa-processes[bot]@users.noreply.github.com"
+          git -C "$state" remote add origin "$remote"
+
+          for attempt in 1 2 3 4 5; do
+            if git -C "$state" fetch -q --depth 1 origin "$STATE_BRANCH" 2>/dev/null; then
+              git -C "$state" checkout -q -B "$STATE_BRANCH" FETCH_HEAD
+            else
+              git -C "$state" checkout -q --orphan "$STATE_BRANCH"
+              git -C "$state" rm -rq --cached . 2>/dev/null || true
+            fi
+            [[ -f "$state/ledger.json" ]] || echo '{}' > "$state/ledger.json"
+            jq --arg fp "$FP" --arg v "$VERSION" --arg f "$SPEC" --argjson tp "$TITLE_PATH" \
+               --arg action "$ACTION" --arg reason "$REASON" --arg now "$now" \
+               --arg cooldown "$cooldown" --arg run "$run_url" --arg pr "$PR_URL" '
+              .[$fp] = ((.[$fp] // {}) + {
+                version: $v, file: $f, titlePath: $tp,
+                last_action: $action, last_reason: $reason, last_run: $run, updated_at: $now
+              })
+              | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
+              | del(.[$fp].verified_at)
+              | if $pr != "" then .[$fp].pr = $pr else . end
+            ' "$state/ledger.json" > "$state/ledger.tmp"
+            mv "$state/ledger.tmp" "$state/ledger.json"
+            git -C "$state" add ledger.json
+            git -C "$state" commit -qm "ledger: ${ACTION} ${VERSION} ${FP}"
+            if git -C "$state" push -q origin "HEAD:refs/heads/${STATE_BRANCH}"; then
+              echo "Ledger updated."
+              exit 0
+            fi
+            echo "Ledger push raced another run (attempt ${attempt}); retrying."
+            sleep $(( attempt * 5 ))
+          done
+          echo "::error::could not update the ledger"
+          exit 1
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/decide"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ─── Live Slack board ─────────────────────────────────────────────────────
+  # One row of the pick job's daily message, rewritten the moment this run
+  # knows its verdict. Separate from `decide` so a run that never reached a
+  # verdict -- a failed prepare, a lost runner -- still replaces its "still
+  # running" row instead of leaving the board stuck at it until someone
+  # notices.
+  board:
+    name: Update the daily Slack board
+    needs: [prepare, decide]
+    if: always() && inputs.spec != '' && inputs.board_date != ''
+    # The verdict is already on the state branch, in the run summary and -- for
+    # a fix -- in the PR. Reporting it to Slack failing must not turn a run
+    # that opened a fix PR red; the job itself still shows the failure.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Import Vault secrets
+        id: slack-secret
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common SLACK_BOT_USER_OAUTH_TOKEN ;
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Rewrite this test's row
+        env:
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.slack-secret.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          BOARD_DATE: ${{ inputs.board_date }}
+          FP: ${{ needs.prepare.outputs.fp }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          PREPARE_SKIP: ${{ needs.prepare.outputs.skip }}
+          DECIDE_RESULT: ${{ needs.decide.result }}
+          ACTION: ${{ needs.decide.outputs.action }}
+          REASON: ${{ needs.decide.outputs.reason }}
+          RATE: ${{ needs.decide.outputs.rate }}
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          s=.github/scripts/oc-flakiness
+
+          # prepare computes the fingerprint, but it is also the job that can
+          # fail before producing one -- and that is exactly the case whose row
+          # most needs replacing. Same formula as prepare and report.mjs.
+          fp="$FP"
+          if [[ -z "$fp" ]]; then
+            title=$(jq -r '.[-1]' <<< "$TITLE_PATH")
+            fp=$(printf '%s::%s::%s' "$VERSION" "$SPEC" "$title" | sha256sum | cut -c1-8)
+          fi
+
+          status=infra
+          detail="the run failed before reaching a verdict"
+          rate=""
+          pr=""
+          if [[ "$PREPARE_RESULT" == "success" && "$PREPARE_SKIP" == "true" ]]; then
+            status=skipped
+            detail=""
+          elif [[ "$DECIDE_RESULT" == "success" && -n "$ACTION" ]]; then
+            status="$ACTION"
+            detail="$REASON"
+            rate="$RATE"
+            pr="$PR_URL"
+          fi
+
+          # `set` stores the row and, once its push has landed, rewrites the
+          # message -- but only while this board is still the newest on the
+          # branch, so it cannot undo a row another run published meanwhile.
+          rc=0
+          bash "$s/board-store.sh" set "$BOARD_DATE" \
+            "$fp" "$status" "$detail" "$pr" "$RUN_URL" "$rate" > /dev/null || rc=$?
+          if [[ "$rc" -eq 3 ]]; then
+            echo "No board for ${BOARD_DATE}; nothing to update."
+            exit 0
+          fi
+          [[ "$rc" -eq 0 ]] || exit "$rc"
+          echo "Reported ${status} for ${fp} on board ${BOARD_DATE}."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/board"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # ─── Copilot review round ─────────────────────────────────────────────────
+  # The fix PR is opened ready for review, so Copilot reviews it within a couple
+  # of minutes -- comfortably inside the run we are already paying for. This job
+  # answers that review in the same run, so a person opening the PR finds every
+  # Copilot thread already handled. One round only: the human reviewer's own
+  # review decides the next cycle, and the point is to make it cheap, not to
+  # replace it.
+  flaky-review-fetch:
+    name: Collect the Copilot review
+    needs: [prepare, decide]
+    if: always() && needs.decide.outputs.pr_url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      pr: ${{ steps.copilot_review.outputs.pr }}
+      threads: ${{ steps.copilot_review.outputs.thread_count }}
+      head: ${{ steps.copilot_review.outputs.head }}
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      - name: Request and await the Copilot review
+        id: copilot_review
+        continue-on-error: true
+        # The poll loop stops itself at COPILOT_WAIT_SECONDS, but a single `gh`
+        # call has no timeout of its own, so a hung connection could otherwise
+        # sit here until the JOB times out -- which continue-on-error cannot
+        # survive, and which would take the summary step with it.
+        timeout-minutes: 20
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          COPILOT_WAIT_SECONDS: ${{ vars.COPILOT_REVIEW_WAIT_SECONDS || '900' }}
+        run: |
+          set -uo pipefail
+          # Matched EXACTLY, never as a prefix. A real user account called
+          # copilot-pull-request-reviewer-qa would satisfy a startswith() test,
+          # and its review would then drive the responder below -- arbitrary
+          # comments turning into commits and thread resolutions. REST reports
+          # the login as "<slug>[bot]"; GraphQL strips the suffix for a Bot
+          # author, so both spellings are accepted, and nothing else is.
+          COPILOT="copilot-pull-request-reviewer"
+          pr_num="${PR_URL##*/}"
+          thread_count=0
+          head_sha=""
+          finish() {
+            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; echo "head=${head_sha}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          [[ "$pr_num" =~ ^[0-9]+$ ]] || { echo "::warning::could not read a PR number from '${PR_URL}'."; pr_num=""; finish; }
+
+          # The PR is opened ready for review, but a draft here would skip the
+          # review in silence -- the whole failure mode this job exists to close.
+          if [ "$(gh pr view "$pr_num" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            echo "::warning::PR #${pr_num} is a draft; marking it ready so Copilot reviews it."
+            gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+          fi
+
+          head_sha=$(gh pr view "$pr_num" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+          [ -n "$head_sha" ] || { echo "::warning::could not read the head SHA of #${pr_num} -- skipping the round."; finish; }
+          echo "Waiting for a Copilot review of ${head_sha}."
+
+          # Keyed on the head COMMIT, not on a timestamp baseline taken here.
+          # Copilot can finish reviewing before this job even starts, and a
+          # baseline would then mark that review as the "before" state and wait
+          # out the full timeout for a second one that never comes -- discarding
+          # the very review this round exists to answer.
+          # `|| true` is load-bearing: a transient gh failure (502, secondary
+          # rate limit) would otherwise propagate out of the assignment and end
+          # the step, skipping the round over a blip.
+          copilot_review_of_head() {
+            gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+              --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
+              2>/dev/null | sort | tail -1 || true
+          }
+
+          latest=$(copilot_review_of_head)
+          if [ -n "$latest" ]; then
+            echo "A Copilot review of this commit had already landed at ${latest}."
+          else
+            # A freshly opened PR is auto-reviewed off the "opened" event, and
+            # GitHub then answers 422 for an already-requested reviewer, which is
+            # harmless. The accepted spelling has moved around, so try each and
+            # stop at the first that lands.
+            requested=false
+            for who in "${COPILOT}[bot]" "${COPILOT}" "Copilot"; do
+              if gh api -X POST "repos/${REPO}/pulls/${pr_num}/requested_reviewers" \
+                   -f "reviewers[]=${who}" >/dev/null 2>&1; then
+                echo "Requested a review from ${who}."
+                requested=true
+                break
+              fi
+            done
+            [ "$requested" = true ] \
+              || echo "Review request not accepted (already requested, or the auto-review is already running)."
+
+            deadline=$(( $(date +%s) + COPILOT_WAIT_SECONDS ))
+            while [ "$(date +%s)" -lt "$deadline" ]; do
+              sleep 30
+              latest=$(copilot_review_of_head)
+              [ -n "$latest" ] && break
+            done
+          fi
+
+          if [ -z "$latest" ]; then
+            echo "::warning::no Copilot review of ${head_sha} within ${COPILOT_WAIT_SECONDS}s -- leaving the PR for the human reviewer."
+            finish
+          fi
+          echo "Copilot reviewed #${pr_num} at ${latest}."
+
+          gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+            --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
+            > /tmp/copilot-review-summary.md 2>/dev/null || : > /tmp/copilot-review-summary.md
+
+          # Every Copilot review of THIS head, not just the newest: a re-request
+          # can produce more than one, and each owns its own threads. Ids kept as
+          # STRINGS on both sides of the match below -- a review id is already
+          # past 2^31, so anything that narrows one to a 32-bit int is a silent
+          # mismatch. Built step by step rather than as one pipeline with a
+          # trailing "|| echo '[]'": that fallback runs on the last stage's exit
+          # status only, so a stage that printed before failing would leave TWO
+          # JSON documents in the variable and the filter below would die.
+          review_ids='[]'
+          if raw_ids=$(gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+               --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
+               2>/dev/null); then
+            parsed_ids=$(printf '%s\n' "$raw_ids" | grep -E '^[0-9]+$' | sort -u | jq -R . | jq -sc '.' 2>/dev/null) || parsed_ids=""
+            [ -n "$parsed_ids" ] && review_ids="$parsed_ids"
+          fi
+          printf '%s' "$review_ids" | jq -e 'type == "array"' >/dev/null 2>&1 || review_ids='[]'
+          echo "Copilot review id(s) for this head: ${review_ids}"
+
+          REPO="$REPO" PR="$pr_num" REVIEW_IDS="$review_ids" \
+            bash .github/scripts/oc-flakiness/copilot-threads.sh \
+            > /tmp/copilot-threads.json 2>/dev/null \
+            || { echo "::warning::could not read the review threads -- treating this round as having none."; \
+                 echo '[]' > /tmp/copilot-threads.json; }
+          jq -e 'type == "array"' /tmp/copilot-threads.json >/dev/null 2>&1 \
+            || echo '[]' > /tmp/copilot-threads.json
+
+          thread_count=$(jq 'length' /tmp/copilot-threads.json 2>/dev/null || echo 0)
+          if [ "$thread_count" -eq 0 ]; then
+            echo "Copilot left no unresolved issue threads on #${pr_num} -- nothing to address."
+          else
+            echo "${thread_count} unresolved Copilot thread(s) on #${pr_num}:"
+            jq -r '.[] | "  - \(.path):\(.line // "?") \(.url)"' /tmp/copilot-threads.json
+          fi
+          finish
+
+      # Everything below only pays off when there is something to answer, so it
+      # is gated rather than run on every PR.
+
+      - name: Upload what the review said
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flaky-review-threads
+          path: |
+            /tmp/copilot-threads.json
+            /tmp/copilot-review-summary.md
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-fetch"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  flaky-review-agent:
+    name: Answer the Copilot review
+    needs: [prepare, decide, flaky-review-fetch]
+    if: >-
+      always() && needs.flaky-review-fetch.outputs.threads != ''
+      && needs.flaky-review-fetch.outputs.threads != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      # The contract the responder is held to lives in the suite's AGENTS.md,
+      # and is taken from THIS workflow's commit rather than from the PR branch:
+      # a stable/* branch carries an older copy, or none at all.
+      - name: Checkout the workflow's commit for the agent manual
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            qa/c8-orchestration-cluster-e2e-test-suite/AGENTS.md
+
+      - name: Checkout the PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
+          path: pr
+          persist-credentials: false
+
+      - name: Import Vault secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+
+      - name: Download what the review said
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flaky-review-threads
+          path: /tmp
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install suite dependencies for lint
+        working-directory: pr/${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Install Claude Code CLI
+        run: |
+          npm install -g @anthropic-ai/claude-code@2.1.156
+          claude --version
+
+      # The agent runs arbitrary commands, so nothing it can reach may grant
+      # write access -- the same boundary the fix agent draws before its own
+      # Claude invocation. Filtering the threads it is shown narrows what can
+      # reach the prompt; it cannot constrain what the model then runs.
+      - name: Assert the responder has no credentials
+        run: |
+          set -euo pipefail
+          rm -f "$HOME/.gitconfig"
+          git -C pr remote set-url origin https://github.com/${{ github.repository }}.git
+          if grep -rqs 'x-access-token' "$HOME/.gitconfig" pr/.git/config; then
+            echo "::error::a credential is still configured"
+            exit 1
+          fi
+
+      - name: Draft the answer to the Copilot review
+        id: review_response
+        continue-on-error: true
+        # A stalled agent must not eat the rest of the job budget: the export
+        # step runs after this one, and continue-on-error does not save it from
+        # a JOB-level timeout.
+        timeout-minutes: 20
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
+          THREAD_COUNT: ${{ needs.flaky-review-fetch.outputs.threads }}
+          VERSION: ${{ inputs.version }}
+          SPEC: ${{ inputs.spec }}
+        run: |
+          set -uo pipefail
+          ws_dir="${GITHUB_WORKSPACE}/pr"
+          suite_dir="${ws_dir}/${SUITE_PATH}"
+
+          cp "${SUITE_PATH}"/AGENTS.md /tmp/flaky-agent-manual.md
+
+          threads=$(cat /tmp/copilot-threads.json)
+          review_summary=$(cat /tmp/copilot-review-summary.md 2>/dev/null || echo "")
+
+          prompt=$(cat <<EOF
+          You are the Camunda QA engineer who just opened PR #${PR_NUMBER} in ${REPO}: a fix for the
+          flaky test \`${SPEC}\` on ${VERSION}. Copilot has reviewed it. Answer that review now, in
+          this run -- this is the ONLY automated round, and the human reviewer sees the result next.
+
+          Read "## Review-Response Agent" in /tmp/flaky-agent-manual.md before you start. It is the
+          contract for this step, with two differences that OVERRIDE it here, because this workflow
+          keeps you credential-free:
+
+          - You have NO GitHub credentials and no \`gh\`. Do NOT commit, push, reply in a thread or
+            resolve one, and do not try: you write the answer, and a separate job publishes it.
+          - Ignore the paragraphs about Live Docker Verify and the Finalize PR verification status
+            step. This workflow has neither, and nothing here changes the PR's draft state.
+
+          The ${THREAD_COUNT} unresolved threads Copilot opened, as JSON (thread id, file, line,
+          url, whether the line has since moved, and the comment bodies):
+
+          ${threads}
+
+          Copilot's review overview:
+
+          ${review_summary}
+
+          How to work them:
+
+          1. ONE THREAD AT A TIME. Every thread in that list gets its own reply, written for that
+             thread alone -- never one answer covering several, never a thread left unanswered.
+          2. Judge each on its merits. A fair share of Copilot comments are wrong, already handled
+             elsewhere, or out of scope for this PR. Read the surrounding code before you decide --
+             never apply a suggestion just because it was made, and never dismiss one unread.
+          3. ACCEPTED: make the change in ${ws_dir} (already checked out on this PR's branch), keep
+             the diff minimal, and run lint on the changed files from ${suite_dir}:
+               npx prettier --write <changed files> && npx eslint <changed files>
+             Leave the change in the working tree -- do NOT commit it. Only these paths may change:
+             ${SUITE_PATH}/{tests,pages,utils,resources}/** and ${SUITE_PATH}/{fixtures,test-setup}.ts.
+             A change anywhere else is rejected by the publisher and costs the whole round, so if a
+             suggestion needs one, treat it as rule 5 instead.
+          4. REJECTED: the reply carries the concrete reason -- wrong, contradicts a repo
+             convention, already handled, or it would mask the very flake this PR exists to fix.
+             A silent dismissal is not acceptable.
+          5. TOO COMPLICATED, needs a maintainer's call, or valid but out of scope: say exactly
+             that and why in the reply. This is the right outcome whenever the change would be
+             larger than this PR, or you are not confident -- the human reviewer picks it up.
+          6. This PR's own constraints still bind you: never mask a failure, no continue-on-error,
+             no test.skip / test.fixme / .only, no Playwright retries, no refactors, no dependency
+             bumps, no unrelated edits. A suggestion that would breach one of those is a REJECT,
+             with that as the reason. In particular, making the test pass by weakening what it
+             asserts defeats the point of the fix.
+
+          When you are done, write /tmp/review-response.json. One entry per thread, and the counts
+          must add up to ${THREAD_COUNT}:
+
+            {"pr": ${PR_NUMBER}, "threads": ${THREAD_COUNT},
+             "accepted": 0, "rejected": 0, "left_open": 0,
+             "replies": [
+               {"id": "<thread id, copied EXACTLY from the list above>",
+                "verdict": "accepted" | "rejected" | "left_open",
+                "body": "<your reply, markdown>"}
+             ]}
+
+          Only the ids from that list are published; anything else is discarded, and a thread you
+          leave out gets a placeholder reply and stays open. A verdict that is not one of the three
+          is treated as "left_open". The publisher commits and pushes your accepted changes as ONE
+          follow-up commit, posts each body in its own thread, appends the pushed commit SHA to
+          every accepted reply, and resolves the accepted and rejected threads. If the push fails,
+          your accepted threads are told so and left open. Write nothing into a body that claims a
+          commit SHA, a push or a resolve yourself -- you cannot know them.
+          EOF
+          )
+
+          cd "$ws_dir"
+          # `shell: bash` means `bash -e`, which `set -uo pipefail` does not undo
+          # -- so an unguarded failing pipeline here would end the step and skip
+          # the export below, losing a round the agent may have completed.
+          claude_rc=0
+          claude -p "$prompt" --dangerously-skip-permissions 2>&1 \
+            | tee /tmp/claude-review-response.md || claude_rc=$?
+          [ "$claude_rc" -eq 0 ] \
+            || echo "::warning::the review-response agent exited ${claude_rc}; recovering whatever it left behind."
+
+      # Everything that crosses into the privileged job goes through this
+      # artifact: a patch, the agent's manifest, and the trusted thread list the
+      # await step produced. Nothing else the agent may have left on this runner
+      # -- a git hook, a tampered node_modules/.bin entry -- travels with it.
+      - name: Export the round for publication
+        id: export
+        if: always()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/round"
+          mkdir -p "$out"
+          # `git add` runs no hooks; `git commit` would, and is left to the
+          # clean runner.
+          git -C pr add -A 2>/dev/null || true
+          git -C pr diff --cached --binary > "$out/review.patch" 2>/dev/null || : > "$out/review.patch"
+          cp /tmp/review-response.json "$out/response.json" 2>/dev/null || echo '{}' > "$out/response.json"
+          cp /tmp/claude-review-response.md "$out/agent-log.md" 2>/dev/null || : > "$out/agent-log.md"
+          echo "patch bytes: $(wc -c < "$out/review.patch")"
+
+      - name: Upload the round
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flaky-review-round
+          path: ${{ runner.temp }}/round
+          retention-days: 7
+
+  # The responder runs an agent with a shell, so nothing secret-bearing may run
+  # on its runner after that: the agent can write $GITHUB_ENV, $GITHUB_PATH, or
+  # the checked-out action itself, none of which shows up in the patch the
+  # publisher validates. Its CI Health metric is therefore reported from here,
+  # on a clean runner -- the dependent-observer pattern the policy already
+  # carries for `collect-stale-backports`.
+  flaky-review-observe:
+    name: Observe the Copilot review round
+    needs: [flaky-review-agent]
+    if: always() && needs.flaky-review-agent.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-agent"
+          build_status: ${{ needs.flaky-review-agent.result }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Publication is a job of its own, on a runner the responder never touched.
+  # The agent could otherwise leave something behind that runs here while a
+  # token is in the environment -- a .git/hooks/pre-commit, a rewritten
+  # node_modules/.bin/eslint -- neither of which would appear in the diff being
+  # validated. Only the patch and the agent's manifest cross
+  # over, and the thread list is re-derived here from the PR rather than taken
+  # from a file the agent could rewrite.
+  review-publish:
+    name: Publish the Copilot review round
+    needs: [prepare, decide, flaky-review-fetch, flaky-review-agent]
+    if: >-
+      always() && needs.flaky-review-fetch.outputs.threads != ''
+      && needs.flaky-review-fetch.outputs.threads != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+            .ci/scripts/ci/observe-build-status
+
+      - name: Checkout the PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.branch }}
+          path: pr
+          persist-credentials: false
+
+      # Tolerated: if the responder produced nothing -- it timed out, it
+      # crashed -- the threads still exist and still deserve an answer. The
+      # reply step then posts the placeholder in each and leaves them open,
+      # which is the outcome a person needs to see.
+      - name: Download the round
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: flaky-review-round
+          path: ${{ runner.temp }}/round
+
+      - name: Generate GitHub App Token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # Held to the fix agent's own allowlist and guards: a review suggestion is
+      # not a reason to admit a change the fix itself could not have made. Every
+      # path in the patch is judged, deletions and both sides of a rename
+      # included -- a deletion outside the suite is as much a write as an edit.
+      - name: Check and apply the patch
+        id: apply
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          patch="${RUNNER_TEMP}/round/review.patch"
+          if [ ! -s "$patch" ]; then
+            echo "The round changed no files."
+            echo "applied=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cd pr
+          allowed="^${SUITE_PATH}/(tests|pages|utils|resources)/|^${SUITE_PATH}/(fixtures|test-setup)\.ts$"
+          # Tool configuration is looked up per directory, so a dotfile, a
+          # package manifest in any form prettier reads (json, yaml, json5),
+          # a *.config.* or a plain JavaScript file is refused even inside the
+          # allowed directories -- the lint below would load it, and a
+          # `plugins` entry there executes arbitrary code in the job that holds
+          # the token.
+          tool_config='(^|/)(\.[^/]*|package\.(json5?|ya?ml)|[^/]*\.config\.[cm]?[jt]s|[^/]*\.[cm]?js)$'
+          fail() { echo "::error::$1"; echo "applied=false" >> "$GITHUB_OUTPUT"; echo "error=$1" >> "$GITHUB_OUTPUT"; exit 0; }
+
+          mapfile -t entries < <(git apply --numstat "$patch" | cut -f3)
+          [ "${#entries[@]}" -gt 0 ] || fail "the patch lists no files"
+          # git C-quotes a path with unusual bytes, and the rename split below
+          # is word-splitting, so a quoted or whitespace-carrying path would be
+          # judged as something other than itself. Nothing the agent legitimately
+          # edits needs one: refuse it by name rather than rely on the allowlist
+          # failing it by accident.
+          for entry in "${entries[@]}"; do
+            case "$entry" in
+              \"*) fail "the patch contains a quoted path (${entry}), which it may not" ;;
+            esac
+          done
+          # Renames print as "old => new", sometimes with the differing
+          # segment in braces; both sides must be allowed, so split on the
+          # arrow and strip the braces before judging each path.
+          for entry in "${entries[@]}"; do
+            entry=${entry//\{/}; entry=${entry//\}/}
+            for f in ${entry//=>/ }; do
+              if ! [[ "$f" =~ $allowed ]] || [[ "$f" =~ $tool_config ]]; then
+                fail "the round touches ${f}, which it may not change"
+              fi
+            done
+          done
+          added=$(grep -E '^\+' "$patch" | grep -vE '^\+\+\+ ' || true)
+          # Any modifier chain: test.only, describe.parallel.skip, ...
+          if grep -qE '\b(test|it|describe)(\.[A-Za-z]+)*\.(skip|fixme|only)\b' <<< "$added"; then
+            fail "the round adds test.skip, test.fixme or .only"
+          fi
+          if grep -qE 'configure\([^)]*retries' <<< "$added" \
+             || { grep -qE 'configure\(' <<< "$added" && grep -qE '^\+\s*retries\s*:' <<< "$added"; }; then
+            fail "the round sets Playwright retries"
+          fi
+          if grep -qE '^(new file|new|old) mode 120000' "$patch"; then
+            fail "the round adds a symlink"
+          fi
+          git apply --index "$patch" || fail "the round's patch does not apply"
+          git diff --cached --name-only --diff-filter=d -- "$SUITE_PATH" \
+            | grep -E '\.ts$' | sed "s#^${SUITE_PATH}/##" > "${RUNNER_TEMP}/ts-files.txt" || true
+          echo "applied=true" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.apply.outputs.applied == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Install suite dependencies for lint
+        if: steps.apply.outputs.applied == 'true'
+        working-directory: pr/${{ env.SUITE_PATH }}
+        run: npm ci
+
+      - name: Lint and push the change
+        id: push
+        if: steps.apply.outputs.applied == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
+        run: |
+          set -uo pipefail
+          cd pr
+          mapfile -t ts < "${RUNNER_TEMP}/ts-files.txt"
+          if [ "${#ts[@]}" -gt 0 ]; then
+            if ! ( cd "$SUITE_PATH" && npx prettier --check "${ts[@]}" && npx eslint "${ts[@]}" ); then
+              echo "::error::the round's changes do not pass lint"
+              { echo "pushed="; echo "error=the change did not pass lint"; } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          # The suite's own gate is `tsc && eslint .`, and prettier/eslint on the
+          # changed files alone would let a type error through to the PR -- a
+          # renamed export, a wrong fixture type -- for CI to find after the
+          # push. Run unconditionally, not only when a .ts file changed: a JSON
+          # fixture or a resource the tests import types from breaks the build
+          # just as well, and that patch would otherwise reach the PR with no
+          # validation at all.
+          if ! ( cd "$SUITE_PATH" && npx tsc --noEmit ); then
+            echo "::error::the round's changes do not typecheck"
+            { echo "pushed="; echo "error=the change did not typecheck"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "qa-processes[bot]"
+          git config user.email "qa-processes[bot]@users.noreply.github.com"
+          # This checkout is clean, but a hook would run with the token present,
+          # so take it off the table explicitly.
+          git -c core.hooksPath=/dev/null commit -qm "test: address the Copilot review on #${PR_NUMBER}"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git push -q origin "HEAD:${BRANCH}"; then
+            sha=$(git rev-parse HEAD)
+            echo "Pushed ${sha} to ${BRANCH}."
+            { echo "pushed=${sha}"; echo "error="; } >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::the follow-up commit could not be pushed"
+            { echo "pushed="; echo "error=the commit could not be pushed"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      # The set of threads this job may touch is derived HERE, from the PR, and
+      # never read from the artifact: the responder's copy sat on a runner the
+      # agent had shell on, so a rewritten file could have named a human's
+      # thread -- or one on another PR -- and had it replied to and resolved.
+      # Re-fetching also drops anything a person answered while the round ran.
+      - name: Re-derive the threads this round may answer
+        id: trusted
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ needs.flaky-review-fetch.outputs.pr }}
+          EXPECTED: ${{ needs.flaky-review-fetch.outputs.threads }}
+        run: |
+          set -uo pipefail
+          out="${RUNNER_TEMP}/trusted-threads.json"
+          bash .github/scripts/oc-flakiness/copilot-threads.sh > "$out" 2>/dev/null \
+            || echo '[]' > "$out"
+          jq -e 'type == "array"' "$out" >/dev/null 2>&1 || echo '[]' > "$out"
+          found=$(jq 'length' "$out")
+          echo "${found} eligible thread(s) on #${PR}."
+          # The fetch job counted EXPECTED of them minutes ago. Fewer here is
+          # usually a person answering one mid-round, which is fine -- but a
+          # failed query lands as an empty array too, and that would otherwise
+          # read as "nothing to answer" and end the round silently.
+          if [ "$found" -lt "${EXPECTED:-0}" ]; then
+            echo "::warning::the review found ${EXPECTED} thread(s), ${found} are still eligible -- someone answered one, or the lookup failed"
+          fi
+
+      # Driven by that list, never by the agent's manifest, which is consulted
+      # only by id: a manifest naming a thread the fetch did not return reaches
+      # nothing. A thread the agent skipped still gets a reply and stays open,
+      # and any verdict outside the three is read as "left_open", so a
+      # malformed answer can never resolve anything.
+      - name: Reply in each thread
+        id: replies
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+          PUSH_ERROR: ${{ steps.push.outputs.error || steps.apply.outputs.error }}
+        run: |
+          set -uo pipefail
+          threads="${RUNNER_TEMP}/trusted-threads.json"
+          # The round directory is absent when the responder uploaded nothing,
+          # and this step runs under the runner's inherited `-e`: without the
+          # mkdir the fallback write below would end the step before a single
+          # placeholder reply went out.
+          mkdir -p "${RUNNER_TEMP}/round"
+          manifest="${RUNNER_TEMP}/round/response.json"
+          [ -s "$threads" ] || { echo "::warning::no eligible threads; nothing to reply to."; exit 0; }
+          jq -e '.replies | type == "array"' "$manifest" >/dev/null 2>&1 || echo '{"replies":[]}' > "$manifest"
+
+          accepted=0; rejected=0; left_open=0; missing=0; failed=0
+          total=$(jq 'length' "$threads")
+          for i in $(seq 0 $(( total - 1 ))); do
+            id=$(jq -r ".[$i].id" "$threads")
+            [ -n "$id" ] && [ "$id" != "null" ] || continue
+
+            # First entry naming this thread; a duplicate is ignored.
+            # `.body` must be a string: jq -r on an object or an array prints
+            # its JSON, which would be posted verbatim as the reply. An entry
+            # that is not shaped like a reply is no entry at all, so the thread
+            # takes the placeholder below and stays open.
+            entry=$(jq -c --arg id "$id" '
+              [.replies[]? | select(type == "object")
+                           | select((.id? // "") == $id)
+                           | select((.body? | type) == "string")] | first // empty' "$manifest")
+            [ -n "$entry" ] || entry='{}'
+            verdict=$(jq -r '.verdict // ""' <<< "$entry")
+            body=$(jq -r '.body // ""' <<< "$entry")
+
+            case "$verdict" in
+              accepted|rejected|left_open) ;;
+              *) verdict=left_open ;;
+            esac
+            if [ -z "$body" ] || [ "$body" = "null" ]; then
+              body="The review round finished without an answer for this thread. Leaving it open for a human reviewer."
+              verdict=left_open
+              missing=$(( missing + 1 ))
+            fi
+
+            resolve=true
+            case "$verdict" in
+              accepted)
+                if [ -n "$PUSHED" ]; then
+                  body="${body}"$'\n\n'"Applied in \`${PUSHED}\`."
+                  accepted=$(( accepted + 1 ))
+                else
+                  body="${body}"$'\n\n'"**Not applied:** ${PUSH_ERROR:-the change did not reach the PR}. Leaving this open."
+                  resolve=false
+                  left_open=$(( left_open + 1 ))
+                fi
+                ;;
+              rejected) rejected=$(( rejected + 1 )) ;;
+              left_open) resolve=false; left_open=$(( left_open + 1 )) ;;
+            esac
+            body="${body}"$'\n\n'"_🤖 Answered by the flakiness fix agent's review round._"
+
+            # A thread the mutation did not reach is still open, whatever the
+            # agent decided about it, so the counters -- and the summary a
+            # person reads to decide whether to look -- must say so.
+            handled=false
+            # shellcheck disable=SC2016 # $id/$body are GraphQL variables, bound by -F/-f
+            if gh api graphql -f query='mutation($id:ID!,$body:String!){
+                 addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){clientMutationId}}' \
+                 -F id="$id" -f body="$body" >/dev/null 2>&1; then
+              handled=true
+              if [ "$resolve" = true ]; then
+                # shellcheck disable=SC2016 # $id is a GraphQL variable, bound by -F
+                gh api graphql -f query='mutation($id:ID!){
+                  resolveReviewThread(input:{threadId:$id}){clientMutationId}}' -F id="$id" >/dev/null 2>&1 \
+                  || { echo "::warning::replied in ${id} but could not resolve it"; handled=false; }
+              fi
+            else
+              echo "::warning::could not reply in thread ${id}"
+            fi
+            if [ "$handled" = false ]; then
+              case "$verdict" in
+                accepted) [ -n "$PUSHED" ] && accepted=$(( accepted - 1 )) || left_open=$(( left_open - 1 )) ;;
+                rejected) rejected=$(( rejected - 1 )) ;;
+                left_open) left_open=$(( left_open - 1 )) ;;
+              esac
+              failed=$(( failed + 1 ))
+            fi
+          done
+          [ "$missing" -eq 0 ] \
+            || echo "::warning::${missing} thread(s) had no answer from the agent and were left open"
+          [ "$failed" -eq 0 ] \
+            || echo "::warning::${failed} thread(s) could not be answered or resolved and are still open"
+          { echo "accepted=${accepted}"; echo "rejected=${rejected}";
+            echo "left_open=${left_open}"; echo "failed=${failed}"; } >> "$GITHUB_OUTPUT"
+          echo "${accepted} applied, ${rejected} rejected, ${left_open} left open, ${failed} not reached."
+
+      # The PR's table and its checklist describe the commit the thresholds were
+      # measured on. A follow-up commit moves the head past it and nothing
+      # re-measures here, so say so rather than leaving a pass-rate claim
+      # standing for code that was never run.
+      - name: Mark the follow-up commit unverified
+        if: steps.push.outputs.pushed != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ needs.flaky-review-fetch.outputs.pr }}
+          MEASURED_SHA: ${{ needs.flaky-review-fetch.outputs.head }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+        run: |
+          set -uo pipefail
+          gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq .body > "${RUNNER_TEMP}/pr-body.md"
+          # sed, not bash substitution: the search half of ${var//pat/rep} is a
+          # glob, where [x] matches the single character x and never the literal
+          # "[x]" this checklist is written with.
+          sed -i 's/^- \[x\] The changed test was re-run/- [ ] The changed test was re-run/' "${RUNNER_TEMP}/pr-body.md"
+          {
+            echo
+            echo "> **The Copilot review round pushed \`${PUSHED}\` after the measurement above.** The pass-rate table and the re-run checklist describe \`${MEASURED_SHA}\`; this round does not re-measure, so the follow-up commit is unverified."
+          } >> "${RUNNER_TEMP}/pr-body.md"
+          gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file "${RUNNER_TEMP}/pr-body.md" >/dev/null \
+            || echo "::warning::could not note the unmeasured head on the PR"
+
+      - name: Summarize the round
+        if: always()
+        env:
+          PR_URL: ${{ needs.decide.outputs.pr_url }}
+          THREADS: ${{ needs.flaky-review-fetch.outputs.threads }}
+          ACCEPTED: ${{ steps.replies.outputs.accepted }}
+          REJECTED: ${{ steps.replies.outputs.rejected }}
+          LEFT_OPEN: ${{ steps.replies.outputs.left_open }}
+          FAILED: ${{ steps.replies.outputs.failed }}
+          PUSHED: ${{ steps.push.outputs.pushed }}
+        run: |
+          set -uo pipefail
+          {
+            echo "### Copilot review round"
+            echo
+            echo "PR: ${PR_URL}"
+            echo
+            echo "${THREADS} thread(s) — ${ACCEPTED:-0} applied, ${REJECTED:-0} rejected, ${LEFT_OPEN:-0} left open for a person."
+            [ "${FAILED:-0}" -eq 0 ] \
+              || echo "**${FAILED} thread(s) could not be answered or resolved** and are still open — publication did not reach them."
+            [ -z "$PUSHED" ] || echo ""
+            [ -z "$PUSHED" ] || echo "Follow-up commit: \`${PUSHED}\` (not re-measured)."
+            if [ -f "${RUNNER_TEMP}/round/agent-log.md" ]; then
+              echo
+              echo '```'
+              tail -c 20000 "${RUNNER_TEMP}/round/agent-log.md"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-flakiness-fix/review-publish"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

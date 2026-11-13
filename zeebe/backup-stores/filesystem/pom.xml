@@ -20,6 +20,10 @@
 
   <name>Zeebe Backup Store for local filesystem</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -37,7 +41,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
 
     <dependency>

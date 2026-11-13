@@ -6,11 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Form} from 'react-final-form';
 import {render, type RenderResult} from 'vitest-browser-react';
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {MockDateRangeField} from './mocks';
-import {getWrapper} from './getWrapper';
 import {formatISODate} from './formatDate';
+
+function getWrapper(initialValues?: {[key: string]: string}) {
+	const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+		return (
+			<>
+				<Form onSubmit={() => {}} initialValues={initialValues}>
+					{() => children}
+				</Form>
+				<div>Outside element</div>
+			</>
+		);
+	};
+
+	return Wrapper;
+}
 
 const pad = (value: string | number) => {
 	return String(value).padStart(2, '0');

@@ -6,6 +6,7 @@ dependencies {
   api(libs.org.springframework.spring.core)
   api(libs.org.slf4j.slf4j.api)
   compileOnly(libs.org.springframework.boot.spring.boot)
+  compileOnly(libs.io.camunda.security.library.api)
   compileOnly(libs.org.springframework.spring.web)
   compileOnly(libs.org.springframework.spring.webmvc)
   compileOnly(libs.jakarta.servlet.jakarta.servlet.api)

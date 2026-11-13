@@ -18,6 +18,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockOperateClientConfigEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
@@ -40,6 +41,7 @@ import {
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
+import {createOperateClientConfigScript} from '#/shared-test-modules/api-mocks/operate-client-config';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {
 	createProcessDefinition,
@@ -94,13 +96,22 @@ function getProcessInstanceShellHandlers({
 	] as const;
 }
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, page}) => {
+	await page.route('**/operate/client-config.js', (route) =>
+		route.fulfill({
+			contentType: 'text/javascript',
+			body: createOperateClientConfigScript(),
+		}),
+	);
 	network.use(
 		mockCurrentUserEndpoint({
 			successResponse: HttpResponse.json(createCurrentUser()),
 		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockOperateClientConfigEndpoint({
+			successResponse: HttpResponse.text(createOperateClientConfigScript()),
 		}),
 		mockLicenseEndpoint({
 			successResponse: HttpResponse.json(createLicense()),
@@ -192,7 +203,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto('?process=my_simple_process&version=1');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&process=my_simple_process&version=1');
 		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
 		isTargetDeployed = true;
 		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
@@ -253,7 +264,9 @@ test.describe('Operate processes page', () => {
 		const frameTitle = page.getByTestId('frame-container').getByText('Batch Modification Mode', {exact: true});
 
 		await test.step('enter batch modification mode', async () => {
-			await operateProcessesPage.goto('?process=my_simple_process&version=1&elementId=task-1');
+			await operateProcessesPage.goto(
+				'?active=true&suspended=true&incidents=true&process=my_simple_process&version=1&elementId=task-1',
+			);
 			await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
 			await operateProcessesPage.moveButton.click();
 			await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
@@ -387,7 +400,7 @@ test.describe('Operate processes page', () => {
 			}),
 			mockGetBatchOperationEndpoint({successResponse: HttpResponse.json(createBatchOperation())}),
 		);
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await page.getByRole('checkbox', {name: 'Select all items'}).check({force: true});
 		await page.getByRole('button', {name: 'Cancel', exact: true}).click();
 		await expect(page.getByRole('dialog')).toContainText(
@@ -803,7 +816,7 @@ test.describe('Operate processes page', () => {
 	});
 
 	test('should render the reset filters button disabled by default', async ({operateProcessesPage}) => {
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.resetFiltersButton).toBeDisabled();
 	});
@@ -812,7 +825,7 @@ test.describe('Operate processes page', () => {
 		page,
 		operateProcessesPage,
 	}) => {
-		await operateProcessesPage.goto('?businessId=eq_order-123');
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true&businessId=eq_order-123');
 		await operateProcessesPage.addOptionalFilter('Variables');
 		await page.getByRole('textbox', {name: 'Name'}).fill('status');
 		await page.getByRole('textbox', {name: 'Value'}).fill('"open"');
@@ -859,7 +872,7 @@ test.describe('Operate processes page', () => {
 		operateProcessesPage,
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 
 		await expect(operateProcessesPage.instancesTable).toBeVisible();
 		await expect(operateProcessesPage.instanceLink('1001')).toHaveAttribute('href', '/operate/processes/1001');
@@ -963,7 +976,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page).toHaveURL('/operate/processes/1001/incidents');
@@ -1000,7 +1013,7 @@ test.describe('Operate processes page', () => {
 			}),
 		);
 
-		await operateProcessesPage.goto();
+		await operateProcessesPage.goto('?active=true&suspended=true&incidents=true');
 		await operateProcessesPage.instanceLink('1001').click();
 
 		await expect(page.getByRole('button', {name: 'More'})).toBeVisible();
@@ -1015,14 +1028,162 @@ test.describe('Operate processes page', () => {
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
 
-		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus');
+		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus#diagram');
 
 		await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
-		const {searchParams} = new URL(page.url());
+		const {searchParams, hash} = new URL(page.url());
 		expect(searchParams.get('elementId')).toBe('call-activity');
 		expect(searchParams.get('isPlaceholder')).toBe('true');
 		expect(searchParams.get('customHint')).toBe('focus');
+		expect(hash).toBe('#diagram');
 		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	});
+
+	test('should open legacy process instance bookmarks', async ({network, page}) => {
+		network.use(...getProcessInstanceShellHandlers());
+
+		for (const path of ['/operate/instances/1001', '/operate/processes/1001']) {
+			await page.goto(`${path}?flowNodeId=1e3&tenantId=1.00#diagram`);
+
+			await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('elementId')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.get('flowNodeId')).toBeNull();
+			expect(hash).toBe('#diagram');
+		}
+	});
+
+	test('should open legacy process list bookmarks', async ({network, page, operateProcessesPage}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processInstanceKey?.$in?.includes('1001'),
+			);
+			await page.goto(
+				`${path}?processDefinitionId=order-process&processDefinitionVersion=1&ids=1001&retriesLeft=true&operationId=batch-1`,
+			);
+
+			await expect(page).toHaveURL(
+				(url) => url.pathname.endsWith('/operate/processes') && !url.searchParams.has('ids'),
+			);
+			const {searchParams} = new URL(page.url());
+			expect(searchParams.get('process')).toBe('order-process');
+			expect(searchParams.get('version')).toBe('1');
+			expect(searchParams.get('retriesLeft')).toBeNull();
+			expect(searchParams.get('operationId')).toBeNull();
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			expect((await request).postDataJSON().filter).toMatchObject({
+				processInstanceKey: {$in: ['1001']},
+				batchOperationKey: {$eq: 'batch-1'},
+				hasRetriesLeft: true,
+			});
+		}
+	});
+
+	test('should preserve raw filter values and current-name precedence in bookmarks', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Order Process', processDefinitionId: '1e3', tenantId: '1.00'})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processDefinitionId?.$eq === '1e3',
+			);
+			await page.goto(
+				`${path}?active=true&suspended=true&incidents=true&process=1e3&processDefinitionId=old&version=all&processDefinitionVersion=2&tenant=old&tenantId=1.00&retriesLeft=true&hasRetriesLeft=false#diagram`,
+			);
+
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			await expect(page).toHaveURL(
+				(url) =>
+					url.pathname.endsWith('/operate/processes') &&
+					!['tenant', 'processDefinitionId', 'processDefinitionVersion', 'version', 'retriesLeft'].some((key) =>
+						url.searchParams.has(key),
+					),
+			);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('process')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.has('processDefinitionId')).toBe(false);
+			expect(searchParams.has('processDefinitionVersion')).toBe(false);
+			expect(searchParams.has('version')).toBe(false);
+			expect(searchParams.get('hasRetriesLeft')).not.toBe('true');
+			expect(searchParams.has('retriesLeft')).toBe(false);
+			expect(hash).toBe('#diagram');
+			const filter = (await request).postDataJSON().filter;
+			expect(filter).toMatchObject({
+				processDefinitionId: {$eq: '1e3'},
+				tenantId: {$eq: '1.00'},
+			});
+			expect(filter).not.toHaveProperty('hasRetriesLeft');
+			expect(filter).not.toHaveProperty('processDefinitionVersion');
+		}
+	});
+
+	test('should not request wait states and should open the variables tab when the flag is off', async ({
+		network,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		const statisticsRequests: string[] = [];
+		page.on('request', (request) => {
+			if (request.url().endsWith('/statistics/wait-states')) {
+				statisticsRequests.push(request.url());
+			}
+		});
+		network.use(
+			...getProcessInstanceShellHandlers({
+				processInstance: createProcessInstance({
+					processInstanceKey: '1001',
+					processDefinitionId: 'order-process',
+					processDefinitionName: 'Order Process',
+					hasIncident: false,
+				}),
+			}),
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({items: [{elementId: 'order-process', waitingCount: 1}]}),
+				),
+			}),
+		);
+
+		await page.goto('/operate/processes/1001');
+
+		await expect(page).toHaveURL('/operate/processes/1001/variables');
+		await expect(page.getByText('Waiting', {exact: true})).toHaveCount(0);
+		expect(statisticsRequests).toHaveLength(0);
 	});
 
 	test('should recover waiting statistics before choosing the default tab', async ({

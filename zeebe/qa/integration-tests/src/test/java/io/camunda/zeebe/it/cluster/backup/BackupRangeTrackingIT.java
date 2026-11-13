@@ -128,12 +128,12 @@ final class BackupRangeTrackingIT {
   @Test
   void shouldTrackBackupRangesDuringLeaderChanges() {
     // given
-    final var actuator = BackupActuator.of(cluster.availableGateway());
     executor.scheduleAtFixedRate(this::generateLoad, 0, 100, TimeUnit.MILLISECONDS);
 
     // when
     final var initialLeader = cluster.leaderForPartition(1);
     initialLeader.stop();
+    final var actuator = BackupActuator.of(cluster.availableGateway());
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(

@@ -25,8 +25,12 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskLookupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.util.Arrays;
@@ -90,6 +94,73 @@ class CompactRecordLoggerTest {
 
       // then
       assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");
+    }
+
+    @Test
+    void shouldSummarizeProcessDefinitionSuspensionByKey() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
+              .withValue(
+                  ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                      .withProcessDefinitionKey(123L)
+                      .withIncludeProcessInstances(true)
+                      .withResolvedVersions(
+                          List.of(
+                              ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
+                                  .withProcessDefinitionKey(123L)
+                                  .withVersion(1)
+                                  .withOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED)
+                                  .build()))
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeProcessDefinitionSuspension(record);
+
+      // then
+      assertThat(summary).isEqualTo("pdKey:K123 includeProcessInstances resolved:1");
+    }
+
+    @Test
+    void shouldSummarizeProcessDefinitionSuspensionByBpmnProcessId() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.PROCESS_DEFINITION_SUSPENSION)
+              .withValue(
+                  ImmutableProcessDefinitionSuspensionRecordValue.builder()
+                      .withBpmnProcessId("order")
+                      .withVersion(2)
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeProcessDefinitionSuspension(record);
+
+      // then
+      assertThat(summary).isEqualTo("\"order\" v2 resolved:0");
+    }
+
+    @Test
+    void shouldSummarizeUserTaskLookupRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.USER_TASK_LOOKUP)
+              .withValue(
+                  ImmutableUserTaskLookupRecordValue.builder()
+                      .withFetchVariables(List.of("foo", "bar"))
+                      .withTenantId("tenant-1")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeUserTaskLookup(record);
+
+      // then
+      assertThat(summary).isEqualTo("fetchVariables:[foo, bar] (tenant: tenant-1)");
     }
 
     @Test

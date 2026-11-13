@@ -19,6 +19,7 @@
   <packaging>jar</packaging>
   <name>Dynamic NodeId Provider</name>
   <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
@@ -127,7 +128,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
   </dependencies>
 

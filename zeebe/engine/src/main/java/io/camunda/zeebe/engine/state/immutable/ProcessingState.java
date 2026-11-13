@@ -90,6 +90,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   ClockState getClockState();
 
+  PolicyState getPolicyState();
+
   RoleState getRoleState();
 
   GroupState getGroupState();
@@ -115,4 +117,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   JobMetricsState getJobMetricsState();
 
   SecretReferenceState getSecretReferenceState();
+
+  PolicyUpdateState getPolicyUpdateState();
 }

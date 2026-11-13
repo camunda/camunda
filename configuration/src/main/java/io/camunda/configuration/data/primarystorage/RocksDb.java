@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.data.primarystorage;
 
+import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_MEMORY_MINIMUM;
 import static io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -87,12 +88,17 @@ public class RocksDb {
   private double memoryFraction = 0.1;
 
   /**
+   * Configures the minimum memory to allocate to RocksDB when using the 'FRACTION' memory
+   * allocation strategy. If memoryFraction of total system memory is less than this value, this
+   * value is allocated instead. Defaults to 0, which disables the minimum.
+   */
+  private DataSize memoryMinimum = DataSize.ofBytes(DEFAULT_MEMORY_MINIMUM);
+
+  /**
    * Configures the maximum fraction of total system memory that RocksDB is allowed to use, as a
-   * safety cap on top of the static memory sizes configured via {@link #memoryAllocationStrategy}.
-   * Only checked when that strategy is not 'FRACTION' (which sizes RocksDB as a fraction of total
-   * memory directly, via {@link #memoryFraction}, so this cap does not apply there). The value must
-   * be greater than 0 and at most 1, or -1 to disable the check (the default). For example, a value
-   * of 0.5 means RocksDB is never allowed to use more than 50% of total system memory.
+   * safety cap on top of the memory configured via {@link #memoryAllocationStrategy}. The value
+   * must be greater than 0 and at most 1, or -1 to disable the check (the default). For example, a
+   * value of 0.5 means RocksDB is never allowed to use more than 50% of total system memory.
    */
   private double maxMemoryFraction = -1;
 
@@ -210,6 +216,14 @@ public class RocksDb {
 
   public void setMemoryFraction(final double memoryFraction) {
     this.memoryFraction = memoryFraction;
+  }
+
+  public DataSize getMemoryMinimum() {
+    return memoryMinimum;
+  }
+
+  public void setMemoryMinimum(final DataSize memoryMinimum) {
+    this.memoryMinimum = memoryMinimum;
   }
 
   public double getMaxMemoryFraction() {

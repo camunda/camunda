@@ -1,0 +1,451 @@
+# description: Reusable workflow — one validation pass of the OC flakiness fix agent.
+#              Each shard runs the matching nightly's whole test selection on its own
+#              docker-compose stack started the way that nightly starts it, for every cell
+#              (e2e-v1 / e2e-v2 / e2e / api-profiles / api-all-in-one) the test was
+#              flaky in. Called only by c8-orchestration-cluster-flakiness-fix.yml.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster - Flakiness Shards
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "8.7, 8.8, 8.9, 8.10 or main — picks the SNAPSHOT image"
+        required: true
+        type: string
+      test_ref:
+        description: "Ref whose test code runs: the target branch, or the flaky-fix branch"
+        required: true
+        type: string
+      cells:
+        description: 'JSON array of cells, e.g. ["e2e-v1","e2e-v2"]'
+        required: true
+        type: string
+      shards:
+        description: 'JSON array of shard ids, e.g. [1,2,3,4,5]'
+        required: true
+        type: string
+      repeat_each:
+        required: true
+        type: number
+      spec:
+        description: "Spec file, relative to the suite root"
+        required: true
+        type: string
+      title_path:
+        description: "JSON array: describe titles followed by the test title"
+        required: true
+        type: string
+      project:
+        description: "Playwright project the nightly ran the test under"
+        required: true
+        type: string
+      label:
+        description: "baseline, iter1 or iter2 — prefixes the artifact names"
+        required: true
+        type: string
+    secrets:
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
+    outputs:
+      verdict:
+        description: "green, scored or blocked — see .github/scripts/oc-flakiness/score.mjs"
+        value: ${{ jobs.score.outputs.verdict }}
+      rate:
+        description: "pooled pass rate in percent"
+        value: ${{ jobs.score.outputs.rate }}
+
+permissions:
+  contents: read
+
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
+jobs:
+  shard:
+    name: ${{ inputs.label }} / ${{ matrix.cell }} / shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ${{ fromJSON(inputs.cells) }}
+        shard: ${{ fromJSON(inputs.shards) }}
+    env:
+      VERSION: ${{ inputs.version }}
+      CELL: ${{ matrix.cell }}
+      SUITE: qa/c8-orchestration-cluster-e2e-test-suite
+    steps:
+      - name: Checkout test code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.test_ref }}
+          persist-credentials: false
+
+      - name: Write shard metadata
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/shard"
+          jq -n --arg cell "$CELL" --argjson shard "$SHARD" \
+            '{cell: $cell, shard: $shard, stack_ok: false}' > "$RUNNER_TEMP/shard/meta.json"
+
+      # The cell table: everything that differs between the nightly cells. Kept
+      # in one step so a change to a nightly's setup has one place to land here.
+      - name: Resolve the cell's stack and test environment
+        run: |
+          set -euo pipefail
+          case "$VERSION" in
+            main) tag=SNAPSHOT ;;
+            8.7|8.8|8.9|8.10) tag="${VERSION}-SNAPSHOT" ;;
+            *) echo "::error::unsupported version: $VERSION"; exit 1 ;;
+          esac
+          {
+            echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${tag}"
+            echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:${tag}"
+          } >> "$GITHUB_ENV"
+
+          if [[ "$VERSION" == "8.7" ]]; then
+            services="operate tasklist"
+            {
+              echo "CORE_APPLICATION_TASKLIST_URL=http://localhost:8080"
+              echo "CORE_APPLICATION_OPERATE_URL=http://localhost:8081"
+              echo "ZEEBE_REST_ADDRESS=http://localhost:8089"
+            } >> "$GITHUB_ENV"
+          else
+            services="camunda"
+            {
+              echo "CORE_APPLICATION_URL=http://localhost:8080"
+              echo "ZEEBE_REST_ADDRESS=http://localhost:8080"
+            } >> "$GITHUB_ENV"
+          fi
+
+          start_optimize=false
+          case "$CELL" in
+            e2e|e2e-v1|e2e-v2)
+              start_optimize=true
+              echo "OPTIMIZE_BASE_URL=http://localhost:8083" >> "$GITHUB_ENV"
+              if [[ "$CELL" == "e2e-v1" && ( "$VERSION" == "8.8" || "$VERSION" == "8.9" ) ]]; then
+                echo "CAMUNDA_TASKLIST_V2_MODE_ENABLED=false" >> "$GITHUB_ENV"
+              elif [[ "$CELL" == "e2e-v2" ]]; then
+                echo "CAMUNDA_TASKLIST_V2_MODE_ENABLED=true" >> "$GITHUB_ENV"
+              fi
+              ;;
+            api-profiles|api-all-in-one)
+              {
+                echo "API_TESTS_ONLY=true"
+                echo "DATABASE=Elasticsearch"
+                echo "CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED=true"
+              } >> "$GITHUB_ENV"
+              if [[ "$CELL" == "api-all-in-one" && "$VERSION" != "8.7" ]]; then
+                echo "CAMUNDA_MODE=all-in-one" >> "$GITHUB_ENV"
+              fi
+              ;;
+            *) echo "::error::unsupported cell: $CELL"; exit 1 ;;
+          esac
+          {
+            echo "STACK_SERVICES=${services}"
+            echo "START_OPTIMIZE=${start_optimize}"
+          } >> "$GITHUB_ENV"
+
+      - name: Import Docker Hub secrets
+        id: dockerhub-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+            secret/data/products/camunda/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW_READ_ONLY | dockerhub-token;
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ steps.dockerhub-secrets.outputs.dockerhub-username }}
+          password: ${{ steps.dockerhub-secrets.outputs.dockerhub-token }}
+
+      - name: Start the stack
+        working-directory: ${{ env.SUITE }}/config
+        run: |
+          set -euo pipefail
+          read -ra services <<< "$STACK_SERVICES"
+          delay=15
+          for attempt in 1 2 3 4 5; do
+            if DATABASE=elasticsearch docker compose pull --include-deps "${services[@]}"; then
+              break
+            fi
+            [[ "$attempt" -eq 5 ]] && { echo "::error::image pull failed 5 times"; exit 1; }
+            sleep "$delay"; delay=$(( delay * 2 ))
+          done
+          DATABASE=elasticsearch docker compose up -d "${services[@]}"
+
+          if [[ "$START_OPTIMIZE" == "true" ]] \
+              && DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+            for attempt in 1 2 3; do
+              DATABASE=elasticsearch docker compose up -d optimize && break
+              [[ "$attempt" -eq 3 ]] && { echo "::error::Optimize did not start"; exit 1; }
+              sleep 15
+            done
+          fi
+
+      - name: Wait for the stack
+        working-directory: ${{ env.SUITE }}/config
+        run: |
+          set -uo pipefail
+          if [[ "$VERSION" == "8.7" ]]; then
+            urls=(http://localhost:8080 http://localhost:8081)
+          else
+            urls=(http://localhost:8080/tasklist http://localhost:8080/operate http://localhost:8080/identity)
+          fi
+          for i in $(seq 1 90); do
+            ok=true
+            for url in "${urls[@]}"; do
+              curl -s -m 5 -o /dev/null "$url" || ok=false
+            done
+            if [[ "$ok" == "true" ]]; then
+              echo "Stack is ready after ${i} checks."
+              break
+            fi
+            if [[ "$i" -eq 90 ]]; then
+              echo "::error::stack not ready after 15 minutes"
+              DATABASE=elasticsearch docker compose logs --tail 200 || true
+              exit 1
+            fi
+            sleep 10
+          done
+
+          if docker ps --format '{{.Names}}' | grep -qx optimize; then
+            for i in $(seq 1 60); do
+              status="$(curl -s -o /dev/null -w '%{http_code}' -m 5 http://localhost:8083/ || true)"
+              [[ "$status" == "302" ]] && exit 0
+              sleep 10
+            done
+            echo "::error::Optimize not ready after 10 minutes"
+            docker logs optimize --tail 100 || true
+            exit 1
+          fi
+
+      - name: Mark the stack as up
+        run: |
+          jq '.stack_ok = true' "$RUNNER_TEMP/shard/meta.json" > "$RUNNER_TEMP/meta.tmp"
+          mv "$RUNNER_TEMP/meta.tmp" "$RUNNER_TEMP/shard/meta.json"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: ${{ env.SUITE }}/package-lock.json
+
+      # Same as the nightlies: resolve the newest versions in package.json's
+      # ranges. Stable branches lock Playwright releases that cannot install
+      # Chromium on the current ubuntu-latest image.
+      - name: Install dependencies and Chromium
+        working-directory: ${{ env.SUITE }}
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+          npx playwright install --with-deps chromium
+
+      # Each shard runs what the matching nightly runs (same projects, filters,
+      # workers and retries), not the target alone: the nightly flakes come
+      # from the rest of the suite (other files' data and cleanup, full-suite
+      # load), and the target alone or its spec file alone passed 50/50 for
+      # tests flaky on most nights. The score counts the target only. The list
+      # check runs on THIS ref because a fix can rename or move the test.
+      - name: Run the nightly test selection
+        working-directory: ${{ env.SUITE }}
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          INCLUDE_SLACK_REPORTER: "false"
+          C8E2E_GLOBAL_TIMEOUT_MIN: "50"
+          VERSION: ${{ inputs.version }}
+          CELL: ${{ matrix.cell }}
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          PROJECT: ${{ inputs.project }}
+          REPEAT_EACH: ${{ inputs.repeat_each }}
+          TEST_REF: ${{ inputs.test_ref }}
+        run: |
+          set -euo pipefail
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$RUNNER_TEMP/list.json" npx playwright test --list --reporter=json \
+            --no-deps --project="$PROJECT" "$SPEC" > /dev/null 2>&1 || true
+          found=$(jq --argjson path "$TITLE_PATH" '
+            def walk($p): (.specs[]? | $p + [.title]), (.suites[]? as $s | $s | walk($p + [$s.title]));
+            [.suites[]? | walk([])] | any(. == $path)
+          ' "$RUNNER_TEMP/list.json" 2>/dev/null || echo false)
+          if [[ "$found" != "true" ]]; then
+            echo "::error::test $(jq -r 'join(" › ")' <<< "$TITLE_PATH") not found in $SPEC on $TEST_REF"
+            exit 1
+          fi
+
+          # Mirrors the run step of c8-orchestration-cluster-reusable-e2e-tests.yml
+          # and c8-orchestration-cluster-reusable-api-tests.yml.
+          args=()
+          case "$CELL" in
+            api-*) args=(--project=api-tests) ;;
+            *)
+              args=(--project=chromium)
+              if docker ps --format '{{.Names}}' | grep -qx optimize; then
+                args+=(--project=optimize-startup)
+              fi
+              case "${VERSION}/${CELL}" in
+                main/e2e) ;;
+                8.9/e2e-v2) args+=(--grep-invert "tests/(common-flows/v1|tasklist/v1)/") ;;
+                */e2e-v2) args+=(--grep-invert "@v1-only") ;;
+                8.9/e2e-v1) args=(--project=chromium tests/common-flows/v1/ tests/tasklist/v1/) ;;
+                8.8/e2e-v1) args=(--project=chromium tests/tasklist/ tests/common-flows/) ;;
+                */e2e-v1) ;;
+                *) echo "::error::no nightly selection for ${VERSION}/${CELL}"; exit 1 ;;
+              esac
+              ;;
+          esac
+
+          echo "Running the ${VERSION}/${CELL} nightly selection ${REPEAT_EACH} time(s): ${args[*]}"
+          rc=0
+          npx playwright test "${args[@]}" --forbid-only --repeat-each="$REPEAT_EACH" || rc=$?
+          echo "Playwright exited ${rc}; the score reads the report, not the exit code."
+
+      # Every artifact holds one top folder named after itself and is
+      # downloaded with merge-multiple, so it lands in <path>/<name>/ whether
+      # a pattern matches one artifact (unpacked flat) or several.
+      - name: Collect the shard's report
+        if: always()
+        env:
+          ARTIFACT: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/shard/json-report" "$RUNNER_TEMP/shard/test-results"
+          cp -r "$SUITE/json-report/." "$RUNNER_TEMP/shard/json-report/" 2>/dev/null || true
+          cp -r "$SUITE/test-results/." "$RUNNER_TEMP/shard/test-results/" 2>/dev/null || true
+          mkdir -p "$RUNNER_TEMP/shard-artifact"
+          cp -r "$RUNNER_TEMP/shard" "$RUNNER_TEMP/shard-artifact/${ARTIFACT}"
+
+      - name: Upload the shard's report
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
+          path: ${{ runner.temp }}/shard-artifact/
+          retention-days: "7"
+
+  score:
+    name: ${{ inputs.label }} / score
+    needs: [shard]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      verdict: ${{ steps.score.outputs.verdict }}
+      rate: ${{ steps.score.outputs.rate }}
+    steps:
+      - name: Checkout the workflow's commit for the scoring script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
+
+      # One signed-URL request per shard artifact; GitHub intermittently
+      # answers one of them with an HTML error page, failing the whole step.
+      - name: Download the shard reports
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-${{ inputs.label }}-*
+          path: ${{ runner.temp }}/shards
+          merge-multiple: true
+
+      - name: Wait before retrying the download
+        if: steps.download.outcome == 'failure'
+        run: sleep 60
+
+      - name: Download the shard reports (retry)
+        if: steps.download.outcome == 'failure'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-${{ inputs.label }}-*
+          path: ${{ runner.temp }}/shards
+          merge-multiple: true
+
+      - name: Score the pass
+        id: score
+        env:
+          SPEC: ${{ inputs.spec }}
+          TITLE_PATH: ${{ inputs.title_path }}
+          CELLS: ${{ inputs.cells }}
+          SHARDS: ${{ inputs.shards }}
+          REPEAT_EACH: ${{ inputs.repeat_each }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          set -euo pipefail
+          planned=$(( $(jq 'length' <<< "$SHARDS") * REPEAT_EACH ))
+          mkdir -p "$RUNNER_TEMP/score"
+          node .github/scripts/oc-flakiness/score.mjs \
+            --dir "$RUNNER_TEMP/shards" --file "$SPEC" --title-path "$TITLE_PATH" \
+            --cells "$CELLS" --planned "$planned" > "$RUNNER_TEMP/score/score.json"
+          jq . "$RUNNER_TEMP/score/score.json"
+          {
+            echo "verdict=$(jq -r .verdict "$RUNNER_TEMP/score/score.json")"
+            echo "rate=$(jq -r .pooled.rate "$RUNNER_TEMP/score/score.json")"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "### ${LABEL}: $(jq -r '"\(.verdict), \(.pooled.rate)% (\(.pooled.passed) passed, \(.pooled.failed) failed)"' "$RUNNER_TEMP/score/score.json")"
+            echo
+            echo "| cell | passed | failed | not run | rate | stacks up |"
+            echo "|---|---|---|---|---|---|"
+            jq -r '.cells | to_entries[] | "| \(.key) | \(.value.passed) | \(.value.failed) | \(.value.notRun) | \(.value.rate)% | \(.value.shardsOk)/\(.value.shards) |"' "$RUNNER_TEMP/score/score.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wrap the score in its artifact folder
+        env:
+          ARTIFACT: flaky-score-${{ inputs.label }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/score-artifact/${ARTIFACT}"
+          cp "$RUNNER_TEMP/score/score.json" "$RUNNER_TEMP/score-artifact/${ARTIFACT}/"
+
+      - name: Upload the score
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: flaky-score-${{ inputs.label }}
+          path: ${{ runner.temp }}/score-artifact/
+          retention-days: 14
+
+      # The agent only needs the shards where the target failed, as one
+      # artifact per pass instead of one per shard.
+      - name: Keep the shards where the target failed
+        id: failing
+        env:
+          LABEL: ${{ inputs.label }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}"
+          jq -r '(.failingShards // [])[]' "$RUNNER_TEMP/score/score.json" | while read -r dir; do
+            cp -r "$RUNNER_TEMP/shards/${dir}" "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}/"
+          done
+          ls "$RUNNER_TEMP/evidence"
+          echo "count=$(jq '.failingShards // [] | length' "$RUNNER_TEMP/score/score.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle the failing shards for the agent
+        if: steps.failing.outputs.count != '0'
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: flaky-evidence-${{ inputs.label }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: "14"
+          retry-jitter-seconds: "0"

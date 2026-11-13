@@ -19,6 +19,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
@@ -48,8 +49,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -147,6 +150,51 @@ final class ReconfigurationTest {
               CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
           return result;
         });
+  }
+
+  /** Delays entry-carrying appends to {@code receiver}, so replication is slow but progressing. */
+  private static void delayEntryAppendsTo(
+      final RaftServer sender, final MemberId receiver, final Duration delay) {
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        VersionedAppendRequest.class,
+        (target, request) ->
+            target.equals(receiver) && !request.entries().isEmpty()
+                ? CompletableFuture.runAsync(
+                    () -> {},
+                    CompletableFuture.delayedExecutor(delay.toMillis(), TimeUnit.MILLISECONDS))
+                : CompletableFuture.completedFuture(null));
+  }
+
+  /** Delivers the first {@code allowed} entry-carrying appends to {@code receiver}, then drops. */
+  private static void dropEntryAppendsToAfter(
+      final RaftServer sender, final MemberId receiver, final int allowed) {
+    final var delivered = new AtomicInteger();
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        VersionedAppendRequest.class,
+        (target, request) -> {
+          if (!target.equals(receiver)
+              || request.entries().isEmpty()
+              || delivered.incrementAndGet() <= allowed) {
+            return CompletableFuture.completedFuture(null);
+          }
+          return CompletableFuture.runAsync(
+              () -> {
+                throw new CompletionException(new ConnectException("append dropped"));
+              },
+              CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
+        });
+  }
+
+  private static void dropPollsFrom(final RaftServer sender, final AtomicBoolean enabled) {
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        PollRequest.class,
+        (target, request) ->
+            enabled.get()
+                ? CompletableFuture.failedFuture(new ConnectException("poll dropped"))
+                : CompletableFuture.completedFuture(null));
   }
 
   private RaftServer createServer(
@@ -1441,6 +1489,87 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void shouldCompleteJoinWhoseCatchUpOutlastsTimeoutWhileProgressing(@TempDir final Path tmp) {
+      // given
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var joinCatchUpTimeout = Duration.ofSeconds(1);
+
+      final var m1 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id1, id2),
+              config -> {
+                config.setMaxAppendBatchSize(1);
+                config.setMaxAppendsPerFollower(1);
+              });
+      m1.bootstrap(id1).join();
+      final var leader = awaitLeader(m1);
+      for (int i = 0; i < 40; i++) {
+        appendEntry(leader).write().join();
+      }
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(5));
+      delayEntryAppendsTo(m1, id2, Duration.ofMillis(100));
+
+      // when
+      final var m2 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id2, id1),
+              config -> config.setJoinCatchUpTimeout(joinCatchUpTimeout));
+      final var startedAt = System.nanoTime();
+      final var join = m2.join(Type.PROMOTABLE, List.of(id1, id2));
+
+      // then
+      assertThat(join).succeedsWithin(Duration.ofSeconds(30));
+      assertThat(Duration.ofNanos(System.nanoTime() - startedAt))
+          .describedAs("the catch-up outlasted the join catch-up timeout")
+          .isGreaterThan(joinCatchUpTimeout.multipliedBy(2));
+      assertThat(memberTypes(m1)).containsEntry(id2, Type.PROMOTABLE);
+    }
+
+    @Test
+    void shouldFailJoinOnceCatchUpStopsProgressingForTimeout(@TempDir final Path tmp) {
+      // given
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var joinCatchUpTimeout = Duration.ofSeconds(2);
+
+      final var m1 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id1, id2),
+              config -> config.setMaxAppendBatchSize(1));
+      m1.bootstrap(id1).join();
+      final var leader = awaitLeader(m1);
+      for (int i = 0; i < 40; i++) {
+        appendEntry(leader).write().join();
+      }
+      assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(5));
+      dropEntryAppendsToAfter(m1, id2, 3);
+
+      // when
+      final var m2 =
+          createServer(
+              tmp,
+              StaticClusterMembershipService.of(id2, id1),
+              config -> config.setJoinCatchUpTimeout(joinCatchUpTimeout));
+      final var startedAt = System.nanoTime();
+      final var join = m2.join(Type.PROMOTABLE, List.of(id1, id2));
+
+      // then
+      assertThat(join)
+          .failsWithin(Duration.ofSeconds(30))
+          .withThrowableThat()
+          .havingRootCause()
+          .isInstanceOf(TimeoutException.class)
+          .withMessageContaining("did not advance");
+      assertThat(Duration.ofNanos(System.nanoTime() - startedAt))
+          .describedAs("failed one timeout after the last advance")
+          .isBetween(joinCatchUpTimeout, joinCatchUpTimeout.multipliedBy(8).dividedBy(5));
+    }
+
+    @Test
     void shouldRejectPromotionUntilCaughtUp(@TempDir final Path tmp) {
       // given - a single-member cluster with a caught-up PROMOTABLE member 2, a promotion lag
       // threshold that any unreplicated entry exceeds, and generous timeouts so that blocking
@@ -2057,6 +2186,52 @@ final class ReconfigurationTest {
                     .containsExactlyInAnyOrder(id1, id2);
               });
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void shouldKeepForcedConfigurationOnInitiatorRestartBeforeForceLeavingEntryCommits() {
+      // given - the last committed entry is the newest configuration, so the forced configuration
+      // (index + 1) is not covered by the commit index and only gets persisted by the force itself
+      // A leaving leader would make its successor append a no-op entry after the configuration.
+      final var leaving = m4.isLeader() ? m3 : m4;
+      assertThat(leaving.leave()).succeedsWithin(Duration.ofSeconds(10));
+      Awaitility.await("the initiator committed the configuration without leaving it")
+          .untilAsserted(
+              () ->
+                  assertThat(m2.getContext().getCommitIndex())
+                      .isEqualTo(m2.getContext().getCurrentConfigurationIndex()));
+      // The members to remove are gone. No member can win an election and the initiator receives
+      // no entries, so neither the force-leaving configuration entry nor a configure request from
+      // a new leader can reach it; only the persisted configuration can tell it about the force.
+      m3.shutdown().join();
+      m4.shutdown().join();
+      final var dropEntryAppends = new AtomicBoolean(true);
+      dropEntryAppendsTo(m1, id2, dropEntryAppends);
+      final var dropPolls = new AtomicBoolean(true);
+      dropPollsFrom(m1, dropPolls);
+      dropPollsFrom(m2, dropPolls);
+      assertThat(m2.forceConfigure(newMembers())).succeedsWithin(Duration.ofSeconds(10));
+
+      // when - the initiator restarts before the force-leaving entry commits
+      m2.shutdown().join();
+      final var m2Restarted =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3, id4));
+      dropPollsFrom(m2Restarted, dropPolls);
+      final var bootstrapped = m2Restarted.bootstrap(id1, id2, id3, id4);
+
+      // then - it still operates under the forced members ...
+      Awaitility.await("the restarted initiator recovers the forced configuration")
+          .untilAsserted(
+              () ->
+                  assertThat(m2Restarted.cluster().getMembers())
+                      .extracting(RaftMember::memberId)
+                      .containsExactlyInAnyOrder(id1, id2));
+
+      // ... and can elect a leader with the other remaining member
+      dropEntryAppends.set(false);
+      dropPolls.set(false);
+      awaitLeader(m1, m2Restarted);
+      assertThat(bootstrapped).succeedsWithin(Duration.ofSeconds(10));
     }
 
     private Map<MemberId, Type> newMembers() {

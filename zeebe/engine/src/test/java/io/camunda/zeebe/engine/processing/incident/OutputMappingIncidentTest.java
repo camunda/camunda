@@ -170,7 +170,8 @@ public class OutputMappingIncidentTest {
         .hasVariableScopeKey(failureCommand.getKey());
 
     assertThat(incidentEvent.getValue().getErrorMessage())
-        .contains("Assertion failure on evaluate the expression");
+        .contains("Assertion failure on evaluate the expression")
+        .contains("(output mapping expression of target variable 'bar')");
   }
 
   @Test

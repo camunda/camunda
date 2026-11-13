@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.OutputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
@@ -28,6 +29,10 @@ public final class CombinedOutputMappingResolver implements MappingResolver<Outp
   @Override
   public Either<Failure, DirectBuffer> resolve(
       final OutputMappings mappings, final MappingExpressionProcessor processor) {
-    return processor.evaluateVariableMappingExpression(mappings.combinedExpression());
+    // the combined expression covers all mappings, so a target can only be named for a lone one
+    final var targetPath =
+        mappings.mappings().size() == 1 ? mappings.mappings().getFirst().targetPath() : null;
+    return processor.evaluateVariableMappingExpression(
+        mappings.combinedExpression(), ExpressionLabel.outputMappingExpression(targetPath));
   }
 }

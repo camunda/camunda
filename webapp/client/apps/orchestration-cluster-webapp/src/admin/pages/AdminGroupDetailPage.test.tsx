@@ -10,12 +10,13 @@ import {HttpResponse, http} from 'msw';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
+import {useCallback, useState} from 'react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockDeleteGroupEndpoint,
-	mockGetGroupEndpoint,
+	mockQueryGroupsEndpoint,
 	mockQueryClientsByGroupEndpoint,
 	mockQueryMappingRulesByGroupEndpoint,
 	mockQueryRolesByGroupEndpoint,
@@ -27,35 +28,43 @@ import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createGroup, createPage} from '#/shared-test-modules/api-mocks/groups';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
+import type {GroupDetailSearch} from '#/admin/modules/groups/detailSearchSchema';
 import {AdminGroupDetailPage, type AdminGroupDetailPageProps} from './AdminGroupDetailPage';
 
 const RETRY_BUDGET = {timeout: 10_000};
 
 // Hovering or focusing a tab prefetches its first page, and the pointer position survives between tests.
 const mockEmptyRoles = () => mockQueryRolesByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
+const mockEmptyUsers = () => mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))});
 
 async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
-	const onTabChange = vi.fn();
+	const onSearchChange = vi.fn();
 	const onDeleted = vi.fn();
-	const screen = await renderWithRouter(
-		() => (
+	const Page = () => {
+		const [search, setSearch] = useState<GroupDetailSearch>(overrides.search ?? {});
+		const handleSearchChange = useCallback((next: Partial<GroupDetailSearch>) => {
+			onSearchChange(next);
+			setSearch((previous) => ({...previous, ...next}));
+		}, []);
+
+		return (
 			<>
 				<AdminGroupDetailPage
 					group={createGroup({groupId: 'ops', name: 'Operations', description: 'The ops team'})}
 					isOidc={false}
 					canManageMappingRules={overrides.isOidc ?? false}
-					activeTab="users"
-					onTabChange={onTabChange}
 					onDeleted={onDeleted}
 					{...overrides}
+					search={search}
+					onSearchChange={handleSearchChange}
 				/>
 				<Toaster />
 			</>
-		),
-		{path: '/admin/groups'},
-	);
+		);
+	};
+	const screen = await renderWithRouter(() => <Page />, {path: '/admin/groups'});
 
-	return {screen, onTabChange, onDeleted};
+	return {screen, onSearchChange, onDeleted};
 }
 
 function mockMembersChangingOn(
@@ -148,7 +157,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should offer clients but not mapping rules when mapping rules cannot be managed', async ({worker}) => {
 		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
 
-		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, search: {tab: 'mappingRules'}});
 
 		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).not.toBeInTheDocument();
@@ -161,7 +170,7 @@ describe('<AdminGroupDetailPage />', () => {
 			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([createUser({username: 'john.doe'})]))}),
 		);
 
-		const {screen} = await renderPage({isOidc: false, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: false, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
 	});
@@ -196,11 +205,11 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should report the selected tab', async ({worker}) => {
 		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}), mockEmptyRoles());
-		const {screen, onTabChange} = await renderPage();
+		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Roles'}));
 
-		expect(onTabChange).toHaveBeenCalledWith('roles');
+		expect(onSearchChange).toHaveBeenCalledWith({tab: 'roles', page: undefined, pageSize: undefined});
 	});
 
 	it('should load a tab before it is selected when its trigger is hovered', async ({worker}) => {
@@ -229,7 +238,7 @@ describe('<AdminGroupDetailPage />', () => {
 			}),
 		);
 
-		const {screen} = await renderPage({activeTab: 'roles'});
+		const {screen} = await renderPage({search: {tab: 'roles'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'admin-role'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Admin role'})).toBeVisible();
@@ -241,17 +250,26 @@ describe('<AdminGroupDetailPage />', () => {
 			mockEmptyRoles(),
 		);
 
-		const {screen} = await renderPage({isOidc: true, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'my-client'})).toBeVisible();
 	});
 
 	it('should show an empty state when the group has no members', async ({worker}) => {
-		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}), mockEmptyRoles());
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockEmptyRoles(),
+		);
 
 		const {screen} = await renderPage();
 
-		await expect.element(screen.getByText('No users assigned to this group.')).toBeVisible();
+		await expect.element(screen.getByText('No users assigned to this group yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about users'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
 	});
 
 	it('should assign a user to the group', async ({worker}) => {
@@ -285,7 +303,7 @@ describe('<AdminGroupDetailPage />', () => {
 
 	it('should assign a client by its ID', async ({worker}) => {
 		worker.use(mockQueryClientsByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
-		const {screen} = await renderPage({isOidc: true, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
 		await userEvent.fill(screen.getByLabelText('Client ID'), 'my-client');
@@ -367,7 +385,7 @@ describe('<AdminGroupDetailPage />', () => {
 			},
 		);
 		worker.use(...server.handlers);
-		const {screen} = await renderPage({isOidc: true, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
@@ -478,8 +496,7 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
-		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
-		await expect.element(screen.getByText('User john.roe assigned')).toBeVisible();
+		await expect.element(screen.getByText('2 members assigned')).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'jane.doe', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
 		await vi.waitFor(() => expect(server.hasServedNewList()).toBe(true), RETRY_BUDGET);
@@ -518,8 +535,7 @@ describe('<AdminGroupDetailPage />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
 
 		// then
-		await expect.element(screen.getByText('User jane.doe assigned')).toBeVisible();
-		await expect.element(screen.getByText('Failed to assign')).toBeVisible();
+		await expect.element(screen.getByText('1 of 2 assigned')).toBeVisible();
 		await expect.element(screen.getByRole('dialog').getByText('john.roe')).toBeVisible();
 		await expect.element(screen.getByRole('dialog').getByText('jane.doe')).not.toBeInTheDocument();
 	});
@@ -527,6 +543,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should not offer roles that are already in the group', async ({worker}) => {
 		// given
 		worker.use(
+			mockEmptyUsers(),
 			mockQueryRolesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([{roleId: 'admin-role', name: 'Admin role'}])),
 			}),
@@ -535,7 +552,7 @@ describe('<AdminGroupDetailPage />', () => {
 				{roleId: 'viewer-role', name: 'Viewer role'},
 			]),
 		);
-		const {screen} = await renderPage({activeTab: 'roles'});
+		const {screen} = await renderPage({search: {tab: 'roles'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign role'}));
@@ -549,6 +566,7 @@ describe('<AdminGroupDetailPage />', () => {
 	it('should not offer mapping rules that are already in the group', async ({worker}) => {
 		// given
 		worker.use(
+			mockEmptyUsers(),
 			mockQueryMappingRulesByGroupEndpoint({
 				successResponse: HttpResponse.json(createPage([createMappingRule({mappingRuleId: 'assigned-rule'})])),
 			}),
@@ -557,7 +575,7 @@ describe('<AdminGroupDetailPage />', () => {
 				createMappingRule({mappingRuleId: 'free-rule'}),
 			]),
 		);
-		const {screen} = await renderPage({isOidc: true, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
@@ -566,25 +584,6 @@ describe('<AdminGroupDetailPage />', () => {
 		// then
 		await expect.element(screen.getByRole('option', {name: 'free-rule'})).toBeVisible();
 		await expect.element(screen.getByRole('option', {name: 'assigned-rule'})).not.toBeInTheDocument();
-	});
-
-	it('should report a failed member lookup instead of an empty group', async ({worker}) => {
-		// given
-		worker.use(
-			mockQueryUsersByGroupEndpoint({
-				successResponse: HttpResponse.json(
-					{type: 'about:blank', title: 'UNAVAILABLE', status: 503, detail: 'Unavailable', instance: '/v2/groups'},
-					{status: 503},
-				),
-			}),
-		);
-
-		// when
-		const {screen} = await renderPage();
-
-		// then
-		await expect.element(screen.getByRole('alert')).toHaveTextContent('Members could not be loaded');
-		await expect.element(screen.getByText('No users assigned to this group.')).not.toBeInTheDocument();
 	});
 
 	it('should report a failed candidate lookup in the assign dialog', async ({worker}) => {
@@ -694,7 +693,7 @@ describe('<AdminGroupDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
 			mockDeleteGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen, onDeleted} = await renderPage();
 

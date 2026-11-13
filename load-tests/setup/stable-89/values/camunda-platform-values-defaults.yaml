@@ -149,7 +149,7 @@ orchestration:
   image:
     registry: docker.io
     repository: camunda/camunda
-    tag: 8.9.24
+    tag: 8.9.26
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   ## @param core.partitionCount defines how many partitions are set up in the cluster
@@ -161,22 +161,25 @@ orchestration:
   ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
   # Resources of the orchestration cluster
+  # CUSTOMIZATION: cluster sizing baseline, 4 CPU and 4Gi with request = limit (a Guaranteed pod, as customers run it).
+  # 3 CPU is throttled 50 to 90% and reaches about 450 PI/s, 4 CPU reaches about 695 PI/s (as fast as 6 CPU).
+  # 4 CPU do not fit on n2-standard-4 nodes, so the brokers run on n2-standard-8 nodes.
   resources:
     requests:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
     limits:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   ## @param core.pvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims
@@ -214,18 +217,11 @@ orchestration:
         # Enable execution metrics exporter to be able to see the execution metrics, like process instance and job completion times
         zeebe.broker.executionMetricsExporterEnabled: "true"
         camunda.flags.jfr.metrics: "true"
-        # Define when the broker should start to reject requests when the disk is almost full, for both processing and replication.
-        zeebe.broker.data.disk.freeSpace.processing: "3GB"
-        zeebe.broker.data.disk.freeSpace.replication: "2GB"
         # We want to have this for long running load tests, to detect consistency issues early on and to have the foreign key checks enabled for better data integrity.
         # Like endurance / soak tests  but not for our maximum stress tests, where we want to push the system to the limits and consistency checks might cause too much overhead.
         zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
         zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
 
-        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-        zeebe.broker.flowControl.write.enabled: "true"
-        zeebe.broker.flowControl.write.limit: 10000
-        zeebe.broker.flowControl.write.throttling.enabled: "true"
     # This file is loaded after application.yml (higher priority). It is empty by default,
     # but can be overridden via --set-file for specific scenarios (e.g. max) to change settings
     # like disabling consistency checks without duplicating the full application.yml content.

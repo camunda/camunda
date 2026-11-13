@@ -33,7 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -225,11 +225,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final TargetIndex index,
       final String id,
       final String routing,
-      final Function<Builder<Object, Object>, ?> actionBuilder) {
+      final Consumer<Builder<Object, Object>> actionBuilder) {
     final UpdateAction<Object, Object> action =
         UpdateAction.of(
             b -> {
-              actionBuilder.apply(b);
+              actionBuilder.accept(b);
               return b;
             });
     final BinaryData binaryAction = BinaryData.of(action, jsonpMapper);

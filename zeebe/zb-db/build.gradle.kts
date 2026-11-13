@@ -4,6 +4,7 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-protocol"))
   api(project(":zeebe-util"))
+  api(project(":zeebe-micrometer"))
   api(project(":zeebe-snapshots"))
   api(libs.org.agrona.agrona)
   api(libs.org.rocksdb.rocksdbjni)

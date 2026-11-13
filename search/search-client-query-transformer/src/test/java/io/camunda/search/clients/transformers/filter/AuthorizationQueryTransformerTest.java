@@ -109,6 +109,50 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
             });
   }
 
+  /**
+   * camunda/camunda#39235: a user granted the AUTHORIZATION resource with an ID that is not an
+   * authorization key, such as a resource type name, got a 500 (NumberFormatException). Such an ID
+   * grants nothing, so the search matches nothing.
+   */
+  @Test
+  public void shouldMatchNothingWhenNoResourceIdIsAnAuthorizationKey() {
+    // given
+    final var authorization =
+        RequiredAuthorization.of(
+            a -> a.authorization().read().resourceIds(List.of("GROUP", "COMPONENT")));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.authorization(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery.queryOption()).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldKeepTheAuthorizationKeysAmongOtherResourceIds() {
+    // given
+    final var authorization =
+        RequiredAuthorization.of(a -> a.authorization().read().resourceIds(List.of("GROUP", "42")));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.enabled(authorization), TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.authorization(b -> b), resourceAccessChecks);
+
+    // then - a single key gives a single term query
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(AuthorizationIndex.ID);
+              assertThat(t.value().longValue()).isEqualTo(42L);
+            });
+  }
+
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given

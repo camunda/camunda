@@ -36,15 +36,22 @@ type Props = {
 	open: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
+	getRootInstancePath: (rootInstanceId: string) => string;
 };
 
-const CancelConfirmationModal: React.FC<Props> = ({processInstanceKey, open, onConfirm, onCancel}) => {
+const CancelConfirmationModal: React.FC<Props> = ({
+	processInstanceKey,
+	open,
+	onConfirm,
+	onCancel,
+	getRootInstancePath,
+}) => {
 	const {t} = useTranslation();
 	const {data: callHierarchy, isError, isPending} = useCallHierarchy(processInstanceKey, {enabled: open});
 	const rootInstanceId = callHierarchy?.[0]?.processInstanceKey;
 
 	if (rootInstanceId) {
-		const rootInstancePath = mergePathname(getBootConfig().contextPath, `/operate/processes/${rootInstanceId}`);
+		const rootInstancePath = mergePathname(getBootConfig().contextPath, getRootInstancePath(rootInstanceId));
 
 		return (
 			<Dialog

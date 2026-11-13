@@ -7,6 +7,7 @@
  */
 
 import {systemConfigurationSchema} from '@camunda/camunda-api-zod-schemas/8.11';
+import {operateClientConfigSchema} from '#/shared/http/operateClientConfig';
 import {createBrowserStorage} from './createBrowserStorage';
 
 const {
@@ -15,6 +16,7 @@ const {
 	clear: clearSessionState,
 } = createBrowserStorage(sessionStorage, {
 	clientConfig: systemConfigurationSchema,
+	operateClientConfig: operateClientConfigSchema,
 });
 
 export {storeSessionState, getSessionState, clearSessionState};

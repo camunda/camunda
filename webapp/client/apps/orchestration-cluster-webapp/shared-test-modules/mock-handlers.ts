@@ -272,6 +272,11 @@ const mockSystemConfigurationEndpoint = createEndpointMock({
 	method: endpoints.getSystemConfiguration.method,
 });
 
+const mockOperateClientConfigEndpoint = createEndpointMock({
+	endpoint: '/operate/client-config.js',
+	method: 'GET',
+});
+
 const mockLicenseEndpoint = createEndpointMock({
 	endpoint: endpoints.getLicense.getUrl(),
 	method: endpoints.getLicense.method,
@@ -412,6 +417,11 @@ const mockGetProcessInstanceSequenceFlowsEndpoint = createEndpointMock({
 const mockQueryMappingRulesEndpoint = createEndpointMock({
 	endpoint: endpoints.queryMappingRules.getUrl(),
 	method: endpoints.queryMappingRules.method,
+});
+
+const mockGetMappingRuleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getMappingRule.getUrl({mappingRuleId: ':mappingRuleId'})),
+	method: endpoints.getMappingRule.method,
 });
 
 const mockCreateMappingRuleEndpoint = createEndpointMock({
@@ -790,6 +800,7 @@ export {
 	mockLoginEndpoint,
 	mockLogoutEndpoint,
 	mockSystemConfigurationEndpoint,
+	mockOperateClientConfigEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockC3OrganizationsEndpoint,
@@ -864,6 +875,7 @@ export {
 	mockCreateMappingRuleEndpoint,
 	mockUpdateMappingRuleEndpoint,
 	mockDeleteMappingRuleEndpoint,
+	mockGetMappingRuleEndpoint,
 	mockQueryUsersEndpoint,
 	mockQueryAuthorizationsEndpoint,
 	mockGetAuthorizationEndpoint,

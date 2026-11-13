@@ -11,7 +11,7 @@ import {useNavigate, useSearch} from '@tanstack/react-router';
 import {z} from 'zod';
 import {DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
-import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
+import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/shadcn.components/InfiniteScroller';
 import {cn} from '#/shared/cn';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 
@@ -50,6 +50,11 @@ type BaseProps<TRow> = {
 	 */
 	isFetching?: boolean;
 	/**
+	 * Compact initial-load skeleton: renders this many skeleton rows under blank, non-sortable headers
+	 * instead of the design system's default rows with live headers.
+	 */
+	loadingRowCount?: number;
+	/**
 	 * Whether a previous (older-scrolled-past) page is currently being fetched via
 	 * `onVerticalScrollStartReach`. Renders a single skeleton row above the existing rows,
 	 * matching the design system's per-cell skeleton look instead of the whole-table
@@ -84,6 +89,10 @@ type BaseProps<TRow> = {
 	 */
 	className?: string;
 	onSort?: (sortKey: string, order: QuerySortOrder) => void;
+	/** Content shown below a row once its expand toggle is opened; return `null` for rows without details. */
+	expansion?: (row: TRow) => React.ReactNode;
+	expandRowLabel?: string;
+	collapseRowLabel?: string;
 	onVerticalScrollStartReach?: () => void;
 	onVerticalScrollEndReach?: () => void;
 	'data-testid'?: string;
@@ -142,7 +151,7 @@ type SelectionProps = {
 	onSelect: (rowId: string) => void;
 	onReset: () => void;
 	batchActions?: BatchAction[];
-	selectionCountLabel?: string;
+	selectionCountLabel?: React.ReactNode;
 	batchActionsLabel?: string;
 	batchActionsCancelLabel?: string;
 };
@@ -151,6 +160,7 @@ type BatchAction = {
 	id: string;
 	label: string;
 	variant?: 'default' | 'destructive';
+	icon?: React.ReactNode;
 	disabled?: boolean;
 	onClick: () => void;
 };
@@ -195,7 +205,14 @@ function readRowHeights(scrollContainer: HTMLElement): number[] {
 		scrollContainer.querySelectorAll<HTMLElement>(
 			`[data-slot="table-body"] [data-slot="table-row"]:not(:has([${SKELETON_EDGE_ATTRIBUTE}]))`,
 		),
-	).map((rowElement) => rowElement.getBoundingClientRect().height);
+	).map((rowElement) => {
+		const expansionRow = rowElement.nextElementSibling;
+		const expansionHeight =
+			expansionRow?.getAttribute('data-slot') === 'data-table-expansion-row'
+				? expansionRow.getBoundingClientRect().height
+				: 0;
+		return rowElement.getBoundingClientRect().height + expansionHeight;
+	});
 }
 
 function sumRowHeights(heights: number[], count: number): number {
@@ -573,6 +590,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		ariaLabel,
 		size = 'md',
 		isFetching = false,
+		loadingRowCount,
 		isFetchingPreviousPage = false,
 		isFetchingNextPage = false,
 		hasPreviousPage = true,
@@ -583,6 +601,9 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		hideHeaderWhenEmpty = false,
 		className,
 		onSort,
+		expansion,
+		expandRowLabel,
+		collapseRowLabel,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
 		'data-testid': dataTestId,
@@ -629,12 +650,24 @@ function SortableTable<TRow>(props: Props<TRow>) {
 
 	const hasSelectionColumn = selection !== undefined;
 
+	const columnsRef = useRef(columns);
+	// eslint-disable-next-line react-hooks/refs
+	columnsRef.current = columns;
+	const columnsSignature = columns
+		.map((column) => [column.key, column.sortKey ?? '', column.label].join('\u0000'))
+		.join('\u0001');
+
+	// `cell` is rendered by the DS as a component, so a new function per render would remount every cell
+	// (dropping focus and closing tooltips) on each refetch. Keep it stable and read the latest render from the ref.
+	const isInitialLoad = isFetching && rows.length === 0;
+	const isCompactLoad = isInitialLoad && loadingRowCount !== undefined;
+
 	const dataColumns: DataTableColumn<DisplayRow<TRow>>[] = useMemo(
 		() =>
-			columns.map((column, columnIndex) => ({
+			columnsRef.current.map((column, columnIndex) => ({
 				id: column.sortKey ?? `col-${column.key}`,
-				header: column.label,
-				enableSorting: column.sortKey !== undefined,
+				header: isCompactLoad ? '' : column.label,
+				enableSorting: column.sortKey !== undefined && !isCompactLoad,
 				accessorFn: column.sortKey !== undefined ? () => null : undefined,
 				cell: (info) => {
 					const displayRow = info.row.original;
@@ -650,10 +683,11 @@ function SortableTable<TRow>(props: Props<TRow>) {
 						);
 					}
 
-					return column.render(displayRow.row);
+					return columnsRef.current[columnIndex]?.render(displayRow.row);
 				},
 			})),
-		[columns, loadingPreviousTestId, loadingNextTestId],
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[columnsSignature, isCompactLoad, loadingPreviousTestId, loadingNextTestId],
 	);
 
 	const displayRows: DisplayRow<TRow>[] = useMemo(() => {
@@ -810,8 +844,6 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		);
 	}
 
-	const isInitialLoad = isFetching && rows.length === 0;
-
 	const dataTable = (
 		<DataTable<DisplayRow<TRow>>
 			columns={dataColumns}
@@ -821,6 +853,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			size={DS_TABLE_SIZE[size]}
 			emptyState={emptyState}
 			loading={isInitialLoad}
+			loadingRowCount={isCompactLoad ? loadingRowCount : undefined}
 			rowSelection={
 				selectedRowIds === undefined ? undefined : {selectedRowIds, onSelectedRowsChange: handleSelectedRowsChange}
 			}
@@ -835,7 +868,23 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			batchActionsCancelLabel={selection?.batchActionsCancelLabel}
 			selectionCountLabel={selection?.selectionCountLabel}
 			getSelectedRows={selection === undefined ? undefined : getSelectedDisplayRows}
-			sorting={hasSortableColumns ? {manual: true, sortState, onSortingChange: handleSortingChange} : undefined}
+			expansion={
+				expansion === undefined
+					? undefined
+					: (displayRow) => (displayRow.kind === 'row' ? expansion(displayRow.row) : null)
+			}
+			getRowCanExpand={
+				expansion === undefined
+					? undefined
+					: (displayRow) => displayRow.kind === 'row' && expansion(displayRow.row) != null
+			}
+			expandRowLabel={expandRowLabel}
+			collapseRowLabel={collapseRowLabel}
+			sorting={
+				hasSortableColumns && !isCompactLoad
+					? {manual: true, sortState, onSortingChange: handleSortingChange}
+					: undefined
+			}
 		/>
 	);
 

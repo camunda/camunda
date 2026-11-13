@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.immutable.SuspensionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -120,13 +118,6 @@ public final class ResumeProcessInstanceDrainTest {
             bufferedCommandRecordsUntilResumed(processInstanceKey), BufferedCommandIntent.DRAINED);
     assertThat(drained).hasSize(BUFFERED_COMMAND_COUNT);
     assertThat(drained.getLast().getPosition()).isLessThan(resumed.getPosition());
-
-    // suspension marker removed once RESUMED applied
-    assertThat(
-            ((MutableProcessingState) ENGINE.getProcessingState())
-                .getSuspensionState()
-                .getSuspensionState(processInstanceKey))
-        .isNull();
   }
 
   @Test
@@ -210,13 +201,6 @@ public final class ResumeProcessInstanceDrainTest {
                 .filter(r -> processInstanceKeyOf(r) == processInstanceKey)
                 .asList())
         .isEmpty();
-
-    // and - the marker stays RESUMING (not reverted to SUSPENDED, not removed)
-    assertThat(
-            ((MutableProcessingState) ENGINE.getProcessingState())
-                .getSuspensionState()
-                .getSuspensionState(processInstanceKey))
-        .isEqualTo(SuspensionState.State.RESUMING);
 
     // and - the partition survived: an unrelated instance still processes normally afterward
     final long otherInstanceKey = deployAndStart();

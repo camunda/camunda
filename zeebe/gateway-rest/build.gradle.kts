@@ -79,7 +79,7 @@ dependencies {
   testImplementation(libs.io.netty.netty.transport)
   testImplementation(libs.org.skyscreamer.jsonassert)
   testImplementation(libs.com.jayway.jsonpath.json.path)
-  testImplementation(project(":zeebe-atomix-cluster"))
+  testImplementation(project(":zeebe-atomix-messaging-api"))
   testImplementation(project(":zeebe-msgpack-core"))
   testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
   testImplementation(project(":zeebe-scheduler"))
@@ -101,10 +101,6 @@ dependencies {
 
 // Spring @WebMvcTest uses Logback-specific APIs (LogbackLoggingSystem).
 // server-conventions adds log4j-slf4j2-impl globally; exclude it here so Logback wins.
-configurations.testRuntimeClasspath {
-  exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j2-impl")
-  exclude(group = "org.apache.logging.log4j", module = "log4j-core")
-}
 
 description = "Zeebe Gateway REST API server"
 

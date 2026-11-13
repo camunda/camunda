@@ -113,6 +113,19 @@ function getUnassignRequest(kind: MemberKind, groupId: string, id: string) {
 	return MEMBER_KIND_CONFIG[kind].unassign(groupId, id);
 }
 
+function getVisibleMemberKinds({isOidc, canManageMappingRules}: {isOidc: boolean; canManageMappingRules: boolean}) {
+	return MEMBER_KINDS.filter((kind) => {
+		if (kind === 'mappingRules') {
+			return canManageMappingRules;
+		}
+		return kind !== 'clients' || isOidc;
+	});
+}
+
+function getActiveMemberKind(visibleKinds: readonly MemberKind[], requested: MemberKind | undefined): MemberKind {
+	return requested !== undefined && visibleKinds.includes(requested) ? requested : 'users';
+}
+
 function getMembersQueryKeyPrefix(groupId: string, kind: MemberKind) {
 	return ['groupMembers', groupId, kind] as const;
 }
@@ -120,11 +133,13 @@ function getMembersQueryKeyPrefix(groupId: string, kind: MemberKind) {
 export {
 	MEMBER_KINDS,
 	compareMembersById,
+	getActiveMemberKind,
 	getAssignRequest,
 	getMemberId,
 	getMembersQuery,
 	getMembersQueryKeyPrefix,
 	getUnassignRequest,
+	getVisibleMemberKinds,
 	toMemberRow,
 	toOptimisticMember,
 };

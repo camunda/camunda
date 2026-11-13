@@ -30,34 +30,27 @@ previous stable version (e.g. `8.10`).
    ascending-version order, between `<PREV>` and `main`. Skip this and the new nightlies run
    and post to Slack individually, but stay absent from the daily report.
 
-3. **Route the new branch in the on-demand workflow**
-   (`.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml`):
+3. **Route the new branch in the on-demand workflow and its test matrix**
+   (`.github/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml` for base detection,
+   `.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml` for the matrix and gates
+   below; the reusable workflow is shared with the PR check, which passes the PR's base branch):
 
-   - Base-branch detection: add `stable/<X.Y>` to both the `git fetch origin ...` line and the
-     `for candidate in ...` loop that resolves a base branch from an arbitrary input branch.
+   - Base-branch detection (on-demand workflow): add `stable/<X.Y>` to both the
+     `git fetch origin ...` line and the `for candidate in ...` loop that resolves a base branch
+     from an arbitrary input branch.
    - RDBMS gate (`c8-orchestration-cluster-api-tests-rdbms` job's `if:`): this is still an
      allow-list (`contains(fromJSON('["stable/8.9","stable/8.10","main"]'), ...)`), not yet
      converted to an exclusion-list like the release workflow's equivalent (see below). Add the
      new version here, or, better, convert it to
-     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), needs.validate-branch.outputs.base)`
+     `!contains(fromJSON('["stable/8.6","stable/8.7","stable/8.8"]'), inputs.base)`
      so it stops needing this edit on every future cut.
-   - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): as of the 8.10 cut
-     this still only lists `stable/8.9 || main`. It does not include `stable/8.10`, so 8.10's
-     on-demand ES API tests only ever run in `profiles` mode, never `all-in-one`. This is a
-     pre-existing gap, not something this checklist introduced. Check this line at every cut
-     and decide whether the new branch should be added, or whether the condition should be
-     generalized instead of extended again.
+   - ES API-tests `camunda_mode` matrix (the job just above the RDBMS one): it lists the
+     branches that run in both `profiles` and `all-in-one` mode (`stable/8.9`, `stable/8.10`,
+     `main`). Add the new branch here, or it runs `profiles` only, and consider generalizing the
+     condition instead of extending it again.
    - `tasklist_mode` matrix: enumerates `stable/8.6`/`stable/8.7` (v1-only) and
      `stable/8.8`/`stable/8.9` (v1+v2), defaulting everything else to v2-only. Self-updating as
      long as no future branch reintroduces Tasklist v1. No edit needed unless that changes.
-   - **Apply the same matrix edits to the automatic PR-check workflow**
-     (`.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml`): it carries the same
-     ES API-tests `camunda_mode` matrix, the same allow-list RDBMS gate and matrix, and the same
-     `tasklist_mode`-keyed E2E `include`, all keyed on `inputs.base`. It has **no** base-detection
-     block to edit — the caller (`ci.yml`) passes the PR's base ref directly — so only these
-     matrix/gate expressions need the new `stable/<X.Y>`. Skip this and a PR against the new branch
-     runs the default (v2-only E2E, `profiles`-only ES API, no RDBMS leg) instead of the intended
-     matrix.
 4. **Route the new branch in the release workflow**
    (`.github/workflows/c8-orchestration-cluster-e2e-tests-release.yml`):
    - Version-to-base mapping (the `if/elif` chain that sets `base="stable/<X.Y>"` from
@@ -104,6 +97,16 @@ previous stable version (e.g. `8.10`).
    - `docker-compose.yml` (`camunda` service, and `optimize` where present)
    - `docker-compose.waitstates-isolated.yml` (`camunda` service)
    - `docker-compose.analytics-isolated.yml` (both `camunda` service occurrences)
+8. **Point the new branch's suite PR check at `main`.** This also lands on `stable/<X.Y>`.
+   The branch inherits `main`'s `.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml`,
+   a thin caller of the PR check in `c8-orchestration-cluster-e2e-tests-pr-reusable.yml`. On
+   `main` it calls the PR's own copy (`uses: ./.github/workflows/...`). Once the new branch drops
+   its own copies of the suite workflows, as `stable/8.8` to `stable/8.10` did, change that
+   `uses:` to `main`'s copy,
+   `camunda/camunda/.github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml@main`,
+   and trim the `paths` filter to the suite and this file. Nothing else in the file needs to
+   change: the check reads everything from the PR, and takes its scripts from `main` for any
+   PR not into `main`.
 
 ## After merging
 

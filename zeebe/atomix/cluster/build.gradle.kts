@@ -5,9 +5,10 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 
 plugins {
   id("buildlogic.sbe-conventions")
-  id("buildlogic.serial-test-conventions")
   id("buildlogic.netty-tcnative-runtime-conventions")
   id("buildlogic.test-jar-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 sbe {
@@ -25,7 +26,10 @@ dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-atomix-utils"))
+  api(project(":zeebe-atomix-messaging-api"))
+  api(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-snapshots"))

@@ -21,7 +21,7 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>2.1.0</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>2.2.0</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
     <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
      long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
@@ -463,17 +463,7 @@
       <artifactId>testcontainers-elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-      <scope>test</scope>
-    </dependency>
 
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
@@ -533,11 +523,6 @@
     <dependency>
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -716,6 +701,12 @@
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-workflow-engine</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -968,6 +959,65 @@
               <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
               <excludes>
                 <exclude>${identity-packages}</exclude>
+                <exclude>**/*$*.java</exclude>
+                <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
+                <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
+                <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    The following two profiles split the physical-tenant suite into client and non-client
+    packages so CI can run them as parallel jobs within the job timeout. Together they run the
+    same tests as the physical-tenant profile; keep their exclusions in sync with it.
+    -->
+    <profile>
+      <id>physical-tenant-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
+              <includes>
+                <include>io/camunda/it/client/*</include>
+              </includes>
+              <excludes>
+                <exclude>**/*$*.java</exclude>
+              </excludes>
+              <systemPropertyVariables>
+                <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>physical-tenant-non-client</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <failIfNoTests>false</failIfNoTests>
+              <groups>multi-db-test</groups>
+              <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
+              <excludes>
+                <exclude>${identity-packages}</exclude>
+                <exclude>io/camunda/it/client/*</exclude>
                 <exclude>**/*$*.java</exclude>
                 <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
                 <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>

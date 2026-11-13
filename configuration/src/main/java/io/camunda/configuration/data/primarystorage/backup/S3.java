@@ -9,6 +9,7 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -148,6 +149,13 @@ public class S3 {
   private boolean supportLegacyMd5;
 
   /**
+   * Defaults mode of the AWS SDK S3 client, e.g. 'standard' or 'in-region'. When not set, the SDK
+   * uses 'auto', which probes the EC2 instance metadata endpoint to detect the runtime environment
+   * and can block for a couple of seconds when not running on AWS.
+   */
+  private DefaultsMode defaultsMode = DefaultsMode.defaultValue();
+
+  /**
    * Maximum number of connections allowed in a connection pool. This is used to restrict the
    * maximum number of concurrent uploads as to avoid connection timeouts when uploading backups
    * with large/many files.
@@ -161,9 +169,10 @@ public class S3 {
   private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
 
   /**
-   * When set, all objects in the bucket will use this prefix. Must be non-empty and not start or
-   * end with '/'. Useful for using the same bucket for multiple Zeebe clusters. In this case,
-   * basePath must be unique.
+   * When set, all objects in the bucket will use this prefix. Useful for using the same bucket for
+   * multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/'
+   * characters are removed, and a blank value or a single '/' means no prefix. A value consisting
+   * only of '/' characters is rejected.
    */
   private String basePath;
 
@@ -316,6 +325,14 @@ public class S3 {
 
   public void setSupportLegacyMd5(final boolean supportLegacyMd5) {
     this.supportLegacyMd5 = supportLegacyMd5;
+  }
+
+  public DefaultsMode getDefaultsMode() {
+    return defaultsMode;
+  }
+
+  public void setDefaultsMode(final DefaultsMode defaultsMode) {
+    this.defaultsMode = defaultsMode;
   }
 
   public String getBasePath() {

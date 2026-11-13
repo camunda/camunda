@@ -24,10 +24,12 @@ import org.immutables.value.Value;
  * Represents an escalation event
  *
  * <p>See {@link EscalationIntent} for intents.
+ *
+ * @see StorageOrdinalRelated
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableEscalationRecordValue.Builder.class)
-public interface EscalationRecordValue extends RecordValue, TenantOwned {
+public interface EscalationRecordValue extends RecordValue, TenantOwned, StorageOrdinalRelated {
 
   /**
    * @return the key of the process instance

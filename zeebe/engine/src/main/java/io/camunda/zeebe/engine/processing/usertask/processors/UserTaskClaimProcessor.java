@@ -11,7 +11,6 @@ import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAut
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -81,7 +80,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
+    asyncRequestBehavior.writeAsyncRequestReceived(
+        userTaskRecord.getElementInstanceKey(), userTaskRecord.getStorageOrdinal(), command);
 
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
@@ -170,7 +170,6 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   }
 
   private static Optional<String> getCallerUsername(final TypedRecord<?> command) {
-    return Optional.ofNullable(
-        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
+    return Optional.ofNullable(command.getAuthInfo().getUsername());
   }
 }

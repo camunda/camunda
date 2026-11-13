@@ -14,16 +14,18 @@ import {ErrorMessage} from '../../ErrorMessage/shadcn.components/ErrorMessage';
 type DefaultProps = {
 	children?: React.ReactNode;
 	status: 'error' | 'loading' | 'content' | 'forbidden';
+	contentLabel?: string;
 };
 
 type WithEmptyMessageProps = {
 	children?: React.ReactNode;
 	status: 'error' | 'empty' | 'loading' | 'content';
+	contentLabel?: string;
 	emptyMessage: React.ComponentProps<typeof EmptyMessage>;
 	messagePosition?: 'top' | 'center';
 };
 
-const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, ...props}) => {
+const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children, status, contentLabel, ...props}) => {
 	const {t} = useTranslation();
 	const position = 'messagePosition' in props ? props.messagePosition : 'top';
 	const messageClassName = position === 'center' ? 'self-center' : 'mt-8';
@@ -34,7 +36,7 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children,
 			{...(status === 'content' && {
 				tabIndex: 0,
 				role: 'region',
-				'aria-label': t('operate.shared.diagramShell.content'),
+				'aria-label': contentLabel ?? t('operate.shared.diagramShell.content'),
 			})}
 			className="relative flex h-full min-h-0 grow items-start justify-center overflow-y-auto"
 		>
@@ -61,8 +63,8 @@ const DiagramShell: React.FC<DefaultProps | WithEmptyMessageProps> = ({children,
 			{status === 'forbidden' && (
 				<ErrorMessage
 					className={messageClassName}
-					message={t('operate.shared.diagramShell.forbiddenMessage')}
-					additionalInfo={t('operate.shared.diagramShell.forbiddenAdditionalInfo')}
+					message={t('operate.decisionInstance.ds.forbidden.heading')}
+					additionalInfo={t('operate.decisionInstance.forbidden.description')}
 				/>
 			)}
 

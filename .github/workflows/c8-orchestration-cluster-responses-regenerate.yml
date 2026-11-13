@@ -78,7 +78,7 @@ jobs:
       PATHS_EXPECTED: ${{ matrix.paths_expected }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - name: Checkout ${{ matrix.ref }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -449,6 +449,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BRANCH:   ${{ steps.push.outputs.branch }}
+          MERGE_TODAY_LABEL: automation-team-needs-merge-today
         run: |
           set -euo pipefail
           printf '%s\n' \
@@ -475,12 +476,16 @@ jobs:
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
 
+          gh pr edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "$MERGE_TODAY_LABEL" \
+            || echo "::warning::could not add the ${MERGE_TODAY_LABEL} label to #${number}"
+
       - name: Open pull request (API paths)
         id: pr-paths
         if: steps.diff-paths.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BRANCH:   ${{ steps.push-paths.outputs.branch }}
+          MERGE_TODAY_LABEL: automation-team-needs-merge-today
         run: |
           set -euo pipefail
           printf '%s\n' \
@@ -505,6 +510,9 @@ jobs:
           number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
+
+          gh pr edit "$number" --repo "$GITHUB_REPOSITORY" --add-label "$MERGE_TODAY_LABEL" \
+            || echo "::warning::could not add the ${MERGE_TODAY_LABEL} label to #${number}"
 
       # Both pipelines have finished, so each has had its chance to open a PR;
       # anything swallowed above becomes a red job here.

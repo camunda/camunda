@@ -211,28 +211,22 @@
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-netty</artifactId>
-      <version>9.1.0</version>
+      <version>9.2.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-core</artifactId>
-      <version>9.1.0</version>
+      <version>9.2.0</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-client-java</artifactId>
-      <version>9.1.0</version>
+      <version>9.2.0</version>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore-nio</artifactId>
-      <version>${version.httpcomponents}</version>
     </dependency>
 
     <dependency>
@@ -247,8 +241,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-rest5-client</artifactId>
     </dependency>
 
     <dependency>
@@ -272,12 +266,6 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-      <version>4.1.5</version>
     </dependency>
 
     <dependency>

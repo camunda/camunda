@@ -20,7 +20,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 import {QUERY_KEY_BY_TAB} from './useTenantMemberMutations';
 
 function compareTenantsBySort(a: Tenant, b: Tenant, queryKey: QueryKey): number {
@@ -47,6 +47,8 @@ function canInsertTenant(_tenant: Tenant, queryKey: QueryKey, currentItemCount: 
 function useTenantMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
+
+	const searchTenant = (tenantId: string) => queries.queryTenants({filter: {tenantId}, page: {limit: 1}});
 
 	const invalidateTenants = () => queryClient.invalidateQueries({queryKey: ['queryTenants']});
 
@@ -78,9 +80,9 @@ function useTenantMutations() {
 			});
 			toast.success(t('admin.tenants.createTenantSuccess'));
 
-			void waitUntilReady(queryClient, queries.getTenant(tenant.tenantId)).then((ready) =>
-				reconcileTenants(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchTenant(tenant.tenantId), {
+				isReady: ({items}) => items.some((item) => item.tenantId === tenant.tenantId),
+			}).then((ready) => reconcileTenants(ready !== undefined));
 		},
 		onError: () => toast.error(t('admin.tenants.createTenantError')),
 	});
@@ -104,8 +106,14 @@ function useTenantMutations() {
 			queryClient.setQueryData(queries.getTenant(tenant.tenantId).queryKey, tenant);
 			toast.success(t('admin.tenants.updateTenantSuccess'));
 
-			void waitUntilReady(queryClient, queries.getTenant(tenant.tenantId), {
-				isReady: (data) => data.name === tenant.name && (data.description ?? '') === (tenant.description ?? ''),
+			void waitUntilReady(queryClient, searchTenant(tenant.tenantId), {
+				isReady: ({items}) =>
+					items.some(
+						(item) =>
+							item.tenantId === tenant.tenantId &&
+							item.name === tenant.name &&
+							(item.description ?? '') === (tenant.description ?? ''),
+					),
 			}).then((ready) => reconcileTenants(ready !== undefined));
 		},
 		onError: () => toast.error(t('admin.tenants.updateTenantError')),
@@ -127,16 +135,10 @@ function useTenantMutations() {
 			});
 			toast.success(t('admin.tenants.deleteTenantSuccess'));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['tenantGone', tenantId],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getTenant({tenantId}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then((confirmed) => {
+			void waitUntilReady(queryClient, searchTenant(tenantId), {
+				isReady: ({items}) => items.every((item) => item.tenantId !== tenantId),
+			}).then((ready) => {
+				const confirmed = ready !== undefined;
 				queryClient.removeQueries({queryKey: queries.getTenant(tenantId).queryKey, type: 'inactive'});
 				for (const key of Object.values(QUERY_KEY_BY_TAB)) {
 					queryClient.removeQueries({queryKey: [key, tenantId], type: 'inactive'});

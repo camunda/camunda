@@ -197,7 +197,7 @@ The default ECK Elasticsearch configuration (defined in `charts/load-test-setup/
 
 |     Setting      |               Default                |
 |------------------|--------------------------------------|
-| Version          | 8.18.0                               |
+| Version          | 9.5.6                                |
 | Node count       | 3                                    |
 | CPU per node     | 7 cores                              |
 | Memory per node  | 8 Gi                                 |
@@ -444,7 +444,7 @@ To run a specific workload profile, use one of the named targets:
 make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
 make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
-make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
+make max       # 300 instances/s (650 with secondary_storage=none), stress regression test at the SLO load, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
@@ -492,6 +492,26 @@ kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identi
 ```
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
+
+#### Browser login on physical-tenant runs
+
+When `physical_tenant_count > 0`, Keycloak uses the hostname `keycloak` and not `localhost`. The
+brokers must reach the token issuer from inside the cluster, and `localhost` in a broker pod is the
+pod itself. The SSO redirect therefore sends your browser to `http://keycloak:18080`, and your
+browser must resolve `keycloak` to `127.0.0.1` (the port-forward).
+
+Start Chrome or Chromium with a host-resolver rule. This needs no root access and affects only this
+browser instance:
+
+```sh
+google-chrome --user-data-dir=/tmp/pt-sso --host-resolver-rules="MAP keycloak 127.0.0.1"
+```
+
+For other browsers, add this line to `/etc/hosts`:
+
+```text
+127.0.0.1 keycloak
+```
 
 #### Keycloak admin credentials
 
@@ -545,7 +565,7 @@ By default, load tests deploy onto preemptible (spot) GKE nodes — defined inli
 in `camunda-platform-values-defaults.yaml`. To deploy onto the stable (non-spot) nodepool
 instead, use `make install-stable`. This applies `values-stable.yaml` on top of
 the platform values, swapping the orchestration `nodeSelector` and tolerations
-to target the `benchmark-n2-standard-4-stable` nodepool.
+to target the `benchmark-n2-standard-8-stable` nodepool.
 
 ```sh
 # Deploy the Camunda Platform on stable nodes

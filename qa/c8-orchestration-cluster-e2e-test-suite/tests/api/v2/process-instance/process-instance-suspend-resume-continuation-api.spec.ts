@@ -28,6 +28,7 @@ import {
 } from '@requestHelpers';
 import {
   extendedAssertionOptions,
+  suspensionAssertionOptions,
   uniquePrefixedId,
 } from '../../../../utils/constants';
 
@@ -298,7 +299,8 @@ async function completeAllUserTasks(
   }
 }
 
-test.describe('Process Instance Suspend and Resume Continuation API', () => {
+test.describe
+  .parallel('Process Instance Suspend and Resume Continuation API', () => {
   test.afterAll(async () => {
     for (const processInstanceKey of instancesToCancel) {
       try {
@@ -528,6 +530,14 @@ test.describe('Process Instance Suspend and Resume Continuation API', () => {
     await assertStatusCode(
       await resumeProcessInstance(request, instance.processInstanceKey),
       204,
+    );
+    // Suspended user tasks are resumed after the 204, over several commands;
+    // completing one that is still suspended is rejected with 409.
+    await expectProcessState(
+      request,
+      instance.processInstanceKey,
+      'ACTIVE',
+      suspensionAssertionOptions,
     );
 
     for (const userTaskKey of userTaskKeys) {

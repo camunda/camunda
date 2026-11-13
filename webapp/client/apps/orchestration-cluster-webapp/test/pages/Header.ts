@@ -28,16 +28,28 @@ class Header extends View {
 		return this.page.getByRole('banner', {name: this.brandingName});
 	}
 
-	get userSidebarToggle() {
-		return this.page.getByRole('button', {name: /open settings/i});
+	get userMenuButton() {
+		return this.page.getByRole('button', {name: /^User menu/});
+	}
+
+	get menu() {
+		return this.page.getByRole('menu');
+	}
+
+	getUserMenuButton(name: string) {
+		return this.page.getByRole('button', {name, exact: true});
+	}
+
+	getMenuText(text: string) {
+		return this.menu.getByText(text, {exact: true});
 	}
 
 	get infoSidebarToggle() {
 		return this.page.getByRole('button', {name: /open info/i});
 	}
 
-	get logoutButton() {
-		return this.page.getByRole('button', {name: /log out/i});
+	get logoutMenuItem() {
+		return this.page.getByRole('menuitem', {name: 'Log out'});
 	}
 
 	get documentationLink() {
@@ -56,12 +68,12 @@ class Header extends View {
 		return this.page.getByRole('button', {name: 'Feedback and Support'});
 	}
 
-	get languageSelector() {
-		return this.page.getByRole('combobox', {name: 'Language'});
+	languageMenuItem(language: string) {
+		return this.page.getByRole('menuitemradio', {name: language});
 	}
 
-	async openUserSidebar() {
-		await this.userSidebarToggle.click();
+	async openUserMenu() {
+		await this.userMenuButton.click();
 	}
 
 	async openInfoSidebar() {
@@ -69,13 +81,7 @@ class Header extends View {
 	}
 
 	async selectLanguage(language: string) {
-		await this.languageSelector.click();
-		await this.page.getByRole('option', {name: language}).click();
-	}
-
-	async logout() {
-		await this.openUserSidebar();
-		await this.logoutButton.click();
+		await this.languageMenuItem(language).click();
 	}
 }
 

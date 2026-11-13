@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSig
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
+import io.camunda.zeebe.engine.processing.timer.TimerFailures;
 import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.CompensateEventDefinition;
@@ -38,13 +40,16 @@ import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
+import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
 
@@ -120,42 +125,66 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     if (timerEventDefinition.getTimeDuration() != null) {
       final String duration = timerEventDefinition.getTimeDuration().getTextContent();
       expression = expressionLanguage.parseExpression(duration);
+      final var label = ExpressionLabel.timerDurationExpression(executableElement.getId());
       executableElement.setTimerFactory(
           (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateIntervalExpression(expression, scopeKey, tenantId)
+                  .evaluateIntervalExpression(expression, scopeKey, tenantId, label)
                   .map(interval -> new RepeatingInterval(1, interval)));
 
     } else if (timerEventDefinition.getTimeCycle() != null) {
       final String cycle = timerEventDefinition.getTimeCycle().getTextContent();
       expression = expressionLanguage.parseExpression(cycle);
+      final var label = ExpressionLabel.timerCycleExpression(executableElement.getId());
       executableElement.setTimerFactory(
-          (expressionProcessor, scopeKey, tenantId) -> {
-            try {
-              return expressionProcessor
-                  .evaluateStringExpression(expression, scopeKey, tenantId)
-                  .map(
-                      text -> {
-                        if (text.startsWith("R")) {
-                          return RepeatingInterval.parse(text);
-                        }
-                        return CronTimer.parse(text);
-                      });
-            } catch (final DateTimeParseException e) {
-              // todo(#4323): replace this caught exception with Either
-              return Either.left(
-                  new Failure(e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
-            }
-          });
+          (expressionProcessor, scopeKey, tenantId) ->
+              expressionProcessor
+                  .evaluateStringExpression(expression, scopeKey, tenantId, label)
+                  .flatMap(text -> parseCycle(text, expression, label, scopeKey)));
 
     } else if (timerEventDefinition.getTimeDate() != null) {
       final String timeDate = timerEventDefinition.getTimeDate().getTextContent();
       expression = expressionLanguage.parseExpression(timeDate);
+      final var label = ExpressionLabel.timerDateExpression(executableElement.getId());
       executableElement.setTimerFactory(
           (expressionProcessor, scopeKey, tenantId) ->
               expressionProcessor
-                  .evaluateDateTimeExpression(expression, scopeKey, tenantId)
-                  .map(TimeDateTimer::new));
+                  .evaluateDateTimeExpression(expression, scopeKey, tenantId, label)
+                  .flatMap(
+                      dateTime ->
+                          createTimeDateTimer(dateTime, executableElement.getId(), scopeKey)));
+    }
+  }
+
+  private static Either<Failure, Timer> createTimeDateTimer(
+      final ZonedDateTime dateTime, final DirectBuffer timerId, final long scopeKey) {
+    try {
+      return Either.right(new TimeDateTimer(dateTime));
+    } catch (final ArithmeticException e) {
+      return Either.left(TimerFailures.dueDateOutOfRange(timerId, scopeKey));
+    }
+  }
+
+  private static Either<Failure, Timer> parseCycle(
+      final String text,
+      final Expression expression,
+      final ExpressionLabel label,
+      final long scopeKey) {
+    try {
+      return Either.right(
+          text.startsWith("R") ? RepeatingInterval.parse(text) : CronTimer.parse(text));
+    } catch (final DateTimeParseException e) {
+      return Either.left(
+          new Failure(
+              "Invalid cycle format '%s' for the %s '%s' of %s: %s"
+                  .formatted(
+                      text,
+                      label.kind(),
+                      expression.getExpression(),
+                      label.target(),
+                      e.getMessage()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
     }
   }
 

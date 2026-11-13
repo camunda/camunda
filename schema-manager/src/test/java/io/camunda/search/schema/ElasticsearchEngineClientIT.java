@@ -7,33 +7,45 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.MAX_INDEX_PATTERN_REQUEST_LENGTH;
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
+import co.elastic.clients.json.JsonData;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SchemaTestUtil;
+import io.camunda.search.schema.utils.SearchEngineClientUtils;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +79,98 @@ public class ElasticsearchEngineClientIT {
   @BeforeEach
   public void refresh() throws IOException {
     elsClient.indices().delete(req -> req.index("*"));
-    elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    // Scoped to test-created templates only: a bare "*" also matches Elasticsearch's built-in
+    // reserved templates (e.g. .deprecation-indexing-template, logs, metrics), which ES9 refuses
+    // to delete via wildcard. ES9 also errors, rather than no-ops, when the pattern matches no
+    // templates at all (e.g. on the very first test), so that case is caught and ignored here.
+    try {
+      elsClient.indices().deleteIndexTemplate(req -> req.name(CONFIG_PREFIX + "*"));
+    } catch (final co.elastic.clients.elasticsearch._types.ElasticsearchException e) {
+      if (!e.getMessage().contains("index_template_missing_exception")) {
+        throw e;
+      }
+    }
+  }
+
+  @Test
+  void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
+    // given
+    final var indexName = "await_active-" + ENGINE_CLIENT_TEST_MARKERS;
+    elsClient.indices().create(req -> req.index(indexName));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of(indexName)));
+  }
+
+  @Test
+  void shouldIgnoreMissingIndicesWhenAwaitingPrimaries() {
+    // given an index that does not exist, e.g. deleted by ILM after the schema was created
+    final var missingIndex = "await_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of(missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitExistingIndicesWhenSomeAreMissing() throws IOException {
+    // given
+    final var existingIndex = "await_mixed_existing-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var missingIndex = "await_mixed_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+    elsClient.indices().create(req -> req.index(existingIndex));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () -> elsEngineClient.awaitActivePrimaries(List.of(existingIndex, missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitPrimariesAcrossMultipleBatches() throws IOException {
+    // given two existing indices, one in the first and one in the last batch, separated by enough
+    // missing indices to need several requests
+    final var firstIndex = "await_batch_first-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var lastIndex = "await_batch_last-" + ENGINE_CLIENT_TEST_MARKERS;
+    elsClient.indices().create(req -> req.index(firstIndex));
+    elsClient.indices().create(req -> req.index(lastIndex));
+    final var indexNames = new ArrayList<String>();
+    indexNames.add(firstIndex);
+    IntStream.range(0, 2 * MAX_INDEX_PATTERN_REQUEST_LENGTH / 100)
+        .mapToObj(
+            i ->
+                "await_batch_missing_%03d-%s-%s"
+                    .formatted(i, "x".repeat(70), ENGINE_CLIENT_TEST_MARKERS))
+        .forEach(indexNames::add);
+    indexNames.add(lastIndex);
+    assertThat(SearchEngineClientUtils.batchPatterns(String.join(",", indexNames)))
+        .hasSizeGreaterThan(1);
+
+    // when / then
+    assertThatNoException().isThrownBy(() -> elsEngineClient.awaitActivePrimaries(indexNames));
+  }
+
+  @Test
+  void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
+    // given an index that exists but whose primary can never be allocated, like one whose
+    // creation request timed out on the client while its shards were still initializing
+    final var indexName = "await_unassigned-" + ENGINE_CLIENT_TEST_MARKERS;
+    elsClient
+        .indices()
+        .create(
+            req ->
+                req.index(indexName)
+                    .waitForActiveShards(w -> w.count(0))
+                    .settings(
+                        s ->
+                            s.otherSettings(
+                                "index.routing.allocation.require._name",
+                                JsonData.of("no-such-node"))));
+
+    // when / then
+    assertThatThrownBy(() -> elsEngineClient.awaitActivePrimaries(List.of(indexName)))
+        .isInstanceOf(SearchEngineException.class)
+        .hasMessageContaining(indexName);
   }
 
   @Test
@@ -255,16 +358,32 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
                 .lifecycle()
                 .name())
         .isEqualTo("test");
+  }
+
+  @Test
+  void shouldReadShardCountsForExistingIndices() throws IOException {
+    // given
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(3);
+    elsEngineClient.createIndex(index, settings);
+
+    // when
+    final var shardCounts =
+        elsEngineClient.getNumberOfShards(List.of(index.getFullQualifiedName() + "*"));
+
+    // then
+    assertThat(shardCounts).containsEntry(index.getFullQualifiedName(), 3);
   }
 
   @Test
@@ -281,6 +400,41 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue()
+      throws IOException, InterruptedException {
+    // given - the engine accepts and stores a string for a setting the typed client model expects
+    // to be an object, which makes parsing the full settings of this index fail
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    elsEngineClient.createIndex(index, settings);
+    final var indexName = index.getFullQualifiedName();
+    executeRaw("POST", indexName + "/_close", null);
+    executeRaw("PUT", indexName + "/_settings", "{\"index.analysis.filter\": \"_none\"}");
+    executeRaw("POST", indexName + "/_open", null);
+
+    // when
+    final var replicaCounts = elsEngineClient.getNumberOfReplicas(List.of(indexName + "*"));
+
+    // then
+    assertThat(replicaCounts).containsEntry(indexName, 2);
+  }
+
+  private static void executeRaw(final String method, final String path, final String body)
+      throws IOException, InterruptedException {
+    // the typed client cannot be used to write a value it would itself refuse to parse
+    final var request =
+        HttpRequest.newBuilder(URI.create("http://" + CONTAINER.getHttpHostAddress() + "/" + path))
+            .header("Content-Type", "application/json")
+            .method(method, HttpRequest.BodyPublishers.ofString(body == null ? "" : body))
+            .build();
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      assertThat(response.statusCode()).isEqualTo(200);
+    }
+  }
+
+  @Test
   void shouldSetReplicasAndShardsFromConfigurationDuringIndexCreation() throws IOException {
     final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
@@ -291,17 +445,17 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
                 .numberOfReplicas())
         .isEqualTo("5");
     assertThat(
-            indices.result().get(index.getFullQualifiedName()).settings().index().numberOfShards())
+            indices.indices().get(index.getFullQualifiedName()).settings().index().numberOfShards())
         .isEqualTo("10");
   }
 
@@ -315,10 +469,10 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
@@ -333,10 +487,11 @@ public class ElasticsearchEngineClientIT {
 
     final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_name"));
 
-    assertThat(policy.result().size()).isEqualTo(1);
-    assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
+    assertThat(policy.lifecycles().size()).isEqualTo(1);
+    assertThat(policy.lifecycles().get("policy_name").policy().phases().delete().minAge().time())
         .isEqualTo("20d");
-    assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+    assertThat(policy.lifecycles().get("policy_name").policy().phases().delete().actions())
+        .isNotNull();
   }
 
   /**
@@ -381,7 +536,7 @@ public class ElasticsearchEngineClientIT {
     // then
     verify(ilmSpy, times(1)).putLifecycle(any(PutLifecycleRequest.class));
     final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_change"));
-    assertThat(policy.result().get("policy_change").policy().phases().delete().minAge().time())
+    assertThat(policy.lifecycles().get("policy_change").policy().phases().delete().minAge().time())
         .isEqualTo("30d");
   }
 

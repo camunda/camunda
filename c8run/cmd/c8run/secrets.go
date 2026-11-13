@@ -86,6 +86,11 @@ func (c *secretsCommand) run(baseDir string, args []string) error {
 			return nil
 		}
 	}
+	if mode, err := localsecrets.Mode(); err != nil {
+		return err
+	} else if mode == localsecrets.EnvMode {
+		return c.runEnvMode(baseDir, args)
+	}
 	store := localsecrets.New(baseDir)
 	c.warnPathChanged(baseDir)
 
@@ -150,6 +155,15 @@ func extractTenantArgument(args []string) ([]string, string, error) {
 
 // runForTenant runs a secrets operation against one physical tenant's own secret directory.
 func (c *secretsCommand) runForTenant(baseDir, tenant string, args []string) error {
+	quiet := *c
+	quiet.tenantScoped = tenant
+	// Env mode never touches the local directory: resolving it can fail without a home directory,
+	// and setting C8RUN_SECRETS_DIR would show up in env listings for a prefix such as C8RUN_SECRETS_.
+	if mode, err := localsecrets.Mode(); err != nil {
+		return err
+	} else if mode == localsecrets.EnvMode {
+		return quiet.run(baseDir, args)
+	}
 	directory, err := localsecrets.TenantDirectory(baseDir, tenant)
 	if err != nil {
 		return err
@@ -165,8 +179,6 @@ func (c *secretsCommand) runForTenant(baseDir, tenant string, args []string) err
 			_ = os.Unsetenv(localsecrets.DirectoryEnv)
 		}
 	}()
-	quiet := *c
-	quiet.tenantScoped = tenant
 	return quiet.run(baseDir, args)
 }
 
@@ -459,13 +471,16 @@ C8RUN_SECRETS_DIR selects another directory; relative paths use the current work
 Each physical tenant has its own secrets; use --physical-tenant <id> (or --physical-tenant=<id>)
 to manage them. A physical tenant never sees another physical tenant's secrets, including default.
 C8RUN_SECRETS_MODE defaults to local; external disables local secret commands.
+C8RUN_SECRETS_MODE=env reads secrets from <C8RUN_SECRETS_ENV_PREFIX>DEFAULT_<NAME>
+and <C8RUN_SECRETS_ENV_PREFIX><ID>_<NAME> environment variables instead. In env mode, list
+reads this shell's environment, and set, delete, import and path are not available.
 Overwrites and deletions may remain cached until c8run restarts or the cache expires.
 Local secret commands do not manage stores configured explicitly through --config, such as AWS or GCP.
 `
 
 var secretsCommandHelp = map[string]string{
 	"set":    "Usage: c8run secrets set <name> [name...] [--stdin]\nPrompts without echo for each value. --stdin accepts exactly one secret.\n",
-	"list":   "Usage: c8run secrets list\nLists names only. Secret values are never displayed.\n",
+	"list":   "Usage: c8run secrets list\nLists names only. Secret values are never displayed.\nIn C8RUN_SECRETS_MODE=env, lists the variables in this shell's environment; c8run sees them only if started from it.\nWarns when --physical-tenant names a physical tenant that is neither saved nor running.\n",
 	"path":   "Usage: c8run secrets path\nShows the c8run-managed local directory without creating it.\n",
 	"delete": "Usage: c8run secrets delete (<name>|--all) [--yes]\nInteractive use asks for confirmation. Non-interactive use requires --yes.\n",
 	"import": "Usage: c8run secrets import [dotenv-file]\nImports dotenv entries from a file, or from stdin when no file is provided. Import is additive.\n",

@@ -45,6 +45,7 @@ dependencies {
   testImplementation(project(":zeebe-snapshots"))
   testImplementation(libs.io.zeebe.zeebe.test.container)
   testImplementation(libs.io.zeebe.zeebe.test.container.engine)
+  testImplementation(project(":zeebe-atomix-messaging-api"))
   testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-atomix-utils"))
   testImplementation(project(":dynamic-node-id-provider"))
@@ -107,6 +108,7 @@ dependencies {
   testImplementation(libs.org.springframework.security.spring.security.oauth2.jose)
   testImplementation(libs.org.testcontainers.testcontainers.elasticsearch)
   testImplementation(project(":camunda-service"))
+  testImplementation(project(":camunda-secret-store-env"))
   testImplementation(project(":camunda-search-client"))
   testImplementation(project(":camunda-search-client-query-transformer"))
   testImplementation(project(":camunda-testcontainer"))
@@ -135,4 +137,13 @@ tasks.withType<Test>().configureEach {
   if (providers.gradleProperty("test.jvm.maxheap").orNull == null) {
     jvmArgs("-Xmx3g")
   }
+}
+
+// read by the environment-variable secret stores of PhysicalTenantEnvSecretIsolationIT and
+// EnvSecretStoreProcessIT; mirrors the failsafe <environmentVariables> in pom.xml
+tasks.named<Test>("it") {
+  environment("PT_ENV_SECRET_IT_TENANTA_API_KEY", "value-of-tenant-a")
+  environment("PT_ENV_SECRET_IT_TENANTB_API_KEY", "value-of-tenant-b")
+  environment("PT_ENV_SECRET_IT_TENANTB_ONLY_B", "only-tenant-b")
+  environment("ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME", "stored-value-that-must-not-leak")
 }

@@ -12,11 +12,16 @@
 		"headerNonProductionLicenseText": "Licence non production. Pour plus d'informations sur l'utilisation en production, veuillez consulter notre <2>page des termes et conditions</2> ou <6>contacter les ventes</6>.",
 		"headerInfoLabel": "Info",
 		"headerSettingsLabel": "Paramètres",
-		"headerProfileLabel": "Profil",
+		"headerUserMenuLabel": "Menu utilisateur, {{name}}",
 		"headerCookiePreferencesLabel": "Préférences des cookies",
 		"headerTermsOfUseLabel": "Conditions d'utilisation",
 		"headerPrivacyPolicyLabel": "Politique de confidentialité",
 		"headerImprintLabel": "Mentions légales",
+		"headerVersionLabel": "Version {{version}}",
+		"headerThemeLabel": "Thème",
+		"headerThemeSystem": "Système",
+		"headerThemeLight": "Clair",
+		"headerThemeDark": "Sombre",
 		"headerLogOutLabel": "Déconnexion",
 		"headerNotificationsLabel": "Notifications",
 		"headerNotificationsLoading": "Chargement des notifications...",
@@ -50,7 +55,6 @@
 		"notificationActionButtonLabel": "Action",
 		"sessionWatcherExpiredTitle": "Session expirée",
 		"networkStatusOfflineTitle": "Connexion internet perdue",
-		"languageSelectorLabel": "Choisissez une langue",
 		"languageSelectorTitle": "Langue",
 		"relativeDateJustNow": "À l'instant",
 		"relativeDateNow": "'Maintenant'",
@@ -170,7 +174,11 @@
 				"deleteMappingRuleSuccess": "Règle de mappage supprimée",
 				"createMappingRuleError": "Échec de la création de la règle de mappage",
 				"updateMappingRuleError": "Échec de la mise à jour de la règle de mappage",
-				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage"
+				"deleteMappingRuleError": "Échec de la suppression de la règle de mappage",
+				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "règle de mappage",
+				"resourcePlural": "règles de mappage"
 			},
 			"users": {
 				"username": "Nom d'utilisateur",
@@ -211,7 +219,9 @@
 				"userDeleted": "Utilisateur {{username}} supprimé",
 				"deleteUserFailed": "Échec de la suppression de l'utilisateur",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "utilisateur",
+				"resourcePlural": "utilisateurs"
 			},
 			"groups": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -247,8 +257,9 @@
 				"members": {
 					"tabsLabel": "Membres du groupe",
 					"assignFailed": "Échec de l'attribution",
+					"assignedMany": "{{count}} membres attribués",
+					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
-					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
 					"users": {
 						"tab": "Utilisateurs",
@@ -259,7 +270,6 @@
 						"select": "Sélectionnez un utilisateur",
 						"search": "Rechercher par nom d'utilisateur",
 						"enterId": "Saisir le nom d'utilisateur",
-						"empty": "Aucun utilisateur n'est attribué à ce groupe.",
 						"remove": "Retirer l'utilisateur",
 						"confirmRemove": "Voulez-vous vraiment retirer <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Utilisateur {{id}} attribué",
@@ -274,7 +284,6 @@
 						"idLabel": "ID du rôle",
 						"select": "Sélectionnez un rôle",
 						"search": "Rechercher par ID de rôle",
-						"empty": "Aucun rôle n'est attribué à ce groupe.",
 						"remove": "Retirer le rôle",
 						"confirmRemove": "Voulez-vous vraiment retirer le rôle <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Rôle {{id}} attribué",
@@ -291,7 +300,6 @@
 						"idLabel": "ID de la règle de mappage",
 						"select": "Sélectionnez une règle de mappage",
 						"search": "Rechercher par ID de règle de mappage",
-						"empty": "Aucune règle de mappage n'est attribuée à ce groupe.",
 						"remove": "Retirer la règle de mappage",
 						"confirmRemove": "Voulez-vous vraiment retirer la règle de mappage <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Règle de mappage {{id}} attribuée",
@@ -304,13 +312,14 @@
 						"assign": "Attribuer un client",
 						"idLabel": "ID du client",
 						"enterId": "Saisissez l'ID du client",
-						"empty": "Aucun client n'est attribué à ce groupe.",
 						"remove": "Retirer le client",
 						"confirmRemove": "Voulez-vous vraiment retirer le client <strong>{{id}}</strong> de ce groupe ?",
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "groupe",
+				"resourcePlural": "groupes"
 			},
 			"clusterVariables": {
 				"closeButton": "Fermer",
@@ -362,7 +371,9 @@
 				"deleteClusterVariableSuccess": "Variable de cluster supprimée",
 				"createClusterVariableError": "Impossible de créer la variable de cluster",
 				"updateClusterVariableError": "Impossible de mettre à jour la variable de cluster",
-				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster"
+				"deleteClusterVariableError": "Impossible de supprimer la variable de cluster",
+				"resourceSingular": "variable de cluster",
+				"resourcePlural": "variables de cluster"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -420,7 +431,9 @@
 				"updateGlobalTaskListenerError": "Échec de la mise à jour de l'écouteur global de tâche",
 				"deleteGlobalTaskListenerError": "Échec de la suppression de l'écouteur global de tâche",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "écouteur global de tâches",
+				"resourcePlural": "écouteurs globaux de tâches"
 			},
 			"authorizations": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -474,7 +487,11 @@
 				"deleteAuthorizationSuccess": "Autorisation supprimée",
 				"deleteAuthorizationError": "Échec de la suppression de l'autorisation",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a pris effet",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "autorisation",
+				"resourcePlural": "autorisations",
+				"noAuthorizationsYet": "Vous n'avez pas encore d'autorisations pour ce type de ressource",
+				"noAuthorizationsYetDescription": "Les autorisations définissent les droits d'accès à différentes ressources. Créez une autorisation en sélectionnant un propriétaire, une ressource et au moins une permission."
 			},
 			"roles": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -510,6 +527,8 @@
 				"members": {
 					"tabsLabel": "Membres du rôle",
 					"assignFailed": "Échec de l'attribution",
+					"assignedMany": "{{count}} membres attribués",
+					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
 					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
@@ -522,7 +541,6 @@
 						"select": "Sélectionnez un utilisateur",
 						"search": "Rechercher par nom d'utilisateur",
 						"enterId": "Saisir le nom d'utilisateur",
-						"empty": "Aucun utilisateur n'est attribué à ce rôle.",
 						"remove": "Retirer l'utilisateur",
 						"confirmRemove": "Voulez-vous vraiment retirer <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Utilisateur {{id}} attribué",
@@ -538,7 +556,6 @@
 						"enterId": "Saisissez l'ID du groupe",
 						"select": "Sélectionnez un groupe",
 						"search": "Rechercher par ID de groupe",
-						"empty": "Aucun groupe n'est attribué à ce rôle.",
 						"remove": "Retirer le groupe",
 						"confirmRemove": "Voulez-vous vraiment retirer le groupe <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Groupe {{id}} attribué",
@@ -555,7 +572,6 @@
 						"idLabel": "ID de la règle de mappage",
 						"select": "Sélectionnez une règle de mappage",
 						"search": "Rechercher par ID de règle de mappage",
-						"empty": "Aucune règle de mappage n'est attribuée à ce rôle.",
 						"remove": "Retirer la règle de mappage",
 						"confirmRemove": "Voulez-vous vraiment retirer la règle de mappage <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Règle de mappage {{id}} attribuée",
@@ -568,13 +584,14 @@
 						"assign": "Attribuer un client",
 						"idLabel": "ID du client",
 						"enterId": "Saisissez l'ID du client",
-						"empty": "Aucun client n'est attribué à ce rôle.",
 						"remove": "Retirer le client",
 						"confirmRemove": "Voulez-vous vraiment retirer le client <strong>{{id}}</strong> de ce rôle ?",
 						"assigned": "Client {{id}} attribué",
 						"removed": "Client {{id}} retiré"
 					}
-				}
+				},
+				"resourceSingular": "rôle",
+				"resourcePlural": "rôles"
 			},
 			"tenants": {
 				"guideBody": "Pour plus d'informations, consultez le ",
@@ -590,7 +607,7 @@
 				"editTenantModalTitle": "Modifier le locataire",
 				"deleteTenantModalTitle": "Supprimer le locataire",
 				"deleteTenantConfirmation": "Voulez-vous vraiment supprimer <strong>{{name}}</strong> ? Cette action est irréversible.",
-				"cancelButton": "Annuler",
+				"cancel": "Annuler",
 				"createButton": "Créer",
 				"saveButton": "Enregistrer",
 				"deleteButton": "Supprimer",
@@ -618,46 +635,86 @@
 				"mappingRuleIdColumn": "ID de la règle de mappage",
 				"mappingRuleNameColumn": "Nom",
 				"clientIdColumn": "ID du client",
-				"tab_users": "Utilisateurs",
-				"tab_groups": "Groupes",
-				"tab_roles": "Rôles",
-				"tab_mapping-rules": "Règles de mappage",
-				"tab_clients": "Clients",
-				"empty_users": "Aucun utilisateur n'est assigné à ce locataire.",
-				"empty_groups": "Aucun groupe n'est assigné à ce locataire.",
-				"empty_roles": "Aucun rôle n'est assigné à ce locataire.",
-				"empty_mapping-rules": "Aucune règle de mappage n'est assignée à ce locataire.",
-				"empty_clients": "Aucun client n'est assigné à ce locataire.",
-				"assignButton": "Assigner",
-				"assignButton_users": "Assigner un utilisateur",
-				"assignButton_groups": "Assigner un groupe",
-				"assignButton_roles": "Assigner un rôle",
-				"assignButton_mapping-rules": "Assigner une règle de mappage",
-				"assignButton_clients": "Assigner un client",
-				"assignModalTitle_users": "Assigner un utilisateur",
-				"assignModalTitle_groups": "Assigner un groupe",
-				"assignModalTitle_roles": "Assigner un rôle",
-				"assignModalTitle_mapping-rules": "Assigner une règle de mappage",
-				"assignModalTitle_clients": "Assigner un client",
-				"assignFieldLabel_users": "Utilisateurs",
-				"assignFieldLabel_groups": "Groupes",
-				"assignFieldLabel_roles": "Rôles",
-				"assignFieldLabel_mapping-rules": "Règles de mappage",
-				"assignFieldLabel_clients": "ID du client",
-				"assignFieldPlaceholder_users": "Rechercher et sélectionner des utilisateurs",
-				"assignFieldPlaceholder_groups": "Rechercher et sélectionner des groupes",
-				"assignFieldPlaceholder_roles": "Rechercher et sélectionner des rôles",
-				"assignFieldPlaceholder_mapping-rules": "Rechercher et sélectionner des règles de mappage",
-				"assignFieldPlaceholder_clients": "Saisissez un ID de client",
+				"members": {
+					"candidatesLoadError": "Impossible de charger les options",
+					"users": {
+						"tab": "Utilisateurs",
+						"assign": "Assigner un utilisateur",
+						"idLabel": "Utilisateurs",
+						"select": "Rechercher et sélectionner des utilisateurs",
+						"search": "Rechercher par nom d'utilisateur",
+						"enterId": "Saisir le nom d'utilisateur",
+						"remove": "Retirer l'utilisateur",
+						"confirmRemove": "Voulez-vous vraiment retirer <strong>{{id}}</strong> de ce locataire ?"
+					},
+					"groups": {
+						"tab": "Groupes",
+						"assign": "Assigner un groupe",
+						"idLabel": "Groupes",
+						"select": "Rechercher et sélectionner des groupes",
+						"search": "Rechercher par ID de groupe",
+						"enterId": "Saisissez l'ID du groupe",
+						"remove": "Retirer le groupe",
+						"confirmRemove": "Voulez-vous vraiment retirer le groupe <strong>{{id}}</strong> de ce locataire ?"
+					},
+					"roles": {
+						"tab": "Rôles",
+						"assign": "Assigner un rôle",
+						"idLabel": "Rôles",
+						"select": "Rechercher et sélectionner des rôles",
+						"search": "Rechercher par ID de rôle",
+						"remove": "Retirer le rôle",
+						"confirmRemove": "Voulez-vous vraiment retirer le rôle <strong>{{id}}</strong> de ce locataire ?"
+					},
+					"mappingRules": {
+						"tab": "Règles de mappage",
+						"assign": "Assigner une règle de mappage",
+						"idLabel": "Règles de mappage",
+						"select": "Rechercher et sélectionner des règles de mappage",
+						"search": "Rechercher par ID de règle de mappage",
+						"remove": "Retirer la règle de mappage",
+						"confirmRemove": "Voulez-vous vraiment retirer la règle de mappage <strong>{{id}}</strong> de ce locataire ?"
+					},
+					"clients": {
+						"tab": "Clients",
+						"assign": "Assigner un client",
+						"idLabel": "ID du client",
+						"enterId": "Saisissez un ID de client",
+						"remove": "Retirer le client",
+						"confirmRemove": "Voulez-vous vraiment retirer le client <strong>{{id}}</strong> de ce locataire ?"
+					}
+				},
 				"assignSuccess": "Assignation enregistrée",
+				"assignedMany": "{{count}} membres attribués",
+				"assignedPartial": "{{assigned}} sur {{total}} attribués",
 				"assignError": "Impossible d'assigner",
-				"unassignButton": "Retirer",
-				"unassignModalTitle": "Retirer du locataire",
-				"unassignConfirmation": "Voulez-vous vraiment retirer <strong>{{id}}</strong> du locataire <strong>{{tenantId}}</strong> ?",
 				"unassignSuccess": "Retiré du locataire",
 				"unassignError": "Impossible de retirer du locataire",
 				"changeNotConfirmed": "Impossible de confirmer que la modification a été appliquée",
-				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent."
+				"changeNotConfirmedDescription": "Actualisez la page pour voir l'état le plus récent.",
+				"resourceSingular": "locataire",
+				"resourcePlural": "locataires",
+				"emptyStateDisclaimer": "Les membres de ce locataire auront accès aux données du locataire."
+			},
+			"emptyState": {
+				"title": "Aucun élément « {{resources}} » créé pour le moment",
+				"description": "Commencez par créer un élément « {{resource}} ».",
+				"createAction": "Créer : {{resource}}",
+				"learnMore": "En savoir plus sur : {{resources}}"
+			},
+			"members": {
+				"kinds": {
+					"users": "utilisateurs",
+					"groups": "groupes",
+					"roles": "rôles",
+					"mappingRules": "règles de mappage",
+					"clients": "clients"
+				},
+				"emptyState": {
+					"title": "Aucun élément « {{resources}} » n'est encore attribué à : {{parent}}",
+					"description": "Commencez par en attribuer un.",
+					"learnMore": "En savoir plus sur : {{resources}}"
+				}
 			}
 		},
 		"tasklist": {
@@ -687,6 +744,9 @@
 			"taskAssignmentStatusCompleted": "Terminées",
 			"taskDetailsTaskCompletedBy": "Terminée par",
 			"taskDetailsDisabledCompleteButtonTitle": "Tâche non assignée",
+			"taskSuspendedLabel": "Suspendue",
+			"taskSuspendedDescription": "Instance de processus suspendue. De nouveau disponible à sa reprise.",
+			"taskSuspendedActionsDisabledDescription": "Instance de processus suspendue. De nouveau disponible à sa reprise.",
 			"taskDetailsCompleteTaskButtonLabel": "Terminer la tâche",
 			"taskStateUpdatingMessage": "Veuillez patienter pendant la mise à jour de la tâche...",
 			"taskStateCancelingMessage": "La tâche est en cours d'annulation. Veuillez patienter...",
@@ -832,6 +892,7 @@
 			"availableTasksNavLinkAssignedToMe": "Tâche assignée à moi: {{name}}",
 			"availableTasksNavLinkAssignedTask": "Tâche assignée: {{name}}",
 			"availableTasksNavLinkUnassignedTask": "Tâche non assignée: {{name}}",
+			"availableTasksNavLinkSuspendedTask": "{{label}} (suspendue)",
 			"customFiltersModalDeleteModalHeading": "Supprimer le filtre",
 			"customFiltersModalDeleteModalBody": "Le filtre personnalisé <strong>{{name}}</strong> sera supprimé.",
 			"customFiltersModalConfirmDeletionButton": "Confirmer la suppression",
@@ -1066,6 +1127,13 @@
 				"drainingDescriptionVersion": "Cette version de la définition de processus est programmée pour suppression et sera automatiquement supprimée une fois que toutes ses instances en cours seront terminées."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Rechercher par nom de processus",
+						"selectVersion": "Sélectionner une version de processus",
+						"searchByElement": "Rechercher par élément de processus"
+					}
+				},
 				"migration": {
 					"migrate": "Migrer",
 					"selectSource": "Pour démarrer la migration, choisissez d’abord un processus et une version.",
@@ -1162,6 +1230,7 @@
 					"suspend": "Suspendre",
 					"resume": "Reprendre",
 					"discard": "Abandonner",
+					"bulkActionsLabel": "Actions groupées",
 					"selectAll": "Sélectionner tous les éléments",
 					"selectRow": "Sélectionner l’instance {{key}}",
 					"selected": "{{total}} éléments sélectionnés",
@@ -1305,13 +1374,20 @@
 					"viewParentInstance": "Afficher l'instance parente {{key}}",
 					"none": "Aucune",
 					"emptyMessage": "Aucune instance ne correspond à ce jeu de filtres",
-					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance"
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+					"tableLabel": "Instances de processus",
+					"loadingPreviousPage": "Chargement des instances de processus précédentes",
+					"loadingNextPage": "Chargement des instances de processus suivantes",
+					"errorTitle": "Impossible de récupérer les données",
+					"errorDescription": "Une erreur s'est produite lors du chargement des instances. Réessayez."
 				},
 				"diagramHeader": {
 					"title": "Processus",
 					"processName": "Nom du processus",
 					"processId": "ID du processus",
-					"versionTag": "Étiquette de version"
+					"versionTag": "Étiquette de version",
+					"copyButtonDescription": "ID du processus / Cliquer pour copier",
+					"copyButtonTitle": "Copier l'ID du processus : {{id}}"
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Supprimer la définition du processus \"{{name}} - Version {{version}}\"",
@@ -1333,7 +1409,8 @@
 					"details": "Détails du processus",
 					"definition": "Définition du processus",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Opération créée"
+					"successTitle": "Opération créée",
+					"loadingMessage": "Suppression de la définition de processus en cours"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus \"{{name}}\"",
@@ -1342,7 +1419,8 @@
 					"selectSingleTenant": "Pour voir un diagramme, sélectionnez un seul locataire",
 					"noProcessSelected": "Aucun processus n'est sélectionné",
 					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres",
-					"processNotFoundTitle": "Le processus n'a pas pu être trouvé"
+					"processNotFoundTitle": "Le processus n'a pas pu être trouvé",
+					"ariaLabel": "Panneau du diagramme"
 				}
 			},
 			"decisions": {
@@ -1521,9 +1599,46 @@
 				"panel": {
 					"label": "panneau de décision",
 					"unknownEvaluationFailure": "L'évaluation a échoué avec une erreur inconnue"
+				},
+				"ds": {
+					"drd": {
+						"title": "Diagramme des exigences de décision",
+						"resize": "Redimensionner le panneau DRD",
+						"maximize": "Agrandir le panneau DRD",
+						"minimize": "Réduire le panneau DRD",
+						"close": "Fermer le panneau DRD",
+						"zoomIn": "Zoom avant",
+						"zoomOut": "Zoom arrière",
+						"resetZoom": "Réinitialiser le zoom",
+						"unavailableTitle": "Aucun diagramme disponible",
+						"unavailableInfo": "Cette décision ne fait pas partie d'un diagramme des exigences de décision.",
+						"content": "Contenu du diagramme des exigences de décision"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Clé d'instance de décision",
+						"evaluationDateColumn": "Date d'évaluation",
+						"processInstanceColumn": "Clé d'instance de processus",
+						"openDrdButton": "Ouvrir le diagramme des exigences de décision"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Onglets du panneau des variables",
+						"inputsAndOutputs": "Entrées et sorties"
+					},
+					"forbidden": {
+						"heading": "Vous n'avez pas la permission de consulter ces informations"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "L'évaluation a échoué pour une raison inconnue. Vérifiez les valeurs d'entrée et la définition de décision.",
+						"expandFailure": "Afficher le message complet",
+						"collapseFailure": "Réduire le message"
+					}
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"diagramPanelPlaceholder": "Espace réservé du panneau de diagramme",
+					"bottomPanelPlaceholder": "Espace réservé du panneau inférieur"
+				},
 				"history": {
 					"title": "Historique de l’instance",
 					"tabs": "Onglets de l’instance de processus",
@@ -1612,6 +1727,7 @@
 				},
 				"header": {
 					"key": "Clé d'instance de processus",
+					"keyCopyButtonDescription": "Clé d'instance de processus / Cliquer pour copier",
 					"waiting": "En attente",
 					"waitingCount": "{{count}} en attente",
 					"version": "Version",
@@ -1676,6 +1792,8 @@
 					"exitDescription": "Quitter",
 					"save": "Enregistrer la variable",
 					"saveDescription": "Enregistrer",
+					"saving": "Enregistrement de la variable",
+					"loadingValue": "Chargement de la valeur de la variable",
 					"deleteDescription": "Supprimer",
 					"editTitle": "Modifier la variable « {{name}} »",
 					"newVariableTitle": "Modifier une nouvelle variable",
@@ -1990,7 +2108,12 @@
 					"parentEntity": "Entité parente",
 					"details": "Détails",
 					"actor": "Acteur",
-					"date": "Date"
+					"date": "Date",
+					"result": "Résultat",
+					"actions": "Actions",
+					"tableLabel": "Journal des opérations",
+					"loadingPreviousPage": "Chargement des entrées précédentes du journal",
+					"loadingNextPage": "Chargement des entrées suivantes du journal"
 				},
 				"emptyState": {
 					"noItemsTitle": "Aucune entrée dans le journal des opérations pour le moment",
@@ -2017,7 +2140,8 @@
 					"actor": "Acteur",
 					"actorPlaceholder": "Nom d'utilisateur ou ID client",
 					"timestampDateRange": "Plage de dates de l'horodatage",
-					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage"
+					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage",
+					"noProcessesFound": "Aucun processus trouvé"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Afficher l'opération de lot {{key}}",
@@ -2090,7 +2214,8 @@
 				"pageSelectLabel": "Page sur {{count}} pages",
 				"pageSelectLabel_one": "Page sur {{count}} page",
 				"pageSelectLabel_other": "Page sur {{count}} pages",
-				"pageText": "page {{page}}"
+				"pageText": "page {{page}}",
+				"pageOf": "Page {{page}} sur {{count}}"
 			},
 			"batchOperation": {
 				"title": "Opérations par lots",
@@ -2129,6 +2254,16 @@
 					"retryHint": "Les éléments ne sont peut-être plus à jour. Réessayez de les charger.",
 					"retry": "Réessayer",
 					"retrying": "Nouvelle tentative de chargement des éléments"
+				},
+				"ds": {
+					"itemsTable": {
+						"tableLabel": "Éléments de l'opération par lots",
+						"loadingPreviousPage": "Chargement des éléments précédents",
+						"loadingNextPage": "Chargement d'autres éléments",
+						"expandFailure": "Afficher les détails de l'échec",
+						"collapseFailure": "Masquer les détails de l'échec",
+						"itemStatusPrefix": "Statut de l'élément"
+					}
 				},
 				"actions": {
 					"suspend": "Suspendre",
@@ -2260,6 +2395,12 @@
 					"lastDays_one": "Dernier {{count}} jour",
 					"lastDays_other": "Derniers {{count}} jours"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Effacer la plage de dates et d'heures",
+					"selectEndDate": "Choisir la date de fin",
+					"pickDayFirst": "Choisissez d'abord une date",
+					"pickEndDay": "Choisir la date de fin"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",
 					"operatorNotEquals": "n'est pas égal à",
@@ -2301,7 +2442,9 @@
 					"copyFailed": "Impossible de copier dans le presse-papiers"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choisir une ou plusieurs options"
+					"chooseOption": "Choisir une ou plusieurs options",
+					"search": "Rechercher...",
+					"noResults": "Aucun résultat trouvé"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Supprimer",
@@ -2354,7 +2497,37 @@
 					"preparingPdfPreview": "Préparation de l’aperçu PDF…"
 				},
 				"diagram": {
-					"label": "Diagramme"
+					"enterFullscreen": "Passer en plein écran",
+					"exitFullscreen": "Quitter le plein écran",
+					"showMinimap": "Afficher la mini-carte",
+					"hideMinimap": "Masquer la mini-carte",
+					"resetZoom": "Réinitialiser le zoom du diagramme",
+					"zoomOut": "Dézoomer le diagramme",
+					"zoomIn": "Zoomer sur le diagramme",
+					"label": "Diagramme",
+					"elementTypes": {
+						"startEvent": "événement de début",
+						"endEvent": "événement de fin",
+						"intermediateCatchEvent": "événement intermédiaire de réception",
+						"intermediateThrowEvent": "événement intermédiaire d’émission",
+						"boundaryEvent": "événement limite",
+						"task": "tâche",
+						"serviceTask": "tâche de service",
+						"userTask": "tâche utilisateur",
+						"scriptTask": "tâche de script",
+						"sendTask": "tâche d’envoi",
+						"receiveTask": "tâche de réception",
+						"manualTask": "tâche manuelle",
+						"businessRuleTask": "tâche de règle métier",
+						"callActivity": "activité d’appel",
+						"subProcess": "sous-processus",
+						"exclusiveGateway": "passerelle exclusive",
+						"parallelGateway": "passerelle parallèle",
+						"inclusiveGateway": "passerelle inclusive",
+						"eventBasedGateway": "passerelle basée sur les événements"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Utilisez les flèches pour passer d’un élément à l’autre et Entrée pour sélectionner."
 				},
 				"stateIcon": {
 					"active": "État actif",
@@ -2373,7 +2546,8 @@
 					"canceled": "Annulé",
 					"completed": "Terminé",
 					"evaluated": "Évalué",
-					"failed": "Échoué"
+					"failed": "Échoué",
+					"pending": "modification en attente"
 				},
 				"modificationBadge": {
 					"added": "{{count}} ajouté(s)",

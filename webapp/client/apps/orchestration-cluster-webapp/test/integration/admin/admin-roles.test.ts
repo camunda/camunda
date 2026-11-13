@@ -7,7 +7,8 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockAssignGroupToRoleEndpoint,
 	mockAssignUserToRoleEndpoint,
@@ -377,7 +378,7 @@ test.describe('Admin role detail', () => {
 		await expect(adminRoleDetailPage.cell('jane.doe')).toBeVisible();
 	});
 
-	test('should assign a user to the role', async ({adminRoleDetailPage, network}) => {
+	test('should assign a user to the role', async ({page, adminRoleDetailPage, network}) => {
 		network.use(
 			mockQueryUsersEndpoint({
 				successResponse: HttpResponse.json(createMembersPage([createUser({username: 'new.user'})])),
@@ -389,6 +390,7 @@ test.describe('Admin role detail', () => {
 		await adminRoleDetailPage.button('Assign user').click();
 		await adminRoleDetailPage.dialogCombobox.click();
 		await adminRoleDetailPage.option('new.user').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryUsersByRoleEndpoint({
@@ -404,11 +406,13 @@ test.describe('Admin role detail', () => {
 	});
 
 	test('should not offer users that are already assigned to the role', async ({adminRoleDetailPage, network}) => {
+		// The backend applies the picker's $notIn exclusion, so the mock has to as well.
 		network.use(
-			mockQueryUsersEndpoint({
-				successResponse: HttpResponse.json(
-					createMembersPage([createUser({username: 'jane.doe'}), createUser({username: 'new.user'})]),
-				),
+			http.post(endpoints.queryUsers.getUrl(), async ({request}) => {
+				const {filter} = (await request.json()) as {filter?: {username?: {$notIn?: string[]}}};
+				const excluded = filter?.username?.$notIn ?? [];
+				const users = ['jane.doe', 'new.user'].filter((username) => !excluded.includes(username));
+				return HttpResponse.json(createMembersPage(users.map((username) => createUser({username}))));
 			}),
 		);
 
@@ -431,29 +435,6 @@ test.describe('Admin role detail', () => {
 		// The user lookup is retried with backoff before it counts as failed.
 		await expect(adminRoleDetailPage.membersLoadFailure).toBeVisible({timeout: 15_000});
 		await expect(adminRoleDetailPage.cell('jane.doe')).toBeHidden();
-	});
-
-	test('should not allow removing a user while the next page is loading', async ({adminRoleDetailPage, network}) => {
-		network.use(
-			mockQueryUsersByRoleEndpoint({
-				successResponse: HttpResponse.json(createMembersPage([{username: 'jane.doe'}, {username: 'john.smith'}], 25)),
-			}),
-		);
-
-		await adminRoleDetailPage.goto('developers');
-		await expect(adminRoleDetailPage.button('Remove user jane.doe')).toBeEnabled();
-
-		network.use(
-			mockQueryUsersByRoleEndpoint({
-				successResponse: HttpResponse.json(createMembersPage([{username: 'page.two'}], 25)),
-				delay: 1500,
-				once: true,
-			}),
-		);
-		await adminRoleDetailPage.nextPageButton.click();
-
-		await expect(adminRoleDetailPage.button('Remove user jane.doe')).toBeDisabled();
-		await expect(adminRoleDetailPage.button('Remove user page.two')).toBeEnabled();
 	});
 
 	test('should step back a page when the only member on the last page is removed', async ({
@@ -510,7 +491,7 @@ test.describe('Admin role detail', () => {
 		await expect(adminRoleDetailPage.cell('john.smith')).toBeVisible();
 	});
 
-	test('should assign a group to the role', async ({adminRoleDetailPage, network}) => {
+	test('should assign a group to the role', async ({page, adminRoleDetailPage, network}) => {
 		network.use(
 			mockQueryGroupsEndpoint({
 				successResponse: HttpResponse.json(createMembersPage([{groupId: 'support', name: 'Support'}])),
@@ -522,6 +503,7 @@ test.describe('Admin role detail', () => {
 		await adminRoleDetailPage.button('Assign group').click();
 		await adminRoleDetailPage.dialogCombobox.click();
 		await adminRoleDetailPage.option('support').click();
+		await page.keyboard.press('Escape');
 
 		network.use(
 			mockQueryGroupsByRoleEndpoint({

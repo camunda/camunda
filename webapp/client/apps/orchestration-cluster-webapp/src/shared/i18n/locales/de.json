@@ -12,11 +12,16 @@
 		"headerNonProductionLicenseText": "Keine Produktionslizenz. Wenn Sie Informationen zur Produktionsnutzung wünschen, besuchen Sie bitte unsere <2>Webseite mit den Nutzungsbedingungen</2> oder <6>kontaktieren Sie den Vertrieb</6>.",
 		"headerInfoLabel": "Info",
 		"headerSettingsLabel": "Einstellungen",
-		"headerProfileLabel": "Profil",
+		"headerUserMenuLabel": "Benutzermenü, {{name}}",
 		"headerCookiePreferencesLabel": "Cookie-Einstellungen",
 		"headerTermsOfUseLabel": "Nutzungsbedingungen",
 		"headerPrivacyPolicyLabel": "Datenschutzrichtlinie",
 		"headerImprintLabel": "Impressum",
+		"headerVersionLabel": "Version {{version}}",
+		"headerThemeLabel": "Design",
+		"headerThemeSystem": "System",
+		"headerThemeLight": "Hell",
+		"headerThemeDark": "Dunkel",
 		"headerLogOutLabel": "Abmelden",
 		"headerNotificationsLabel": "Benachrichtigungen",
 		"headerNotificationsLoading": "Benachrichtigungen werden geladen...",
@@ -50,7 +55,6 @@
 		"notificationActionButtonLabel": "Aktion",
 		"sessionWatcherExpiredTitle": "Sitzung abgelaufen",
 		"networkStatusOfflineTitle": "Internetverbindung unterbrochen",
-		"languageSelectorLabel": "Sprache wählen",
 		"languageSelectorTitle": "Sprache",
 		"relativeDateJustNow": "Gerade eben",
 		"relativeDateNow": "'Jetzt'",
@@ -170,7 +174,11 @@
 				"deleteMappingRuleSuccess": "Zuordnungsregel gelöscht",
 				"createMappingRuleError": "Zuordnungsregel konnte nicht erstellt werden",
 				"updateMappingRuleError": "Zuordnungsregel konnte nicht aktualisiert werden",
-				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden"
+				"deleteMappingRuleError": "Zuordnungsregel konnte nicht gelöscht werden",
+				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Zuordnungsregel",
+				"resourcePlural": "Zuordnungsregeln"
 			},
 			"users": {
 				"username": "Benutzername",
@@ -211,7 +219,9 @@
 				"userDeleted": "Benutzer {{username}} gelöscht",
 				"deleteUserFailed": "Benutzer konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Benutzer",
+				"resourcePlural": "Benutzer"
 			},
 			"groups": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -247,8 +257,9 @@
 				"members": {
 					"tabsLabel": "Gruppenmitglieder",
 					"assignFailed": "Zuweisung fehlgeschlagen",
+					"assignedMany": "{{count}} Mitglieder zugewiesen",
+					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
-					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
 					"users": {
 						"tab": "Benutzer",
@@ -259,7 +270,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Gruppe sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -274,7 +284,6 @@
 						"idLabel": "Rollen-ID",
 						"select": "Rolle auswählen",
 						"search": "Nach Rollen-ID suchen",
-						"empty": "Dieser Gruppe sind keine Rollen zugewiesen.",
 						"remove": "Rolle entfernen",
 						"confirmRemove": "Möchten Sie die Rolle <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Rolle {{id}} zugewiesen",
@@ -291,7 +300,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Gruppe sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -304,13 +312,14 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Gruppe sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Gruppe entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Gruppe",
+				"resourcePlural": "Gruppen"
 			},
 			"clusterVariables": {
 				"closeButton": "Schließen",
@@ -362,7 +371,9 @@
 				"deleteClusterVariableSuccess": "Cluster-Variable gelöscht",
 				"createClusterVariableError": "Cluster-Variable konnte nicht erstellt werden",
 				"updateClusterVariableError": "Cluster-Variable konnte nicht aktualisiert werden",
-				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden"
+				"deleteClusterVariableError": "Cluster-Variable konnte nicht gelöscht werden",
+				"resourceSingular": "Cluster-Variable",
+				"resourcePlural": "Cluster-Variablen"
 			},
 			"globalTaskListeners": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -420,7 +431,9 @@
 				"updateGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht aktualisiert werden",
 				"deleteGlobalTaskListenerError": "Globaler Aufgaben-Listener konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "globalen Aufgaben-Listener",
+				"resourcePlural": "globale Aufgaben-Listener"
 			},
 			"authorizations": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -474,7 +487,11 @@
 				"deleteAuthorizationSuccess": "Autorisierung gelöscht",
 				"deleteAuthorizationError": "Autorisierung konnte nicht gelöscht werden",
 				"changeNotConfirmed": "Es konnte nicht bestätigt werden, dass die Änderung wirksam wurde",
-				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen."
+				"changeNotConfirmedDescription": "Laden Sie die Seite neu, um den aktuellen Stand zu sehen.",
+				"resourceSingular": "Autorisierung",
+				"resourcePlural": "Autorisierungen",
+				"noAuthorizationsYet": "Für diesen Ressourcentyp gibt es noch keine Autorisierungen",
+				"noAuthorizationsYetDescription": "Autorisierungen legen Zugriffsberechtigungen für verschiedene Ressourcen fest. Erstellen Sie eine Autorisierung, indem Sie einen Eigentümer, eine Ressource und mindestens eine Berechtigung auswählen."
 			},
 			"roles": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -510,6 +527,8 @@
 				"members": {
 					"tabsLabel": "Rollenmitglieder",
 					"assignFailed": "Zuweisung fehlgeschlagen",
+					"assignedMany": "{{count}} Mitglieder zugewiesen",
+					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
 					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
@@ -522,7 +541,6 @@
 						"select": "Benutzer auswählen",
 						"search": "Nach Benutzernamen suchen",
 						"enterId": "Benutzernamen eingeben",
-						"empty": "Dieser Rolle sind keine Benutzer zugewiesen.",
 						"remove": "Benutzer entfernen",
 						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Benutzer {{id}} zugewiesen",
@@ -538,7 +556,6 @@
 						"enterId": "Gruppen-ID eingeben",
 						"select": "Gruppe auswählen",
 						"search": "Nach Gruppen-ID suchen",
-						"empty": "Dieser Rolle sind keine Gruppen zugewiesen.",
 						"remove": "Gruppe entfernen",
 						"confirmRemove": "Möchten Sie die Gruppe <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Gruppe {{id}} zugewiesen",
@@ -555,7 +572,6 @@
 						"idLabel": "Zuordnungsregel-ID",
 						"select": "Zuordnungsregel auswählen",
 						"search": "Nach Zuordnungsregel-ID suchen",
-						"empty": "Dieser Rolle sind keine Zuordnungsregeln zugewiesen.",
 						"remove": "Zuordnungsregel entfernen",
 						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Zuordnungsregel {{id}} zugewiesen",
@@ -568,13 +584,14 @@
 						"assign": "Client zuweisen",
 						"idLabel": "Client-ID",
 						"enterId": "Client-ID eingeben",
-						"empty": "Dieser Rolle sind keine Clients zugewiesen.",
 						"remove": "Client entfernen",
 						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus dieser Rolle entfernen?",
 						"assigned": "Client {{id}} zugewiesen",
 						"removed": "Client {{id}} entfernt"
 					}
-				}
+				},
+				"resourceSingular": "Rolle",
+				"resourcePlural": "Rollen"
 			},
 			"tenants": {
 				"guideBody": "Weitere Informationen finden Sie im ",
@@ -590,7 +607,7 @@
 				"editTenantModalTitle": "Mandant bearbeiten",
 				"deleteTenantModalTitle": "Mandant löschen",
 				"deleteTenantConfirmation": "Möchten Sie <strong>{{name}}</strong> wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-				"cancelButton": "Abbrechen",
+				"cancel": "Abbrechen",
 				"createButton": "Erstellen",
 				"saveButton": "Speichern",
 				"deleteButton": "Löschen",
@@ -618,46 +635,86 @@
 				"mappingRuleIdColumn": "Zuordnungsregel-ID",
 				"mappingRuleNameColumn": "Name",
 				"clientIdColumn": "Client-ID",
-				"tab_users": "Benutzer",
-				"tab_groups": "Gruppen",
-				"tab_roles": "Rollen",
-				"tab_mapping-rules": "Zuordnungsregeln",
-				"tab_clients": "Clients",
-				"empty_users": "Diesem Mandanten sind keine Benutzer zugewiesen.",
-				"empty_groups": "Diesem Mandanten sind keine Gruppen zugewiesen.",
-				"empty_roles": "Diesem Mandanten sind keine Rollen zugewiesen.",
-				"empty_mapping-rules": "Diesem Mandanten sind keine Zuordnungsregeln zugewiesen.",
-				"empty_clients": "Diesem Mandanten sind keine Clients zugewiesen.",
-				"assignButton": "Zuweisen",
-				"assignButton_users": "Benutzer zuweisen",
-				"assignButton_groups": "Gruppe zuweisen",
-				"assignButton_roles": "Rolle zuweisen",
-				"assignButton_mapping-rules": "Zuordnungsregel zuweisen",
-				"assignButton_clients": "Client zuweisen",
-				"assignModalTitle_users": "Benutzer zuweisen",
-				"assignModalTitle_groups": "Gruppe zuweisen",
-				"assignModalTitle_roles": "Rolle zuweisen",
-				"assignModalTitle_mapping-rules": "Zuordnungsregel zuweisen",
-				"assignModalTitle_clients": "Client zuweisen",
-				"assignFieldLabel_users": "Benutzer",
-				"assignFieldLabel_groups": "Gruppen",
-				"assignFieldLabel_roles": "Rollen",
-				"assignFieldLabel_mapping-rules": "Zuordnungsregeln",
-				"assignFieldLabel_clients": "Client-ID",
-				"assignFieldPlaceholder_users": "Benutzer suchen und auswählen",
-				"assignFieldPlaceholder_groups": "Gruppen suchen und auswählen",
-				"assignFieldPlaceholder_roles": "Rollen suchen und auswählen",
-				"assignFieldPlaceholder_mapping-rules": "Zuordnungsregeln suchen und auswählen",
-				"assignFieldPlaceholder_clients": "Client-ID eingeben",
+				"members": {
+					"candidatesLoadError": "Optionen konnten nicht geladen werden",
+					"users": {
+						"tab": "Benutzer",
+						"assign": "Benutzer zuweisen",
+						"idLabel": "Benutzer",
+						"select": "Benutzer suchen und auswählen",
+						"search": "Nach Benutzernamen suchen",
+						"enterId": "Benutzernamen eingeben",
+						"remove": "Benutzer entfernen",
+						"confirmRemove": "Möchten Sie <strong>{{id}}</strong> wirklich aus diesem Mandanten entfernen?"
+					},
+					"groups": {
+						"tab": "Gruppen",
+						"assign": "Gruppe zuweisen",
+						"idLabel": "Gruppen",
+						"select": "Gruppen suchen und auswählen",
+						"search": "Nach Gruppen-ID suchen",
+						"enterId": "Gruppen-ID eingeben",
+						"remove": "Gruppe entfernen",
+						"confirmRemove": "Möchten Sie die Gruppe <strong>{{id}}</strong> wirklich aus diesem Mandanten entfernen?"
+					},
+					"roles": {
+						"tab": "Rollen",
+						"assign": "Rolle zuweisen",
+						"idLabel": "Rollen",
+						"select": "Rollen suchen und auswählen",
+						"search": "Nach Rollen-ID suchen",
+						"remove": "Rolle entfernen",
+						"confirmRemove": "Möchten Sie die Rolle <strong>{{id}}</strong> wirklich aus diesem Mandanten entfernen?"
+					},
+					"mappingRules": {
+						"tab": "Zuordnungsregeln",
+						"assign": "Zuordnungsregel zuweisen",
+						"idLabel": "Zuordnungsregeln",
+						"select": "Zuordnungsregeln suchen und auswählen",
+						"search": "Nach Zuordnungsregel-ID suchen",
+						"remove": "Zuordnungsregel entfernen",
+						"confirmRemove": "Möchten Sie die Zuordnungsregel <strong>{{id}}</strong> wirklich aus diesem Mandanten entfernen?"
+					},
+					"clients": {
+						"tab": "Clients",
+						"assign": "Client zuweisen",
+						"idLabel": "Client-ID",
+						"enterId": "Client-ID eingeben",
+						"remove": "Client entfernen",
+						"confirmRemove": "Möchten Sie den Client <strong>{{id}}</strong> wirklich aus diesem Mandanten entfernen?"
+					}
+				},
 				"assignSuccess": "Zuweisung gespeichert",
+				"assignedMany": "{{count}} Mitglieder zugewiesen",
+				"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 				"assignError": "Zuweisung fehlgeschlagen",
-				"unassignButton": "Entfernen",
-				"unassignModalTitle": "Aus Mandant entfernen",
-				"unassignConfirmation": "Möchten Sie <strong>{{id}}</strong> wirklich aus dem Mandanten <strong>{{tenantId}}</strong> entfernen?",
 				"unassignSuccess": "Aus Mandant entfernt",
 				"unassignError": "Entfernen aus dem Mandanten fehlgeschlagen",
 				"changeNotConfirmed": "Die Änderung konnte nicht bestätigt werden",
-				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen."
+				"changeNotConfirmedDescription": "Aktualisieren Sie die Seite, um den neuesten Stand zu sehen.",
+				"resourceSingular": "Mandant",
+				"resourcePlural": "Mandanten",
+				"emptyStateDisclaimer": "Mitglieder dieses Mandanten erhalten Zugriff auf die Daten innerhalb des Mandanten."
+			},
+			"emptyState": {
+				"title": "Noch keine {{resources}} erstellt",
+				"description": "Legen Sie zunächst Folgendes an: {{resource}}.",
+				"createAction": "{{resource}} erstellen",
+				"learnMore": "Mehr über {{resources}} erfahren"
+			},
+			"members": {
+				"kinds": {
+					"users": "Benutzer",
+					"groups": "Gruppen",
+					"roles": "Rollen",
+					"mappingRules": "Zuordnungsregeln",
+					"clients": "Clients"
+				},
+				"emptyState": {
+					"title": "Diesem Element ({{parent}}) sind noch keine {{resources}} zugewiesen",
+					"description": "Beginnen Sie mit der ersten Zuweisung.",
+					"learnMore": "Mehr über {{resources}} erfahren"
+				}
 			}
 		},
 		"tasklist": {
@@ -687,6 +744,9 @@
 			"taskAssignmentStatusCompleted": "Abgeschlossen",
 			"taskDetailsTaskCompletedBy": "Abgeschlossen von",
 			"taskDetailsDisabledCompleteButtonTitle": "Aufgabe ist nicht zugewiesen",
+			"taskSuspendedLabel": "Ausgesetzt",
+			"taskSuspendedDescription": "Prozessinstanz ausgesetzt. Wieder verfügbar, sobald sie fortgesetzt wird.",
+			"taskSuspendedActionsDisabledDescription": "Prozessinstanz ausgesetzt. Wieder verfügbar, sobald sie fortgesetzt wird.",
 			"taskDetailsCompleteTaskButtonLabel": "Aufgabe abschließen",
 			"taskStateUpdatingMessage": "Bitte warten Sie, während die Aufgabe aktualisiert wird...",
 			"taskStateCancelingMessage": "Die Aufgabe wird abgebrochen. Bitte warten...",
@@ -832,6 +892,7 @@
 			"availableTasksNavLinkAssignedToMe": "Aufgabe mir zugewiesen: {{name}}",
 			"availableTasksNavLinkAssignedTask": "Zugewiesene Aufgabe: {{name}}",
 			"availableTasksNavLinkUnassignedTask": "Nicht zugewiesene Aufgabe: {{name}}",
+			"availableTasksNavLinkSuspendedTask": "{{label}} (ausgesetzt)",
 			"customFiltersModalDeleteModalHeading": "Filter löschen",
 			"customFiltersModalDeleteModalBody": "Der benutzerdefinierte Filter <strong>{{name}}</strong> wird gelöscht.",
 			"customFiltersModalConfirmDeletionButton": "Löschen bestätigen",
@@ -1063,6 +1124,13 @@
 				"drainingDescriptionVersion": "Diese Version der Prozessdefinition ist zur Löschung vorgesehen und wird automatisch entfernt, sobald alle ihre laufenden Instanzen abgeschlossen sind."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Nach Prozessname suchen",
+						"selectVersion": "Prozessversion auswählen",
+						"searchByElement": "Nach Prozesselement suchen"
+					}
+				},
 				"migration": {
 					"migrate": "Migrieren",
 					"selectSource": "Um die Migration zu starten, wählen Sie zuerst einen Prozess und eine Version aus.",
@@ -1159,6 +1227,7 @@
 					"suspend": "Aussetzen",
 					"resume": "Fortsetzen",
 					"discard": "Verwerfen",
+					"bulkActionsLabel": "Massenaktionen",
 					"selectAll": "Alle Elemente auswählen",
 					"selectRow": "Instanz {{key}} auswählen",
 					"selected": "{{total}} Elemente ausgewählt",
@@ -1302,13 +1371,20 @@
 					"viewParentInstance": "Übergeordnete Instanz {{key}} anzeigen",
 					"none": "Keine",
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
-					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen"
+					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
+					"tableLabel": "Prozessinstanzen",
+					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
+					"loadingNextPage": "Nächste Prozessinstanzen werden geladen",
+					"errorTitle": "Daten konnten nicht abgerufen werden",
+					"errorDescription": "Beim Laden der Instanzen ist ein Fehler aufgetreten. Versuchen Sie es erneut."
 				},
 				"diagramHeader": {
 					"title": "Prozess",
 					"processName": "Prozessname",
 					"processId": "Prozess-ID",
-					"versionTag": "Versions-Tag"
+					"versionTag": "Versions-Tag",
+					"copyButtonDescription": "Prozess-ID / Klicken zum Kopieren",
+					"copyButtonTitle": "Prozess-ID kopieren: {{id}}"
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Prozessdefinition \"{{name}} - Version {{version}}\" löschen",
@@ -1330,7 +1406,8 @@
 					"details": "Prozessdetails",
 					"definition": "Prozessdefinition",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Vorgang erstellt"
+					"successTitle": "Vorgang erstellt",
+					"loadingMessage": "Prozessdefinition wird gelöscht"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
@@ -1339,7 +1416,8 @@
 					"selectSingleTenant": "Um ein Diagramm zu sehen, wählen Sie einen einzelnen Mandanten aus",
 					"noProcessSelected": "Es ist kein Prozess ausgewählt",
 					"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus",
-					"processNotFoundTitle": "Prozess konnte nicht gefunden werden"
+					"processNotFoundTitle": "Prozess konnte nicht gefunden werden",
+					"ariaLabel": "Diagrammbereich"
 				}
 			},
 			"decisions": {
@@ -1518,9 +1596,46 @@
 				"panel": {
 					"label": "Entscheidungspanel",
 					"unknownEvaluationFailure": "Auswertung ist mit einem unbekannten Fehler fehlgeschlagen"
+				},
+				"ds": {
+					"drd": {
+						"title": "Entscheidungsanforderungsdiagramm",
+						"resize": "Größe des DRD-Bereichs ändern",
+						"maximize": "DRD-Bereich maximieren",
+						"minimize": "DRD-Bereich minimieren",
+						"close": "DRD-Bereich schließen",
+						"zoomIn": "Vergrößern",
+						"zoomOut": "Verkleinern",
+						"resetZoom": "Zoom zurücksetzen",
+						"unavailableTitle": "Kein Diagramm verfügbar",
+						"unavailableInfo": "Diese Entscheidung ist nicht Teil eines Entscheidungsanforderungsdiagramms.",
+						"content": "Inhalt des Entscheidungsanforderungsdiagramms"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Entscheidungsinstanzschlüssel",
+						"evaluationDateColumn": "Auswertungsdatum",
+						"processInstanceColumn": "Prozessinstanzschlüssel",
+						"openDrdButton": "Entscheidungsanforderungsdiagramm öffnen"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Registerkarten des Variablenbereichs",
+						"inputsAndOutputs": "Eingaben und Ausgaben"
+					},
+					"forbidden": {
+						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "Die Auswertung ist aus einem unbekannten Grund fehlgeschlagen. Prüfen Sie die Eingabewerte und die Entscheidungsdefinition.",
+						"expandFailure": "Vollständige Meldung anzeigen",
+						"collapseFailure": "Meldung einklappen"
+					}
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
+					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"
+				},
 				"history": {
 					"title": "Instanzhistorie",
 					"tabs": "Prozessinstanz-Registerkarten",
@@ -1609,6 +1724,7 @@
 				},
 				"header": {
 					"key": "Prozessinstanzschlüssel",
+					"keyCopyButtonDescription": "Prozessinstanzschlüssel / Klicken zum Kopieren",
 					"waiting": "Wartend",
 					"waitingCount": "{{count}} wartend",
 					"version": "Version",
@@ -1673,6 +1789,8 @@
 					"exitDescription": "Verlassen",
 					"save": "Variable speichern",
 					"saveDescription": "Speichern",
+					"saving": "Variable wird gespeichert",
+					"loadingValue": "Variablenwert wird geladen",
 					"deleteDescription": "Löschen",
 					"editTitle": "Variable \"{{name}}\" bearbeiten",
 					"newVariableTitle": "Neue Variable bearbeiten",
@@ -1987,7 +2105,12 @@
 					"parentEntity": "Übergeordnete Entität",
 					"details": "Details",
 					"actor": "Akteur",
-					"date": "Datum"
+					"date": "Datum",
+					"result": "Ergebnis",
+					"actions": "Aktionen",
+					"tableLabel": "Operationsprotokoll",
+					"loadingPreviousPage": "Vorherige Protokolleinträge werden geladen",
+					"loadingNextPage": "Nächste Protokolleinträge werden geladen"
 				},
 				"emptyState": {
 					"noItemsTitle": "Noch keine Einträge im Operationsprotokoll",
@@ -2014,7 +2137,8 @@
 					"actor": "Akteur",
 					"actorPlaceholder": "Benutzername oder Client-ID",
 					"timestampDateRange": "Zeitstempel-Datumsbereich",
-					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern"
+					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern",
+					"noProcessesFound": "Keine Prozesse gefunden"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Batch-Vorgang {{key}} anzeigen",
@@ -2087,7 +2211,8 @@
 				"pageSelectLabel": "Seite von {{count}} Seiten",
 				"pageSelectLabel_one": "Seite von {{count}} Seite",
 				"pageSelectLabel_other": "Seite von {{count}} Seiten",
-				"pageText": "Seite {{page}}"
+				"pageText": "Seite {{page}}",
+				"pageOf": "Seite {{page}} von {{count}}"
 			},
 			"batchOperation": {
 				"title": "Stapeloperationen",
@@ -2126,6 +2251,16 @@
 					"retryHint": "Die Elemente sind möglicherweise nicht mehr aktuell. Versuchen Sie erneut, sie zu laden.",
 					"retry": "Erneut versuchen",
 					"retrying": "Elemente werden erneut geladen"
+				},
+				"ds": {
+					"itemsTable": {
+						"tableLabel": "Elemente der Batch-Operation",
+						"loadingPreviousPage": "Vorherige Elemente werden geladen",
+						"loadingNextPage": "Weitere Elemente werden geladen",
+						"expandFailure": "Fehlerdetails anzeigen",
+						"collapseFailure": "Fehlerdetails ausblenden",
+						"itemStatusPrefix": "Status des Elements"
+					}
 				},
 				"actions": {
 					"suspend": "Pausieren",
@@ -2257,6 +2392,12 @@
 					"lastDays_one": "Letzter {{count}} Tag",
 					"lastDays_other": "Letzte {{count}} Tage"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Datums- und Zeitbereich löschen",
+					"selectEndDate": "Enddatum wählen",
+					"pickDayFirst": "Zuerst ein Datum wählen",
+					"pickEndDay": "Enddatum wählen"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",
 					"operatorNotEquals": "ist nicht gleich",
@@ -2298,7 +2439,9 @@
 					"copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Option(en) auswählen"
+					"chooseOption": "Option(en) auswählen",
+					"search": "Suchen...",
+					"noResults": "Keine Ergebnisse gefunden"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Löschen",
@@ -2351,7 +2494,37 @@
 					"preparingPdfPreview": "PDF-Vorschau wird vorbereitet…"
 				},
 				"diagram": {
-					"label": "Diagramm"
+					"enterFullscreen": "Vollbild öffnen",
+					"exitFullscreen": "Vollbild beenden",
+					"showMinimap": "Minikarte anzeigen",
+					"hideMinimap": "Minikarte ausblenden",
+					"resetZoom": "Diagrammzoom zurücksetzen",
+					"zoomOut": "Diagramm verkleinern",
+					"zoomIn": "Diagramm vergrößern",
+					"label": "Diagramm",
+					"elementTypes": {
+						"startEvent": "Startereignis",
+						"endEvent": "Endereignis",
+						"intermediateCatchEvent": "Zwischenereignis (fangend)",
+						"intermediateThrowEvent": "Zwischenereignis (werfend)",
+						"boundaryEvent": "Grenzereignis",
+						"task": "Aufgabe",
+						"serviceTask": "Service-Aufgabe",
+						"userTask": "Benutzeraufgabe",
+						"scriptTask": "Skript-Aufgabe",
+						"sendTask": "Sendeaufgabe",
+						"receiveTask": "Empfangsaufgabe",
+						"manualTask": "Manuelle Aufgabe",
+						"businessRuleTask": "Geschäftsregel-Aufgabe",
+						"callActivity": "Aufrufaktivität",
+						"subProcess": "Teilprozess",
+						"exclusiveGateway": "Exklusives Gateway",
+						"parallelGateway": "Paralleles Gateway",
+						"inclusiveGateway": "Inklusives Gateway",
+						"eventBasedGateway": "Ereignisbasiertes Gateway"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Mit den Pfeiltasten zwischen Elementen wechseln und mit der Eingabetaste auswählen."
 				},
 				"stateIcon": {
 					"active": "Status aktiv",
@@ -2370,7 +2543,8 @@
 					"canceled": "Abgebrochen",
 					"completed": "Abgeschlossen",
 					"evaluated": "Ausgewertet",
-					"failed": "Fehlgeschlagen"
+					"failed": "Fehlgeschlagen",
+					"pending": "Änderung ausstehend"
 				},
 				"modificationBadge": {
 					"added": "{{count}} hinzugefügt",

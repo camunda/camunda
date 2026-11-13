@@ -29,16 +29,18 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
       new LongProperty("operationReference", -1);
   private final LongProperty batchOperationReferenceProperty =
       new LongProperty("batchOperationReference", -1);
+  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
 
   public AsyncRequestRecord() {
-    super(7);
+    super(8);
     declareProperty(scopeKeyProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(requestIdProperty)
         .declareProperty(requestStreamIdProperty)
         .declareProperty(operationReferenceProperty)
-        .declareProperty(batchOperationReferenceProperty);
+        .declareProperty(batchOperationReferenceProperty)
+        .declareProperty(storageOrdinalProperty);
   }
 
   public void wrap(final AsyncRequestRecord record) {
@@ -49,6 +51,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     requestStreamIdProperty.setValue(record.getRequestStreamId());
     operationReferenceProperty.setValue(record.getOperationReference());
     batchOperationReferenceProperty.setValue(record.getBatchOperationReference());
+    storageOrdinalProperty.setValue(record.getStorageOrdinal());
   }
 
   @Override
@@ -128,6 +131,16 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
 
   public AsyncRequestRecord setBatchOperationReference(final long batchOperationReference) {
     batchOperationReferenceProperty.setValue(batchOperationReference);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProperty.getValue();
+  }
+
+  public AsyncRequestRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProperty.setValue(storageOrdinal);
     return this;
   }
 }

@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwar
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -108,6 +109,54 @@ final class PhysicalTenantForcedRemovalTest {
     assertThat(configuration.globalConfiguration().members())
         .describedAs("brokers left in the cluster")
         .containsOnlyKeys(BARE_0, BARE_1);
+  }
+
+  /**
+   * A caller that lost the confirmation of a force removal retries the same request. The retry must
+   * find nothing left to do rather than reconfigure the partitions again.
+   */
+  @Test
+  void shouldPlanNothingWhenForceRemovalIsRepeated() {
+    // given — a force removal of broker 2 that has already been applied
+    wire(
+        BARE_0,
+        twoTenants(
+            cluster(Set.of(BARE_0, BARE_1, BARE_2), Set.of(BARE_0, BARE_1)),
+            cluster(Set.of(BARE_0, BARE_1, BARE_2), Set.of(BARE_1, BARE_2))));
+    final var request = new ForceRemoveBrokersRequestTransformer(Set.of(BARE_2), BARE_0);
+    final var afterFirstRemoval = simulate(request);
+
+    // when — the same request is planned again
+    final var secondPlan = request.phases(afterFirstRemoval);
+
+    // then
+    EitherAssert.assertThat(secondPlan).isRight();
+    assertThat(secondPlan.get()).isEmpty();
+  }
+
+  /**
+   * A retry may overlap an earlier removal only partly, e.g. when the caller widens the request
+   * after the first one went through. Only what is still left has to be removed.
+   */
+  @Test
+  void shouldOnlyRemoveWhatIsLeftWhenRemovalOverlapsAnEarlierOne() {
+    // given — broker 0 has already been force removed from a three-broker cluster
+    final var all = Set.of(BARE_0, BARE_1, BARE_2);
+    wire(BARE_2, twoTenants(cluster(all, all), cluster(all, all)));
+    final var afterFirstRemoval =
+        simulate(new ForceRemoveBrokersRequestTransformer(Set.of(BARE_0), BARE_2));
+    manager.updateMultiConfiguration(ignored -> afterFirstRemoval).join();
+
+    // when — brokers 0 and 1 are force removed
+    final var configuration =
+        simulate(new ForceRemoveBrokersRequestTransformer(Set.of(BARE_0, BARE_1), BARE_2));
+
+    // then — every tenant is left on broker 2, the only broker remaining
+    assertThat(replicasOf(afterFirstRemoval, DEFAULT_GROUP))
+        .containsExactlyInAnyOrder(BARE_1, BARE_2);
+    assertThat(replicasOf(configuration, DEFAULT_GROUP)).containsExactly(BARE_2);
+    assertThat(replicasOf(configuration, TENANT_A)).containsExactly(BARE_2);
+    assertThat(configuration.globalConfiguration().members()).containsOnlyKeys(BARE_2);
   }
 
   @ParameterizedTest

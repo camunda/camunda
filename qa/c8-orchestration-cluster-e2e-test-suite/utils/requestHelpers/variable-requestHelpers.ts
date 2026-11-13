@@ -93,6 +93,22 @@ export async function expectVariableValue(
   }).toPass(assertionOptions);
 }
 
+export async function expectVariableValues(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  values: Record<string, string | number | boolean>,
+  assertionOptions = extendedAssertionOptions,
+): Promise<void> {
+  for (const [name, value] of Object.entries(values)) {
+    await expectVariableValue(
+      request,
+      {processInstanceKey, name},
+      JSON.stringify(value),
+      assertionOptions,
+    );
+  }
+}
+
 export async function setupVariableTest(
   localState: Record<string, unknown>,
   request: APIRequestContext,

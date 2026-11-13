@@ -153,8 +153,15 @@ final class TestSupport {
             ValueType.BUFFERED_COMMAND,
             ValueType.ELEMENT_INSTANCE_WALK,
             ValueType.PROCESS_DEFINITION_RESTORE,
+            ValueType.POLICY_UPDATE,
+            ValueType.PROCESS_DEFINITION_SUSPENSION,
             // internal engine-to-engine record, never exported by design
-            ValueType.AGENT_HISTORY_BATCH);
+            ValueType.AGENT_HISTORY_BATCH,
+            // a read of the engine state that changes nothing, never exported by design
+            ValueType.USER_TASK_LOOKUP,
+            // no templates yet, they come with the probe export (#68870)
+            ValueType.PROBE,
+            ValueType.PROBE_BATCH);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 

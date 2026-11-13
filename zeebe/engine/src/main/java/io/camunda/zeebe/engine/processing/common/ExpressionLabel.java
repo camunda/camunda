@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -99,8 +100,61 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("escalation code expression", event(eventId));
   }
 
+  /** Labels an expression as the duration expression of a timer event. */
+  public static ExpressionLabel timerDurationExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer duration expression", event(eventId));
+  }
+
+  /** Labels an expression as the cycle expression of a timer event. */
+  public static ExpressionLabel timerCycleExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer cycle expression", event(eventId));
+  }
+
+  /** Labels an expression as the date expression of a timer event. */
+  public static ExpressionLabel timerDateExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("timer date expression", event(eventId));
+  }
+
+  /** Labels an expression as the due date expression of a user task. */
+  public static ExpressionLabel dueDateExpression(final DirectBuffer userTaskId) {
+    return new ExpressionLabel("due date expression", userTask(userTaskId));
+  }
+
+  /** Labels an expression as the follow-up date expression of a user task. */
+  public static ExpressionLabel followUpDateExpression(final DirectBuffer userTaskId) {
+    return new ExpressionLabel("follow-up date expression", userTask(userTaskId));
+  }
+
+  /**
+   * Labels an expression as the source expression of an input mapping. Pass the mapping's target
+   * path to name the variable it writes to, or {@code null} when the failing expression combines
+   * several mappings and no single target is known.
+   */
+  public static ExpressionLabel inputMappingExpression(final @Nullable List<String> targetPath) {
+    return new ExpressionLabel(
+        "input mapping expression", targetPath == null ? null : mappingTarget(targetPath));
+  }
+
+  /**
+   * Labels an expression as the source expression of an output mapping. Pass the mapping's target
+   * path to name the variable it writes to, or {@code null} when the failing expression combines
+   * several mappings and no single target is known.
+   */
+  public static ExpressionLabel outputMappingExpression(final @Nullable List<String> targetPath) {
+    return new ExpressionLabel(
+        "output mapping expression", targetPath == null ? null : mappingTarget(targetPath));
+  }
+
+  private static String mappingTarget(final List<String> targetPath) {
+    return "target variable '%s'".formatted(String.join(".", targetPath));
+  }
+
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
     return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
+  }
+
+  private static String userTask(final DirectBuffer userTaskId) {
+    return "user task '%s'".formatted(BufferUtil.bufferAsString(userTaskId));
   }
 
   private static String event(final DirectBuffer eventId) {

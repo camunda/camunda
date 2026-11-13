@@ -63,6 +63,24 @@ public class ClusterVariableDbModelTest {
   }
 
   @Test
+  public void shouldStoreIntegerBeyondLongRangeAsString() {
+    // when
+    final ClusterVariableDbModel model =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
+            .name("test")
+            .value("18446744073709551615")
+            .tenantId("tenant1")
+            .scope(ClusterVariableScope.GLOBAL)
+            .build();
+
+    // then
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
+    assertThat(model.longValue()).isNull();
+    assertThat(model.doubleValue()).isNull();
+    assertThat(model.value()).isEqualTo("18446744073709551615");
+  }
+
+  @Test
   public void shouldCopyClusterVariable() {
     // given
     final List<MetadataEntry> metadata =

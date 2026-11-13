@@ -9,7 +9,8 @@
 		"paths": {
 			"#/pw-modules/*": ["./test/pw-modules/*"],
 			"#/pages/*": ["./test/pages/*"],
-			"#/shared-test-modules/*": ["./shared-test-modules/*"]
+			"#/shared-test-modules/*": ["./shared-test-modules/*"],
+			"#/shared/*": ["./src/shared/*"]
 		}
 	},
 	"include": ["vite.config.ts", "playwright.config.ts", "test/**/*.ts", "shared-test-modules/**/*.ts"]

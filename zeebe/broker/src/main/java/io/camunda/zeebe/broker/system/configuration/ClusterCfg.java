@@ -118,7 +118,7 @@ public final class ClusterCfg implements ConfigurationEntry {
       throw new IllegalArgumentException(
           String.format("electionTimeout %s must be at least 1ms", electionTimeout));
     }
-    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+    if (electionTimeout.compareTo(heartbeatInterval) <= 0) {
       throw new IllegalArgumentException(
           String.format(
               "electionTimeout %s must be greater than heartbeatInterval %s",

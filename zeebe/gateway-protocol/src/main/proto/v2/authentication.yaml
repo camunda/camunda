@@ -8,7 +8,11 @@ paths:
       operationId: getAuthentication
       x-required-permissions: []
       summary: Get current user
-      description: Retrieves the current authenticated user.
+      description: >-
+        Retrieves the current authenticated user. On an unprotected API
+        (`camunda.security.authentication.unprotected-api=true`) a caller without an identity gets
+        a result with `isAnonymous` set to `true` instead of a `401`, because no credentials can
+        authenticate it there.
       security:
         - bearerAuth: []
       responses:
@@ -74,7 +78,7 @@ components:
         - authorizationsEnabled
       properties:
         authorizationsEnabled:
-          description: Indicates whether authorization checks are enabled for the cluster.
+          description: Indicates whether authorization checks are enabled for the physical tenant of the request.
           type: boolean
 
     CamundaUserResult:
@@ -90,11 +94,19 @@ components:
         - displayName
         - email
         - username
+        - isAnonymous
       properties:
+        isAnonymous:
+          description: >-
+            Whether the caller has no identity. Only an unprotected API answers an anonymous
+            caller; a protected API returns `401` instead. When `true`, `username`,
+            `displayName` and `email` are `null` and the lists are empty.
+          type: boolean
         username:
-          description: The username of the user.
+          description: The username of the user. `null` when `isAnonymous` is `true`.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/Username"
+          nullable: true
         displayName:
           description: The display name of the user.
           type: string
@@ -109,7 +121,8 @@ components:
           description: >-
             The web components the user is authorized to use. When authorizations are disabled
             for the cluster, this always returns `["*"]`, regardless of the user's actual
-            permissions, since access is not restricted in that case.
+            permissions, since access is not restricted in that case. An anonymous caller of an
+            unprotected API also gets `["*"]`, for the same reason.
           type: array
           example:
             - "*"
@@ -148,3 +161,25 @@ components:
         canLogout:
           description: Flag for understanding if the user is able to perform logout.
           type: boolean
+      x-properties-added-in-version:
+        - propertyName: "isAnonymous"
+          addedInVersion: "8.11"
+
+    AuthenticatedCamundaUserResult:
+      description: >-
+        A `CamundaUserResult` with `isAnonymous` set to `false`, so `username` is always set.
+        `GET /authentication/me` returns `CamundaUserResult`. Clients that only handle a caller
+        with an identity can narrow the result to this schema once they checked `isAnonymous`.
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/CamundaUserResult'
+      properties:
+        isAnonymous:
+          description: Always `false`, because the caller has an identity.
+          type: boolean
+          enum:
+            - false
+        username:
+          description: The username of the user.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/Username"

@@ -121,14 +121,16 @@ public final class ConditionalEvaluationRecord extends UnifiedRecordValue
    *
    * @param processDefinitionKey the process definition key
    * @param processInstanceKey the process instance key
+   * @param storageOrdinal the storage ordinal assigned to the started process instance
    * @return this record for fluent chaining
    */
   public ConditionalEvaluationRecord addStartedProcessInstance(
-      final long processDefinitionKey, final long processInstanceKey) {
+      final long processDefinitionKey, final long processInstanceKey, final int storageOrdinal) {
     startedProcessInstancesProp
         .add()
         .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessInstanceKey(processInstanceKey);
+        .setProcessInstanceKey(processInstanceKey)
+        .setStorageOrdinal(storageOrdinal);
     return this;
   }
 }

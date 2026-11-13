@@ -1,6 +1,9 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   api(project(":zeebe-backup"))
@@ -22,7 +25,7 @@ dependencies {
   api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
   api(libs.org.reactivestreams.reactive.streams)
   implementation(project(":zeebe-util"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   testImplementation(project(":zeebe-backup-testkit"))
   testImplementation(projectArtifact(":zeebe-backup-testkit", ArtifactKind.TESTS))
@@ -31,6 +34,7 @@ dependencies {
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.org.testcontainers.testcontainers.localstack)
   testImplementation(libs.org.mockito.mockito.core)
+  testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
   testImplementation(libs.org.mockito.mockito.junit.jupiter)
   testImplementation(libs.org.awaitility.awaitility)
   testImplementation(project(":zeebe-test-util"))

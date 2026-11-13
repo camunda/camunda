@@ -23,6 +23,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-micrometer</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
 
@@ -128,16 +133,6 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-xml-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.model</groupId>
-      <artifactId>camunda-dmn-model</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
-      <artifactId>dmn-engine</artifactId>
     </dependency>
 
     <dependency>

@@ -8,12 +8,23 @@
 package io.camunda.zeebe.backup.s3;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.CONTENTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFESTS_DIRECTORY_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.MANIFEST_OBJECT_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SEGMENTS_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.SNAPSHOT_FILESET_NAME;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.formatBasePath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestPathPattern;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.manifestsPrefix;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.metadataPath;
+import static io.camunda.zeebe.backup.common.BackupStorePaths.parseManifestPath;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -34,7 +45,6 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
-import io.camunda.zeebe.util.MemberIdUtil;
 import io.camunda.zeebe.util.SemanticVersion;
 import java.io.IOException;
 import java.net.URI;
@@ -61,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -105,10 +114,8 @@ public final class S3BackupStore implements BackupStore {
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS);
-  static final String SNAPSHOT_PREFIX = "snapshot/";
-  static final String SEGMENTS_PREFIX = "segments/";
-  static final String MANIFEST_OBJECT_KEY = "manifest.json";
-  static final String METADATA_OBJECT_NAME = "metadata.json";
+  static final String SNAPSHOT_PREFIX = SNAPSHOT_FILESET_NAME + "/";
+  static final String SEGMENTS_PREFIX = SEGMENTS_FILESET_NAME + "/";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private static final int LIST_PAGE_SIZE = 1000;
@@ -118,6 +125,7 @@ public final class S3BackupStore implements BackupStore {
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
+  private final String basePath;
 
   S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -127,14 +135,14 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
-    final var basePath = config.basePath();
-    final var basePrefix = basePath.map(base -> base + "/").map(Pattern::quote).orElse("");
+    basePath = formatBasePath(config.basePath());
+    final var quotedBasePath = Pattern.quote(basePath);
     final var identifierSuffix =
         "(?:manifests/)?(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<memberId>(%s)).*"
-            .formatted(MemberIdUtil.regexPattern());
-    backupIdentifierPattern = Pattern.compile("^" + basePrefix + identifierSuffix);
+            .formatted(MemberId.regexPattern());
+    backupIdentifierPattern = Pattern.compile("^" + quotedBasePath + identifierSuffix);
     legacyCheckpointPrefixPattern =
-        Pattern.compile("^" + basePrefix + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
+        Pattern.compile("^" + quotedBasePath + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/$");
   }
 
   public static BackupStore of(final S3BackupConfig config) {
@@ -174,8 +182,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String legacyWildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return basePath + BackupIdentifierWildcard.asPrefix(wildcard);
   }
 
   /**
@@ -189,10 +196,7 @@ public final class S3BackupStore implements BackupStore {
    * matches.
    */
   private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + Directory.MANIFESTS.name
-        + "/"
-        + BackupIdentifierWildcard.asPrefix(wildcard);
+    return manifestsPrefix(basePath, wildcard);
   }
 
   /** Backwards compatible object path for backups generated prior to 8.9 */
@@ -403,7 +407,7 @@ public final class S3BackupStore implements BackupStore {
     return client
         .headBucket(HeadBucketRequest.builder().bucket(config.bucketName()).build())
         .whenCompleteAsync(
-            (HeadBucketResponse ignore, @Nullable Throwable err) -> {
+            (final HeadBucketResponse ignore, @Nullable final Throwable err) -> {
               if (err != null) {
                 throw new ConfigurationException("Failed to connect to S3", err);
               }
@@ -412,11 +416,7 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return "%smetadata/%d/%s"
-        .formatted(
-            config.basePath().map(base -> base + "/").orElse(""),
-            partitionId,
-            METADATA_OBJECT_NAME);
+    return metadataPath(basePath, partitionId);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(
@@ -512,11 +512,17 @@ public final class S3BackupStore implements BackupStore {
       final BackupIdentifierWildcard wildcard) {
     final Set<BackupIdentifier> identifiers = ConcurrentHashMap.newKeySet();
     final Set<Long> legacyCheckpointIds = ConcurrentHashMap.newKeySet();
+    final var manifestPathPattern = manifestPathPattern(basePath, wildcard);
     final var current =
         forEachPage(
             wildcardPrefix(wildcard),
             Optional.empty(),
-            page -> collectManifestIdentifiers(page, wildcard, identifiers));
+            page ->
+                collectManifestIdentifiers(
+                    page,
+                    wildcard,
+                    key -> parseManifestKey(manifestPathPattern, key),
+                    identifiers));
     final CompletableFuture<Void> legacy;
     if (wildcard.partitionId().isPresent()) {
       legacy =
@@ -536,7 +542,8 @@ public final class S3BackupStore implements BackupStore {
           forEachPage(
               legacyWildcardPrefix(wildcard),
               Optional.empty(),
-              page -> collectManifestIdentifiers(page, wildcard, identifiers));
+              page ->
+                  collectManifestIdentifiers(page, wildcard, this::tryParseKeyAsId, identifiers));
     }
     return current.thenCombine(
         legacy,
@@ -551,14 +558,27 @@ public final class S3BackupStore implements BackupStore {
   private void collectManifestIdentifiers(
       final ListObjectsV2Response page,
       final BackupIdentifierWildcard wildcard,
+      final Function<String, Optional<BackupIdentifier>> parseKey,
       final Set<BackupIdentifier> identifiers) {
     page.contents().stream()
         .map(S3Object::key)
-        .filter(key -> key.endsWith(MANIFEST_OBJECT_KEY))
-        .map(this::tryParseKeyAsId)
+        .filter(key -> key.endsWith(MANIFEST_OBJECT_NAME))
+        .map(parseKey)
         .flatMap(Optional::stream)
         .filter(wildcard::matches)
         .forEach(identifiers::add);
+  }
+
+  private Optional<BackupIdentifier> parseManifestKey(final Pattern pattern, final String key) {
+    final var matcher = pattern.matcher(key);
+    if (!matcher.matches()) {
+      return Optional.empty();
+    }
+    final var id = parseManifestPath(matcher);
+    if (id.isEmpty()) {
+      LOG.warn("Tried interpreting key {} as a BackupIdentifier but failed", key);
+    }
+    return id;
   }
 
   private CompletableFuture<List<BackupStatus>> readPage(
@@ -635,8 +655,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<Set<BackupIdentifier>> listLegacyMembers(
       final BackupIdentifierWildcard wildcard, final long checkpointId) {
-    final var prefix =
-        legacyBasePrefix() + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
+    final var prefix = basePath + wildcard.partitionId().orElseThrow() + "/" + checkpointId + "/";
     final Set<BackupIdentifier> members = ConcurrentHashMap.newKeySet();
     return forEachPage(
             prefix,
@@ -688,16 +707,12 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  private String legacyBasePrefix() {
-    return config.basePath().map(base -> base + "/").orElse("");
-  }
-
   /**
    * Prefix under which a delimiter listing yields one common prefix per legacy checkpoint of the
    * wildcard's partition, narrowed by the checkpoint pattern where it has a prefix.
    */
   private String legacyCheckpointPrefix(final BackupIdentifierWildcard wildcard) {
-    return legacyBasePrefix()
+    return basePath
         + wildcard.partitionId().orElseThrow()
         + "/"
         + wildcard.checkpointPattern().prefix();
@@ -723,7 +738,7 @@ public final class S3BackupStore implements BackupStore {
         .getObject(
             req ->
                 req.bucket(config.bucketName())
-                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_KEY),
+                    .key(objectPrefix(id, Directory.MANIFESTS) + MANIFEST_OBJECT_NAME),
             AsyncResponseTransformer.toBytes())
         .exceptionallyCompose(
             throwable -> {
@@ -732,7 +747,7 @@ public final class S3BackupStore implements BackupStore {
                 return client.getObject(
                     req ->
                         req.bucket(config.bucketName())
-                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_KEY),
+                            .key(legacyObjectPrefix(id) + MANIFEST_OBJECT_NAME),
                     AsyncResponseTransformer.toBytes());
               }
               return CompletableFuture.failedFuture(throwable);
@@ -820,7 +835,7 @@ public final class S3BackupStore implements BackupStore {
                                     descriptor ->
                                         derivePath(descriptor, manifest.id(), Directory.MANIFESTS))
                                 .orElseGet(() -> objectPrefix(manifest.id(), Directory.MANIFESTS))
-                            + MANIFEST_OBJECT_KEY)
+                            + MANIFEST_OBJECT_NAME)
                     .build(),
             body)
         .thenApply(resp -> manifest);
@@ -860,7 +875,7 @@ public final class S3BackupStore implements BackupStore {
     final var builder = S3AsyncClient.builder();
 
     // Enable auto-tuning of various parameters based on the environment
-    builder.defaultsMode(DefaultsMode.AUTO);
+    builder.defaultsMode(config.defaultsMode().toSdk());
 
     // Enable legacy MD5 plugin if configured, as it is required for compatibility with S3
     // compatible storage systems that expect MD5 checksums in the request.
@@ -914,8 +929,8 @@ public final class S3BackupStore implements BackupStore {
   }
 
   public enum Directory {
-    MANIFESTS("manifests"),
-    CONTENTS("contents");
+    MANIFESTS(MANIFESTS_DIRECTORY_NAME),
+    CONTENTS(CONTENTS_DIRECTORY_NAME);
 
     private final String name;
 

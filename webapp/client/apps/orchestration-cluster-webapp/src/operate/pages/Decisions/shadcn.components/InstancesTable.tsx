@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {useState} from 'react';
 import {createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
@@ -102,7 +103,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			label: t('operate.decisions.ds.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
 				<DecisionInstanceLink
-					to="/operate/decisions/$decisionInstanceId"
+					to={`${OPERATE_BASE}/decisions/$decisionInstanceId` as const}
 					params={{decisionInstanceId: row.decisionEvaluationInstanceKey}}
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
@@ -148,9 +149,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			key: 'processInstanceKey',
 			label: t('operate.decisions.ds.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
-				row.processInstanceKey ? (
+				row.processInstanceKey && row.processInstanceKey !== '-1' ? (
 					<ProcessInstanceLink
-						to="/operate/processes/$processInstanceId"
+						to={`${OPERATE_BASE}/processes/$processInstanceId` as const}
 						params={{processInstanceId: row.processInstanceKey}}
 						title={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
 						aria-label={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}

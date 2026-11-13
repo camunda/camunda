@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -47,11 +48,12 @@ public class DecisionInstanceExportHandler
   @Override
   public void export(final Record<DecisionEvaluationRecordValue> record) {
     final DecisionEvaluationRecordValue value = record.getValue();
+    final List<EvaluatedDecisionValue> evaluatedDecisions = value.getEvaluatedDecisions();
 
-    int index = 1;
-    for (index = 1; index <= value.getEvaluatedDecisions().size(); index++) {
-      final EvaluatedDecisionValue evaluatedDecision = value.getEvaluatedDecisions().get(index - 1);
-      final DecisionInstanceDbModel decisionInstance = map(record, evaluatedDecision, index);
+    for (int index = 1; index <= evaluatedDecisions.size(); index++) {
+      final EvaluatedDecisionValue evaluatedDecision = evaluatedDecisions.get(index - 1);
+      final DecisionInstanceDbModel decisionInstance =
+          map(record, evaluatedDecision, index, evaluatedDecisions.size());
       decisionInstanceWriter.create(decisionInstance);
     }
   }
@@ -59,10 +61,10 @@ public class DecisionInstanceExportHandler
   // TODO move to common exporter util module #24002
   private DecisionInstanceState getState(
       final Record<DecisionEvaluationRecordValue> record,
-      final DecisionEvaluationRecordValue decisionEvaluation,
+      final int evaluatedDecisionsCount,
       final int i) {
     if (record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name())
-        && i == decisionEvaluation.getEvaluatedDecisions().size()) {
+        && i == evaluatedDecisionsCount) {
       return DecisionInstanceState.FAILED;
     } else {
       return DecisionInstanceState.EVALUATED;
@@ -72,9 +74,10 @@ public class DecisionInstanceExportHandler
   private DecisionInstanceDbModel map(
       final Record<DecisionEvaluationRecordValue> record,
       final EvaluatedDecisionValue evaluatedDecision,
-      final int index) {
+      final int index,
+      final int evaluatedDecisionsCount) {
     final DecisionEvaluationRecordValue value = record.getValue();
-    final var state = getState(record, value, index);
+    final var state = getState(record, evaluatedDecisionsCount, index);
     final var key = record.getKey();
     final var id =
         !Objects.equals(evaluatedDecision.getDecisionEvaluationInstanceKey(), "")
@@ -105,6 +108,7 @@ public class DecisionInstanceExportHandler
         .evaluationFailure(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value))
         .tenantId(value.getTenantId())
         .build();
   }

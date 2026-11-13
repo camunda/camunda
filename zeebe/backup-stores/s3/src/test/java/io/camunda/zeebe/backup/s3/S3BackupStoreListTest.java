@@ -71,6 +71,7 @@ final class S3BackupStoreListTest {
   private final List<ListObjectsV2Request> requests = new CopyOnWriteArrayList<>();
   private final Set<BackupIdentifier> readManifests = ConcurrentHashMap.newKeySet();
   private final Set<BackupIdentifier> vanishedManifests = ConcurrentHashMap.newKeySet();
+  private final List<String> foreignCurrentKeys = new ArrayList<>();
   private final Map<Long, List<Integer>> legacyMembers =
       new TreeMap<>(Map.of(500L, List.of(0), 700L, List.of(0, 2)));
   private S3BackupStore store;
@@ -198,6 +199,28 @@ final class S3BackupStoreListTest {
     assertThat(page)
         .extracting(BackupStatus::id)
         .containsExactlyInAnyOrder(id(0, 700), id(2, 700), id(0, 500));
+  }
+
+  @Test
+  void shouldSkipManifestKeysThatAreNotABackupIdentifier() {
+    // given
+    foreignCurrentKeys.addAll(
+        List.of(
+            "manifests/1/998/1x/manifest.json",
+            "manifests/1/998/1/nested/manifest.json",
+            "manifests/1/998/99999999999/manifest.json",
+            "manifests/1/998/%s_1/manifest.json".formatted("a".repeat(64))));
+
+    // when
+    final var page =
+        store
+            .list(partition(1), ListOptions.newestFirst(OptionalLong.empty(), OptionalInt.of(2)))
+            .join();
+
+    // then
+    assertThat(page)
+        .extracting(status -> status.id().checkpointId())
+        .containsExactly(999L, 700L, 700L);
   }
 
   @ParameterizedTest
@@ -361,7 +384,9 @@ final class S3BackupStoreListTest {
                 .toList(),
             "current-page-2");
       }
-      return objects(List.of("manifests/1/999/1/manifest.json"), null);
+      final var keys = new ArrayList<>(foreignCurrentKeys);
+      keys.add("manifests/1/999/1/manifest.json");
+      return objects(keys, null);
     }
     if (prefix.equals("1/") && delimited) {
       final var checkpoints = legacyMembers.keySet().stream().map("1/%d/"::formatted).toList();

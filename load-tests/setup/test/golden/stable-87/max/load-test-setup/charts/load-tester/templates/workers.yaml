@@ -118,7 +118,7 @@ spec:
             - name: LOAD_TESTER_WORKER_CAPACITY
               value: "60"
             - name: LOAD_TESTER_WORKER_THREADS
-              value: "10"
+              value: "30"
             - name: LOAD_TESTER_WORKER_COMPLETION_DELAY
               value: "50ms"
             - name: LOAD_TESTER_WORKER_WORKER_NAME

@@ -77,6 +77,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
@@ -99,7 +100,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
+import io.camunda.zeebe.engine.processing.usertask.UserTaskLookupFetchProcessor;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -120,6 +123,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskLookupIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -403,14 +407,17 @@ public final class EngineProcessors {
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState,
-            bpmnBehaviors,
-            writers,
-            asyncRequestBehavior,
-            cslCheck,
-            tenantCheck,
-            suspensionMetrics);
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
+    typedRecordProcessors.onCommand(
+        ValueType.USER_TASK_LOOKUP,
+        UserTaskLookupIntent.FETCH,
+        new UserTaskLookupFetchProcessor(
+            processingState,
+            writers,
+            tenantCheck,
+            new UserTaskAuthorizationCheck(cslCheck),
+            config.getMaxResponseMessageSize()));
 
     addIncidentProcessors(
         processingState,
@@ -502,11 +509,15 @@ public final class EngineProcessors {
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
+    PolicyUpdateProcessors.addPolicyUpdateProcessors(
+        typedRecordProcessors, processingState, keyGenerator, writers, commandDistributionBehavior);
+
     addResourceFetchProcessors(
         typedRecordProcessors, writers, processingState, permissionsBehavior, tenantCheck, config);
 
     BatchOperationSetupProcessors.addBatchOperationProcessors(
         keyGenerator,
+        storageOrdinalProvider,
         typedRecordProcessors,
         writers,
         commandDistributionBehavior,
@@ -659,8 +670,7 @@ public final class EngineProcessors {
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck,
-      final SuspensionMetrics suspensionMetrics) {
+      final CslTenantCheck tenantCheck) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -669,8 +679,7 @@ public final class EngineProcessors {
         writers,
         asyncRequestBehavior,
         cslCheck,
-        tenantCheck,
-        suspensionMetrics);
+        tenantCheck);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(

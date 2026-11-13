@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationAuthorizationCheck;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -57,6 +59,7 @@ public final class BatchOperationCreationCreateProcessor
       "Expected to create a batch operation with key: '%d', but a batch operation command with this key already exists";
 
   private final KeyGenerator keyGenerator;
+  private final StorageOrdinalProvider storageOrdinalProvider;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -70,6 +73,7 @@ public final class BatchOperationCreationCreateProcessor
       final Writers writers,
       final ProcessingState state,
       final KeyGenerator keyGenerator,
+      final StorageOrdinalProvider storageOrdinalProvider,
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
@@ -79,6 +83,7 @@ public final class BatchOperationCreationCreateProcessor
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
+    this.storageOrdinalProvider = storageOrdinalProvider;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
@@ -87,6 +92,9 @@ public final class BatchOperationCreationCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    // Stamped before validation so a rejected CREATE carries the active storage ordinal too.
+    command.getValue().setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
+
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
@@ -178,9 +186,20 @@ public final class BatchOperationCreationCreateProcessor
       final TypedRecord<BatchOperationCreationRecord> command) {
 
     if (!DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getAuthorizationCheckBuffer())) {
-      final RequiredAuthorization<?> authorization =
+      final var check =
           MsgPackConverter.convertToObject(
-              command.getValue().getAuthorizationCheckBuffer(), RequiredAuthorization.class);
+              command.getValue().getAuthorizationCheckBuffer(),
+              BatchOperationAuthorizationCheck.class);
+      // the resource id supplier and condition are not part of the wire format
+      final RequiredAuthorization<?> authorization =
+          new RequiredAuthorization<>(
+              check.resourceType(),
+              check.permissionType(),
+              check.resourceIds(),
+              null,
+              check.resourcePropertyNames(),
+              null,
+              check.transitive());
       return cslCheck.checkForDistributedCommand(
           command,
           authorization,

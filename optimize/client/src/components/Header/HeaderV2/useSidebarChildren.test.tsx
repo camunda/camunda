@@ -8,7 +8,7 @@
 
 import {ShallowWrapper, shallow} from 'enzyme';
 import {useLocation} from 'react-router-dom';
-import type {SidebarGroupItem, SidebarNode} from '@camunda/design-system';
+import type {SidebarGroup, SidebarNode} from '@camunda/design-system';
 
 import useSidebarChildren from './useSidebarChildren';
 
@@ -30,8 +30,8 @@ function getItems(node: ShallowWrapper): SidebarNode[] {
   return (node.props() as {'data-items': SidebarNode[]})['data-items'];
 }
 
-function getAnalysis(node: ShallowWrapper): SidebarGroupItem {
-  return getItems(node).find((item) => item.key === 'analysis') as SidebarGroupItem;
+function getAnalysis(node: ShallowWrapper): SidebarGroup {
+  return getItems(node).find((item) => item.key === 'analysis') as SidebarGroup;
 }
 
 it('should render no navigation when actions are hidden', () => {
@@ -61,7 +61,7 @@ it('should expand the analysis group while on an analysis route', () => {
   (useLocation as jest.Mock).mockReturnValue({pathname: '/analysis/branchAnalysis'});
   const node = shallow(<Sidebar />);
 
-  expect(getAnalysis(node)).toMatchObject({isActive: true, isExpanded: true});
+  expect(getAnalysis(node).isExpanded).toBe(true);
 });
 
 it('should allow collapsing the analysis group while on an analysis route', () => {
@@ -78,7 +78,7 @@ it('should collapse the analysis group outside of the analysis routes', () => {
   (useLocation as jest.Mock).mockReturnValue({pathname: '/collections'});
   const node = shallow(<Sidebar />);
 
-  expect(getAnalysis(node)).toMatchObject({isActive: false, isExpanded: false});
+  expect(getAnalysis(node).isExpanded).toBe(false);
 });
 
 it('should keep a manual collapse when leaving and returning to the analysis routes', () => {

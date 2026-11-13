@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "86e654601b9095255cb37e895077096818ed374b",
-    "generatedAt": "2026-10-25T12:11:06.815Z",
+    "commit": "a12381989e86d2b77099c3601aac41747f6248a8",
+    "generatedAt": "2026-11-13T12:08:33.738Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "cce92a4b7e0bb25d99e0ade651c43c4241d63f10c939ef5c3b0d1214dea7e89d"
+    "specSha256": "e1264a1f1333c62a1a6f89299a136bc61313fe11fd436b3a82f6f92110599cc0"
   },
   "responses": [
     {
@@ -1336,6 +1336,10 @@
             "type": "array<string>"
           },
           {
+            "name": "isAnonymous",
+            "type": "boolean"
+          },
+          {
             "name": "roles",
             "type": "array<string>"
           },
@@ -1368,7 +1372,8 @@
           },
           {
             "name": "username",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -1442,6 +1447,7 @@
                     "GROUP",
                     "MAPPING_RULE",
                     "MESSAGE",
+                    "PROBE",
                     "PROCESS_DEFINITION",
                     "RESOURCE",
                     "ROLE",
@@ -1565,6 +1571,7 @@
                     "GROUP",
                     "MAPPING_RULE",
                     "MESSAGE",
+                    "PROBE",
                     "PROCESS_DEFINITION",
                     "RESOURCE",
                     "ROLE",
@@ -1669,6 +1676,7 @@
               "GROUP",
               "MAPPING_RULE",
               "MESSAGE",
+              "PROBE",
               "PROCESS_DEFINITION",
               "RESOURCE",
               "ROLE",
@@ -3476,6 +3484,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -3677,6 +3690,11 @@
               "UNSPECIFIED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "tenantId",
@@ -6167,6 +6185,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -7855,6 +7878,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "suspendedDate",
                   "type": "string",
                   "nullable": true
@@ -8013,6 +8041,11 @@
               "SUSPENDED",
               "TERMINATED"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "suspendedDate",
@@ -12146,20 +12179,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12254,6 +12273,128 @@
       }
     },
     {
+      "path": "/user-tasks/{userTaskKey}/lookup",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "assignee",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "candidateGroups",
+            "type": "array<string>"
+          },
+          {
+            "name": "candidateUsers",
+            "type": "array<string>"
+          },
+          {
+            "name": "creationDate",
+            "type": "string"
+          },
+          {
+            "name": "customHeaders",
+            "type": "object"
+          },
+          {
+            "name": "dueDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "elementId",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "externalFormReference",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "followUpDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "formKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "processDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "processDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "processInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "state",
+            "type": "string",
+            "enumValues": [
+              "CREATING",
+              "CREATED",
+              "ASSIGNING",
+              "CLAIMING",
+              "UPDATING",
+              "COMPLETING",
+              "CANCELING"
+            ]
+          },
+          {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          },
+          {
+            "name": "tenantId",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
+          },
+          {
+            "name": "userTaskKey",
+            "type": "string"
+          },
+          {
+            "name": "variables",
+            "type": "object"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/user-tasks/{userTaskKey}/variables/search",
       "method": "POST",
       "status": "200",
@@ -12267,20 +12408,6 @@
                 {
                   "name": "isTruncated",
                   "type": "boolean"
-                },
-                {
-                  "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
                 },
                 {
                   "name": "name",
@@ -12362,20 +12489,6 @@
                   "type": "boolean"
                 },
                 {
-                  "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
-                  "children": {
-                    "required": [
-                      {
-                        "name": "protectionModes",
-                        "type": "array<string>"
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12445,20 +12558,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "metadata",
-            "type": "object",
-            "nullable": true,
-            "children": {
-              "required": [
-                {
-                  "name": "protectionModes",
-                  "type": "array<string>"
-                }
-              ],
-              "optional": []
-            }
-          },
           {
             "name": "name",
             "type": "string"

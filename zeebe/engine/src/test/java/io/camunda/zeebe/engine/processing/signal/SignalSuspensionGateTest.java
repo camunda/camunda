@@ -8,12 +8,12 @@
 package io.camunda.zeebe.engine.processing.signal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -93,10 +93,15 @@ public final class SignalSuspensionGateTest {
       } else {
         // transient states are seeded directly, as a real suspend or resume passes through them
         // within a single command and never exposes them to a later signal
-        await().until(ENGINE::hasReachedEnd);
-        ((MutableProcessingState) ENGINE.getProcessingState())
-            .getSuspensionState()
-            .setSuspensionState(processInstanceKey, state);
+        // a written event is only applied on replay, so restart the engine around the write
+        ENGINE.pauseProcessing(1);
+        ENGINE.stop();
+        ENGINE.writeRecords(
+            RecordToWrite.event()
+                .key(processInstanceKey)
+                .processInstance(
+                    ProcessInstanceIntent.valueOf(state.name()), new ProcessInstanceRecord()));
+        ENGINE.start();
       }
 
       // when

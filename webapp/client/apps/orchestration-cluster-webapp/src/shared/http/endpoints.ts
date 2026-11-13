@@ -904,6 +904,16 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	getMappingRule: ({mappingRuleId}: Pick<MappingRule, 'mappingRuleId'>) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.getMappingRule.getUrl({mappingRuleId: encodeURIComponent(mappingRuleId)})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getMappingRule.method,
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
 	createMappingRule: (body: CreateMappingRuleRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.createMappingRule.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
@@ -932,8 +942,8 @@ const endpoints = {
 			},
 		),
 
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl()), {
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl(options)), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.searchClusterVariables.method,
 			body: JSON.stringify(body),
@@ -1342,6 +1352,12 @@ const endpoints = {
 	// Served as `window.clientConfig = {...};` by the Admin client config controller.
 	getAdminClientConfig: () =>
 		new Request(getFullURL('/admin/config.js'), {
+			...BASE_REQUEST_OPTIONS,
+			method: 'GET',
+		}),
+
+	getOperateClientConfig: () =>
+		new Request(getFullURL('/operate/client-config.js'), {
 			...BASE_REQUEST_OPTIONS,
 			method: 'GET',
 		}),

@@ -57,6 +57,7 @@ v2/
 ├── filters.yaml               ← Advanced filter schemas (string, integer, date-time)
 ├── keys.yaml                  ← Key type schemas (LongKey, ProcessDefinitionKey, …)
 ├── identifiers.yaml           ← Identifier types (TenantId, ProcessDefinitionId, …)
+├── common-schemas.yaml        ← Value schemas shared across domains (ClearableDateTime, …)
 ├── cursors.yaml               ← Cursor schemas for pagination
 ├── <domain>.yaml              ← Per-domain paths + schemas (e.g., process-definitions.yaml)
 ```
@@ -308,16 +309,18 @@ You are probably reaching for `T | undefined` in JS, and `T | Unset` in Python. 
 
 The exception to this is a PATCH operation where sending an explicit `null` is semantically meaningful: it erases any previous set value.
 
+This is enforced by the `no-nullable-request-properties` Spectral rule. The rule has no built-in PATCH exemption: none of the existing PATCH fields erase a value on `null` (they treat it like omission), so exempting PATCH by method would approve exactly those. A field where an explicit `null` genuinely erases the stored value is added to the rule's allowlist, `zeebe/gateway-protocol/spectral-functions/verifyNoNullableRequestProperties.allowlist.json`, keyed by operationId and normalized field path (e.g. `changeset.dueDate`, `items[].name`, or `<root>` for the body schema itself). Each entry belongs to a group carrying a `reason` that explains the erase semantics, and needs API Governance review. Request fields that were already released as `nullable` are grandfathered in the same file.
+
 ### 2.5 Eventually consistent annotation (`x-eventually-consistent`)
 
-Every operation **should** declare `x-eventually-consistent` explicitly:
+Every operation **must** declare `x-eventually-consistent` explicitly:
 
 |                     Operation type                      |  Value  |                   Reason                    |
 |---------------------------------------------------------|---------|---------------------------------------------|
 | **Queries** (search, statistics, GET reads)             | `true`  | Read from eventually-consistent projections |
 | **Commands** (create, update, delete, complete, assign) | `false` | Synchronous writes                          |
 
-> **What the Spectral rule enforces:** The `no-eventually-consistent-on-commands` rule only prevents command (mutating) operations from being marked `x-eventually-consistent: true`. It does **not** require the extension to be present on every operation, nor does it enforce that query operations set it to `true`. Declaring the annotation on all operations is a **team convention** for clarity and SDK correctness; setting `true` on a command causes SDK generators to emit unnecessary polling wrappers.
+> **What the Spectral rules enforce:** `require-eventually-consistent` fails the build when an operation does not declare `x-eventually-consistent` as a boolean `true` or `false`. `no-eventually-consistent-on-commands` additionally prevents command (mutating) operations from being marked `true`, since that makes SDK generators emit unnecessary polling wrappers. Neither rule checks that query operations set it to `true` — that remains a reviewer responsibility.
 
 #### Relationship to `@RequiresSecondaryStorage`
 
@@ -1561,6 +1564,43 @@ conditioning (those use different mechanisms). If a new case needs nested
 request paths or non-scalar matchers, extend this section and the
 `present-when-shape` rule together rather than overloading the existing shape.
 
+### 2.22 Clearable values (`x-clearable`)
+
+Some request fields have three states: omitted or `null` keeps the persisted value, a value sets
+it, and an empty string clears it. Do not declare such a field with a typed `format` such as
+`date-time` alone: `""` is not a valid date-time, so the schema would reject the documented way
+to clear the field, and generated SDKs would type the field so that it cannot hold `""`.
+
+Reference a clearable schema from `common-schemas.yaml` instead, and state in the description how
+the field is cleared:
+
+```yaml
+dueDate:
+  allOf:
+    - $ref: 'common-schemas.yaml#/components/schemas/ClearableDateTime'
+  description: The due date of the task. Clear by providing an empty String.
+```
+
+`ClearableDateTime` is an `anyOf` of a `date-time` string and an empty string (`maxLength: 0`),
+marked with `x-clearable: true`. `x-clearable` tells SDK generators to keep the typed value (for
+example a date-time type) and add an explicit way to clear it, rather than generating a string
+union. To make another type clearable, add a schema of the same shape to `common-schemas.yaml`.
+The gateway and the Java client map `ClearableDateTime` to `String` (`typeMappings` in
+`gateways/gateway-model` and `clients/java`, in both the Maven and Gradle builds); a new
+clearable schema needs the same mappings.
+
+Two Spectral rules check the marker and its uses:
+
+- `clearable-schema-accepts-empty-string`: a schema with `x-clearable` must set it to `true`,
+  must not declare its own `format`, and must accept `""` through an `anyOf` member with
+  `maxLength: 0`.
+- `clearable-reference-declares-no-format`: a property that references a clearable schema must
+  not declare a `format` next to the reference.
+
+The rules cannot tell which fields are meant to be clearable: nothing checks that a field
+described as cleared by an empty string actually references a clearable schema. That decision,
+and the description wording, are left to the author and reviewer.
+
 ---
 
 ## 3. Spectral linting & custom rules
@@ -1594,24 +1634,28 @@ spectral lint "zeebe/gateway-protocol/src/main/proto/v2/*.yaml" \
 
 The ruleset lives in `zeebe/gateway-protocol/.spectral.yaml`. Custom functions are in `spectral-functions/`.
 
-|                    Rule                    | Severity |                                                                 What it checks                                                                  |
-|--------------------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                                                                      |
-| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                       |
-| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                |
-| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                 |
-| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                                                                          |
-| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                               |
-| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                 |
-| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                 |
-| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                |
-| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                 |
-| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                   |
-| `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17)                                               |
-| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)                                                       |
-| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                                                                         |
-| `no-ambiguous-identifier-property`         | error    | Schema properties must not be a bare `id` or `key` — use a qualified name (see §2.2). Pre-existing contracts are grandfathered via an allowlist |
-| `no-ambiguous-identifier-property-inline`  | error    | Same check for inline request/response/parameter schemas, with no allowlist                                                                     |
+|                    Rule                    | Severity |                                                                  What it checks                                                                   |
+|--------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operation-tag-defined`                    | error    | Every operation must have at least one tag                                                                                                        |
+| `no-period-in-summary`                     | error    | Path summaries must not end with a period                                                                                                         |
+| `no-flow-node-in-*` (5 rules)              | error    | "flow node" terminology is banned; use "element"                                                                                                  |
+| `require-property-descriptions`            | error    | Every schema property must have a `description`                                                                                                   |
+| `operation-key-properties-must-be-strings` | warn     | Path parameters ending in `Key` must be `type: string`                                                                                            |
+| `schema-key-properties-must-be-strings`    | warn     | Schema properties ending in `Key` must be `type: string` (or compose `BasicStringFilterProperty`)                                                 |
+| `required-properties-must-exist`           | error    | Every entry in `required` must exist in `properties` or `allOf`                                                                                   |
+| `array-properties-must-be-required`        | error    | Response array properties must be `required` and not `nullable`                                                                                   |
+| `no-nullable-request-properties`           | error    | Request body fields must not be `nullable` (see §2.4). Released contracts and approved PATCH "null erases" fields are allowlisted                 |
+| `no-eventually-consistent-on-commands`     | error    | Command operations must not have `x-eventually-consistent: true`                                                                                  |
+| `require-eventually-consistent`            | error    | Every operation must declare `x-eventually-consistent` as `true` or `false` (see §2.5)                                                            |
+| `valid-deprecated-enum-members`            | error    | `x-deprecated-enum-members` must be well-formed                                                                                                   |
+| `require-added-in-version`                 | error    | Every operation must declare `x-added-in-version` (see §2.17)                                                                                     |
+| `properties-added-in-version-shape`        | error    | `x-properties-added-in-version` entries must be `{propertyName, addedInVersion}` only (see §2.17)                                                 |
+| `require-scope`                            | error    | Every operation must declare `x-scope` as `cluster-wide` or `physical-tenant` (see §2.20)                                                         |
+| `oas3-valid-schema-example`                | error    | Schemas must be valid per OpenAPI 3.0 JSON Schema rules                                                                                           |
+| `no-ambiguous-identifier-property`         | error    | Schema properties must not be a bare `id` or `key` — use a qualified name (see §2.2). Pre-existing contracts are grandfathered via an allowlist   |
+| `no-ambiguous-identifier-property-inline`  | error    | Same check for inline request/response/parameter schemas, with no allowlist                                                                       |
+| `clearable-schema-accepts-empty-string`    | error    | A schema with `x-clearable` must set it to `true`, declare no `format`, and accept `""` through an `anyOf` member with `maxLength: 0` (see §2.22) |
+| `clearable-reference-declares-no-format`   | error    | A property referencing a clearable schema must not declare a `format` next to the reference (see §2.22)                                           |
 
 ### 3.4 Adding new Spectral rules
 

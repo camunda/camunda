@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Text} from '@camunda/design-system';
 import {Link, useMatchRoute} from '@tanstack/react-router';
 import {Bell, Calendar, CircleCheck, TriangleAlert} from '@camunda/design-system/icons';
@@ -19,6 +19,7 @@ import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatD
 import {AssigneeBadge} from './AssigneeBadge';
 import {DateLabel} from './DateLabel';
 import {PriorityLabel} from './PriorityLabel';
+import {SuspendedBadge} from './SuspendedBadge';
 
 type Props = {
 	userTaskKey: string;
@@ -31,7 +32,8 @@ type Props = {
 	dueDate: string | null;
 	completionDate: string | null;
 	priority: number | null;
-	currentUser: CurrentUser;
+	isSuspended: boolean;
+	currentUser: AuthenticatedCurrentUser;
 };
 
 const Task = React.forwardRef<HTMLDivElement, Props>(
@@ -47,6 +49,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 			dueDate: dueDateString,
 			completionDate: completionDateString,
 			priority,
+			isSuspended,
 			currentUser,
 		},
 		ref,
@@ -78,21 +81,25 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 						displayName,
 						assigneeId: assignee,
 						currentUsername: currentUser.username,
+						isSuspended,
 					})}
 				>
 					<div className="flex h-full w-full flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
-						<div className="flex min-h-5 flex-col justify-center">
-							<Text variant="label-md-strong" className="truncate" title={displayName}>
-								{displayName}
-							</Text>
-							<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={processDisplayName}>
-								{processDisplayName}
-							</Text>
-							{businessId === null ? null : (
-								<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={businessId}>
-									{businessId}
+						<div className="flex items-start justify-between gap-2">
+							<div className="flex min-h-5 min-w-0 flex-1 flex-col justify-center">
+								<Text variant="label-md-strong" className="truncate" title={displayName}>
+									{displayName}
 								</Text>
-							)}
+								<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={processDisplayName}>
+									{processDisplayName}
+								</Text>
+								{businessId === null ? null : (
+									<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={businessId}>
+										{businessId}
+									</Text>
+								)}
+							</div>
+							{isSuspended ? <SuspendedBadge isIconOnly /> : null}
 						</div>
 
 						<div className="flex min-h-5 items-center justify-between gap-2">

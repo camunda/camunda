@@ -69,11 +69,12 @@ public final class ClockTest {
     ENGINE.awaitProcessingOf(record);
 
     // then
+    Assertions.assertThat(record).hasIntent(ClockIntent.PINNED);
+    assertThat(record.getValue().getTime()).isEqualTo(fakeNow.toEpochMilli());
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.pinAt(fakeNow));
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
         .tryWriteResponse(anyInt(), anyLong());
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test
@@ -132,8 +133,7 @@ public final class ClockTest {
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.pinAt(fakeNow));
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test
@@ -148,11 +148,11 @@ public final class ClockTest {
     ENGINE.awaitProcessingOf(record);
 
     // then
+    Assertions.assertThat(record).hasIntent(ClockIntent.RESETTED);
     assertThat(ENGINE.getStreamClock().instant()).isAfter(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.none());
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(0))
         .tryWriteResponse(anyInt(), anyLong());
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.none());
   }
 
   @Test
@@ -216,8 +216,7 @@ public final class ClockTest {
 
     // then
     assertThat(ENGINE.getStreamClock().instant()).isEqualTo(fakeNow);
-    assertThat(ENGINE.getProcessingState().getClockState().getModification())
-        .isEqualTo(Modification.pinAt(fakeNow));
+    assertThat(StoredClock.read(clockClient)).isEqualTo(Modification.pinAt(fakeNow));
   }
 
   @Test

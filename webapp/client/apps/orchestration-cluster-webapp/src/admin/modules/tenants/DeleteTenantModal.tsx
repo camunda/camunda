@@ -75,7 +75,7 @@ const DeleteTenantModal: React.FC<Props> = ({tenant, onClose, onDeleted}) => {
 					/>
 				</AlertDialogDescription>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={remove.isPending}>{t('admin.tenants.cancelButton')}</AlertDialogCancel>
+					<AlertDialogCancel disabled={remove.isPending}>{t('admin.tenants.cancel')}</AlertDialogCancel>
 					<AlertDialogAction
 						className={buttonVariants({variant: 'destructive'})}
 						disabled={remove.isPending}

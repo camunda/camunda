@@ -79,6 +79,7 @@ import io.camunda.client.api.command.GloballyScopedClusterVariableCreationComman
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ListSecretsCommandStep1;
+import io.camunda.client.api.command.LookupUserTaskCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -280,6 +281,7 @@ import io.camunda.client.impl.command.JobUpdatePriorityCommandImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.ListSecretsCommandImpl;
+import io.camunda.client.impl.command.LookupUserTaskCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PinClockCommandImpl;
@@ -420,6 +422,8 @@ import io.camunda.client.impl.statistics.request.ProcessDefinitionMessageSubscri
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceWaitStateStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
+import io.camunda.client.impl.tls.MtlsMaterial;
+import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.JobWorkerExecutors;
 import io.camunda.client.impl.util.VersionUtil;
@@ -430,11 +434,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -523,6 +525,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   public static ManagedChannel buildChannel(final CamundaClientConfiguration config) {
+    // Resolve and validate the mTLS material up front, before any transport's plaintext branch
+    // can silently skip it: configuring CAMUNDA_MTLS_* against plaintext-only addresses must fail
+    // here instead of building a plaintext client that ignores the material.
+    MtlsMaterial.fromConfiguration(config);
+
     final URI address;
     address = config.getGrpcAddress();
 
@@ -569,20 +576,15 @@ public final class CamundaClientImpl implements CamundaClient {
     final URI grpcAddress = config.getGrpcAddress();
     if (!AddressUtil.isPlaintextConnection(grpcAddress)) {
       final String certificatePath = config.getCaCertificatePath();
-      SslContext sslContext = null;
-
-      if (certificatePath != null) {
-        if (certificatePath.isEmpty()) {
-          throw new IllegalArgumentException(
-              "Expected valid certificate path but found empty path instead.");
-        }
-
-        try (final FileInputStream certInputStream = new FileInputStream(certificatePath)) {
-          sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
+      if (certificatePath != null && certificatePath.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Expected valid certificate path but found empty path instead.");
       }
+
+      // Builds the mTLS-aware context when CAMUNDA_MTLS_* material is configured, the legacy
+      // CA-certificate context when only caCertificatePath is set, and null (gRPC defaults)
+      // otherwise.
+      final SslContext sslContext = TlsContexts.createGrpcSslContext(config);
 
       channelBuilder.useTransportSecurity().sslContext(sslContext);
       if (config.getOverrideAuthority() != null) {
@@ -1384,6 +1386,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UserTaskGetRequest newUserTaskGetRequest(final long userTaskKey) {
     return new UserTaskGetRequestImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public LookupUserTaskCommandStep1 newLookupUserTaskCommand(final long userTaskKey) {
+    return new LookupUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
   }
 
   @Override

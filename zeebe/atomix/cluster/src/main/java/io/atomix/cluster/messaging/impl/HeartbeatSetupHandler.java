@@ -7,7 +7,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import static io.atomix.cluster.messaging.SbeUtil.*;
+import static io.atomix.cluster.messaging.impl.SbeUtil.*;
 
 import io.atomix.cluster.messaging.BooleanType;
 import io.atomix.cluster.messaging.HeartbeatSetupRequestDecoder;

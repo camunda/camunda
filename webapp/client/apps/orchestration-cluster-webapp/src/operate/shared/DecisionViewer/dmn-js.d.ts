@@ -16,7 +16,7 @@ declare module 'dmn-js-shared/lib/base/Manager' {
 		addMarker(elementId: string, marker: string): void;
 		removeMarker(elementId: string, marker: string): void;
 		resized(): void;
-		zoom(level: number | 'fit-viewport', position?: 'auto' | {x: number; y: number}): number;
+		zoom(level?: number | 'fit-viewport', position?: 'auto' | {x: number; y: number}): number;
 	};
 
 	type DrdOverlays = {

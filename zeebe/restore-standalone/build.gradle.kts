@@ -1,6 +1,10 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   implementation(project(":zeebe-restore"))
@@ -15,6 +19,7 @@ dependencies {
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":camunda-db-rdbms"))
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.slf4j.slf4j.api)

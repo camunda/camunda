@@ -53,6 +53,24 @@ describe('<AdminClusterVariablesPage />', () => {
 		toast.dismiss();
 	});
 
+	it('should offer to create the first cluster variable when there are no cluster variables', async () => {
+		const {screen} = await renderPage({clusterVariables: [], totalItems: 0});
+
+		await expect.element(screen.getByText('No cluster variables created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about cluster variables'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create cluster variable'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no cluster variables', async () => {
+		const {screen} = await renderPage({clusterVariables: [], totalItems: 0, search: {search: 'nothing'}});
+
+		await expect.element(screen.getByText('No cluster variables created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
 	it('should list the cluster variables with their scope', async () => {
 		const {screen} = await renderPage({
 			clusterVariables: [
@@ -69,12 +87,6 @@ describe('<AdminClusterVariablesPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'Tenant: tenant-a'})).toBeVisible();
 	});
 
-	it('should show an empty state when there are no cluster variables', async () => {
-		const {screen} = await renderPage({clusterVariables: [], totalItems: 0});
-
-		await expect.element(screen.getByText('No cluster variables found.')).toBeVisible();
-	});
-
 	it('should search by name once the reader stops typing', async () => {
 		const {screen, onSearchChange} = await renderPage();
 
@@ -84,10 +96,11 @@ describe('<AdminClusterVariablesPage />', () => {
 	});
 
 	it('should not overwrite newer input when a stale search term is applied', async () => {
-		const {screen} = await renderPage();
+		const {screen, onSearchChange} = await renderPage();
 		const searchBox = screen.getByRole('searchbox');
 
 		await userEvent.fill(searchBox, 'a');
+		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'a', page: undefined}), DEBOUNCED);
 		await userEvent.fill(searchBox, 'ab');
 
 		// Simulates the route applying the debounced "a" navigation while the reader kept typing.

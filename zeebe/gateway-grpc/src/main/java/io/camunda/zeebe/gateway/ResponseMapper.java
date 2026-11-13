@@ -601,7 +601,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobs() {
       return response.getJobsList().stream()
-          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries(), j.getJobLeaseToken()))
           .toList();
     }
 
@@ -613,7 +613,7 @@ public final class ResponseMapper {
     @Override
     public List<ActivatedJob> getJobsToDefer() {
       return sizeExceedingJobs.stream()
-          .map(j -> new ActivatedJob(j.getKey(), j.getRetries()))
+          .map(j -> new ActivatedJob(j.getKey(), j.getRetries(), j.getJobLeaseToken()))
           .toList();
     }
   }

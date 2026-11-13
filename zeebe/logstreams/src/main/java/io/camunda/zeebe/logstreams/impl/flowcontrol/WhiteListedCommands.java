@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -25,6 +26,9 @@ public class WhiteListedCommands {
           JobIntent.FAIL,
           JobIntent.YIELD,
           JobIntent.TIME_OUT,
+          UserTaskIntent.COMPLETE,
+          UserTaskIntent.ASSIGN,
+          UserTaskIntent.CLAIM,
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,

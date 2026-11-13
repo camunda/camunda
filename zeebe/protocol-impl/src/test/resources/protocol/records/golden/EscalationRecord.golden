@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.escalation;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -21,13 +22,15 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
   private final StringProperty escalationCodeProp = new StringProperty("escalationCode", "");
   private final StringProperty throwElementIdProp = new StringProperty("throwElementId", "");
   private final StringProperty catchElementIdProp = new StringProperty("catchElementId", "");
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   public EscalationRecord() {
-    super(4);
+    super(5);
     declareProperty(processInstanceKeyProp)
         .declareProperty(escalationCodeProp)
         .declareProperty(throwElementIdProp)
-        .declareProperty(catchElementIdProp);
+        .declareProperty(catchElementIdProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public void wrap(final EscalationRecord record) {
@@ -35,6 +38,7 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
     escalationCodeProp.setValue(record.getEscalationCode());
     throwElementIdProp.setValue(record.getThrowElementId());
     catchElementIdProp.setValue(record.getCatchElementId());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
   }
 
   @Override
@@ -74,6 +78,16 @@ public class EscalationRecord extends UnifiedRecordValue implements EscalationRe
 
   public EscalationRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public EscalationRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 

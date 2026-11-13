@@ -2,7 +2,8 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.server-conventions")
-  id("buildlogic.serial-test-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 dependencies {
@@ -10,7 +11,8 @@ dependencies {
   implementation(libs.org.jspecify.jspecify)
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-utils"))
   api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-protocol"))
@@ -18,8 +20,10 @@ dependencies {
   implementation(project(":zeebe-scheduler"))
   api(project(":zeebe-transport"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.io.micrometer.micrometer.commons)
   api(libs.io.micrometer.micrometer.core)
+  testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(project(":zeebe-protocol-test-util"))

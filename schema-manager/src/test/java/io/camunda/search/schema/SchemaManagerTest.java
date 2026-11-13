@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -498,6 +499,39 @@ class SchemaManagerTest {
   }
 
   /**
+   * Regression test for #66929. The replica read only exists to skip redundant writes, so a failure
+   * of it must not fail schema init, which retries without limit and blocks application start.
+   * Falling back to an empty map would instead look like "nothing has drifted" and skip every
+   * write, so every descriptor must be written.
+   */
+  @RegressionTest("https://github.com/camunda/camunda/issues/66929")
+  void shouldWriteReplicaSettingsForEveryDescriptorWhenReplicaCountsCannotBeRead() {
+    // given - the read fails with an exception the engine clients do not wrap
+    final var client = mock(SearchEngineClient.class);
+    final var indexA = new TestIndexDescriptor("index-a", "mappings.json");
+    final var indexB = new TestIndexDescriptor("index-b", "mappings.json");
+    when(client.getNumberOfReplicas(ALL_TEST_INDICES_WILDCARD))
+        .thenThrow(new IllegalStateException("unexpected JSON event"));
+    final var manager =
+        new SchemaManager(
+            client,
+            List.of(indexA, indexB),
+            List.of(),
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    // when
+    manager.startupOnce();
+    manager.close();
+
+    // then - schema init went on and wrote the configured replica count everywhere
+    verify(client).putSettings(eq(indexA), eq(Map.of("index.number_of_replicas", "1")));
+    verify(client).putSettings(eq(indexB), eq(Map.of("index.number_of_replicas", "1")));
+  }
+
+  /**
    * Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}. An
    * alias can point to more than one physical index (e.g. across a rollover), so the shared
    * snapshot can come back with several entries for one descriptor; a write must fire if any of
@@ -815,6 +849,55 @@ class SchemaManagerTest {
         assertThat(logs.messagesAt(Level.WARN))
             .noneSatisfy(message -> assertThat(message).contains("is pinned to"));
       }
+    }
+  }
+
+  @Nested
+  class TruncateIndicesTest {
+
+    @Test
+    void shouldRecreateIndicesInsteadOfDeletingDocuments() {
+      // given
+      schemaManager = createSchemaManager();
+
+      // when
+      final var truncated = schemaManager.truncateIndices();
+
+      // then
+      assertThat(truncated)
+          .containsOnly(
+              metadataIndex.getFullQualifiedName(), testIndexDescriptor.getFullQualifiedName());
+      truncated.forEach(
+          index -> verify(searchEngineClient, atLeastOnce()).deleteIndexIfExists(index));
+      verify(searchEngineClient).createIndex(eq(metadataIndex), any());
+      verify(searchEngineClient).createIndex(eq(testIndexDescriptor), any());
+      verify(searchEngineClient, never()).truncateIndex(anyString());
+    }
+
+    @Test
+    void shouldDeleteDocumentsIfSchemaIsManagedExternally() {
+      // given
+      config.schemaManager().setCreateSchema(false);
+      schemaManager = createSchemaManager();
+
+      // when
+      final var truncated = schemaManager.truncateIndices();
+
+      // then
+      truncated.forEach(index -> verify(searchEngineClient, atLeastOnce()).truncateIndex(index));
+      verify(searchEngineClient, never()).deleteIndexIfExists(anyString());
+      verify(searchEngineClient, never()).createIndex(any(), any());
+    }
+
+    private SchemaManager createSchemaManager() {
+      return new SchemaManager(
+          searchEngineClient,
+          indexDescriptors,
+          templateDescriptors,
+          config,
+          mock(IndexSchemaValidator.class),
+          "8.8.0",
+          null);
     }
   }
 

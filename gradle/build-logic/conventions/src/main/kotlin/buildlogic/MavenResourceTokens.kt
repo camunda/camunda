@@ -1,8 +1,8 @@
 package buildlogic
 
-import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.Transformer
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.CopySpec
 import org.gradle.kotlin.dsl.getByType
@@ -34,11 +34,18 @@ fun CopySpec.filterMavenResources(
     ),
   )
 
-  val filterArgs = mapOf("tokens" to tokens, "beginToken" to beginToken, "endToken" to endToken)
+  if (tokens.isEmpty()) return
+
+  val replacements = tokens.mapKeys { (key, _) -> beginToken + key + endToken }
+  val pattern = Regex(replacements.keys.joinToString("|") { Regex.escape(it) })
+  val replace =
+    Transformer<String?, String> { line ->
+      pattern.replace(line!!) { replacements.getValue(it.value) }
+    }
   if (matching == null) {
-    filter(filterArgs, ReplaceTokens::class.java)
+    filter(replace)
   } else {
-    filesMatching(matching) { filter(filterArgs, ReplaceTokens::class.java) }
+    filesMatching(matching) { filter(replace) }
   }
 }
 

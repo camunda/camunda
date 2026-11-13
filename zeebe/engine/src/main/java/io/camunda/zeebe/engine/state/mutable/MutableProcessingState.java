@@ -113,6 +113,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableClockState getClockState();
 
   @Override
+  MutablePolicyState getPolicyState();
+
+  @Override
   MutableRoleState getRoleState();
 
   @Override
@@ -150,6 +153,9 @@ public interface MutableProcessingState extends ProcessingState {
 
   @Override
   MutableSecretReferenceState getSecretReferenceState();
+
+  @Override
+  MutablePolicyUpdateState getPolicyUpdateState();
 
   KeyGenerator getKeyGenerator();
 }

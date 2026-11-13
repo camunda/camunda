@@ -6,11 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {StructuredListSkeleton} from '@carbon/react';
+import {Link, StructuredListSkeleton} from '@carbon/react';
 import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
+import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
+import {getOperateClientConfig} from '#/shared/config/getOperateClientConfig';
+import {mergePathname} from '#/shared/http/mergePathname';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 import {StructuredList} from '#/operate/shared/StructuredList/StructuredList';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
@@ -72,7 +75,10 @@ const ProcessInstanceDetails: React.FC = () => {
 
 	const waitStatesKey = isProcessScope ? processInstanceId : elementInstanceKey;
 	const isWaitStatesEnabled =
-		waitStatesKey !== undefined && isRunning && (isProcessScope || resolvedElementInstance?.state === 'ACTIVE');
+		getOperateClientConfig().waitStatesEnabled &&
+		waitStatesKey !== undefined &&
+		isRunning &&
+		(isProcessScope || resolvedElementInstance?.state === 'ACTIVE');
 	const {data: waitStatesData} = useQuery({
 		...waitStatesQuery({processInstanceKey: processInstanceId, elementInstanceKey: waitStatesKey ?? ''}),
 		enabled: isWaitStatesEnabled,
@@ -163,15 +169,13 @@ const ProcessInstanceDetails: React.FC = () => {
 								key: 'open-tasklist',
 								label: t('operate.processInstance.details.tasklist'),
 								value: (
-									<ProcessInstanceLink
-										to="/tasklist/$userTaskKey"
-										params={{userTaskKey: userTask.userTaskKey}}
-										search={{filter: tasklistFilter}}
+									<Link
+										href={`${mergePathname(getBootConfig().contextPath, `/tasklist/${userTask.userTaskKey}`)}?filter=${tasklistFilter}`}
 										target="_blank"
 										rel="noopener noreferrer"
 									>
 										{t('operate.processInstance.details.openTasklist')}
-									</ProcessInstanceLink>
+									</Link>
 								),
 							},
 						]

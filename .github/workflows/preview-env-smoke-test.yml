@@ -257,7 +257,8 @@ jobs:
         run: |
           # Start TCP proxy on port 443 (requires sudo for privileged port)
           # Use full path since sudo doesn't inherit PATH
-          sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
+          sudo --preserve-env=TELEPORT_PROXY,TELEPORT_AUTH_SERVER,TELEPORT_IDENTITY_FILE \
+            "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
           sleep 5
 
           # Verify tunnel is running
@@ -628,26 +629,3 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
-  # Hands the failing smoke-test legs to the central AlwaysGreen triage in
-  # camunda/c8-cross-component-e2e-tests, the same way
-  # docker-build-helm-integration.yml does.
-  #
-  # `base_ref: main` is only the fallback for a failing job that is not a recognised
-  # per-version leg: this workflow deploys four refs in ONE run, and triage maps each
-  # rendered `Run <version> Smoke Tests` job to the branch it actually deployed.
-  alwaysgreen-triage:
-    name: AlwaysGreen triage and fix dispatch
-    if: ${{ always() && github.event_name == 'schedule' && needs.test.result == 'failure' }}
-    needs:
-    - test
-    permissions:
-      contents: read
-    # Local path, not `@main`: on main the two resolve to the same file, and a local
-    # ref is what lets a change to the shim be tested by the PR that makes it.
-    uses: ./.github/workflows/alwaysgreen-triage.yml
-    secrets: inherit
-    with:
-      # Only the fallback for a failing job that is not a recognised per-version leg;
-      # the central triage maps each leg to the branch it deployed.
-      base_ref: main

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.error;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -28,6 +29,7 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private static final StringValue STACKTRACE_KEY = new StringValue("stacktrace");
   private static final StringValue ERROR_EVENT_POSITION_KEY = new StringValue("errorEventPosition");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final StringProperty exceptionMessageProp = new StringProperty(EXCEPTION_MESSAGE_KEY);
   private final StringProperty stacktraceProp = new StringProperty(STACKTRACE_KEY, "");
@@ -36,12 +38,15 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
 
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+
   public ErrorRecord() {
-    super(4);
+    super(5);
     declareProperty(exceptionMessageProp)
         .declareProperty(stacktraceProp)
         .declareProperty(errorEventPositionProp)
-        .declareProperty(processInstanceKeyProp);
+        .declareProperty(processInstanceKeyProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public void initErrorRecord(final Throwable throwable, final long position) {
@@ -90,6 +95,16 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
 
   public ErrorRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public ErrorRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

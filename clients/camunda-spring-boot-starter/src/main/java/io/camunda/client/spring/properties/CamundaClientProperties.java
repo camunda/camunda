@@ -43,6 +43,9 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
 
+  @NestedConfigurationProperty
+  private CamundaClientMtlsProperties mtls = new CamundaClientMtlsProperties();
+
   /** The number of threads for invocation of job workers. */
   private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
 
@@ -52,6 +55,9 @@ public class CamundaClientProperties {
   /**
    * A custom <code>maxMessageSize</code> sets the maximum inbound message size the client can
    * receive from Camunda. It specifies the <code>maxInboundMessageSize</code> of the gRPC channel.
+   * For document downloads, it is the size of the buffer that holds the content until the
+   * application reads it, not a limit on the document size. The buffer can grow larger if the
+   * application reads more slowly than the network delivers the content.
    */
   private DataSize maxMessageSize = DataSize.ofBytes(DEFAULT_MAX_MESSAGE_SIZE);
 
@@ -307,6 +313,14 @@ public class CamundaClientProperties {
 
   public void setAuth(final CamundaClientAuthProperties auth) {
     this.auth = auth;
+  }
+
+  public CamundaClientMtlsProperties getMtls() {
+    return mtls;
+  }
+
+  public void setMtls(final CamundaClientMtlsProperties mtls) {
+    this.mtls = mtls;
   }
 
   public boolean getEnabled() {

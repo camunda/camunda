@@ -173,7 +173,7 @@ function useHistoryController(instance: ProcessInstance) {
 			document.hidden ||
 			polling.current ||
 			pending.current.size > 0 ||
-			queries.some(({isFetching}) => isFetching)
+			client.isFetching({queryKey: ['instanceHistory', instanceKey]}) > 0
 		) {
 			return;
 		}

@@ -12,7 +12,7 @@ dependencies {
   implementation(libs.co.elastic.clients.elasticsearch.java.optimize)
   implementation(libs.org.springframework.spring.context)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)
-  implementation(libs.org.elasticsearch.client.elasticsearch.rest.client.optimize)
+  implementation(libs.co.elastic.clients.elasticsearch.rest5.client.optimize)
   implementation(libs.org.opensearch.client.opensearch.java) {
     exclude(group = "commons-logging", module = "commons-logging")
   }

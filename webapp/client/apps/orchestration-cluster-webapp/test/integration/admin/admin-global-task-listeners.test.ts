@@ -57,7 +57,11 @@ test.describe('Admin global task listeners', () => {
 	test('should create a global task listener', async ({adminGlobalTaskListenersPage, network, page}) => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
-				successResponse: HttpResponse.json(createQueryGlobalTaskListenersResponse()),
+				successResponse: HttpResponse.json(
+					createQueryGlobalTaskListenersResponse({
+						items: [createGlobalTaskListener({id: 'existing-listener', type: 'existing-type'})],
+					}),
+				),
 			}),
 		);
 
@@ -175,12 +179,17 @@ test.describe('Admin global task listeners', () => {
 	test('should search global task listeners by ID', async ({adminGlobalTaskListenersPage, network}) => {
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
-				successResponse: HttpResponse.json(createQueryGlobalTaskListenersResponse()),
+				successResponse: HttpResponse.json(
+					createQueryGlobalTaskListenersResponse({
+						items: [createGlobalTaskListener({id: 'existing-listener', type: 'existing-type'})],
+					}),
+				),
 			}),
 		);
 
 		await adminGlobalTaskListenersPage.goto();
 		await expect(adminGlobalTaskListenersPage.searchInput).toBeVisible();
+		await expect(adminGlobalTaskListenersPage.row('existing-listener')).toBeVisible();
 
 		network.use(
 			mockSearchGlobalTaskListenersEndpoint({
@@ -195,5 +204,6 @@ test.describe('Admin global task listeners', () => {
 		await adminGlobalTaskListenersPage.searchInput.fill('my-listener');
 
 		await expect(adminGlobalTaskListenersPage.row('my-listener')).toBeVisible();
+		await expect(adminGlobalTaskListenersPage.row('existing-listener')).not.toBeVisible();
 	});
 });

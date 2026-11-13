@@ -21,21 +21,12 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
+import io.camunda.client.impl.tls.TlsContexts;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Collections;
@@ -45,7 +36,6 @@ import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManagerFactory;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -79,6 +69,12 @@ public class HttpClientFactory {
   /** The versioned base context path of the cluster-scoped REST API */
   public static final String CLUSTER_API_PATH = "/cluster/v2";
 
+  /**
+   * Maximum age of a pooled connection, however often it is used. Without it, a connection to a
+   * replaced server pod keeps timing out forever, as busy clients never let it go idle.
+   */
+  static final TimeValue DEFAULT_CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
+
   private static final String PHYSICAL_TENANT_PATH_SEGMENT = "/physical-tenants/";
 
   /**
@@ -97,25 +93,33 @@ public class HttpClientFactory {
 
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
+  private final TimeValue connectionTimeToLive;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
   }
 
-  /** Lets tests shorten the margin of the response deadline. */
+  /** Lets tests shorten the margin of the response deadline and the connection lifetime. */
   HttpClientFactory(
-      final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
+    this.connectionTimeToLive = connectionTimeToLive;
   }
 
   public HttpClient createClient() {
+    return createClient(createConnectionManager());
+  }
+
+  /** Lets tests keep a handle on the connection pool to observe it. */
+  HttpClient createClient(final PoolingAsyncClientConnectionManager connectionManager) {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
-    final PoolingAsyncClientConnectionManager connectionManager = createConnectionManager();
     final CloseableHttpAsyncClient client =
         defaultClientBuilder(credentialsProvider, connectionManager)
             .setDefaultRequestConfig(defaultRequestConfig)
@@ -135,7 +139,7 @@ public class HttpClientFactory {
         credentialsProvider);
   }
 
-  private PoolingAsyncClientConnectionManager createConnectionManager() {
+  PoolingAsyncClientConnectionManager createConnectionManager() {
     final HttpClientHostnameVerifier hostnameVerifier =
         new HostnameVerifier(config.getOverrideAuthority());
     final TlsStrategy tlsStrategy =
@@ -147,17 +151,19 @@ public class HttpClientFactory {
         PoolingAsyncClientConnectionManagerBuilder.create()
             .setTlsStrategy(tlsStrategy)
             .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
-            // ResponseDeadlineChainHandler discards the whole connection on expiry, which is only
-            // safe with one exchange per HTTP/2 connection. Pin it, as newer httpclient5 versions
-            // default to multiplexing.
+            // ResponseDeadlineChainHandler and ExchangeAbortChainHandler discard the whole
+            // connection, which is only safe with one exchange per HTTP/2 connection. Pin it, as
+            // newer httpclient5 versions default to multiplexing.
             .setMessageMultiplexing(false)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
+            .setDefaultConnectionConfig(
+                ConnectionConfig.custom().setTimeToLive(connectionTimeToLive).build());
 
     if (config.useClientSideLoadBalancing()) {
       connectionManagerBuilder.setDnsResolver(new RandomizedDnsResolver());
-      // Use a short connection TTL to force frequent re-resolution of DNS. Without this,
-      // pooled connections are reused indefinitely, and the randomized DNS resolver would
-      // only take effect when a new connection is created — defeating load balancing.
+      // Use a much shorter connection TTL than the default to force frequent re-resolution of
+      // DNS. Otherwise the randomized DNS resolver only takes effect when a new connection is
+      // created, which would rarely happen and defeat load balancing.
       connectionManagerBuilder.setDefaultConnectionConfig(
           ConnectionConfig.custom().setTimeToLive(TimeValue.ofSeconds(1)).build());
     }
@@ -232,6 +238,7 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
+            .setRetryStrategy(new HttpRetryStrategy())
             .useSystemProperties(); // allow users to customize via system properties
 
     // Register a request-level interceptor that injects the Authorization header at the
@@ -260,6 +267,12 @@ public class HttpClientFactory {
         ChainElement.MAIN_TRANSPORT.name(),
         ResponseDeadlineChainHandler.NAME,
         new ResponseDeadlineChainHandler(responseDeadlineMargin));
+    // lets a document stream end its download when the application closes it early. It goes in
+    // front of the deadline handler, which must stay directly in front of the transport.
+    builder.addExecInterceptorBefore(
+        ResponseDeadlineChainHandler.NAME,
+        ExchangeAbortChainHandler.NAME,
+        new ExchangeAbortChainHandler());
 
     return builder;
   }
@@ -277,59 +290,12 @@ public class HttpClientFactory {
   }
 
   private SSLContext createSslContext() {
-    if (AddressUtil.isPlaintextConnection(config.getRestAddress())
-        || config.getCaCertificatePath() == null) {
+    if (AddressUtil.isPlaintextConnection(config.getRestAddress())) {
       return SSLContexts.createDefault();
     }
-
-    final KeyStore keyStore = createKeyStore();
-    try {
-      final TrustManagerFactory factory =
-          TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-      factory.init(keyStore);
-
-      final SSLContext context = SSLContexts.custom().build();
-      context.init(null, factory.getTrustManagers(), null);
-      return context;
-    } catch (final NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a {@link KeyStore} from a provided PEM certificate file. The file is expected to
-   * contain a PEM encoded certificate chain. This is done to maintain backwards compatibility with
-   * how TLS configuration is done in the Camunda Java client.
-   *
-   * <p>When loading the certificate chain into the key store, the certificate entry alias is set to
-   * the index of the certificate in the chain. This technique is also used by Netty for the gRPC
-   * communication API.
-   *
-   * @return the key store containing the CA certificate chain
-   */
-  private KeyStore createKeyStore() {
-    final File pemChain = new File(config.getCaCertificatePath());
-
-    try (final FileInputStream certificateStream = new FileInputStream(pemChain)) {
-      final KeyStore store = KeyStore.getInstance(KeyStore.getDefaultType());
-      store.load(null);
-
-      final CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-      int i = 1;
-      while (certificateStream.available() > 0) {
-        final Certificate certificate = certificateFactory.generateCertificate(certificateStream);
-        final String alias = Integer.toString(i);
-        store.setCertificateEntry(alias, certificate);
-        i++;
-      }
-
-      return store;
-    } catch (final CertificateException
-        | IOException
-        | KeyStoreException
-        | NoSuchAlgorithmException e) {
-      throw new RuntimeException(e);
-    }
+    // Handles the mTLS material (CAMUNDA_MTLS_*) as well as the legacy caCertificatePath, and
+    // falls back to the default context when neither is configured.
+    return TlsContexts.createRestSslContext(config);
   }
 
   /**

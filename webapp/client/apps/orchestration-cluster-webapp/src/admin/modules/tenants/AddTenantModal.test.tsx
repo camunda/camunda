@@ -14,7 +14,7 @@ import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {mockCreateTenantEndpoint, mockGetTenantEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockCreateTenantEndpoint, mockQueryTenantsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {AddTenantModal} from './AddTenantModal';
 
@@ -51,10 +51,11 @@ describe('<AddTenantModal />', () => {
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetTenantEndpoint({
-				successResponse: HttpResponse.json(
-					createTenant({tenantId: 'tenant-a', name: 'Tenant A', description: 'My tenant'}),
-				),
+			mockQueryTenantsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createTenant({tenantId: 'tenant-a', name: 'Tenant A', description: 'My tenant'})],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 

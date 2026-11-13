@@ -12,8 +12,8 @@ ARG JATTACH_CHECKSUM_ARM64="288ae5ed87ee7fe0e608c06db5a23a096a6217c9878ede53c4e3
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
-ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.4_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5"
+ARG BASE_IMAGE_PUBLIC="eclipse-temurin:25.0.5_8-jre-noble"
+ARG BASE_DIGEST_PUBLIC="sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce"
 ARG BASE="hardened"
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -81,10 +81,11 @@ WORKDIR /camunda
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
-COPY --link ${DISTBALL} camunda.tar.gz
+COPY --link ${DISTBALL} camunda.tar
 
+# tar detects gzip itself, so DISTBALL can be a .tar or a .tar.gz
 RUN mkdir camunda-zeebe && \
-    tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
+    tar xfv camunda.tar --strip 1 -C camunda-zeebe
 
 ARG TARGETARCH
 # Extract the target-arch RocksDB native lib into a system library dir and strip ALL
@@ -186,6 +187,35 @@ VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
 VOLUME ${CAMUNDA_HOME}/documents
 VOLUME /driver-lib
+
+# CVE-2026-114820: Oracle's Security Alert removes the eMudhra roots emSign G1, G2 and ECC G3 and
+# Sectigo's AAA Certificate Services from the JDK cacerts, but the bases still ship emSign G1 (and
+# on Temurin ECC G3) in ca-certificates. Deselect them in /etc/ca-certificates.conf, so
+# update-ca-certificates drops them from the OS bundle and keeps them out when a derived image runs
+# it to add its own CA. Temurin's JVM cacerts is separate, so G1 and G3 are also deleted from it by
+# fingerprint; on Minimus it is rebuilt from the OS bundle. The build fails if G1, G3 or AAA is left
+# in either store or a store looks truncated. emSign C1 and C3 are not part of Oracle's removal.
+RUN set -eu; \
+    g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    g1=40F6AF0346A99AA1CD1D555A4E9CCE62C7F9634603EE406615833DC8C8D00367; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    tmp=$(mktemp -d); \
+    chk() { \
+      awk -v a="$g3" -v b="$g1" -v c="$aaa" '$1=="SHA256:"{f=$2; gsub(":","",f); n++; if (f==a||f==b||f==c) x=1} END{exit (n>100 && !x ? 0 : 1)}' "$1" \
+        || { echo "forbidden root left in $2, or it looks truncated" >&2; exit 1; }; \
+    }; \
+    sed -i -E 's#^mozilla/(emSign_Root_CA_-_G1|emSign_ECC_Root_CA_-_G3)\.crt$#!&#' /etc/ca-certificates.conf; \
+    update-ca-certificates; \
+    keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
+    for fp in "$g3" "$g1"; do \
+      alias=$(awk -v fp="$fp" '/^Alias name: /{a=substr($0,13)} $1=="SHA256:"{f=$2; gsub(":","",f); if (f==fp) print a}' "$tmp/jvm.txt"); \
+      if [ -n "$alias" ]; then keytool -delete -cacerts -storepass changeit -alias "$alias"; fi; \
+    done; \
+    keytool -list -v -cacerts -storepass changeit > "$tmp/jvm.txt"; \
+    chk "$tmp/jvm.txt" "JVM cacerts"; \
+    keytool -printcert -file /etc/ssl/certs/ca-certificates.crt > "$tmp/os.txt"; \
+    chk "$tmp/os.txt" "OS bundle"; \
+    rm -rf "$tmp"
 
 COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options

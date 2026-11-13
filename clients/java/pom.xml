@@ -263,6 +263,16 @@
     </dependency>
 
     <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
@@ -354,6 +364,7 @@
             <typeMapping>OffsetDateTime=String</typeMapping>
             <!-- map complex String schemas to String -->
             <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+            <typeMapping>ClearableDateTime=String</typeMapping>
             <!-- map metadata values (oneOf string/number) to Object so they can carry their value -->
             <typeMapping>ClusterVariableResultBaseMetadataValue=Object</typeMapping>
             <!-- generates named models for inline oneOf properties -->

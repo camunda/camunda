@@ -6,12 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
 import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {ConversationMessage} from './ConversationMessage';
+
+vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
 
 describe('<ConversationMessage />', () => {
 	it.for([

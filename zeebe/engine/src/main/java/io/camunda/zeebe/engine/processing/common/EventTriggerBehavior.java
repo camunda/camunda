@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -274,8 +273,7 @@ public class EventTriggerBehavior {
             elementRecord.getStorageOrdinal(),
             elementRecord.getBpmnProcessIdBuffer(),
             elementRecord.getTenantId(),
-            variables,
-            VariableMetadataLookup.NONE);
+            variables);
       } catch (final ValidationException e) {
         throw new IllegalArgumentException(
             String.format(

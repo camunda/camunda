@@ -10,6 +10,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {createUser, mockProcessXML, searchResult} from 'modules/testUtils';
 import {Filters} from '../index';
+import {variableFilterStore} from 'modules/stores/variableFilter';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
@@ -604,5 +605,75 @@ describe('Optional Filters', () => {
       screen.queryByLabelText(/^batch operation key$/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/^business id$/i)).not.toBeInTheDocument();
+  });
+
+  it('should keep the variable filter when other filters change until reset', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper('/?active=true&suspended=true&incidents=true'),
+    });
+    const openVariableFilter = async () => {
+      await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+      await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+    };
+    const completed = screen.getByRole('checkbox', {name: 'Completed'});
+
+    await openVariableFilter();
+    await user.type(screen.getByTestId('single-condition-name'), 'foo');
+    await user.type(screen.getByTestId('single-condition-value'), '"bar"');
+    await vi.advanceTimersByTimeAsync(1000);
+    await user.click(completed);
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent('completed=true'),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('foo');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('"bar"');
+
+    await user.click(completed);
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).not.toHaveTextContent('completed'),
+    );
+    await user.click(screen.getByRole('button', {name: /reset filters/i}));
+    await openVariableFilter();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(screen.getByTestId('single-condition-name')).toHaveValue('');
+    expect(screen.getByTestId('single-condition-value')).toHaveValue('');
+  });
+
+  it('should keep unsubmitted filter inputs when the variable filter changes', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(
+      screen.getByTestId('optional-filter-menuitem-parentProcessInstanceKey'),
+    );
+    await user.click(screen.getByRole('button', {name: /^more filters$/i}));
+    await user.click(screen.getByTestId('optional-filter-menuitem-variable'));
+
+    await user.type(
+      screen.getByLabelText(/^parent process instance key$/i),
+      '1',
+    );
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
+    await user.type(screen.getByTestId('single-condition-name'), 'foo');
+    await user.type(screen.getByTestId('single-condition-value'), '"bar"');
+    await vi.advanceTimersByTimeAsync(1000);
+    await waitFor(() =>
+      expect(variableFilterStore.conditions).toEqual([
+        {name: 'foo', operator: 'equals', value: '"bar"'},
+      ]),
+    );
+
+    expect(screen.getByLabelText(/^parent process instance key$/i)).toHaveValue(
+      '1',
+    );
+    expect(
+      screen.getByText('Key has to be a 16 to 19 digit number'),
+    ).toBeInTheDocument();
   });
 });

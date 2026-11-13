@@ -36,11 +36,12 @@ function lintFixtureFile(fixtureName, fileName) {
 
   // Test isolation: each fixture lint must see the fixture's own registry,
   // or no registry at all. Inheriting an ambient SPECTRAL_SEMANTIC_KINDS_REGISTRY
-  // (or SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY) from the parent process would make
+  // (or SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY / SPECTRAL_NULLABLE_REQUEST_ALLOWLIST) from the parent process would make
   // results order- and environment-dependent.
   const env = { ...process.env };
   delete env.SPECTRAL_SEMANTIC_KINDS_REGISTRY;
   delete env.SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY;
+  delete env.SPECTRAL_NULLABLE_REQUEST_ALLOWLIST;
   const fixtureRegistry = path.join(fixtureDir, 'semantic-kinds.json');
   if (fs.existsSync(fixtureRegistry)) {
     env.SPECTRAL_SEMANTIC_KINDS_REGISTRY = fixtureRegistry;
@@ -48,6 +49,10 @@ function lintFixtureFile(fixtureName, fileName) {
   const permissionsRegistry = path.join(fixtureDir, 'resource-permissions.json');
   if (fs.existsSync(permissionsRegistry)) {
     env.SPECTRAL_RESOURCE_PERMISSIONS_REGISTRY = permissionsRegistry;
+  }
+  const nullableAllowlist = path.join(fixtureDir, 'nullable-request-allowlist.json');
+  if (fs.existsSync(nullableAllowlist)) {
+    env.SPECTRAL_NULLABLE_REQUEST_ALLOWLIST = nullableAllowlist;
   }
 
   try {

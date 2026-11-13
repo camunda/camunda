@@ -1,4 +1,8 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   api(libs.com.fasterxml.jackson.core.jackson.databind)
@@ -14,7 +18,7 @@ dependencies {
   api(libs.software.amazon.awssdk.s3)
   api(libs.software.amazon.awssdk.apache.client)
   implementation(project(":zeebe-util"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":camunda-cluster"))
   testImplementation(libs.org.testcontainers.testcontainers)
   testImplementation(libs.org.testcontainers.testcontainers.junit.jupiter)
   testImplementation(libs.org.testcontainers.testcontainers.localstack)

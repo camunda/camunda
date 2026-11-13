@@ -397,7 +397,50 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  /**
+   * Tracks the user tasks a suspension walk has suspended, keyed [processInstanceKey |
+   * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
+   * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
+   */
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL),
+
+  /**
+   * probeKey -> the probe, its lifecycle state ({@code ACTIVATABLE}, {@code
+   * WAITING_FOR_SECRET_RESOLUTION} or {@code ACTIVATED}) and the worker of the poll that collected
+   * it. A probe lives only on the partition that created it, until it ends.
+   */
+  PROBES(167, PARTITION_LOCAL),
+
+  /**
+   * [[probeId | probeKey] | tenantId] -> ∅: the probes that wait for a poll, found by a prefix scan
+   * on the probe ID, as jobs by their type in {@link #JOB_ACTIVATABLE_BY_PRIORITY}, without the
+   * priority.
+   */
+  PROBES_ACTIVATABLE(168, PARTITION_LOCAL),
+
+  /** [deadline | probeKey] -> ∅: the probes in deadline order, for the time-out scheduler. */
+  PROBE_DEADLINES(169, PARTITION_LOCAL),
+
+  /**
+   * The open policy update of the partition, keyed [updateId]: its identifiers and how many of its
+   * chunks are buffered. Only partition 1 holds one. Removed when the policy version is committed.
+   */
+  POLICY_UPDATE(170, PARTITION_LOCAL),
+
+  /**
+   * The buffered chunks of the open policy update, keyed [updateId | chunkIndex]. Removed with the
+   * update when the policy version is committed.
+   */
+  POLICY_UPDATE_CHUNK(171, PARTITION_LOCAL),
+
+  /**
+   * The committed policy of a partition that Hub manages, as a single row under a constant key.
+   * Global, so a partition added by scaling starts with the current policy version. An update that
+   * is still being applied is not part of it: that only exists on partition 1.
+   */
+  POLICY(172, GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

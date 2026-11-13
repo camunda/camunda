@@ -22,13 +22,12 @@ import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {ExpandedToolDetails} from '#/admin/modules/mcp-processes/ExpandedToolDetails';
 import type {McpProcessTool} from '#/admin/modules/mcp-processes/mcpProcessTools';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type McpProcessesSearch} from '#/admin/modules/mcp-processes/searchSchema';
+import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
 
 const EMPTY_CELL = '-';
 const SORTED_COLUMN_ID = 'toolName';
-const MCP_PROCESSES_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/mcp-processes/';
-
 type AdminMcpProcessesPageProps = {
 	tools: McpProcessTool[];
 	totalItems: number;
@@ -131,7 +130,7 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 					<p className="text-sm leading-5 text-muted-foreground">
 						{t('admin.mcpProcesses.guideBody')}
 						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
-							<a href={MCP_PROCESSES_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+							<a href={GUIDE_URLS.mcpProcesses} target="_blank" rel="noopener noreferrer">
 								{t('admin.mcpProcesses.guideLinkLabel')}
 							</a>
 						</Button>
@@ -144,7 +143,7 @@ const AdminMcpProcessesPage: React.FC<AdminMcpProcessesPageProps> = ({
 					</Label>
 					<SearchInput
 						id="mcp-processes-search"
-						className="max-w-sm min-w-48"
+						className="w-full sm:max-w-sm sm:min-w-48"
 						placeholder={t('admin.mcpProcesses.searchByToolName')}
 						value={searchDraft}
 						onChange={(event) => setSearchDraft(event.target.value)}

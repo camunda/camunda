@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -17,12 +18,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedComma
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class SuspensionAppliersTest {
@@ -111,6 +115,43 @@ public class SuspensionAppliersTest {
 
     // then
     assertThat(suspensionState.isSuspended(processInstanceKey)).isFalse();
+    assertThat(suspensionState.getSuspensionState(processInstanceKey)).isNull();
+
+    final List<Long> visitedKeys = new ArrayList<>();
+    suspensionState.visitBufferedCommands(
+        processInstanceKey, (key, command) -> visitedKeys.add(key));
+    assertThat(visitedKeys).isEmpty();
+  }
+
+  @ParameterizedTest(name = "parent process instance key {0}")
+  @ValueSource(longs = {-1L, 1L})
+  void shouldClearSuspensionAndBufferedCommandsWhenProcessInstanceTerminates(
+      final long parentProcessInstanceKey) {
+    // given - a suspended root instance, or a call activity's child instance, which can be
+    // suspended on its own
+    final long processInstanceKey = 6L;
+    final long bufferedCommandKey = 60L;
+    suspensionState.setSuspensionState(processInstanceKey, SuspensionState.State.SUSPENDED);
+    bufferedApplier.applyState(
+        bufferedCommandKey,
+        new BufferedCommandRecord().setProcessInstanceKey(processInstanceKey).setCommandKey(61L));
+    final var terminatedApplier =
+        new ProcessInstanceElementTerminatedV3Applier(
+            processingState.getElementInstanceState(),
+            processingState.getEventScopeInstanceState(),
+            processingState.getMultiInstanceState(),
+            mock(BufferedStartMessageEventStateApplier.class),
+            suspensionState);
+
+    // when
+    terminatedApplier.applyState(
+        processInstanceKey,
+        new ProcessInstanceRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setParentProcessInstanceKey(parentProcessInstanceKey)
+            .setBpmnElementType(BpmnElementType.PROCESS));
+
+    // then
     assertThat(suspensionState.getSuspensionState(processInstanceKey)).isNull();
 
     final List<Long> visitedKeys = new ArrayList<>();

@@ -36,7 +36,6 @@ import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -70,17 +69,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
 
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
 
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing

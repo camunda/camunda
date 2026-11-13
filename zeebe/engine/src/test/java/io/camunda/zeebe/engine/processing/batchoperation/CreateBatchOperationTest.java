@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -205,6 +206,7 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    engine.increaseTime(SCHEDULER_INTERVAL);
 
     // then
     assertThat(
@@ -241,6 +243,11 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    advanceSchedulerUntil(
+        r ->
+            r.getIntent() == BatchOperationExecutionIntent.EXECUTE
+                && r.getValue() instanceof final BatchOperationExecutionRecordValue v
+                && v.getBatchOperationKey() == batchOperationKey);
 
     // then
     assertThat(
@@ -268,7 +275,7 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
   }
 
   @Test
-  public void shouldCreateAndInitLargeResolveIncidentBatchOperation() {
+  public void shouldHalveAndRetryWhenCreateAndInitLargeResolveIncidentBatchOperation() {
     // given
     final int numItems = 3000;
     final var filterBuffer =
@@ -286,6 +293,11 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    advanceSchedulerUntil(
+        r ->
+            r.getIntent() == BatchOperationExecutionIntent.EXECUTE
+                && r.getValue() instanceof final BatchOperationExecutionRecordValue v
+                && v.getBatchOperationKey() == batchOperationKey);
 
     // then
     assertThat(
@@ -302,9 +314,9 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
                 .onlyEvents()
                 .limitByCount(
                     record -> record.getIntent().equals(BatchOperationIntent.INITIALIZING),
-                    4)) // reduce to 5000, 2500, 1250, 1250 and then one more init-phase
+                    8)) // three halvings from 5000 to 625, then five pages of 625 for 3000 items
         .extracting(r -> r.getValue().getSearchQueryPageSize())
-        .containsSequence(5000, 2500, 1250, 1250);
+        .containsSequence(5000, 2500, 1250, 625, 625, 625, 625, 625);
 
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()

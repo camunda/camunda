@@ -18,9 +18,27 @@ gh issue view <issue_number> --repo <owner>/<repo> --json labels,issueType
 |-----------------|-----------------------------------------------------------------------|
 | `severity/*`    | `critical` \| `high` \| `mid` \| `low` \| `unknown` — impact if it fires |
 | `likelihood/*`  | `high` \| `mid` \| `low` \| `unknown` — how often it fires             |
-| `component/*`   | owning module — see the path map in the repo's `AGENTS.md`            |
+| `component/*`   | owning module — see the Module map in `docs/architecture/overview.md` and the hints below |
 | `affects/8.x`   | release lines the bug affects                                        |
 | `discovered-by/*` | how the bug surfaced (load tests, chaos day, gameday, manual, QA automation) |
+
+`component/*` labels don't map 1:1 to the Module map. Zeebe-internal labels live under `zeebe/`:
+
+| Label | Path |
+|---|---|
+| `component/raft`, `component/gossip` | `zeebe/atomix/cluster/` |
+| `component/journal` | `zeebe/journal/` |
+| `component/scheduler` | `zeebe/scheduler/` |
+| `component/transport` | `zeebe/transport/` |
+| `component/snapshot` | `zeebe/snapshot/` |
+| `component/state` | `zeebe/zb-db/` |
+| `component/stream-platform` | `zeebe/stream-platform/` |
+| `component/engine`, `component/zeebe-engine` | `zeebe/engine/` |
+| `component/broker` | `zeebe/broker/` |
+| `component/protocol` | `zeebe/protocol/` |
+| `component/backup` | `zeebe/backup/` |
+| `component/exporter` | `zeebe/exporters/` |
+| `component/tasklist` | `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` |
 
 Org-level **urgency** (`immediate` / `next` / `planned` / `someday`) is derived from severity ×
 likelihood — `critical` severity always maps to `immediate`. This skill's target is `next` and

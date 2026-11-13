@@ -52,6 +52,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.metrics.StreamMetricsDoc;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -71,6 +72,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
@@ -119,6 +121,48 @@ public final class StreamProcessorTest {
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onResumed();
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onClose();
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldRecordDurationOfSlowOnRecoveredListener() throws Exception {
+    // given
+    // A listener slower than the WARN threshold must not prevent recovery from completing, and its
+    // duration must be observable through the timer. The WARN log is not asserted because the
+    // module has no log-capture test dependency.
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
+    doAnswer(
+            invocation -> {
+              // parkNanos can return early on an unpark permit, which the actor scheduler issues,
+              // so keep parking until the deadline has passed.
+              final long deadline = System.nanoTime() + slowBy.toNanos();
+              long remaining;
+              while ((remaining = deadline - System.nanoTime()) > 0) {
+                LockSupport.parkNanos(remaining);
+              }
+              return null;
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
+    final var meterRegistry = streamPlatform.getProcessorMeterRegistry();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("zeebe.stream.processor.on.recovered.listener.duration")
+                            .timers()
+                            .stream()
+                            .mapToDouble(timer -> timer.totalTime(TimeUnit.MILLISECONDS))
+                            .sum())
+                    .isGreaterThanOrEqualTo(slowBy.toMillis()));
   }
 
   @Test
@@ -183,6 +227,28 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldFailOpeningWhenSnapshotPositionIsNotInLog() throws Exception {
+    // given - a snapshot that claims a position which does not exist in the log
+    streamPlatform.startStreamProcessor();
+    final var zeebeDb = streamPlatform.getZeebeDb();
+    new DbLastProcessedPositionState(zeebeDb, zeebeDb.createContext()).markAsProcessed(1_000L);
+    streamPlatform.snapshot();
+    streamPlatform.closeStreamProcessor();
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    Mockito.clearInvocations(mockProcessorLifecycleAware);
+
+    // when - recovering from that snapshot
+    final var startingProcessor =
+        Assertions.assertThatThrownBy(() -> streamPlatform.startStreamProcessorNotAwaitOpening());
+
+    // then - opening fails with the recovery error, not an NPE or a timeout, and listeners know
+    startingProcessor
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasStackTraceContaining("Expected to find event with the snapshot position 1000");
+    verify(mockProcessorLifecycleAware, TIMEOUT).onFailed();
+  }
+
+  @Test
   public void shouldCallRecordProcessorLifecycle() {
     // given
     streamPlatform.writeBatch(
@@ -234,6 +300,22 @@ public final class StreamProcessorTest {
         .verify(defaultRecordProcessor, TIMEOUT)
         .onProcessingError(eq(processingError), any(), any());
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/12240")
+  void shouldCallOnErrorWhenProcessingOverflowsStack() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var processingError = new StackOverflowError("processing error");
+    doThrow(processingError).when(defaultRecordProcessor).process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT).onProcessingError(eq(processingError), any(), any());
   }
 
   @Test

@@ -21,7 +21,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
 function compareUsersBySort(a: User, b: User, queryKey: QueryKey): number {
 	const body = queryKey[1] as QueryUsersRequestBody | undefined;
@@ -58,6 +58,8 @@ function useUserMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 
+	const searchUser = (username: string) => queries.queryUsers({filter: {username}, page: {limit: 1}});
+
 	const invalidateUsers = () => queryClient.invalidateQueries({queryKey: ['users']});
 
 	const reconcileUsers = (confirmed: boolean) => {
@@ -86,9 +88,9 @@ function useUserMutations() {
 			});
 			toast.success(t('admin.users.userCreated', {username: user.username}));
 
-			void waitUntilReady(queryClient, queries.getUser(user.username)).then((ready) =>
-				reconcileUsers(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchUser(user.username), {
+				isReady: ({items}) => items.some((item) => item.username === user.username),
+			}).then((ready) => reconcileUsers(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.users.createUserFailed'), {description: await getErrorMessage(error)});
@@ -114,8 +116,9 @@ function useUserMutations() {
 			queryClient.setQueryData(queries.getUser(user.username).queryKey, user);
 			toast.success(t('admin.users.userUpdated', {username: user.username}));
 
-			void waitUntilReady(queryClient, queries.getUser(user.username), {
-				isReady: (data) => data.name === user.name && data.email === user.email,
+			void waitUntilReady(queryClient, searchUser(user.username), {
+				isReady: ({items}) =>
+					items.some((item) => item.username === user.username && item.name === user.name && item.email === user.email),
 			}).then((ready) => reconcileUsers(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -136,16 +139,9 @@ function useUserMutations() {
 			queryClient.removeQueries({queryKey: queries.getUser(username).queryKey});
 			toast.success(t('admin.users.userDeleted', {username}));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['userGone', username],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getUser({username}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileUsers);
+			void waitUntilReady(queryClient, searchUser(username), {
+				isReady: ({items}) => items.every((item) => item.username !== username),
+			}).then((ready) => reconcileUsers(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.users.deleteUserFailed'), {description: await getErrorMessage(error)});

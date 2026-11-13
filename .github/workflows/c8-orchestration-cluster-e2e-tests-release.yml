@@ -620,7 +620,7 @@ jobs:
           fi
 
       - name: Setup Java
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: '21'
@@ -1185,7 +1185,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
+                    "text": "${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<!subteam^S071S7HSWF7|qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
                   }
                 }
               ]

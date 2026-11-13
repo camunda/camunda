@@ -63,11 +63,9 @@ public class SequenceFlowDbReader extends AbstractEntityReader<SequenceFlowEntit
                     .page(convertPaging(dbSort, query.page())));
 
     final var hits =
-        executeQuery(
-            () ->
-                sequenceFlowMapper.search(dbQuery).stream()
-                    .map(SequenceFlowEntityMapper::toEntity)
-                    .toList());
+        sequenceFlowMapper.search(dbQuery).stream()
+            .map(SequenceFlowEntityMapper::toEntity)
+            .toList();
     return buildSearchQueryResult(hits.size(), hits, null);
   }
 }

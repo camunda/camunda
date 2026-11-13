@@ -86,7 +86,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
@@ -124,11 +124,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      uses: camunda/infra-global-github-actions/fossa/setup@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      uses: camunda/infra-global-github-actions/fossa/info@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -141,7 +141,7 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      uses: camunda/infra-global-github-actions/fossa/analyze@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -158,7 +158,7 @@ jobs:
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      uses: camunda/infra-global-github-actions/fossa/analyze@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -170,7 +170,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+      uses: camunda/infra-global-github-actions/fossa/pr-check@1a10a8e84ce7e9cbbfed6f1c482f5bff65748238 # fossa-1.1.1
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}

@@ -147,11 +147,11 @@ public class Raft {
   private Duration configurationChangeTimeout = Duration.ofSeconds(10);
 
   /**
-   * Sets how long a member joining a partition is given to catch up to the entry that admitted it.
-   * A join is only complete once the joiner has replicated that entry; until then it is a
-   * non-voting learner. If the joiner does not get there in time, the attempt fails and is retried
-   * from scratch, so a value below the time a joiner needs to replicate the backlog makes joins
-   * fail repeatedly. On slow networks or with large logs, raise it.
+   * Sets how long a member joining a partition may go without making progress towards the entry
+   * that admitted it. A join is only complete once the joiner has replicated that entry; until then
+   * it is a non-voting learner. If the joiner's commit index does not advance for this long, the
+   * attempt fails and is retried. Raise it if a joiner can go this long without committing
+   * anything, for example while receiving a very large snapshot.
    */
   private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
 

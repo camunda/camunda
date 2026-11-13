@@ -28,6 +28,7 @@ import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -261,10 +262,8 @@ public final class ReconfigurationHelper {
    * to what this node has itself persisted, so waiting for the local commit index - not the
    * leader's - is what guarantees the entry is durable here too.
    *
-   * <p>The wait runs on its own {@link RaftContext#getJoinCatchUpTimeout()} budget rather than what
-   * remains of the join-request deadline, which may be mostly spent on retries by the time the join
-   * is accepted: reaching the accepted index is paced by replication - potentially a snapshot
-   * install plus a log replay - not by request round-trips.
+   * <p>Fails only once a whole {@link RaftContext#getJoinCatchUpTimeout()} passes without this
+   * node's commit index advancing, as the time to catch up grows with the leader's backlog.
    *
    * @param index the index of the configuration entry admitting this member
    * @param result the future to complete once the entry commits locally
@@ -276,36 +275,7 @@ public final class ReconfigurationHelper {
       return;
     }
 
-    // Self-removing: whichever of the commit notification or the timeout fires first cancels the
-    // other. Needs a mutable field for the timeout handle because the timeout's callback captures
-    // the listener, so the listener must exist before the handle does.
-    final var listener =
-        new RaftCommitListener() {
-          Scheduled timeout;
-
-          @Override
-          public void onCommit(final long committedIndex) {
-            if (committedIndex < index) {
-              return;
-            }
-            raftContext.removeCommitListener(this);
-            timeout.cancel();
-            LOGGER.debug("Configuration entry at index {} committed locally", index);
-            result.complete(null);
-          }
-        };
-    listener.timeout =
-        threadContext.schedule(
-            raftContext.getJoinCatchUpTimeout(),
-            () -> {
-              raftContext.removeCommitListener(listener);
-              result.completeExceptionally(
-                  new TimeoutException(
-                      ("Join request was accepted at index %d, but that configuration entry did"
-                              + " not commit locally within the join catch-up timeout of %s")
-                          .formatted(index, raftContext.getJoinCatchUpTimeout())));
-            });
-    raftContext.addCommitListener(listener);
+    new LocalCommitWait(index, result).start();
   }
 
   public CompletableFuture<Void> leave() {
@@ -575,6 +545,62 @@ public final class ReconfigurationHelper {
               threadContext);
     } else {
       raftContext.transition(Role.CANDIDATE);
+    }
+  }
+
+  /** Waits for this node's commit index to reach {@link #index}, failing if it stops advancing. */
+  private final class LocalCommitWait implements RaftCommitListener {
+    private final long index;
+    private final CompletableFuture<Void> result;
+    private long lastAdvanceNanos;
+    private Scheduled progressCheck;
+
+    private LocalCommitWait(final long index, final CompletableFuture<Void> result) {
+      this.index = index;
+      this.result = result;
+    }
+
+    private void start() {
+      lastAdvanceNanos = System.nanoTime();
+      progressCheck = threadContext.schedule(raftContext.getJoinCatchUpTimeout(), this::check);
+      raftContext.addCommitListener(this);
+    }
+
+    @Override
+    public void onCommit(final long committedIndex) {
+      if (committedIndex < index) {
+        lastAdvanceNanos = System.nanoTime();
+        return;
+      }
+      raftContext.removeCommitListener(this);
+      progressCheck.cancel();
+      LOGGER.debug("Configuration entry at index {} committed locally", index);
+      result.complete(null);
+    }
+
+    private void check() {
+      if (result.isDone()) {
+        return;
+      }
+
+      final long commitIndex = raftContext.getCommitIndex();
+      final var idle = Duration.ofNanos(System.nanoTime() - lastAdvanceNanos);
+      final var remaining = raftContext.getJoinCatchUpTimeout().minus(idle);
+      if (remaining.isPositive()) {
+        LOGGER.debug(
+            "Still catching up to configuration entry at index {}, commit index is {}",
+            index,
+            commitIndex);
+        progressCheck = threadContext.schedule(remaining, this::check);
+        return;
+      }
+
+      raftContext.removeCommitListener(this);
+      result.completeExceptionally(
+          new TimeoutException(
+              ("Join request was accepted at index %d, but this member's commit index did not"
+                      + " advance from %d within the join catch-up timeout of %s")
+                  .formatted(index, commitIndex, raftContext.getJoinCatchUpTimeout())));
     }
   }
 }

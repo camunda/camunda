@@ -1,16 +1,23 @@
+import buildlogic.ArtifactKind
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
+import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.filterMavenResources
+import buildlogic.projectArtifact
 import io.camunda.gradle.pom.PomResolver
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.WriteProperties
+import org.gradle.api.tasks.bundling.Tar
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.jvm.tasks.Jar
+import org.gradle.process.CommandLineArgumentProvider
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
   id("buildlogic.server-conventions")
+  distribution
   id("buildlogic.distribution-dependency-report-conventions")
   alias(libs.plugins.spring.boot)
   id("buildlogic.openapi-conventions")
@@ -109,7 +116,6 @@ val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("lib
 val elasticsearchVersion = versionCatalog.requiredVersion("co-elastic-clients-elasticsearch-java")
 val distName = "camunda-zeebe"
 val distVersion = project.version.toString()
-val distDirectory = layout.buildDirectory.dir(distName)
 val parentPom = providers.fileContents(layout.settingsDirectory.file("parent/pom.xml"))
 val distPom = providers.fileContents(layout.projectDirectory.file("pom.xml"))
 val jvmModuleOpens =
@@ -229,11 +235,40 @@ val distScripts =
     }
   }
 
+// defaults.yaml is committed in src/main/config (and shipped from there); :configuration generates it
+// from the Spring metadata. Mirrors Maven's exec:java@generate-default-config.
+// Outside CI the archives and DefaultConfigTest consume the directory through updateDefaultConfig,
+// so every build ships and tests the freshly generated file. In CI they read the committed
+// directory as is, so that DefaultConfigTest catches a stale committed copy.
+val generatedDefaultConfig =
+  configurations.create("generatedDefaultConfig") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+  }
+
+val updateDefaultConfig =
+  tasks.register<Copy>("updateDefaultConfig") {
+    group = "build tools"
+    description = "Copies the generated defaults.yaml into src/main/config"
+    from(generatedDefaultConfig)
+    into(layout.projectDirectory.dir("src/main/config"))
+  }
+
+val shippedConfig: Any =
+  if (providers.environmentVariable("CI").isPresent) layout.projectDirectory.dir("src/main/config")
+  else updateDefaultConfig
+
+// Compiling refreshes the committed copy too, not only the tasks that consume it.
+if (!providers.environmentVariable("CI").isPresent) {
+  tasks.named("compileJava") { finalizedBy(updateDefaultConfig) }
+}
+
 val distContents =
   copySpec {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     with(distScripts)
-    from("src/main/config") { into("config") }
+    from(shippedConfig) { into("config") }
     from(copyOpenApiYaml) { into("config/openapi/v2") }
     from(tasks.named<Jar>("jar")) { into("lib") }
     from(configurations.runtimeClasspath.map { it.asFileTree }) {
@@ -245,55 +280,56 @@ val distContents =
     from(generateDistReadme)
   }
 
-val assembleDist =
-  tasks.register<Sync>("assembleDist") {
-    dependsOn(
-      tasks.named("jar"),
-      generateDistReadme,
-      generateDistScripts,
-      copyOpenApiYaml,
-    )
-    into(distDirectory)
-    with(distContents)
+distributions {
+  main {
+    distributionBaseName.set(distName)
+    contents { with(distContents) }
   }
-
-// npm builds only run when producing a dist artifact, not during tests or compilation.
-tasks.named("assembleDist") {
-  dependsOn(
-    ":identity-webjar:npmBuild",
-    ":operate-webjar:npmBuild",
-    ":webapp-webjar:npmBuild",
-  )
 }
 
-val distTar =
-  tasks.register<Tar>("distTar") {
-    group = "build"
-    description = "Create the Camunda distribution tar.gz archive"
-    dependsOn(assembleDist)
+// npm builds only run when producing a dist artifact, not during tests or compilation.
+tasks
+  .matching { it.name in setOf("installDist", "distTar", "distZip") }
+  .configureEach {
+    dependsOn(
+      ":identity-webjar:npmBuild",
+      ":operate-webjar:npmBuild",
+      ":webapp-webjar:npmBuild",
+    )
+  }
+
+// distTar and distZip are created by the distribution plugin from the main distribution above.
+tasks.named<Tar>("distTar") {
+  reproducibleArchive()
+  // The plugin's tar is uncompressed; -Pdist.tar.gzip=true makes it a .tar.gz.
+  if (providers.gradleProperty("dist.tar.gzip").map(String::toBoolean).getOrElse(false)) {
     compression = Compression.GZIP
-    archiveBaseName.set(distName)
-    archiveVersion.set(distVersion)
     archiveExtension.set("tar.gz")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-
-    into("$distName-$distVersion") { with(distContents) }
   }
+}
 
-val distZip =
-  tasks.register<Zip>("distZip") {
-    group = "build"
-    description = "Create the Camunda distribution zip archive"
-    dependsOn(assembleDist)
-    archiveBaseName.set(distName)
-    archiveVersion.set(distVersion)
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+tasks.named<Zip>("distZip") { reproducibleArchive() }
 
-    into("$distName-$distVersion") { with(distContents) }
-  }
+// DefaultConfigTest compares the committed defaults.yaml with the one generated by :configuration.
+// Passing the path is also what enables the test, which Maven never does.
+class GeneratedDefaultsArguments(
+  @get:InputFiles @get:PathSensitive(PathSensitivity.NONE) val generated: FileCollection
+) : CommandLineArgumentProvider {
+  override fun asArguments() =
+    listOf("-Dcamunda.test.generated-defaults-yaml=${generated.singleFile.absolutePath}")
+}
 
-tasks.named("assemble") {
-  dependsOn(assembleDist, distTar, distZip)
+tasks.named<Test>("test") {
+  jvmArgumentProviders.add(GeneratedDefaultsArguments(generatedDefaultConfig.incoming.files))
+  // The test also reads the committed file from the working directory.
+  inputs.files(shippedConfig).withPropertyName("defaultsYaml").withPathSensitivity(PathSensitivity.NONE)
+}
+
+dependencies {
+  add(
+    generatedDefaultConfig.name,
+    projectArtifact(":configuration", ArtifactKind.DEFAULT_CONFIG),
+  )
 }
 
 dependencies {
@@ -346,7 +382,10 @@ dependencies {
     exclude(group = "com.github.vertical-blank", module = "sql-formatter")
   }
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-backup"))
@@ -392,6 +431,8 @@ dependencies {
   implementation(project(":camunda-secret-store-file"))
   implementation(project(":camunda-secret-store-aws"))
   implementation(project(":camunda-secret-store-gcp"))
+  implementation(project(":camunda-secret-store-env"))
+  implementation(project(":camunda-secret-store-azure"))
   implementation(project(":zeebe-rebalance"))
   implementation(project(":zeebe-restore"))
   implementation(libs.org.slf4j.slf4j.api)
@@ -478,8 +519,6 @@ description = "Zeebe Distribution"
 tasks.named("bootJar") { enabled = false }
 
 tasks.named<Jar>("jar") { archiveClassifier.set("") }
-
-tasks.named("assemble") { dependsOn(assembleDist) }
 
 configurations.named("runtimeClasspath") {
   exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")

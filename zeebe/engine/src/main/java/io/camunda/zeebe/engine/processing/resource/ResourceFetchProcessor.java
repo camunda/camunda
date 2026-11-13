@@ -99,7 +99,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private Optional<PersistedResource> findResource(
       final TypedRecord<ResourceRecord> command, final long resourceKey) {
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
     return authorizedTenants.wildcard()
         ? findResourceForAnonymouslyAuthorizedTenants(resourceKey)
         : findResourceForAuthenticatedAuthorizedTenants(resourceKey, authorizedTenants);

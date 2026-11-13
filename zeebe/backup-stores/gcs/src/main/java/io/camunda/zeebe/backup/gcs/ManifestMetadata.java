@@ -8,15 +8,12 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.Blob;
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import io.camunda.zeebe.backup.common.CheckpointIds;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
@@ -90,23 +87,18 @@ final class ManifestMetadata {
   }
 
   /**
-   * Reconstructs a {@link BackupStatus} from the GCS blob's custom metadata and path. The blob path
-   * encodes the backup identifier (partitionId/checkpointId/memberId).
+   * Reconstructs the {@link BackupStatus} of the backup with the given identifier, which the caller
+   * parsed from the blob's name, from the GCS blob's custom metadata.
    *
    * @return the backup status, or empty if the blob has no status metadata (e.g. written by an
    *     older version)
    */
-  static Optional<BackupStatus> toBackupStatus(
-      final Blob blob, final String basePath, final String manifestBlobName) {
+  static Optional<BackupStatus> toBackupStatus(final Blob blob, final BackupIdentifier id) {
     final var metadata = blob.getMetadata();
     if (metadata == null || !metadata.containsKey(STATUS_CODE)) {
       return Optional.empty();
     }
 
-    final var id = parseIdentifier(blob.getName(), basePath, manifestBlobName);
-    if (id.isEmpty()) {
-      return Optional.empty();
-    }
     final var statusCode = BackupStatusCode.valueOf(metadata.get(STATUS_CODE));
     final var failureReason = Optional.ofNullable(metadata.get(FAILURE_REASON));
     final var created = Optional.ofNullable(metadata.get(CREATED_AT)).map(Instant::parse);
@@ -114,32 +106,7 @@ final class ManifestMetadata {
     final var descriptor = parseDescriptor(metadata);
 
     return Optional.of(
-        new BackupStatusImpl(id.get(), descriptor, statusCode, failureReason, created, modified));
-  }
-
-  /**
-   * Parses the backup identifier encoded in the name of a manifest blob. Empty if the checkpoint id
-   * segment is a digit run too long to fit a {@code long} — a foreign or corrupted blob rather than
-   * one this store wrote, left for the caller to skip instead of failing the whole listing.
-   */
-  static Optional<BackupIdentifier> parseIdentifier(
-      final String blobName, final String basePath, final String manifestBlobName) {
-    // Path format: {basePath}manifests/{partitionId}/{checkpointId}/{memberId}/manifest.json
-    // where {memberId} is "zone_nodeId" for zone-aware clusters or bare "nodeId" otherwise.
-    final var manifestsPrefix = basePath + "manifests/";
-    final var relativePath =
-        blobName.substring(manifestsPrefix.length(), blobName.length() - manifestBlobName.length());
-    // relativePath is now: {partitionId}/{checkpointId}/{memberId}/
-    final var parts = relativePath.split("/");
-    final var checkpointId = CheckpointIds.tryParse(parts[1]);
-    if (checkpointId.isEmpty()) {
-      return Optional.empty();
-    }
-    final var memberId = BrokerMemberId.from(parts[2]);
-    final var zone = memberId.zone();
-    return Optional.of(
-        new BackupIdentifierImpl(
-            memberId.nodeIdx(), zone, Integer.parseInt(parts[0]), checkpointId.getAsLong()));
+        new BackupStatusImpl(id, descriptor, statusCode, failureReason, created, modified));
   }
 
   private static Optional<BackupDescriptor> parseDescriptor(final Map<String, String> metadata) {

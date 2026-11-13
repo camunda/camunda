@@ -29,15 +29,15 @@ internal fun VersionCatalogBuilder.catalogDatabaseLibraries() {
   library("com-zaxxer-hikaricp", "com.zaxxer", "HikariCP").versionRef("com-zaxxer-hikaricp")
   library("org-apache-lucene-lucene-core", "org.apache.lucene", "lucene-core").withoutVersion()
   library(
-      "org-elasticsearch-client-elasticsearch-rest-client",
-      "org.elasticsearch.client",
-      "elasticsearch-rest-client",
+      "co-elastic-clients-elasticsearch-rest5-client",
+      "co.elastic.clients",
+      "elasticsearch-rest5-client",
     )
     .versionRef("elasticsearch")
   library(
-      "org-elasticsearch-client-elasticsearch-rest-client-optimize",
-      "org.elasticsearch.client",
-      "elasticsearch-rest-client",
+      "co-elastic-clients-elasticsearch-rest5-client-optimize",
+      "co.elastic.clients",
+      "elasticsearch-rest5-client",
     )
     .versionRef("optimize-elasticsearch-client")
   // version managed by buildlogic.optimize-conventions

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
@@ -73,12 +74,14 @@ public final class MappingExpressionProcessor {
    * Evaluates the given expression against this processor's pre-scoped context.
    *
    * @param source the expression to evaluate
+   * @param label identifies the mapping in the failure message, if any
    * @return either the evaluation result as a MsgPack buffer, or a failure
    */
-  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(final Expression source) {
+  public Either<Failure, DirectBuffer> evaluateVariableMappingExpression(
+      final Expression source, final ExpressionLabel label) {
     // delegates scopeKey/tenantId to the underlying processor, which re-scopes its own context;
     // the pre-computed scopedContext field is only for direct getVariable lookups, not evaluation
-    return processor.evaluateVariableMappingExpression(source, scopeKey, tenantId);
+    return processor.evaluateVariableMappingExpression(source, scopeKey, tenantId, label);
   }
 
   /**

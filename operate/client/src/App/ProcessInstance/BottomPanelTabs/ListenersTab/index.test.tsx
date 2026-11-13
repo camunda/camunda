@@ -201,6 +201,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -224,6 +225,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -251,6 +253,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -276,6 +279,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -300,6 +304,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -327,6 +332,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -350,6 +356,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -376,6 +383,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -411,6 +419,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -446,6 +455,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),
@@ -476,6 +486,7 @@ describe('<ListenersTab />', () => {
       buildExpectedPayload(
         z.strictObject({
           $in: z.tuple([
+            z.literal('BPMN_ELEMENT'),
             z.literal('EXECUTION_LISTENER'),
             z.literal('TASK_LISTENER'),
           ]),

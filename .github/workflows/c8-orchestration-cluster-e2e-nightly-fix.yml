@@ -1,9 +1,16 @@
 # description: Triage-driven fix agent for C8 Orchestration Cluster nightly E2E/API failures.
 #              Dispatched per version by c8-orchestration-cluster-e2e-nightly-triage.yml.
 #              Uses Claude Code CLI to read failing tests + screenshots, apply a minimal fix,
-#              and open a draft PR against stable/<version> (or main). After the PR is open,
-#              triggers the matching on-demand workflow(s) and patches the PR body with
-#              the run URL(s) for verification.
+#              and open a PR — ready for review, not a draft — against stable/<version> (or main).
+#              The run then waits for Copilot's automatic review (it never fires on a draft) and a
+#              second Claude invocation answers every thread it opened, one reply per thread, before
+#              a human ever sees the PR; what it cannot settle is replied to and left open.
+#              On branches that carry the
+#              automatic orchestration-cluster suite PR check (team-test-automation#188) the body is
+#              patched with a definition of done; on branches without it (e.g. stable/8.7) the agent
+#              still triggers the on-demand workflow and links the run for verification.
+#              While a release branch is frozen for that line, the fix PR is also labelled for
+#              backport to it when the release branch still holds the same test area.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -154,7 +161,7 @@ jobs:
           # 100-minute ceiling. The job's timeout-minutes is the hard cap on
           # total waiting; exceeding it fails the gate rather than releasing a
           # still-blocked agent.
-          stall_budget=$(( 120 * 60 ))
+          stall_budget=$(( 150 * 60 ))
           deadline=$(( $(date +%s) + stall_budget ))
           prev_ahead=""
           self_started=""
@@ -203,18 +210,22 @@ jobs:
             sleep 60
           done
 
-          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 120m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
+          echo "::warning::serialize gate saw no older ${VERSION} agent finish for 150m — proceeding anyway. The agent's own open-PR check is still a guard against duplicates, it is just no longer race-free."
 
   fix:
     name: Fix nightly failures (${{ github.event.inputs.version }})
     needs: [serialize]
     runs-on: ubuntu-latest
-    # 100 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
+    # 130 (not 60): the Live Docker Verify loop (AGENTS.md) can build a full
     # Camunda distribution from source for RDBMS-flagged failures, mirroring
     # c8-orchestration-cluster-e2e-tests-on-demand.yml's own H2/RDBMS job.
     # Raised from 90 after run 35684370785 (2026-09-22) hit that ceiling with
-    # real, uncommitted progress still in flight.
-    timeout-minutes: 100
+    # real, uncommitted progress still in flight; raised again from 100 for the
+    # Copilot review round that now follows the agent (up to 15 minutes waiting
+    # for the review, then a second Claude invocation to answer it). The agent's
+    # own deadline stays at 85 minutes from job start, so the extra 30 minutes
+    # belong to the round, not to the fix.
+    timeout-minutes: 130
 
     steps:
       - name: Record job start time
@@ -226,6 +237,11 @@ jobs:
         # token/Go/npm/workspace setup ends up taking longer than usual.
         id: job_start
         run: echo "epoch=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
+      # Deliberately not the first step: "Record job start time" above must stay
+      # first so the agent's deadline is anchored to the job start.
+      - uses: camunda/infra-global-github-actions/start-build-monitor@ead99f6c9c536f5c47e443929d47e8fcfdb05a81 # start-build-monitor-1.0.1
+        continue-on-error: true
 
       - name: Resolve target branch
         id: target
@@ -344,6 +360,46 @@ jobs:
             skills
             memory/teams
 
+      # camunda/team-test-automation is internal and this repository is public,
+      # so `uses: camunda/team-test-automation/...` cannot resolve and fails the
+      # whole job at setup, before continue-on-error can apply. Check the action
+      # out here, ahead of the insteadOf rewrite, and run it as a local action
+      # in "Resolve this area's triage owner".
+      - name: Generate team-test-automation read token
+        id: owner-action-token
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: team-test-automation
+          read-only: true
+
+      - name: Check out the triage-owner action
+        id: owner-action
+        if: steps.owner-action-token.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: camunda/team-test-automation
+          # main, not a SHA: the assignment data ships inside the action, so a
+          # pin would freeze ownership at whoever held the area that day.
+          ref: main
+          token: ${{ steps.owner-action-token.outputs.token }}
+          path: team-test-automation
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /.github/actions/resolve-triage-owner/
+            /.github/workflows/triage-assignments.json
+
       - name: Record the routing runbook version
         id: routing
         env:
@@ -394,8 +450,8 @@ jobs:
           # Add a more-specific insteadOf for workspace-cli that uses the Vault PAT.
           # Git selects the longest-matching insteadOf, so this wins over the global
           # qa-processes rewrite set in "Configure git with GitHub App token".
-          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
-          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli-v2".insteadOf "https://github.com/camunda/workspace-cli-v2"
+          go install github.com/camunda/workspace-cli-v2/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install Claude Code CLI
@@ -446,7 +502,7 @@ jobs:
           git -C "$ws_dir" fetch --depth 1 origin "${TARGET_REF}"
           git -C "$ws_dir" checkout "${TARGET_REF}"
 
-      - name: Determine which artifact downloads + on-demand verifications are needed
+      - name: Determine which artifact downloads are needed
         id: scope
         run: |
           set -euo pipefail
@@ -592,6 +648,11 @@ jobs:
           changes, 'fix:' for other code changes (NEVER 'fix:' for test-only changes —
           commitlint rejects it).
 
+          Open the PR READY FOR REVIEW, not a draft — do not pass --draft and do not convert it to
+          one. Copilot's automatic review never fires on a draft, and this run waits for that review
+          so it can address the comments before a human ever looks at the PR. The Live Docker Verify
+          outcome still decides the PR's final state, and the workflow applies it after that round.
+
           CRITICAL for /tmp/fix-meta.json: the "branch" field must be the exact
           headRefName of the PR you opened — never null, never omitted. Obtain it
           with: gh pr view <number> --repo ${REPO} --json headRefName --jq '.headRefName'
@@ -626,115 +687,788 @@ jobs:
           cd "${ws_dir}"
           claude -p "$prompt" --dangerously-skip-permissions
 
-      - name: Trigger on-demand verification runs and patch PR body
+      - name: Verify PRs and patch body with definition of done
         if: always()
         env:
           # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
           # The Vault token lacks read:org, which causes gh CLI to fail its
           # GraphQL auth check and never reach the workflow dispatch REST call.
-          # The job already has actions:write and pull-requests:write so the
-          # built-in token is sufficient for triggering workflows and patching PR bodies.
+          # The job has actions:write and pull-requests:write, so the built-in
+          # token is sufficient for dispatching workflows and patching PR bodies.
           GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           REPO:       ${{ github.repository }}
           TARGET_REF: ${{ steps.target.outputs.ref }}
         run: |
           set -euo pipefail
           if [ ! -f /tmp/fix-meta.json ]; then
-            echo "No fix-meta.json produced — nothing to verify."
+            echo "No fix-meta.json produced — nothing to patch."
             exit 0
           fi
 
           count=$(jq '.prs | length' /tmp/fix-meta.json)
           category=$(jq -r '.category // ""' /tmp/fix-meta.json 2>/dev/null || echo "")
           if [ "$count" -eq 0 ]; then
-            echo "No PRs were opened — nothing to verify."
+            echo "No PRs were opened — nothing to patch."
             if [ "$category" = "not-determined" ]; then
               echo "::warning::Fix agent could not determine a fix (category: not-determined)"
             fi
             exit 0
           fi
 
+          # The orchestration-cluster suite runs automatically as a non-blocking
+          # PR check (team-test-automation#188) on branches that carry the PR
+          # check workflow, but only for PRs that change a non-Markdown suite
+          # file (its paths filter). Where both hold, that check validates the
+          # fix and a manually triggered on-demand run is redundant. Otherwise
+          # (e.g. stable/8.7, or a fix that only touches a workflow), keep
+          # dispatching the on-demand run as the fix's automatic suite signal.
+          if gh api "repos/${REPO}/contents/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml?ref=${TARGET_REF}" \
+               --silent >/dev/null 2>&1; then
+            branch_has_check=true
+            echo "${TARGET_REF} has the automatic suite PR check."
+          else
+            branch_has_check=false
+            echo "${TARGET_REF} has no automatic suite PR check — dispatching the on-demand run."
+          fi
+
+          # Whether the PR check runs for this PR, mirroring its paths filter:
+          # it changes a non-Markdown file under the suite, or one of the suite
+          # check's workflows or scripts. Retried, and "no" when the file list cannot
+          # be read, so an API failure never leaves a fix unverified.
+          pr_runs_suite_check() {
+            local files attempt
+            for attempt in 1 2 3 4; do
+              if files=$(gh pr view "$1" --repo "$REPO" --json files --jq '.files[].path'); then
+                awk '/^qa\/c8-orchestration-cluster-e2e-test-suite\// && !/\.md$/ {found = 1}
+                     /^\.github\/workflows\/c8-orchestration-cluster-e2e-tests-(pr|pr-reusable|reusable)\.yml$/ {found = 1}
+                     /^\.github\/scripts\/c8-e2e-suite-(report\.sh|triage\.(mjs|sh)|base-rerun\.sh)$/ {found = 1}
+                     END {exit !found}' <<<"$files"
+                return
+              fi
+              sleep $((2 ** attempt))
+            done
+            echo "::warning::Could not list the files of PR #$1 — dispatching the on-demand run."
+            return 1
+          }
+
           jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
             pr_number=$(echo "$pr_obj" | jq -r '.number')
             branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
-
-            if [ -z "$branch" ] || [ "$branch" = "null" ]; then
-              echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
-              branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
-              echo "Resolved branch: $branch"
-            fi
-
             on_demand_run_url=""
 
-            if [ -n "$branch" ] && [ "$branch" != "null" ]; then
-              echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
-              dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            has_auto_check=false
+            if [ "$branch_has_check" = "true" ] && pr_runs_suite_check "$pr_number"; then
+              has_auto_check=true
+              echo "PR #${pr_number} runs the automatic suite PR check — skipping the on-demand dispatch."
+            fi
 
-              # Recent gh versions print the run URL directly to stdout/stderr.
-              # Capture it — this is race-proof because it is the exact run we triggered.
-              # Note: the GitHub API does not expose workflow_dispatch inputs in the
-              # runs list or individual run endpoints, so we cannot filter by branch
-              # input after the fact.
-              trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
-                --repo "$REPO" -f branch="$branch" 2>&1)
-              dispatch_exit=$?
-              echo "$trigger_output"
-              on_demand_run_url=$(echo "$trigger_output" \
-                | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
-
-              # Fallback: if gh did not print a URL (older gh version), poll by
-              # creation time. Only attempt when dispatch actually succeeded —
-              # if dispatch failed, the poll could pick up a different agent's run.
-              if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
-                echo "gh did not return run URL directly — falling back to time-based poll"
-                for _ in $(seq 1 18); do
-                  sleep 5
-                  run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
-                    2>/dev/null \
-                    | jq -r --arg t "$dispatched_at" \
-                      '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
-                    || echo "")
-                  if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
-                    on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
-                    break
-                  fi
-                done
-              elif [ "$dispatch_exit" -ne 0 ]; then
-                echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+            # Without the automatic check, dispatch the on-demand run as the
+            # fix's only automatic suite signal (fire-and-forget: we resolve the
+            # run URL for the PR body but do not wait for it to finish).
+            if [ "$has_auto_check" != "true" ]; then
+              if [ -z "$branch" ] || [ "$branch" = "null" ]; then
+                echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
+                branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
               fi
-
-              [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
+              if [ -n "$branch" ] && [ "$branch" != "null" ]; then
+                echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
+                dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                # Recent gh versions print the run URL directly; capture it (race-proof,
+                # it is the exact run we triggered). The API does not expose
+                # workflow_dispatch inputs, so we cannot filter by branch input later.
+                trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                  --repo "$REPO" -f branch="$branch" 2>&1)
+                dispatch_exit=$?
+                echo "$trigger_output"
+                on_demand_run_url=$(echo "$trigger_output" \
+                  | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+                # Fallback: older gh versions do not print the URL — poll by creation
+                # time, but only when the dispatch itself succeeded (otherwise the poll
+                # could pick up a different agent's run).
+                if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
+                  for _ in $(seq 1 18); do
+                    sleep 5
+                    run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                      2>/dev/null \
+                      | jq -r --arg t "$dispatched_at" \
+                        '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                      || echo "")
+                    if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                      on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                      break
+                    fi
+                  done
+                elif [ "$dispatch_exit" -ne 0 ]; then
+                  echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+                fi
+                [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
+              fi
             fi
 
-            # Patch PR body with the verification link (idempotent: strip any
-            # existing "## On-demand verification runs" section before appending
-            # so re-runs do not accumulate duplicate blocks)
+            # Patch the PR body idempotently. Strip any previously appended
+            # "## Definition of done" or "## On-demand verification runs" section —
+            # only up to the next heading, so a section placed after them survives —
+            # then re-append the definition of done plus, where dispatched, the
+            # on-demand link.
             current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
-            base_body=$(printf '%s' "$current_body" | sed '/^## On-demand verification runs/,$d' | sed 's/[[:space:]]*$//')
+            base_body=$(printf '%s' "$current_body" | awk '
+              /^## Definition of done$/          { skip=1; next }
+              /^## On-demand verification runs$/ { skip=1; next }
+              /^## / { skip=0 }
+              !skip { print }
+            ' | sed 's/[[:space:]]*$//')
+            new_body="${base_body}"$'\n\n## Definition of done\n- Relevant tests have been run and passed (do not request review before tests finish).\n'
             if [ -n "$on_demand_run_url" ]; then
-              verification_block=$'\n\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
-              new_body="${base_body}${verification_block}"
-              printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
+              new_body="${new_body}"$'\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
             fi
+            printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
           done
+
+      - name: Resolve this area's triage owner
+        id: triage-owner
+        # always(), because the steps that consume this run on always() too.
+        # The agent failing is precisely the case with no fix PR and a thread
+        # that needs a person -- the default success() would skip the lookup
+        # exactly when the owner matters most.
+        if: always() && steps.owner-action.outcome == 'success'
+        # Best-effort by contract: emits found=false rather than failing, so a
+        # roster that is missing or stale leaves the thread unmentioned and the
+        # PR unassigned instead of turning a nightly red.
+        continue-on-error: true
+        uses: ./team-test-automation/.github/actions/resolve-triage-owner
+        with:
+          area: oc
 
       - name: Re-label PRs (idempotent)
         if: always()
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          TRIAGE_OWNER_LOGIN: ${{ steps.triage-owner.outputs.login }}
+          # The job's own token, not the App token minted at the start of the
+          # job: the agent can run past that token's one-hour life, and the
+          # refresh below happens later still -- so both edits would fail auth
+          # and leave the PRs unlabelled and unassigned. The workflow already
+          # grants pull-requests: write, which is all this step needs.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO:     ${{ github.repository }}
         run: |
           if [ -f /tmp/fix-meta.json ]; then
+            # Assignee rather than reviewer: the bot authors these PRs, so a
+            # review request from it is refused as a self-review.
+            #
+            # `if`, not `[ ... ] && ...`: Actions runs run-steps under `bash -e`,
+            # and an empty owner is the expected state, not an error.
+            # An array, not a string: the flag and its value are two argv
+            # entries, so an unquoted string would rely on word splitting
+            # (SC2086) and a quoted one would pass "--add-assignee login" as a
+            # single argument.
+            assignee=()
+            if [ -n "${TRIAGE_OWNER_LOGIN:-}" ]; then
+              assignee=(--add-assignee "${TRIAGE_OWNER_LOGIN}")
+            fi
             jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_num; do
-              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null || true
+              gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" "${assignee[@]}" 2>/dev/null \
+                || gh pr edit "$pr_num" --repo "$REPO" --add-label "failing-test-fix" 2>/dev/null \
+                || true
             done
           fi
+
+      # Copilot's automatic review fires only on a NON-draft PR, and it fires
+      # fast. A draft gets nothing until a human marks it ready hours later, and
+      # by then nobody re-triages what Copilot said. So the agent now opens the
+      # PR ready for review and this step waits for that ONE review, so the next
+      # step can answer it inside the same run. A PR reused across nights gets
+      # no "opened" event, hence the explicit review request.
+      #
+      # Placed BEFORE "Finalize PR verification status": that step demotes an
+      # `unverified` PR back to draft, which would end the review round before
+      # it started.
+      #
+      # A GitHub App installation token lives one hour; this job may run over two
+      # (timeout-minutes: 130), and the review phase is at the very end of it —
+      # after provisioning, the Live Docker Verify loop and the fix agent. With
+      # the original token the head lookup would 401, this step would warn and
+      # skip the round, and the response agent's replies and resolves would
+      # fail: a silent loss of the whole round, late in a long job. So mint a
+      # fresh one here, for the three steps that follow. Best-effort — each
+      # consumer falls back to the original token, which is still valid on a
+      # short run.
+      - name: Refresh the GitHub App token for the review phase
+        id: github-token-review
+        if: always()
+        continue-on-error: true
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
+
+      # The token refresh above re-authenticates `gh`, but git authenticates
+      # separately: "Configure git with GitHub App token" baked the ORIGINAL
+      # installation token into a global insteadOf rewrite, and every git call
+      # on this runner still carries it — including the release-pair resolver's
+      # `git ls-remote origin` in the runner checkout. That resolver fails
+      # CLOSED, so an expired token reads as "no active release branch" and the
+      # backport gate silently stops proposing and reconciling labels.
+      #
+      # So re-point the rewrite here, as its own step: the responder below
+      # updates only the agent workspace, and does not run at all when Copilot
+      # left no threads. Existing entries are dropped by the key git itself
+      # prints, rather than by reconstructing the old token's key, so this holds
+      # if that earlier step ever changes shape.
+      - name: Re-point git at the refreshed token
+        id: git-token-review
+        if: always()
+        continue-on-error: true
+        env:
+          TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+        run: |
+          set -uo pipefail
+          git config --global --get-regexp 'insteadof$' 2>/dev/null \
+            | awk '{print $1}' \
+            | while read -r key; do
+                git config --global --unset-all "$key" 2>/dev/null || true
+              done
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+          echo "git now authenticates with the review-phase token."
+
+      - name: Request and await the Copilot review
+        id: copilot_review
+        if: always()
+        continue-on-error: true
+        # The poll loop stops itself at COPILOT_WAIT_SECONDS, but a single `gh`
+        # call has no timeout of its own, so a hung connection could still sit
+        # here until the JOB times out — which continue-on-error cannot survive,
+        # and which would take the finalize, artifact and Slack steps with it.
+        timeout-minutes: 20
+        env:
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          COPILOT_WAIT_SECONDS: ${{ vars.COPILOT_REVIEW_WAIT_SECONDS || '900' }}
+        run: |
+          set -uo pipefail
+          # Matched EXACTLY, never as a prefix. A real user account called
+          # copilot-pull-request-reviewer-qa would satisfy a startswith() test,
+          # and its review of the current head would then drive the privileged
+          # responder below — arbitrary comments turning into commits and thread
+          # resolutions. REST reports the login as "<slug>[bot]"; GraphQL strips
+          # the suffix for a Bot author, so both spellings are accepted, and
+          # nothing else is.
+          COPILOT="copilot-pull-request-reviewer"
+          pr_num=""
+          thread_count=0
+          head_sha=""
+          finish() {
+            { echo "pr=${pr_num}"; echo "thread_count=${thread_count}"; echo "head=${head_sha}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          [ -f /tmp/fix-meta.json ] || { echo "No fix-meta.json — nothing was opened."; finish; }
+          pr_num=$(jq -r '[.prs[]?.number] | first // empty' /tmp/fix-meta.json 2>/dev/null || echo "")
+          [ -n "$pr_num" ] || { echo "No PR in fix-meta.json — nothing to review."; finish; }
+
+          # The agent is told not to open a draft, but a draft here would skip
+          # the review in silence, which is the whole failure mode this step
+          # exists to close. The finalize step below still has the final say on
+          # draft state, and runs after this round.
+          if [ "$(gh pr view "$pr_num" --repo "$REPO" --json isDraft --jq .isDraft 2>/dev/null)" = "true" ]; then
+            echo "::warning::PR #${pr_num} was opened as a draft; marking it ready so Copilot reviews it."
+            gh pr ready "$pr_num" --repo "$REPO" 2>/dev/null || true
+          fi
+
+          head_sha=$(gh pr view "$pr_num" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+          [ -n "$head_sha" ] || { echo "::warning::Could not read the head SHA of #${pr_num} — skipping the review round."; finish; }
+          echo "Waiting for a Copilot review of ${head_sha}."
+
+          # Keyed on the head COMMIT, not on a timestamp baseline taken here.
+          # Copilot can finish reviewing before this step even starts, and a
+          # baseline would then mark that review as the "before" state and wait
+          # out the full timeout for a second one that never comes — discarding
+          # the very review this round exists to answer. A review records the
+          # commit it reviewed, so ask for that instead; it is unambiguous on a
+          # PR reused across nights too, whose older reviews name older commits.
+          # --jq runs once PER PAGE, so sort across pages.
+          # `|| true` is load-bearing: `shell: bash` means -e, pipefail is set
+          # above, and a transient gh failure (502, secondary rate limit) would
+          # otherwise propagate out of the assignment below and end the step —
+          # skipping the whole round over a blip GitHub recovers from seconds
+          # later. A failed lookup prints nothing, so the caller sees an empty
+          # result and simply polls again until the deadline.
+          copilot_review_of_head() {
+            gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+              --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .submitted_at] | max // empty" \
+              2>/dev/null | sort | tail -1 || true
+          }
+
+          latest=$(copilot_review_of_head)
+          if [ -n "$latest" ]; then
+            echo "A Copilot review of this commit had already landed at ${latest}."
+          else
+            # Only needed for a PR reused across nights — a freshly opened one is
+            # auto-reviewed off the "opened" event, and GitHub then answers 422
+            # for an already-requested reviewer, which is harmless. The accepted
+            # spelling of the Copilot reviewer has moved around, so try each and
+            # stop at the first that lands.
+            requested=false
+            for who in "${COPILOT}[bot]" "${COPILOT}" "Copilot"; do
+              if gh api -X POST "repos/${REPO}/pulls/${pr_num}/requested_reviewers" \
+                   -f "reviewers[]=${who}" >/dev/null 2>&1; then
+                echo "Requested a review from ${who}."
+                requested=true
+                break
+              fi
+            done
+            [ "$requested" = true ] \
+              || echo "Review request not accepted (already requested, or the auto-review is already running)."
+
+            deadline=$(( $(date +%s) + COPILOT_WAIT_SECONDS ))
+            while [ "$(date +%s)" -lt "$deadline" ]; do
+              sleep 30
+              latest=$(copilot_review_of_head)
+              [ -n "$latest" ] && break
+            done
+          fi
+
+          if [ -z "$latest" ]; then
+            echo "::warning::No Copilot review of ${head_sha} within ${COPILOT_WAIT_SECONDS}s — leaving the PR for the human reviewer."
+            finish
+          fi
+          echo "Copilot reviewed #${pr_num} at ${latest}."
+
+          gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+            --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\")] | max_by(.submitted_at) | .body // empty" \
+            > /tmp/copilot-review-summary.md 2>/dev/null || : > /tmp/copilot-review-summary.md
+
+          # Every Copilot review of THIS head, not just the newest: a re-request
+          # can produce more than one, and each owns its own threads. Ids kept as
+          # STRINGS on both sides of the match below — a review id is already
+          # past 2^31, so anything that narrows one to a 32-bit int is a silent
+          # mismatch waiting to happen.
+          #
+          # Built step by step rather than as one pipeline with a trailing
+          # "|| echo '[]'": that fallback runs on the exit status of the last
+          # stage only, so a stage that printed before failing would leave TWO
+          # JSON documents in the variable. --argjson rejects that, the filter
+          # below dies, thread_count lands at 0, and the round is skipped in
+          # silence — the exact opposite of the fail-open it is meant to be.
+          review_ids='[]'
+          if raw_ids=$(gh api --paginate "repos/${REPO}/pulls/${pr_num}/reviews" \
+               --jq "[.[] | select(.user.login == \"${COPILOT}[bot]\" or .user.login == \"${COPILOT}\") | select(.commit_id == \"${head_sha}\") | .id | tostring] | .[]" \
+               2>/dev/null); then
+            parsed_ids=$(printf '%s\n' "$raw_ids" | grep -E '^[0-9]+$' | sort -u | jq -R . | jq -sc '.' 2>/dev/null) || parsed_ids=""
+            [ -n "$parsed_ids" ] && review_ids="$parsed_ids"
+          fi
+          # Belt and braces: whatever happened above, what goes into --argjson is
+          # exactly one JSON array, or the empty one that fails open.
+          printf '%s' "$review_ids" | jq -e 'type == "array"' >/dev/null 2>&1 || review_ids='[]'
+          echo "Copilot review id(s) for this head: ${review_ids}"
+
+          # Paginated, and slurped into one flat array of nodes: a PR reused
+          # across nights accumulates resolved threads, and a single first:100
+          # page of them would push this round's findings off the end and leave
+          # thread_count at a false zero. --paginate emits one JSON document per
+          # page, hence the jq -s.
+          # shellcheck disable=SC2016 # $owner/$repo/$pr/$endCursor are GraphQL variables, bound by -F below
+          gh api graphql --paginate -f query='
+            query($owner:String!,$repo:String!,$pr:Int!,$endCursor:String){
+              repository(owner:$owner,name:$repo){
+                pullRequest(number:$pr){
+                  reviewThreads(first:100, after:$endCursor){
+                    pageInfo{hasNextPage endCursor}
+                    nodes{
+                      id isResolved isOutdated
+                      comments(first:20){nodes{
+                        author{login} path line body url
+                        pullRequestReview{fullDatabaseId}}}}}}}}' \
+            -F owner="${REPO%/*}" -F repo="${REPO#*/}" -F pr="$pr_num" 2>/dev/null \
+            | jq -s '[.[].data.repository.pullRequest.reviewThreads.nodes[]?]' \
+            > /tmp/copilot-threads-raw.json 2>/dev/null \
+            || echo '[]' > /tmp/copilot-threads-raw.json
+
+          # Only threads Copilot opened in THIS review, and nobody has resolved.
+          #
+          # A thread carrying ANY non-Copilot comment is dropped outright, and
+          # only Copilot-authored bodies are forwarded even from the threads that
+          # survive. Everything in this file is interpolated into the prompt of an
+          # agent that runs with --dangerously-skip-permissions and push
+          # credentials, and on a public repository anyone can reply inside a
+          # Copilot thread — so an unfiltered reply is an instruction channel into
+          # that agent. The exclusion is also what the paragraph below has always
+          # claimed and never enforced: a thread this round deliberately left open
+          # carries our own bot's reply, so it now really does stay out of the
+          # next night's round, with the human's question intact.
+          #
+          # Threads a human started are theirs to run; an outdated thread is kept
+          # (the line moved, the point may still stand); and a thread an earlier
+          # night's round deliberately LEFT OPEN for the human is excluded —
+          # re-answering it every night would bury their question under agent
+          # replies. Scoped by the review's own id, not by a time window: a
+          # pending review's comments are written as they are drafted and
+          # submitted only at the end. An empty id list means the lookup failed,
+          # and then every unresolved Copilot thread is in scope — answering one
+          # twice is a far smaller failure than skipping the round.
+          jq --arg bot "$COPILOT" --argjson ids "$review_ids" '
+            def is_copilot: . == $bot or . == $bot + "[bot]";
+            [
+            .[]?
+            | select(.isResolved == false)
+            | select(((.comments.nodes[0].author.login) // "") | is_copilot)
+            | select([.comments.nodes[] | (.author.login // "") | is_copilot] | all)
+            | ((.comments.nodes[0].pullRequestReview.fullDatabaseId // "") | tostring) as $rid
+            | select(($ids | length) == 0 or ($ids | index($rid)) != null)
+            | {id,
+               path: .comments.nodes[0].path,
+               line: .comments.nodes[0].line,
+               url: .comments.nodes[0].url,
+               outdated: .isOutdated,
+               comments: [.comments.nodes[]
+                          | select((.author.login // "") | is_copilot)
+                          | {author: (.author.login // "?"), body}]}
+          ]' /tmp/copilot-threads-raw.json > /tmp/copilot-threads.json 2>/dev/null \
+            || { echo "::warning::could not filter the review threads — treating this round as having none."; \
+                 echo '[]' > /tmp/copilot-threads.json; }
+
+          thread_count=$(jq 'length' /tmp/copilot-threads.json 2>/dev/null || echo 0)
+          if [ "$thread_count" -eq 0 ]; then
+            echo "Copilot left no unresolved issue threads on #${pr_num} — nothing to address."
+          else
+            echo "${thread_count} unresolved Copilot thread(s) on #${pr_num}:"
+            jq -r '.[] | "  - \(.path):\(.line // "?") \(.url)"' /tmp/copilot-threads.json
+          fi
+          finish
+
+      # One round, and only one: the PR carries the agent's answer to every
+      # Copilot thread by the time a person opens it, and that person's own
+      # review is what decides the next cycle. Anything the agent cannot settle
+      # is replied to and deliberately LEFT open, so it reaches that person as a
+      # question rather than disappearing under a resolve.
+      - name: Address the Copilot review comments
+        id: review_response
+        if: always() && steps.copilot_review.outputs.thread_count != '' && steps.copilot_review.outputs.thread_count != '0'
+        continue-on-error: true
+        # A stalled agent must not eat the rest of the job budget: everything
+        # that reports this run — the artifact upload and the Slack thread reply
+        # — runs after this step, and continue-on-error does not save them from a
+        # JOB-level timeout. 20 minutes is ample for a handful of threads and
+        # still leaves the reporting steps room.
+        timeout-minutes: 20
+        env:
+          ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+          GH_PAT: ${{ steps.secrets.outputs.GH_PAT }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.copilot_review.outputs.pr }}
+          THREAD_COUNT: ${{ steps.copilot_review.outputs.thread_count }}
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -uo pipefail
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          suite_dir="$ws_dir/qa/c8-orchestration-cluster-e2e-test-suite"
+
+          # The job-wide "Configure git with GitHub App token" step baked the
+          # ORIGINAL installation token into a global insteadOf rewrite. That
+          # token is an hour old by the time this round runs, so both the agent's
+          # push and the backstop push below would fail against it — accepted
+          # fixes would be replied to and resolved without ever reaching the PR.
+          # Point this repository's origin at the refreshed token instead. The
+          # explicit credential in the URL does not match the rewrite's
+          # "https://github.com/" prefix, so it wins without having to unpick the
+          # global config; GH_TOKEN falls back to the original token when the
+          # refresh failed, which is no worse than before.
+          git -C "$ws_dir" remote set-url origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+
+          threads=$(cat /tmp/copilot-threads.json)
+          review_summary=$(cat /tmp/copilot-review-summary.md 2>/dev/null || echo "")
+
+          prompt=$(cat <<EOF
+          You are the Camunda QA engineer who just opened PR #${PR_NUMBER} in ${REPO} for the
+          failing orchestration-cluster ${VERSION} nightly. Copilot has reviewed it. Address that
+          review now, in this run — this is the ONLY automated round, and the human reviewer sees
+          the result next cycle.
+
+          Read "## Review-Response Agent" in /tmp/nightly-fix-agent-manual.md before you start. It
+          is the contract for this step; everything below is the dispatch-specific part.
+
+          The ${THREAD_COUNT} unresolved threads Copilot opened, as JSON (thread id, file, line,
+          url, whether the line has since moved, and the comment bodies):
+
+          ${threads}
+
+          Copilot's review overview:
+
+          ${review_summary}
+
+          How to work them:
+
+          1. ONE THREAD AT A TIME, and reply IN EACH THREAD SEPARATELY. Never post one issue
+             comment that answers several threads at once, never answer in the PR body, and never
+             leave a thread with no reply. Every thread in that list gets its own reply.
+          2. Judge each on its merits. A fair share of Copilot comments are wrong, already handled
+             elsewhere, or out of scope for this PR. Read the surrounding code before you decide —
+             never apply a suggestion just because it was made, and never dismiss one unread.
+          3. ACCEPTED: make the change on this PR's branch in ${ws_dir} (you are already on it),
+             keep the diff minimal, run lint on the changed files, and commit ALL accepted changes
+             in ONE follow-up commit — then PUSH it with "git push" BEFORE you resolve anything.
+             Only once that push has SUCCEEDED do you reply in each accepted thread with what you
+             changed and the pushed commit SHA, and resolve it. A resolved thread says the defect
+             is fixed on the PR; a commit that never left this runner has fixed nothing. If the
+             push fails, say exactly that in each affected thread and LEAVE those threads OPEN.
+             Commit title prefix: 'test:' for test-only changes, 'ci:' for workflow-only changes,
+             'fix:' for other code changes — commitlint rejects 'fix:' on a test-only change.
+          4. REJECTED: reply in the thread with the concrete reason — wrong, contradicts a repo
+             convention, already handled, or it would mask the very failure this PR exists to
+             catch — then resolve it. A silent dismissal is not acceptable.
+          5. TOO COMPLICATED, needs a maintainer's call, or valid but out of scope: reply in the
+             thread saying exactly that and why, and LEAVE IT OPEN. Do not resolve it. This is the
+             right outcome whenever the change would be larger than this PR, or you are not
+             confident — the human reviewer picks it up from there.
+          6. This PR's own constraints still bind you: never mask a failure, no continue-on-error,
+             no test.skip / test.fixme / .only, no refactors, no dependency bumps, no unrelated
+             edits. A suggestion that would breach one of those is a REJECT, with that as the
+             reason.
+          7. Do NOT stand up a Docker environment, do NOT run Playwright, do NOT open another PR,
+             do NOT change the PR's draft state or its backport labels, and do NOT touch threads a
+             human opened.
+
+          Reply in a thread:
+            gh api graphql -f query='mutation(\$id:ID!,\$body:String!){
+              addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:\$id,body:\$body}){clientMutationId}}' \\
+              -F id=<threadId> -F body='<reply>'
+
+          Resolve a thread (ONLY after you have replied in it):
+            gh api graphql -f query='mutation(\$id:ID!){
+              resolveReviewThread(input:{threadId:\$id}){clientMutationId}}' -F id=<threadId>
+
+          Lint before committing, from ${suite_dir}:
+            npx prettier --write <changed files> && npx eslint <changed files>
+
+          When you are done, write /tmp/review-response.json — counts must add up to ${THREAD_COUNT}:
+            {"pr": ${PR_NUMBER}, "threads": ${THREAD_COUNT}, "accepted": 0, "rejected": 0,
+             "left_open": 0, "commit": "<sha of your follow-up commit, or null if nothing changed>"}
+          EOF
+          )
+
+          cd "$ws_dir"
+          # `shell: bash` means `bash -e`, which `set -uo pipefail` above does not
+          # undo — so an unguarded failing pipeline here would end the step right
+          # now and skip everything below it: the unpushed-commit backstop, the
+          # fix-meta fold, and the step summary. That is precisely the case those
+          # exist for. Capturing the status keeps the pipeline out of -e's reach.
+          claude_rc=0
+          claude -p "$prompt" --dangerously-skip-permissions 2>&1 \
+            | tee /tmp/claude-review-response.md || claude_rc=$?
+          [ "$claude_rc" -eq 0 ] \
+            || echo "::warning::the review-response agent exited ${claude_rc}; recovering whatever it left behind."
+
+          {
+            echo "## Copilot review round"
+            echo ""
+            echo '```'
+            cat /tmp/claude-review-response.md
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Belt and braces for the rule above: a commit that never reached the
+          # remote is invisible to the PR, so a thread resolved against it would
+          # claim a fix nobody can see. The agent is told to push; this catches
+          # the case where it did not.
+          if [ "$(git rev-list --count '@{u}..HEAD' 2>/dev/null || echo 0)" -gt 0 ]; then
+            echo "::warning::the review round left commit(s) unpushed — pushing them now."
+            git push 2>&1 \
+              || echo "::error::could not push the review-round commit(s); the PR does not carry them."
+          fi
+
+          # Fold the round into fix-meta so the Slack reply and the uploaded
+          # artifact both carry it.
+          if [ -f /tmp/review-response.json ] && [ -f /tmp/fix-meta.json ]; then
+            jq --slurpfile rr /tmp/review-response.json '.review_round = $rr[0]' /tmp/fix-meta.json \
+              > /tmp/fix-meta.next && mv /tmp/fix-meta.next /tmp/fix-meta.json
+          else
+            echo "::warning::review-response.json missing — the round ran but reported no counts."
+          fi
+
+      # Its resolver runs `git ls-remote` in the RUNNER checkout, so it depends
+      # on the "Re-point git at the refreshed token" step above, not on the
+      # responder's workspace-local remote.
+      #
+      # Runs AFTER the Copilot review round, deliberately. This gate decides
+      # eligibility from the PR's actual diff — whether the release branch holds
+      # the same area and whether the patch still applies — and labels for
+      # backport-action accordingly. The review round can add a commit, so a gate
+      # run before it would judge a diff the merged PR no longer has, and label
+      # (or decline to label) on that stale picture. Keep it below the round.
+      - name: Propose backport to the active release branch
+        # Between a code freeze and the release, the RC is built from
+        # release-X.Y.Z, not from the branch this agent fixes, so a fix merged
+        # here in that window never reaches the RC. The gate decides whether the
+        # release branch holds the same area (spec present, failing test present,
+        # patch still applies) and labels only then -- backport-action opens the
+        # backport PR when the fix PR merges. Outside a freeze the resolver finds
+        # no active branch and the whole step is a no-op.
+        #
+        # Advisory by construction: never fails the job, because a fix PR that is
+        # already open must not be held up by a backport question.
+        if: always()
+        continue-on-error: true
+        env:
+          # Refreshed token: this gate now runs after the review round, which can
+          # be more than an hour into the job, and the original installation
+          # token would have expired by then.
+          GH_TOKEN:       ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
+          REPO:           ${{ github.repository }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          set -uo pipefail
+          : > /tmp/backport-meta.json
+          [ -f /tmp/fix-meta.json ] || exit 0
+
+          # Resolved in the runner checkout of main: the resolver and this gate are
+          # maintained on main, and ws_dir sits on the target branch, which may
+          # predate either.
+          pairs="/tmp/release-pairs.tsv"
+          if ! "${GITHUB_WORKSPACE}/.github/scripts/mergeback/resolve-active-release-pairs.sh" origin > "$pairs"; then
+            # Unknown, which is not the same as "none". Reconciling on a failed
+            # lookup would strip every label this gate has ever applied.
+            echo "::warning::Could not resolve active release branches -- nothing proposed, nothing reconciled."
+            exit 0
+          fi
+          echo "Active release branches:"
+          cat "$pairs"
+
+          # Remove $2 from PR $1, but only when this gate applied it. The label's
+          # latest `labeled` event separates automation from a person: a Bot actor
+          # is us, a User is a deliberate request that must survive. An origin that
+          # cannot be read counts as a person -- removing someone's request on
+          # uncertainty is the worse mistake. Echoes removed | kept | failed.
+          revoke_if_bot() {
+            local pr="$1" label="$2" actor_type rc=0
+            # `set -o pipefail` is in force, so rc catches a failed page fetch as well
+            # as a jq error. Without this check, pagination that dies after the bot's
+            # own labelling event but before a later human one would read as "Bot" on
+            # a partial history and remove a human's label.
+            actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
+              | jq -rs --arg l "$label" \
+                  '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""') \
+              || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              # stderr: both callers `case` on this function's entire stdout, so a
+              # warning printed here would miss `kept` and fall through to the
+              # failure branch, telling the thread to remove a label whose owner is
+              # precisely what could not be determined.
+              echo "::warning::Could not read the label history of PR #${pr} -- leaving '${label}' in place." >&2
+              echo kept
+              return
+            fi
+            if [ "$actor_type" != "Bot" ]; then
+              echo kept
+              return
+            fi
+            if gh pr edit "$pr" --repo "$REPO" --remove-label "$label" >/dev/null; then
+              echo removed
+            else
+              echo failed
+            fi
+          }
+
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr; do
+            # 1. Reconcile labels whose release branch is no longer frozen.
+            #
+            # The gate labels when the PR opens, but backport-action fires when it
+            # merges. Any PR that outlives the release -- one the reopen path
+            # resurrected, say -- would otherwise open a backport into a branch that
+            # already shipped. This runs even when no release branch is frozen at
+            # all, which is exactly when the stale labels are.
+            while IFS= read -r label; do
+              [ -z "$label" ] && continue
+              ref="${label#backport }"
+              # Still frozen: the propose pass below owns this label, not this one.
+              # grep drains rather than -q: `pipefail` plus an early exit would
+              # report a failed pipeline and read an active branch as stale.
+              if cut -f1 "$pairs" | grep -xF "$ref" >/dev/null; then
+                continue
+              fi
+              case "$(revoke_if_bot "$pr" "$label")" in
+                removed) reason="removed -- ${ref} has shipped, so the backport would land after the release" ;;
+                kept)    reason="left in place -- ${ref} has shipped, but a person asked for this backport" ;;
+                *)       reason="STALE LABEL STILL SET for ${ref} -- remove it before merging" ;;
+              esac
+              echo "PR #${pr}: reconcile ${label} -> ${reason}"
+              jq -cn --argjson pr "$pr" --arg ref "$ref" --arg reason "$reason" \
+                '{pr: $pr, release_ref: $ref, decision: "reconciled", reason: $reason}' \
+                >> /tmp/backport-meta.json
+            done < <(gh pr view "$pr" --repo "$REPO" --json labels \
+                       --jq '.labels[].name | select(startswith("backport release-"))' 2>/dev/null)
+
+            # 2. Propose for the branch that IS frozen for this line, if any.
+            [ -s "$pairs" ] || continue
+
+            # The aggregate PR diff, NOT `--patch`: that returns a per-commit patch
+            # series, in which a helper added in one commit and edited in a later one
+            # appears as a modification of a file the release branch does not have,
+            # refusing a PR whose net change only adds it. The plain diff keeps the
+            # `index` lines the three-way apply needs.
+            patch="/tmp/pr-${pr}.patch"
+            if ! gh pr diff "$pr" --repo "$REPO" > "$patch" 2>/dev/null; then
+              echo "::warning::Could not read the diff of PR #${pr} -- skipping its backport check."
+              continue
+            fi
+            # Three-way apply needs the patch's pre-image blobs, which ws_dir was
+            # cloned too shallowly to hold; the PR head's recent history carries them.
+            git -C "$ws_dir" fetch --no-tags --depth 50 origin "pull/${pr}/head" >/dev/null 2>&1 || true
+
+            v=$(cd "$ws_dir" && PAIRS_FILE="$pairs" \
+              "${GITHUB_WORKSPACE}/.github/scripts/nightly-fix-release-backport.sh" \
+              "$TARGET_REF" "$pr" "$patch" /tmp/test_specs.json)
+            echo "PR #${pr}: $v"
+            [ -z "$v" ] && continue
+
+            decision=$(jq -r '.decision' <<< "$v")
+            release_ref=$(jq -r '.release_ref' <<< "$v")
+            if [ "$decision" = "eligible" ]; then
+              gh label create "backport ${release_ref}" --repo "$REPO" --color c5def5 \
+                --description "Backport a pull request to ${release_ref#release-}" 2>/dev/null || true
+              if gh pr edit "$pr" --repo "$REPO" --add-label "backport ${release_ref}"; then
+                echo "$v" >> /tmp/backport-meta.json
+              else
+                echo "::warning::Could not label PR #${pr} for backport to ${release_ref}."
+                jq -c '.decision = "skipped" | .reason = "label could not be applied"' <<< "$v" \
+                  >> /tmp/backport-meta.json
+              fi
+            elif [ "$decision" = "skipped" ]; then
+              # A label an earlier night applied for this still-frozen branch no
+              # longer holds -- the PR has changed since. Same ownership rules.
+              label="backport ${release_ref}"
+              if [ -n "$release_ref" ] \
+                 && gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null \
+                    | grep -xF "$label" >/dev/null; then
+                case "$(revoke_if_bot "$pr" "$label")" in
+                  removed) v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v") ;;
+                  kept)    v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v") ;;
+                  *)       echo "::warning::Could not remove the stale label '${label}' from PR #${pr}."
+                           v=$(jq -c '.reason += "; STALE LABEL STILL SET, remove it before merging"' <<< "$v") ;;
+                esac
+              fi
+              echo "$v" >> /tmp/backport-meta.json
+            fi
+          done
 
       - name: Finalize PR verification status (verified/unverified)
         if: always()
         env:
-          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          GH_TOKEN: ${{ steps.github-token-review.outputs.token || steps.github-token.outputs.token }}
           REPO:     ${{ github.repository }}
+          COPILOT_ROUND_PR:   ${{ steps.copilot_review.outputs.pr }}
+          COPILOT_ROUND_HEAD: ${{ steps.copilot_review.outputs.head }}
         run: |
           set -euo pipefail
           gh label create "verified" --repo "$REPO" --color "0E8A16" \
@@ -745,6 +1479,50 @@ jobs:
           if [ ! -f /tmp/fix-meta.json ]; then
             echo "No fix-meta.json — nothing to finalize."
             exit 0
+          fi
+
+          # The Live Docker Verify loop ran against the commit the fix agent
+          # pushed. If the Copilot round then changed code, that result describes
+          # an earlier revision, and the response agent is forbidden from standing
+          # up an environment — so there is no verification signal for what the PR
+          # now contains. Drop to "skipped" rather than label the new head
+          # verified: it leaves the PR ready for its human review (an unverified
+          # demotion to draft would undo the round) while claiming nothing that
+          # was not measured.
+          #
+          # Decided from the HEAD, not only from the round's own manifest. A
+          # responder that pushed a commit and then died before writing
+          # /tmp/review-response.json leaves review_round.commit empty while the
+          # PR carries changed, unverified code — the one case where a false
+          # `verified` would be worst. So compare the PR's head against the one
+          # the review step recorded before the round, and withhold verification
+          # whenever it moved, or whenever it cannot be read at all.
+          #
+          # The downgrade is written back into fix-meta.json, not just held in a
+          # shell variable: the job summary and the uploaded artifact both read
+          # that file afterwards, and would otherwise keep reporting a
+          # verification this step just decided not to stand behind.
+          rr_commit=$(jq -r '.review_round.commit // "" | select(. != "null")' /tmp/fix-meta.json 2>/dev/null || echo "")
+          round_pr="${COPILOT_ROUND_PR}"
+          pre_round_head="${COPILOT_ROUND_HEAD}"
+          if [ -n "$round_pr" ]; then
+            current_head=$(gh pr view "$round_pr" --repo "$REPO" --json headRefOid --jq .headRefOid 2>/dev/null || echo "")
+            head_moved=false
+            if [ -z "$current_head" ]; then
+              head_moved=true
+            elif [ -n "$pre_round_head" ] && [ "$current_head" != "$pre_round_head" ]; then
+              head_moved=true
+            fi
+            if [ -n "$rr_commit" ] || [ "$head_moved" = true ]; then
+              if jq -e --arg n "$round_pr" \
+                   '[.prs[]? | select((.number|tostring) == $n and .verify == "verified")] | length > 0' \
+                   /tmp/fix-meta.json >/dev/null 2>&1; then
+                echo "::warning::live verification predates the Copilot round on PR #${round_pr} (commit='${rr_commit}', head '${pre_round_head:-unknown}' -> '${current_head:-unreadable}') — not labelling it verified."
+                jq --arg n "$round_pr" \
+                  '(.prs[]? | select((.number|tostring) == $n and .verify == "verified") | .verify) = "skipped"' \
+                  /tmp/fix-meta.json > /tmp/fix-meta.next && mv /tmp/fix-meta.next /tmp/fix-meta.json
+              fi
+            fi
           fi
 
           jq -c '.prs[]?' /tmp/fix-meta.json | while read -r pr_obj; do
@@ -912,6 +1690,13 @@ jobs:
                 /tmp/fix-meta.json || true
             fi
 
+            if [ -f /tmp/fix-meta.json ] && [ "$(jq -r 'has("review_round")' /tmp/fix-meta.json)" = "true" ]; then
+              echo ""
+              jq -r '.review_round
+                     | "**Copilot review:** \(.threads // 0) comment(s) — \(.accepted // 0) applied, \(.rejected // 0) rejected, \(.left_open // 0) left open"' \
+                /tmp/fix-meta.json
+            fi
+
             if [ -n "${TRIAGE_RUN_URL:-}" ]; then
               echo ""
               echo "**Triage run:** [↗](${TRIAGE_RUN_URL})"
@@ -926,12 +1711,15 @@ jobs:
           path: |
             /tmp/test_specs.json
             /tmp/fix-meta.json
+            /tmp/copilot-threads.json
+            /tmp/claude-review-response.md
           retention-days: 14
           if-no-files-found: warn
 
       - name: Slack thread reply
         if: always() && github.event.inputs.send_slack_notification == 'true'
         env:
+          OWNER_SLACK_ID: ${{ steps.triage-owner.outputs.slack_user_id }}
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_BOT_USER_OAUTH_TOKEN }}
           SLACK_THREAD_TS:            ${{ github.event.inputs.slack_thread_ts }}
           SLACK_CHANNEL:              ${{ github.event.inputs.slack_channel }}
@@ -1007,6 +1795,46 @@ jobs:
             lines+=("• PR(s) opened: ${pr_links}")
           fi
 
+          # The Copilot round already happened on that PR, so say what it left
+          # behind: a thread the agent deliberately left open is the only part
+          # still waiting on a person.
+          if [ -f /tmp/fix-meta.json ] && [ "$(jq -r 'has("review_round")' /tmp/fix-meta.json)" = "true" ]; then
+            rr=$(jq -c '.review_round' /tmp/fix-meta.json)
+            rr_total=$(echo "$rr" | jq -r '.threads // 0')
+            rr_acc=$(echo "$rr" | jq -r '.accepted // 0')
+            rr_rej=$(echo "$rr" | jq -r '.rejected // 0')
+            rr_open=$(echo "$rr" | jq -r '.left_open // 0')
+            rr_line="• Copilot review: ${rr_total} comment(s) — ${rr_acc} applied, ${rr_rej} rejected"
+            [ "$rr_open" -gt 0 ] && rr_line="${rr_line}, :eyes: ${rr_open} left open for you"
+            lines+=("$rr_line")
+          fi
+
+          # Sub-bullet per fix PR that met an active release branch: during a code
+          # freeze the RC is built from that branch, so whether the fix reaches it
+          # is the thread's next question. Nothing is emitted outside a freeze.
+          if [ -s /tmp/backport-meta.json ]; then
+            while IFS= read -r bp; do
+              [ -z "$bp" ] && continue
+              bp_pr=$(echo "$bp" | jq -r '.pr')
+              bp_ref=$(echo "$bp" | jq -r '.release_ref')
+              bp_reason=$(echo "$bp" | jq -r '.reason // ""')
+              case "$(echo "$bp" | jq -r '.decision')" in
+                eligible)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: label added to PR #${bp_pr} — backport PR opens on merge")
+                  ;;
+                reconciled)
+                  # A label left over from a freeze that has since ended. Worth a
+                  # line even though nothing is pending: it is the only place a
+                  # label disappearing from a PR is explained.
+                  lines+=("   ↳ backport label for \`${bp_ref}\` on PR #${bp_pr}: ${bp_reason}")
+                  ;;
+                *)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: skipped — ${bp_reason}")
+                  ;;
+              esac
+            done < /tmp/backport-meta.json
+          fi
+
           # A confirmed product bug lands as a skip PR, so its bullets + the skip PR
           # are reported together under the bug heading — but only when the skip PR
           # actually exists; an issue filed with NO skip PR means the test still fails.
@@ -1058,6 +1886,11 @@ jobs:
           fi
 
           text="${icon} *${VERSION}* fix agent — ${summary}"$'\n'"<${RUN_URL}|Agent run ↗>"
+          # No PR means nothing was fixed and this thread needs a person --
+          # exactly the case that used to name nobody at all.
+          if [ "$pr_count" -eq 0 ] && [ -n "${OWNER_SLACK_ID:-}" ]; then
+            text="${text}"$'\n'":bust_in_silhouette: <@${OWNER_SLACK_ID}> please take a look."
+          fi
           payload=$(jq -nc \
             --arg channel    "$SLACK_CHANNEL" \
             --arg thread_ts  "$SLACK_THREAD_TS" \
@@ -1068,3 +1901,13 @@ jobs:
             -H "Authorization: Bearer ${SLACK_BOT_USER_OAUTH_TOKEN}" \
             -H 'Content-Type: application/json; charset=utf-8' \
             -d "$payload" | jq '.' || true
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

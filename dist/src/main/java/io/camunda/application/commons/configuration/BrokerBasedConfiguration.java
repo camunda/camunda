@@ -8,6 +8,7 @@
 package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
-import io.camunda.zeebe.util.MemberIdUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.Filter;
 import java.time.Duration;
@@ -73,7 +73,7 @@ public class BrokerBasedConfiguration {
   @Bean
   public MeterRegistryCustomizer<MeterRegistry> brokerIdMeterRegistryCustomizer() {
     final var cluster = properties.getCluster();
-    final var brokerId = MemberIdUtil.memberIdString(cluster.getZone(), cluster.getNodeId());
+    final var brokerId = MemberId.memberIdString(cluster.getZone(), cluster.getNodeId());
     return registry -> registry.config().commonTags("broker-id", brokerId);
   }
 
@@ -93,7 +93,7 @@ public class BrokerBasedConfiguration {
     final var ioThreads = threadCfg.getIoThreadCount();
     final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
     final var nodeId =
-        MemberIdUtil.memberIdString(
+        MemberId.memberIdString(
             properties.getCluster().getZone(), properties.getCluster().getNodeId());
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }

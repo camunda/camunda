@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.processing.engine;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
 
@@ -22,12 +23,35 @@ public class EngineMessages {
       Set.of("zeebe.broker.experimental.engine.messages.ttlCheckerBatchLimit");
   private static final Set<String> LEGACY_TTL_CHECKER_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.messages.ttlCheckerInterval");
+  private static final Set<String> LEGACY_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.messages.pendingSubscriptionRecoveryBatchLimit");
+
+  /**
+   * Configures how many message subscriptions a new leader scans per chunk when it rebuilds the
+   * pending subscriptions after recovery.
+   */
+  private int pendingSubscriptionRecoveryBatchLimit =
+      DEFAULT_MESSAGES_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT;
 
   /** Configures the maximum number of expired messages processed per Time-To-Live check. */
   private int ttlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
 
   /** Configures the interval at which buffered messages are checked for expiry. */
   private Duration ttlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+
+  public int getPendingSubscriptionRecoveryBatchLimit() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".pending-subscription-recovery-batch-limit",
+        pendingSubscriptionRecoveryBatchLimit,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_PENDING_SUBSCRIPTION_RECOVERY_BATCH_LIMIT_PROPERTIES);
+  }
+
+  public void setPendingSubscriptionRecoveryBatchLimit(
+      final int pendingSubscriptionRecoveryBatchLimit) {
+    this.pendingSubscriptionRecoveryBatchLimit = pendingSubscriptionRecoveryBatchLimit;
+  }
 
   public int getTtlCheckerBatchLimit() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(

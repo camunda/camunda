@@ -358,6 +358,7 @@ runs:
 
         maven-change:
           - 'bom/**'
+          - '.github/conftest-pom/**'
           - 'build-tools/**'
           - 'dist/**'
           - 'parent/**'
@@ -415,6 +416,7 @@ runs:
           - 'zeebe/gateway-protocol/spectral-functions/**'
           - 'zeebe/gateway-protocol/spectral-tests/**'
           - '.github/scripts/x-added-in-version-check/**'
+          - '.github/scripts/oas-breaking-change-check/**'
           - '.github/workflows/verify-x-added-in-version-annotations.yml'
 
         rdbms-change:

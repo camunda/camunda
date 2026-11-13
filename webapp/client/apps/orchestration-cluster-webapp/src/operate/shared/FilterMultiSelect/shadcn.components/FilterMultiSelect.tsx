@@ -46,6 +46,8 @@ const FilterMultiSelect: React.FC<Props> = ({name, titleText, items}) => {
 							options={options}
 							value={selectedItems}
 							placeholder={t('operate.shared.filterMultiSelect.chooseOption')}
+							searchPlaceholder={t('operate.shared.filterMultiSelect.search')}
+							emptyIndicator={t('operate.shared.filterMultiSelect.noResults')}
 							aria-labelledby={labelId}
 							onValueChange={(value) => {
 								input.onChange(value.length ? value : undefined);

@@ -221,6 +221,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAgentDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAssignmentDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledDecisionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCaseImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeConditionalFilterImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenerImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenersImpl;
@@ -679,6 +680,7 @@ public class Bpmn {
     ZeebePriorityDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeJobPriorityDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeVersionTagImpl.registerType(bpmnModelBuilder);
+    ZeebeCaseImpl.registerType(bpmnModelBuilder);
     ZeebeAdHocImpl.registerType(bpmnModelBuilder);
     ZeebeLinkedResourceImpl.registerType(bpmnModelBuilder);
     ZeebeLinkedResourcesImpl.registerType(bpmnModelBuilder);

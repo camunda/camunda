@@ -23,6 +23,7 @@ import {
 } from '@camunda/design-system';
 import {useTranslation} from 'react-i18next';
 import type {CurrentApp} from '#/shared/c3/components/C3Provider';
+import {OPERATE_BASE} from '#/shared/operateBase';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 
 type Options = {
@@ -51,7 +52,10 @@ function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor, currentApp: CamundaAppK
 		label: breadcrumb.label,
 		icon: getBreadcrumbIcon(breadcrumb.key, currentApp),
 		onClick: breadcrumb.onClick,
-		linkProps: breadcrumb.key === 'app' ? {to: `/${currentApp}`} : breadcrumb.linkProps,
+		linkProps:
+			breadcrumb.key === 'app'
+				? {to: currentApp === 'operate' ? OPERATE_BASE : `/${currentApp}`}
+				: breadcrumb.linkProps,
 		actions: breadcrumb.actions,
 		dropdownTitle: breadcrumb.dropdownTitle,
 		dropdownAriaLabel: breadcrumb.dropdownAriaLabel,

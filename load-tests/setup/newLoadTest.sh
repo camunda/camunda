@@ -42,30 +42,30 @@ elasticsearch_version=""
 case "$target_version" in
   main)
     # renovate: version=camunda-platform-8.10
-    camunda_platform_helm_chart_version="15.2.0"
+    camunda_platform_helm_chart_version="15.4.2"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     ;;
   stable-87)
     # renovate: version=camunda-platform-8.7
-    camunda_platform_helm_chart_version="12.14.1"
+    camunda_platform_helm_chart_version="12.14.3"
     allowed_storage=(elasticsearch)
     elasticsearch_version="8.17.4"
     ;;
   stable-88)
     # renovate: version=camunda-platform-8.8
-    camunda_platform_helm_chart_version="13.14.1"
+    camunda_platform_helm_chart_version="13.14.5"
     allowed_storage=(elasticsearch opensearch none)
     elasticsearch_version="8.18.0"
     ;;
   stable-89)
     # renovate: version=camunda-platform-8.9
-    camunda_platform_helm_chart_version="14.11.1"
+    camunda_platform_helm_chart_version="14.12.2"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;
   stable-810)
     # renovate: version=camunda-platform-8.10
-    camunda_platform_helm_chart_version="15.2.0"
+    camunda_platform_helm_chart_version="15.4.2"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     elasticsearch_version="8.18.0"
     ;;

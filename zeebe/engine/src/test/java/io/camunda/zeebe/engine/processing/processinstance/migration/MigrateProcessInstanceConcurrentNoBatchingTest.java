@@ -12,9 +12,9 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -973,15 +973,10 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
         .skip(1)
         .await();
 
-    // we generate a key for the intermediate catch event so we can activate it using events
-    // this requires us to pause processing to avoid concurrent database transaction modification
-    ENGINE.pauseProcessing(1);
-    final var keyGenerator =
-        ((MutableProcessingState) ENGINE.getProcessingState()).getKeyGenerator();
-    final var intermediateCatchEventKey = keyGenerator.nextKey();
-
     // we need to stop the engine to ensure events are applied after writing the records directly
     ENGINE.stop();
+    // we pick a key for the intermediate catch event so we can activate it using events
+    final var intermediateCatchEventKey = unusedKey(0);
 
     // when the event-based gateway is completed, the intermediate catch event is activated
     // and the migration is attempted while the intermediate catch event is active
@@ -1325,16 +1320,12 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
             .withElementId("wait")
             .getFirst();
 
-    // we generate a key for the intermediate catch event so we can activate it using events
-    // this requires us to pause processing to avoid concurrent database transaction modification
-    ENGINE.pauseProcessing(1);
-    final var keyGenerator =
-        ((MutableProcessingState) ENGINE.getProcessingState()).getKeyGenerator();
-    final var sequenceFlowKey = keyGenerator.nextKey();
-    final var multiInstanceBodyKey = keyGenerator.nextKey();
-
     // we need to stop the engine to ensure events are applied after writing the records directly
     ENGINE.stop();
+    // we pick keys for the sequence flow and the multi-instance body so we can activate them using
+    // events; the multi-instance body key is only on a command, so it must be the lower one
+    final var multiInstanceBodyKey = unusedKey(0);
+    final var sequenceFlowKey = unusedKey(1);
 
     // when
     final var sequenceFlowRecord = new ProcessInstanceRecord();
@@ -1397,5 +1388,16 @@ public class MigrateProcessInstanceConcurrentNoBatchingTest {
         but a concurrent command was executed on the process instance. \
         Please retry the migration."""
         .formatted(processInstanceKey);
+  }
+
+  /**
+   * Returns a key above every key in the partition's log. Call it after {@code ENGINE.stop()}, so
+   * the log no longer changes. Replaying an event moves the key generator past the event's key, but
+   * replay skips commands. So the highest key a test picks must be on an event; the engine then
+   * never hands out any of the picked keys.
+   */
+  private static long unusedKey(final int offset) {
+    final long highestKey = ENGINE.events().mapToLong(LoggedEvent::getKey).max().orElseThrow();
+    return highestKey + 1 + offset;
   }
 }

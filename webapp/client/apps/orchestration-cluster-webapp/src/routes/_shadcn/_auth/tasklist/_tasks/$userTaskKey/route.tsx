@@ -22,7 +22,7 @@ import {AssignButton} from '#/tasklist/modules/task-details/components/AssignBut
 import {TaskDetailPage} from '#/tasklist/pages/TaskDetailPage';
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 
-const POLLING_STATES: UserTask['state'][] = ['CANCELING', 'UPDATING', 'COMPLETING', 'ASSIGNING'];
+const FINAL_STATES: UserTask['state'][] = ['COMPLETED', 'CANCELED', 'FAILED'];
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKey')({
 	loader: async ({context: {queryClient}, params: {userTaskKey}}) => {
@@ -55,7 +55,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKe
 			refetchInterval(query) {
 				const state = query.state.data?.state;
 
-				return state && POLLING_STATES.includes(state) ? 5000 : false;
+				return state && !FINAL_STATES.includes(state) ? 5000 : false;
 			},
 		});
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
@@ -82,6 +82,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/_tasks/$userTaskKe
 						key={task.userTaskKey}
 						userTaskKey={task.userTaskKey}
 						taskState={task.state}
+						isSuspended={task.isSuspended}
 						assignee={task.assignee ?? null}
 						currentUser={currentUser.username}
 					/>

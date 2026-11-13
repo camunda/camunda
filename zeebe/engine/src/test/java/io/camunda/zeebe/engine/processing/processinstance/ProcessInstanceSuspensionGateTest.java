@@ -16,15 +16,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Duration;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,29 +56,27 @@ public final class ProcessInstanceSuspensionGateTest {
             .withElementId(processId)
             .getFirst();
     Assertions.assertThat(terminated.getValue()).hasProcessInstanceKey(processInstanceKey);
-    assertThat(ENGINE.getProcessingState().getSuspensionState().isSuspended(processInstanceKey))
-        .describedAs("terminating a suspended root must clear its suspension marker")
-        .isFalse();
   }
 
   @Test
-  public void shouldClearBufferedCommandsWhenCancellingSuspendedProcessInstance() {
-    // given - suspending a user task buffers its RESUME command
+  public void shouldCancelSuspendedProcessInstanceWithBufferedCommands() {
+    // given - a timer that becomes due while suspended buffers its trigger
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .userTask("task", t -> t.zeebeUserTask())
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
                 .endEvent()
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofSeconds(1));
     RecordingExporter.records()
         .withValueType(ValueType.BUFFERED_COMMAND)
         .withIntent(BufferedCommandIntent.BUFFERED)
@@ -92,24 +89,18 @@ public final class ProcessInstanceSuspensionGateTest {
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
-    // then - no orphan buffered command remains for the now-terminated root instance
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId(processId)
-        .await();
-    final List<Long> remainingBufferedCommands = new ArrayList<>();
-    ENGINE
-        .getProcessingState()
-        .getSuspensionState()
-        .visitBufferedCommands(
-            processInstanceKey, (key, command) -> remainingBufferedCommands.add(key));
-    assertThat(remainingBufferedCommands)
-        .describedAs("terminating a suspended root must clear its buffered commands")
-        .isEmpty();
+    // then - the buffered trigger does not hold up the cancellation. That terminating the root
+    // clears its buffered commands is covered by SuspensionAppliersTest
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(processId)
+                .exists())
+        .isTrue();
   }
 
   @Test
-  public void shouldClearSuspensionStateForCallActivityChildInstanceOnCascadedTermination() {
+  public void shouldTerminateSuspendedCallActivityChildInstanceOnCascadedTermination() {
     // given - a call activity child instance, suspended independently of its parent (suspension
     // does not cascade), then terminated as a side effect of the parent being cancelled
     final String parentProcessId = Strings.newRandomValidBpmnId();
@@ -142,16 +133,14 @@ public final class ProcessInstanceSuspensionGateTest {
     // when - cancelling the root cascades termination down into the suspended child instance
     ENGINE.processInstance().withInstanceKey(parentInstanceKey).cancel();
 
-    // then
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-        .withProcessInstanceKey(childInstanceKey)
-        .withBpmnProcessId(childProcessId)
-        .withElementType(BpmnElementType.PROCESS)
-        .getFirst();
-    assertThat(ENGINE.getProcessingState().getSuspensionState().isSuspended(childInstanceKey))
-        .describedAs(
-            "terminating a suspended call activity child instance must clear its suspension"
-                + " marker too, since suspension is not restricted to top-level root instances")
-        .isFalse();
+    // then - that it also clears the child's suspension marker is covered by
+    // SuspensionAppliersTest
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(childInstanceKey)
+                .withBpmnProcessId(childProcessId)
+                .withElementType(BpmnElementType.PROCESS)
+                .exists())
+        .isTrue();
   }
 }

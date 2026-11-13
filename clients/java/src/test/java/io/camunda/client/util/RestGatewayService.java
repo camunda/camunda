@@ -87,6 +87,7 @@ import io.camunda.client.protocol.rest.TopologyResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UserCreateResult;
 import io.camunda.client.protocol.rest.UserResult;
+import io.camunda.client.protocol.rest.UserTaskLookupResult;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserUpdateResult;
 import io.camunda.client.protocol.rest.VariableResult;
@@ -485,6 +486,10 @@ public class RestGatewayService {
 
   public void onUserTaskRequest(final long userTaskKey, final UserTaskResult response) {
     registerGet(RestGatewayPaths.getUserTaskUrl(userTaskKey), response);
+  }
+
+  public void onLookupUserTaskRequest(final long userTaskKey, final UserTaskLookupResult response) {
+    registerPost(RestGatewayPaths.getUserTaskLookupUrl(userTaskKey), response);
   }
 
   public void onElementInstanceRequest(

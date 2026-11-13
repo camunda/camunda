@@ -34,6 +34,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
  *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.env.<id>.prefix}
  * </ul>
  *
  * <p>Exactly one store per physical tenant is supported, and its {@code <id>} must be {@code
@@ -165,6 +166,7 @@ public class Secrets {
     private Map<String, FileStore> file = new LinkedHashMap<>();
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
+    private Map<String, EnvStore> env = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -201,6 +203,14 @@ public class Secrets {
 
     public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
       this.gcp = gcp;
+    }
+
+    public Map<String, EnvStore> getEnv() {
+      return env;
+    }
+
+    public void setEnv(final Map<String, EnvStore> env) {
+      this.env = env;
     }
   }
 
@@ -332,6 +342,35 @@ public class Secrets {
 
     public void setPath(final String path) {
       this.path = path;
+    }
+  }
+
+  /**
+   * Configuration for a store that reads secrets from the node's environment variables. The
+   * environment is read once at startup, so changing a secret requires a restart.
+   */
+  public static class EnvStore {
+
+    /**
+     * Prefix every secret variable carries: secret {@code name} is read from the variable {@code
+     * <prefix><name>}. Required, and must start with a letter, contain only letters, digits and
+     * underscores, and end with an underscore, such as {@code APP_SECRET_}. Startup is refused when
+     * it is missing or malformed, or when it starts, ignoring case, with a prefix reserved for the
+     * platform's own settings and credentials, such as {@code CAMUNDA_}, {@code ZEEBE_}, {@code
+     * SPRING_} or {@code AWS_}.
+     */
+    private String prefix = "";
+
+    public String getPrefix() {
+      return prefix;
+    }
+
+    /**
+     * Coerces {@code null} to an empty prefix, so {@link #getPrefix()} keeps its {@code NullMarked}
+     * contract whatever a caller passes.
+     */
+    public void setPrefix(final @Nullable String prefix) {
+      this.prefix = prefix == null ? "" : prefix;
     }
   }
 

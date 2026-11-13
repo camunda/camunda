@@ -1,6 +1,7 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  testImplementation(project(":zeebe-bpmn-model"))
   implementation(libs.info.picocli.picocli)
   implementation(project(":zeebe-cluster-config-api")) {
     exclude(group = "io.netty")

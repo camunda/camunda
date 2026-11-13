@@ -36,7 +36,7 @@ public class IdentitySearchResultResponseDto {
 
   @Override
   public int hashCode() {
-    return Objects.hash(result);
+    return Objects.hashCode(result);
   }
 
   @Override

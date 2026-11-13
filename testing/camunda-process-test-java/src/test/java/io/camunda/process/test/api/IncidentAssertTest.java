@@ -15,255 +15,428 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThatIncident;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.process.test.api.assertions.IncidentSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.IncidentBuilder;
-import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsProvider;
-import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith({CamundaAssertExtension.class, MockitoExtension.class})
 public class IncidentAssertTest {
 
-  private static final long PROCESS_INSTANCE_KEY = 1L;
+  private static final String ELEMENT_ID = "payment";
+  private static final long PROCESS_INSTANCE_KEY = 123L;
 
   @Mock private CamundaDataSource camundaDataSource;
-  @Mock private ProcessInstanceEvent processInstanceEvent;
 
   @BeforeEach
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
   }
 
-  @BeforeEach
-  void configureMocks() {
-    when(camundaDataSource.findProcessInstances(any()))
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentState.class,
+      names = {"ACTIVE", "PENDING", "MIGRATED"})
+  void shouldAssertIncidentIsActive(final IncidentState state) {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, state)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentState.class,
+      names = {"RESOLVED", "UNKNOWN", "UNKNOWN_ENUM_VALUE"})
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentIsNotActive(final IncidentState state) {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, state)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () -> assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive())
+        .hasMessage(
+            "Expected incident [elementId: %s] to be active, but was %s",
+            ELEMENT_ID, state.name().toLowerCase());
+  }
+
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailIfNoMatchingIncidentExists() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident("shipping", IncidentState.ACTIVE)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () -> assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive())
+        .hasMessage("No incident [elementId: %s] found", ELEMENT_ID);
+  }
+
+  @Test
+  void shouldEventuallyFindMatchingIncident() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.emptyList())
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive();
+  }
+
+  @Test
+  void shouldIgnoreNonMatchingIncidents() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Arrays.asList(
+                newIncident("shipping", IncidentState.RESOLVED),
+                newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive();
+  }
+
+  @Test
+  void shouldAssertIncidentIsResolved() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.RESOLVED)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isResolved();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = IncidentState.class,
+      names = {"ACTIVE", "PENDING", "MIGRATED", "UNKNOWN", "UNKNOWN_ENUM_VALUE"})
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentIsNotResolved(final IncidentState state) {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, state)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () -> assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isResolved())
+        .hasMessage(
+            "Expected incident [elementId: %s] to be resolved, but was %s",
+            ELEMENT_ID, state.name().toLowerCase());
+  }
+
+  @Test
+  void shouldEventuallyAssertIncidentIsResolved() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.RESOLVED)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isResolved();
+  }
+
+  @Test
+  void shouldRefreshIncidentForEachChainedAssertion() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.RESOLVED)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).isActive().isResolved();
+  }
+
+  @Test
+  void shouldChainIncidentAssertions() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+        .isActive()
+        .hasErrorType(IncidentErrorType.JOB_NO_RETRIES)
+        .hasErrorMessage("Payment failed")
+        .hasElementId(ELEMENT_ID)
+        .hasProcessInstanceKey(PROCESS_INSTANCE_KEY);
+  }
+
+  @Test
+  void shouldAssertIncidentHasErrorType() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
         .thenReturn(
             Collections.singletonList(
-                ProcessInstanceBuilder.newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+                newIncident(ELEMENT_ID, IncidentState.ACTIVE, IncidentErrorType.JOB_NO_RETRIES)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+        .hasErrorType(IncidentErrorType.JOB_NO_RETRIES);
   }
 
-  private static Incident newActiveIncident(final String id) {
-    return newIncident(id, IncidentErrorType.CONDITION_ERROR, IncidentState.ACTIVE, "error");
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentHasDifferentErrorType() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(ELEMENT_ID, IncidentState.ACTIVE, IncidentErrorType.CONDITION_ERROR)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+                    .hasErrorType(IncidentErrorType.JOB_NO_RETRIES))
+        .hasMessage(
+            "Expected incident [elementId: %s] to have error type %s, but was %s",
+            ELEMENT_ID, IncidentErrorType.JOB_NO_RETRIES, IncidentErrorType.CONDITION_ERROR);
   }
 
-  private static Incident newResolvedIncident(final String id) {
-    return newIncident(id, IncidentErrorType.CONDITION_ERROR, IncidentState.RESOLVED, "error");
+  @Test
+  void shouldEventuallyAssertIncidentHasErrorType() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(ELEMENT_ID, IncidentState.ACTIVE, IncidentErrorType.CONDITION_ERROR)))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(ELEMENT_ID, IncidentState.ACTIVE, IncidentErrorType.JOB_NO_RETRIES)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+        .hasErrorType(IncidentErrorType.JOB_NO_RETRIES);
+  }
+
+  @Test
+  void shouldAssertIncidentHasErrorMessage() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Payment failed")));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).hasErrorMessage("Payment failed");
+  }
+
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentHasDifferentErrorMessage() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Card declined")));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+                    .hasErrorMessage("Payment failed"))
+        .hasMessage(
+            "Expected incident [elementId: %s] to have error message '%s', but was '%s'",
+            ELEMENT_ID, "Payment failed", "Card declined");
+  }
+
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailSafelyIfIncidentHasNullErrorMessage() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID, IncidentState.ACTIVE, IncidentErrorType.JOB_NO_RETRIES, null)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+                    .hasErrorMessage("Payment failed"))
+        .hasMessage(
+            "Expected incident [elementId: %s] to have error message '%s', but was '%s'",
+            ELEMENT_ID, "Payment failed", null);
+  }
+
+  @Test
+  void shouldEventuallyAssertIncidentHasErrorMessage() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Card declined")))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Payment failed")));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID)).hasErrorMessage("Payment failed");
+  }
+
+  @Test
+  void shouldAssertIncidentHasElementId() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byProcessInstanceKey(PROCESS_INSTANCE_KEY))
+        .hasElementId(ELEMENT_ID);
+  }
+
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentHasDifferentElementId() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident("shipping", IncidentState.ACTIVE)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertThatIncident(IncidentSelectors.byProcessInstanceKey(PROCESS_INSTANCE_KEY))
+                    .hasElementId(ELEMENT_ID))
+        .hasMessage(
+            "Expected incident [processInstanceKey: %d] to have element ID '%s', but was '%s'",
+            PROCESS_INSTANCE_KEY, ELEMENT_ID, "shipping");
+  }
+
+  @Test
+  void shouldEventuallyAssertIncidentHasElementId() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident("shipping", IncidentState.ACTIVE)))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byProcessInstanceKey(PROCESS_INSTANCE_KEY))
+        .hasElementId(ELEMENT_ID);
+  }
+
+  @Test
+  void shouldAssertIncidentHasProcessInstanceKey() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+        .hasProcessInstanceKey(PROCESS_INSTANCE_KEY);
+  }
+
+  @Test
+  @CamundaAssertExpectFailure
+  void shouldFailIfIncidentHasDifferentProcessInstanceKey() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Payment failed",
+                    456L)));
+
+    // when / then
+    Assertions.assertThatThrownBy(
+            () ->
+                assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+                    .hasProcessInstanceKey(PROCESS_INSTANCE_KEY))
+        .hasMessage(
+            "Expected incident [elementId: %s] to have process instance key %d, but was %d",
+            ELEMENT_ID, PROCESS_INSTANCE_KEY, 456L);
+  }
+
+  @Test
+  void shouldEventuallyAssertIncidentHasProcessInstanceKey() {
+    // given
+    when(camundaDataSource.findIncidents(any()))
+        .thenReturn(
+            Collections.singletonList(
+                newIncident(
+                    ELEMENT_ID,
+                    IncidentState.ACTIVE,
+                    IncidentErrorType.JOB_NO_RETRIES,
+                    "Payment failed",
+                    456L)))
+        .thenReturn(Collections.singletonList(newIncident(ELEMENT_ID, IncidentState.ACTIVE)));
+
+    // when / then
+    assertThatIncident(IncidentSelectors.byElementId(ELEMENT_ID))
+        .hasProcessInstanceKey(PROCESS_INSTANCE_KEY);
+  }
+
+  private static Incident newIncident(final String elementId, final IncidentState state) {
+    return newIncident(elementId, state, IncidentErrorType.JOB_NO_RETRIES);
   }
 
   private static Incident newIncident(
-      final String id,
-      final IncidentErrorType type,
+      final String elementId,
       final IncidentState state,
-      final String error) {
-    return IncidentBuilder.newActiveIncident(type, error).setElementId(id).setState(state).build();
+      final IncidentErrorType incidentErrorType) {
+    return newIncident(elementId, state, incidentErrorType, "Payment failed");
   }
 
-  static class ActiveIncidentsProvider implements ArgumentsProvider {
-    @Override
-    public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
-      return Stream.of(
-          Arguments.of(
-              "Active Incident",
-              newIncident("1", IncidentErrorType.CONDITION_ERROR, IncidentState.ACTIVE, "error")),
-          Arguments.of(
-              "Migrated Incident",
-              newIncident("1", IncidentErrorType.CONDITION_ERROR, IncidentState.MIGRATED, "error")),
-          Arguments.of(
-              "Pending Incident",
-              newIncident("1", IncidentErrorType.CONDITION_ERROR, IncidentState.PENDING, "error")));
-    }
+  private static Incident newIncident(
+      final String elementId,
+      final IncidentState state,
+      final IncidentErrorType incidentErrorType,
+      final String errorMessage) {
+    return newIncident(elementId, state, incidentErrorType, errorMessage, PROCESS_INSTANCE_KEY);
   }
 
-  @Nested
-  class HasNoIncidents {
-    @Test
-    void shouldPassIfNoIncidentsFound() {
-      // given
-      when(camundaDataSource.findIncidents(any())).thenReturn(Collections.emptyList());
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveIncidents();
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @ArgumentsSource(ActiveIncidentsProvider.class)
-    @CamundaAssertExpectFailure
-    void shouldFailIfActiveIncidentsFound(final String label, final Incident incident) {
-      // given
-      when(camundaDataSource.findIncidents(any())).thenReturn(Collections.singletonList(incident));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-                      .hasNoActiveIncidents())
-          .hasMessage(
-              "Process instance [key: %d] should have no incidents, but the following incidents were active:\n"
-                  + "\t- '1' [type: CONDITION_ERROR] \"error\"",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    @CamundaAssertExpectFailure
-    void shouldFormatMultipleActiveIncidents() {
-      // given
-      final List<Incident> incidents =
-          Arrays.asList(
-              newIncident("1", IncidentErrorType.CONDITION_ERROR, IncidentState.ACTIVE, "error1"),
-              newIncident(
-                  "2", IncidentErrorType.CALLED_DECISION_ERROR, IncidentState.ACTIVE, "error2"),
-              newIncident(
-                  "3",
-                  IncidentErrorType.DECISION_EVALUATION_ERROR,
-                  IncidentState.ACTIVE,
-                  "error3"));
-      when(camundaDataSource.findIncidents(any())).thenReturn(incidents);
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-                      .hasNoActiveIncidents())
-          .hasMessage(
-              "Process instance [key: %d] should have no incidents, but the following incidents were active:\n"
-                  + "\t- '1' [type: CONDITION_ERROR] \"error1\"\n"
-                  + "\t- '2' [type: CALLED_DECISION_ERROR] \"error2\"\n"
-                  + "\t- '3' [type: DECISION_EVALUATION_ERROR] \"error3\"",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldPassIfAllIncidentsAreResolved() {
-      // given
-      when(camundaDataSource.findIncidents(any()))
-          .thenReturn(
-              Arrays.asList(
-                  newResolvedIncident("1"), newResolvedIncident("2"), newResolvedIncident("3")));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveIncidents();
-    }
-
-    @Test
-    void shouldEventuallyPassOnceAllIncidentsAreResolved() {
-      // given
-      when(camundaDataSource.findIncidents(any()))
-          .thenReturn(Collections.singletonList(newActiveIncident("1")))
-          .thenReturn(Collections.singletonList(newActiveIncident("1")))
-          .thenReturn(Collections.singletonList(newActiveIncident("1")))
-          .thenReturn(Collections.singletonList(newResolvedIncident("1")));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasNoActiveIncidents();
-    }
-  }
-
-  @Nested
-  class HasActiveIncidents {
-    @ParameterizedTest(name = "{0}")
-    @ArgumentsSource(ActiveIncidentsProvider.class)
-    void shouldPassIfActiveIncidentsFound(final String label, final Incident incident) {
-      // given
-      when(camundaDataSource.findIncidents(any())).thenReturn(Collections.singletonList(incident));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveIncidents();
-    }
-
-    @Test
-    @CamundaAssertExpectFailure
-    void shouldFailIfOnlyResolvedIncidentsAreFound() {
-      // given
-      when(camundaDataSource.findIncidents(any()))
-          .thenReturn(Collections.singletonList(newResolvedIncident("1")));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-                      .hasActiveIncidents())
-          .hasMessage(
-              "Process instance [key: %d] should have at least one active incident, but none were found",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    @CamundaAssertExpectFailure
-    void shouldFailIfNoIncidentsFound() {
-      // given
-      when(camundaDataSource.findIncidents(any())).thenReturn(Collections.emptyList());
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      Assertions.assertThatThrownBy(
-              () ->
-                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
-                      .hasActiveIncidents())
-          .hasMessage(
-              "Process instance [key: %d] should have at least one active incident, but none were found",
-              PROCESS_INSTANCE_KEY);
-    }
-
-    @Test
-    void shouldEventuallyPassIfActiveIncidentsAreFound() {
-      // given
-      when(camundaDataSource.findIncidents(any()))
-          .thenReturn(Collections.emptyList())
-          .thenReturn(Collections.emptyList())
-          .thenReturn(Collections.emptyList())
-          .thenReturn(Collections.singletonList(newActiveIncident("1")));
-
-      // when
-      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-
-      // then
-      CamundaAssert.assertThatProcessInstance(processInstanceEvent).hasActiveIncidents();
-    }
+  private static Incident newIncident(
+      final String elementId,
+      final IncidentState state,
+      final IncidentErrorType incidentErrorType,
+      final String errorMessage,
+      final long processInstanceKey) {
+    return IncidentBuilder.newActiveIncident(incidentErrorType, errorMessage)
+        .setElementId(elementId)
+        .setProcessInstanceKey(processInstanceKey)
+        .setState(state)
+        .build();
   }
 }

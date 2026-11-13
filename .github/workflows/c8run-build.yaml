@@ -13,20 +13,32 @@ on:
       - "release/**"
     paths:
       - "c8run/**"
+      # camunda.bat and the Unix launcher are generated from these templates.
+      - "dist/src/main/scripts/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
+      # C8RUN_SECRETS_MODE=env runs on the server's environment-variable secret store
+      - "secret-store/**"
+      - "dist/src/main/java/io/camunda/application/commons/secrets/**"
+      - "configuration/src/main/java/io/camunda/configuration/Secrets.java"
   pull_request:
     paths:
       - "c8run/**"
+      # camunda.bat and the Unix launcher are generated from these templates.
+      - "dist/src/main/scripts/**"
       - ".github/actions/setup-c8run/action.yml"
       - ".github/workflows/c8run-build.yaml"
+      # C8RUN_SECRETS_MODE=env runs on the server's environment-variable secret store
+      - "secret-store/**"
+      - "dist/src/main/java/io/camunda/application/commons/secrets/**"
+      - "configuration/src/main/java/io/camunda/configuration/Secrets.java"
   schedule:
     # Run at 23:30 UTC every day
     - cron: "30 23 * * *"
   workflow_dispatch:
 
 env:
-  GO_VERSION: ">= 1.23.1"
+  GO_VERSION: "1.27.3"
   TEST_OWNER: '@camunda/distribution'
 
 permissions:
@@ -86,6 +98,11 @@ jobs:
       run:
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -248,6 +265,11 @@ jobs:
     timeout-minutes: 15
     needs: camunda-dist-build
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -272,12 +294,12 @@ jobs:
           cache: false
 
       - name: Setup Java 21
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: "temurin"
           java-version: "25"
@@ -316,12 +338,14 @@ jobs:
           JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
           JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
 
+      # The directory name contains a space on purpose: C8Run must start from paths
+      # like C:\Program Files\..., where camunda.bat once failed on a quoted JAVACMD.
       - name: Extract packaged C8Run for E2E
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path e2e-distribution | Out-Null
-          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath e2e-distribution
-          $distribution = (Get-ChildItem e2e-distribution -Directory).FullName
+          New-Item -ItemType Directory -Path "e2e distribution" | Out-Null
+          Expand-Archive -Path (Get-ChildItem camunda8-run-*.zip).FullName -DestinationPath "e2e distribution"
+          $distribution = (Get-ChildItem "e2e distribution" -Directory).FullName
           "C8RUN_E2E_DIR=$distribution" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
         working-directory: .\c8run
 
@@ -421,6 +445,11 @@ jobs:
         shell: bash
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -490,12 +519,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   test_c8run_physical_tenant_isolation:
-    name: C8Run Tenant Isolation ${{ matrix.os }}
+    name: C8Run Tenant Isolation ${{ matrix.os }}${{ matrix.name_suffix }}
     needs: [test_c8run_on_unix, test_c8run_e2e_on_windows]
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+        secrets_mode: [local, env]
         include:
           - os: ubuntu-latest
             artifact: camunda8-run-build-ubuntu-latest
@@ -505,15 +535,33 @@ jobs:
             artifact: camunda8-run-build-macos-15-intel
           - os: windows-latest
             artifact: camunda8-run-build-windows
+          # adds the env-mode-only checks to every OS's env run
+          - secrets_mode: env
+            name_suffix: -env-secrets
+            default_secret: default-env-secret-value
+            list_expect: C8RUN_E2E_SECRET
+            connector_env_prefix: C8E2E_
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     permissions:
       contents: read
+    env:
+      C8RUN_SECRETS_MODE: ${{ matrix.secrets_mode }}
+      # env mode reads the secrets from these; local mode ignores them. `c8run secrets list`
+      # reads them from the test step's environment, so they are set for the whole job.
+      C8RUN_SECRETS_ENV_PREFIX: C8E2E_
+      C8E2E_DEFAULT_C8RUN_E2E_SECRET: default-env-secret-value
+      C8E2E_PT1_C8RUN_E2E_SECRET: pt1-only-secret-value
     defaults:
       run:
         shell: bash
         working-directory: ./c8run
     steps:
+      - name: Enable long paths for git
+        if: runner.os == 'Windows'
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: git config --system core.longpaths true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -567,7 +615,11 @@ jobs:
           fi
           cp ../../e2e_tests/physical-tenants-auth.yaml .
           printf '%s' 'pt1-e2e-password' | "$c8run" physical-tenants add pt1 --username alice --password-stdin
-          printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+          # c8run secrets set is disabled in env mode, where the job's C8E2E_* variables hold the secrets.
+          # The value is inlined, not read from an env variable, so c8run start can't pass it on unprefixed.
+          if [[ "$C8RUN_SECRETS_MODE" == "local" ]]; then
+            printf '%s' 'pt1-only-secret-value' | "$c8run" secrets --physical-tenant pt1 set C8RUN_E2E_SECRET --stdin
+          fi
           "$c8run" start --no-browser --config physical-tenants-auth.yaml
         working-directory: ${{ env.C8RUN_E2E_DIR }}
 
@@ -578,15 +630,19 @@ jobs:
           C8RUN_AUTH: alice:pt1-e2e-password
           C8RUN_DEFAULT_AUTH: demo:demo
           TENANT_SECRET_VALUE: pt1-only-secret-value
+          CHECK_MISSING_SECRET: "1"
           CHECK_CONNECTORS: "1"
           C8RUN_DIR: ${{ env.C8RUN_E2E_DIR }}
+          DEFAULT_SECRET_VALUE: ${{ matrix.default_secret }}
+          SECRETS_LIST_EXPECT: ${{ matrix.list_expect }}
+          CONNECTOR_ENV_PREFIX: ${{ matrix.connector_env_prefix }}
         working-directory: ./c8run/e2e_tests
 
       - name: Upload physical tenant isolation logs
         if: ${{ (failure() || cancelled()) && env.C8RUN_E2E_DIR != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: c8run-tenant-isolation-logs-${{ matrix.os }}
+          name: c8run-tenant-isolation-logs-${{ matrix.os }}${{ matrix.name_suffix }}
           path: ${{ env.C8RUN_E2E_DIR }}/log/*.log
           retention-days: 10
 
@@ -595,7 +651,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "test_c8run_physical_tenant_isolation/${{ matrix.os }}"
+          job_name: "test_c8run_physical_tenant_isolation/${{ matrix.os }}${{ matrix.name_suffix }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

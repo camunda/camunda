@@ -79,7 +79,7 @@ pom-only commit — the Gradle side almost never auto-picks-up a pom change.
 
 - **New codegen input (OpenAPI spec, SBE schema, protobuf, templated resource)** — Maven
   plugin config changes (new spec file, new template placeholder) need a matching update to
-  the Gradle `GenerateTask`/`Sync`+`ReplaceTokens` equivalent in `buildSrc/` — see
+  the Gradle `GenerateTask`/`Sync`+`filterMavenResources` equivalent in the module build — see
   [maven-plugin-equivalents.md](maven-plugin-equivalents.md). A new placeholder token with no
   Gradle-side substitution ships the literal placeholder string into the built resource.
 

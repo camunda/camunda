@@ -85,6 +85,10 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String errorMessage;
 
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinal;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -330,6 +334,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public ProcessInstanceForListViewEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -356,7 +369,8 @@ public class ProcessInstanceForListViewEntity
         rootProcessInstanceKey,
         businessId,
         suspendedDate,
-        errorMessage);
+        errorMessage,
+        storageOrdinal);
   }
 
   @Override
@@ -391,6 +405,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tags, that.tags)
         && Objects.equals(businessId, that.businessId)
         && Objects.equals(suspendedDate, that.suspendedDate)
-        && Objects.equals(errorMessage, that.errorMessage);
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(storageOrdinal, that.storageOrdinal);
   }
 }

@@ -77,12 +77,6 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
-      # Scope for the orchestration-cluster suite PR check (team-test-automation#188):
-      # base branch, whether any suite file actually changed, and the spec files
-      # the PR added/modified (so the run can gate only on the author's own tests).
-      c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
-      c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
-      c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -102,76 +96,6 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
-      # Resolve the orchestration-cluster suite PR check's scope: the base
-      # branch, whether any file under the suite directory actually changed
-      # (so a CI-only PR tripping c8-e2e-test-suite-changes via ci-relevant does
-      # not start the heavy run), and which spec files the PR added or modified
-      # (so the run gates only on the author's own tests). PR-only; on other
-      # events the outputs stay empty and the suite test job is skipped.
-      - name: Resolve C8 E2E suite PR scope
-        id: c8-e2e-suite-scope
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-          SUITE_PREFIX: qa/c8-orchestration-cluster-e2e-test-suite/
-        run: |
-          set -euo pipefail
-          echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
-
-          # One listing, carrying each file's status, so the run decision and the
-          # gating scope can read it differently. Each rename also emits a
-          # synthetic "removed<TAB>previous_filename" entry so a file moved OUT of
-          # the suite still counts for the run decision (via its old suite path);
-          # the changed-specs filter below drops the removed entry and keeps only
-          # the destination.
-          files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
-            --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
-
-          # Run decision: ANY suite file changed, including deletions — a PR that
-          # only removes a fixture, resource or spec can still break the suite and
-          # must be exercised.
-          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
-          if [[ -z "$suite_changed" ]]; then
-            echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
-            echo "run-tests=false" >> "$GITHUB_OUTPUT"
-            {
-              echo "changed-specs<<EOF"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "run-tests=true" >> "$GITHUB_OUTPUT"
-
-          # Gating scope: added/modified/renamed spec files only (a removed spec
-          # cannot fail), path relative to the suite root (matching the Playwright
-          # report), and restricted to the specs the PR matrix actually executes,
-          # so the gate never greens a changed spec it did not run:
-          # v2-stateless-tests (needs V2_STATELESS_TESTS=true, which swaps the
-          # whole project list), analytics-exporter (its own isolated project) and
-          # optimize-default-config are excluded here — they are covered by their
-          # dedicated nightly workflows, exactly as the on-demand run leaves them
-          # out. optimize-startup.spec.ts IS kept: the E2E job adds
-          # `--project=optimize-startup` whenever the branch's compose defines the
-          # Optimize service, so a change to it is validated by this check.
-          changed_specs="$(printf '%s\n' "$files" \
-            | awk -F'\t' '$1 != "removed" {print $2}' \
-            | sed -n "s#^${SUITE_PREFIX}##p" \
-            | grep -E '\.spec\.ts$' \
-            | grep -E '^tests/' \
-            | awk '!/^tests\/api\/v2\/analytics-exporter\// && (!/^tests\/api\/v2\/optimize\// || $0 == "tests/api/v2/optimize/optimize-startup.spec.ts")' \
-            || true)"
-
-          echo "Spec files gating this PR:"
-          printf '%s\n' "${changed_specs:-<none>}"
-
-          {
-            echo "changed-specs<<EOF"
-            printf '%s\n' "$changed_specs"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
@@ -186,7 +110,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.71.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -241,7 +165,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - name: Determine fetch depth for checkout
         id: depth
         run: |
@@ -277,7 +201,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -301,19 +225,32 @@ jobs:
 
   junit-vintage-check:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Lint / JUnit Vintage Engine"
+    name: "Lint / Maven POMs"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      # renovate: datasource=github-tags depName=open-policy-agent/conftest
+      CONFTEST_VERSION: '0.71.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
+      - name: Check Surefire/Failsafe excludes keep the nested class default
+        # Also report this check when the junit-vintage-engine check failed
+        if: ${{ !cancelled() }}
+        run: |
+          .github/scripts/download-with-retry.sh \
+            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            "${RUNNER_TEMP}/conftest.tar.gz"
+          tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
+          rm -f "${RUNNER_TEMP}/conftest.tar.gz"
+          git ls-files -z '*pom.xml' | xargs -0 "${RUNNER_TEMP}/conftest" test --rego-version v0 -o github --parser xml --policy .github/conftest-pom
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -335,7 +272,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -346,7 +283,7 @@ jobs:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
       - name: Set up Helm
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -384,7 +321,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -426,13 +363,13 @@ jobs:
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Set up Helm
-        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -460,14 +397,22 @@ jobs:
     name: "Lint / Flattened POM Metadata"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      # Installed before the Maven build so an apt outage fails the job before
+      # spending minutes on the build; the composite below then skips its own install.
+      - name: Install xmllint
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libxml2-utils
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: validate-pom-metadata
@@ -506,7 +451,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -540,7 +485,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -590,7 +535,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -666,7 +611,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -735,7 +680,7 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -787,7 +732,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - name: Set all test constants
         id: set-constants
         run: |
@@ -796,14 +741,14 @@ jobs:
           # ============================================================================
 
           # Zeebe modules owned by @camunda/core-features
-          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp'"
+          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-micrometer',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp',':camunda-secret-store-env',':camunda-secret-store-azure'"
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
           BACKUP="':zeebe-backup',':zeebe-backup-store-azure',':zeebe-backup-store-common',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3',':zeebe-backup-testkit'"
 
           # Zeebe modules owned by @camunda/zeebe-distributed-platform
-          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config-api',':zeebe-cluster-config-impl',':zeebe-cluster-config-openapi',':zeebe-cluster-config-rest',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
+          DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-messaging-api',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config-api',':zeebe-cluster-config-impl',':zeebe-cluster-config-openapi',':zeebe-cluster-config-rest',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
           # Zeebe modules owned by @camunda/core-features
           CLIENT="':camunda-client-java'"
@@ -1079,7 +1024,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1184,7 +1129,7 @@ jobs:
             owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1266,7 +1211,7 @@ jobs:
       contents: read
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@v7
@@ -1354,49 +1299,53 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
+    name: "Physical Tenant Acceptance Tests / ${{ matrix.database.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - database-type: "h2"
-            database-name: "H2"
+        database:
+          - type: "h2"
+            name: "H2"
             # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that
             # skip RDBMS-incompatible tests.
-            it-database-type: "rdbms_h2"
-            database-image-version: ""
-          - database-type: "elasticsearch"
-            database-name: "ES 8.x"
-            it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            it-type: "rdbms_h2"
+            image-version: ""
+          - type: "elasticsearch"
+            name: "ES 9.x"
+            it-type: "es"
+            image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - database-type: "opensearch"
-            database-name: "OS 3.x"
-            it-database-type: "os"
-            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+          - type: "opensearch"
+            name: "OS 3.x"
+            it-type: "os"
+            image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
             # Points the PT at a genuinely separate OS instance (db/docker-compose.yml's
             # opensearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-opensearch-url: "http://localhost:9201"
+        # Unsharded, the suite took 15-18 of its 20 minutes, so a slow cache restore alone timed
+        # it out. Each shard maps to a physical-tenant-<shard> Maven profile.
+        shard: [ "client", "non-client" ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "${{ matrix.database-type }}"
-      database-name: "${{ matrix.database-name }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      it-database-type: "${{ matrix.it-database-type }}"
+      database-type: "${{ matrix.database.type }}"
+      database-name: "${{ matrix.database.name }}"
+      database-image-version: "${{ matrix.database.image-version }}"
+      it-database-type: "${{ matrix.database.it-type }}"
       physical-tenant: "tenanta"
-      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
-      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
+      physical-tenant-elasticsearch-url: "${{ matrix.database.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.database.physical-tenant-opensearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
-      # physical-tenant profile.
-      maven-profiles: "physical-tenant"
+      # physical-tenant-<shard> profiles.
+      maven-profiles: "physical-tenant-${{ matrix.shard }}"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
       test-suite-name: "acceptance"
+      shard: "${{ matrix.shard }}"
       # Fork PRs can't authenticate to GCS (no Vault access, see gcs-build-cache-auth),
       # so fall back to each reusable workflow's build-zeebe path instead of the shared distball.
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
@@ -1414,9 +1363,9 @@ jobs:
             it-database-type: "rdbms_h2"
             database-image-version: ""
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
@@ -1454,9 +1403,9 @@ jobs:
             it-database-type: "rdbms_h2"
             database-image-version: ""
           - database-type: "elasticsearch"
-            database-name: "ES 8.x"
+            database-name: "ES 9.x"
             it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
@@ -1503,7 +1452,7 @@ jobs:
       # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
       TEST_OWNER: '@camunda/data-layer'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1598,7 +1547,7 @@ jobs:
       # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
       TEST_OWNER: '@camunda/data-layer'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1727,7 +1676,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1883,7 +1832,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1900,6 +1849,8 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -Dquickly
+          retry-max-attempts: 2
+          retry-timeout-minutes: 6
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
@@ -1959,10 +1910,10 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-9 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1978,7 +1929,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -2370,7 +2321,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2424,11 +2375,11 @@ jobs:
     permissions:
       contents: write  # required by Dependency Submission API
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: '21'
@@ -2499,12 +2450,12 @@ jobs:
       pull-requests: write
       actions: read  # required to list snapshot-workflow runs for base resolution (Workstream D)
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -2588,7 +2539,7 @@ jobs:
       run:
         working-directory: ${{ env.SUITE_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2612,30 +2563,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # Automatic PR run of the orchestration-cluster suite against a local stack,
-  # mirroring the manual on-demand matrix for the PR's base branch. It blocks the
-  # merge only on specs this PR added or modified (gating: changed); failures in
-  # untouched, historically flaky tests are reported but do not block. The PR
-  # scope (base branch, which specs changed, whether to run at all) is computed
-  # by the detect-changes job. Runs only on a non-fork pull_request — fork PRs
-  # cannot authenticate to Vault, which the RDBMS leg's setup-build needs.
-  # See camunda/team-test-automation#188.
-  c8-e2e-test-suite-tests:
-    name: "C8 E2E Test Suite / Tests"
-    if: >-
-      needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
-      && github.event.pull_request.head.repo.fork != true
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
-    secrets: inherit
-    permissions:
-      contents: read
-    with:
-      base: ${{ needs.detect-changes.outputs.c8-e2e-suite-base }}
-      test-ref: ${{ github.sha }}
-      changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
-      gating: changed
-
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -2651,7 +2578,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2667,7 +2594,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
-      - uses: bufbuild/buf-action@85aebf73123b5c15fd5528aaecbf9129cddf7fa7 # v1.6.0
+      - uses: bufbuild/buf-action@37ac33d8960807670a6e9719080e885197b09cc6 # v1.7.0
         if: |
           !(contains(steps.pr-body.outputs.result, 'BREAKING CHANGE:') ||
             contains(github.event.merge_group.head_commit.message, 'BREAKING CHANGE:'))
@@ -2689,6 +2616,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   openapi-lint:
+    # Owner: CamundaEx
+    # Support: @camunda-ex-medic
+    # Slack team: #team-camunda-ex
     name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
@@ -2699,7 +2629,7 @@ jobs:
       # renovate: datasource=npm depName=@camunda8/spectral-cli
       SPECTRAL_VERSION: '6.16.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2721,7 +2651,7 @@ jobs:
       - name: Run OpenAPI Linter (Structural pass)
         # Spectral provides comprehensive OpenAPI validation including:
         # - Schema structure validation (catches issues like required: false at property level)
-        # - x-eventually-consistent annotation correctness (command operations must not be marked eventually consistent)
+        # - x-eventually-consistent annotation correctness (every operation must declare it; command operations must not be marked eventually consistent)
         # - Works correctly with multi-part specs using external $ref
         run: >
           spectral lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
@@ -2773,7 +2703,7 @@ jobs:
     env:
       VERIFIER_DIR: .github/scripts/x-added-in-version-check
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - name: Checkout PR
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
@@ -2787,10 +2717,13 @@ jobs:
         uses: ./.github/actions/npm-ci-with-retry
         with:
           directory: ${{ env.VERIFIER_DIR }}
+      - name: Test verifier
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
+        run: npm test
       - name: Build verifier artefacts (endpoint-map + version-map)
         working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
-          # build-artefacts.mjs runs the vendored build-bundler-version-map.mjs
+          # build-artefacts.mjs runs build-bundler-version-map.mjs
           # directly, which uses LATEST_BRANCH as the camunda/camunda ref to
           # bundle as the next (in-development) version. Must be the commit
           # the step above checked out, otherwise the difference between the
@@ -2827,6 +2760,125 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  openapi-breaking-change-check:
+    name: "Lint / C8 REST OpenAPI breaking changes"
+    # Reporting-only (phase 1): posts the breaking changes a PR introduces relative to the last
+    # release as a PR comment and job summary. Findings never fail the job; setup failures and check
+    # errors do. API governance accepts a break with the `skip-oasdiff` label, which skips the job
+    # from the next push on.
+    # Fork PRs get the job summary only: their token is read-only, so no comment is posted.
+    # See .github/scripts/oas-breaking-change-check/README.md
+    if: >-
+      github.event_name == 'pull_request' &&
+      needs.detect-changes.outputs.openapi-changes == 'true' &&
+      !contains(github.event.pull_request.labels.*.name, 'skip-oasdiff')
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      CHECK_DIR: .github/scripts/oas-breaking-change-check
+      # renovate: datasource=github-releases depName=oasdiff/oasdiff
+      OASDIFF_VERSION: '1.37.0'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+          # HEAD is the PR merge commit; its first parent (HEAD^1) is the PR base.
+          fetch-depth: 2
+      - name: Install check dependencies
+        timeout-minutes: 3
+        shell: bash
+        run: python3 -m pip install --quiet --disable-pip-version-check -r "${CHECK_DIR}/requirements.txt"
+      - name: Install oasdiff
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          base_url="https://github.com/oasdiff/oasdiff/releases/download/v${OASDIFF_VERSION}"
+          asset="oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz"
+          dir="${RUNNER_TEMP}/oasdiff"
+          mkdir -p "${dir}"
+          # --retry-all-errors: curl only retries timeouts and 5xx by default, so a transient TLS
+          # handshake failure (exit 35) would fail the job without a single retry
+          curl_opts=(-fsSL --connect-timeout 10 --max-time 120 --retry 5 --retry-delay 2 --retry-all-errors)
+          curl "${curl_opts[@]}" -o "${dir}/${asset}" "${base_url}/${asset}"
+          curl "${curl_opts[@]}" -o "${dir}/checksums.txt" "${base_url}/checksums.txt"
+          (cd "${dir}" && grep -F " ${asset}" checksums.txt | sha256sum -c -)
+          tar -xzf "${dir}/${asset}" -C "${dir}" oasdiff
+      - name: Check for breaking changes
+        id: check
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          out="${RUNNER_TEMP}/oas-check"
+          # check.py exits 0 for both statuses and non-zero when it cannot complete; the comment step
+          # then marks an existing comment as stale.
+          rc=0
+          python3 "${CHECK_DIR}/check.py" --base-ref "${BASE_REF}" --oasdiff "${RUNNER_TEMP}/oasdiff/oasdiff" \
+            --out-dir "${out}" || rc=$?
+          if [ -f "${out}/report.md" ]; then
+            cat "${out}/report.md" >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          if [ -f "${out}/status" ]; then
+            echo "status=$(cat "${out}/status")" >> "${GITHUB_OUTPUT}"
+          fi
+          exit "${rc}"
+      - name: Post PR comment
+        # Fork PRs have a read-only token and cannot comment; they get the job summary above.
+        if: always() && !github.event.pull_request.head.repo.fork
+        timeout-minutes: 3
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: bash "${CHECK_DIR}/post-comment.sh"
+      - name: Import Slack webhook secret
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking')
+        timeout-minutes: 3
+        id: slack-secrets
+        continue-on-error: true
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL;
+      # Workflow Builder webhook: payload must be flat string variables (pr_url, run_url, reason), no nested blocks
+      - name: Notify Slack on breaking changes or failure
+        if: >-
+          !github.event.pull_request.head.repo.fork &&
+          (failure() || steps.check.outputs.status == 'breaking') &&
+          steps.slack-secrets.outcome == 'success'
+        timeout-minutes: 3
+        continue-on-error: true
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          webhook: ${{ steps.slack-secrets.outputs.OASDIFF_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            {"pr_url": "${{ github.event.pull_request.html_url }}", "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "reason": "${{ steps.check.outputs.status == 'breaking' && 'breaking changes found' || 'check errored' }}"}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   openapi-webapp-client-typecheck:
     # Checks that a change to the C8 REST OpenAPI spec does not break the Webapp Client types.
     # `npm ci` runs the `prepare` script of @camunda/camunda-api-zod-schemas, which regenerates the
@@ -2844,7 +2896,7 @@ jobs:
       TEST_TYPE: Build
       CLIENT_DIR: webapp/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2902,9 +2954,9 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: '44.171.1'
+      RENOVATE_VERSION: '44.224.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2944,10 +2996,12 @@ jobs:
     name: "Shell / Script Tests"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 12
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2983,12 +3037,16 @@ jobs:
 
       - name: Run Renovate assignee alignment tests
         run: node --test .github/scripts/align-renovate-assignees.test.mjs
+      - name: Run ESUP backport warning tests
+        run: node --test .github/scripts/esup-backport-warning.test.mjs
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests
         run: bats .github/scripts/oc-nightly-suite-health/suite-health.bats
       - name: Run OC nightly fix-PR reopen gate tests
         run: bats .github/scripts/nightly-fix-reopen.bats
+      - name: Run OC nightly release-backport gate tests
+        run: bats .github/scripts/nightly-fix-release-backport.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -3007,7 +3065,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -3017,7 +3075,7 @@ jobs:
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
@@ -3053,7 +3111,6 @@ jobs:
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
-      - c8-e2e-test-suite-tests
       - codeowners-check
       - commitlint
       - database-integration-tests
@@ -3073,6 +3130,7 @@ jobs:
       - load-test-helm-lockfile
       - load-test-k6-prettier
       - maven-spotless-linter
+      - openapi-breaking-change-check
       - openapi-lint
       - openapi-webapp-client-typecheck
       - openapi-x-added-in-version-check
@@ -3172,19 +3230,31 @@ jobs:
     # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); pending EngOps exception.
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # check-snapshot-deploy lists the run's artifacts
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
+        with:
+          github-token: ${{ github.token }}
+          artifacts: |
+            fe-operate-${{ github.run_id }}
+            fe-webapp-${{ github.run_id }}
+            fe-identity-${{ github.run_id }}
       - name: Import Nexus credentials
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: nexus-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
@@ -3197,6 +3267,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Check time since last snapshot deploy
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: snapshot-gate
         env:
           NEXUS_USR: ${{ steps.nexus-secrets.outputs.NEXUS_USR }}
@@ -3221,6 +3292,7 @@ jobs:
             echo "fresh=false" >> "$GITHUB_OUTPUT"
           fi
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           maven-cache-key-modifier: snapshots
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -3229,19 +3301,23 @@ jobs:
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). mvn runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-webapp-${{ github.run_id }}
           path: webapp/client/apps/orchestration-cluster-webapp/dist
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
       # Not produced by build-platform-frontend, so still built inline here.
       - uses: ./.github/actions/build-frontend
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-cpt-coverage-fe
         with:
           directory: ./testing/camunda-process-test-coverage
@@ -3259,7 +3335,7 @@ jobs:
       # that retry_on: error does NOT retry. timeout_minutes needs real margin for this to be useful,
       # else every run just hits the timeout wall on attempt 1 (see incident 2026-09-02).
       - name: Compile and deploy snapshot artifacts
-        if: github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true'
+        if: steps.deploy-check.outputs.deploy == 'true' && (github.event_name != 'push' || steps.snapshot-gate.outputs.fresh != 'true')
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         with:
           max_attempts: 2
@@ -3267,12 +3343,15 @@ jobs:
           retry_wait_seconds: 15
           timeout_minutes: 20
           command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true -Ddistro.zip.attach=false -Doptimize.distro.attach=false compile generate-sources source:jar javadoc:jar deploy
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -3302,19 +3381,31 @@ jobs:
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # check-snapshot-deploy lists the run's artifacts
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
+        with:
+          github-token: ${{ github.token }}
+          artifacts: |
+            fe-operate-${{ github.run_id }}
+            fe-webapp-${{ github.run_id }}
+            fe-identity-${{ github.run_id }}
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -3324,18 +3415,22 @@ jobs:
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). build-zeebe runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-webapp-${{ github.run_id }}
           path: webapp/client/apps/orchestration-cluster-webapp/dist
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
       - uses: ./.github/actions/build-zeebe
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
@@ -3343,6 +3438,7 @@ jobs:
           retry-max-attempts: 2
           retry-timeout-minutes: 7
       - uses: ./.github/actions/build-platform-docker
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-camunda-docker
         with:
           repository: camunda/camunda
@@ -3353,12 +3449,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -3378,7 +3477,9 @@ jobs:
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      actions: read  # check-snapshot-deploy lists the run's artifacts
+      contents: read  # check-snapshot-deploy reads the branch head
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
@@ -3387,12 +3488,20 @@ jobs:
     env:
       TEST_OWNER: '@camunda/core-features'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Check whether to deploy the snapshot
+        id: deploy-check
+        uses: ./.github/actions/check-snapshot-deploy
+        with:
+          github-token: ${{ github.token }}
+          artifacts: |
+            fe-optimize-${{ github.run_id }}
       - uses: ./.github/actions/setup-build
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -3402,19 +3511,23 @@ jobs:
       # Optimize frontend bundle is built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). The Optimize assembly runs with -PskipFrontendBuild below.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
       # Builds io.camunda deps from source instead of Nexus to avoid a race with deploy-snapshots.
       # See https://github.com/camunda/camunda/pull/59937 for details.
       - uses: ./.github/actions/build-zeebe
+        if: steps.deploy-check.outputs.deploy == 'true'
         with:
           maven-extra-args: -Dquickly
       - name: Generate Optimize production .tar.gz
+        if: steps.deploy-check.outputs.deploy == 'true'
         uses: ./.github/actions/run-maven
         with:
           parameters: install -f optimize -DskipTests -Dskip.docker -PskipFrontendBuild,runAssembly -T1
       - uses: ./.github/actions/build-platform-docker
+        if: steps.deploy-check.outputs.deploy == 'true'
         id: build-optimize-docker
         with:
           repository: camunda/optimize
@@ -3425,12 +3538,15 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: optimize.Dockerfile
           push: true
+      # A stale re-run of the branch head fails by design (see check-snapshot-deploy). The
+      # stale-rerun reason keeps it in CI analytics, and the base-branch alert can ignore it.
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          user_reason: ${{ steps.deploy-check.outputs.stale == 'true' && 'stale-rerun' || '' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

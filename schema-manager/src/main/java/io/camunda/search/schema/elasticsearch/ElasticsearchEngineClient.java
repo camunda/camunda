@@ -28,7 +28,7 @@ import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.IndexSettings;
-import co.elastic.clients.elasticsearch.indices.IndexTemplate;
+import co.elastic.clients.elasticsearch.indices.IndexTemplateWithRollover;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -55,6 +55,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,6 +68,15 @@ import java.util.stream.Collectors;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
+
+  private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
+      "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
+          + "'monitor' cluster privilege required to verify cluster health during startup. "
+          + "The Camunda readiness probe will not pass until this is resolved. "
+          + "To fix: grant the 'monitor' cluster privilege to the service account, "
+          + "or disable the check by setting "
+          + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.";
+
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
   private static final Slices AUTO_SLICES =
@@ -201,7 +211,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       return client
           .indices()
           .getAlias(req -> req.index(List.copyOf(indexNames)))
-          .result()
+          .aliases()
           .entrySet()
           .stream()
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().aliases().keySet()));
@@ -237,8 +247,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       return client
           .indices()
-          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
-          .result()
+          // only this setting is requested: the typed model parses every returned setting, so an
+          // unrelated value it does not expect would fail the whole read
+          .getSettings(
+              req ->
+                  req.index(List.copyOf(indexNames))
+                      .name("index.number_of_shards")
+                      .ignoreUnavailable(true))
+          .settings()
           .entrySet()
           .stream()
           .flatMap(
@@ -267,8 +283,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       return client
           .indices()
-          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
-          .result()
+          // only this setting is requested: the typed model parses every returned setting, so an
+          // unrelated value it does not expect would fail the whole read
+          .getSettings(
+              req ->
+                  req.index(List.copyOf(indexNames))
+                      .name("index.number_of_replicas")
+                      .ignoreUnavailable(true))
+          .settings()
           .entrySet()
           .stream()
           .flatMap(
@@ -314,7 +336,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private boolean lifecyclePolicyMatches(final String policyName, final String deletionMinAge) {
     try {
       final var lifecycle =
-          client.ilm().getLifecycle(req -> req.name(policyName)).result().get(policyName);
+          client.ilm().getLifecycle(req -> req.name(policyName)).lifecycles().get(policyName);
       if (lifecycle == null) {
         // policy does not exist yet, so there is nothing to compare against
         return false;
@@ -430,6 +452,45 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public void awaitActivePrimaries(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return;
+    }
+    final var timeout = Duration.ofSeconds(10);
+    try {
+      for (final String batch :
+          SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var existing = getIndexNames(batch);
+        if (existing.isEmpty()) {
+          continue;
+        }
+        final var response =
+            client
+                .cluster()
+                .health(
+                    r ->
+                        r.index(List.copyOf(existing))
+                            .waitForStatus(HealthStatus.Yellow)
+                            .timeout(Time.of(t -> t.time(timeout.toMillis() + "ms"))));
+        if (response.timedOut()) {
+          throw new SearchEngineException(
+              "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                  .formatted(batch, timeout, response.status()));
+        }
+      }
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    }
+  }
+
+  @Override
   public boolean isHealthy() {
     try {
       final var response = client.cluster().health(r -> r.timeout(Time.of(t -> t.time("500ms"))));
@@ -438,14 +499,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           && !response.status().equals(HealthStatus.Red);
     } catch (final ElasticsearchException e) {
       if (e.status() == 403) {
-        throw new SearchEngineHealthCheckPermissionException(
-            "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
-                + "'monitor' cluster privilege required to verify cluster health during startup. "
-                + "The Camunda readiness probe will not pass until this is resolved. "
-                + "To fix: grant the 'monitor' cluster privilege to the service account, "
-                + "or disable the check by setting "
-                + "'camunda.data.secondary-storage.elasticsearch.health-check-enabled=false'.",
-            e);
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
       }
       LOG.warn(
           "Elasticsearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
@@ -506,7 +560,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           client
               .indices()
               .get(req -> req.index(pattern).ignoreUnavailable(true))
-              .result()
+              .indices()
               .keySet());
     } catch (final IOException | ElasticsearchException e) {
       final var errMsg = String.format("Failed to retrieve index names for pattern '%s'", pattern);
@@ -564,7 +618,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       return client
           .indices()
           .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
-          .result()
+          .mappings()
           .entrySet()
           .stream()
           .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
@@ -738,12 +792,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private static String storedSettingsFingerprint(final IndexTemplate template) {
+  private static String storedSettingsFingerprint(final IndexTemplateWithRollover template) {
     final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
     return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
-  private IndexTemplate getIndexTemplateState(
+  private IndexTemplateWithRollover getIndexTemplateState(
       final IndexTemplateDescriptor indexTemplateDescriptor) {
     try {
       return client

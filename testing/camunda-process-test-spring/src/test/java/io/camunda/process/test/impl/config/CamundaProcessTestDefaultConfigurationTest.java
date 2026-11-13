@@ -320,6 +320,24 @@ public class CamundaProcessTestDefaultConfigurationTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.process-test.cluster-secrets.ROCKET_API_KEY=zee-test-key",
+        "camunda.process-test.cluster-secrets.NASA_TOKEN=moon-mission-token"
+      })
+  class ShouldApplyClusterSecretsConfiguration {
+
+    @Autowired private CamundaProcessTestRuntimeConfiguration configuration;
+
+    @Test
+    void shouldReadClusterSecrets() {
+      assertThat(configuration.getClusterSecrets())
+          .containsEntry("ROCKET_API_KEY", "zee-test-key")
+          .containsEntry("NASA_TOKEN", "moon-mission-token");
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
         "io.camunda.process.test.connectors-enabled=true",
         "io.camunda.process.test.camunda-docker-image-version=8.8.0-legacy",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy"

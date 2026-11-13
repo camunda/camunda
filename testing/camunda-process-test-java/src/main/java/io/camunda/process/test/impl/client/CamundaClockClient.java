@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /** Interface for manipulating the Camunda cluster clock in process tests. */
-public interface CamundaClockClient {
+public interface CamundaClockClient extends AutoCloseable {
 
   /**
    * Returns the current time of the cluster.
@@ -44,4 +44,8 @@ public interface CamundaClockClient {
 
   /** Resets the cluster time to the system time. */
   void resetTime();
+
+  /** Releases the resources of the client. */
+  @Override
+  void close();
 }

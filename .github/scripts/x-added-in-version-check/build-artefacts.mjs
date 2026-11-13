@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generates both version-map.json and endpoint-map.json by running
- * build-bundler-version-map.mjs (vendored from camunda/return-of-api-added-
- * in-analysis) directly in this directory, and copying the produced
+ * build-bundler-version-map.mjs directly in this directory, and copying the produced
  * `output/bundler-version-map.json` and `output/endpoint-map.json` to the
  * configured paths.
  *
@@ -38,7 +37,7 @@ const endpointMapPath = resolve(
 const bundlerSpecsDir = resolve(
   process.env.BUNDLER_SPECS_DIR ?? join(scriptDir, "artefacts", "bundler-specs"),
 );
-// Scratch output dir for the vendored script's own OUTPUT_PATH, separate from
+// Scratch output dir for the builder's own OUTPUT_PATH, separate from
 // the persistent bundler-specs cache above. Wiped before every run so a
 // failed previous run's stale files can never be mistaken for fresh output.
 const outputDir = join(scriptDir, "artefacts", ".bundler-output");

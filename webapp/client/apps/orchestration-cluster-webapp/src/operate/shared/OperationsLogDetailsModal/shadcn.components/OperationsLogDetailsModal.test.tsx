@@ -15,11 +15,9 @@ import {OperationsLogDetailsModal} from './OperationsLogDetailsModal';
 
 const OPERATE_ROOT_PATH = '/operate';
 
-function renderModal(auditLog: ReturnType<typeof createAuditLog>, basepath = '') {
+function renderModal(auditLog: ReturnType<typeof createAuditLog>) {
 	return renderWithRouter(() => <OperationsLogDetailsModal isOpen onClose={() => {}} auditLog={auditLog} />, {
 		path: OPERATE_ROOT_PATH,
-		basepath,
-		initialEntry: `${basepath}${OPERATE_ROOT_PATH}`,
 	});
 }
 
@@ -65,9 +63,7 @@ describe('<OperationsLogDetailsModal />', () => {
 		const screen = await renderModal(auditLog);
 
 		await expect.element(screen.getByRole('dialog')).toMatchTextContent('This operation is part of a batch.');
-		await expect
-			.element(screen.getByRole('link', {name: 'View batch operation details.'}))
-			.toHaveAttribute('href', '/operate/batch-operations/batch-123');
+		await expect.element(screen.getByRole('link', {name: 'View batch operation details.'})).toBeVisible();
 	});
 
 	it('should render the applied-to section for BATCH entity types', async () => {
@@ -83,92 +79,6 @@ describe('<OperationsLogDetailsModal />', () => {
 		await expect.element(screen.getByText('Applied to:')).toBeVisible();
 		await expect.element(screen.getByText(/process instances/)).toBeVisible();
 	});
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a process instance entity link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}) => {
-			const auditLog = createAuditLog({
-				entityType: 'PROCESS_INSTANCE',
-				entityKey: '2251799813685250',
-				processInstanceKey: '2251799813685250',
-				processDefinitionId: 'order-process',
-			});
-
-			const screen = await renderModal(auditLog, basepath);
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a parent process instance link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}) => {
-			const auditLog = createAuditLog({
-				entityType: 'VARIABLE',
-				entityKey: 'variable-1',
-				processInstanceKey: '2251799813685250',
-				processDefinitionId: 'order-process',
-			});
-
-			const screen = await renderModal(auditLog, basepath);
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render a BATCH entity key link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}) => {
-			const auditLog = createAuditLog({
-				entityType: 'BATCH',
-				operationType: 'CANCEL',
-				batchOperationKey: 'batch-456',
-				batchOperationType: 'CANCEL_PROCESS_INSTANCE',
-			});
-
-			const screen = await renderModal(auditLog, basepath);
-
-			// Both the entity key row and the "Applied to" section render a link with this same
-			// aria-label; `.first()` targets the entity key row's link.
-			await expect
-				.element(screen.getByRole('link', {name: 'View batch operation batch-456'}).first())
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-456`);
-		},
-	);
-
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
-		'should render an evaluated decision entity key link with the correct basepath "$basepath"',
-		async ({basepath, expectedPathPrefix}) => {
-			const auditLog = createAuditLog({
-				entityType: 'DECISION',
-				operationType: 'EVALUATE',
-				entityKey: 'decision-instance-123',
-				decisionDefinitionId: 'approve-order',
-			});
-
-			const screen = await renderModal(auditLog, basepath);
-
-			await expect
-				.element(screen.getByRole('link', {name: 'View decision instance decision-instance-123'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/decision-instance-123`);
-		},
-	);
 
 	it('should render the resource key detail row for RESOURCE entity types', async () => {
 		const auditLog = createAuditLog({

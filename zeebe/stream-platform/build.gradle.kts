@@ -1,10 +1,15 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(project(":zeebe-scheduler"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)

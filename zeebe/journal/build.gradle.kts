@@ -1,4 +1,8 @@
-plugins { id("buildlogic.sbe-conventions") }
+plugins {
+  id("buildlogic.sbe-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 sbe {
   schemaFiles.from(layout.projectDirectory.file("src/main/resources/journal-schema.xml"))
@@ -15,6 +19,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.core)
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   api(libs.com.github.jnr.jnr.ffi)
   api(libs.com.github.jnr.jnr.constants)
   testImplementation(libs.com.github.jnr.jnr.posix)

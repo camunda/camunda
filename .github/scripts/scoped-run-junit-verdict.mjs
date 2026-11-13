@@ -3,8 +3,7 @@
 // Decide whether ONE coverage-plan case passed, from a JUnit XML report.
 //
 // Used by the two scoped-run workflows that verify a generated test — the
-// component one (vitest) and the unit one (Maven Surefire). See
-// camunda/team-test-automation#83.
+// component one (vitest) and the unit one (Maven Surefire).
 //
 // ONE script for both, because both write the same document. Vitest's junit
 // reporter and Surefire emit the same `<testcase name= classname=>` elements

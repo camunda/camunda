@@ -23,8 +23,9 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.state.message.PendingSubscriptions;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
+import io.camunda.zeebe.engine.util.client.UserTaskLookupClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -102,6 +104,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -149,6 +152,8 @@ public final class EngineRule extends ExternalResource {
         cfg.setEnableRpaReexportMigration(false);
         cfg.setEnableProcessDefinitionRestore(false);
       };
+  private BiConsumer<Integer, EngineConfiguration> partitionEngineConfigModifier =
+      (partitionId, cfg) -> {};
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
@@ -161,7 +166,10 @@ public final class EngineRule extends ExternalResource {
     this.partitionCount = partitionCount;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
+            PARTITION_ID,
+            partitionCount,
+            DefaultZeebeDbFactory.defaultFactory(partitionCount),
+            sharedStorage);
   }
 
   public static EngineRule singlePartition() {
@@ -297,6 +305,16 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  /**
+   * Modifies the engine configuration of a single partition, applied after the modifiers given to
+   * {@link #withEngineConfig(Consumer)}. Lets a test give partitions different settings.
+   */
+  public EngineRule withPartitionEngineConfig(
+      final BiConsumer<Integer, EngineConfiguration> modifier) {
+    partitionEngineConfigModifier = partitionEngineConfigModifier.andThen(modifier);
+    return this;
+  }
+
   public EngineRule withSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
     this.searchClientsProxy = searchClientsProxy;
     return this;
@@ -375,6 +393,8 @@ public final class EngineRule extends ExternalResource {
                 }
 
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
+                partitionEngineConfigModifier.accept(
+                    partitionId, recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
                         recordProcessorContext,
                         partitionCount,
@@ -414,6 +434,10 @@ public final class EngineRule extends ExternalResource {
 
   public void snapshot() {
     environmentRule.snapshot();
+  }
+
+  public void snapshot(final int partitionId) {
+    environmentRule.snapshot(partitionId);
   }
 
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
@@ -471,12 +495,22 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public ProcessingState getProcessingState() {
-    return environmentRule.getProcessingState();
+  /**
+   * Returns the records written to the first partition's log, read with a fresh reader. Unlike
+   * {@link RecordingExporter}, this does not depend on how far the export has progressed.
+   */
+  public RecordStream events() {
+    return environmentRule.events();
   }
 
-  public ProcessingState getProcessingState(final int partitionId) {
-    return environmentRule.getProcessingState(partitionId);
+  /**
+   * Returns the process message subscriptions waiting for a reply from the message partition. They
+   * are kept in a thread-safe map in memory, so unlike the rest of the processing state they can be
+   * read while the partition processes.
+   */
+  public List<PendingSubscription> getPendingProcessMessageSubscriptions() {
+    return PendingSubscriptions.of(
+        environmentRule.getProcessingState().getTransientPendingSubscriptionState());
   }
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
@@ -581,6 +615,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public UserTaskLookupClient userTaskLookup() {
+    return new UserTaskLookupClient(environmentRule);
   }
 
   public UserClient user() {
@@ -698,7 +736,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  ((ProcessingDbState) getProcessingState())
+                  ((ProcessingDbState) environmentRule.getProcessingState())
                       .forEach(
                           columnFamily,
                           keyInstance,

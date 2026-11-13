@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useNavigate} from '@tanstack/react-router';
 import {useCallback} from 'react';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
@@ -16,7 +16,7 @@ import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/co
 
 type Props = {
 	task: UserTask;
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	search: TasklistIndexSearch;
 	formSchema: string | null;
 	variables: Variable[];
@@ -55,6 +55,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 		currentUser: currentUser.username,
 		taskState: task.state,
 		assignee: task.assignee ?? null,
+		isSuspended: task.isSuspended,
 		onComplete,
 	});
 	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED';
@@ -67,6 +68,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 				completionStatus={status}
 				isCompletionAllowed={isCompletionAllowed}
 				isHidden={isHidden}
+				isSuspended={task.isSuspended}
 				onSubmit={complete}
 			/>
 		);
@@ -82,6 +84,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 			isCompleted={task.state === 'COMPLETED'}
 			completionStatus={status}
 			isCompletionHidden={isHidden}
+			isSuspended={task.isSuspended}
 			hasNextPage={hasNextVariablesPage}
 			isFetchingNextPage={isFetchingNextVariablesPage}
 			isNextPageError={isNextVariablesPageError}

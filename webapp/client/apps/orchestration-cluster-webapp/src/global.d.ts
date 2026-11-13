@@ -13,6 +13,8 @@ declare module '@tanstack/history' {
 		operateVariableFilterDraft?: {name: string; value: string};
 		operateVariableFilterOpenedFromList?: true;
 		operateInstanceMigration?: unknown;
+		operateHideOptionalFilters?: true;
+		operateLoginReferrer?: string;
 	}
 }
 

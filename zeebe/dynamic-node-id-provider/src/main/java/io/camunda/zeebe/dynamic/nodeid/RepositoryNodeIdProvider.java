@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.nodeid;
 
-import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.nodeid.Lease.VersionMappings;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
@@ -20,7 +19,6 @@ import java.time.InstantSource;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +48,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final Duration renewalDelay;
   private @Nullable ScheduledFuture<?> renewalTask;
   private final AtomicBoolean shutdownInitiated = new AtomicBoolean(false);
+  private final @Nullable String zone;
   private VersionMappings knownVersionMappings = VersionMappings.empty();
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
@@ -64,6 +63,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration readinessCheckTimeout,
       final Duration expiredLeaseThreshold,
       final String taskId,
+      final @Nullable String zone,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
         Objects.requireNonNull(nodeIdRepository, "nodeIdRepository cannot be null");
@@ -74,6 +74,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     this.expiredLeaseThreshold =
         Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
+    this.zone = zone;
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
@@ -143,8 +144,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   @Override
-  public void setMembers(final Set<Member> currentMembers) {
-    executor.execute(() -> updateVersionMappings(currentMembers));
+  public void setMemberVersions(final Map<MemberId, Version> memberVersions) {
+    executor.execute(() -> updateVersionMappings(memberVersions));
   }
 
   @Override
@@ -333,12 +334,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     }
   }
 
-  private void updateVersionMappings(final Set<Member> currentMembers) {
+  private void updateVersionMappings(final Map<MemberId, Version> memberVersions) {
     final var nodeInstances =
-        currentMembers.stream()
-            .filter(m -> isBroker(m.id()))
-            .map(m -> Map.entry(m.id().nodeIdx(), Version.of(m.nodeVersion())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        memberVersions.entrySet().stream()
+            // leases are per zone, but members of different zones share the same nodeIdx
+            .filter(e -> isBroker(e.getKey()) && e.getKey().isInZone(zone))
+            .collect(Collectors.toMap(e -> e.getKey().nodeIdx(), Entry::getValue));
     knownVersionMappings = new VersionMappings(nodeInstances);
     LOG.trace("Updating known version mappings to {}", knownVersionMappings);
   }

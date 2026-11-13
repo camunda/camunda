@@ -529,6 +529,15 @@ Implementation:
 3. Use [setup-yarn-cache](https://github.com/camunda/infra-global-github-actions/tree/main/setup-yarn-cache) action, see [usage example in #21607](https://github.com/camunda/camunda/pull/21607).
 4. No implementation since Golang usage is low.
 
+### Maven cache hit reporting
+
+[setup-maven-cache](https://github.com/camunda/camunda/tree/main/.github/actions/setup-maven-cache)
+classifies every restore as `exact` (primary key matched), `fallback` (a `restore-keys` prefix matched an
+older `pom.xml` hash, so most dependencies are present) or `miss` (cold repository), or `skipped` when the
+cache step did not run. The result is printed in the job's step summary and is available as the
+`cache-result` action output. `cache-hit` alone cannot be used for a hit ratio, as it is only `true` on an
+exact match.
+
 ### Bounding a degraded cache backend
 
 `actions/cache` aborts a stalled segment download with a *warning* rather than a failure, then
@@ -596,6 +605,7 @@ If you need to use a 3rd party action not on the list, ask the Engineering Opera
 <summary>List of allowed 3rd party actions and reusable workflows</summary>
 EnricoMi/publish-unit-test-result-action@*,
 YunaBraska/java-info-action@*,
+anthropics/claude-code-action@*,
 asdf-vm/actions/install@*,
 astral-sh/setup-uv@*,
 atomicjar/testcontainers-cloud-setup-action@*,
@@ -642,6 +652,7 @@ mxschmitt/action-tmate@*,
 ncipollo/release-action@*,
 nick-fields/retry@*,
 octokit/*@*,
+oven-sh/setup-bun@*,
 peaceiris/actions-gh-pages@*,
 peter-evans/create-or-update-comment@*,
 peter-evans/find-comment@*,
@@ -909,6 +920,7 @@ Follow the Monorepo CI medic routines and check out the available [CI runbooks](
 There can be many factors influencing that and it is sometimes hard to find the root caues. Below list should provide guidance:
 
 1. Try to rerun the failing CI check(s) at least to overcome transient problems.
+   * Only re-run recent runs (up to 2 days old). Older runs have lost their short-lived artifacts, and a re-run whose commit is no longer the branch head skips its snapshot deploys so it can't roll the snapshot back. Start a new run instead (push or `workflow_dispatch`), see [this runbook entry](./ci-runbooks.md#re-run-of-an-old-workflow-run-in-the-deploy-jobs).
 2. If on a Pull Request, consider whether the code changes on that Pull Request might cause the CI check failure.
 3. Check if there is an [open issue](#issue-tracking) about that failing CI check, e.g. by searching for the error message.
 4. [Ask Copilot about the failure](https://github.blog/changelog/2025-01-15-copilot-users-can-ask-about-a-failed-actions-job-ga/) using the `Explain error` button

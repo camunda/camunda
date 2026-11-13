@@ -410,16 +410,16 @@ jobs:
 
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: ">=1.23.1"
+          go-version: "1.27.3"
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Setup Java 21
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: "temurin"
           java-version: "21"
 
-      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: "temurin"
           java-version: "25"
@@ -633,7 +633,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@95c6f97de08ce6befa8e1b222140676204d792fb # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -684,12 +684,20 @@ jobs:
             echo "PR for ${pr_branch} already exists; updated its branch."
             exit 0
           fi
+          # The ticked opt-out below is what the release-notes PR-gate reads; without it the
+          # check fails because this version bump tracks no issue.
+          body="$(printf '%s\n' \
+            "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train." \
+            "" \
+            "## Related issues" \
+            "" \
+            "- [x] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)")"
           gh pr create \
             --repo "${{ github.repository }}" \
             --base "${BRANCH}" \
             --head "${pr_branch}" \
             --title "deps: update c8run versions to ${CAMUNDA_VERSION}" \
-            --body "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train."
+            --body "${body}"
 
       - name: Observe build status
         if: always()

@@ -7,7 +7,11 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated.MAIN_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel;
@@ -68,7 +72,76 @@ class DecisionInstanceExportHandlerTest {
     assertThat(dbModelCaptor.getValue().businessId()).isNull();
   }
 
+  @Test
+  void shouldSetStorageOrdinal() {
+    // given
+    final var record = decisionEvaluationRecord("order-123", 1001);
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().storageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalIfMainIndex() {
+    // given
+    final var record = decisionEvaluationRecord("order-123", MAIN_INDEX);
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().storageOrdinal()).isNull();
+  }
+
+  @Test
+  void shouldExportEveryDecisionReadingEvaluatedDecisionsOnce() {
+    // given - getEvaluatedDecisions() copies every decision on each call in the broker, so
+    // calling it per decision makes the export cost quadratic in the DRG size
+    final List<EvaluatedDecisionValue> decisions =
+        List.of(evaluatedDecision("d1"), evaluatedDecision("d2"), evaluatedDecision("d3"));
+    final DecisionEvaluationRecordValue value =
+        mock(
+            DecisionEvaluationRecordValue.class,
+            delegatesTo(
+                ImmutableDecisionEvaluationRecordValue.builder()
+                    .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+                    .withEvaluatedDecisions(decisions)
+                    .build()));
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter, times(3)).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getAllValues())
+        .extracting(DecisionInstanceDbModel::decisionDefinitionId)
+        .containsExactly("d1", "d2", "d3");
+    verify(value, times(1)).getEvaluatedDecisions();
+  }
+
+  private EvaluatedDecisionValue evaluatedDecision(final String decisionId) {
+    return ImmutableEvaluatedDecisionValue.builder()
+        .from(factory.generateObject(EvaluatedDecisionValue.class))
+        .withDecisionId(decisionId)
+        .withDecisionType("DECISION_TABLE")
+        .build();
+  }
+
   private Record<DecisionEvaluationRecordValue> decisionEvaluationRecord(final String businessId) {
+    return decisionEvaluationRecord(businessId, 0);
+  }
+
+  private Record<DecisionEvaluationRecordValue> decisionEvaluationRecord(
+      final String businessId, final int storageOrdinal) {
     final EvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
@@ -79,6 +152,7 @@ class DecisionInstanceExportHandlerTest {
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(List.of(evaluatedDecision))
             .withBusinessId(businessId)
+            .withStorageOrdinal(storageOrdinal)
             .build();
     return factory.generateRecord(
         ValueType.DECISION_EVALUATION,

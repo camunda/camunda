@@ -5,7 +5,8 @@ import java.nio.file.Files
 
 plugins {
   id("buildlogic.sbe-conventions")
-  id("buildlogic.serial-test-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
 }
 
 // Exclude stream-protocol.xml from regular resources - we handle it separately for SBE generation
@@ -73,7 +74,8 @@ tasks.named<JavaExec>("generateSbe") { dependsOn(copyStreamProtocol, createProto
 dependencies {
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":zeebe-atomix-messaging-api"))
+  implementation(project(":zeebe-atomix-membership-api"))
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-scheduler"))
@@ -82,6 +84,7 @@ dependencies {
   testImplementation(projectArtifact(":zeebe-scheduler", ArtifactKind.TESTS))
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+  testImplementation(project(":zeebe-atomix-cluster"))
   testImplementation(project(":zeebe-test-util"))
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.org.awaitility.awaitility)

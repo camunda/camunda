@@ -15,7 +15,7 @@ import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {
-	mockGetGlobalTaskListenerEndpoint,
+	mockSearchGlobalTaskListenersEndpoint,
 	mockUpdateGlobalTaskListenerEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createGlobalTaskListener} from '#/shared-test-modules/api-mocks/global-task-listeners';
@@ -76,7 +76,9 @@ describe('<EditGlobalTaskListenerModal />', () => {
 				successResponse: HttpResponse.json(updatedGlobalTaskListener),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalTaskListenerEndpoint({successResponse: HttpResponse.json(updatedGlobalTaskListener)}),
+			mockSearchGlobalTaskListenersEndpoint({
+				successResponse: HttpResponse.json({items: [updatedGlobalTaskListener], page: {totalItems: 1}}),
+			}),
 		);
 
 		const screen = await render(

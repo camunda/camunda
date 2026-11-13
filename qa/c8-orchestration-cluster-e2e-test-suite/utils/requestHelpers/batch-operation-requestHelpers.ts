@@ -8,8 +8,14 @@
 
 import {APIRequestContext, APIResponse, expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
-import {createCancellationBatch} from '@requestHelpers';
-import {defaultAssertionOptions} from 'utils/constants';
+import {
+  createCancellationBatch,
+  expectProcessInstanceCount,
+} from './process-instance-requestHelpers';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from 'utils/constants';
 import {validateResponse} from 'json-body-assertions';
 
 export async function cancelBatchOperation(
@@ -146,6 +152,72 @@ export async function expectBatchState(
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
     timeout: 120_000,
   });
+}
+
+export async function runBatchAndWaitForCompletion(
+  request: APIRequestContext,
+  endpoint:
+    | '/process-instances/cancellation'
+    | '/process-instances/deletion'
+    | '/process-instances/suspension'
+    | '/process-instances/resumption',
+  filter: Record<string, unknown>,
+): Promise<string> {
+  const res = await request.post(buildUrl(endpoint), {
+    headers: jsonHeaders(),
+    data: {filter},
+  });
+
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: endpoint,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  const batchKey = json.batchOperationKey;
+
+  await expectBatchState(request, batchKey, 'COMPLETED');
+  return batchKey;
+}
+
+export async function runProcessInstanceBatch(
+  request: APIRequestContext,
+  path: '/process-instances/suspension' | '/process-instances/resumption',
+  processDefinitionId: string,
+  sourceState: string,
+  targetState: string,
+  count: number,
+) {
+  await expectProcessInstanceCount(
+    request,
+    {processDefinitionId, state: sourceState},
+    count,
+    extendedAssertionOptions,
+  );
+  const batchOperationKey = await runBatchAndWaitForCompletion(request, path, {
+    processDefinitionId,
+  });
+  await expect(async () => {
+    const result = await request.get(
+      buildUrl('/batch-operations/{batchOperationKey}', {batchOperationKey}),
+      {headers: jsonHeaders()},
+    );
+    await assertStatusCode(result, 200);
+    const batch = await result.json();
+    expect(batch.operationsTotalCount).toBe(count);
+    expect(batch.operationsCompletedCount).toBe(count);
+    expect(batch.operationsFailedCount).toBe(0);
+  }).toPass(extendedAssertionOptions);
+  await expectProcessInstanceCount(
+    request,
+    {processDefinitionId, state: targetState},
+    count,
+    extendedAssertionOptions,
+  );
 }
 
 // Post-migration user-task search waits for the secondary-storage indexer to

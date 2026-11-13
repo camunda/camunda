@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {delay, http, HttpResponse} from 'msw';
@@ -101,7 +101,9 @@ describe('<DiagramHeader />', () => {
 		let showVersion2 = () => {};
 		const Header = () => {
 			const [definition, setDefinition] = useState(version1);
-			showVersion2 = () => setDefinition(version2);
+			useEffect(() => {
+				showVersion2 = () => setDefinition(version2);
+			}, []);
 			return <DiagramHeader processDefinitionSelection={{kind: 'single-version', definition}} />;
 		};
 		const screen = await renderWithRouter(Header, {path: '/operate/processes', initialEntry: '/operate/processes'});

@@ -67,6 +67,7 @@ val openApiGenerateSimple =
       mapOf(
         "OffsetDateTime" to "String",
         "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+        "ClearableDateTime" to "String",
         "ResourceKey" to "String",
         "ScopeKey" to "String",
         "ElementInstanceKey" to "String",
@@ -122,7 +123,6 @@ val openApiGenerateSimple =
           "io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum",
         "ProcessInstanceStateFilterProperty" to
           "io.camunda.gateway.protocol.model.ProcessInstanceStateEnum",
-        "ProtectionModeFilterProperty" to "io.camunda.gateway.protocol.model.ProtectionModeEnum",
         "OperationTypeFilterProperty" to
           "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
         "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum",

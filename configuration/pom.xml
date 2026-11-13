@@ -88,6 +88,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-s3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-db</artifactId>
     </dependency>
 
@@ -109,7 +114,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
     </dependency>
 
     <dependency>
@@ -259,6 +264,30 @@
 
   <build>
     <plugins>
+      <!-- Generates defaults.yaml from the Spring configuration metadata. It is not shipped from
+           here: dist ships its committed copy and DefaultConfigTest checks the two are identical.
+           To update the committed copy, run mvn exec:java@generate-default-config -pl dist/ -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-default-config</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>process-classes</phase>
+            <configuration>
+              <mainClass>io.camunda.configuration.GenerateDefaults</mainClass>
+              <arguments>
+                <argument>${project.build.outputDirectory}/META-INF/spring-configuration-metadata.json</argument>
+                <argument>${project.build.directory}/generated/default-config/defaults.yaml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
@@ -282,6 +311,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
+          <!-- The configuration processor rewrites spring-configuration-metadata.json from the
+               sources it sees. After a partial recompile it drops the untouched classes, which
+               corrupts the generated defaults.yaml. Recompile the whole module instead. -->
+          <useIncrementalCompilation>true</useIncrementalCompilation>
           <annotationProcessorPaths>
             <path>
               <groupId>org.springframework.boot</groupId>

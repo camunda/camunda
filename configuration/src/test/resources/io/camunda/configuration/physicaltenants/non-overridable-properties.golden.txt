@@ -101,6 +101,7 @@ data.primary-storage.rocks-db.max-memory-fraction
 data.primary-storage.rocks-db.memory-allocation-strategy
 data.primary-storage.rocks-db.memory-fraction
 data.primary-storage.rocks-db.memory-limit
+data.primary-storage.rocks-db.memory-minimum
 data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key
@@ -138,6 +139,9 @@ security.http-headers.referrer-policy.value
 security.multi-tenancy
 security.multi-tenancy.api-enabled
 security.multi-tenancy.checks-enabled
+security.saas
+security.saas.cluster-id
+security.saas.organization-id
 security.session
 security.session.heartbeat.enabled
 security.session.max-inactive-interval

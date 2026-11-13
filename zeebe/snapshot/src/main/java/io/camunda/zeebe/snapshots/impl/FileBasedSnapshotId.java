@@ -149,8 +149,7 @@ public final class FileBasedSnapshotId implements SnapshotId {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        index, term, processedPosition, exporterPosition, brokerId, checksum.hashCode());
+    return Objects.hash(index, term, processedPosition, exporterPosition, brokerId, checksum);
   }
 
   @Override

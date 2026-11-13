@@ -31,7 +31,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -172,8 +171,7 @@ public final class JobFailProcessor
             value.getStorageOrdinal(),
             value.getBpmnProcessIdBuffer(),
             value.getTenantId(),
-            variables,
-            VariableMetadataLookup.NONE);
+            variables);
       } catch (final ValidationException e) {
         // as we perform validation for variables upfront, this should never happen
         throw new IllegalArgumentException(
@@ -245,6 +243,6 @@ public final class JobFailProcessor
 
   @Override
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
-    return SuspensionAction.REJECT;
+    return SuspensionAction.PROCESS;
   }
 }

@@ -22,10 +22,12 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.util.Either;
@@ -82,6 +84,39 @@ class StreamProcessorErrorHandlingTest {
     verify(commandResponseWriter, TIMEOUT.times(1)).recordType(RecordType.COMMAND_REJECTION);
     verify(commandResponseWriter, TIMEOUT.times(1)).valueType(ValueType.ERROR);
     verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(anyInt(), anyLong());
+  }
+
+  @Test
+  void shouldMarkRejectionErrorRecordAsNotOrdinalControlled() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any())).thenThrow(new RuntimeException());
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenThrow(new RuntimeException());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.userCommand()
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    logStreamReader.next(); // command
+
+    await("should write rejection to log")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    final var record = logStreamReader.next();
+    final var recordMetadata = new RecordMetadata();
+    record.readMetadata(recordMetadata);
+    assertThat(recordMetadata.getIntent()).isEqualTo(ErrorIntent.CREATED);
+
+    final var errorRecord = new ErrorRecord();
+    record.readValue(errorRecord);
+    assertThat(errorRecord.getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test

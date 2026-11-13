@@ -77,7 +77,7 @@ Run lint from `webapp/client/`. Run the remaining commands from `webapp/client/a
 | -------------------------- | --------------------------------------------- |
 | `npm ci`                   | Install dependencies (from `webapp/client/`)  |
 | `npm run dev:oc`           | Dev server on `:3000` (from `webapp/client/`) |
-| `npm run lint`             | ESLint + Prettier (from `webapp/client/`)     |
+| `npm run lint`             | oxlint + Prettier (from `webapp/client/`)     |
 | `npm run typecheck`        | TypeScript check across all tsconfigs         |
 | `npm run test:unit`        | Unit tests — Vitest in headless Chromium      |
 | `npm run test:unit:ui`     | Unit tests — visible browser for debugging    |

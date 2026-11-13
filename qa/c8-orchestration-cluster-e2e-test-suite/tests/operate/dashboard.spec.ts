@@ -28,7 +28,8 @@ let instanceIds: string[] = [];
 // and Process Instances counts separate for each project's worker.
 const runTag = `dashboard-spec-${Math.random().toString(36).slice(2, 10)}`;
 
-const DASHBOARD_INCIDENT_BASE_MESSAGE = `[${runTag}] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.`;
+const dashboardIncidentBaseMessage = (tag: string) =>
+  `[${tag}] This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.`;
 
 test.beforeAll(async ({request}) => {
   test.setTimeout(180000);
@@ -50,10 +51,11 @@ test.beforeAll(async ({request}) => {
   ]);
 
   createWorker('dashboardIncidentGenerator', true, {}, (job) => {
+    const message = dashboardIncidentBaseMessage(job.variables.runTag);
     if (job.variables.incidentType === 'Incident Type A') {
-      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type A`);
+      return job.fail(`${message} Type A`);
     } else {
-      return job.fail(`${DASHBOARD_INCIDENT_BASE_MESSAGE} Type B`);
+      return job.fail(`${message} Type B`);
     }
   });
 
@@ -67,9 +69,11 @@ test.beforeAll(async ({request}) => {
     createSingleInstance('processWithAnIncident', 1),
     createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type A',
+      runTag,
     }),
     createSingleInstance('dashboardIncidentGenerator', 1, {
       incidentType: 'Incident Type B',
+      runTag,
     }),
   ]);
 
@@ -172,6 +176,9 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.getIncidentRow(typeALink),
+      ).toBeVisible();
       // Instances with an incident open on the Incidents tab by default;
       // switch to Variables before asserting on the variable value.
       await operateProcessInstancePage.clickVariablesTab();
@@ -188,6 +195,9 @@ test.describe('Dashboard', () => {
       ).toBeVisible();
 
       await operateDashboardPage.clickViewInstanceLink();
+      await expect(
+        operateProcessInstancePage.getIncidentRow(typeBLink),
+      ).toBeVisible();
       await operateProcessInstancePage.clickVariablesTab();
       await expect(
         operateProcessInstancePage.variablesList.getByText('"Incident Type B"'),

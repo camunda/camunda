@@ -58,9 +58,6 @@
             <forkCount>${testForkCount}</forkCount>
             <reuseForks>true</reuseForks>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
           </configuration>
         </plugin>
 

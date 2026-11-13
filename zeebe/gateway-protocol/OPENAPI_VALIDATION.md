@@ -15,8 +15,9 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Schema compliance with OpenAPI 3.0 JSON Schema spec
   - Custom naming conventions (e.g., no "flow node" terminology)
   - Property description requirements
+  - Clearable schemas (`x-clearable`) must accept an empty string, and properties referencing them must not declare a `format`
   - Key property type validation (`...Key` properties must be strings)
-  - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
+  - Eventually-consistent annotation validation (every operation must declare `x-eventually-consistent` as `true` or `false`; command operations must not be marked as eventually consistent)
   - Required property existence validation (entries in required array must exist in properties)
   - Operation versioning annotation validation (every operation must declare `x-added-in-version`)
   - Operation scope annotation validation (every operation must declare `x-scope` as `cluster-wide` or `physical-tenant`)
@@ -69,9 +70,21 @@ required:
   - myField  # ✓ Correct - array at object level
 ```
 
-### `x-eventually-consistent` on Command Operations
+### `x-eventually-consistent` on Operations
 
-Command (mutating) operations must not be marked with `x-eventually-consistent: true`.
+Every operation must declare `x-eventually-consistent` explicitly as a boolean `true` or `false` (rule `require-eventually-consistent`). A missing value, `null`, or a quoted string such as `"true"` fails validation, because SDK generators read the annotation to decide whether to emit polling wrappers and a missing value silently means "no polling".
+
+In addition, command (mutating) operations must be marked `x-eventually-consistent: false`. Rule `no-eventually-consistent-on-commands` rejects `true` on them.
+
+**Missing:**
+
+```yaml
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      # ❌ x-eventually-consistent is not declared
+```
 
 **Wrong:**
 
@@ -129,6 +142,38 @@ schema:
 ```
 
 See [#46224](https://github.com/camunda/camunda/issues/46224) for details.
+
+### Request Body Fields Must Not Be Nullable
+
+Request fields express optionality by being left out of `required`, not through `nullable`. A nullable request field makes SDK generators emit a three-state type (`T | undefined | null` in JS, `T | Unset | None` in Python). The `no-nullable-request-properties` rule fails on any `nullable: true` inside a request body schema. This includes the body schema itself: an optional body is expressed with `requestBody.required: false`, and a nullable body schema is allowlisted under the key `<root>`. Existing released fields, and PATCH fields where an explicit `null` erases the stored value, are listed in `spectral-functions/verifyNoNullableRequestProperties.allowlist.json` after API Governance review. Each entry belongs to a group carrying a `reason`.
+
+**Wrong:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+            nullable: true
+```
+
+**Correct:**
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        properties:
+          name:
+            type: string
+# Optional: simply leave `name` out of the required array
+```
+
+See [#66952](https://github.com/camunda/camunda/issues/66952) for details.
 
 ### Missing `x-added-in-version` on an Operation
 

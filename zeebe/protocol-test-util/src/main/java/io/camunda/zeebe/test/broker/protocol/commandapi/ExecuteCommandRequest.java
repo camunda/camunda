@@ -42,7 +42,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   private byte[] encodedCmd;
   private ActorFuture<DirectBuffer> responseFuture;
   private Intent intent = null;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = AuthInfo.EMPTY;
 
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
@@ -76,7 +76,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization;
     return this;
   }
 

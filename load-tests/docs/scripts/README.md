@@ -85,7 +85,7 @@ Done
 ```
 
 **GitHub Actions Workflow:**
-You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, event type (cpu/wall/alloc), and optional profiler options through the GitHub UI.
+You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, and optional profiler options (it profiles the cpu and alloc events) through the GitHub UI.
 
 ## PartitionDistribution.sh
 

@@ -6,10 +6,12 @@
 @REM updated since 2015 and is effectively frozen, so this copy should not
 @REM require maintenance.
 @REM
-@REM The only change we made is the "CAMUNDA ADDITION" block below, which loads
-@REM an optional config\jvm.options @argfile before the exec call so that
-@REM runtime-specific JVM flags (e.g. flags only available on JDK 23+) can be
-@REM applied in Docker images without breaking the general distribution.
+@REM We made two changes, both marked "CAMUNDA ADDITION"/"CAMUNDA CHANGE" below:
+@REM - an optional config\jvm.options @argfile is loaded before the exec call so
+@REM   that runtime-specific JVM flags (e.g. flags only available on JDK 23+) can
+@REM   be applied in Docker images without breaking the general distribution;
+@REM - the JAVACMD default uses "if not defined" so that a quoted JAVACMD (as set
+@REM   by C8Run for a Java path with spaces) does not break the script.
 @REM -----------------------------------------------------------------------------
 @echo off
 
@@ -62,7 +64,13 @@ for %%i in ("%~dp0..") do set "BASEDIR=%%~fi"
 set REPO=
 #ENV_SETUP#
 
-if "%JAVACMD%"=="" set JAVACMD=#JAVA_BINARY#
+@REM --- CAMUNDA CHANGE ----------------------------------------------------------
+@REM Upstream compares the quoted JAVACMD value with an empty string. That is a
+@REM syntax error once JAVACMD is itself quoted and contains a space, e.g.
+@REM "C:\Program Files\c8run\jre\bin\java.exe", and the quotes are needed by
+@REM the exec call below. Test whether the variable is defined instead.
+if not defined JAVACMD set JAVACMD=#JAVA_BINARY#
+@REM --- END CAMUNDA CHANGE ------------------------------------------------------
 
 if "%REPO%"=="" set REPO=%BASEDIR%\#REPO#
 

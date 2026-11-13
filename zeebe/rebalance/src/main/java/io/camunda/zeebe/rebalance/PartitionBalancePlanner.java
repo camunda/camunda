@@ -88,9 +88,9 @@ public final class PartitionBalancePlanner {
             .orElseThrow(
                 () ->
                     new IllegalStateException(
-                        "No member of physical tenant %s's partition group is eligible to lead "
-                            + "partition %d, so it cannot be planned"
-                                .formatted(physicalTenantId, partitionId)));
+                        ("No member of physical tenant %s's partition group is eligible to lead "
+                                + "partition %d, so it cannot be planned")
+                            .formatted(physicalTenantId, partitionId)));
     final var currentLeader = groupLeaders.currentLeader(partitionId);
     if (currentLeader.map(desiredLeader::equals).orElse(false)) {
       return PartitionRebalance.alreadyLeader(physicalTenantId, partitionId, desiredLeader);

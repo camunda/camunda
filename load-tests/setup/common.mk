@@ -94,7 +94,7 @@ endif
 # Without secondary storage the exporters do no indexing work, so the cluster sustains a higher rate.
 # Keep the rates in sync with load-tests/docs/scripts/optimal.json, which the PR benchmark comment shows.
 ifeq ($(secondary_storage),none)
-_scenario_load_test_flags = --set load-tester.starter.rate=500
+_scenario_load_test_flags = --set load-tester.starter.rate=650
 else
 _scenario_load_test_flags = --set load-tester.starter.rate=300
 endif
@@ -167,6 +167,9 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # generate-physical-tenant-values target below and generate-physical-tenant-values.sh.
 ifneq ($(physical_tenant_count),0)
 platform_values += -f camunda-platform-physical-tenants.yaml
+# The broker fetches the OIDC discovery document from the issuer URL, so with tenants the pinned
+# Keycloak hostname must be reachable from inside the cluster (see generate-physical-tenant-values.sh).
+_load_test_setup_flags += --set keycloak.hostname=keycloak
 endif
 
 # Disable Optimize if not enabled

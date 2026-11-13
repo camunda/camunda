@@ -28,6 +28,16 @@ final class MemberTest {
   private static final Address ADDRESS = Address.from("localhost", 26502);
 
   @Test
+  void shouldThrowWhenMemberZoneDoesNotMatchMemberIdPrefix() {
+    // given
+    final var memberId = MemberId.from("us-east_0");
+
+    // then
+    assertThatThrownBy(() -> Member.builder(memberId).withZoneId("us").build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldPropagateZoneFromMemberIdWhenBuildingZonedMemberViaFactory() {
     // given
     final var memberId = MemberId.from("us-east", 0);

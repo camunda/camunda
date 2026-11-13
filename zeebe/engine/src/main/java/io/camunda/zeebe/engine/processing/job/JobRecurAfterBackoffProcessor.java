@@ -78,6 +78,9 @@ public class JobRecurAfterBackoffProcessor
         case SUSPENDED:
           textState = "its process instance is suspended";
           break;
+        case FAILED:
+          textState = "its backoff has not ended yet";
+          break;
         default:
           textState = "no such job was found";
           break;
@@ -88,8 +91,13 @@ public class JobRecurAfterBackoffProcessor
     }
   }
 
+  /**
+   * Uses the same boundary as {@link JobState#findBackedOffJobs}, which hands over a job whose
+   * backoff ends at the current time and does not check that job again. Rejecting it here would
+   * leave the job failed.
+   */
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < clock.millis();
+    return job.getRecurringTime() <= clock.millis();
   }
 
   @Override

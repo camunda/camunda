@@ -401,6 +401,11 @@ public final class TestCluster implements CloseableSilently {
     shutdown();
   }
 
+  /** Makes the ports of all nodes available to other applications again. */
+  public void releasePorts() {
+    nodes().values().forEach(TestApplication::releasePorts);
+  }
+
   private boolean isReady(final TestApplication<?> node) {
     if (!node.isStarted()) {
       return false;

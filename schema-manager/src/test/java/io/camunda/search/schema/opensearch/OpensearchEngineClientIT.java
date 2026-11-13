@@ -9,6 +9,7 @@ package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.MAX_INDEX_PATTERN_REQUEST_LENGTH;
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,16 +30,19 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState;
 import io.camunda.search.schema.utils.SchemaTestUtil;
+import io.camunda.search.schema.utils.SearchEngineClientUtils;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Named;
@@ -47,6 +51,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.generic.Body;
@@ -67,6 +72,94 @@ public class OpensearchEngineClientIT {
     objectMapper =
         ((JacksonJsonpMapper) openSearchClient._transport().jsonpMapper()).objectMapper();
     opensearchEngineClient = new OpensearchEngineClient(openSearchClient, objectMapper);
+  }
+
+  @Test
+  void shouldReturnWhenPrimaryShardsAreActive() throws IOException {
+    // given
+    final var indexName = "await_active-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(indexName));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)));
+  }
+
+  @Test
+  void shouldIgnoreMissingIndicesWhenAwaitingPrimaries() {
+    // given an index that does not exist, e.g. deleted by ILM after the schema was created
+    final var missingIndex = "await_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitExistingIndicesWhenSomeAreMissing() throws IOException {
+    // given
+    final var existingIndex = "await_mixed_existing-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var missingIndex = "await_mixed_missing-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(existingIndex));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                opensearchEngineClient.awaitActivePrimaries(List.of(existingIndex, missingIndex)));
+  }
+
+  @Test
+  void shouldAwaitPrimariesAcrossMultipleBatches() throws IOException {
+    // given two existing indices, one in the first and one in the last batch, separated by enough
+    // missing indices to need several requests
+    final var firstIndex = "await_batch_first-" + ENGINE_CLIENT_TEST_MARKERS;
+    final var lastIndex = "await_batch_last-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient.indices().create(req -> req.index(firstIndex));
+    openSearchClient.indices().create(req -> req.index(lastIndex));
+    final var indexNames = new ArrayList<String>();
+    indexNames.add(firstIndex);
+    IntStream.range(0, 2 * MAX_INDEX_PATTERN_REQUEST_LENGTH / 100)
+        .mapToObj(
+            i ->
+                "await_batch_missing_%03d-%s-%s"
+                    .formatted(i, "x".repeat(70), ENGINE_CLIENT_TEST_MARKERS))
+        .forEach(indexNames::add);
+    indexNames.add(lastIndex);
+    assertThat(SearchEngineClientUtils.batchPatterns(String.join(",", indexNames)))
+        .hasSizeGreaterThan(1);
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(indexNames));
+  }
+
+  @Test
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason =
+          "Creates an unallocatable primary shard, which turns the shared cluster red; unsafe for shared AWS OpenSearch")
+  void shouldFailWhenPrimaryShardIsNotActiveWithinTimeout() throws IOException {
+    // given an index that exists but whose primary can never be allocated, like one whose
+    // creation request timed out on the client while its shards were still initializing
+    final var indexName = "await_unassigned-" + ENGINE_CLIENT_TEST_MARKERS;
+    openSearchClient
+        .indices()
+        .create(
+            req ->
+                req.index(indexName)
+                    .waitForActiveShards(w -> w.count(0))
+                    .settings(
+                        s ->
+                            s.customSettings(
+                                "index.routing.allocation.require._name",
+                                JsonData.of("no-such-node"))));
+
+    // when / then
+    assertThatThrownBy(() -> opensearchEngineClient.awaitActivePrimaries(List.of(indexName)))
+        .isInstanceOf(SearchEngineException.class)
+        .hasMessageContaining(indexName);
   }
 
   @Test
@@ -194,6 +287,24 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
+  void shouldReadShardCountsForExistingIndices() {
+    // given
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_shards-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfShards(3);
+    opensearchEngineClient.createIndex(index, settings);
+
+    // when
+    final var shardCounts =
+        opensearchEngineClient.getNumberOfShards(List.of(index.getFullQualifiedName() + "*"));
+
+    // then
+    assertThat(shardCounts).containsEntry(index.getFullQualifiedName(), 3);
+  }
+
+  @Test
   void shouldReadReplicaCountsForExistingIndices() throws IOException {
     final var index =
         createTestIndexDescriptor(
@@ -206,6 +317,39 @@ public class OpensearchEngineClientIT {
         opensearchEngineClient.getNumberOfReplicas(List.of(index.getFullQualifiedName() + "*"));
 
     assertThat(replicaCounts).containsEntry(index.getFullQualifiedName(), 2);
+  }
+
+  @Test
+  void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue() throws IOException {
+    // given - the engine accepts and stores a string for a setting the typed client model expects
+    // to be an object, which makes parsing the full settings of this index fail
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_unexpected_setting-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var settings = new IndexConfiguration();
+    settings.setNumberOfReplicas(2);
+    opensearchEngineClient.createIndex(index, settings);
+    final var indexName = index.getFullQualifiedName();
+    executeRaw("POST", indexName + "/_close", null);
+    executeRaw("PUT", indexName + "/_settings", "{\"index.analysis.filter\": \"_none\"}");
+    executeRaw("POST", indexName + "/_open", null);
+
+    // when
+    final var replicaCounts = opensearchEngineClient.getNumberOfReplicas(List.of(indexName + "*"));
+
+    // then
+    assertThat(replicaCounts).containsEntry(indexName, 2);
+  }
+
+  private void executeRaw(final String method, final String endpoint, final String body)
+      throws IOException {
+    final var builder = Requests.builder().method(method).endpoint(endpoint);
+    if (body != null) {
+      builder.body(Body.from(body.getBytes(StandardCharsets.UTF_8), "application/json"));
+    }
+    try (final var response = openSearchClient.generic().execute(builder.build())) {
+      assertThat(response.getStatus()).isEqualTo(200);
+    }
   }
 
   @Test

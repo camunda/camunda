@@ -1,12 +1,15 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
   api(project(":zeebe-backup"))
   api(project(":zeebe-backup-store-common"))
   implementation(project(":zeebe-protocol"))
-  implementation(project(":zeebe-atomix-cluster"))
+  implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-util"))
   api(libs.com.google.cloud.google.cloud.core)
   api(libs.com.google.cloud.google.cloud.storage) {

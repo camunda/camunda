@@ -1,12 +1,15 @@
 import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.parallel-test-classes-conventions")
+  id("buildlogic.mutation-testing-conventions")
+}
 
 dependencies {
-  implementation(project(":camunda-cluster"))
+  api(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
   api(project(":zeebe-scheduler"))
-  api(project(":zeebe-atomix-cluster"))
   implementation(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-db"))
@@ -16,6 +19,7 @@ dependencies {
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-journal"))
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-micrometer"))
   implementation(libs.org.slf4j.slf4j.api)
   api(libs.io.micrometer.micrometer.core)
   api(libs.io.micrometer.micrometer.commons)

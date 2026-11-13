@@ -30,17 +30,17 @@ class AssignMembersModal extends View {
 	}
 
 	get assignButton() {
-		return this.dialog.getByRole('button', {name: 'Assign', exact: true});
+		return this.dialog.getByRole('button', {name: this.title, exact: true});
 	}
 }
 
 class UnassignModal extends View {
 	get dialog() {
-		return this.page.getByRole('alertdialog', {name: 'Remove from tenant'});
+		return this.page.getByRole('alertdialog', {name: 'Remove user'});
 	}
 
 	get confirmButton() {
-		return this.dialog.getByRole('button', {name: 'Remove'});
+		return this.dialog.getByRole('button', {name: 'Remove user'});
 	}
 }
 
@@ -89,7 +89,7 @@ class AdminTenantDetailPage extends BasePage {
 	}
 
 	get removeMenuItem() {
-		return this.page.getByRole('menuitem', {name: 'Remove', exact: true});
+		return this.page.getByRole('menuitem', {name: 'Remove user', exact: true});
 	}
 }
 

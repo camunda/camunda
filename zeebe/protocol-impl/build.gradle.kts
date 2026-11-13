@@ -6,11 +6,9 @@ dependencies {
   api(project(":zeebe-protocol"))
   api(project(":zeebe-msgpack-core"))
   api(project(":zeebe-msgpack-value"))
-  api(project(":zeebe-bpmn-model"))
   api(project(":zeebe-util"))
   api(project(":camunda-security-protocol"))
   implementation(libs.io.camunda.security.library.api)
-  implementation(libs.io.camunda.security.library.core)
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
@@ -20,6 +18,8 @@ dependencies {
   api(libs.com.fasterxml.jackson.datatype.jackson.datatype.jsr310)
   implementation(project(":zeebe-auth"))
   testImplementation(project(":zeebe-test-util"))
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Protocol Implementation"

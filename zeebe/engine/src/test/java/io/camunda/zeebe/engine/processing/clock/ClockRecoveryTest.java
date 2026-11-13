@@ -79,11 +79,11 @@ public final class ClockRecoveryTest {
   }
 
   private void assertClockAfterRestart(final Modification expected) {
-    assertThat(engine.getProcessingState().getClockState().getModification())
-        .describedAs("the stored clock after the restart")
-        .isEqualTo(expected);
     assertThat(((ControllableStreamClock) engine.getStreamClock()).currentModification())
         .describedAs("the running clock after the restart")
+        .isEqualTo(expected);
+    assertThat(StoredClock.read(engine.clock()))
+        .describedAs("the stored clock after the restart")
         .isEqualTo(expected);
   }
 }

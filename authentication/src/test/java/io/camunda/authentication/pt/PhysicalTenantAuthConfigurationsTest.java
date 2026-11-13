@@ -19,6 +19,7 @@ import io.camunda.security.spring.oidc.NoopOidcClaimsProvider;
 import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
 import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.camunda.spring.utils.PhysicalTenantAuthConfigurations;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.http.HttpClient;
 import java.util.Map;

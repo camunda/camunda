@@ -14,7 +14,7 @@ import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {mockUpdateMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockQueryMappingRulesEndpoint, mockUpdateMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {EditMappingRuleModal} from './EditMappingRuleModal';
 
@@ -60,11 +60,15 @@ describe('<EditMappingRuleModal />', () => {
 	it('should update the mapping rule with the edited values', async ({worker}) => {
 		const mockOnClose = vi.fn();
 		const mappingRule = createMappingRule({mappingRuleId: 'my-rule'});
+		const updatedMappingRule = {...mappingRule, name: 'Updated name'};
 		worker.use(
 			mockUpdateMappingRuleEndpoint({
 				schema: z.object({name: z.literal('Updated name'), claimName: z.string(), claimValue: z.string()}),
-				successResponse: HttpResponse.json({}),
+				successResponse: HttpResponse.json(updatedMappingRule),
 				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json({items: [updatedMappingRule], page: {totalItems: 1}}),
 			}),
 		);
 

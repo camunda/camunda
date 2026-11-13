@@ -41,6 +41,7 @@ graph TD
         SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 00:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
+        STABLE_STRESS["camunda-stable-stress-tests.yml<br/><i>Monday 07:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
         CLEANUP["camunda-load-test-ttl-cleanup.yml<br/><i>Daily 04:00 UTC</i>"]
     end
@@ -56,6 +57,7 @@ graph TD
         ECS["camunda-ecs-weekly-load-test.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         VERIFY["camunda-verify-and-cleanup-<br/>load-test.yml<br/><i>workflow_call</i>"]
         VARIANT["stress-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
+        PUBLISH["load-test-publish-results.yml<br/><i>workflow_call</i>"]
         PROFILE["profile-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
         METRICS["camunda-load-test-metrics.yaml<br/><i>workflow_call + workflow_dispatch</i>"]
         DELETE["camunda-delete-load-test.yml<br/><i>workflow_call + workflow_dispatch</i>"]
@@ -72,17 +74,20 @@ graph TD
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "one call per variant<br/>(matrix)" --> VARIANT
+    DAILY -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
+    STABLE_STRESS -- "one call per stable<br/>branch and storage" --> VARIANT
+    STABLE_STRESS -- "aggregate metrics, GCS,<br/>Slack summary" --> PUBLISH
     VARIANT -- "scenario: max" --> CORE
-    VARIANT -- "always profiles first<br/>30min of each variant" --> PROFILE
-    VARIANT -- "3hr soak, then<br/>snapshot metrics" --> METRICS
-    VARIANT -- "delete namespace<br/>after metrics" --> DELETE
+    VARIANT -- "profiles each variant<br/>after the soak" --> PROFILE
+    VARIANT -- "45 min soak, then<br/>snapshot metrics" --> METRICS
+    VARIANT -- "delete namespace<br/>after metrics and profiling" --> DELETE
     WEEKLY -- "main: 3 parallel calls,<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "main: ECS" --> ECS
     WEEKLY -- "stable: 1 job per branch<br/>(cross-branch ref)" --> CORE
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
     PR -- "scenario: max" --> CORE
-    PR -- "profile path:<br/>after 30min wait" --> PROFILE
+    PR -- "profile path:<br/>after 45min wait" --> PROFILE
     PR -- "metrics path:<br/>15min warmup + 30min window,<br/>compare vs daily-on-main" --> METRICS
     ADHOC --> CORE
     ADHOC --> RELEASE
@@ -106,6 +111,7 @@ graph TD
 | 00:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
 | 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
+| 07:00 UTC Monday  | `camunda-stable-stress-tests.yml`          | Weekly    |
 
 For detailed inputs, triggers, and job definitions, see each workflow's header comments in [`.github/workflows/`](../.github/workflows/).
 
@@ -178,8 +184,9 @@ For a full list of Prometheus metrics, SLO targets, and PromQL queries used to e
 
 ### Historical results archive (GCS)
 
-The daily stress-test workflow (`camunda-daily-load-tests.yml`) persists each run's aggregated
-metrics, variant manifest, and flamegraphs to
+The daily stress-test workflow (`camunda-daily-load-tests.yml`, through the shared
+`load-test-publish-results.yml`) persists each run's aggregated metrics, variant manifest, and
+flamegraphs to
 `gs://camunda-benchmark-load-test-results-prod/automated/daily/stress/<benchmark>/`, outliving both
 the 90-day GH Actions artifact retention and the Prometheus retention window.
 
@@ -393,7 +400,9 @@ Example running tests (naming pattern: `medic-y-<year>-<week>-<sha>-<variant>-re
 
 ### Daily load tests (stress test)
 
-Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and run for 3 hours.
+Daily stress tests run against the state of the **main** branch via the [Daily load tests GitHub workflow](../.github/workflows/camunda-daily-load-tests.yml), in four variants: gRPC and REST (both against Elasticsearch), and no-secondary-storage in both gRPC and REST flavors (exporters disabled). All use the same [stress-load-test.yml](../.github/workflows/stress-load-test.yml) workflow and measure for 45 minutes (15 min warmup, then a 30 min measured window, the same as the PR load test). Profiling follows the soak, and the namespace is deleted after metrics and profiling are done.
+
+The supported stable branches get the same stress test weekly, on Mondays, via the [Stable branches stress tests GitHub workflow](../.github/workflows/camunda-stable-stress-tests.yml): gRPC with Elasticsearch and gRPC without secondary storage per branch, with a separate Slack summary and GCS archive (`gs://camunda-benchmark-load-test-results-prod/automated/weekly/stress-stable/<benchmark>/`). Each branch is built and deployed by its own `camunda-load-test.yml`, profiling, metrics and cleanup run from main.
 
 **Goal:** Validating the reliability and performance of the current main under stress, and detecting newly introduced instabilities with a short feedback loop.
 
@@ -407,7 +416,7 @@ Daily stress tests run against the state of the **main** branch via the [Daily l
 
 **Profiling:** Every stress test variant is profiled by [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml).
 
-Before any metrics or profiles are taken the stress tests get a warmup period.
+Before the metrics window starts the stress tests get a 15 minute warmup period. Profiling starts after the soak, so the profiler does not run during the measured window.
 
 ### Ad-hoc load tests
 
@@ -435,7 +444,7 @@ The label selects the secondary storage and the client protocol: `benchmark-<sto
 
 Load tests started by labeling a PR will always run a stress test (no endurance test). Running Camunda applications will be profiled after a warm up period, and metrics will be collected during the subsequent steady-state period. Afterwards the results will be shared via a comment on the PR.
 
-- **Profile path:** after the 15-minute warmup, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
+- **Profile path:** after the 15-minute warmup and the 30-minute metrics window, async-profiler samples each pod and the flamegraph comment is posted as soon as artifacts upload. No dependency on the metrics path.
 - **Metrics path:**
   1. Waits 15 minutes (warmup), then 30 minutes (metrics accumulation), so PromQL `rate`/`increase` numbers cover steady-state traffic with no ramp-up bias.
   2. Resolves the last completed daily-on-main run via the GitHub Actions API ([`.github/scripts/resolve-daily.py`](../.github/scripts/resolve-daily.py)), walking back up to 7 business days. Derives the daily comparison anchor from `soak.started_at + 45 min` to match the same post-warmup slice as the PR side.
@@ -488,7 +497,7 @@ If you need custom tuning, start with the closest `scenario` and then add target
 
 Select the `scenario` input in the workflow dispatch form:
 
-- `max` — artificial stress workload (currently `300` PI/s, or `500` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
+- `max`: artificial stress workload (currently `300` PI/s, or `650` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for stress and quick regression validation; this is the default ad-hoc option. The rate is below the capacity on purpose, see [regression test vs maximum test](../docs/testing/reliability-testing.md#regression-test-vs-maximum-test). To find the limit, run with a higher rate (for example `--set load-tester.starter.rate=900`). Keep the rate in `setup/common.mk` and `docs/scripts/optimal.json` together.
 - `realistic` — complex, customer-like workload with multi-instance activities, call activities, and DMN; use this for release-like validation and broader functional realism. See [realistic load](../docs/testing/reliability-testing.md#realistic-load).
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).

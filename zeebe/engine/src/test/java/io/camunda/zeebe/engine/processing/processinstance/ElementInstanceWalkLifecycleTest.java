@@ -15,7 +15,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -80,7 +79,7 @@ public final class ElementInstanceWalkLifecycleTest {
     engine.processInstance().withInstanceKey(processInstanceKey).suspend();
 
     // then - post-order: both tasks suspended (in key order) before the process instance, with
-    // exactly one UserTask.SUSPENDED and one buffered RESUME per task. Only four
+    // exactly one UserTask.SUSPENDED and no buffered command per task. Only four
     // ElementInstanceWalk.SUSPEND commands: descend into the first task, suspend it and move
     // straight to the second (no detour back through the root), suspend it and ascend, suspend
     // the root.
@@ -97,7 +96,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // lower-keyed task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,
@@ -107,7 +105,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // move straight to the higher-keyed task
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,
@@ -195,7 +192,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,
@@ -261,7 +257,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // first instance is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,
@@ -271,7 +266,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // move to the second instance
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,
@@ -344,7 +338,6 @@ public final class ElementInstanceWalkLifecycleTest {
                 ValueType.ELEMENT_INSTANCE_WALK,
                 ElementInstanceWalkIntent.SUSPEND), // task is a leaf
             tuple(RecordType.EVENT, ValueType.USER_TASK, UserTaskIntent.SUSPENDED),
-            tuple(RecordType.EVENT, ValueType.BUFFERED_COMMAND, BufferedCommandIntent.BUFFERED),
             tuple(
                 RecordType.EVENT,
                 ValueType.ELEMENT_INSTANCE_WALK,

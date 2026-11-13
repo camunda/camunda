@@ -11,22 +11,20 @@ import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi, beforeAll} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
 import {
 	mockCreateGlobalClusterVariableEndpoint,
 	mockCreateTenantClusterVariableEndpoint,
-	mockGetGlobalClusterVariableEndpoint,
-	mockGetTenantClusterVariableEndpoint,
+	mockQueryClusterVariablesEndpoint,
 	mockQueryTenantsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
 import {createQueryTenantsResponse, createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {AddClusterVariableModal} from './AddClusterVariableModal';
-
-const MONACO_LOAD = {timeout: 15_000};
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 function getWrapper() {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
@@ -46,14 +44,14 @@ async function renderModal(props: Partial<React.ComponentProps<typeof AddCluster
 	const screen = await render(<AddClusterVariableModal isOpen isTenantScopeAvailable onClose={onClose} {...props} />, {
 		wrapper: getWrapper(),
 	});
-	await expect
-		.element(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'}), MONACO_LOAD)
-		.toBeInTheDocument();
+	await expect.element(screen.getByRole('textbox', {name: 'Value - Enter string or JSON'})).toBeInTheDocument();
 
 	return {screen, onClose};
 }
 
 describe('<AddClusterVariableModal />', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	afterEach(async () => {
 		await cleanup();
 		toast.dismiss();
@@ -74,8 +72,11 @@ describe('<AddClusterVariableModal />', () => {
 				successResponse: HttpResponse.json(createClusterVariable({name: 'my-variable', value: '{"answer":42}'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalClusterVariableEndpoint({
-				successResponse: HttpResponse.json(createClusterVariable({name: 'my-variable', value: '{"answer":42}'})),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createClusterVariable({name: 'my-variable', value: '{"answer":42}'})],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();
@@ -101,10 +102,13 @@ describe('<AddClusterVariableModal />', () => {
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetTenantClusterVariableEndpoint({
-				successResponse: HttpResponse.json(
-					createClusterVariable({name: 'my-variable', scope: 'TENANT', tenantId: 'tenant-a', value: '"hello"'}),
-				),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [
+						createClusterVariable({name: 'my-variable', scope: 'TENANT', tenantId: 'tenant-a', value: '"hello"'}),
+					],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();
@@ -185,8 +189,11 @@ describe('<AddClusterVariableModal />', () => {
 				successResponse: HttpResponse.json(createClusterVariable({name: 'aZ09_~@.+-', value: '1'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalClusterVariableEndpoint({
-				successResponse: HttpResponse.json(createClusterVariable({name: 'aZ09_~@.+-', value: '1'})),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createClusterVariable({name: 'aZ09_~@.+-', value: '1'})],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();

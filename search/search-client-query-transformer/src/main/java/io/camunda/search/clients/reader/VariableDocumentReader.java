@@ -9,6 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.aggregation.result.VariableNameAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableNameQuery;
@@ -27,6 +28,9 @@ public class VariableDocumentReader extends DocumentBasedReader implements Varia
   @Override
   public List<String> searchVariableNames(
       final VariableNameQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    // Invoke decode method to reject malformed cursors with an error.
+    Cursor.decode(query.page().after());
+    Cursor.decode(query.page().before());
     if (query.filter().processDefinitionKeyOperations().isEmpty()) {
       return List.of();
     }

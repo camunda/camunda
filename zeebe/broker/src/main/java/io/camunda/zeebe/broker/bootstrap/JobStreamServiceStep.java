@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamer;
 import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -203,7 +203,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         mutable.fetchVariables(),
         mutable.tenantIds(),
         mutable.tenantFilter(),
-        mutable.claims(),
+        AuthInfo.ofClaims(mutable.claims()),
         mutable.withLease());
   }
 
@@ -218,7 +218,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       Collection<DirectBuffer> fetchVariables,
       Collection<String> tenantIds,
       TenantFilter tenantFilter,
-      Map<String, Object> claims,
+      AuthInfo authInfo,
       boolean withLease)
       implements JobActivationProperties {
 

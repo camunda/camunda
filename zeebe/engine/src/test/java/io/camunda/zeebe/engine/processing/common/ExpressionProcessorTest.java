@@ -754,7 +754,8 @@ class ExpressionProcessorTest {
           Arguments.of(
               (ProcessorMethod)
                   (processor, expression) ->
-                      processor.evaluateVariableMappingExpression(expression, -1L, "tenant"),
+                      processor.evaluateVariableMappingExpression(
+                          expression, -1L, "tenant", ExpressionLabel.NONE),
               "evaluateVariableMappingExpression"));
     }
 
@@ -846,7 +847,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=\"abc\"");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -859,7 +862,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("={y: x}");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -872,7 +877,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=null");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -888,7 +895,9 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=unknown_var");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isRight();
@@ -901,13 +910,63 @@ class ExpressionProcessorTest {
       final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
 
       // when
-      final var result = processor.evaluateVariableMappingExpression(expression, 1L, "tenant");
+      final var result =
+          processor.evaluateVariableMappingExpression(
+              expression, 1L, "tenant", ExpressionLabel.NONE);
 
       // then
       assertThat(result).isLeft();
       Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
       Assertions.assertThat(result.getLeft().getMessage())
           .contains("Assertion failure on evaluate the expression");
+    }
+  }
+
+  @Nested
+  class EvaluateVariableMappingExpressionWithLabelTest {
+
+    @Test
+    void shouldNameMappingKindAndTargetVariableOnEvaluationFailure() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.inputMappingExpression(List.of("order", "id"));
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(input mapping expression of target variable 'order.id')");
+    }
+
+    @Test
+    void shouldOnlyNameMappingKindWhenNoSingleTargetIsKnown() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("x", 1)),
+              DEFAULT_TIMEOUT);
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x != 1)");
+      final var label = ExpressionLabel.outputMappingExpression(null);
+
+      // when
+      final var result =
+          processor.evaluateVariableMappingExpression(expression, 1L, "tenant", label);
+
+      // then
+      assertThat(result).isLeft();
+      Assertions.assertThat(result.getLeft().getMessage())
+          .contains("(output mapping expression)")
+          .doesNotContain("target variable");
     }
   }
 
@@ -965,6 +1024,151 @@ class ExpressionProcessorTest {
               The value must be either a string or a number, but was 'NULL'. \
               The evaluation reported the following warnings:
               [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
+
+  @Nested
+  class EvaluateIntervalAndDateTimeExpressionWithLabelTest {
+
+    private static final ExpressionLabel LABEL =
+        new ExpressionLabel("timer duration expression", "event 't'");
+
+    private final ExpressionProcessor processor =
+        new ExpressionProcessor(
+            EXPRESSION_LANGUAGE,
+            new InMemoryVariableEvaluationContext(Map.of("x", "foo")),
+            DEFAULT_TIMEOUT);
+
+    @Test
+    void shouldLabelInvalidDurationFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid duration format 'foo' for the timer duration expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDurationFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid duration format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelIntervalTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer duration expression 'true' of event 't' to be one of");
+    }
+
+    @Test
+    void shouldLabelIntervalEvaluationFailureMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=assert(x, x = \"bar\")");
+
+      // when
+      final var result = processor.evaluateIntervalExpression(expression, -1L, "tenant", LABEL);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .contains("(timer duration expression of event 't')");
+    }
+
+    @Test
+    void shouldLabelInvalidDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the timer date expression 'x' of event 't'.");
+    }
+
+    @Test
+    void shouldLabelInvalidNullableDateTimeFormatMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("due date expression", "user task 'u'");
+
+      // when
+      final var result =
+          processor.evaluateDateTimeExpression(expression, -1L, "tenant", true, label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              "Invalid date-time format 'foo' for the due date expression 'x' of user task 'u'.");
+    }
+
+    @Test
+    void shouldKeepGenericInvalidDateTimeFormatMessageWithoutLabel() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant");
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo("Invalid date-time format 'foo' for expression 'x'.");
+    }
+
+    @Test
+    void shouldLabelDateTimeTypeMismatchMessage() {
+      // given
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("=true");
+      final var label = new ExpressionLabel("timer date expression", "event 't'");
+
+      // when
+      final var result = processor.evaluateDateTimeExpression(expression, -1L, "tenant", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .asString()
+          .startsWith(
+              "Expected result of the timer date expression 'true' of event 't' to be one of");
     }
   }
 }

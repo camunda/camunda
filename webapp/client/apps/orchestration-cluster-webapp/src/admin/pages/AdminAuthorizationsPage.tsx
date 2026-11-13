@@ -27,8 +27,7 @@ import {AddAuthorizationModal} from '#/admin/modules/authorizations/AddAuthoriza
 import {DeleteAuthorizationModal} from '#/admin/modules/authorizations/DeleteAuthorizationModal';
 import {AuthorizationsTable} from '#/admin/modules/authorizations/AuthorizationsTable';
 import type {AuthorizationsSearch} from '#/admin/modules/authorizations/searchSchema';
-
-const AUTHORIZATIONS_GUIDE_URL = 'https://docs.camunda.io/docs/next/components/admin/authorization/';
+import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
 
 type ModalState = {type: 'create'} | {type: 'delete'; authorization: Authorization} | null;
 
@@ -75,7 +74,7 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 					<p className="text-sm leading-5 text-muted-foreground">
 						{t('admin.authorizations.guideBody')}
 						<Button asChild variant="link" className="h-auto p-0 align-baseline font-normal">
-							<a href={AUTHORIZATIONS_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+							<a href={GUIDE_URLS.authorizations} target="_blank" rel="noopener noreferrer">
 								{t('admin.authorizations.guideLinkLabel')}
 							</a>
 						</Button>
@@ -83,14 +82,14 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 				</div>
 
 				<div className="flex flex-col gap-4">
-					<div className="flex items-end gap-4">
+					<div className="flex flex-col gap-4 sm:flex-row sm:items-end">
 						<div className="flex flex-col gap-1">
 							<Label htmlFor="authorizations-resource-type">{t('admin.authorizations.resourceTypeFilterLabel')}</Label>
 							<Select
 								value={resourceType}
 								onValueChange={(next) => onSearchChange({resourceType: next as ResourceType, page: undefined})}
 							>
-								<SelectTrigger id="authorizations-resource-type" className="w-64">
+								<SelectTrigger id="authorizations-resource-type" className="w-full sm:w-64">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -102,13 +101,13 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 								</SelectContent>
 							</Select>
 						</div>
-						<div className="flex-1">
+						<div className="sm:flex-1">
 							<Label htmlFor="authorizations-owner-search" className="sr-only">
 								{t('admin.authorizations.filterByOwnerId')}
 							</Label>
 							<SearchInput
 								id="authorizations-owner-search"
-								className="max-w-sm min-w-48"
+								className="w-full sm:max-w-sm sm:min-w-48"
 								placeholder={t('admin.authorizations.filterByOwnerId')}
 								value={ownerIdDraft}
 								onChange={(event) => setOwnerIdDraft(event.target.value)}
@@ -125,6 +124,7 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 						clientConfig={clientConfig}
 						onSearchChange={onSearchChange}
 						onDelete={openDeleteModal}
+						onCreate={() => setModalState({type: 'create'})}
 					/>
 				</div>
 			</div>

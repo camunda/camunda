@@ -25,7 +25,11 @@ public final class SearchGetRequestTransformer
 
     builder.id(value.id());
     builder.index(value.index());
-    builder.routing(value.routing());
+    // a null or empty routing is sent by the ES 9 client as an empty routing= parameter instead of
+    // being omitted
+    if (value.routing() != null && !value.routing().isEmpty()) {
+      builder.routing(value.routing());
+    }
 
     final var excludes = value.sourceExcludes();
     if (excludes != null && !excludes.isEmpty()) {

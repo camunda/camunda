@@ -183,6 +183,7 @@
                 <typeMapping>OffsetDateTime=String</typeMapping>
                 <!-- map complex String schemas to String -->
                 <typeMapping>ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMapping>
+                <typeMapping>ClearableDateTime=String</typeMapping>
                 <typeMapping>ResourceKey=String</typeMapping>
                 <typeMapping>ScopeKey=String</typeMapping>
                 <typeMapping>ElementInstanceKey=String</typeMapping>
@@ -229,7 +230,6 @@
                 <typeMapping>MessageSubscriptionStateFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum</typeMapping>
                 <typeMapping>MessageSubscriptionTypeFilterProperty=io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum</typeMapping>
                 <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
-                <typeMapping>ProtectionModeFilterProperty=io.camunda.gateway.protocol.model.ProtectionModeEnum</typeMapping>
                 <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
                 <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
                 <!-- sort requests mapped to advanced counterpart since they are equal and simple -> advanced mapping is simple this way -->

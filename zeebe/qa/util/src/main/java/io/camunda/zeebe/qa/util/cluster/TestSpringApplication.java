@@ -19,7 +19,7 @@ import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.PortReservations;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
+  private static final Duration STOP_TIMEOUT = Duration.ofMinutes(2);
 
   protected ConfigurableApplicationContext springContext;
   protected final Camunda unifiedConfig;
@@ -63,6 +65,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Collection<String> additionalProfiles;
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
+  private final PortReservations ports = new PortReservations();
   private final Set<String> refreshableKeys = new HashSet<>();
 
   /**
@@ -99,8 +102,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     this.additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
-    overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
-    overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+    overridePropertyIfAbsent("server.port", reservePort());
+    overridePropertyIfAbsent("management.server.port", reservePort());
 
     // give each application a Tomcat base directory that survives until the JVM exits. Since
     // Spring Boot 4.1, auto-generated base directories are deleted when the owning web server is
@@ -145,11 +148,91 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   @Override
   public T stop() {
     if (springContext != null) {
-      springContext.close();
+      final var context = springContext;
       springContext = null;
+      closeWithTimeout(context, STOP_TIMEOUT);
     }
 
     return self();
+  }
+
+  /**
+   * Closes the context on a separate thread and gives up after the given timeout. Broker shutdown
+   * waits on its actors without a timeout, so a single stuck actor job would otherwise block the
+   * calling test thread until the surefire/failsafe fork is killed, taking every remaining test and
+   * the test reports of the current class with it.
+   */
+  static void closeWithTimeout(
+      final ConfigurableApplicationContext context, final Duration timeout) {
+    final var failure = new AtomicReference<Throwable>();
+    final var closer =
+        Thread.ofPlatform()
+            .name("test-spring-application-close")
+            .daemon(true)
+            .start(
+                () -> {
+                  try {
+                    context.close();
+                  } catch (final Throwable e) {
+                    failure.set(e);
+                  }
+                });
+    final boolean closed;
+    try {
+      closed = closer.join(timeout);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted while stopping the application", e);
+    }
+
+    if (!closed) {
+      LOGGER.error(
+          "Application did not stop within {}; abandoning it. Thread dump:\n{}",
+          timeout,
+          threadDump());
+      throw new IllegalStateException(
+          "Application did not stop within %s; see the logged thread dump".formatted(timeout));
+    }
+    switch (failure.get()) {
+      case null -> {}
+      case final RuntimeException e -> throw e;
+      case final Error e -> throw e;
+      case final Throwable e ->
+          throw new IllegalStateException("Failed to stop the application", e);
+    }
+  }
+
+  private static String threadDump() {
+    final var dump = new StringBuilder();
+    Thread.getAllStackTraces()
+        .forEach(
+            (thread, stack) -> {
+              dump.append('"')
+                  .append(thread.getName())
+                  .append("\" ")
+                  .append(thread.getState())
+                  .append('\n');
+              for (final var frame : stack) {
+                dump.append("    at ").append(frame).append('\n');
+              }
+              dump.append('\n');
+            });
+    return dump.toString();
+  }
+
+  /**
+   * Makes the ports of this application available to other applications again. The ports stay
+   * reserved across {@link #stop()} and {@link #close()}, so a closed application can still be
+   * restarted on the same ports; after this it should not be started again.
+   */
+  @Override
+  public void releasePorts() {
+    ports.close();
+  }
+
+  /** Returns a free port that stays reserved for this application until {@link #releasePorts()}. */
+  protected final int reservePort() {
+    return ports.nextPort();
   }
 
   @Override

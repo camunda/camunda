@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {describe, expect, vi} from 'vitest';
 import {render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
@@ -50,10 +50,12 @@ async function renderTable(overrides: RenderOverrides = {}, {initialEntry = '/'}
 		const [isFetching, setIsFetching] = useState(props.isFetching ?? false);
 		const [isFetchingPreviousPage, setIsFetchingPreviousPage] = useState(props.isFetchingPreviousPage ?? false);
 		const [isFetchingNextPage, setIsFetchingNextPage] = useState(props.isFetchingNextPage ?? false);
-		setRowsState = setRows;
-		setIsFetchingState = setIsFetching;
-		setIsFetchingPreviousPageState = setIsFetchingPreviousPage;
-		setIsFetchingNextPageState = setIsFetchingNextPage;
+		useEffect(() => {
+			setRowsState = setRows;
+			setIsFetchingState = setIsFetching;
+			setIsFetchingPreviousPageState = setIsFetchingPreviousPage;
+			setIsFetchingNextPageState = setIsFetchingNextPage;
+		}, []);
 		return (
 			<SortableTable<Row>
 				{...props}
@@ -892,6 +894,46 @@ describe('<SortableTable />', () => {
 			// then
 			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
 			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 - evictedRowHeight);
+		});
+
+		it('should include the expanded detail row height when compensating for an evicted row', async () => {
+			// given
+			const screen = await renderTable({
+				rows: [
+					{id: 'row-1', name: 'Order process'},
+					{id: 'row-2', name: 'Shipping process'},
+				],
+				expansion: (row) => (row.id === 'row-1' ? <div style={{height: 120}}>Details of {row.name}</div> : null),
+				expandRowLabel: 'Show details',
+				collapseRowLabel: 'Hide details',
+				onVerticalScrollStartReach: vi.fn(),
+				onVerticalScrollEndReach: vi.fn(),
+			});
+			await userEvent.click(screen.getByRole('button', {name: 'Show details'}).first());
+			await expect.element(screen.getByText('Details of Order process')).toBeVisible();
+			const container = screen.getByTestId('table').element() as HTMLElement;
+			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
+			const observer = getObserver();
+			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
+			const evictedRow = screen.getByText('Order process').element().closest('[data-slot="table-row"]')!;
+			const evictedHeight =
+				evictedRow.getBoundingClientRect().height + evictedRow.nextElementSibling!.getBoundingClientRect().height;
+
+			// when
+			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
+			observer.intersect(bottomSentinel);
+			screen.setIsFetchingNextPage(true);
+			await expect.element(screen.getByText('Loading more rows')).toBeVisible();
+			screen.setIsFetchingNextPage(false);
+			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
+			screen.setRows([
+				{id: 'row-2', name: 'Shipping process'},
+				{id: 'row-3', name: 'Billing process'},
+			]);
+
+			// then
+			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
+			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 - evictedHeight);
 		});
 
 		it('should also compensate when rows are evicted from the top while the user is still pinned to the bottom', async () => {

@@ -24,6 +24,14 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-cluster</artifactId>
     </dependency>
+    <!-- Only PhysicalTenantAuthConfigurations needs the security library's configuration model,
+         and its callers (authentication, configuration) already depend on it. Kept provided for
+         the same reason as spring-boot below. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <!-- Only PhysicalTenantConfigUtil needs Spring Boot's ConfigurationPropertySources APIs, and
          its consumers are Spring Boot applications that provide spring-boot at runtime. Kept
          provided so it does not leak transitively to non-Boot library consumers of spring-utils

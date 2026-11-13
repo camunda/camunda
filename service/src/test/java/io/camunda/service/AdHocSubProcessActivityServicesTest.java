@@ -126,7 +126,7 @@ public class AdHocSubProcessActivityServicesTest {
 
     // then
     assertThat(result).isEqualTo(expectedResponse);
-    assertThat(requestCaptor.getValue().getAuthorization().getClaims())
+    assertThat(requestCaptor.getValue().getAuthorization().toClaimsMap())
         .containsExactly(entry(USER_TOKEN_CLAIMS, Map.of("claim", "value")));
     assertThat(requestCaptor.getValue().getPartitionGroup()).isEqualTo(PHYSICAL_TENANT_ID);
   }

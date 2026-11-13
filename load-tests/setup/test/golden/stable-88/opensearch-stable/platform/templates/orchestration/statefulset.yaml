@@ -50,7 +50,7 @@ spec:
         - name: harbor-registry
       containers:
         - name: orchestration
-          image: docker.io/camunda/camunda:8.8.42
+          image: docker.io/camunda/camunda:8.8.44
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
@@ -127,10 +127,10 @@ spec:
             timeoutSeconds: 1
           resources:
             limits:
-              cpu: 3000m
+              cpu: 4000m
               memory: 4Gi
             requests:
-              cpu: 3000m
+              cpu: 4000m
               memory: 4Gi
           volumeMounts:
             - name: config
@@ -173,7 +173,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       nodeSelector:
-        component: benchmark-n2-standard-4-stable
+        component: benchmark-n2-standard-8-stable
         topology.kubernetes.io/zone: europe-west1-c
       affinity:
         podAntiAffinity:
@@ -189,7 +189,7 @@ spec:
         - effect: NoSchedule
           key: nodepool
           operator: Equal
-          value: n2-standard-4-stable
+          value: n2-standard-8-stable
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim

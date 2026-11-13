@@ -10,6 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -24,8 +25,9 @@ import org.junit.jupiter.api.Test;
  * registered map's value type would NOT be recursively merged — a tenant overriding one field of an
  * inner entry would silently lose the inner fields it did not restate (config loss).
  *
- * <p>This test walks the value-type graph of every registry entry and fails if such a nested
- * POJO-valued map appears, <em>unless</em> the map is listed in {@link
+ * <p>This test walks the value-type graph of every registry entry, and of the named OIDC providers,
+ * which {@code PhysicalTenantAuthConfigurations} merges field by field in the same way, and fails
+ * if such a nested POJO-valued map appears, <em>unless</em> the map is listed in {@link
  * MapOverlaySurface#DEFAULT_MERGE_ALLOWLIST} — an explicit acceptance that the map keeps Spring's
  * entry-level merge (e.g. an opaque {@code Map<String, Object>} with no bindable sub-fields to
  * lose). Maps with scalar values (e.g. a {@code Map<String, String>}) are safe for the same reason:
@@ -48,6 +50,11 @@ class MapOverlayNestedMapGuardTest {
             violations);
       }
     }
+    collectNestedPojoMaps(
+        OidcConfiguration.class,
+        MapOverlaySurface.OIDC_PROVIDERS + ".*",
+        new LinkedHashSet<>(),
+        violations);
     assertThat(violations)
         .as(
             "registered map value types must not contain nested POJO-valued maps — "

@@ -20,6 +20,7 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.TenantDto;
+import io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
 import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import io.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
@@ -53,9 +54,12 @@ import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.ValidationHelper;
 import io.camunda.optimize.service.variable.ProcessVariableService;
 import io.micrometer.core.instrument.Tags;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -192,6 +196,7 @@ public abstract class ReportEvaluationHandler {
                                       toReportDataDefinitionDto(
                                           def, scopedDef.getVersions(), scopedDef.getTenantIds())))
                   .toList();
+          applyNamesFromResolvedTenants(validatedDefs, reportEvaluationInfo.getUserId());
           processReportData.setDefinitions(validatedDefs);
           // Heatmap tiles render on top of the BPMN diagram, so the frontend needs the definition
           // XML in the report configuration. Unlike normal reports, agentic reports are stored with
@@ -248,19 +253,55 @@ public abstract class ReportEvaluationHandler {
         .toList();
   }
 
-  private ReportDataDefinitionDto toReportDataDefinitionDto(
-      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def) {
+  /**
+   * {@code getDefinitionWithAvailableTenants} picks the definition name across all tenants before
+   * authorization narrows the tenant list, so the name can come from a tenant the user cannot see.
+   * Re-resolve each name within the definition's resolved tenants only, with one lookup per
+   * distinct tenant set rather than per definition; without a match the name is cleared and labels
+   * fall back to the process id.
+   */
+  private void applyNamesFromResolvedTenants(
+      final List<ReportDataDefinitionDto> definitions, final String userId) {
+    definitions.stream()
+        .collect(Collectors.groupingBy(definition -> new HashSet<>(definition.getTenantIds())))
+        .forEach(
+            (tenantIds, definitionsInTenants) -> {
+              final Map<String, String> namesByKey =
+                  definitionService
+                      .getFullyImportedDefinitions(
+                          DefinitionType.PROCESS,
+                          definitionsInTenants.stream()
+                              .map(ReportDataDefinitionDto::getKey)
+                              .collect(Collectors.toSet()),
+                          new ArrayList<>(tenantIds),
+                          userId)
+                      .stream()
+                      .filter(definition -> definition.getName() != null)
+                      .collect(
+                          Collectors.toMap(
+                              DefinitionResponseDto::getKey,
+                              DefinitionResponseDto::getName,
+                              (first, second) -> first));
+              definitionsInTenants.forEach(
+                  definition -> {
+                    final String name = namesByKey.get(definition.getKey());
+                    definition.setName(name);
+                    definition.setDisplayName(name);
+                  });
+            });
+  }
+
+  private ReportDataDefinitionDto toReportDataDefinitionDto(final DefinitionResponseDto def) {
     return toReportDataDefinitionDto(def, List.of(ALL_VERSIONS));
   }
 
   private ReportDataDefinitionDto toReportDataDefinitionDto(
-      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def,
-      final List<String> versions) {
+      final DefinitionResponseDto def, final List<String> versions) {
     return toReportDataDefinitionDto(def, versions, null);
   }
 
   private ReportDataDefinitionDto toReportDataDefinitionDto(
-      final io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto def,
+      final DefinitionResponseDto def,
       final List<String> versions,
       final List<String> requestedTenantIds) {
     final List<String> resolvedVersions =

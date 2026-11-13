@@ -22,6 +22,17 @@ inputs:
     default: "3"
     required: false
 
+outputs:
+  cache-result:
+    description: >
+      Outcome of the Maven cache restore: `exact` (primary key matched), `fallback` (a restore key
+      matched an older pom hash or the `shared` slot), `miss` (nothing restored) or `skipped`
+      (cache step did not run, e.g. disabled on a PR).
+    value: ${{ steps.cache-outcome.outputs.result }}
+  cache-matched-key:
+    description: The key of the cache entry that was restored. Only set on pull request runs, empty otherwise.
+    value: ${{ steps.cache-outcome.outputs.matched-key }}
+
 runs:
   using: composite
   steps:
@@ -40,6 +51,9 @@ runs:
       #     The `bf` collector is suggested when the project contains many modules and dependencies.
       # `aether.connector.*` configures the HTTP transport of Maven 3.9 (resolver 1.x).
       # `aether.connector.requestTimeout` is a socket read timeout (max silence between packets), not a total download time.
+      # `aether.connector.http.retryHandler.serviceUnavailable` lists the HTTP status codes Maven retries, up to
+      #     `retryHandler.count` times with a 5s, 10s, 15s, ... backoff. The default is 429,503, so a short Nexus
+      #     502 or 504 failed the build at once.
       run: |
         tee .mvn/maven.config <<EOF
         --errors
@@ -49,6 +63,7 @@ runs:
         -D aether.connector.http.connectionMaxTtl=120
         -D aether.connector.http.reuseConnections=${{ inputs.maven-wagon-http-pool }}
         -D aether.connector.http.retryHandler.count=5
+        -D aether.connector.http.retryHandler.serviceUnavailable=429,502,503,504
         -D aether.enhancedLocalRepository.split=true
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav
@@ -63,6 +78,8 @@ runs:
         # it matters for caching as absolute paths on self-hosted and GitHub runners differ
         # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
         KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
+        # Fall back to the busy `shared` slot when LRU evicts a low-traffic one
+        FALLBACK_KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-shared
       shell: sh
       run: |
         maven_version=$(./mvnw --version | head -n 1 | sed "s/Apache Maven \([[:digit:]]\.[[:digit:]]\.[[:digit:]]\).*/\1/g")
@@ -76,10 +93,12 @@ runs:
           echo "MAVEN_CACHE_PATH=~/.m2/repository/cached/releases/" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_FALLBACK_KEY_PREFIX=${FALLBACK_KEY_PREFIX}" >> $GITHUB_ENV
         else
           echo "MAVEN_CACHE_PATH=~/.m2/repository/" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY=${KEY_PREFIX}-full-${HASH_FILES}" >> $GITHUB_ENV
           echo "MAVEN_CACHE_KEY_PREFIX=${KEY_PREFIX}-full" >> $GITHUB_ENV
+          echo "MAVEN_CACHE_FALLBACK_KEY_PREFIX=${FALLBACK_KEY_PREFIX}-full" >> $GITHUB_ENV
         fi
 
       # Check if PR contains a label to disable the cache
@@ -103,6 +122,7 @@ runs:
     # 6-minute job into a timeout. `timeout-minutes` is deliberately not used: GitHub ignores it
     # on composite-action steps, so the bound has to come from the action's own env var.
     - name: Cache local Maven repository
+      id: cache-full
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
       env:
@@ -113,8 +133,10 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+          ${{ env.MAVEN_CACHE_FALLBACK_KEY_PREFIX }}
 
     - name: Restore maven cache
+      id: cache-restore
       # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
       env:
@@ -126,3 +148,51 @@ runs:
         key: ${{ env.MAVEN_CACHE_KEY }}
         restore-keys: |
           ${{ env.MAVEN_CACHE_KEY_PREFIX }}
+          ${{ env.MAVEN_CACHE_FALLBACK_KEY_PREFIX }}
+
+    # `cache-hit` alone is only `true` on an exact key match, so a restore through `restore-keys`
+    # (older pom hash, most dependencies present) would be indistinguishable from a cold miss.
+    # Classify all three outcomes so hit ratios can be derived per job and modifier.
+    - name: Report Maven cache outcome
+      id: cache-outcome
+      if: ${{ always() }}
+      shell: bash
+      env:
+        STEP_OUTCOMES: ${{ steps.cache-full.outcome }} ${{ steps.cache-restore.outcome }}
+        FULL_OUTCOME: ${{ steps.cache-full.outcome }}
+        FULL_HIT: ${{ steps.cache-full.outputs.cache-hit }}
+        RESTORE_HIT: ${{ steps.cache-restore.outputs.cache-hit }}
+        RESTORE_KEY: ${{ steps.cache-restore.outputs.cache-matched-key }}
+        MODIFIER: ${{ inputs.maven-cache-key-modifier }}
+        BRANCH_TYPE: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' && 'main-or-stable' || 'pr' }}
+      run: |
+        if [[ "$STEP_OUTCOMES" == *failure* || "$STEP_OUTCOMES" == *cancelled* ]]; then
+          echo "maven-cache job=${GITHUB_JOB} modifier=${MODIFIER} branch-type=${BRANCH_TYPE} result omitted: cache step failed or was cancelled"
+          exit 0
+        elif [[ "$STEP_OUTCOMES" != *success* ]]; then
+          result=skipped
+        else
+          # main/stable: the full `actions/cache` step emits no matched key, so a fallback restore
+          # is told apart from a miss by the restored directory being populated.
+          if [[ "$FULL_OUTCOME" == "success" ]]; then
+            hit="$FULL_HIT"; MATCHED_KEY=""
+          else
+            hit="$RESTORE_HIT"; MATCHED_KEY="$RESTORE_KEY"
+          fi
+          cache_dir="${MAVEN_CACHE_PATH/#\~/$HOME}"
+          if [[ "$hit" == "true" ]]; then
+            result=exact
+          elif [[ -n "$(ls -A "$cache_dir" 2>/dev/null)" ]]; then
+            result=fallback
+          else
+            result=miss
+          fi
+        fi
+
+        {
+          echo "result=${result}"
+          echo "matched-key=${MATCHED_KEY}"
+        } >> "$GITHUB_OUTPUT"
+
+        echo "maven-cache job=${GITHUB_JOB} modifier=${MODIFIER} branch-type=${BRANCH_TYPE} result=${result}"
+        echo "- Maven cache \`${MODIFIER}\` (${BRANCH_TYPE}): **${result}**${MATCHED_KEY:+ (\`${MATCHED_KEY}\`)}" >> "$GITHUB_STEP_SUMMARY"

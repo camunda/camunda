@@ -165,6 +165,30 @@ public class CamundaProcessTestContainerRuntimeTest {
   }
 
   @Test
+  void shouldConfigureClusterSecrets() {
+    // given
+    final Map<String, String> clusterSecrets = new HashMap<>();
+    clusterSecrets.put("secret-1", "1");
+    clusterSecrets.put("secret-2", "2");
+
+    final String additionalClusterSecretKey = "secret-3";
+    final String additionalClusterSecretValue = "3";
+
+    final Map<String, String> expectedClusterSecrets = new HashMap<>(clusterSecrets);
+    expectedClusterSecrets.put(additionalClusterSecretKey, additionalClusterSecretValue);
+
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withClusterSecrets(clusterSecrets)
+        .withClusterSecret(additionalClusterSecretKey, additionalClusterSecretValue)
+        .build();
+
+    // then
+    verify(camundaContainer).withClusterSecrets(expectedClusterSecrets);
+  }
+
+  @Test
   void shouldAlwaysPullCamundaSnapshotImages() {
     // when
     CamundaProcessTestContainerRuntime.newBuilder()

@@ -247,6 +247,8 @@ registerProject(":camunda-zeebe", "dist")
 
 registerProject(":zeebe-util", "zeebe/util")
 
+registerProject(":zeebe-micrometer", "zeebe/micrometer")
+
 registerProject(":camunda-qa-compatibility-test", "qa/compatibility-test")
 
 include(":webapps-common")
@@ -292,6 +294,10 @@ registerProject(":camunda-db-rdbms", "db/rdbms")
 registerProject(":camunda-search-client-elasticsearch", "search/search-client-elasticsearch")
 
 registerProject(":zeebe-atomix-cluster", "zeebe/atomix/cluster")
+
+registerProject(":zeebe-atomix-messaging-api", "zeebe/atomix/messaging-api")
+
+registerProject(":zeebe-atomix-membership-api", "zeebe/atomix/membership-api")
 
 registerProject(":zeebe-msgpack-value", "zeebe/msgpack-value")
 
@@ -380,8 +386,6 @@ registerProject(":zeebe-transport", "zeebe/transport")
 
 registerProject(":camunda-gateway-mcp", "gateways/gateway-mcp")
 
-registerProject(":zeebe-build-tools", "build-tools")
-
 registerProject(":zeebe-elasticsearch-exporter", "zeebe/exporters/elasticsearch-exporter")
 
 registerProject(
@@ -406,6 +410,10 @@ registerProject(":camunda-secret-store-file", "secret-store/secret-store-file")
 registerProject(":camunda-secret-store-aws", "secret-store/secret-store-aws")
 
 registerProject(":camunda-secret-store-gcp", "secret-store/secret-store-gcp")
+
+registerProject(":camunda-secret-store-env", "secret-store/secret-store-env")
+
+registerProject(":camunda-secret-store-azure", "secret-store/secret-store-azure")
 
 registerProject(":zeebe-rebalance", "zeebe/rebalance")
 

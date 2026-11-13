@@ -129,6 +129,7 @@ public class RestGatewayPaths {
   private static final String URL_USER_TASK_COMPLETION =
       REST_API_PATH + "/user-tasks/%s/completion";
   private static final String URL_USER_TASK_FORM = REST_API_PATH + "/user-tasks/%s/form";
+  private static final String URL_USER_TASK_LOOKUP = REST_API_PATH + "/user-tasks/%s/lookup";
   private static final String URL_USER_TASK_UNASSIGNMENT =
       REST_API_PATH + "/user-tasks/%s/assignee";
   private static final String URL_USER_TASK_UPDATE = REST_API_PATH + "/user-tasks/%s";
@@ -461,6 +462,10 @@ public class RestGatewayPaths {
 
   public static String getUserTaskUrl(final long userTaskKey) {
     return String.format(URL_USER_TASK, userTaskKey);
+  }
+
+  public static String getUserTaskLookupUrl(final long userTaskKey) {
+    return String.format(URL_USER_TASK_LOOKUP, userTaskKey);
   }
 
   public static String getElementInstanceUrl(final long elementInstanceKey) {

@@ -9,16 +9,21 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.security.core.authz.TenantAccess;
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.LongPredicate;
 import org.apache.commons.lang3.StringUtils;
 
 public class DbUserTaskState implements MutableUserTaskState {
@@ -54,6 +59,13 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final DbString initialAssignee = new DbString();
   private final ColumnFamily<DbLong, DbString> userTasksInitialAssigneeColumnFamily;
 
+  // [processInstanceKey | userTaskKey] => nil
+  private final DbLong suspendedProcessInstanceKey = new DbLong();
+  private final DbLong suspendedUserTaskKey = new DbLong();
+  private final DbCompositeKey<DbLong, DbLong> processInstanceSuspendedUserTaskKey =
+      new DbCompositeKey<>(suspendedProcessInstanceKey, suspendedUserTaskKey);
+  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> suspendedUserTasksColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
@@ -81,6 +93,13 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskKey,
             initialAssignee);
+
+    suspendedUserTasksColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE,
+            transactionContext,
+            processInstanceSuspendedUserTaskKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -112,6 +131,11 @@ public class DbUserTaskState implements MutableUserTaskState {
   @Override
   public void delete(final long key) {
     userTaskKey.wrapLong(key);
+    // the suspended entry is keyed by process instance first, so read the record for its key
+    final var userTask = userTasksColumnFamily.get(userTaskKey);
+    if (userTask != null) {
+      unmarkSuspended(userTask.getRecord().getProcessInstanceKey(), key);
+    }
     userTasksColumnFamily.deleteExisting(userTaskKey);
     statesUserTaskColumnFamily.deleteExisting(fkUserTask);
   }
@@ -168,6 +192,20 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void markSuspended(final long processInstanceKey, final long userTaskKey) {
+    suspendedProcessInstanceKey.wrapLong(processInstanceKey);
+    suspendedUserTaskKey.wrapLong(userTaskKey);
+    suspendedUserTasksColumnFamily.upsert(processInstanceSuspendedUserTaskKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void unmarkSuspended(final long processInstanceKey, final long userTaskKey) {
+    suspendedProcessInstanceKey.wrapLong(processInstanceKey);
+    suspendedUserTaskKey.wrapLong(userTaskKey);
+    suspendedUserTasksColumnFamily.deleteIfExists(processInstanceSuspendedUserTaskKey);
+  }
+
+  @Override
   public LifecycleState getLifecycleState(final long key) {
     userTaskKey.wrapLong(key);
     final UserTaskLifecycleStateValue storedLifecycleState =
@@ -205,5 +243,37 @@ public class DbUserTaskState implements MutableUserTaskState {
     userTaskKey.wrapLong(key);
     return Optional.ofNullable(userTasksInitialAssigneeColumnFamily.get(userTaskKey))
         .map(DbString::toString);
+  }
+
+  @Override
+  public boolean isSuspended(final long processInstanceKey, final long userTaskKey) {
+    suspendedProcessInstanceKey.wrapLong(processInstanceKey);
+    suspendedUserTaskKey.wrapLong(userTaskKey);
+    return suspendedUserTasksColumnFamily.exists(processInstanceSuspendedUserTaskKey);
+  }
+
+  @Override
+  public boolean hasSuspendedUserTasks(final long processInstanceKey) {
+    final var found = new AtomicBoolean();
+    forEachSuspendedUserTask(
+        processInstanceKey,
+        -1L,
+        userTaskKey -> {
+          found.set(true);
+          return false;
+        });
+    return found.get();
+  }
+
+  @Override
+  public void forEachSuspendedUserTask(
+      final long processInstanceKey, final long startAtUserTaskKey, final LongPredicate visitor) {
+    suspendedProcessInstanceKey.wrapLong(processInstanceKey);
+    suspendedUserTaskKey.wrapLong(startAtUserTaskKey);
+    final var startAt = startAtUserTaskKey < 0 ? null : processInstanceSuspendedUserTaskKey;
+    final KeyVisitor<DbCompositeKey<DbLong, DbLong>> keyVisitor =
+        key -> visitor.test(key.second().getValue());
+    suspendedUserTasksColumnFamily.whileEqualPrefix(
+        suspendedProcessInstanceKey, startAt, keyVisitor);
   }
 }

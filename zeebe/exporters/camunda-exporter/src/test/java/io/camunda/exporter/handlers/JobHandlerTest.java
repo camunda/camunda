@@ -185,6 +185,7 @@ final class JobHandlerTest {
             .withCustomHeaders(Map.of("key", "val"))
             .withTenantId(tenantId)
             .withBusinessId(businessId)
+            .withStorageOrdinal(1001)
             .withErrorMessage(errorMessage)
             .withJobKind(jobKind)
             .withJobListenerEventType(jobListenerEventType)
@@ -238,6 +239,33 @@ final class JobHandlerTest {
     assertThat(entity.getDeniedReason()).isEqualTo(null);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
     assertThat(entity.getBusinessId()).isEqualTo(businessId);
+    assertThat(entity.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalWhenDefault() {
+    // given
+    final long recordKey = 789;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isNull();
   }
 
   @Test

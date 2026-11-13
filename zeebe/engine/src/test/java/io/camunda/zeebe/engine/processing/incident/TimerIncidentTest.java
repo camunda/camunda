@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -16,9 +17,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -39,6 +42,9 @@ public final class TimerIncidentTest {
   private static final String CYCLE_EXPRESSION = "cycle(" + DURATION_EXPRESSION + ")";
   private static final String DATETIME_EXPRESSION =
       "date and time(date(" + DURATION_VARIABLE + "),time(\"T00:00:00@UTC\"))";
+  private static final String DUE_DATE_OUT_OF_RANGE_MESSAGE =
+      "Expected the due date of timer '%s' to be within the supported range, but the evaluated "
+          + "timer results in a due date that is too far in the past or future.";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -113,7 +119,8 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'date and time(date(timer_duration),time("T00:00:00@UTC"))' \
+            Expected result of the timer date expression \
+            'date and time(date(timer_duration),time("T00:00:00@UTC"))' of event 'boundary-event-1' \
             to be one of '[DATE_TIME, STRING]', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'
@@ -146,9 +153,9 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Invalid date-time format 'not_a_duration_expression' for expression '"
+            "Invalid date-time format 'not_a_duration_expression' for the timer date expression '"
                 + DURATION_VARIABLE
-                + "'.");
+                + "' of event 'boundary-event-1'.");
   }
 
   @Test
@@ -172,7 +179,8 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'duration(timer_duration)' to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
+            Expected result of the timer duration expression 'duration(timer_duration)' of event 'timer-1' \
+            to be one of '[DURATION, PERIOD, STRING]', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'timer_duration'
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Illegal arguments: 'null'""");
@@ -203,9 +211,9 @@ public final class TimerIncidentTest {
     assertIncidentCreated(incident, elementInstance)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Invalid duration format 'not_a_duration_expression' for expression '"
+            "Invalid duration format 'not_a_duration_expression' for the timer duration expression '"
                 + DURATION_VARIABLE
-                + "'.");
+                + "' of event 'timer-1'.");
   }
 
   @Test
@@ -234,10 +242,77 @@ public final class TimerIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'cycle(duration(timer_duration))' to be 'STRING', but was 'NULL'. \
+            Expected result of the timer cycle expression 'cycle(duration(timer_duration))' \
+            of event 'boundary-event-1' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'duration': Failed to parse duration from 'not_a_duration_expression'
             [FUNCTION_INVOCATION_FAILURE] Failed to invoke function 'cycle': cycle function expected an interval (duration) parameter, but found 'null'""");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCycleVariableNotACycle() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "not_a_cycle_expression")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    // the parser's own reason is appended; only assert on the part we own to stay independent of
+    // the cron library's wording
+    assertThat(incident.getValue().getErrorMessage())
+        .startsWith(
+            "Invalid cycle format 'not_a_cycle_expression' for the timer cycle expression '"
+                + DURATION_VARIABLE
+                + "' of event 'boundary-event-1': ");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfRepeatingCycleVariableHasNoInterval() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "Rfoo")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid cycle format 'Rfoo' for the timer cycle expression '"
+                + DURATION_VARIABLE
+                + "' of event 'boundary-event-1': No interval given");
   }
 
   @Test
@@ -298,6 +373,199 @@ public final class TimerIncidentTest {
                 .withRecordKey(incident.getValue().getElementInstanceKey())
                 .findAny())
         .describedAs("Expect that element was activated")
+        .isPresent();
+  }
+
+  @Test
+  public void shouldNotCreateIncidentIfDueDateIsFarInTheFuture() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            // about 317 years: the due date fits into epoch milliseconds, so it must not fail
+            .withVariable(DURATION_VARIABLE, "PT9999999990S")
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(ELEMENT_ID)
+                .findAny())
+        .describedAs("Expect that the timer catch event was activated without an incident")
+        .isPresent();
+
+    final Record<TimerRecordValue> timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(timerCreated.getValue().getDueDate())
+        .isCloseTo(
+            timerCreated.getTimestamp() + Duration.ofSeconds(9_999_999_990L).toMillis(),
+            within(Duration.ofMinutes(1).toMillis()));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDurationDueDateIsOutOfRange() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "P300000000Y")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasVariableScopeKey(elementInstance.getKey())
+        .hasErrorMessage(DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted(ELEMENT_ID));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDueDateExceedsMaxDateTime() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            // beyond the max year of java.time, so it fails with a DateTimeException, not overflow
+            .withVariable(DURATION_VARIABLE, "P1000000000Y")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasVariableScopeKey(elementInstance.getKey())
+        .hasErrorMessage(DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted(ELEMENT_ID));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfCycleDueDateIsOutOfRange() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithCycle(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "R/P300000000Y")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasVariableScopeKey(elementInstance.getKey())
+        .hasErrorMessage(DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted("boundary-event-1"));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfTimeDateIsOutOfRange() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcessWithTimeDate(DURATION_VARIABLE)).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "+300000000-01-01T00:00:00Z")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasVariableScopeKey(elementInstance.getKey())
+        .hasErrorMessage(DUE_DATE_OUT_OF_RANGE_MESSAGE.formatted("boundary-event-1"));
+  }
+
+  @Test
+  public void shouldResolveIncidentIfDueDateIsOutOfRange() {
+    // given
+    ENGINE.deployment().withXmlResource(createProcess(DURATION_VARIABLE)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "P300000000Y")
+            .create();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(incident.getValue().getVariableScopeKey())
+        .withDocument(Collections.singletonMap(DURATION_VARIABLE, Duration.ofSeconds(1).toString()))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementInstanceKey(incident.getValue().getElementInstanceKey())
+                .findAny())
+        .describedAs("Expect that the timer was created after resolving the incident")
         .isPresent();
   }
 }

@@ -23,7 +23,9 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCases;
+import io.camunda.process.test.api.testCases.VariablesTableRow;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
 import java.io.IOException;
 import java.io.InputStream;
 import org.junit.jupiter.api.Test;
@@ -80,5 +82,31 @@ public class DeserializationTest {
             testCaseInstructions ->
                 assertThat(testCaseInstructions.get(0))
                     .isInstanceOf(CreateProcessInstanceInstruction.class));
+  }
+
+  @Test
+  void shouldParseNullValuesInVariablesTableRow() throws IOException {
+    // given
+    final String json =
+        "{\"testCases\":[{\"name\":\"test\",\"instructions\":[{"
+            + "\"type\":\"MOCK_JOB_WORKER_COMPLETE_JOB\",\"jobType\":\"pick-sample\","
+            + "\"variablesTable\":[{\"when\":{\"errorCode\":null},"
+            + "\"variables\":{\"handled\":true,\"comment\":null}}]}]}]}";
+
+    // when
+    final TestCases testCases = objectMapper.readValue(json, TestCases.class);
+
+    // then
+    final MockJobWorkerCompleteJobInstruction instruction =
+        (MockJobWorkerCompleteJobInstruction)
+            testCases.getTestCases().get(0).getInstructions().get(0);
+    assertThat(instruction.getVariablesTable()).hasSize(1);
+
+    final VariablesTableRow row = instruction.getVariablesTable().get(0);
+    assertThat(row.getWhen()).containsOnlyKeys("errorCode").containsEntry("errorCode", null);
+    assertThat(row.getVariables())
+        .containsOnlyKeys("handled", "comment")
+        .containsEntry("handled", true)
+        .containsEntry("comment", null);
   }
 }

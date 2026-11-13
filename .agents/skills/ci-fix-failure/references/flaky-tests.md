@@ -19,13 +19,13 @@ and file a tracking issue.
 
 ## Repo policy
 
-From `AGENTS.md`:
+This is the single source of truth for filing a flake. `AGENTS.md` ("Always-green policy") links
+here. Once a test is confirmed flaky:
 
-> If it is flaky (non-deterministic):
-> 1. Search for an existing open issue in camunda/camunda. If none exists, raise one using
->    the `create-issue` skill (use the bug template; also add the `kind/flake` label).
-> 2. Assign the issue to the engineer.
-> 3. Treat the baseline as passed and proceed — do not disable the test.
+1. Search for an existing open issue in camunda/camunda. If none exists, raise one using the
+   `create-issue` skill (use the bug template; also add the `kind/flake` label).
+2. Assign the issue to the engineer.
+3. Treat the baseline as passed and proceed. Do not disable the test.
 
 There is also an automated **flaky-test gate** documented at
 [docs/monorepo-docs/flaky-test-gate.md](../../../../docs/monorepo-docs/flaky-test-gate.md). Read
@@ -43,7 +43,8 @@ Likely flake: <Test FQN> — <one-line reason>.
 Existing issue: <link or "none found">.
 Recommended next steps:
   1. Rerun the failed jobs: gh run rerun --failed <run-id> --repo camunda/camunda
-  2. If no tracking issue exists, file one with the `create-issue` skill (label kind/flake).
+  2. If no tracking issue exists, file one with the `create-issue` skill (label kind/flake) and
+     assign it to the engineer.
   3. Do NOT disable, @Disabled, or skip the test.
 ```
 

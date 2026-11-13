@@ -57,6 +57,6 @@ describe('<DiagramShell />', () => {
 	it('should render the forbidden message', async () => {
 		const screen = await render(<DiagramShell status="forbidden">{null}</DiagramShell>);
 
-		await expect.element(screen.getByText('Missing permissions to view the Definition')).toBeVisible();
+		await expect.element(screen.getByText('You do not have permission to view this information')).toBeVisible();
 	});
 });

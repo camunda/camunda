@@ -50,6 +50,15 @@ export const extendedAssertionOptions = {
   timeout: 90_000,
 };
 
+// Use when waiting for a suspend or resume to land. The engine walks the
+// instance's element tree one element per batch, interleaved with other
+// partition work, so a wide tree on a loaded cluster can take well past the
+// default window; poll densely so the common fast case returns at once.
+export const suspensionAssertionOptions = {
+  intervals: [500, 1_000, 2_000, 5_000],
+  timeout: 90_000,
+};
+
 // Prefixed unique id for a resource a test deploys or creates — process
 // definition ids, message names, job types. Parallel workers share a cluster, so
 // a fixed id would let one test's deployment or subscription answer another's.

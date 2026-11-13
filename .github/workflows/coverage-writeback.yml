@@ -1,6 +1,5 @@
 # description: Flips a qa/coverage plan's `planned` cases to `automated` once
 #              their tests exist, and opens the correction as a PR.
-#              See camunda/team-test-automation#83.
 # test location: /qa/coverage
 # type: CI
 # owner: @camunda/test-automation-team

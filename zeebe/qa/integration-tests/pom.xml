@@ -238,6 +238,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
       <scope>test</scope>
     </dependency>
@@ -659,6 +665,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-secret-store-env</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
       <scope>test</scope>
     </dependency>
@@ -759,6 +771,14 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
+          <!-- read by the environment-variable secret stores of PhysicalTenantEnvSecretIsolationIT
+               and EnvSecretStoreProcessIT -->
+          <environmentVariables>
+            <PT_ENV_SECRET_IT_TENANTA_API_KEY>value-of-tenant-a</PT_ENV_SECRET_IT_TENANTA_API_KEY>
+            <PT_ENV_SECRET_IT_TENANTB_API_KEY>value-of-tenant-b</PT_ENV_SECRET_IT_TENANTB_API_KEY>
+            <PT_ENV_SECRET_IT_TENANTB_ONLY_B>only-tenant-b</PT_ENV_SECRET_IT_TENANTB_ONLY_B>
+            <ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME>stored-value-that-must-not-leak</ENV_SECRET_PROCESS_IT_UNREFERENCED_NAME>
+          </environmentVariables>
         </configuration>
       </plugin>
       <plugin>

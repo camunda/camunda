@@ -21,7 +21,6 @@ describe('<DangerButton />', () => {
 		await expect.element(button).toBeVisible();
 		await expect.element(button).toHaveAttribute('data-size', 'default');
 		await expect.element(screen.getByText('Delete', {exact: true})).toBeVisible();
-		await expect.element(screen.getByTestId('delete-operation')).toBeVisible();
 	});
 
 	it.for([
@@ -54,5 +53,25 @@ describe('<DangerButton />', () => {
 		const button = screen.getByRole('button', {name: 'Delete Instance 123', exact: true});
 
 		await expect.element(button).toBeDisabled();
+	});
+
+	it('should render an icon-only button without the text label', async () => {
+		const screen = await render(
+			<DangerButton type="DELETE" onClick={vi.fn()} title="Delete Instance 123" isIconOnly />,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Delete Instance 123', exact: true})).toBeVisible();
+		await expect.element(screen.getByText('Delete', {exact: true})).not.toBeInTheDocument();
+	});
+
+	it('should render the label as part of the accessible button when the label is responsive', async () => {
+		const screen = await render(
+			<DangerButton type="DELETE" onClick={vi.fn()} title="Delete Instance 123" hasResponsiveLabel />,
+		);
+
+		const button = screen.getByRole('button', {name: 'Delete Instance 123', exact: true});
+
+		await expect.element(button).toHaveAttribute('title', 'Delete Instance 123');
+		await expect.element(screen.getByText('Delete', {exact: true})).toBeInTheDocument();
 	});
 });

@@ -9,8 +9,11 @@ package io.camunda.configuration.data.primarystorage.backup;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.time.Duration;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Gcs {
   private static final String PREFIX = "camunda.data.primary-storage.backup.gcs";
@@ -41,8 +44,9 @@ public class Gcs {
 
   /**
    * When set, all blobs in the bucket will use this prefix. Useful for using the same bucket for
-   * multiple Zeebe clusters. In this case, basePath must be unique. Should not start or end with
-   * '/' character. Must be non-empty and not consist of only '/' characters.
+   * multiple Zeebe clusters. In this case, basePath must be unique. Leading and trailing '/'
+   * characters are removed, and a blank value or a single '/' means no prefix. A value consisting
+   * only of '/' characters is rejected.
    */
   private String basePath;
 
@@ -67,6 +71,12 @@ public class Gcs {
 
   /** Size of the buffer (in bytes) used when uploading files to GCS. */
   private int bufferSize = 2 * 1024 * 1024;
+
+  /**
+   * Limits on how the GCS client retries failing requests. When not set, the GCS client defaults
+   * apply.
+   */
+  @NestedConfigurationProperty private Retry retry = new Retry();
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
@@ -139,5 +149,37 @@ public class Gcs {
   public enum GcsBackupStoreAuth {
     NONE,
     AUTO
+  }
+
+  public Retry getRetry() {
+    return retry;
+  }
+
+  public void setRetry(final Retry retry) {
+    this.retry = retry;
+  }
+
+  public static class Retry {
+    /** Maximum total time the client keeps retrying a failing request. */
+    private Optional<Duration> totalTimeout = Optional.empty();
+
+    /** Maximum number of attempts the client makes for a failing request. */
+    private Optional<Integer> maxAttempts = Optional.empty();
+
+    public Optional<Duration> getTotalTimeout() {
+      return totalTimeout;
+    }
+
+    public void setTotalTimeout(final Optional<Duration> totalTimeout) {
+      this.totalTimeout = totalTimeout;
+    }
+
+    public Optional<Integer> getMaxAttempts() {
+      return maxAttempts;
+    }
+
+    public void setMaxAttempts(final Optional<Integer> maxAttempts) {
+      this.maxAttempts = maxAttempts;
+    }
   }
 }

@@ -12,11 +12,16 @@
 		"headerNonProductionLicenseText": "Non-Production License. If you would like information on production usage, please refer to our <2>terms & conditions page</2> or <6>contact sales</6>.",
 		"headerInfoLabel": "Info",
 		"headerSettingsLabel": "Settings",
-		"headerProfileLabel": "Profile",
+		"headerUserMenuLabel": "User menu, {{name}}",
 		"headerCookiePreferencesLabel": "Cookie preferences",
 		"headerTermsOfUseLabel": "Terms of use",
 		"headerPrivacyPolicyLabel": "Privacy policy",
 		"headerImprintLabel": "Imprint",
+		"headerVersionLabel": "Version {{version}}",
+		"headerThemeLabel": "Theme",
+		"headerThemeSystem": "System",
+		"headerThemeLight": "Light",
+		"headerThemeDark": "Dark",
 		"headerLogOutLabel": "Log out",
 		"headerNotificationsLabel": "Notifications",
 		"headerNotificationsLoading": "Loading notifications...",
@@ -50,7 +55,6 @@
 		"notificationActionButtonLabel": "Action",
 		"sessionWatcherExpiredTitle": "Session expired",
 		"networkStatusOfflineTitle": "Internet connection lost",
-		"languageSelectorLabel": "Choose a language",
 		"languageSelectorTitle": "Language",
 		"relativeDateJustNow": "Just now",
 		"relativeDateNow": "'Now'",
@@ -170,7 +174,11 @@
 				"deleteMappingRuleSuccess": "Mapping rule deleted",
 				"createMappingRuleError": "Failed to create mapping rule",
 				"updateMappingRuleError": "Failed to update mapping rule",
-				"deleteMappingRuleError": "Failed to delete mapping rule"
+				"deleteMappingRuleError": "Failed to delete mapping rule",
+				"changeNotConfirmed": "Couldn't confirm the change took effect",
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "mapping rule",
+				"resourcePlural": "mapping rules"
 			},
 			"users": {
 				"username": "Username",
@@ -211,7 +219,9 @@
 				"userDeleted": "User {{username}} deleted",
 				"deleteUserFailed": "Failed to delete user",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "user",
+				"resourcePlural": "users"
 			},
 			"groups": {
 				"guideBody": "For more information, see the ",
@@ -247,8 +257,9 @@
 				"members": {
 					"tabsLabel": "Group members",
 					"assignFailed": "Failed to assign",
+					"assignedMany": "{{count}} members assigned",
+					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
-					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
 					"users": {
 						"tab": "Users",
@@ -259,7 +270,6 @@
 						"select": "Select a user",
 						"search": "Search by username",
 						"enterId": "Enter username",
-						"empty": "No users assigned to this group.",
 						"remove": "Remove user",
 						"confirmRemove": "Are you sure you want to remove <strong>{{id}}</strong> from this group?",
 						"assigned": "User {{id}} assigned",
@@ -274,7 +284,6 @@
 						"idLabel": "Role ID",
 						"select": "Select a role",
 						"search": "Search by role ID",
-						"empty": "No roles assigned to this group.",
 						"remove": "Remove role",
 						"confirmRemove": "Are you sure you want to remove the role <strong>{{id}}</strong> from this group?",
 						"assigned": "Role {{id}} assigned",
@@ -291,7 +300,6 @@
 						"idLabel": "Mapping rule ID",
 						"select": "Select a mapping rule",
 						"search": "Search by mapping rule ID",
-						"empty": "No mapping rules assigned to this group.",
 						"remove": "Remove mapping rule",
 						"confirmRemove": "Are you sure you want to remove the mapping rule <strong>{{id}}</strong> from this group?",
 						"assigned": "Mapping rule {{id}} assigned",
@@ -304,13 +312,14 @@
 						"assign": "Assign client",
 						"idLabel": "Client ID",
 						"enterId": "Enter client ID",
-						"empty": "No clients assigned to this group.",
 						"remove": "Remove client",
 						"confirmRemove": "Are you sure you want to remove the client <strong>{{id}}</strong> from this group?",
 						"assigned": "Client {{id}} assigned",
 						"removed": "Client {{id}} removed"
 					}
-				}
+				},
+				"resourceSingular": "group",
+				"resourcePlural": "groups"
 			},
 			"clusterVariables": {
 				"closeButton": "Close",
@@ -362,7 +371,9 @@
 				"deleteClusterVariableSuccess": "Cluster variable deleted",
 				"createClusterVariableError": "Failed to create cluster variable",
 				"updateClusterVariableError": "Failed to update cluster variable",
-				"deleteClusterVariableError": "Failed to delete cluster variable"
+				"deleteClusterVariableError": "Failed to delete cluster variable",
+				"resourceSingular": "cluster variable",
+				"resourcePlural": "cluster variables"
 			},
 			"globalTaskListeners": {
 				"guideBody": "For more information, see the ",
@@ -420,7 +431,9 @@
 				"updateGlobalTaskListenerError": "Failed to update global task listener",
 				"deleteGlobalTaskListenerError": "Failed to delete global task listener",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "global task listener",
+				"resourcePlural": "global task listeners"
 			},
 			"authorizations": {
 				"guideBody": "For more information, see the ",
@@ -474,7 +487,11 @@
 				"deleteAuthorizationSuccess": "Authorization deleted",
 				"deleteAuthorizationError": "Failed to delete authorization",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "authorization",
+				"resourcePlural": "authorizations",
+				"noAuthorizationsYet": "You don't have any authorizations for this resource type yet",
+				"noAuthorizationsYetDescription": "Authorizations define access permissions for different resources. Create an authorization by selecting an owner, resource, and at least one permission."
 			},
 			"roles": {
 				"guideBody": "For more information, see the ",
@@ -510,6 +527,8 @@
 				"members": {
 					"tabsLabel": "Role members",
 					"assignFailed": "Failed to assign",
+					"assignedMany": "{{count}} members assigned",
+					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
 					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
@@ -522,7 +541,6 @@
 						"select": "Select a user",
 						"search": "Search by username",
 						"enterId": "Enter username",
-						"empty": "No users assigned to this role.",
 						"remove": "Remove user",
 						"confirmRemove": "Are you sure you want to remove <strong>{{id}}</strong> from this role?",
 						"assigned": "User {{id}} assigned",
@@ -538,7 +556,6 @@
 						"enterId": "Enter group ID",
 						"select": "Select a group",
 						"search": "Search by group ID",
-						"empty": "No groups assigned to this role.",
 						"remove": "Remove group",
 						"confirmRemove": "Are you sure you want to remove the group <strong>{{id}}</strong> from this role?",
 						"assigned": "Group {{id}} assigned",
@@ -555,7 +572,6 @@
 						"idLabel": "Mapping rule ID",
 						"select": "Select a mapping rule",
 						"search": "Search by mapping rule ID",
-						"empty": "No mapping rules assigned to this role.",
 						"remove": "Remove mapping rule",
 						"confirmRemove": "Are you sure you want to remove the mapping rule <strong>{{id}}</strong> from this role?",
 						"assigned": "Mapping rule {{id}} assigned",
@@ -568,13 +584,14 @@
 						"assign": "Assign client",
 						"idLabel": "Client ID",
 						"enterId": "Enter client ID",
-						"empty": "No clients assigned to this role.",
 						"remove": "Remove client",
 						"confirmRemove": "Are you sure you want to remove the client <strong>{{id}}</strong> from this role?",
 						"assigned": "Client {{id}} assigned",
 						"removed": "Client {{id}} removed"
 					}
-				}
+				},
+				"resourceSingular": "role",
+				"resourcePlural": "roles"
 			},
 			"tenants": {
 				"guideBody": "For more information, see the ",
@@ -590,7 +607,7 @@
 				"editTenantModalTitle": "Edit tenant",
 				"deleteTenantModalTitle": "Delete tenant",
 				"deleteTenantConfirmation": "Are you sure you want to delete <strong>{{name}}</strong>? This action cannot be undone.",
-				"cancelButton": "Cancel",
+				"cancel": "Cancel",
 				"createButton": "Create",
 				"saveButton": "Save",
 				"deleteButton": "Delete",
@@ -618,46 +635,86 @@
 				"mappingRuleIdColumn": "Mapping rule ID",
 				"mappingRuleNameColumn": "Name",
 				"clientIdColumn": "Client ID",
-				"tab_users": "Users",
-				"tab_groups": "Groups",
-				"tab_roles": "Roles",
-				"tab_mapping-rules": "Mapping rules",
-				"tab_clients": "Clients",
-				"empty_users": "No users assigned to this tenant.",
-				"empty_groups": "No groups assigned to this tenant.",
-				"empty_roles": "No roles assigned to this tenant.",
-				"empty_mapping-rules": "No mapping rules assigned to this tenant.",
-				"empty_clients": "No clients assigned to this tenant.",
-				"assignButton": "Assign",
-				"assignButton_users": "Assign user",
-				"assignButton_groups": "Assign group",
-				"assignButton_roles": "Assign role",
-				"assignButton_mapping-rules": "Assign mapping rule",
-				"assignButton_clients": "Assign client",
-				"assignModalTitle_users": "Assign user",
-				"assignModalTitle_groups": "Assign group",
-				"assignModalTitle_roles": "Assign role",
-				"assignModalTitle_mapping-rules": "Assign mapping rule",
-				"assignModalTitle_clients": "Assign client",
-				"assignFieldLabel_users": "Users",
-				"assignFieldLabel_groups": "Groups",
-				"assignFieldLabel_roles": "Roles",
-				"assignFieldLabel_mapping-rules": "Mapping rules",
-				"assignFieldLabel_clients": "Client ID",
-				"assignFieldPlaceholder_users": "Search and select users",
-				"assignFieldPlaceholder_groups": "Search and select groups",
-				"assignFieldPlaceholder_roles": "Search and select roles",
-				"assignFieldPlaceholder_mapping-rules": "Search and select mapping rules",
-				"assignFieldPlaceholder_clients": "Enter a client ID",
+				"members": {
+					"candidatesLoadError": "Options could not be loaded",
+					"users": {
+						"tab": "Users",
+						"assign": "Assign user",
+						"idLabel": "Users",
+						"select": "Search and select users",
+						"search": "Search by username",
+						"enterId": "Enter username",
+						"remove": "Remove user",
+						"confirmRemove": "Are you sure you want to remove <strong>{{id}}</strong> from this tenant?"
+					},
+					"groups": {
+						"tab": "Groups",
+						"assign": "Assign group",
+						"idLabel": "Groups",
+						"select": "Search and select groups",
+						"search": "Search by group ID",
+						"enterId": "Enter group ID",
+						"remove": "Remove group",
+						"confirmRemove": "Are you sure you want to remove the group <strong>{{id}}</strong> from this tenant?"
+					},
+					"roles": {
+						"tab": "Roles",
+						"assign": "Assign role",
+						"idLabel": "Roles",
+						"select": "Search and select roles",
+						"search": "Search by role ID",
+						"remove": "Remove role",
+						"confirmRemove": "Are you sure you want to remove the role <strong>{{id}}</strong> from this tenant?"
+					},
+					"mappingRules": {
+						"tab": "Mapping rules",
+						"assign": "Assign mapping rule",
+						"idLabel": "Mapping rules",
+						"select": "Search and select mapping rules",
+						"search": "Search by mapping rule ID",
+						"remove": "Remove mapping rule",
+						"confirmRemove": "Are you sure you want to remove the mapping rule <strong>{{id}}</strong> from this tenant?"
+					},
+					"clients": {
+						"tab": "Clients",
+						"assign": "Assign client",
+						"idLabel": "Client ID",
+						"enterId": "Enter a client ID",
+						"remove": "Remove client",
+						"confirmRemove": "Are you sure you want to remove the client <strong>{{id}}</strong> from this tenant?"
+					}
+				},
 				"assignSuccess": "Assignment saved",
+				"assignedMany": "{{count}} members assigned",
+				"assignedPartial": "{{assigned}} of {{total}} assigned",
 				"assignError": "Failed to assign",
-				"unassignButton": "Remove",
-				"unassignModalTitle": "Remove from tenant",
-				"unassignConfirmation": "Are you sure you want to remove <strong>{{id}}</strong> from tenant <strong>{{tenantId}}</strong>?",
 				"unassignSuccess": "Removed from tenant",
 				"unassignError": "Failed to remove from the tenant",
 				"changeNotConfirmed": "Couldn't confirm the change took effect",
-				"changeNotConfirmedDescription": "Refresh the page to see the latest state."
+				"changeNotConfirmedDescription": "Refresh the page to see the latest state.",
+				"resourceSingular": "tenant",
+				"resourcePlural": "tenants",
+				"emptyStateDisclaimer": "Members of this tenant will be given access to the data within the tenant."
+			},
+			"emptyState": {
+				"title": "No {{resources}} created yet",
+				"description": "Start by creating a new {{resource}}.",
+				"createAction": "Create {{resource}}",
+				"learnMore": "Learn more about {{resources}}"
+			},
+			"members": {
+				"kinds": {
+					"users": "users",
+					"groups": "groups",
+					"roles": "roles",
+					"mappingRules": "mapping rules",
+					"clients": "clients"
+				},
+				"emptyState": {
+					"title": "No {{resources}} assigned to this {{parent}} yet",
+					"description": "Start by assigning one.",
+					"learnMore": "Learn more about {{resources}}"
+				}
 			}
 		},
 		"tasklist": {
@@ -687,6 +744,9 @@
 			"taskAssignmentStatusCompleted": "Completed",
 			"taskDetailsTaskCompletedBy": "Completed by",
 			"taskDetailsDisabledCompleteButtonTitle": "Task is not assigned",
+			"taskSuspendedLabel": "Suspended",
+			"taskSuspendedDescription": "Process instance suspended. Available again when it resumes.",
+			"taskSuspendedActionsDisabledDescription": "Process instance suspended. Available again when it resumes.",
 			"taskDetailsCompleteTaskButtonLabel": "Complete Task",
 			"taskStateUpdatingMessage": "Please wait while the task is being updated...",
 			"taskStateCancelingMessage": "The task is being cancelled. Please wait...",
@@ -832,6 +892,7 @@
 			"availableTasksNavLinkAssignedToMe": "Task assigned to me: {{name}}",
 			"availableTasksNavLinkAssignedTask": "Assigned task: {{name}}",
 			"availableTasksNavLinkUnassignedTask": "Unassigned task: {{name}}",
+			"availableTasksNavLinkSuspendedTask": "{{label}} (suspended)",
 			"customFiltersModalDeleteModalHeading": "Delete filter",
 			"customFiltersModalDeleteModalBody": "The custom filter <strong>{{name}}</strong> will be deleted.",
 			"customFiltersModalConfirmDeletionButton": "Confirm deletion",
@@ -1075,6 +1136,13 @@
 				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"ds": {
+					"filters": {
+						"searchByName": "Search by process name",
+						"selectVersion": "Select a process version",
+						"searchByElement": "Search by process element"
+					}
+				},
 				"migration": {
 					"migrate": "Migrate",
 					"selectSource": "To start the migration process, choose a process and version first.",
@@ -1171,6 +1239,7 @@
 					"suspend": "Suspend",
 					"resume": "Resume",
 					"discard": "Discard",
+					"bulkActionsLabel": "Bulk actions",
 					"selectAll": "Select all items",
 					"selectRow": "Select instance {{key}}",
 					"selected": "{{total}} items selected",
@@ -1314,13 +1383,20 @@
 					"viewParentInstance": "View parent instance {{key}}",
 					"none": "None",
 					"emptyMessage": "There are no Instances matching this filter set",
-					"emptyAdditionalInfo": "To see some results, select at least one Instance state"
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
+					"tableLabel": "Process instances",
+					"loadingPreviousPage": "Loading previous process instances",
+					"loadingNextPage": "Loading next process instances",
+					"errorTitle": "Couldn't fetch data",
+					"errorDescription": "Something went wrong while loading the instances. Try again."
 				},
 				"diagramHeader": {
 					"title": "Process",
 					"processName": "Process name",
 					"processId": "Process ID",
-					"versionTag": "Version tag"
+					"versionTag": "Version tag",
+					"copyButtonDescription": "Process ID / Click to copy",
+					"copyButtonTitle": "Copy Process ID: {{id}}"
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Delete Process Definition \"{{name}} - Version {{version}}\"",
@@ -1342,7 +1418,8 @@
 					"details": "Process Details",
 					"definition": "Process Definition",
 					"definitionVersion": "{{name}} - Version {{version}}",
-					"successTitle": "Operation created"
+					"successTitle": "Operation created",
+					"loadingMessage": "Deleting process definition"
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Process \"{{name}}\"",
@@ -1351,7 +1428,8 @@
 					"selectSingleTenant": "To see a Diagram, select a single Tenant",
 					"noProcessSelected": "There is no Process selected",
 					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel",
-					"processNotFoundTitle": "Process could not be found"
+					"processNotFoundTitle": "Process could not be found",
+					"ariaLabel": "Diagram Panel"
 				}
 			},
 			"decisions": {
@@ -1530,9 +1608,46 @@
 				"panel": {
 					"label": "decision panel",
 					"unknownEvaluationFailure": "Evaluation failed with unknown error"
+				},
+				"ds": {
+					"drd": {
+						"title": "Decision requirements diagram",
+						"resize": "Resize DRD panel",
+						"maximize": "Maximize DRD panel",
+						"minimize": "Minimize DRD panel",
+						"close": "Close DRD panel",
+						"zoomIn": "Zoom in",
+						"zoomOut": "Zoom out",
+						"resetZoom": "Reset zoom",
+						"unavailableTitle": "No diagram available",
+						"unavailableInfo": "This decision is not part of a decision requirements diagram.",
+						"content": "Decision requirements diagram content"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Decision instance key",
+						"evaluationDateColumn": "Evaluation date",
+						"processInstanceColumn": "Process instance key",
+						"openDrdButton": "Open decision requirements diagram"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Variable panel tabs",
+						"inputsAndOutputs": "Inputs and outputs"
+					},
+					"forbidden": {
+						"heading": "You do not have permission to view this information"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "Evaluation failed for an unknown reason. Check the input values and the decision definition.",
+						"expandFailure": "Show full message",
+						"collapseFailure": "Collapse message"
+					}
 				}
 			},
 			"processInstance": {
+				"scaffold": {
+					"diagramPanelPlaceholder": "Diagram panel placeholder",
+					"bottomPanelPlaceholder": "Bottom panel placeholder"
+				},
 				"history": {
 					"title": "Instance History",
 					"tabs": "Process instance tabs",
@@ -1621,6 +1736,7 @@
 				},
 				"header": {
 					"key": "Process Instance Key",
+					"keyCopyButtonDescription": "Process Instance Key / Click to copy",
 					"waiting": "Waiting",
 					"waitingCount": "{{count}} waiting",
 					"version": "Version",
@@ -1685,6 +1801,8 @@
 					"exitDescription": "Exit",
 					"save": "Save variable",
 					"saveDescription": "Save",
+					"saving": "Saving variable",
+					"loadingValue": "Loading variable value",
 					"deleteDescription": "Delete",
 					"editTitle": "Edit Variable \"{{name}}\"",
 					"newVariableTitle": "Edit a new Variable",
@@ -1999,7 +2117,12 @@
 					"parentEntity": "Parent entity",
 					"details": "Details",
 					"actor": "Actor",
-					"date": "Date"
+					"date": "Date",
+					"result": "Result",
+					"actions": "Actions",
+					"tableLabel": "Operations log",
+					"loadingPreviousPage": "Loading previous operations log entries",
+					"loadingNextPage": "Loading next operations log entries"
 				},
 				"emptyState": {
 					"noItemsTitle": "No operation log items yet",
@@ -2026,7 +2149,8 @@
 					"actor": "Actor",
 					"actorPlaceholder": "Username or client ID",
 					"timestampDateRange": "Timestamp date range",
-					"filterByTimestampDateRange": "Filter by timestamp date range"
+					"filterByTimestampDateRange": "Filter by timestamp date range",
+					"noProcessesFound": "No processes found"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "View batch operation {{key}}",
@@ -2099,7 +2223,8 @@
 				"pageSelectLabel": "Page of {{count}} pages",
 				"pageSelectLabel_one": "Page of {{count}} page",
 				"pageSelectLabel_other": "Page of {{count}} pages",
-				"pageText": "page {{page}}"
+				"pageText": "page {{page}}",
+				"pageOf": "Page {{page}} of {{count}}"
 			},
 			"batchOperation": {
 				"title": "Batch Operations",
@@ -2138,6 +2263,16 @@
 					"retryHint": "The items may be out of date. Retry loading them.",
 					"retry": "Retry",
 					"retrying": "Retrying items"
+				},
+				"ds": {
+					"itemsTable": {
+						"tableLabel": "Batch operation items",
+						"loadingPreviousPage": "Loading previous items",
+						"loadingNextPage": "Loading more items",
+						"expandFailure": "Show failure details",
+						"collapseFailure": "Hide failure details",
+						"itemStatusPrefix": "Item status"
+					}
 				},
 				"actions": {
 					"suspend": "Suspend",
@@ -2269,6 +2404,12 @@
 					"lastDays_one": "Last {{count}} day",
 					"lastDays_other": "Last {{count}} days"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Clear date and time range",
+					"selectEndDate": "Pick end date",
+					"pickDayFirst": "Pick a date first",
+					"pickEndDay": "Pick end date"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",
 					"operatorNotEquals": "does not equal",
@@ -2310,7 +2451,9 @@
 					"copyFailed": "Couldn't copy to clipboard"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choose option(s)"
+					"chooseOption": "Choose option(s)",
+					"search": "Search...",
+					"noResults": "No results found"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Delete",
@@ -2363,7 +2506,37 @@
 					"preparingPdfPreview": "Preparing PDF preview…"
 				},
 				"diagram": {
-					"label": "Diagram"
+					"enterFullscreen": "Enter fullscreen",
+					"exitFullscreen": "Exit fullscreen",
+					"showMinimap": "Show minimap",
+					"hideMinimap": "Hide minimap",
+					"resetZoom": "Reset diagram zoom",
+					"zoomOut": "Zoom out diagram",
+					"zoomIn": "Zoom in diagram",
+					"label": "Diagram",
+					"elementTypes": {
+						"startEvent": "start event",
+						"endEvent": "end event",
+						"intermediateCatchEvent": "intermediate catch event",
+						"intermediateThrowEvent": "intermediate throw event",
+						"boundaryEvent": "boundary event",
+						"task": "task",
+						"serviceTask": "service task",
+						"userTask": "user task",
+						"scriptTask": "script task",
+						"sendTask": "send task",
+						"receiveTask": "receive task",
+						"manualTask": "manual task",
+						"businessRuleTask": "business rule task",
+						"callActivity": "call activity",
+						"subProcess": "subprocess",
+						"exclusiveGateway": "exclusive gateway",
+						"parallelGateway": "parallel gateway",
+						"inclusiveGateway": "inclusive gateway",
+						"eventBasedGateway": "event-based gateway"
+					},
+					"elementLabel": "{{name}} ({{type}})",
+					"keyboardHint": "Use the arrow keys to move between elements and Enter to select."
 				},
 				"stateIcon": {
 					"active": "active state",
@@ -2382,7 +2555,8 @@
 					"canceled": "Canceled",
 					"completed": "Completed",
 					"evaluated": "Evaluated",
-					"failed": "Failed"
+					"failed": "Failed",
+					"pending": "pending modification"
 				},
 				"modificationBadge": {
 					"added": "{{count}} added",

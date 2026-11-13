@@ -54,6 +54,12 @@ dependencyResolutionManagement {
             )
                 .version(pomProperty("version.assertj-assertions-generator"))
             library(
+                "pitest-gradle-plugin",
+                "info.solidsoft.gradle.pitest",
+                "gradle-pitest-plugin",
+            )
+                .version(pomProperty("plugin.version.pitest-gradle"))
+            library(
                 "openapi-generator-plugin",
                 "org.openapitools",
                 "openapi-generator-gradle-plugin",

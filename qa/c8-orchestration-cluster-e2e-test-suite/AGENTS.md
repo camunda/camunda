@@ -241,8 +241,8 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 |                        Workflow                         |                           Trigger                            |                                                       Link                                                       |
 |---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
-| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml`    | Automatic PR check (non-fork PRs touching the suite)         | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+| `c8-orchestration-cluster-e2e-tests-pr.yml`             | PRs changing the suite (non-blocking, skipped for forks)     | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-pr.yml)        |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
 and failure handling are in [`docs/nightly-runbook.md`](docs/nightly-runbook.md).
@@ -266,6 +266,9 @@ Each supported version lives on its own branch in `camunda/camunda`:
   reproduces on `main`, land there first and backport instead.
 - Each PR should reference the originating nightly run URL in the description so the next on-call
   can audit the trail.
+- **While a release is frozen** — the RC is built from `release-X.Y.Z`, so a fix merged to `main`
+  or `stable/8.x` in that window does not reach it. Use the `backport release-X.Y.Z` label, never a
+  hand cherry-pick; see "Backport to a frozen release branch" under **Nightly Fix Agent**.
 
 ## Contributing
 
@@ -274,7 +277,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Your changed tests must pass the automatic PR check before requesting review.** A PR that changes the suite runs the suite automatically (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), blocking the merge on the specs you added or modified. It does not gate on untouched tests and does not run on fork PRs — when your change can break tests you did not edit (shared page object, fixture or config) or the PR is from a fork, also run the on-demand workflow and document any failures in the PR description, confirming they are pre-existing.
+- **If your PR changes non-Markdown files of the suite, wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the on-demand workflow against that branch instead.** A Markdown-only PR does not trigger the check and needs no run. PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -1003,7 +1006,7 @@ skipping.
    cause: comment on it with your additional diagnosis; do not open a
    second PR.
 
-8. Open a draft PR targeting the same base branch you are on, label
+8. Open a PR targeting the same base branch you are on, label
    `failing-test-fix`. Body must include:
 
    - Root cause analysis
@@ -1011,8 +1014,13 @@ skipping.
    - Link to the failing nightly run(s)
    - Link to the triage run
 
-   The PR stays in draft at this point — do not mark it ready yet. The Live
-   Docker Verify loop below decides whether it can leave draft.
+   **Open it ready for review, NOT a draft** — do not pass `--draft`.
+   Copilot's automatic review never fires on a draft, and the calling workflow
+   waits for that review so the Review-Response Agent can answer every comment
+   in this same run, before a human ever opens the PR (see
+   `## Review-Response Agent`). The Live Docker Verify loop below still owns
+   the PR's final state: an `unverified` outcome demotes it back to draft, but
+   only after the review round has run.
 
 ### Live Docker Verify
 
@@ -1077,10 +1085,11 @@ and verify against it**, using the same general loop:
    Result Manifest below):
 
    - Green within 3 iterations → `"verify": "verified"`. The calling workflow
-     marks the PR ready-for-review and adds the `verified` label.
-   - Still red after 3 → `"verify": "unverified"`. The PR stays in draft, gets
-     the `unverified` label, and your PR body must describe what you tried and
-     the remaining failure.
+     adds the `verified` label; the PR is already ready for review.
+   - Still red after 3 → `"verify": "unverified"`. The calling workflow demotes
+     the PR to draft and adds the `unverified` label — after the Copilot review
+     round, so the round still happens. Your PR body must describe what you
+     tried and the remaining failure.
 
 **Not eligible for this loop** (record `"verify": "skipped"` instead):
 the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
@@ -1120,6 +1129,43 @@ first, and record the routing of a group as soon as its root cause is known.
      memory gap that you find under `gaps`.
 3. **Record one `routing` entry per group** in `/tmp/fix-meta.json` (see "Result manifest").
 
+### Backport to a frozen release branch
+
+This happens to your PR automatically, after you stop. You do not run it, and there is nothing to
+decide — read it so the label and the Slack line do not surprise you, and so you never try to do it
+by hand.
+
+Between a code freeze and the release, the RC is built from `release-X.Y.Z` (e.g.
+`release-8.11.0-alpha1`), not from the branch you fixed. A fix merged to `main` or
+`stable/<version>` in that window never reaches the RC, which is why the workflow asks, once your
+PR is open, whether the fix belongs on the release branch too:
+
+1. Is a release branch for this line currently frozen? (`release-*` that is untagged and ahead of
+   its `X.Y` line.) Outside a freeze there is none and nothing else happens.
+2. Does every file your patch modifies or deletes exist on that branch? Files you add are exempt.
+3. Is every dispatched failing test title present in its spec there? A spec can survive the cut
+   while the test inside it is post-freeze work.
+4. Does your patch still apply three-way?
+
+All yes → the PR gets a `backport release-X.Y.Z` label, and backport-action opens the backport PR
+when your PR merges. Any no → no label, and the nightly Slack thread carries the reason so a human
+can decide. Either way your PR is unaffected: the step never fails the job.
+
+The check re-runs every night on a PR you reuse, and it reconciles as well as proposes. A label an
+earlier night applied is removed when a later push makes the answer no, and also once the release
+has shipped — the label is added when your PR opens but the backport only happens when it merges,
+so a PR that outlives the release would otherwise land a backport on a branch that is already out.
+A label a person added by hand is always left alone, and so is one whose origin cannot be read.
+
+What this asks of you:
+
+- Keep `prs` in `/tmp/fix-meta.json` accurate — it is the list the step iterates. A PR you opened
+  but did not record is a PR that never gets considered for the RC.
+- Do not open a PR against a `release-*` branch, cherry-pick onto one, or add the label yourself.
+  Your PR targets `main` or `stable/<version>`, exactly as before.
+- Do not weaken a fix to make it portable. A fix that is correct only for `main` is correct; the
+  checks above exist precisely to leave it there.
+
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
@@ -1129,6 +1175,7 @@ first, and record the routing of a group as soon as its root cause is known.
 - **Never fix a responsive-layout failure by pinning or widening the viewport.** `test.use({viewport: ...})` and `page.setViewportSize(...)` are not fixes for a UI that reflows, collapses a toolbar into a menu, or hides a column at the suite's default width — they force the test to stop exercising the layout most users actually see, and a per-file `test.use` silently changes every other test in that file too. Interact with whatever the narrow-width UI actually offers (open the menu, click the item by its accessible name, scroll to reveal on-screen content) or, when the same information is genuinely rendered nowhere at that width, verify it through a different always-visible surface (a different tab, filter, or list column) instead. Confirm which case you're in by reading the component source — is the element conditionally never rendered (e.g. a JSX branch that returns `null` / omits the column) or only `display:none`-hidden by CSS? Only the former genuinely has no on-screen alternative. If a live/local environment is available to you in the session (it is not part of the automated dispatch's tool set — see Forbidden tools above), confirm by inspecting the rendered app instead of guessing from source alone. If no non-viewport fix exists at all, say so explicitly in the PR body rather than defaulting to a silent viewport pin.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
+- **Never target a `release-*` branch** — your PR goes to `main` or `stable/<version>`; the release-branch backport is labelled for you (see "Backport to a frozen release branch" above).
 - **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
 
 ### Result manifest
@@ -1165,7 +1212,12 @@ section above for what each means). Defaults to being treated as `"skipped"`
 if omitted — set it explicitly. The calling workflow creates the
 `verified`/`unverified` labels if missing, applies one of them mutually
 exclusively based on this field, and toggles the PR's ready/draft state to
-match (`skipped`/`not-reproduced` leave the label and draft state untouched).
+match (`skipped`/`not-reproduced` leave the label and draft state untouched;
+`verified` leaves the PR ready, `unverified` demotes it to draft — both only
+after the Copilot review round). If the review round pushed a commit, the
+workflow downgrades a `verified` PR to `skipped` for labelling purposes: the
+verification measured the previous head and the Review-Response Agent may not
+run Playwright, so nothing re-measured it.
 `root_cause` and `fix` are **strongly recommended** — they are surfaced directly
 in the GitHub job summary so reviewers understand the agent's decision without
 reading the full agent log.
@@ -1184,10 +1236,11 @@ gh pr view <number> --repo camunda/camunda --json headRefName --jq '.headRefName
 - Any fixed test with `test_type: "api"` → `"has_api": true`
 - Both can be `true` when a PR covers mixed failures.
 
-The calling workflow uses these flags to determine scope, but only one
-on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-demand.yml`
-(covers both E2E and API tests). **If `has_e2e` and `has_api` are both `false`,
-no verification run is triggered and the fix is never validated automatically.**
+These flags record the kinds of tests the PR fixed. The opened PR is validated
+by the non-blocking suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`,
+covers both E2E and API tests). On a branch that does not carry that workflow,
+the calling workflow triggers one on-demand verification run
+(`c8-orchestration-cluster-e2e-tests-on-demand.yml`) instead.
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
 
@@ -1267,6 +1320,125 @@ calling workflow shows `team` and `tier` in the Slack thread and the whole entry
 Use exactly the keys of the example, also when a value is empty, plus `job` for a workflow-level
 failure. Give `reasoning`, `sources`, `candidates` and `gaps` as lists. The job summary does not
 show other keys, such as `group` or `source`.
+
+## Review-Response Agent
+
+This section is read by the second Claude invocation of two workflows -- the one dispatched after
+Copilot has reviewed the PR that agent just opened:
+
+- `.github/workflows/c8-orchestration-cluster-e2e-nightly-fix.yml`, for a PR from the Nightly Fix
+  Agent;
+- `.github/workflows/c8-orchestration-cluster-flakiness-fix.yml`, for a PR from the Flakiness Fix
+  Agent.
+
+It applies to every dispatched version, `main` and `stable/<version>` alike. Where the two differ,
+the dispatch-specific part of your prompt says so; everything in this section binds you in both.
+
+**One difference is structural.** The flakiness caller runs you with **no GitHub credentials**, the
+same boundary its fix agent draws: you edit files and write your verdicts and reply bodies to a
+manifest, and a separate job — on a runner you never touched — then validates the diff against the
+fix agent's own allowlist, lints it, commits, pushes, posts each reply in its thread and resolves
+what it should. Which verdict each thread gets, and what a reply has to say, is unchanged — only
+who performs the mutation differs, so read "push it, reply, resolve" below as "the workflow does
+this with what you wrote".
+
+Two consequences for how you write the manifest. The replies are posted against the thread ids the
+workflow gathered, not the ones you name: an id it did not gather reaches nothing, and a thread you
+leave out gets a placeholder reply and stays open — so answer every thread you were given. And a
+verdict outside `accepted`, `rejected` and `left_open` is read as `left_open`, so a thread whose
+verdict you cannot spell exactly will never be resolved.
+
+### Why the PR is open and not a draft
+
+Copilot's automatic review never fires on a draft. A draft fix PR therefore sat untouched until a
+human marked it ready hours later, got its review then, and nobody went back to triage what the
+review said. So the fix agent now opens the PR **ready for review**, Copilot reviews it within a
+couple of minutes, and this agent answers that review inside the same run. By the time a person
+opens the PR, every Copilot thread already has a considered reply.
+
+**One round, and one round only.** Do not wait for, or solicit, a second Copilot pass. The human
+reviewer's own review is what decides the next cycle — your job is to make their review cheap, not
+to replace it.
+
+### What you do with each thread
+
+Work the threads **one at a time**, and **reply in each thread separately**. Never answer several
+threads in one issue comment, never answer in the PR body, and never leave a thread with no reply:
+an unanswered thread is indistinguishable from one nobody read.
+
+You only ever see threads Copilot opened and nobody else has touched: the workflow drops any
+thread carrying a non-Copilot comment, and forwards only Copilot-authored bodies from the rest.
+Anything a person wrote — a reply on a Copilot thread, a thread of their own, or a thread an
+earlier round left open — is theirs, stays out of your prompt, and must not be answered by you.
+
+Judge each comment on its merits. A fair share of Copilot comments are wrong, already handled
+elsewhere, or out of scope for this PR. Read the surrounding code before deciding — never apply a
+suggestion because it was made, and never dismiss one unread.
+
+|                                 Verdict                                  |                                                                                                                                                                    What to do                                                                                                                                                                     |        Resolve?        |
+|--------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| **Accepted**                                                             | Make the change on the PR's branch, minimal diff, lint the changed files, and commit all accepted changes in ONE follow-up commit — then **push it, and only resolve once the push succeeded**. Reply in each accepted thread with what changed and the pushed commit SHA. If the push fails, say so in each affected thread and leave them open. | yes, after the push    |
+| **Rejected**                                                             | Reply with the concrete reason — wrong, contradicts a repo convention, already handled, or it would mask the very failure this PR exists to catch.                                                                                                                                                                                                | yes                    |
+| **Too complicated / needs a maintainer's call / valid but out of scope** | Reply saying exactly that and why.                                                                                                                                                                                                                                                                                                                | **no — leave it open** |
+
+Leaving a thread open is a legitimate outcome, not a failure. It is the right one whenever the
+change would be larger than this PR, whenever the call is a maintainer's to make, or whenever you
+are simply not confident. An open thread is how the question reaches the human reviewer; a resolve
+is how it disappears.
+
+**Push before you resolve.** A resolved thread tells the reviewer the defect is fixed on the PR. A
+commit sitting on the runner has fixed nothing, and this agent's workspace is thrown away when the
+job ends — so an accepted thread resolved against an unpushed commit is a false report that nobody
+will catch. Push first, verify it succeeded, then resolve. The workflow pushes anything you left
+behind and warns about it, but that is a backstop, not the contract.
+
+**A code change here invalidates Live Docker Verify (nightly only).** If the fix agent verified its fix against a
+local Docker environment and you then change code, that result describes the previous commit — and
+you are not allowed to stand up an environment or run Playwright, so nothing re-measures it. The
+workflow handles this: it drops the `verified` label for that head rather than claiming a
+verification that did not happen. Do not re-assert it in a thread reply or the PR body.
+
+### The constraints that still bind you
+
+Everything the fix agent was held to still applies to any change you make here: never mask a
+failure, no `continue-on-error`, no `test.skip()` / `test.fixme()` / `.only` (outside an
+already-gated product bug), no refactors, no dependency bumps, no unrelated edits, and the lint gate
+before every commit. **A suggestion that would breach one of these is a reject, with that as the
+stated reason** — Copilot does not know this suite's rules, and "the reviewer asked for it" does not
+override them.
+
+Also: do not stand up a Docker environment or run Playwright, do not open another PR, do not change
+the PR's draft state (nightly: the Finalize PR verification status step owns that), do not touch the
+PR's labels, and do not touch threads a human opened.
+
+### Mechanics
+
+```bash
+# Reply in one thread
+gh api graphql -f query='mutation($id:ID!,$body:String!){
+  addPullRequestReviewThreadReply(input:{pullRequestReviewThreadId:$id,body:$body}){clientMutationId}}' \
+  -F id=<threadId> -F body='<reply>'
+
+# Resolve it — ONLY after replying
+gh api graphql -f query='mutation($id:ID!){
+  resolveReviewThread(input:{threadId:$id}){clientMutationId}}' -F id=<threadId>
+```
+
+Lint before committing, from `qa/c8-orchestration-cluster-e2e-test-suite` (see `## Linting`):
+`npm run lint` — or `npx prettier --write <changed files> && npx eslint <changed files>` when only
+a couple of files changed.
+
+### Result manifest
+
+Write `/tmp/review-response.json` when you are done. The counts must add up to the number of
+threads you were given — the workflow folds this into the job summary (and, for the nightly,
+`fix-meta.json` and the Slack thread reply), where `left_open` is the only part still waiting on a
+person:
+
+```json
+{"pr": 1234, "threads": 3, "accepted": 2, "rejected": 1, "left_open": 0,
+ "commit": "<sha of the follow-up commit, or null if nothing changed>"}
+```
 
 ## Unskip Verify Agent
 

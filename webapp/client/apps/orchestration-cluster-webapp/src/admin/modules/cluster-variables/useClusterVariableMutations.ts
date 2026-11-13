@@ -13,6 +13,7 @@ import type {
 	ClusterVariable,
 	ClusterVariableSearchResult,
 	QueryClusterVariablesRequestBody,
+	UpdateClusterVariableRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -20,11 +21,11 @@ import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 import {isDuplicateClusterVariableError} from './isDuplicateClusterVariableError';
 
 type ClusterVariableIdentity = Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>;
-type ClusterVariableInput = ClusterVariableIdentity & {value: unknown};
+type ClusterVariableInput = ClusterVariableIdentity & Pick<UpdateClusterVariableRequestBody, 'value' | 'metadata'>;
 
 const LIST_QUERY_KEY_PREFIX = ['queryClusterVariables'];
 
@@ -77,6 +78,12 @@ function useClusterVariableMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
 
+	const searchClusterVariable = ({name, scope, tenantId}: ClusterVariableIdentity) =>
+		queries.queryClusterVariables(
+			{filter: {name, scope, ...(typeof tenantId === 'string' && {tenantId})}, page: {limit: 1}},
+			{truncateValues: false},
+		);
+
 	const invalidateClusterVariables = () =>
 		Promise.all([
 			queryClient.invalidateQueries({queryKey: LIST_QUERY_KEY_PREFIX}),
@@ -114,9 +121,10 @@ function useClusterVariableMutations() {
 			patchLists(clusterVariable);
 			toast.success(t('admin.clusterVariables.createClusterVariableSuccess'));
 
-			void waitUntilReady(queryClient, queries.getClusterVariable(toIdentity(clusterVariable))).then((ready) =>
-				reconcileClusterVariables(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchClusterVariable(clusterVariable), {
+				isReady: ({items}) =>
+					items.some((item) => getClusterVariableId(item) === getClusterVariableId(clusterVariable)),
+			}).then((ready) => reconcileClusterVariables(ready !== undefined));
 		},
 		onError: async (error) => {
 			// A duplicate name is corrected inline on the name field instead of a toast.
@@ -140,8 +148,13 @@ function useClusterVariableMutations() {
 			patchLists(clusterVariable);
 			toast.success(t('admin.clusterVariables.updateClusterVariableSuccess'));
 
-			void waitUntilReady(queryClient, queries.getClusterVariable(toIdentity(clusterVariable)), {
-				isReady: (data) => data.value === clusterVariable.value,
+			void waitUntilReady(queryClient, searchClusterVariable(clusterVariable), {
+				isReady: ({items}) =>
+					items.some(
+						(item) =>
+							getClusterVariableId(item) === getClusterVariableId(clusterVariable) &&
+							item.value === clusterVariable.value,
+					),
 			}).then((ready) => reconcileClusterVariables(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -167,16 +180,9 @@ function useClusterVariableMutations() {
 			queryClient.removeQueries({queryKey: queries.getClusterVariable(identity).queryKey});
 			toast.success(t('admin.clusterVariables.deleteClusterVariableSuccess'));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['clusterVariableGone', identity],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getClusterVariable(identity));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileClusterVariables);
+			void waitUntilReady(queryClient, searchClusterVariable(identity), {
+				isReady: ({items}) => items.every((item) => getClusterVariableId(item) !== getClusterVariableId(identity)),
+			}).then((ready) => reconcileClusterVariables(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.clusterVariables.deleteClusterVariableError'), {description: await getErrorMessage(error)});

@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {render} from 'vitest-browser-react';
 import type {AgentInstanceMessageContent, AgentInstanceToolCall} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {ToolResultMessage} from './ToolResultMessage';
+
+vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
 
 const TOOL_CALL: AgentInstanceToolCall = {
 	toolCallId: 'call-1',

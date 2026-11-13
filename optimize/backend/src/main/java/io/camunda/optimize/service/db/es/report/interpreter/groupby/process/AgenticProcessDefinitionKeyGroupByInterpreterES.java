@@ -18,7 +18,6 @@ import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
-import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
@@ -55,9 +54,8 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterES
   public AgenticProcessDefinitionKeyGroupByInterpreterES(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter,
-      final DefinitionService definitionService) {
-    super(configurationService, distributedByInterpreter, viewInterpreter, definitionService);
+      final ProcessViewInterpreterFacadeES viewInterpreter) {
+    super(configurationService, distributedByInterpreter, viewInterpreter);
   }
 
   @Override

@@ -67,6 +67,28 @@ final class IntentEncodingDecodingTest {
     assertThat(acknowledgement).isSameAs(ElementInstanceWalkIntent.SUSPENDED);
   }
 
+  @Test
+  void shouldIdentifyProbeCommandsAndEvents() {
+    // when
+    final Set<ProbeIntent> events =
+        Stream.of(ProbeIntent.values()).filter(Intent::isEvent).collect(Collectors.toSet());
+    final Set<ProbeBatchIntent> batchEvents =
+        Stream.of(ProbeBatchIntent.values()).filter(Intent::isEvent).collect(Collectors.toSet());
+
+    // then
+    assertThat(events)
+        .containsExactlyInAnyOrder(
+            ProbeIntent.CREATED,
+            ProbeIntent.YIELDED,
+            ProbeIntent.ANSWERED,
+            ProbeIntent.TIMED_OUT,
+            ProbeIntent.CANCELED);
+    assertThat(batchEvents).containsExactly(ProbeBatchIntent.ACTIVATED);
+    assertThat(Intent.fromProtocolValue(ValueType.PROBE, "ANSWER")).isSameAs(ProbeIntent.ANSWER);
+    assertThat(Intent.fromProtocolValue(ValueType.PROBE_BATCH, "ACTIVATE"))
+        .isSameAs(ProbeBatchIntent.ACTIVATE);
+  }
+
   private static Stream<ParameterSet> parameters() {
     final List<ParameterSet> result = new ArrayList<>();
     result.addAll(buildParameterSets(AgentDefinitionIntent.class, AgentDefinitionIntent::from));
@@ -138,6 +160,8 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(MessageSubscriptionIntent.class, MessageSubscriptionIntent::from));
     result.addAll(buildParameterSets(MultiInstanceIntent.class, MultiInstanceIntent::from));
+    result.addAll(buildParameterSets(ProbeBatchIntent.class, ProbeBatchIntent::from));
+    result.addAll(buildParameterSets(ProbeIntent.class, ProbeIntent::from));
     result.addAll(buildParameterSets(ProcessIntent.class, ProcessIntent::from));
     result.addAll(buildParameterSets(ProcessEventIntent.class, ProcessEventIntent::from));
     result.addAll(buildParameterSets(ProcessInstanceIntent.class, ProcessInstanceIntent::from));
@@ -164,6 +188,10 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(ResourceIntent.class, ResourceIntent::from));
     result.addAll(buildParameterSets(ResourceDeletionIntent.class, ResourceDeletionIntent::from));
     result.addAll(buildParameterSets(ResourceReexportIntent.class, ResourceReexportIntent::from));
+    result.addAll(buildParameterSets(PolicyUpdateIntent.class, PolicyUpdateIntent::from));
+    result.addAll(
+        buildParameterSets(
+            ProcessDefinitionSuspensionIntent.class, ProcessDefinitionSuspensionIntent::from));
     result.addAll(
         buildParameterSets(
             ProcessDefinitionRestoreIntent.class, ProcessDefinitionRestoreIntent::from));
@@ -182,6 +210,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(UsageMetricIntent.class, UsageMetricIntent::from));
     result.addAll(buildParameterSets(UserIntent.class, UserIntent::from));
     result.addAll(buildParameterSets(UserTaskIntent.class, UserTaskIntent::from));
+    result.addAll(buildParameterSets(UserTaskLookupIntent.class, UserTaskLookupIntent::from));
     result.addAll(buildParameterSets(VariableDocumentIntent.class, VariableDocumentIntent::from));
     result.addAll(buildParameterSets(VariableIntent.class, VariableIntent::from));
 

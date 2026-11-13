@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
+import io.camunda.application.commons.security.EngineSecurityConfigFactory;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -16,7 +17,6 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -237,15 +237,7 @@ public final class SystemContextLoader {
 
   private PhysicalTenantContext buildPhysicalTenantContext(
       final String physicalTenantId, final Camunda camunda) {
-    final var s = camunda.getSecurity();
-    final var securityConfig =
-        new EngineSecurityConfig(
-            s.getAuthentication(),
-            s.getAuthorizations().isEnabled(),
-            s.getMultiTenancy().isChecksEnabled(),
-            s.getInitialization(),
-            s.getCompiledIdValidationPattern(),
-            s.getCompiledGroupIdValidationPattern());
+    final var securityConfig = EngineSecurityConfigFactory.create(camunda.getSecurity());
     final var authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfig);
 
     final BrokerCfg brokerConfig;

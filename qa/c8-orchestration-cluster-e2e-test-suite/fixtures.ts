@@ -251,8 +251,19 @@ const test = publicTest.extend<NonNullable<unknown>, AuthWorkerFixtures>({
     },
     {scope: 'worker'},
   ],
-  page: async ({context, loginState}, use) => {
+  page: async ({context, loginState, loginUser}, use) => {
     await context.addCookies(loginState.cookies);
+    // The worker's session can expire during a long run. Renew it here, before
+    // the CSRF init script is registered, so only one script writes the token
+    // and it matches the session cookie in this context.
+    const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+    const me = await context.request.get(`${baseURL}/v2/authentication/me`);
+    if (me.status() === 401) {
+      const login = await logInViaApi(context.request, baseURL, loginUser);
+      expect(login.response.status()).toBe(204);
+      loginState.csrfToken = login.csrfToken;
+      loginState.cookies = await context.cookies();
+    }
     await context.addInitScript((csrfToken) => {
       sessionStorage.setItem('X-CSRF-TOKEN', csrfToken);
     }, loginState.csrfToken);

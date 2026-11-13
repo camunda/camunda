@@ -42,7 +42,14 @@ type SubmissionResponse =
 	| ResumeProcessInstancesBatchOperationResponseBody
 	| CreateModificationBatchOperationResponseBody;
 type Navigate = ReturnType<typeof useNavigate>;
-type TrackingInput = {queryClient: QueryClient; batchOperationKey: string; navigate: Navigate};
+type BatchOperationRoute =
+	'/operate/batch-operations/$batchOperationKey' | '/operate-preview/batch-operations/$batchOperationKey';
+type TrackingInput = {
+	queryClient: QueryClient;
+	batchOperationKey: string;
+	navigate: Navigate;
+	batchOperationRoute: BatchOperationRoute;
+};
 const REQUESTS = {
 	delete: endpoints.createDeletionBatchOperation,
 	cancel: endpoints.createCancellationBatchOperation,
@@ -58,7 +65,13 @@ function refresh(queryClient: QueryClient) {
 	}
 }
 
-function notifyDetails(batchOperationKey: string, title: string, kind: 'success' | 'warning', navigate: Navigate) {
+function notifyDetails(
+	batchOperationKey: string,
+	title: string,
+	kind: 'success' | 'warning',
+	navigate: Navigate,
+	batchOperationRoute: BatchOperationRoute,
+) {
 	notificationsStore.displayNotification({
 		kind,
 		title,
@@ -66,8 +79,7 @@ function notifyDetails(batchOperationKey: string, title: string, kind: 'success'
 		isDismissable: true,
 		isActionable: true,
 		actionButtonLabel: t('operate.processes.toolbar.details'),
-		onActionButtonClick: () =>
-			void navigate({to: '/operate/batch-operations/$batchOperationKey', params: {batchOperationKey}}),
+		onActionButtonClick: () => void navigate({to: batchOperationRoute, params: {batchOperationKey}}),
 	});
 }
 
@@ -121,6 +133,7 @@ const trackingMachine = setup({
 								t('operate.processes.toolbar.progressUnavailable'),
 								'warning',
 								context.navigate,
+								context.batchOperationRoute,
 							);
 						},
 					},
@@ -135,10 +148,11 @@ const trackingMachine = setup({
 
 const processBulkOperationMachine = setup({
 	types: {
-		input: {} as {queryClient: QueryClient; navigate: Navigate},
+		input: {} as {queryClient: QueryClient; navigate: Navigate; batchOperationRoute?: BatchOperationRoute},
 		context: {} as {
 			queryClient: QueryClient;
 			navigate: Navigate;
+			batchOperationRoute: BatchOperationRoute;
 			acceptedIdentity: string | null;
 			acceptedKey: string | null;
 		},
@@ -157,7 +171,12 @@ const processBulkOperationMachine = setup({
 		}),
 	},
 }).createMachine({
-	context: ({input}) => ({...input, acceptedIdentity: null, acceptedKey: null}),
+	context: ({input}) => ({
+		...input,
+		batchOperationRoute: input.batchOperationRoute ?? '/operate/batch-operations/$batchOperationKey',
+		acceptedIdentity: null,
+		acceptedKey: null,
+	}),
 	initial: 'idle',
 	states: {
 		idle: {on: {submit: 'submitting'}},
@@ -169,7 +188,14 @@ const processBulkOperationMachine = setup({
 					target: 'idle',
 					actions: assign(({context, event, spawn}) => {
 						const {batchOperationKey, batchOperationType, filterIdentity} = event.output;
-						spawn('track', {input: {queryClient: context.queryClient, batchOperationKey, navigate: context.navigate}});
+						spawn('track', {
+							input: {
+								queryClient: context.queryClient,
+								batchOperationKey,
+								navigate: context.navigate,
+								batchOperationRoute: context.batchOperationRoute,
+							},
+						});
 						refresh(context.queryClient);
 						notifyDetails(
 							batchOperationKey,
@@ -178,6 +204,7 @@ const processBulkOperationMachine = setup({
 							}),
 							'success',
 							context.navigate,
+							context.batchOperationRoute,
 						);
 						return {acceptedIdentity: filterIdentity, acceptedKey: batchOperationKey};
 					}),

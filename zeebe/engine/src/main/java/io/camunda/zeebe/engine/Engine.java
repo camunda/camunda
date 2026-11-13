@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -142,7 +143,11 @@ public class Engine implements RecordProcessor {
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);
     bufferingBehavior =
-        new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
+        new CommandBufferingBehavior(
+            processingState.getKeyGenerator(),
+            writers,
+            processingState.getElementInstanceState(),
+            suspensionMetrics);
 
     // Replay only rebuilds the state, so the clock is set from the state once replay is done.
     // This listener is added first, so the other listeners already see this clock when they
@@ -329,8 +334,9 @@ public class Engine implements RecordProcessor {
               record,
               RejectionType.PROCESSING_ERROR,
               """
-                Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
-                Check your broker logs (partition %d), or ask your operator, for more details."""
+              Expected to process command %d (%s.%s) without errors, but unexpected error occurred. \
+              Check your broker logs (partition %d), or ask your operator, for more details.\
+              """
                   .formatted(
                       record.getKey(),
                       record.getValueType(),
@@ -340,14 +346,25 @@ public class Engine implements RecordProcessor {
     errorRecord.initErrorRecord(processingException, record.getPosition());
 
     if (DbBannedInstanceState.shouldBeBanned(record.getIntent())) {
-      if (record.getValue() instanceof ProcessInstanceRelated) {
-        final long processInstanceKey =
-            ((ProcessInstanceRelated) record.getValue()).getProcessInstanceKey();
+      if (record.getValue() instanceof final ProcessInstanceRelated piRelated) {
+        final long processInstanceKey = piRelated.getProcessInstanceKey();
         errorRecord.setProcessInstanceKey(processInstanceKey);
+        errorRecord.setStorageOrdinal(resolveStorageOrdinal(piRelated, processInstanceKey));
+      } else {
+        errorRecord.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
       }
 
       writers.state().appendFollowUpEvent(record.getKey(), ErrorIntent.CREATED, errorRecord);
     }
+  }
+
+  private int resolveStorageOrdinal(
+      final ProcessInstanceRelated piRelated, final long processInstanceKey) {
+    final var elementInstance =
+        processingState.getElementInstanceState().getInstance(processInstanceKey);
+    return elementInstance != null
+        ? elementInstance.getValue().getStorageOrdinal()
+        : piRelated.getStorageOrdinal();
   }
 
   /**

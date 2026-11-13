@@ -39,6 +39,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK_LOOKUP;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 import static io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent.INPUT_COLLECTION_EVALUATED;
@@ -121,6 +122,12 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -146,6 +153,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskLookupRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -309,6 +317,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
+    valueLoggers.put(USER_TASK_LOOKUP, this::summarizeUserTaskLookup);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
     valueLoggers.put(ValueType.MESSAGE_CORRELATION, this::summarizeMessageCorrelation);
     valueLoggers.put(ValueType.CLOCK, this::summarizeClock);
@@ -352,6 +361,11 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
+    valueLoggers.put(ValueType.POLICY_UPDATE, this::summarizePolicyUpdate);
+    valueLoggers.put(ValueType.PROBE, this::summarizeProbe);
+    valueLoggers.put(ValueType.PROBE_BATCH, this::summarizeProbeBatch);
+    valueLoggers.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION, this::summarizeProcessDefinitionSuspension);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -1111,6 +1125,11 @@ public class CompactRecordLogger {
         + shortenKey(value.getParentKey())
         + " idx:"
         + shortenKey(value.getIndex());
+  }
+
+  String summarizeUserTaskLookup(final Record<?> record) {
+    final var value = (UserTaskLookupRecordValue) record.getValue();
+    return "fetchVariables:" + value.getFetchVariables() + formatTenant(value);
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
@@ -2271,6 +2290,78 @@ public class CompactRecordLogger {
     result.append(" tenantId:").append(value.getTenantId());
 
     return result.toString();
+  }
+
+  private String summarizePolicyUpdate(final Record<?> record) {
+    final var value = (PolicyUpdateRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("policy:").append(value.getPolicyId());
+    result
+        .append(" version:")
+        .append(value.getBasePolicyVersion())
+        .append("->")
+        .append(value.getPolicyVersion());
+    result.append(" seqNo:").append(value.getSeqNo());
+    result.append(" update:").append(value.getUpdateId());
+    if (value.getChunkCount() > 0) {
+      result
+          .append(" chunk:")
+          .append(value.getChunkIndex() + 1)
+          .append("/")
+          .append(value.getChunkCount());
+    }
+    if (!value.getErrorMessage().isEmpty()) {
+      result.append(" error:").append(value.getErrorMessage());
+    }
+
+    return result.toString();
+  }
+
+  private String summarizeProbe(final Record<?> record) {
+    final var value = (ProbeRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("\"").append(value.getProbeId()).append("\"");
+    if (!value.getWorker().isEmpty()) {
+      result.append(" worker:").append(value.getWorker());
+    }
+    if (value.getOutcome() != ProbeOutcome.UNSPECIFIED) {
+      result.append(" outcome:").append(value.getOutcome());
+    }
+    if (value.getEndReason() != ProbeEndReason.UNSPECIFIED) {
+      result.append(" reason:").append(value.getEndReason());
+    }
+    result.append(" tenantId:").append(value.getTenantId());
+
+    return result.toString();
+  }
+
+  String summarizeProcessDefinitionSuspension(final Record<?> record) {
+    final var value = (ProcessDefinitionSuspensionRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    if (value.getProcessDefinitionKey() > 0) {
+      result.append("pdKey:").append(shortenKey(value.getProcessDefinitionKey()));
+    } else {
+      result.append(formatId(value.getBpmnProcessId())).append(" v").append(value.getVersion());
+    }
+    if (value.isIncludeProcessInstances()) {
+      result.append(" includeProcessInstances");
+    }
+    result.append(" resolved:").append(value.getResolvedVersions().size());
+
+    return result.toString();
+  }
+
+  private String summarizeProbeBatch(final Record<?> record) {
+    final var value = (ProbeBatchRecordValue) record.getValue();
+    return "%s worker:%s max:%d probes:%s"
+        .formatted(
+            value.getProbeIds(),
+            value.getWorker(),
+            value.getMaxProbesToActivate(),
+            value.getProbeKeys().stream().map(this::shortenKey).toList());
   }
 
   private String formatPinnedTime(final long time) {

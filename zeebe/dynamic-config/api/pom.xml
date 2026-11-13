@@ -18,6 +18,10 @@
   <artifactId>zeebe-cluster-config-api</artifactId>
   <name>Zeebe Dynamic Cluster Configuration API</name>
 
+  <properties>
+    <junit.module.configurationParameters>${junit.parallel.classes.configurationParameters}</junit.module.configurationParameters>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -26,7 +30,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-atomix-cluster</artifactId>
+      <artifactId>zeebe-atomix-messaging-api</artifactId>
     </dependency>
 
     <dependency>

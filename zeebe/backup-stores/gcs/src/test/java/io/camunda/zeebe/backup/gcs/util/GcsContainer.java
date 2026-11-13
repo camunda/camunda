@@ -49,7 +49,7 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
     //noinspection OctalInteger
     copyFileToContainer(
         Transferable.of(
-            "/bin/fake-gcs-server -data /data -scheme http -port %d -external-url %s"
+            "/bin/fake-gcs-server -backend memory -scheme http -port %d -external-url %s"
                 .formatted(PORT, externalEndpoint()),
             0777),
         STARTER_SCRIPT);

@@ -32,7 +32,6 @@ import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -580,6 +579,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
     unifiedConfig.getCluster().getRaft().setFlushDelay(Duration.ZERO);
+    // the first leader is only elected after a randomized timeout in [electionTimeout, 2 *
+    // electionTimeout], so the 2.5s default adds 2.5-5s to every cluster start; the heartbeat
+    // interval (250ms by default) still leaves several heartbeats per timeout
+    unifiedConfig.getCluster().getRaft().setElectionTimeout(Duration.ofSeconds(1));
 
     // Set data defaults - smaller segments for tests
     unifiedConfig.getData().setSnapshotPeriod(Duration.ofMinutes(5));
@@ -621,17 +624,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .setRedistributionInterval(Duration.ofSeconds(1));
 
     // Set dynamic ports via properties (these aren't in unified config yet)
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
 
     withSecondaryStorageType(SecondaryStorageType.none);
   }

@@ -28,7 +28,8 @@ import org.junit.jupiter.api.Test;
  *
  * <ul>
  *   <li>deep-merged by a {@link MapOverlaySpec} registered in {@link
- *       PhysicalTenantMapOverlays#REGISTRY};
+ *       PhysicalTenantMapOverlays#REGISTRY}, or, for the named OIDC providers, by {@code
+ *       PhysicalTenantAuthConfigurations} (see {@link MapOverlaySurface#deepMergedMapPaths});
  *   <li>explicitly listed in {@link MapOverlaySurface#DEFAULT_MERGE_ALLOWLIST} as keeping Spring's
  *       default entry-level merge;
  *   <li>non-overridable per {@link PhysicalTenantOverridePolicyValidation} — a map a tenant can

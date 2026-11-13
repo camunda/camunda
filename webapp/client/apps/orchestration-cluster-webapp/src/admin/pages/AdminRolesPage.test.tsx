@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {cleanup, render} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
-import {TooltipProvider, Toaster, toast} from '@camunda/design-system';
+import {toast} from '@camunda/design-system';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
+import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateRoleEndpoint,
 	mockDeleteRoleEndpoint,
-	mockGetRoleEndpoint,
+	mockQueryRolesEndpoint,
 	mockUpdateRoleEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createRole} from '#/shared-test-modules/api-mocks/roles';
@@ -25,22 +25,8 @@ import {AdminRolesPage, type AdminRolesPageProps} from './AdminRolesPage';
 const DEBOUNCED = {timeout: 3000};
 const RETRY_BUDGET = {timeout: 10_000};
 
-function getWrapper() {
-	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
-
-	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
-		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>{children}</TooltipProvider>
-			<Toaster />
-		</QueryClientProvider>
-	);
-
-	return Wrapper;
-}
-
 async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 	const onSearchChange = vi.fn();
-	const onOpenRole = vi.fn();
 	const screen = await render(
 		<AdminRolesPage
 			roles={[createRole()]}
@@ -48,13 +34,12 @@ async function renderPage(overrides: Partial<AdminRolesPageProps> = {}) {
 			defaultRoleIds={[]}
 			search={{}}
 			onSearchChange={onSearchChange}
-			onOpenRole={onOpenRole}
 			{...overrides}
 		/>,
-		{wrapper: getWrapper()},
+		{wrapper: createAdminPageWrapper()},
 	);
 
-	return {screen, onSearchChange, onOpenRole};
+	return {screen, onSearchChange};
 }
 
 describe('<AdminRolesPage />', () => {
@@ -70,10 +55,29 @@ describe('<AdminRolesPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'Operations'})).toBeVisible();
 	});
 
-	it('should show an empty state when there are no roles', async () => {
+	it('should offer to create the first role when there are no roles', async () => {
 		const {screen} = await renderPage({roles: [], totalItems: 0});
 
+		await expect.element(screen.getByText('No roles created yet')).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Learn more about roles'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Create role'}));
+
+		await expect.element(screen.getByRole('dialog')).toBeVisible();
+	});
+
+	it('should keep the table when a page past the last one has no roles but others exist', async () => {
+		const {screen} = await renderPage({roles: [], totalItems: 25, search: {page: 2}});
+
+		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('searchbox')).toBeVisible();
+	});
+
+	it('should keep the table when a search finds no roles', async () => {
+		const {screen} = await renderPage({roles: [], totalItems: 0, search: {search: 'nothing'}});
+
 		await expect.element(screen.getByText('No roles found.')).toBeVisible();
+		await expect.element(screen.getByText('No roles created yet')).not.toBeInTheDocument();
 	});
 
 	it('should disable editing and deleting default roles', async () => {
@@ -91,13 +95,11 @@ describe('<AdminRolesPage />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Delete role'})).toBeDisabled();
 	});
 
-	it('should open a role when a row is clicked', async () => {
-		const role = createRole({roleId: 'ops'});
-		const {screen, onOpenRole} = await renderPage({roles: [role]});
+	it('should link each row to its role', async () => {
+		const role = createRole({roleId: 'ops/1'});
+		const {screen} = await renderPage({roles: [role]});
 
-		await userEvent.click(screen.getByRole('cell', {name: 'ops'}));
-
-		expect(onOpenRole).toHaveBeenCalledWith(role);
+		await expect.element(screen.getByRole('link', {name: 'ops/1'})).toHaveAttribute('href', '/admin/roles/ops%2F1');
 	});
 
 	it('should search by role ID once the reader stops typing', async () => {
@@ -137,7 +139,7 @@ describe('<AdminRolesPage />', () => {
 		const role = createRole({roleId: 'ops', name: 'Operations'});
 		worker.use(
 			mockCreateRoleEndpoint({successResponse: HttpResponse.json(role, {status: 201})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json(role)}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [role], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: []});
 
@@ -219,7 +221,7 @@ describe('<AdminRolesPage />', () => {
 		const updated = {...role, name: 'Ops team'};
 		worker.use(
 			mockUpdateRoleEndpoint({successResponse: HttpResponse.json(updated)}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: [role]});
 
@@ -235,7 +237,7 @@ describe('<AdminRolesPage />', () => {
 		const role = createRole({roleId: 'ops'});
 		worker.use(
 			mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen} = await renderPage({roles: [role]});
 
@@ -250,7 +252,7 @@ describe('<AdminRolesPage />', () => {
 		// given
 		worker.use(
 			mockCreateRoleEndpoint({successResponse: HttpResponse.json(createRole({roleId: 'ops'}), {status: 201})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const {screen} = await renderPage({roles: []});
 

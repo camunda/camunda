@@ -7,10 +7,12 @@ functions:
   - verifyKeyTypesPaths
   - verifyKeyTypesSchemas
   - verifyEventuallyConsistent
+  - verifyEventuallyConsistentDeclared
   - verifyRequiredPropertiesExist
   - verifyNoRedundantRequired
   - verifyArrayPropertiesRequired
   - verifyResponsePropertiesRequired
+  - verifyNoNullableRequestProperties
   - verifyDeprecatedEnumMembers
   - verifyAddedInVersion
   - verifyScope
@@ -102,6 +104,68 @@ rules:
       field: description
       function: truthy
 
+  clearable-schema-accepts-empty-string:
+    description: >-
+      A schema marked x-clearable must set it to true, must not declare its own format, and
+      must accept the empty string that clears the value through an anyOf member with
+      maxLength 0. See section 2.22 of docs/rest-api-endpoint-guidelines.md.
+    severity: error
+    # resolved: false reports at the schema's source location. The parent
+    # operator (^) is used instead of a [?(@['x-clearable'])] filter for the
+    # same reason as valid-deprecated-enum-members below.
+    resolved: false
+    given: "$..x-clearable^"
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [x-clearable, anyOf]
+          properties:
+            x-clearable:
+              const: true
+            anyOf:
+              type: array
+              contains:
+                type: object
+                required: [maxLength]
+                properties:
+                  maxLength:
+                    const: 0
+          not:
+            required: [format]
+    message: >-
+      A clearable schema must set `x-clearable: true`, must not declare a format, and must
+      accept an empty string through an anyOf member with `maxLength: 0`.
+
+  clearable-reference-declares-no-format:
+    description: >-
+      A property that references a clearable schema (x-clearable) must not declare a format
+      next to the reference: the format would reject the empty string that clears the value.
+      See section 2.22 of docs/rest-api-endpoint-guidelines.md.
+    severity: error
+    # Resolved, so a referenced schema's x-clearable is visible inside the
+    # property's allOf.
+    given: $..properties[*]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          if:
+            required: [allOf]
+            properties:
+              allOf:
+                type: array
+                contains:
+                  type: object
+                  required: [x-clearable]
+          then:
+            not:
+              required: [format]
+    message: >-
+      Property references a clearable schema, so it must not declare a format next to the
+      reference.
+
   operation-key-properties-must-be-strings:
     description: "`...Key` parameters must be of type `string`."
     severity: warn
@@ -149,6 +213,17 @@ rules:
     then:
       function: verifyResponsePropertiesRequired
 
+  # Request body fields must not be `nullable` (camunda/camunda#66952).
+  # Exceptions live in spectral-functions/verifyNoNullableRequestProperties.allowlist.json;
+  # new entries need API Governance review.
+  no-nullable-request-properties:
+    description: "Request body fields must not be `nullable`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyNoNullableRequestProperties
+
   no-eventually-consistent-on-commands:
     description: "Command (mutating) operations must not have x-eventually-consistent: true."
     severity: error
@@ -156,6 +231,14 @@ rules:
     then:
       function: verifyEventuallyConsistent
     message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."
+
+  require-eventually-consistent:
+    description: "Every operation must declare `x-eventually-consistent` explicitly as `true` or `false`."
+    severity: error
+    given: $.paths[*][*]
+    message: "{{error}}"
+    then:
+      function: verifyEventuallyConsistentDeclared
 
   valid-deprecated-enum-members:
     description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
