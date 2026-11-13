@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -368,6 +369,47 @@ class SchemaManagerTest {
     // the executor it was dispatched to, so this does not race the async task.
     schemaManager.close();
     verify(searchEngineClient, times(1)).getIndexNames(anyString());
+  }
+
+  @Test
+  void shouldFailStartupWhenActivePrimariesAreNotAvailableForExistingIndices() {
+    // given - every index already exists, so nothing is created and only the readiness gate can
+    // notice that the primaries are not active yet
+    schemaManager = createSpySchemaManager("8.10.0");
+    mockAllIndicesExist();
+    final var unavailable = new SearchEngineException("primaries not active");
+    doThrow(unavailable).when(searchEngineClient).awaitActivePrimaries(any());
+
+    // when / then
+    assertThatThrownBy(() -> schemaManager.startupOnce()).isSameAs(unavailable);
+    verify(searchEngineClient, never()).createIndex(any(), any());
+    verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldNotWaitForActivePrimariesWhenHealthCheckIsDisabled() {
+    // given
+    config.schemaManager().setHealthCheckEnabled(false);
+    schemaManager = createSpySchemaManager("8.10.0");
+    mockAllIndicesExist();
+
+    // when
+    schemaManager.startupOnce();
+
+    // then
+    verify(searchEngineClient, never()).awaitActivePrimaries(any());
+  }
+
+  private void mockAllIndicesExist() {
+    final Map<String, IndexMapping> existing = new HashMap<>();
+    indexDescriptors.forEach(
+        descriptor ->
+            existing.put(
+                descriptor.getFullQualifiedName(),
+                new IndexMapping.Builder().indexName(descriptor.getFullQualifiedName()).build()));
+    when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX))).thenReturn(existing);
+    when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX_TEMPLATE)))
+        .thenReturn(Map.of());
   }
 
   /**
