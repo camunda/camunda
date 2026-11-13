@@ -1032,6 +1032,8 @@ components:
                 Defines a list of alternative filter groups combined using OR logic. Each object in the array is evaluated independently, and the filter matches if any one of them is satisfied.
 
                 Top-level fields and the `$or` clause are combined using AND logic — meaning: (top-level filters) AND (any of the `$or` filters) must match.
+
+                Each object in the array must contain at least one filter criterion. An empty object (`{}`), or one whose properties are only empty filter objects without operators, is rejected with a `400 Bad Request` response.
                 <br>
                 <em>Example:</em>
 
