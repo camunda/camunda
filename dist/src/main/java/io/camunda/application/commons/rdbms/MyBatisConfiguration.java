@@ -10,6 +10,7 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
 import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
+import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -158,9 +160,18 @@ public class MyBatisConfiguration {
   public RdbmsDataSources rdbmsDataSources(
       final PhysicalTenantResolver physicalTenantResolver, final MeterRegistry meterRegistry)
       throws IOException {
+    final var stateTenantIds =
+        physicalTenantResolver.getAll().entrySet().stream()
+            .filter(
+                tenant ->
+                    tenant.getValue().getData().getPrimaryStorage().getType()
+                        == PrimaryStorageType.rdbms)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toUnmodifiableSet());
     return RdbmsDataSources.of(
         physicalTenantResolver.mapValues(
             camunda -> camunda.getData().getSecondaryStorage().getRdbms()),
+        stateTenantIds,
         meterRegistry);
   }
 

@@ -22,6 +22,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -259,6 +260,62 @@ class RdbmsDataSourcesTest {
   }
 
   @Test
+  void shouldBuildASecondPoolOnlyForTenantsKeepingTheirStateInTheDatabase() throws Exception {
+    // given
+    final var configs = new LinkedHashMap<String, Rdbms>();
+    configs.put("state-tenant", h2Rdbms());
+    configs.put("history-tenant", h2Rdbms());
+
+    // when
+    try (final var registry =
+        RdbmsDataSources.of(configs, Set.of("state-tenant"), new SimpleMeterRegistry())) {
+
+      // then
+      assertThat(registry.stateDataSourceFor("history-tenant")).isEmpty();
+      assertThat(registry.stateDataSourceFor("state-tenant"))
+          .get()
+          .isInstanceOfSatisfying(
+              HikariDataSource.class,
+              ds -> {
+                assertThat(ds).isNotSameAs(registry.dataSourceFor("state-tenant"));
+                assertThat(ds.getPoolName()).isEqualTo("camunda-rdbms-state-state-tenant");
+                assertThat(ds.getJdbcUrl()).isEqualTo(configs.get("state-tenant").getUrl());
+                assertThat(ds.getTransactionIsolation()).isEqualTo("TRANSACTION_READ_COMMITTED");
+              });
+    }
+  }
+
+  @Test
+  void shouldKeepMorePreparedStatementsOnPostgresForTheState() throws Exception {
+    // given
+    final var rdbms = new Rdbms();
+    rdbms.setUrl("jdbc:postgresql://localhost:1/camunda");
+    rdbms.setUsername("camunda");
+    rdbms.setPassword("camunda");
+
+    // when
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID),
+            new SimpleMeterRegistry())) {
+
+      // then
+      final var historyDs =
+          (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      final var stateDs =
+          (HikariDataSource)
+              registry
+                  .stateDataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                  .orElseThrow();
+      assertThat(stateDs.getDataSourceProperties().getProperty("preparedStatementCacheQueries"))
+          .isEqualTo("1024");
+      assertThat(historyDs.getDataSourceProperties().getProperty("preparedStatementCacheQueries"))
+          .isNull();
+    }
+  }
+
+  @Test
   void shouldCloseAllDataSourcesOnClose() throws Exception {
     final var configs = new LinkedHashMap<String, Rdbms>();
     configs.put("tenant-a", h2Rdbms());
@@ -266,15 +323,20 @@ class RdbmsDataSourcesTest {
 
     final HikariDataSource dsA;
     final HikariDataSource dsB;
-    try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
+    final HikariDataSource stateDsA;
+    try (final var registry =
+        RdbmsDataSources.of(configs, Set.of("tenant-a"), new SimpleMeterRegistry())) {
       dsA = (HikariDataSource) registry.dataSourceFor("tenant-a");
       dsB = (HikariDataSource) registry.dataSourceFor("tenant-b");
+      stateDsA = (HikariDataSource) registry.stateDataSourceFor("tenant-a").orElseThrow();
       assertThat(dsA.isClosed()).isFalse();
       assertThat(dsB.isClosed()).isFalse();
+      assertThat(stateDsA.isClosed()).isFalse();
     }
 
     assertThat(dsA.isClosed()).isTrue();
     assertThat(dsB.isClosed()).isTrue();
+    assertThat(stateDsA.isClosed()).isTrue();
   }
 
   static Stream<BatchRewritingCase> batchRewritingCases() {
