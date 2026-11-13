@@ -12,6 +12,7 @@ import {
   classify,
   compareWithBase,
   currentReports,
+  errorSummary,
   failedTests,
   normalizeSpec,
   parseExpectedLegs,
@@ -406,4 +407,58 @@ test('a report with testDir ./tests/ is matched to the base suite, not read as a
   const [r] = compareWithBase(pr, [onBase], base, ['api-tests']);
   assert.equal(r.file, 'tests/api/operate-api-tests.spec.ts');
   assert.equal(r.base, 'passed');
+});
+
+// --- the error line under each failed test ------------------------------------
+
+test('errorSummary keeps the first two lines of the error, without colours, log or stack', () => {
+  const message =
+    '\u001b[31mError: expect(received).toMatch(expected)\u001b[39m\n\n' +
+    'Expected substring: "a"\nReceived string: "b"\n\nCall Log:\n- Timeout';
+  assert.equal(errorSummary({error: {message}}), 'Error: expect(received).toMatch(expected) · Expected substring: "a"');
+  assert.equal(
+    errorSummary({errors: [{message: 'TimeoutError: locator.click: Timeout 10000ms exceeded.\n  > 12 |   await x'}]}),
+    'TimeoutError: locator.click: Timeout 10000ms exceeded.',
+  );
+  assert.equal(errorSummary({}), '');
+  assert.equal(errorSummary(undefined), '');
+  const long = errorSummary({error: {message: `Error: ${'x'.repeat(500)}`}});
+  assert.equal(long.length, 200);
+  assert.ok(long.endsWith('…'));
+});
+
+test('the comment shows each failed test with its error', () => {
+  const report = {
+    suites: [
+      {
+        title: 'tests/a.spec.ts',
+        file: 'tests/a.spec.ts',
+        suites: [
+          {
+            title: 'g',
+            specs: [
+              {
+                title: 'x',
+                file: 'tests/a.spec.ts',
+                tests: [
+                  {
+                    status: 'unexpected',
+                    results: [
+                      {error: {message: 'Error: first try'}},
+                      {error: {message: 'Error: Response shape errors\n[ENUM] value "PROBE" not in [`A`]'}},
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const failures = failedTests(report);
+  assert.equal(failures[0].error, 'Error: Response shape errors · [ENUM] value "PROBE" not in [`A`]');
+  const b = classify([{leg: 'API', failures, rerun: done({...failures[0], base: 'failed'})}]);
+  const body = render({...baseArgs, buckets: b});
+  assert.match(body, /- `tests\/a\.spec\.ts` › g › x _\(API\)_\n  - `Error: Response shape errors · \[ENUM\] value "PROBE" not in \['A'\]`/);
 });
