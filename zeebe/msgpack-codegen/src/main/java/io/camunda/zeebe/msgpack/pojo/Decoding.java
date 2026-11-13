@@ -239,7 +239,10 @@ public final class Decoding {
     }
   }
 
-  /** Reads a string and resolves it to the constant with the same name, without allocating. */
+  /**
+   * Reads a string and resolves it to the constant with that {@code name()}, like {@code
+   * EnumValue}, without allocating. {@code names} are the names of {@code values}.
+   */
   public static <E extends Enum<E>> E readEnum(
       final MsgPackReader reader, final UnsafeBuffer[] names, final E[] values) {
     final int length = reader.readStringLength();

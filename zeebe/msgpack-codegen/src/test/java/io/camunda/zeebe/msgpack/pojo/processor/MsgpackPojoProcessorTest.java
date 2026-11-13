@@ -314,6 +314,21 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldRejectAnEnumThatOverridesToString() {
+    // given
+    final var kind =
+        new Source(
+            "sample.Kind",
+            "package sample; public enum Kind { ONE; @Override public String toString() { return \"one\"; } }");
+
+    // when
+    final var result = compile(kind, pojo(valid("Kind kind = Kind.ONE;")));
+
+    // then
+    assertThat(result.errors()).anyMatch(e -> e.contains("overrides toString()"));
+  }
+
+  @Test
   void shouldKeepTheDefaultOfAMissingEnum() throws Exception {
     // given
     final var result = compile(enumKind(), pojo(valid("Kind kind = Kind.TWO; int count = 1;")));
