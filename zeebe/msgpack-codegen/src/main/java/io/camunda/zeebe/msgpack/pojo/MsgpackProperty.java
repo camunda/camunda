@@ -23,6 +23,10 @@ import java.lang.annotation.Target;
  * io.camunda.zeebe.msgpack.value.BaseValue}s (e.g. an {@code UnpackedObject}, embedded as a nested
  * map that references the source buffer), and {@code final List}s of those, stored as an array of
  * maps. A list starts empty and its items need a public constructor without parameters.
+ *
+ * <p>A property without default, like a legacy property declared without one, is a {@link
+ * RequiredLong} or {@link RequiredInt}, or a {@code @Nullable} {@code DirectBuffer}, enum or {@code
+ * Boolean}. Writing it while unset, and reading a message without its key, fails.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)
@@ -38,14 +42,6 @@ public @interface MsgpackProperty {
    * view on the source buffer, without copying.
    */
   boolean binary() default false;
-
-  /**
-   * The property has no default: reading a value without this key fails, like it does for a
-   * property of an {@code UnpackedObject} that is declared without a default. Every field has a
-   * Java default, so a missing key is otherwise read as that default, e.g. {@code 0}. An enum field
-   * without initializer is required without this, as it holds no value then.
-   */
-  boolean required() default false;
 
   /**
    * The {@code DirectBuffer} holds a document, like the {@code DocumentProperty} it replaces: a

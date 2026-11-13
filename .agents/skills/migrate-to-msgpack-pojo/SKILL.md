@@ -64,11 +64,15 @@ Open the class and every property it declares.
 | Old property                                   | New field                                                                 |
 | ---------------------------------------------- | ------------------------------------------------------------------------- |
 | `LongProperty(key, default)`                   | `long field = default;`                                                   |
+| `LongProperty(key)` without default            | `final RequiredLong field = new RequiredLong();` (unset until `set(v)`)   |
+| `IntegerProperty(key)` without default         | `final RequiredInt field = new RequiredInt();`                            |
+| `BooleanProperty(key)` without default         | `@Nullable Boolean field;` (null = unset)                                 |
 | `IntegerProperty(key, default)`                | `int field = default;`                                                    |
 | `BooleanProperty(key, default)`                | `boolean field = default;`                                                |
 | `StringProperty(key, default)`                 | `DirectBuffer field = Decoding.EMPTY;` (non-empty default: step 3)        |
-| `BinaryProperty(key)`                          | `@MsgpackProperty(binary = true, required = true) DirectBuffer field = Decoding.EMPTY;` |
-| `EnumProperty<E>(key)` without default         | `E field;` (null until set, writing null fails like before)               |
+| `StringProperty(key)` without default          | `@Nullable DirectBuffer field;` (null = unset)                            |
+| `BinaryProperty(key)`                          | `@MsgpackProperty(binary = true) @Nullable DirectBuffer field;`           |
+| `EnumProperty<E>(key)` without default         | `@Nullable E field;` (null = unset)                                       |
 | `EnumProperty<E>(key, default)`                | `E field = default;`                                                      |
 | `ObjectProperty<X>(key, new X())`              | `final X field = new X();` (X is a `@MsgpackPojo` or a `BaseValue`)       |
 | `ArrayProperty<StringValue>`                   | `final List<DirectBuffer> field = new ArrayList<>();`                     |
@@ -77,7 +81,8 @@ Open the class and every property it declares.
 
 Use `@MsgpackProperty(document = true) DirectBuffer field = DocumentValue.EMPTY_DOCUMENT;` for a
 `DocumentProperty`, and `@MsgpackProperty(raw = true) DirectBuffer field = Decoding.EMPTY;` for a
-`PackedProperty` (preserve any explicit default). For `ArrayProperty<X>` where X is a `@MsgpackPojo`
+`PackedProperty` (preserve any explicit default). Without a default they are `@Nullable` and have
+no initializer, like the strings above. For `ArrayProperty<X>` where X is a `@MsgpackPojo`
 or `BaseValue`, use `final List<X> field = new ArrayList<>();`; X needs a public no-arg constructor.
 
 `IntArrayList`/`LongArrayList` store the same msgpack array of integers as the old arrays (and as
@@ -127,17 +132,25 @@ Also check, and STOP if any of these is true:
 5. Reading differences: `UnpackedObject` throws when a declared property is missing from the
    input (`verifyAllDeclaredPropertiesAreSet`). Properties with a default never throw there (they
    always have a value), so the generated class keeps the same default: no difference. Properties
-   WITHOUT a default keep the throw through `@MsgpackProperty(required = true)` (see below).
+   WITHOUT a default keep the throw through `RequiredLong`/`RequiredInt` holders and `@Nullable`
+   fields (see below).
 
-Properties WITHOUT a default (`new LongProperty("k")`, `BooleanProperty`, `StringProperty`,
-`BinaryProperty`) throw when written before being set and when missing on read. Map them to
-`@MsgpackProperty(required = true)` and use the Java default (`0L`, `false`, `Decoding.EMPTY`) as
-initializer: `required` keeps the read guard, the initializer gives the field a value to write. The
-bytes are identical for everything the old class could write. The new class writes the Java default
-where the old one threw on write: in the serde tests set such a value explicitly on both objects,
-also in the "defaults" tests (the old class cannot write while unset), and say so in the commit
-body. An enum without default is the same: the new class throws `IllegalStateException` instead of
-`MsgpackPropertyException` when written unset; mention it in the commit body.
+Properties WITHOUT a default (`new LongProperty("k")`, `IntegerProperty`, `BooleanProperty`,
+`StringProperty`, `BinaryProperty`, `DocumentProperty`, `EnumProperty`) have an unset state. Map
+them as in the table: a `long`/`int` to a `final RequiredLong`/`RequiredInt` holder, everything
+else to a `@Nullable` field without initializer (`org.jspecify.annotations.Nullable`; a
+`Boolean` field must be `@Nullable`). The generated class behaves like the old one: writing or
+getting the length while one is unset throws the same `MsgpackPropertyException`, reading a map
+without the key throws "Property 'k' has no valid value", `reset()` makes it unset again, and
+`toString` prints `"NO VALID WRITEABLE VALUE"`. The bytes are identical. Translate the accessors:
+`prop.getValue()` -> `field.get()` (holder, throws if unset) or `field` (check for `null`),
+`prop.setValue(v)` -> `field.set(v)` or `field = v`, `prop.hasValue()` -> `field.isSet()` or
+`field != null`. A legacy getter that threw while unset keeps doing so for a holder; for a
+`@Nullable` field it now returns `null`: if callers rely on the throw, STOP. Differences to
+mention in the commit body: `get()` of an unset holder throws `IllegalStateException` (the legacy
+one a `MsgpackPropertyException` with the key), and `equals` of two objects with unset properties
+does not throw (the legacy one does). In the serde tests, cover the unset write and read like the
+`NameV1` twin does.
 
 ## Step 1: write down the stored layout
 
@@ -183,8 +196,8 @@ Edit the class in place:
    `MsgpackRecordValue` needs (`getLength`, `write`, `wrap(buffer, offset, length)`, `reset`).
 2. Replace each `XxxProperty` field by a plain package-private field from the table in step 0.
    Generator rules: fields must NOT be `private`; scalar, string and enum fields must NOT be
-   `final` and carry their default as initializer (plus `required = true` if the old property had
-   no default, see step 0); nested objects and lists must be `final` and
+   `final` and carry their default as initializer (a property without default is a holder or a
+   `@Nullable` field without initializer, see step 0); nested objects and lists must be `final` and
    initialized inline; initializers must be side-effect free. Declare the fields in the stored
    order from step 1. Field name = key string; if you want a different Java name add
    `@MsgpackProperty("theKey")`. A `final UnsafeBuffer` field is wrapped in place on read and

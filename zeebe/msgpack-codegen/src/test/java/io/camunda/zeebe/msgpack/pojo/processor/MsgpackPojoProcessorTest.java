@@ -255,65 +255,6 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
-  void shouldRejectAMessageWithoutARequiredProperty() throws Exception {
-    // given
-    final var result =
-        compile(pojo(valid("@MsgpackProperty(required = true) long key; int count = 1;")));
-    assertThat(result.errors()).isEmpty();
-    final var message = message("count", 2);
-
-    // when
-    final ThrowingCallable read = () -> read(result, message);
-
-    // then
-    assertThatThrownBy(read).hasMessageContaining("Property 'key' has no valid value");
-  }
-
-  @Test
-  void shouldReadAMessageWithARequiredProperty() throws Exception {
-    // given
-    final var result =
-        compile(pojo(valid("@MsgpackProperty(required = true) long key; int count = 1;")));
-    assertThat(result.errors()).isEmpty();
-
-    // when
-    final var read = read(result, message("key", 7));
-
-    // then
-    assertThat(get(read, "key")).isEqualTo(7L);
-    assertThat(get(read, "count")).isEqualTo(1);
-  }
-
-  @Test
-  void shouldRejectMoreRequiredPropertiesThanItCanTrack() {
-    // given
-    final var fields = new StringBuilder();
-    for (int i = 0; i <= Long.SIZE; i++) {
-      fields.append("@MsgpackProperty(required = true) long f%d;%n".formatted(i));
-    }
-
-    // when
-    final var result = compile(pojo(valid(fields.toString())));
-
-    // then
-    assertThat(result.errors()).anyMatch(e -> e.contains("more than 64 required properties"));
-  }
-
-  @Test
-  void shouldRejectAMessageWithoutAnEnumThatHasNoDefault() throws Exception {
-    // given
-    final var result = compile(enumKind(), pojo(valid("Kind kind; int count = 1;")));
-    assertThat(result.errors()).isEmpty();
-    final var message = message("count", 2);
-
-    // when
-    final ThrowingCallable read = () -> read(result, message);
-
-    // then
-    assertThatThrownBy(read).hasMessageContaining("Property 'kind' has no valid value");
-  }
-
-  @Test
   void shouldRejectAnEnumThatOverridesToString() {
     // given
     final var kind =
