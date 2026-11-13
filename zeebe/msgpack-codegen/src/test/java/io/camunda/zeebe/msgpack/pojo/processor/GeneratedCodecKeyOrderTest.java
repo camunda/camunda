@@ -45,6 +45,10 @@ final class GeneratedCodecKeyOrderTest {
       import org.agrona.DirectBuffer;
       """;
 
+  /** The map {"a": 1} */
+  private static final DirectBuffer DOCUMENT =
+      new UnsafeBuffer(new byte[] {(byte) 0x81, (byte) 0xa1, 'a', 0x01});
+
   private static Result compiled;
 
   @BeforeAll
@@ -73,6 +77,7 @@ final class GeneratedCodecKeyOrderTest {
                       boolean flag = true;
                       DirectBuffer name = Decoding.EMPTY;
                       @MsgpackProperty(binary = true) DirectBuffer payload = Decoding.EMPTY;
+                      @MsgpackProperty(document = true) DirectBuffer doc = new org.agrona.concurrent.UnsafeBuffer(new byte[] {(byte) 0x80});
                       Kind kind = Kind.TWO;
                       final List<DirectBuffer> ids = new ArrayList<>();
                       final List<Long> versions = new ArrayList<>();
@@ -152,6 +157,7 @@ final class GeneratedCodecKeyOrderTest {
     assertThat(get(sample, "count")).isEqualTo(1);
     assertThat(get(sample, "key")).isEqualTo(-1L);
     assertThat(get(sample, "flag")).isEqualTo(true);
+    assertThat(get(sample, "doc")).isEqualTo(new UnsafeBuffer(new byte[] {(byte) 0x80}));
     assertThat(get(sample, "kind").toString()).isEqualTo("TWO");
     assertThat((List<?>) get(sample, "ids")).isEmpty();
     assertThat((List<?>) get(sample, "versions")).isEmpty();
@@ -226,6 +232,7 @@ final class GeneratedCodecKeyOrderTest {
             new Entry("flag", w -> w.writeBoolean(false)),
             new Entry("name", w -> w.writeString(utf8("zeebe"))),
             new Entry("payload", w -> w.writeBinary(utf8("bin"))),
+            new Entry("doc", w -> w.writeBinary(DOCUMENT)),
             new Entry("kind", w -> w.writeString(utf8("ONE"))),
             new Entry(
                 "ids",
@@ -257,6 +264,7 @@ final class GeneratedCodecKeyOrderTest {
     assertThat(get(sample, "flag")).isEqualTo(false);
     assertThat(get(sample, "name")).isEqualTo(utf8("zeebe"));
     assertThat(get(sample, "payload")).isEqualTo(utf8("bin"));
+    assertThat(get(sample, "doc")).isEqualTo(DOCUMENT);
     assertThat(get(sample, "kind").toString()).isEqualTo("ONE");
     assertThat(get(sample, "ids")).isEqualTo(List.of(utf8("a"), utf8("b")));
     assertThat(get(sample, "versions")).isEqualTo(List.of(1L, 300L, 5_000_000_000L));

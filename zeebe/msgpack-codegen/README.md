@@ -31,9 +31,15 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
 - Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
-  or raw msgpack), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, agrona's
+  raw msgpack, or a document), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
   `@MsgpackPojo`s and `BaseValue`s.
+- `@MsgpackProperty(raw = true)` embeds an already encoded msgpack value and replaces
+  `PackedProperty`. `@MsgpackProperty(document = true)` replaces `DocumentProperty`: it is stored as
+  a msgpack binary that holds a map, a nil or empty value is read as the empty map and anything else
+  that is not a map is rejected. The usual default is `DocumentValue.EMPTY_DOCUMENT`, which, like
+  every default buffer, must never be modified. A setter that has to keep the guarantee of
+  `DocumentProperty#setValue` calls `Decoding.document(buffer)`, which normalizes and validates.
 - The class must be top-level, its superclasses must not declare stored fields, and keys must be
   unique; compilation fails otherwise.
 - Fields are read and written directly, so they must not be `private`. Scalars, strings and enums

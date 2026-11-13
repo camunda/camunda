@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BaseProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -350,6 +351,8 @@ final class GeneratedCodecPropertyTest {
       case BINARY -> binaryBytes(lengths()).map(v -> (Object) v);
       case RAW ->
           Arbitraries.longs().map(GeneratedCodecPropertyTest::randomValue).map(v -> (Object) v);
+      case DOCUMENT ->
+          Arbitraries.longs().map(GeneratedCodecPropertyTest::randomDocument).map(v -> (Object) v);
       case ENUM -> Arbitraries.integers().between(0, KIND_NAMES.length - 1).map(v -> (Object) v);
       case STRING_LIST ->
           stringBytes(Arbitraries.integers().between(0, 40))
@@ -427,6 +430,7 @@ final class GeneratedCodecPropertyTest {
       case BOOLEAN -> true;
       case STRING, BINARY -> new byte[] {'d', 1};
       case RAW -> new byte[] {(byte) 0xc0};
+      case DOCUMENT -> new byte[] {(byte) 0x80};
       case ENUM -> DEFAULT_KIND;
       case STRING_LIST -> emptyLists ? List.of() : List.of(new byte[] {'x'});
       case LONG_LIST -> emptyLists ? List.of() : List.of(9L);
@@ -471,6 +475,7 @@ final class GeneratedCodecPropertyTest {
             case STRING -> w.writeString(new UnsafeBuffer((byte[]) value));
             case BINARY -> w.writeBinary(new UnsafeBuffer((byte[]) value));
             case RAW -> w.writeRaw(new UnsafeBuffer((byte[]) value));
+            case DOCUMENT -> w.writeBinary(new UnsafeBuffer((byte[]) value));
             case ENUM ->
                 w.writeString(
                     new UnsafeBuffer(KIND_NAMES[(Integer) value].getBytes(StandardCharsets.UTF_8)));
@@ -537,6 +542,20 @@ final class GeneratedCodecPropertyTest {
   private static byte[] randomValue(final long seed) {
     final var random = new Random(seed);
     return encoded(w -> writeRandom(w, random, 2));
+  }
+
+  /** A document: a msgpack map of random content, which is what a DocumentProperty holds. */
+  private static byte[] randomDocument(final long seed) {
+    final var random = new Random(seed);
+    return encoded(
+        w -> {
+          final int size = random.nextInt(4);
+          w.writeMapHeader(size);
+          for (int i = 0; i < size; i++) {
+            w.writeString(new UnsafeBuffer(("d" + i).getBytes(StandardCharsets.UTF_8)));
+            writeRandom(w, random, 2);
+          }
+        });
   }
 
   private static void writeRandom(final MsgPackWriter w, final Random random, final int depth) {
@@ -620,7 +639,7 @@ final class GeneratedCodecPropertyTest {
   private static Object comparable(final Type type, final Object value) {
     return switch (type) {
       case LONG, INT, BOOLEAN, LONG_LIST -> value;
-      case STRING, BINARY, RAW -> ByteBuffer.wrap((byte[]) value);
+      case STRING, BINARY, RAW, DOCUMENT -> ByteBuffer.wrap((byte[]) value);
       case ENUM -> KIND_NAMES[(Integer) value];
       case STRING_LIST -> ((List<byte[]>) value).stream().map(ByteBuffer::wrap).toList();
       case NESTED -> {
@@ -639,7 +658,7 @@ final class GeneratedCodecPropertyTest {
     final var value = compiled.fields().get(field.name()).get(instance);
     return switch (field.type()) {
       case LONG, INT, BOOLEAN, LONG_LIST -> value;
-      case STRING, BINARY, RAW -> bytes((DirectBuffer) value);
+      case STRING, BINARY, RAW, DOCUMENT -> bytes((DirectBuffer) value);
       case ENUM -> value.toString();
       case STRING_LIST ->
           ((List<DirectBuffer>) value).stream().map(GeneratedCodecPropertyTest::bytes).toList();
@@ -668,7 +687,8 @@ final class GeneratedCodecPropertyTest {
       final var value = values.get(field.index());
       switch (field.type()) {
         case LONG, INT, BOOLEAN -> target.set(instance, value);
-        case STRING, BINARY, RAW -> target.set(instance, new UnsafeBuffer((byte[]) value));
+        case STRING, BINARY, RAW, DOCUMENT ->
+            target.set(instance, new UnsafeBuffer((byte[]) value));
         case ENUM -> target.set(instance, compiled.kind().getEnumConstants()[(Integer) value]);
         case STRING_LIST -> {
           final var list = (List<DirectBuffer>) target.get(instance);
@@ -766,6 +786,7 @@ final class GeneratedCodecPropertyTest {
     STRING,
     BINARY,
     RAW,
+    DOCUMENT,
     ENUM,
     STRING_LIST,
     LONG_LIST,
@@ -795,6 +816,9 @@ final class GeneratedCodecPropertyTest {
       if (type == Type.RAW) {
         attributes.add("raw = true");
       }
+      if (type == Type.DOCUMENT) {
+        attributes.add("document = true");
+      }
       final var annotation =
           attributes.isEmpty() ? "" : "@MsgpackProperty(" + String.join(", ", attributes) + ") ";
       return annotation
@@ -805,6 +829,8 @@ final class GeneratedCodecPropertyTest {
             case STRING, BINARY ->
                 "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {'d', 1});";
             case RAW -> "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {(byte) 0xc0});";
+            case DOCUMENT ->
+                "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {(byte) 0x80});";
             case ENUM -> "Kind " + name() + " = Kind.TWO;";
             case STRING_LIST ->
                 "final List<DirectBuffer> "
@@ -884,6 +910,7 @@ final class GeneratedCodecPropertyTest {
               case STRING -> new StringProperty(key, "d\u0001");
               case BINARY -> new BinaryProperty(key, new UnsafeBuffer(new byte[] {'d', 1}));
               case RAW -> new PackedProperty(key, new UnsafeBuffer(new byte[] {(byte) 0xc0}));
+              case DOCUMENT -> new DocumentProperty(key);
               case ENUM -> new EnumProperty<>(key, TwinKind.class, TwinKind.TWO);
               case STRING_LIST -> new ArrayProperty<>(key, StringValue::new);
               case LONG_LIST -> new ArrayProperty<>(key, LongValue::new);
@@ -904,6 +931,7 @@ final class GeneratedCodecPropertyTest {
         case STRING -> bytes(((StringProperty) property).getValue());
         case BINARY -> bytes(((BinaryProperty) property).getValue());
         case RAW -> bytes(((PackedProperty) property).getValue());
+        case DOCUMENT -> bytes(((DocumentProperty) property).getValue());
         case ENUM -> ((EnumProperty<?>) property).getValue().toString();
         case STRING_LIST -> {
           final var values = new ArrayList<ByteBuffer>();

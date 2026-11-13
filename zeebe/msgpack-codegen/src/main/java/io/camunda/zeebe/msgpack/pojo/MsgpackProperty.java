@@ -15,11 +15,11 @@ import java.lang.annotation.Target;
 /**
  * Optional. Every non-static field of a {@link MsgpackPojo} is stored under its field name unless
  * it is annotated with {@link MsgpackIgnore}; this annotation only overrides the key or marks a raw
- * value. Supported field types: {@code long}, {@code int}, {@code boolean}, {@code DirectBuffer}
- * (msgpack string, or an already encoded msgpack value if {@link #raw()}), enums (stored by {@code
- * toString()}), {@code List<DirectBuffer>} (array of strings), {@code List<Long>}, {@code
- * org.agrona.collections.IntArrayList} and {@code LongArrayList} (arrays of integers, the agrona
- * ones without boxing), other {@link MsgpackPojo} types and {@code
+ * value or a document. Supported field types: {@code long}, {@code int}, {@code boolean}, {@code
+ * DirectBuffer} (msgpack string, or an already encoded msgpack value if {@link #raw()}), enums
+ * (stored by {@code toString()}), {@code List<DirectBuffer>} (array of strings), {@code
+ * List<Long>}, {@code org.agrona.collections.IntArrayList} and {@code LongArrayList} (arrays of
+ * integers, the agrona ones without boxing), other {@link MsgpackPojo} types and {@code
  * io.camunda.zeebe.msgpack.value.BaseValue}s (e.g. an {@code UnpackedObject}, embedded as a nested
  * map that references the source buffer).
  */
@@ -45,4 +45,12 @@ public @interface MsgpackProperty {
    * without initializer is required without this, as it holds no value then.
    */
   boolean required() default false;
+
+  /**
+   * The {@code DirectBuffer} holds a document, like the {@code DocumentProperty} it replaces: a
+   * msgpack map that is stored as a msgpack binary. A nil or empty value is read as the empty map
+   * and anything else that is not a map is rejected, see {@code Decoding#document}. Cannot be
+   * combined with {@link #raw()} or {@link #binary()}.
+   */
+  boolean document() default false;
 }
