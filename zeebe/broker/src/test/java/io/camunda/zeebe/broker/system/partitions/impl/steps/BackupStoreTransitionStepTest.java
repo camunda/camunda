@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -66,7 +67,7 @@ class BackupStoreTransitionStepTest {
     transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
     transitionContext.setBrokerCfg(brokerCfg);
 
-    step = new BackupStoreTransitionStep();
+    step = new BackupStoreTransitionStep(BackupReadRateLimiter.unlimited());
   }
 
   @ParameterizedTest

@@ -50,7 +50,7 @@ final class FileSetManagerRateLimitTest {
   private final Map<String, PutObjectRequest> requests = new ConcurrentHashMap<>();
   private final S3AsyncClient client = mockClientStoringUploads();
   // a real limiter whose rate never makes a test wait; the spy records what was paid for
-  private final BackupReadRateLimiter limiter = spy(BackupReadRateLimiter.shared(1L << 40));
+  private final BackupReadRateLimiter limiter = spy(BackupReadRateLimiter.of(1L << 40));
 
   @TempDir private Path directory;
 
@@ -101,7 +101,7 @@ final class FileSetManagerRateLimitTest {
             .withBucketName("b")
             .withApiCallTimeout(Duration.ofSeconds(180))
             .build();
-    final var manager = new FileSetManager(client, config, BackupReadRateLimiter.UNLIMITED);
+    final var manager = new FileSetManager(client, config, BackupReadRateLimiter.unlimited());
 
     // when
     manager.save("prefix/", new NamedFileSetImpl(Map.of("segment-1.log", file))).join();

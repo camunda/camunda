@@ -8,8 +8,6 @@
 package io.camunda.zeebe.backup.common;
 
 import java.io.InputStream;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
@@ -22,14 +20,13 @@ import java.util.function.LongSupplier;
  * allow a burst above the configured rate.
  *
  * <p>Backup stores are created per partition, but all partitions of a broker read from the same
- * disk. Use {@link #shared(long)} so that all backups of a broker draw from one budget.
+ * disk. Create one limiter per broker and pass it to every backup store, so that all backups of the
+ * broker draw from one budget.
  */
 public final class BackupReadRateLimiter {
 
-  public static final BackupReadRateLimiter UNLIMITED =
-      new BackupReadRateLimiter(0, System::nanoTime, Sleeper.THREAD_SLEEP);
-
-  private static final Map<Long, BackupReadRateLimiter> SHARED = new ConcurrentHashMap<>();
+  private static final BackupReadRateLimiter UNLIMITED =
+      new BackupReadRateLimiter(Long.MAX_VALUE, System::nanoTime, Sleeper.THREAD_SLEEP);
 
   private final long bytesPerSecond;
   private final LongSupplier nanoClock;
@@ -38,9 +35,9 @@ public final class BackupReadRateLimiter {
 
   BackupReadRateLimiter(
       final long bytesPerSecond, final LongSupplier nanoClock, final Sleeper sleeper) {
-    if (bytesPerSecond < 0) {
+    if (bytesPerSecond <= 0) {
       throw new IllegalArgumentException(
-          "Expected backup read rate to be 0 (unlimited) or positive, but was %d bytes per second"
+          "Expected backup read rate to be positive, but was %d bytes per second"
               .formatted(bytesPerSecond));
     }
     this.bytesPerSecond = bytesPerSecond;
@@ -49,19 +46,20 @@ public final class BackupReadRateLimiter {
     nextFreeNanos = nanoClock.getAsLong();
   }
 
+  /** Returns a limiter that never makes a read wait. */
+  public static BackupReadRateLimiter unlimited() {
+    return UNLIMITED;
+  }
+
   /**
-   * Returns the limiter for the given rate that is shared by all backups in this JVM.
+   * Returns a new limiter with its own budget. Backups only share the budget when they are given
+   * the same instance.
    *
-   * @param bytesPerSecond the maximum read rate; 0 means unlimited
-   * @throws IllegalArgumentException if the rate is negative
+   * @param bytesPerSecond the maximum read rate
+   * @throws IllegalArgumentException if the rate is not positive
    */
-  public static BackupReadRateLimiter shared(final long bytesPerSecond) {
-    if (bytesPerSecond == 0) {
-      return UNLIMITED;
-    }
-    return SHARED.computeIfAbsent(
-        bytesPerSecond,
-        rate -> new BackupReadRateLimiter(rate, System::nanoTime, Sleeper.THREAD_SLEEP));
+  public static BackupReadRateLimiter of(final long bytesPerSecond) {
+    return new BackupReadRateLimiter(bytesPerSecond, System::nanoTime, Sleeper.THREAD_SLEEP);
   }
 
   public long bytesPerSecond() {
@@ -69,7 +67,7 @@ public final class BackupReadRateLimiter {
   }
 
   public boolean isUnlimited() {
-    return bytesPerSecond == 0;
+    return this == UNLIMITED;
   }
 
   /**
@@ -99,6 +97,13 @@ public final class BackupReadRateLimiter {
   /** Returns a stream that pays for every byte read from or skipped in the given stream. */
   public InputStream wrap(final InputStream inputStream) {
     return isUnlimited() ? inputStream : new RateLimitedInputStream(inputStream, this);
+  }
+
+  @Override
+  public String toString() {
+    return isUnlimited()
+        ? "BackupReadRateLimiter{unlimited}"
+        : "BackupReadRateLimiter{bytesPerSecond=" + bytesPerSecond + '}';
   }
 
   @FunctionalInterface
