@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -28,12 +29,27 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 final class TestRestorableBackupStore implements BackupStore {
 
   final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
   final Map<Integer, byte[]> metadataByPartition = new ConcurrentHashMap<>();
+  private final @Nullable Path copyDirectory;
+
+  /** A store that keeps references to the files of a backup, which must outlive the restore. */
+  TestRestorableBackupStore() {
+    this(null);
+  }
+
+  /**
+   * A store that copies the files of a backup into the given directory when saving it, as a real
+   * store uploads them, so the backup survives compaction and newer snapshots.
+   */
+  TestRestorableBackupStore(final @Nullable Path copyDirectory) {
+    this.copyDirectory = copyDirectory;
+  }
 
   /**
    * Must be called before a backup is saved or marked as failed.
@@ -46,8 +62,9 @@ final class TestRestorableBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    backups.put(backup.id(), backup);
-    Optional.ofNullable(waiters.remove(backup.id())).ifPresent(waiter -> waiter.complete(backup));
+    final var saved = copyDirectory == null ? backup : copy(backup, copyDirectory);
+    backups.put(saved.id(), saved);
+    Optional.ofNullable(waiters.remove(saved.id())).ifPresent(waiter -> waiter.complete(saved));
     return CompletableFuture.completedFuture(null);
   }
 
@@ -151,6 +168,22 @@ final class TestRestorableBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> verifyConnection() {
     return CompletableFuture.completedFuture(null);
+  }
+
+  private Backup copy(final Backup backup, final Path directory) {
+    final var target =
+        directory.resolve("%d-%d".formatted(backup.id().partitionId(), backup.id().checkpointId()));
+    try {
+      final var snapshot =
+          copyNamedFileSet(
+              Files.createDirectories(target.resolve("snapshot")), backup.snapshot().namedFiles());
+      final var segments =
+          copyNamedFileSet(
+              Files.createDirectories(target.resolve("segments")), backup.segments().namedFiles());
+      return new BackupImpl(backup.id(), backup.descriptor(), snapshot, segments);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private NamedFileSet copyNamedFileSet(
