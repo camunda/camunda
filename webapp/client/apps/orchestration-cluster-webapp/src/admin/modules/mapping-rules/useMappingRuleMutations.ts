@@ -128,6 +128,7 @@ function useMappingRuleMutations() {
 				isReady: ({items}) =>
 					items.some(
 						(item) =>
+							item.mappingRuleId === mappingRule.mappingRuleId &&
 							item.name === mappingRule.name &&
 							item.claimName === mappingRule.claimName &&
 							item.claimValue === mappingRule.claimValue,
