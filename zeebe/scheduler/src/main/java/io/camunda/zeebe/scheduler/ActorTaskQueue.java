@@ -14,6 +14,9 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
 @SuppressWarnings("restriction")
 public final class ActorTaskQueue extends ActorTaskQueueHead {
+  // unlinking stale nodes writes to a shared node; only do it when it saves a long walk
+  static final int MIN_STALE_NODES_TO_SKIP = 16;
+
   @SuppressWarnings("unused")
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
@@ -38,21 +41,65 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * Attempts to steal a task from this list. The operation does not actually remove the task.
    * Instead, it modifies the task's state.
    *
+   * <p>Nodes whose task was already claimed stay in the list until the owner pops them. A claim
+   * only ever increments the task's state count, so such a node can never be claimed again. To
+   * avoid walking long runs of them on every attempt (e.g. while the owner is blocked and the list
+   * keeps growing), such runs are unlinked from the {@code prev} chain, which is only used for
+   * stealing. Short runs are left in place, so that the common case does not write to shared nodes.
+   *
    * @return the actor which was stolen or null in case no actor is available
    */
   public ActorTask trySteal() {
-    ActorTaskQueueNode node = tail;
+    final ActorTaskQueueNode newest = tail;
+    // A thief only ever rewrites the prev of the second-newest node: the tail may still be linked
+    // by its producer. Stale nodes walked below it are counted, and if there are enough, its prev
+    // is pointed at the node where the walk stops.
+    ActorTaskQueueNode anchor = null;
+    ActorTaskQueueNode anchorPrev = null;
+    int stale = 0;
 
+    ActorTaskQueueNode node = newest;
     while (node != null && node != empty) {
       final ActorTask task = node.task;
       if (task.claim(node.stateCount)) {
+        skipStaleNodes(anchor, anchorPrev, node, stale);
         return task;
       }
 
-      node = node.prev;
+      final ActorTaskQueueNode older = node.prev;
+      if (older == null) {
+        // still being appended, or popped after the walk read the link to it: nothing older to
+        // steal
+        skipStaleNodes(anchor, anchorPrev, node, stale);
+        return null;
+      }
+
+      if (anchor != null) {
+        stale++;
+      } else if (node != newest) {
+        anchor = node;
+        anchorPrev = older;
+      }
+      node = older;
     }
 
+    skipStaleNodes(anchor, anchorPrev, node, stale);
     return null;
+  }
+
+  /**
+   * Points {@code anchor} past {@code stale} claimed nodes to {@code next}, if that saves a long
+   * walk. Does nothing if its prev changed since the walk read it: another thief may have unlinked
+   * further in the meantime, and overwriting that would bring back the nodes it skipped.
+   */
+  static void skipStaleNodes(
+      final ActorTaskQueueNode anchor,
+      final ActorTaskQueueNode anchorPrev,
+      final ActorTaskQueueNode next,
+      final int stale) {
+    if (anchor != null && stale >= MIN_STALE_NODES_TO_SKIP && next != null) {
+      UnsafeApi.compareAndSetReference(anchor, PREV_OFFSET, anchorPrev, next);
+    }
   }
 
   public ActorTask pop() {
