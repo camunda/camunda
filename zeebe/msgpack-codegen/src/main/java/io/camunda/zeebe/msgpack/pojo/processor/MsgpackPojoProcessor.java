@@ -379,7 +379,6 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("public final class %1$sOps {\n".formatted(pojo));
     s.append(
         "  public static final MsgpackOps<%1$s> INSTANCE = new Instance();\n\n".formatted(pojo));
-    // INSTANCE must be initialized before DEFAULTS: the constructor of the POJO may resolve it
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
     s.append("  private %sOps() {}\n\n".formatted(pojo));
     s.append("  /** Restores the field initializers. */\n");
