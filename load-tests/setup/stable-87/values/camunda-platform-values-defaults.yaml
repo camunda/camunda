@@ -189,22 +189,25 @@ zeebe:
   # IoThreadCount defines how many threads can be used for the exporting on each broker pod
   ioThreadCount: "3"
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
+  # CUSTOMIZATION: cluster sizing baseline, 4 CPU and 4Gi with request = limit (a Guaranteed pod, as customers run it).
+  # 3 CPU is throttled 50 to 90% and reaches about 450 PI/s, 4 CPU reaches about 695 PI/s (as fast as 6 CPU).
+  # 4 CPU do not fit on n2-standard-4 nodes, so the brokers run on n2-standard-8 nodes.
   resources:
     requests:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
     limits:
-      cpu: 3000m
+      cpu: 4000m
       memory: 4Gi
 
   nodeSelector:
-    component: benchmark-n2-standard-4
+    component: benchmark-n2-standard-8
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool
       operator: Equal
-      value: n2-standard-4
+      value: n2-standard-8
       effect: NoSchedule
 
   # PvcSize defines the persistent volume claim size, which is used by each broker pod https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims

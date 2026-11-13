@@ -129,10 +129,10 @@ spec:
             timeoutSeconds: 1
           resources:
             limits:
-              cpu: 3000m
+              cpu: 4000m
               memory: 4Gi
             requests:
-              cpu: 3000m
+              cpu: 4000m
               memory: 4Gi
           volumeMounts:
             - name: config
@@ -175,7 +175,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       nodeSelector:
-        component: benchmark-n2-standard-4
+        component: benchmark-n2-standard-8
         topology.kubernetes.io/zone: europe-west1-d
       affinity:
         podAntiAffinity:
@@ -191,7 +191,7 @@ spec:
         - effect: NoSchedule
           key: nodepool
           operator: Equal
-          value: n2-standard-4
+          value: n2-standard-8
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim

@@ -82,9 +82,9 @@ class TestOptimalMetrics:
     def test_no_secondary_storage_expects_the_higher_rate(self):
         # when
         metrics = rc.optimal_metrics(self._load(), "none")
-        # then: 500 PI/s over the 1800 s window, as the max scenario starts without storage
-        assert metrics["completed-pi-rate-per-second"]["expected"] == 500
-        assert metrics["process-instances-completed"]["expected"] == 900_000
+        # then: 650 PI/s over the 1800 s window, as the max scenario starts without storage
+        assert metrics["completed-pi-rate-per-second"]["expected"] == 650
+        assert metrics["process-instances-completed"]["expected"] == 1_170_000
         assert metrics["data-availability"]["expected"] is None
 
     def test_override_keeps_the_base_tolerance(self):
