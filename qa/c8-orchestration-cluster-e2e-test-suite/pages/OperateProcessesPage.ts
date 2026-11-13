@@ -306,13 +306,6 @@ class OperateProcessesPage {
     await this.processInstanceKeySortButton.click();
   }
 
-  async visibleKeys(): Promise<string[]> {
-    const texts = await this.page
-      .getByTestId('cell-processInstanceKey')
-      .allInnerTexts();
-    return texts.map((t) => t.trim());
-  }
-
   static getProcessVersion(row: Locator): Locator {
     return row.getByTestId('cell-processVersion');
   }
@@ -713,13 +706,6 @@ class OperateProcessesPage {
 
   async clickViewParentInstanceFromList(): Promise<void> {
     await this.viewParentInstanceLinkInList.click();
-  }
-
-  getNthProcessInstanceCheckbox(index: number): Locator {
-    return getDataList(this.page)
-      .getByRole('row')
-      .nth(index + 1) // +1 to skip header row
-      .getByRole('checkbox');
   }
 
   async scrollUntilElementIsVisible(locator: Locator): Promise<void> {

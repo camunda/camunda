@@ -308,8 +308,8 @@ test.describe('Processes', () => {
     });
 
     await test.step('Cancel the running instance', async () => {
-      await operateProcessesPage.cancelProcessInstanceButton.click();
-      await operateProcessesPage.cancelProcessInstanceDialogButton.click();
+      await operateProcessesPage.clickCancelProcessInstanceButton();
+      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
