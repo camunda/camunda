@@ -71,6 +71,11 @@ public final class RocksdbCfg implements ConfigurationEntry {
       // we must do some transformations on the entries of this properties object.
       columnFamilyOptions = initColumnFamilyOptions(columnFamilyOptions);
     }
+    if (writeBehind.isEnabled()) {
+      // fail the start of the broker on a setting that the write-behind DB rejects, instead of the
+      // start of a partition
+      writeBehind.createWriteBehindConfiguration();
+    }
   }
 
   long getMemoryLimitBytes(final int partitionsPerBrokerCount) {

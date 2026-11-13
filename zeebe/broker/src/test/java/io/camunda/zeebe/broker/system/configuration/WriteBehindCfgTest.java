@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.writebehind.KeyIndexPolicy;
@@ -104,5 +105,28 @@ final class WriteBehindCfgTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("'KEEP_SOME'")
         .hasMessageContaining("KEEP_HIGHEST");
+  }
+
+  @Test
+  void shouldFailBrokerStartForSettingsThatWouldHangAPartition() {
+    // given - a negative limit is always exceeded, so the first commit would wait for ever
+    final var rocksdb = new RocksdbCfg();
+    rocksdb.getWriteBehind().setEnabled(true);
+    rocksdb.getWriteBehind().setMaxPending(DataSize.ofBytes(-1));
+
+    // when / then
+    assertThatThrownBy(() -> rocksdb.init(new BrokerCfg(), ""))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("maxPendingBytes");
+  }
+
+  @Test
+  void shouldNotValidateSettingsWhileWriteBehindIsDisabled() {
+    // given
+    final var rocksdb = new RocksdbCfg();
+    rocksdb.getWriteBehind().setMaxPending(DataSize.ofBytes(-1));
+
+    // when / then
+    assertThatCode(() -> rocksdb.init(new BrokerCfg(), "")).doesNotThrowAnyException();
   }
 }
