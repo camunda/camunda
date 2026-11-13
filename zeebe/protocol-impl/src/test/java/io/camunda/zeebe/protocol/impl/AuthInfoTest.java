@@ -92,6 +92,26 @@ final class AuthInfoTest {
     return AuthInfo.decode(buffer, 0, buffer.capacity());
   }
 
+  /**
+   * Previous versions exposed binary claim values as {@code byte[]}, which is also all the msgpack
+   * converter can serialize, so the read-only {@link ByteBuffer}s are unwrapped for them.
+   */
+  @SuppressWarnings("unchecked")
+  static <T> T withBinaryAsBytes(final T value) {
+    if (value instanceof final Map<?, ?> map) {
+      final var copy = new LinkedHashMap<Object, Object>();
+      map.forEach((k, v) -> copy.put(k, withBinaryAsBytes(v)));
+      return (T) copy;
+    } else if (value instanceof final List<?> list) {
+      return (T) list.stream().map(AuthInfoTest::withBinaryAsBytes).toList();
+    } else if (value instanceof final ByteBuffer buffer) {
+      final var bytes = new byte[buffer.remaining()];
+      buffer.duplicate().get(bytes);
+      return (T) bytes;
+    }
+    return value;
+  }
+
   @Nested
   final class Accessors {
 
@@ -580,26 +600,6 @@ final class AuthInfoTest {
       this.claims.setValue(
           new UnsafeBuffer(MsgPackConverter.convertToMsgPack(withBinaryAsBytes(claims))));
     }
-  }
-
-  /**
-   * Previous versions exposed binary claim values as {@code byte[]}, which is also all the msgpack
-   * converter can serialize, so the read-only {@link ByteBuffer}s are unwrapped for them.
-   */
-  @SuppressWarnings("unchecked")
-  static <T> T withBinaryAsBytes(final T value) {
-    if (value instanceof final Map<?, ?> map) {
-      final var copy = new LinkedHashMap<Object, Object>();
-      map.forEach((k, v) -> copy.put(k, withBinaryAsBytes(v)));
-      return (T) copy;
-    } else if (value instanceof final List<?> list) {
-      return (T) list.stream().map(AuthInfoTest::withBinaryAsBytes).toList();
-    } else if (value instanceof final ByteBuffer buffer) {
-      final var bytes = new byte[buffer.remaining()];
-      buffer.duplicate().get(bytes);
-      return (T) bytes;
-    }
-    return value;
   }
 
   /** Mirrors the parts of a {@code CommandDistributionRecord} relevant to the auth info. */
