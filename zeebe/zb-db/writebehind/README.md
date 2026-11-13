@@ -145,7 +145,7 @@ writer thread outside the write, for example an `OutOfMemoryError`, marks it fai
 | Batches | `active` (receives commits) and `sealed` (being flushed, nullable). Both `ConcurrentSkipListMap<RawKey, Version>`. |
 | `flushEpoch` | Even when no flush is changing batches. Guards cache fills from storage reads. |
 | Publish lock | A `StampedLock`. Write lock: commit, seal, release, key index install/disable, close. Read lock: opening a view, `awaitFlushed`. Point reads take no lock. |
-| Read cache | Caffeine cache of flushed values and storage misses, weighted by `200 + key + value bytes`. |
+| Read cache | Caffeine cache of flushed values only, weighted by `200 + key + value bytes`. |
 | Key index | Per-CF sorted set of all live keys inside a window. Answers "absent" for lookups in the window and drives indexed scans. |
 | Window | `bound == null`: the whole CF. `KEEP_LOWEST`: keys below the bound. `KEEP_HIGHEST`: keys above the bound. |
 
