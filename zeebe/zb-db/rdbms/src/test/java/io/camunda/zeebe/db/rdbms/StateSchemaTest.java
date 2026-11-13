@@ -5,20 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.db.rdbms.schema;
+package io.camunda.zeebe.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.db.rdbms.TestDatabase;
-import io.camunda.zeebe.db.rdbms.TestH2Database;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-class StateSchemaManagerTest {
+/** Checks what the tables of the state guarantee, whatever writes to them. */
+class StateSchemaTest {
 
   private static final String UNIQUE_VIOLATION = "23505";
 
@@ -30,83 +29,9 @@ class StateSchemaManagerTest {
   }
 
   @Test
-  void shouldCreateStateTables() throws SQLException {
-    // given
-    final var schemaManager = new StateSchemaManager(database.dataSource(), "A_");
-
-    // when
-    schemaManager.migrate();
-
-    // then
-    assertThat(database.tableNames()).contains("A_ZS_PARTITION", "A_ZS_OTHER", "A_ZS_KEY");
-  }
-
-  @Test
-  void shouldTrackChangesInItsOwnTables() throws SQLException {
-    // given
-    final var schemaManager = new StateSchemaManager(database.dataSource(), "A_");
-
-    // when
-    schemaManager.migrate();
-
-    // then the history schema's tracking tables are left alone
-    assertThat(database.tableNames())
-        .contains("A_ZEEBE_STATE_DATABASECHANGELOG", "A_ZEEBE_STATE_DATABASECHANGELOGLOCK")
-        .doesNotContain("A_DATABASECHANGELOG", "A_DATABASECHANGELOGLOCK");
-  }
-
-  @Test
-  void shouldKeepStateWhenMigratedAgain() throws SQLException {
-    // given
-    final var schemaManager = new StateSchemaManager(database.dataSource(), "A_");
-    schemaManager.migrate();
-    insertPartition("A_", 1, "state-1");
-    insertState("A_", 1, new byte[] {1});
-
-    // when
-    schemaManager.migrate();
-
-    // then
-    assertThat(stateKeys("A_", 1)).containsExactly(new byte[] {1});
-  }
-
-  @Test
-  void shouldMigrateEveryPrefixOfTheSameDatabase() throws SQLException {
-    // given
-    new StateSchemaManager(database.dataSource(), "").migrate();
-
-    // when
-    new StateSchemaManager(database.dataSource(), "B_").migrate();
-
-    // then
-    assertThat(database.tableNames())
-        .contains("ZS_PARTITION", "ZS_KEY", "B_ZS_PARTITION", "B_ZS_KEY");
-  }
-
-  @Test
-  void shouldUpdatePrefixThatIsBehindAnotherPrefixOfTheSameDatabase() throws SQLException {
-    // given - B_ misses a change set, as if it were still on an older version
-    final var upToDate = new StateSchemaManager(database.dataSource(), "A_");
-    final var behind = new StateSchemaManager(database.dataSource(), "B_");
-    upToDate.migrate();
-    behind.migrate();
-    execute("DROP TABLE B_ZS_KEY");
-    execute("DELETE FROM B_ZEEBE_STATE_DATABASECHANGELOG WHERE ID = 'create_zs_key_table'");
-
-    // and Liquibase has found A_ up to date
-    upToDate.migrate();
-
-    // when
-    behind.migrate();
-
-    // then
-    assertThat(database.tableNames()).contains("B_ZS_KEY");
-  }
-
-  @Test
   void shouldRejectSecondStateForSamePartition() throws SQLException {
     // given
-    new StateSchemaManager(database.dataSource(), "A_").migrate();
+    TestStorage.createTables(database.dataSource(), "A_");
     insertPartition("A_", 1, "state-1");
 
     // when - then
@@ -118,7 +43,7 @@ class StateSchemaManagerTest {
   @Test
   void shouldSortKeysAsUnsignedBytesLikeRocksDb() throws SQLException {
     // given
-    new StateSchemaManager(database.dataSource(), "A_").migrate();
+    TestStorage.createTables(database.dataSource(), "A_");
     insertPartition("A_", 1, "state-1");
     final var keys =
         List.of(
@@ -144,13 +69,6 @@ class StateSchemaManagerTest {
             new byte[] {0x7F},
             new byte[] {(byte) 0x80},
             new byte[] {(byte) 0xFF});
-  }
-
-  private void execute(final String sql) throws SQLException {
-    try (final var connection = database.dataSource().getConnection();
-        final var statement = connection.createStatement()) {
-      statement.execute(sql);
-    }
   }
 
   private void insertPartition(final String prefix, final int partitionId, final String stateId)

@@ -35,7 +35,7 @@ class RdbmsSnapshotTest {
   private static final int PARTITION = 1;
 
   private final TestDatabase database = createDatabase();
-  private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
+  private final RdbmsStorage storage = TestStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;
 
@@ -93,7 +93,7 @@ class RdbmsSnapshotTest {
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
     try (final var otherDatabase = createDatabase()) {
-      final var otherStorage = RdbmsStorage.open(otherDatabase.dataSource(), "");
+      final var otherStorage = TestStorage.open(otherDatabase.dataSource(), "");
 
       // when / then
       assertThatThrownBy(() -> factory(otherStorage, PARTITION).createDb(snapshot.toFile()))
@@ -110,8 +110,7 @@ class RdbmsSnapshotTest {
     createDb(factory(storage, PARTITION), directory.resolve("runtime"))
         .createSnapshot(snapshot.toFile());
     try (final var otherDatabase = createDatabase()) {
-      final var otherFactory =
-          factory(RdbmsStorage.open(otherDatabase.dataSource(), ""), PARTITION);
+      final var otherFactory = factory(TestStorage.open(otherDatabase.dataSource(), ""), PARTITION);
       createDb(otherFactory, directory.resolve("other-runtime"));
 
       // when / then

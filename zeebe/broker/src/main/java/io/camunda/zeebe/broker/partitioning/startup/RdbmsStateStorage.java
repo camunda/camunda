@@ -14,9 +14,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The relational database that holds the state of one partition group's partitions, when {@code
- * camunda.data.primary-storage.type} is {@code rdbms}. Once {@link #isSchemaReady()}, {@link
- * #open()} creates or updates the state's schema before the partitions start. The connection pool
- * belongs to the application, which closes it after the broker has stopped.
+ * camunda.data.primary-storage.type} is {@code rdbms}. Its tables are created with the rest of the
+ * tenant's schema; once {@link #isSchemaReady()}, {@link #open()} prepares the access to them
+ * before the partitions start. The connection pool belongs to the application, which closes it
+ * after the broker has stopped.
  */
 @NullMarked
 public final class RdbmsStateStorage implements AutoCloseable {
@@ -36,9 +37,7 @@ public final class RdbmsStateStorage implements AutoCloseable {
   }
 
   /**
-   * Creates or updates the schema.
-   *
-   * @throws RuntimeException if the database can't be reached or its schema can't be updated
+   * @throws RuntimeException if the database can't be reached, or is neither H2 nor PostgreSQL
    */
   public void open() {
     storage = RdbmsStorage.open(database.dataSource(), database.prefix());

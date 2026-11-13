@@ -384,10 +384,9 @@ public final class PartitionManagerImpl
   }
 
   /**
-   * The application brings the tenant's schema up to date only after the broker has started, and
-   * the state's own schema changes must not run at the same time: Liquibase shares its lock
-   * bookkeeping across the JVM, and the history's lock would never be released. So the partitions
-   * wait for it, checking again later rather than blocking the actor.
+   * The application creates the state's tables with the rest of the tenant's schema, and only after
+   * the broker has started. So the partitions wait for it, checking again later rather than
+   * blocking the actor.
    */
   private void startPartitionsOnceTheSchemaIsReady(
       final RdbmsStateStorage storage,

@@ -34,7 +34,7 @@ class RdbmsReadOnlyTest {
   private static final int PARTITION = 1;
 
   private final TestDatabase database = createDatabase(Duration.ofMillis(100));
-  private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
+  private final RdbmsStorage storage = TestStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;
 

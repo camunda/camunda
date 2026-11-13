@@ -151,7 +151,8 @@ public class MyBatisConfiguration {
               rdbmsDataSources.vendorPropertiesFor(physicalTenantId),
               trimmedPrefix,
               rdbms.getAutoDdl(),
-              rdbms.getDdlLockWaitTimeout()));
+              rdbms.getDdlLockWaitTimeout(),
+              rdbmsDataSources.stateDataSourceFor(physicalTenantId).isPresent()));
     }
     return physicalTenantConfigs;
   }

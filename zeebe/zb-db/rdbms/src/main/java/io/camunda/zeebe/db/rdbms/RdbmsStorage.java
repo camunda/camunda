@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.db.rdbms;
 
-import io.camunda.zeebe.db.rdbms.schema.StateSchemaManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -27,8 +26,9 @@ import org.jspecify.annotations.Nullable;
  * The relational database that holds the partition state. One instance exists per data source and
  * is shared by all partitions of a broker.
  *
- * <p>Opening it creates or updates the schema, then sets up MyBatis. The caller owns the data
- * source: it is used as given and never closed here.
+ * <p>It doesn't create its tables: {@code LiquibaseSchemaManager} does, with the rest of the
+ * physical tenant's schema, before the partitions start. The caller owns the data source: it is
+ * used as given and never closed here.
  */
 public final class RdbmsStorage {
 
@@ -43,20 +43,17 @@ public final class RdbmsStorage {
   }
 
   /**
-   * Creates or updates the schema and prepares the database access.
+   * Prepares the database access to tables that must already exist.
    *
    * @param dataSource an H2 or PostgreSQL data source; H2 is only meant for tests
    * @param prefix the start of every table name, may be empty
    * @throws IllegalArgumentException if the database is neither H2 nor PostgreSQL
-   * @throws io.camunda.zeebe.db.rdbms.schema.StateSchemaMigrationException if the schema could not
-   *     be created or updated
    */
   public static RdbmsStorage open(final DataSource dataSource, final String prefix) {
     Objects.requireNonNull(dataSource, "must specify a data source");
     Objects.requireNonNull(prefix, "must specify a prefix, which may be empty");
 
     final var databaseId = databaseId(dataSource);
-    new StateSchemaManager(dataSource, prefix).migrate();
     return new RdbmsStorage(
         dataSource,
         new SqlSessionFactoryBuilder().build(configuration(dataSource, prefix, databaseId)));

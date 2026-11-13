@@ -44,7 +44,7 @@ final class RdbmsZeebeDbTest {
 
   // short, so that a test waiting for a row lock fails fast
   private final TestH2Database database = new TestH2Database(Duration.ofMillis(100));
-  private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
+  private final RdbmsStorage storage = TestStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = new ArrayList<>();
   @TempDir private Path directory;
 
@@ -221,7 +221,7 @@ final class RdbmsZeebeDbTest {
     // given
     final var connectionLost = new AtomicBoolean();
     final var dataSource = failingDataSource(database.dataSource(), connectionLost);
-    final var db = createDb(RdbmsStorage.open(dataSource, ""), 1);
+    final var db = createDb(TestStorage.open(dataSource, ""), 1);
     final var columnFamily = columnFamily(db, db.createContext());
     connectionLost.set(true);
 
@@ -247,7 +247,7 @@ final class RdbmsZeebeDbTest {
     // given
     final var commits = new AtomicInteger();
     final var db =
-        createDb(RdbmsStorage.open(countingCommits(database.dataSource(), commits), ""), 1);
+        createDb(TestStorage.open(countingCommits(database.dataSource(), commits), ""), 1);
     final var context = db.createContext();
     final var columnFamily = columnFamily(db, context);
     context.runInTransaction(() -> columnFamily.upsert(key(1), value("committed")));
@@ -274,7 +274,7 @@ final class RdbmsZeebeDbTest {
     pool.setMaxConnections(1);
     pool.setLoginTimeout(1);
     try {
-      final var poolStorage = RdbmsStorage.open(pool, "");
+      final var poolStorage = TestStorage.open(pool, "");
       final var db = createDb(poolStorage, 1);
       final var context = db.createContext();
       final var columnFamily = columnFamily(db, context);

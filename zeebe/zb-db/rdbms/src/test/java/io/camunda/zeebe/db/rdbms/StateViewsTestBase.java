@@ -62,7 +62,7 @@ abstract class StateViewsTestBase {
 
   @BeforeEach
   void createSchema() {
-    RdbmsStorage.open(dataSource(), "");
+    TestStorage.createTables(dataSource(), "");
   }
 
   @Test

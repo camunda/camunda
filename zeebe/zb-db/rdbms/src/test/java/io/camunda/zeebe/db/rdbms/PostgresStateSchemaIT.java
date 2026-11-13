@@ -5,7 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-@NullMarked
-package io.camunda.zeebe.db.rdbms.schema;
+package io.camunda.zeebe.db.rdbms;
 
-import org.jspecify.annotations.NullMarked;
+final class PostgresStateSchemaIT extends StateSchemaTest {
+
+  @Override
+  TestDatabase createDatabase() {
+    return new TestPostgresDatabase();
+  }
+}

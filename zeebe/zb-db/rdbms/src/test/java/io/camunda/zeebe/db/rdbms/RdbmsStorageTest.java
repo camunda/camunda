@@ -23,17 +23,6 @@ class RdbmsStorageTest {
   }
 
   @Test
-  void shouldCreateSchemaWhenOpened() throws SQLException {
-    // when
-    RdbmsStorage.open(database.dataSource(), "A_");
-
-    // then
-    assertThat(database.tableNames())
-        .contains("A_" + StateTables.PARTITION)
-        .containsAll(StateTables.all().stream().map(table -> "A_" + table.name()).toList());
-  }
-
-  @Test
   void shouldUseTheStatementsOfTheDatabase() {
     // when
     final var storage = RdbmsStorage.open(database.dataSource(), "A_");

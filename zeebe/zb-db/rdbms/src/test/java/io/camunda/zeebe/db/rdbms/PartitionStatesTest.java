@@ -35,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 class PartitionStatesTest {
 
   private final TestDatabase database = createDatabase(Duration.ofSeconds(10));
-  private final RdbmsStorage storage = RdbmsStorage.open(database.dataSource(), "");
+  private final RdbmsStorage storage = TestStorage.open(database.dataSource(), "");
   private final List<ZeebeDb<?>> dbs = Collections.synchronizedList(new ArrayList<>());
   @TempDir private Path directory;
 

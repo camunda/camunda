@@ -21,8 +21,7 @@ import org.jspecify.annotations.NullMarked;
  *     broker
  * @param prefix the tenant's table prefix, the same as its history tables'
  * @param schemaReady whether the tenant's schema is up to date for this version. The partitions
- *     wait for it before they touch the database, so that their schema changes never run at the
- *     same time as the history's
+ *     wait for it before they touch the database, as it includes the state's tables
  */
 @NullMarked
 public record RdbmsStateDatabase(

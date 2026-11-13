@@ -50,24 +50,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-core</artifactId>
-    </dependency>
-
-    <!-- holds the changelog of the state tables, next to the history's -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-db-rdbms-schema</artifactId>
-      <scope>runtime</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.github.vertical-blank</groupId>
-          <artifactId>sql-formatter</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
       <groupId>org.mybatis</groupId>
       <artifactId>mybatis</artifactId>
     </dependency>
@@ -92,6 +74,25 @@
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- holds the changelog the tests create the state tables with -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

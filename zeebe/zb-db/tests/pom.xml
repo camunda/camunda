@@ -53,6 +53,23 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- holds the changelog the tests create the state tables with -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>test</scope>
@@ -106,6 +123,10 @@
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
           </usedDependencies>
+          <!-- only its resources are used, which the analyzer can't see -->
+          <ignoredUnusedDeclaredDependencies>
+            <dep>io.camunda:camunda-db-rdbms-schema</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
