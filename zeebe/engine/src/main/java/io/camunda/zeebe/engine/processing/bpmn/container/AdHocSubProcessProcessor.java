@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
@@ -201,7 +202,10 @@ public class AdHocSubProcessProcessor
     } else {
       return expressionProcessor
           .evaluateArrayOfStringsExpression(
-              activeElementsCollection, context.getElementInstanceKey(), context.getTenantId())
+              activeElementsCollection,
+              context.getElementInstanceKey(),
+              context.getTenantId(),
+              ExpressionLabel.activeElementsCollectionExpression(adHocSubProcess.getId()))
           .mapLeft(
               failure ->
                   new Failure(
@@ -300,7 +304,8 @@ public class AdHocSubProcessProcessor
         .evaluateAnyExpressionToBuffer(
             outputElementExpression,
             childContext.getElementInstanceKey(),
-            childContext.getTenantId())
+            childContext.getTenantId(),
+            ExpressionLabel.adHocOutputElementExpression(adHocSubProcess.getId()))
         .flatMap(
             outputElementValue -> {
               final DirectBuffer outputCollectionValue =
@@ -367,7 +372,8 @@ public class AdHocSubProcessProcessor
           .evaluateBooleanExpression(
               completionConditionExpression,
               adHocSubProcessContext.getElementInstanceKey(),
-              adHocSubProcessContext.getTenantId())
+              adHocSubProcessContext.getTenantId(),
+              ExpressionLabel.adHocCompletionConditionExpression(adHocSubProcess.getId()))
           .mapLeft(
               failure ->
                   new Failure(

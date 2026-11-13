@@ -61,6 +61,41 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
         "script expression", "script task '%s'".formatted(BufferUtil.bufferAsString(scriptTaskId)));
   }
 
+  /** Labels an expression as the input collection expression of a multi-instance activity. */
+  public static ExpressionLabel inputCollectionExpression(final DirectBuffer activityId) {
+    return new ExpressionLabel("input collection expression", multiInstanceActivity(activityId));
+  }
+
+  /** Labels an expression as the output element expression of a multi-instance activity. */
+  public static ExpressionLabel outputElementExpression(final DirectBuffer activityId) {
+    return new ExpressionLabel("output element expression", multiInstanceActivity(activityId));
+  }
+
+  /** Labels an expression as the completion condition expression of a multi-instance activity. */
+  public static ExpressionLabel completionConditionExpression(final DirectBuffer activityId) {
+    return new ExpressionLabel(
+        "completion condition expression", multiInstanceActivity(activityId));
+  }
+
+  /** Labels an expression as the active elements collection expression of an ad-hoc sub-process. */
+  public static ExpressionLabel activeElementsCollectionExpression(
+      final DirectBuffer adHocSubProcessId) {
+    return new ExpressionLabel(
+        "active elements collection expression", adHocSubProcess(adHocSubProcessId));
+  }
+
+  /** Labels an expression as the output element expression of an ad-hoc sub-process. */
+  public static ExpressionLabel adHocOutputElementExpression(final DirectBuffer adHocSubProcessId) {
+    return new ExpressionLabel("output element expression", adHocSubProcess(adHocSubProcessId));
+  }
+
+  /** Labels an expression as the completion condition expression of an ad-hoc sub-process. */
+  public static ExpressionLabel adHocCompletionConditionExpression(
+      final DirectBuffer adHocSubProcessId) {
+    return new ExpressionLabel(
+        "completion condition expression", adHocSubProcess(adHocSubProcessId));
+  }
+
   /**
    * Labels an expression as the condition expression of a sequence flow, e.g. for the gateway
    * failure message "Expected result of the condition expression '...' of sequence flow 's2' to be
@@ -155,6 +190,14 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
 
   private static String userTask(final DirectBuffer userTaskId) {
     return "user task '%s'".formatted(BufferUtil.bufferAsString(userTaskId));
+  }
+
+  private static String multiInstanceActivity(final DirectBuffer activityId) {
+    return "multi-instance activity '%s'".formatted(BufferUtil.bufferAsString(activityId));
+  }
+
+  private static String adHocSubProcess(final DirectBuffer adHocSubProcessId) {
+    return "ad-hoc sub-process '%s'".formatted(BufferUtil.bufferAsString(adHocSubProcessId));
   }
 
   private static String event(final DirectBuffer eventId) {

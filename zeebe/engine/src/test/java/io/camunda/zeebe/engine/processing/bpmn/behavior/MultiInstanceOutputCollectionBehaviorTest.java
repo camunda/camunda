@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -65,7 +66,10 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
     when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression), anyLong(), anyString()))
+            eq(outputElementExpression),
+            anyLong(),
+            anyString(),
+            eq(ExpressionLabel.outputElementExpression(wrapString("task")))))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
@@ -73,6 +77,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockChildContext = mock(BpmnElementContext.class);
     when(mockChildContext.getTenantId()).thenReturn(tenantId);
+    when(mockChildContext.getElementId()).thenReturn(wrapString("task"));
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(indexThatIsOutOfBounds);
 
@@ -116,7 +121,10 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
     when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression), anyLong(), anyString()))
+            eq(outputElementExpression),
+            anyLong(),
+            anyString(),
+            eq(ExpressionLabel.outputElementExpression(wrapString("task")))))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
@@ -124,6 +132,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockChildContext = mock(BpmnElementContext.class);
     when(mockChildContext.getTenantId()).thenReturn(tenantId);
+    when(mockChildContext.getElementId()).thenReturn(wrapString("task"));
     when(mockStateBehavior.getElementInstance(mockChildContext).getMultiInstanceLoopCounter())
         .thenReturn(index);
 
