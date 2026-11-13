@@ -23,6 +23,7 @@ dependencies {
   api(libs.com.google.protobuf.protobuf.java)
   api(libs.uk.co.real.logic.sbe.tool)
   api(libs.org.agrona.agrona)
+  implementation(project(":zeebe-db-api"))
   implementation(project(":zeebe-db"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-stream-platform"))
