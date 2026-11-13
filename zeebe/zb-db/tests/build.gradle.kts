@@ -3,6 +3,7 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   testImplementation(project(":zeebe-db-api"))
   testImplementation(project(":zeebe-db"))
+  testImplementation(project(":zeebe-db-writebehind"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.org.agrona.agrona)
   testImplementation(libs.io.micrometer.micrometer.core)
