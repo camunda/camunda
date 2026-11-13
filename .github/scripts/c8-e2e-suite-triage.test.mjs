@@ -360,8 +360,9 @@ test('normalizeSpec resolves a path against the report rootDir, whatever the tes
   assert.equal(normalizeSpec('tests/api/a.spec.ts'), 'tests/api/a.spec.ts');
 });
 
-test('a report with testDir ./tests/ is matched to the base suite, not read as a new test', () => {
+test('a report with testDir ./tests/ is matched to the base suite, not read as a new test', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
+  t.after(() => fs.rmSync(root, {recursive: true, force: true}));
   const base = path.join(root, 'qa/c8-orchestration-cluster-e2e-test-suite');
   fs.mkdirSync(path.join(base, 'tests/api'), {recursive: true});
   fs.writeFileSync(path.join(base, 'tests/api/operate-api-tests.spec.ts'), '');
