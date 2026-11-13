@@ -344,7 +344,59 @@ public final class StorageOrdinalAssignmentTest {
                 .getStorageOrdinal())
         .isEqualTo(FIXED_ORDINAL);
 
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(deployedProcess.getProcessDefinitionKey())
+            .getFirst()
+            .getValue();
+    assertThat(triggered.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(triggered.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
     assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldKeepRescheduledTimerStartEventNotOrdinalControlled() {
+    // given
+    final long processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-start-reschedule-process")
+                    .startEvent("timer-start")
+                    .timerWithCycle("R/PT10S")
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .getFirst();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+    assertThat(triggered.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+
+    final var trigger =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+            .withRecordKey(triggered.getKey())
+            .getFirst();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withSourceRecordPosition(trigger.getPosition())
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test
@@ -2234,8 +2286,8 @@ public final class StorageOrdinalAssignmentTest {
     // when: the timer fires
     engine.increaseTime(Duration.ofHours(2));
 
-    // then: the legacy timer's TRIGGERED and the CREATED it reschedules derive -1 instead of the
-    // persisted 0
+    // then: the legacy timer's TRIGGERED carries the ordinal of the started instance, while the
+    // CREATED it reschedules derives -1 instead of the persisted 0
     assertThat(
             RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
                 .withProcessDefinitionKey(processDefinitionKey)
@@ -2243,7 +2295,7 @@ public final class StorageOrdinalAssignmentTest {
                 .getFirst()
                 .getValue()
                 .getStorageOrdinal())
-        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+        .isEqualTo(FIXED_ORDINAL);
     final var legacyTrigger =
         RecordingExporter.timerRecords(TimerIntent.TRIGGER)
             .withRecordKey(legacyTimerKey)
