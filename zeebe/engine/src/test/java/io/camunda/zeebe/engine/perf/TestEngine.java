@@ -23,6 +23,8 @@ import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -35,12 +37,18 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -61,7 +69,8 @@ public final class TestEngine {
       final int partitionCount,
       final TestContext testContext,
       final InstantSource clock,
-      final Consumer<StreamProcessorBuilder> processorConfiguration) {
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean withExporter) {
     this.partitionCount = partitionCount;
 
     testStreams =
@@ -98,22 +107,26 @@ public final class TestEngine {
         .manage(
             streamProcessingComposite.startTypedStreamProcessor(
                 partitionId,
-                (recordProcessorContext) ->
-                    EngineProcessors.createEngineProcessors(
-                            recordProcessorContext,
-                            partitionCount,
-                            new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
-                            interPartitionCommandSender,
-                            featureFlags,
-                            JobStreamer.noop(),
-                            SearchClientsProxy.noop(),
-                            new BrokerRequestAuthorizationConverter(
-                                EngineSecurityConfigurations.defaultConfig()),
-                            new SecretStoreRegistry(Map.of()))
-                        .withListener(
-                            new ProcessingExporterTransistor(
-                                testStreams.getLogStream(
-                                    StreamProcessingComposite.getLogName(partitionId)))),
+                (recordProcessorContext) -> {
+                  final var processors =
+                      EngineProcessors.createEngineProcessors(
+                          recordProcessorContext,
+                          partitionCount,
+                          new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
+                          interPartitionCommandSender,
+                          featureFlags,
+                          JobStreamer.noop(),
+                          SearchClientsProxy.noop(),
+                          new BrokerRequestAuthorizationConverter(
+                              EngineSecurityConfigurations.defaultConfig()),
+                          new SecretStoreRegistry(Map.of()));
+                  return withExporter
+                      ? processors.withListener(
+                          new ProcessingExporterTransistor(
+                              testStreams.getLogStream(
+                                  StreamProcessingComposite.getLogName(partitionId))))
+                      : processors;
+                },
                 Optional.empty(),
                 processorConfiguration,
                 true));
@@ -149,12 +162,119 @@ public final class TestEngine {
   }
 
   public static TestEngine createSinglePartitionEngine(final TestContext testContext) {
-    return new TestEngine(1, 1, testContext, InstantSource.system(), cfg -> {});
+    return new TestEngine(1, 1, testContext, InstantSource.system(), cfg -> {}, true);
   }
 
   public static TestEngine createSinglePartitionEngine(
       final TestContext testContext, final InstantSource clock) {
-    return new TestEngine(1, 1, testContext, clock, cfg -> {});
+    return new TestEngine(1, 1, testContext, clock, cfg -> {}, true);
+  }
+
+  /**
+   * An engine without the exporter that feeds the {@code RecordingExporter}. The clients of this
+   * class cannot be used with it, because they wait for exported records. Drive it with {@link
+   * #commandWriter()}, {@link #awaitProcessed(long)} and {@link #newLogReader()} instead.
+   */
+  public static TestEngine createSinglePartitionEngineWithoutExporter(
+      final TestContext testContext) {
+    return new TestEngine(1, 1, testContext, InstantSource.system(), cfg -> {}, false);
+  }
+
+  public StreamProcessingComposite commandWriter() {
+    return streamProcessingComposite;
+  }
+
+  /** Blocks until the stream processor has processed the command at {@code position}. */
+  public void awaitProcessed(final long position) {
+    final var processor = streamProcessingComposite.getStreamProcessor(1);
+    while (processor.getLastProcessedPositionAsync().join() < position) {
+      LockSupport.parkNanos(50_000);
+    }
+  }
+
+  /**
+   * Exports the RocksDB properties and statistics and returns all meters without a column family.
+   */
+  public Map<String, Double> dbMetrics() {
+    streamProcessingComposite.exportDbMetrics(1);
+    final var values = new TreeMap<String, Double>();
+    for (final var meter : streamProcessingComposite.getMeterRegistry(1).getMeters()) {
+      if (meter.getId().getTag("columnFamily") == null) {
+        final var measurement = meter.measure().iterator().next();
+        values.put(meter.getId().getName(), measurement.getValue());
+      }
+    }
+    return values;
+  }
+
+  /**
+   * Exports the metrics that are tagged with a column family (RocksDB access metrics, when the
+   * environment variable {@code ZEEBE_DB_ACCESS_METRICS} is set, and the write-behind counters) and
+   * returns their current values by column family name and metric.
+   */
+  public Map<String, Map<String, Double>> columnFamilyMetrics() {
+    streamProcessingComposite.exportDbMetrics(1);
+    final var names = new HashMap<String, String>();
+    for (final var columnFamily : ZbColumnFamilies.values()) {
+      names.put(Integer.toString(columnFamily.getValue()), columnFamily.name());
+    }
+    final var table = new HashMap<String, Map<String, Double>>();
+    for (final var meter : streamProcessingComposite.getMeterRegistry(1).getMeters()) {
+      final var id = meter.getId();
+      final var columnFamily = id.getTag("columnFamily");
+      if (columnFamily == null) {
+        continue;
+      }
+      final var operation = id.getTag("operation");
+      final var metric =
+          operation != null
+              ? "rocksdb." + operation
+              : id.getName().replace("zeebe.writebehind.", "");
+      final double value =
+          meter instanceof final Timer timer
+              ? timer.count()
+              : meter.measure().iterator().next().getValue();
+      table
+          .computeIfAbsent(names.getOrDefault(columnFamily, columnFamily), k -> new TreeMap<>())
+          .put(metric, value);
+    }
+    return table;
+  }
+
+  /** One line per column family with the change since {@code baseline}, the busiest first. */
+  public static List<String> formatColumnFamilyMetrics(
+      final Map<String, Map<String, Double>> current,
+      final Map<String, Map<String, Double>> baseline) {
+    final var diff = new HashMap<String, Map<String, Double>>();
+    current.forEach(
+        (columnFamily, metrics) ->
+            metrics.forEach(
+                (metric, value) -> {
+                  final double change =
+                      value
+                          - baseline.getOrDefault(columnFamily, Map.of()).getOrDefault(metric, 0.0);
+                  if (change != 0) {
+                    diff.computeIfAbsent(columnFamily, k -> new TreeMap<>()).put(metric, change);
+                  }
+                }));
+    return diff.entrySet().stream()
+        .sorted(
+            Comparator.comparingDouble(
+                    (Map.Entry<String, Map<String, Double>> e) ->
+                        e.getValue().values().stream().mapToDouble(Double::doubleValue).sum())
+                .reversed())
+        .map(
+            e ->
+                e.getKey()
+                    + " "
+                    + e.getValue().entrySet().stream()
+                        .map(m -> "%s=%.0f".formatted(m.getKey(), m.getValue()))
+                        .collect(Collectors.joining(" ")))
+        .toList();
+  }
+
+  public LogStreamReader newLogReader() {
+    return testStreams.getLogStream(StreamProcessingComposite.getLogName(1)).newLogStreamReader();
   }
 
   public void reset() {

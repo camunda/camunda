@@ -21,6 +21,7 @@ dependencies {
   implementation(project(":zeebe-protocol"))
   implementation(project(":zeebe-db-api"))
   testImplementation(project(":zeebe-db"))
+  testImplementation(project(":zeebe-db-writebehind"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-msgpack-core"))
   implementation(project(":zeebe-expression-language"))
@@ -69,5 +70,25 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach { jvmArgs("-Xmx4g") }
+
+// Single-threaded engine load without JMH, e.g.:
+// ZEEBE_DB_WRITE_BEHIND_ENABLED=true ./gradlew :zeebe-workflow-engine:engineLoad -Pinstances=100000
+tasks.register<JavaExec>("engineLoad") {
+  group = "verification"
+  description = "Runs EngineLoadMain against the test runtime classpath"
+  val testSourceSet = sourceSets.test.get()
+  classpath = testSourceSet.runtimeClasspath
+  mainClass.set("io.camunda.zeebe.engine.perf.EngineLoadMain")
+  jvmArgs("-Xmx4g", "-Xms4g", "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED")
+  // -Pjfr=/tmp/engine.jfr records a Flight Recording of the whole run
+  project.findProperty("jfr")?.let { jvmArgs("-XX:StartFlightRecording=filename=$it,settings=profile") }
+  // read through providers so that the configuration cache sees a changed variable
+  environment(providers.environmentVariablesPrefixedBy("ZEEBE_DB_").get())
+  environment(providers.environmentVariablesPrefixedBy("LOAD_").get())
+  project.findProperty("instances")?.let { environment("LOAD_INSTANCES", it) }
+  project.findProperty("warmup")?.let { environment("LOAD_WARMUP", it) }
+  project.findProperty("prefill")?.let { environment("LOAD_PREFILL", it) }
+  project.findProperty("revisit")?.let { environment("LOAD_REVISIT", it) }
+}
 
 description = "Zeebe Workflow Engine"
