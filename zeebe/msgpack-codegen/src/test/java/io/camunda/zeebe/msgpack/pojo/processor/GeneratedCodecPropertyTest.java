@@ -872,6 +872,16 @@ final class GeneratedCodecPropertyTest {
                           + """
                           @MsgpackPojo
                           public final class Inner extends MsgpackBufferValue<Inner> {
+                            @Override
+                            protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Inner> codec() {
+                              return InnerCodec.INSTANCE;
+                            }
+
+                            @Override
+                            protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Inner> ops() {
+                              return InnerOps.INSTANCE;
+                            }
+
                             int value = 3;
                             DirectBuffer text = Decoding.EMPTY;
                             @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
@@ -1014,6 +1024,10 @@ final class GeneratedCodecPropertyTest {
       }
       s.append(
           "  @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();\n");
+      s.append(
+          "  @Override protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() { return SampleCodec.INSTANCE; }\n");
+      s.append(
+          "  @Override protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() { return SampleOps.INSTANCE; }\n");
       return s.append("}\n").toString();
     }
   }

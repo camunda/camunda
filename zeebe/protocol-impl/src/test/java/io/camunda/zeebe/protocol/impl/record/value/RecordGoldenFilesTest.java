@@ -851,6 +851,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           long time = 0;
           int count = 1;
           boolean flag;
@@ -888,6 +898,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           @MsgpackProperty(document = true) DirectBuffer variables = Decoding.EMPTY;
           @MsgpackProperty(raw = true) UnsafeBuffer value = new UnsafeBuffer();
           final List<TenantRecord> tenants = new ArrayList<>();
@@ -913,6 +933,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           DirectBuffer variables = Decoding.EMPTY;
         }
         """;
@@ -933,6 +963,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           @MsgpackProperty("time") long epochMillis = 0;
         }
         """;
@@ -953,6 +993,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           long timestamp = 0;
         }
         """;
@@ -973,6 +1023,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           int time = 0;
         }
         """;
@@ -994,6 +1054,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           DirectBuffer payload = Decoding.EMPTY;
         }
         """;
@@ -1015,6 +1085,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           OtherKind kind = OtherKind.A;
         }
         """;
@@ -1035,6 +1115,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           long time = 0;
           Kind kind;
         }
@@ -1056,6 +1146,16 @@ public class RecordGoldenFilesTest {
         """
         @MsgpackPojo
         public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<TestRecord> codec() {
+            return TestRecordCodec.INSTANCE;
+          }
+
+          @Override
+          protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<TestRecord> ops() {
+            return TestRecordOps.INSTANCE;
+          }
+
           long time = 0;
           long extra = -1;
         }

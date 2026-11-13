@@ -9,6 +9,8 @@ package io.camunda.microbenchmarks.msgpack;
 
 import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
@@ -20,6 +22,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** Plain data with a generated codec, stores the same bytes as {@link UnpackedVariable}. */
 @MsgpackPojo
 public final class PojoVariable extends MsgpackBufferValue<PojoVariable> {
+  @Override
+  protected MsgpackCodec<PojoVariable> codec() {
+    return PojoVariableCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PojoVariable> ops() {
+    return PojoVariableOps.INSTANCE;
+  }
 
   long key;
 
