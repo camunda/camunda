@@ -212,6 +212,43 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldStoreAKeyThatNeedsEscapingInJava() throws Exception {
+    // given a key with a quote, a backslash, a newline and a non-ASCII character
+    final var key = "a\"b\\c\nd\u00e9";
+    final var result =
+        compile(
+            pojo(
+                valid(
+                    """
+                    @MsgpackProperty("a\\"b\\\\c\\nd\u00e9") long key = 1L;
+                    @MsgpackProperty(value = "r\\"aw", raw = true)
+                    DirectBuffer raw = io.camunda.zeebe.msgpack.pojo.Decoding.EMPTY;
+                    """)));
+    assertThat(result.errors()).isEmpty();
+    final var sampleClass = result.load("sample.Sample");
+    @SuppressWarnings("unchecked")
+    final var codec =
+        (MsgpackCodec<Recyclable>) Codecs.of(sampleClass.asSubclass(Recyclable.class));
+    final var bytes = new ExpandableArrayBuffer();
+    final var writer = new MsgPackWriter().wrap(bytes, 0);
+    writer.writeMapHeader(1);
+    writer.writeString(new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8)));
+    writer.writeInteger(42);
+    final int length = writer.getOffset();
+    final var target = (Recyclable) sampleClass.getConstructor().newInstance();
+    target.reset();
+
+    // when
+    codec.read(new MsgPackReader().wrap(bytes, 0, length), target);
+    final ThrowingCallable writeEmptyRaw =
+        () -> codec.write(new MsgPackWriter().wrap(new ExpandableArrayBuffer(), 0), target);
+
+    // then the key is read and the raw key is named as it is stored
+    assertThat(get(target, "key")).isEqualTo(42L);
+    assertThatThrownBy(writeEmptyRaw).hasMessageContaining("'r\"aw'");
+  }
+
+  @Test
   void shouldIgnoreFieldsMarkedAsIgnored() {
     // given a field of a type that would be rejected
     final var source = pojo(valid("long key; @MsgpackIgnore Thread ignored;"));
