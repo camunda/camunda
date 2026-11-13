@@ -18,14 +18,17 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +46,23 @@ import org.springframework.stereotype.Component;
     havingValue = "true",
     matchIfMissing = true)
 public class ProcessInstanceStartMeter implements AutoCloseable {
+  /**
+   * Maximum number of pending process instance keys sent per availability check. A search returns
+   * at most one page of instances, so sending more keys than fit on a page only inflates the query
+   * cost (see https://github.com/camunda/camunda/issues/65373) without answering them. The search
+   * in {@code searchStartedInstances} uses it as its page limit.
+   */
+  public static final int AVAILABILITY_CHECK_BATCH_SIZE = 2500;
+
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
+
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
-  private final Map<Long, PiCreationResult> startedInstances;
+  // Pending instances per partition, so a partition whose data is slow to become available cannot
+  // crowd the others out of the availability check. Each queue is roughly oldest first: instances
+  // are added when their create response arrives.
+  private final ConcurrentHashMap<Integer, LinkedBlockingDeque<PiCreationResult>>
+      pendingByPartition;
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
@@ -80,7 +96,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     this.clock = clock;
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
-    startedInstances = new ConcurrentHashMap<>();
+    pendingByPartition = new ConcurrentHashMap<>();
     piCheckExecutorService = scheduledExecutorService;
     dataAvailabilityQueryDurationTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION)
@@ -88,7 +104,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
     MicrometerUtil.buildGauge(
-            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, startedInstances::size)
+            StarterLatencyMetricsDoc.PENDING_PROCESS_INSTANCES, this::pendingCount)
         .register(registry);
   }
 
@@ -104,7 +120,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
         .newProcessInstanceSearchRequest()
         .filter((f) -> f.processInstanceKey(key -> key.in(startedInstances)))
         .sort(s -> s.startDate().asc())
-        .page(p -> p.limit(2500))
+        .page(p -> p.limit(AVAILABILITY_CHECK_BATCH_SIZE))
         .send()
         .thenApply(
             response ->
@@ -159,22 +175,25 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   private void checkForProcessInstances() {
-    if (startedInstances.isEmpty()) {
+    final var batchKeys = selectBatchKeys();
+    if (batchKeys.isEmpty()) {
       LOG.debug("No instances awaiting, skip check for process instances.");
       rescheduleCheck(0);
       return;
     }
 
-    LOG.debug("Current instances awaiting {}", startedInstances.size());
+    LOG.debug("Current instances awaiting {}, checking {}", pendingCount(), batchKeys.size());
     final var startQueryTime = clock.getNanos();
     availabilityChecker
-        .findAvailableInstances(List.copyOf(startedInstances.keySet()))
+        .findAvailableInstances(batchKeys)
         .whenCompleteAsync(
             (availableInstances, error) -> {
               final var endQueryTime = clock.getNanos();
               final long duration = endQueryTime - startQueryTime;
               dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
 
+              final boolean resultPageFull =
+                  error == null && availableInstances.size() >= AVAILABILITY_CHECK_BATCH_SIZE;
               if (error == null) {
                 LOG.debug("Available process instances items: {}", availableInstances.size());
                 processAvailableInstances(availableInstances);
@@ -183,42 +202,89 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
               }
 
               cleanUpStaleInstances();
-              rescheduleCheck(duration);
+              if (resultPageFull) {
+                // every queried instance was available, so more are likely available beyond the
+                // batch: don't wait for the interval. Otherwise (errors, data not yet searchable,
+                // few confirmed) keep the interval to not hammer a struggling backend.
+                scheduleCheck(0);
+              } else {
+                rescheduleCheck(duration);
+              }
             },
             piCheckExecutorService);
+  }
+
+  /**
+   * Selects the keys to check: the oldest pending instances, as they have been pending the longest
+   * and are the most likely to be available (see {@link #AVAILABILITY_CHECK_BATCH_SIZE} for why the
+   * batch is capped).
+   *
+   * <p>The batch is shared fairly between the partitions, so a partition whose data is slow to
+   * become available cannot crowd the others out. A partition with fewer pending instances than its
+   * share leaves the rest to the partitions with more, so the batch is full whenever at least
+   * {@link #AVAILABILITY_CHECK_BATCH_SIZE} instances are pending.
+   */
+  private List<Long> selectBatchKeys() {
+    final var queues =
+        pendingByPartition.values().stream()
+            .filter(queue -> !queue.isEmpty())
+            .sorted(Comparator.comparingInt(LinkedBlockingDeque::size))
+            .toList();
+    final var batchKeys = new ArrayList<Long>();
+    for (int i = 0; i < queues.size(); i++) {
+      final int partitionsLeft = queues.size() - i;
+      final int remaining = AVAILABILITY_CHECK_BATCH_SIZE - batchKeys.size();
+      final int share = (remaining + partitionsLeft - 1) / partitionsLeft;
+      queues.get(i).stream()
+          .limit(share)
+          .map(PiCreationResult::processInstanceKey)
+          .forEach(batchKeys::add);
+    }
+    return batchKeys;
+  }
+
+  private int pendingCount() {
+    return pendingByPartition.values().stream().mapToInt(LinkedBlockingDeque::size).sum();
+  }
+
+  private void removePending(final Predicate<PiCreationResult> shouldRemove) {
+    pendingByPartition.values().forEach(queue -> queue.removeIf(shouldRemove));
   }
 
   private void cleanUpStaleInstances() {
     // clean up stale instances which exceeded the max duration - to save memory
     final long nanoTime = clock.getNanos();
-    final var instancesWhereTimeExceededDeadline =
-        startedInstances.values().stream()
-            .filter(piCreationResult -> nanoTime - piCreationResult.startTimeNanos > MAX_DURATION)
-            .toList();
-    instancesWhereTimeExceededDeadline.forEach(
+    // Instances are queued in response order, which is not strictly start order, so check them all
+    removePending(
         piResults -> {
+          if (nanoTime - piResults.startTimeNanos <= MAX_DURATION) {
+            return false;
+          }
           final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
           LOG.debug(
               "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
               piResults.processInstanceKey,
               TimeUnit.NANOSECONDS.toMillis(durationNanos));
           recordInstanceAvailable(piResults, durationNanos);
+          return true;
         });
   }
 
   private void processAvailableInstances(final List<Long> availableInstances) {
-    availableInstances.stream()
-        .map(startedInstances::get)
-        .filter(Objects::nonNull)
-        .forEach(
-            piResults -> {
-              final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
-              LOG.debug(
-                  "Process instance {} retrieved in {} ms",
-                  piResults.processInstanceKey,
-                  TimeUnit.NANOSECONDS.toMillis(durationNanos));
-              recordInstanceAvailable(piResults, durationNanos);
-            });
+    final var availableKeys = Set.copyOf(availableInstances);
+    removePending(
+        piResults -> {
+          if (!availableKeys.contains(piResults.processInstanceKey)) {
+            return false;
+          }
+          final long durationNanos = clock.getNanos() - piResults.startTimeNanos;
+          LOG.debug(
+              "Process instance {} retrieved in {} ms",
+              piResults.processInstanceKey,
+              TimeUnit.NANOSECONDS.toMillis(durationNanos));
+          recordInstanceAvailable(piResults, durationNanos);
+          return true;
+        });
   }
 
   private void recordInstanceAvailable(
@@ -232,12 +298,14 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                     .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
                     .register(registry))
         .record(durationNanos, TimeUnit.NANOSECONDS);
-    startedInstances.remove(awaitingPI.processInstanceKey);
   }
 
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
-    startedInstances.put(
-        processInstanceKey, new PiCreationResult(processInstanceKey, startTimeNanos));
+    pendingByPartition
+        .computeIfAbsent(
+            Protocol.decodePartitionId(processInstanceKey),
+            partition -> new LinkedBlockingDeque<>())
+        .add(new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
   private record PiCreationResult(long processInstanceKey, long startTimeNanos) {}
