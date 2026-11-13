@@ -8,11 +8,15 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createSingleInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  createSingleInstance,
+  waitForProcessInstancesIndexed,
+  waitForLatestProcessVersion,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -66,7 +70,11 @@ test.beforeAll(async () => {
     processInstanceKey: instanceToCancelResponse.processInstanceKey,
   };
 
-  await sleep(2000);
+  await waitForProcessInstancesIndexed([
+    instanceWithoutAnIncident.processInstanceKey,
+    instanceWithAnIncident.processInstanceKey,
+    instanceToCancel.processInstanceKey,
+  ]);
 });
 
 test.describe('Processes', () => {
@@ -265,7 +273,7 @@ test.describe('Processes', () => {
 
     await test.step('Deploy new process and verify it loads', async () => {
       await deploy(['./resources/newProcess.bpmn']);
-      await sleep(5000);
+      await waitForLatestProcessVersion('testProcess', 1);
 
       await page.goto(
         `${baseUrl}/operate/processes?processDefinitionId=testProcess&processDefinitionVersion=1`,

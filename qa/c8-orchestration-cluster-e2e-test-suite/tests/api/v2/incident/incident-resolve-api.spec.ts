@@ -44,10 +44,9 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
   });
 
   test('Resolve Incident success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createSingleIncidentProcessInstance(localState, request);
+    const created = await createSingleIncidentProcessInstance(request);
     const elementInstanceKey = {key: ''};
-    const incidentKeys = localState['incidentKeys'] as string[];
+    const incidentKeys = created.incidentKeys;
     const incidentKey = incidentKeys[0];
 
     await test.step('Search for incidents and verify the number of incidents and its state', async () => {
@@ -58,7 +57,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
             headers: jsonHeaders(),
             data: {
               filter: {
-                processInstanceKey: localState['processInstanceKey'] as string,
+                processInstanceKey: created.processInstanceKey,
               },
             },
           },
@@ -118,7 +117,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
             headers: jsonHeaders(),
             data: {
               filter: {
-                processInstanceKey: localState['processInstanceKey'] as string,
+                processInstanceKey: created.processInstanceKey,
               },
             },
           },
@@ -201,9 +200,8 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
   });
 
   test('Resolve Incident with a job - success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createProcessInstanceWithAJob(localState);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const instance = await createProcessInstanceWithAJob();
+    processInstanceKeys.push(instance.processInstanceKey);
     const incidentKey = {key: ''};
 
     const jobKey = await activateJobToObtainAValidJobKey(request, 'test-fail');
@@ -232,9 +230,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
                 headers: jsonHeaders(),
                 data: {
                   filter: {
-                    processInstanceKey: localState[
-                      'processInstanceKey'
-                    ] as string,
+                    processInstanceKey: instance.processInstanceKey,
                   },
                 },
               },
@@ -299,9 +295,7 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
                 headers: jsonHeaders(),
                 data: {
                   filter: {
-                    processInstanceKey: localState[
-                      'processInstanceKey'
-                    ] as string,
+                    processInstanceKey: instance.processInstanceKey,
                   },
                 },
               },

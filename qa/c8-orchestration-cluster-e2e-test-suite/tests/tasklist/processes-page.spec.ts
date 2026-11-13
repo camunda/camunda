@@ -10,18 +10,24 @@ import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
 import {deploy, waitForLatestProcessVersion} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {buildUrl, jsonHeaders} from 'utils/http';
+import {sleep} from 'utils/sleep';
 
 test.beforeAll(async () => {
-  await deploy([
+  const deployment = await deploy([
     './resources/user_process.bpmn',
     './resources/processWithStartNodeFormDeployed.bpmn',
     './resources/create_invoice.form',
   ]);
-  await sleep(2000);
+  // The Processes tab only lists the latest indexed version of each process.
+  for (const process of deployment.processes) {
+    await waitForLatestProcessVersion(
+      process.processDefinitionId,
+      process.processDefinitionVersion,
+    );
+  }
 });
 
 test.describe('process page', () => {
@@ -221,7 +227,6 @@ test.describe('process page', () => {
     );
     await taskDetailsPage.fillTextInput('Invoice Number*', '123');
     await taskDetailsPage.addDynamicListRow();
-    await sleep(500);
 
     await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
@@ -230,6 +235,9 @@ test.describe('process page', () => {
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
     await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
+    // Not a wait for the system: form-js debounces field changes into the
+    // form state, and nothing in the DOM signals when that has happened.
+    // Submitting earlier can send a stale value and the submit is rejected.
     await sleep(500);
     await tasklistProcessesPage.clickStartProcessSubButton();
 

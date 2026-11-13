@@ -8,7 +8,12 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  createSingleInstance,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
@@ -53,7 +58,14 @@ test.beforeAll(async () => {
     1,
   );
 
-  await sleep(2000);
+  await waitForProcessInstancesIndexed(
+    [
+      instanceWithIncidentToCancel,
+      instanceWithIncidentToResolve,
+      collapsedSubProcessInstance,
+      executionCountProcessInstance,
+    ].map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('Process Instance', () => {
@@ -72,7 +84,6 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
       });
-      await sleep(1000);
     });
 
     await test.step('Verify incidents tab is visible', async () => {
@@ -208,7 +219,6 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceId,
       });
-      await sleep(1000);
     });
 
     await test.step('Verify incidents tab is visible', async () => {
@@ -263,7 +273,6 @@ test.describe('Process Instance', () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: collapsedSubProcessInstance.processInstanceKey,
       });
-      await sleep(1000);
     });
 
     await test.step('Click on startEvent in instance history', async () => {
@@ -366,10 +375,16 @@ test.beforeAll(async () => {
     './resources/process_to_test_incidents.bpmn',
     './resources/callProcess_with Incident.bpmn',
   ]);
-  await createInstances('root-cause-test', 1, 1);
-  await createInstances('call-level-1-process', 1, 1, {shouldFail: true});
+  const instances = [
+    ...(await createInstances('root-cause-test', 1, 1)),
+    ...(await createInstances('call-level-1-process', 1, 1, {
+      shouldFail: true,
+    })),
+  ];
 
-  await sleep(5000);
+  await waitForProcessInstancesIndexed(
+    instances.map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('Process Instance Incident', () => {

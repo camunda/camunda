@@ -254,7 +254,20 @@ class OperateProcessesPage {
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        await sleep(5_000);
+        // Click only once the list has settled, so the link belongs to the
+        // filtered results rather than the previous list. The loader alone is
+        // not enough: right after a filter change the search may not have
+        // started yet. Require the same target on two consecutive reads.
+        let previousHref: string | null | undefined;
+        await expect(async () => {
+          await expect(this.page.getByTestId('data-table-loader')).toBeHidden();
+          const href = await this.processInstanceLink.getAttribute('href', {
+            timeout: 5_000,
+          });
+          const settled = href !== null && href === previousHref;
+          previousHref = href;
+          expect(settled, 'instance list still changing').toBe(true);
+        }).toPass({intervals: [1_000], timeout: 30_000});
         await this.processInstanceLink.click();
         return;
       } catch {
@@ -620,12 +633,11 @@ class OperateProcessesPage {
             .locator('label');
 
           // Wait for the element to be attached and stable
-          await checkbox.waitFor({state: 'attached'});
-          await sleep(200);
+          await expect(checkbox).toBeVisible();
           if (!(await checkbox.isChecked())) {
             await checkbox.click();
           }
-          await sleep(100);
+          await expect(checkbox).toBeChecked();
           break;
         } catch (error) {
           retryCount++;

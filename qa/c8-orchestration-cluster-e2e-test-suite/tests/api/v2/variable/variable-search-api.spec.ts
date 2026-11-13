@@ -34,9 +34,8 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await setupVariableTest(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const variableSetup = await setupVariableTest(request);
+    processInstanceKeys.push(variableSetup.processInstanceKey);
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
@@ -61,9 +60,8 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables With Name Filter', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await setupVariableTest(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const variableSetup = await setupVariableTest(request);
+    processInstanceKeys.push(variableSetup.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
@@ -95,16 +93,15 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables With Multiple Filters', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await setupVariableTest(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const variableSetup = await setupVariableTest(request);
+    processInstanceKeys.push(variableSetup.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processInstanceKey: localState['processInstanceKey'],
+            processInstanceKey: variableSetup.processInstanceKey,
             name: 'customerId',
           },
         },
@@ -124,23 +121,22 @@ test.describe.parallel('Search Variables API Tests', () => {
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(body.items.length).toBeGreaterThan(0);
       body.items.forEach((item: Record<string, unknown>) => {
-        expect(item.processInstanceKey).toBe(localState['processInstanceKey']);
+        expect(item.processInstanceKey).toBe(variableSetup.processInstanceKey);
         expect(item.name).toBe('customerId');
       });
     }).toPass(defaultAssertionOptions);
   });
 
   test('Search Variables Pagination Limit 1', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await setupVariableTest(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const variableSetup = await setupVariableTest(request);
+    processInstanceKeys.push(variableSetup.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processInstanceKey: localState['processInstanceKey'],
+            processInstanceKey: variableSetup.processInstanceKey,
           },
           page: {
             limit: 1,
@@ -165,16 +161,15 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Sort by Name ASC', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await setupVariableTest(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const variableSetup = await setupVariableTest(request);
+    processInstanceKeys.push(variableSetup.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processInstanceKey: localState['processInstanceKey'],
+            processInstanceKey: variableSetup.processInstanceKey,
           },
           sort: [
             {

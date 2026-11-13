@@ -83,20 +83,13 @@ test.describe
 
     await test.step('Create process instance with incidents', async () => {
       await test.step('Start a process instance that will have an incident', async () => {
-        const firstLocalState: Record<string, unknown> = {};
-        await createTwoDifferentIncidentsInOneProcess(firstLocalState, request);
-        processInstanceKeys.push(
-          firstLocalState['processInstanceKey'] as string,
-        );
+        const firstCreated =
+          await createTwoDifferentIncidentsInOneProcess(request);
+        processInstanceKeys.push(firstCreated.processInstanceKey);
 
-        const secondLocalState: Record<string, unknown> = {};
-        await createTwoDifferentIncidentsInOneProcess(
-          secondLocalState,
-          request,
-        );
-        processInstanceKeys.push(
-          secondLocalState['processInstanceKey'] as string,
-        );
+        const secondCreated =
+          await createTwoDifferentIncidentsInOneProcess(request);
+        processInstanceKeys.push(secondCreated.processInstanceKey);
       });
 
       const processInstanceKeyToSearch =

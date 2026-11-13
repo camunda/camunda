@@ -553,8 +553,12 @@ class TaskDetailsPage {
   }
 
   async fillDynamicList(label: string, value: string) {
+    // Not a wait for the system: form-js re-renders the dynamic list after
+    // each change, and filling during that re-render can be lost. Nothing in
+    // the DOM signals when it has finished.
     await sleep(500);
     const locator = this.page.getByLabel(label);
+    await expect(locator.first()).toBeVisible();
     const elements = await locator.all();
     if (elements.length === 0) {
       throw new Error(
@@ -604,7 +608,12 @@ class TaskDetailsPage {
   }
 
   async addDynamicListRow(): Promise<void> {
+    // A new row adds inputs; wait for them so a following fillDynamicList
+    // sees every row instead of racing the re-render.
+    const inputs = this.page.locator('input');
+    const inputCountBefore = await inputs.count();
     await this.addDynamicListRowButton.click();
+    await expect.poll(() => inputs.count()).toBeGreaterThan(inputCountBefore);
   }
 
   async assertFieldValue(label: string, expectedValue: string): Promise<void> {

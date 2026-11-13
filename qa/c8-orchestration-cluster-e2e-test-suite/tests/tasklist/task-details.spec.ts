@@ -9,13 +9,17 @@
 import {expect} from '@playwright/test';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {publicTest as test} from 'fixtures';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  waitForProcessInstancesIndexed,
+} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {expectUserTaskUnassigned, findUserTask} from '@requestHelpers';
 import {buildUrl, jsonHeaders} from 'utils/http';
 import {defaultAssertionOptions} from 'utils/constants';
+import {sleep} from 'utils/sleep';
 
 test.beforeAll(async () => {
   await deploy([
@@ -55,9 +59,8 @@ test.beforeAll(async () => {
     './resources/employee_confirmation_form.form',
     './resources/usertask_with_custom_headers.bpmn',
   ]);
-  await sleep(1000);
 
-  await Promise.all([
+  const instances = await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
     createInstances('usertask_for_assign_unassign', 1, 1),
     createInstances('user_registration', 1, 2),
@@ -94,7 +97,9 @@ test.beforeAll(async () => {
     createInstances('usertask_with_custom_headers', 1, 1),
   ]);
 
-  await sleep(1000);
+  await waitForProcessInstancesIndexed(
+    instances.flat().map((instance) => instance.processInstanceKey),
+  );
 });
 
 test.describe('task details page', () => {
@@ -280,7 +285,6 @@ test.describe('task details page', () => {
       'USD - United States Dollar',
       'EUR - Euro',
     );
-    await sleep(500);
     await taskDetailsPage.addDynamicListRow();
     await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
@@ -289,6 +293,9 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('EUR 231');
     await expect(taskDetailsPage.form).toContainText('EUR 264');
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
+    // Not a wait for the system: form-js debounces field changes into the
+    // form state, and nothing in the DOM signals when that has happened.
+    // Submitting earlier can send a stale value and the submit is rejected.
     await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
 
@@ -492,6 +499,9 @@ test.describe('task details page', () => {
     await taskDetailsPage.incrementUntilValue('1');
     await taskDetailsPage.incrementUntilValue('2');
     await taskDetailsPage.decrementUntilValue('1');
+    // Not a wait for the system: form-js debounces number-field changes into
+    // the form state, and nothing in the DOM signals when that has happened.
+    // Completing earlier submits the stale (empty) value.
     await sleep(500);
     await taskDetailsPage.clickCompleteTaskButton();
     // 30s was hit by the May 21 nightly — bump to the 60s budget the

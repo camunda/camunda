@@ -43,9 +43,8 @@ test.describe.parallel('Search Incidents API Tests', () => {
   });
 
   test('Search Incidents Success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
@@ -73,11 +72,8 @@ test.describe.parallel('Search Incidents API Tests', () => {
   test('Search Incidents within multiple process instances Success', async ({
     request,
   }) => {
-    const localState: Record<string, unknown> = {};
-    await createIncidentsInTwoProcesses(localState, request);
-    for (const element of localState['processInstanceKey'] as string[]) {
-      processInstanceKeys.push(element);
-    }
+    const created = await createIncidentsInTwoProcesses(request);
+    processInstanceKeys.push(...created.processInstanceKeys);
 
     await expect(async () => {
       const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
@@ -105,10 +101,9 @@ test.describe.parallel('Search Incidents API Tests', () => {
   test('Search Incidents With IncidentKey Filter Success', async ({
     request,
   }) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
-    const incidentKeys = localState['incidentKeys'] as string[];
+    const created = await createTwoIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
+    const incidentKeys = created.incidentKeys;
 
     await expect(async () => {
       const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
@@ -140,9 +135,8 @@ test.describe.parallel('Search Incidents API Tests', () => {
   });
 
   test('Search Incidents With Error Type Filter Success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
@@ -204,9 +198,8 @@ test.describe.parallel('Search Incidents API Tests', () => {
   test('Search Incidents With Error Type Filter and Process Instance Key Success', async ({
     request,
   }) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoDifferentIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoDifferentIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
 
     await test.step('Search for EXTRACT_VALUE_ERROR incidents', async () => {
       await expect(async () => {
@@ -215,7 +208,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
           data: {
             filter: {
               errorType: 'EXTRACT_VALUE_ERROR',
-              processInstanceKey: localState['processInstanceKey'] as string,
+              processInstanceKey: created.processInstanceKey,
             },
           },
         });
@@ -246,7 +239,7 @@ test.describe.parallel('Search Incidents API Tests', () => {
           data: {
             filter: {
               errorType: 'CALLED_DECISION_ERROR',
-              processInstanceKey: localState['processInstanceKey'] as string,
+              processInstanceKey: created.processInstanceKey,
             },
           },
         });
@@ -303,9 +296,8 @@ test.describe.parallel('Search Incidents API Tests', () => {
   });
 
   test('Search Incidents Empty Result success', async ({request}) => {
-    const localState: Record<string, unknown> = {};
-    await createTwoIncidentsInOneProcess(localState, request);
-    processInstanceKeys.push(localState['processInstanceKey'] as string);
+    const created = await createTwoIncidentsInOneProcess(request);
+    processInstanceKeys.push(created.processInstanceKey);
 
     await expect(async () => {
       const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {

@@ -8,10 +8,14 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  waitForProcessInstancesIndexed,
+  waitForLatestProcessVersion,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {ProcessDeployment as ProcessDeploymentDTO} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
@@ -89,7 +93,8 @@ test.beforeAll(async () => {
     parentProcessInstanceKeys,
   };
 
-  await sleep(2000);
+  await waitForProcessInstancesIndexed(parentProcessInstanceKeys);
+  await waitForLatestProcessVersion('childProcess', childProcessV2.version);
 });
 
 test.describe('Child Process Instance Migration', () => {
@@ -199,7 +204,6 @@ test.describe('Child Process Instance Migration', () => {
       await operateProcessMigrationModePage.mapFlowNode('Task', 'New Task');
 
       await operateProcessMigrationModePage.completeProcessInstanceMigration();
-      await sleep(200);
     });
 
     await test.step('Verify 1 instance migrated to target version', async () => {

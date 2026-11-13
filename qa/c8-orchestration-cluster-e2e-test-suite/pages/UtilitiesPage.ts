@@ -103,7 +103,9 @@ export async function completeTaskWithRetry(
       // load, especially for sequential multi-task flows like the priority
       // chain in hto-user-flows.spec.ts.
       await taskPanelPage.openTask(taskName, {timeout: 60000});
-      await sleep(500);
+      await expect(
+        taskDetailsPage.assignedToMeText.or(taskDetailsPage.assignToMeButton),
+      ).toBeVisible();
       if (!(await taskDetailsPage.assignedToMeText.isVisible())) {
         await taskDetailsPage.clickAssignToMeButton();
       }
