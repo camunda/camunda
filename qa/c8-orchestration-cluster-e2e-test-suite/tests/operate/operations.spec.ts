@@ -18,9 +18,6 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {jsonHeaders} from 'utils/http';
-import {logInViaApi} from 'utils/logInViaApi';
-
-const baseURL = process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -64,27 +61,6 @@ test.beforeAll(async () => {
 
 test.describe('Operations', () => {
   test.beforeEach(async ({page, operateHomePage}) => {
-    // The login session is worker-scoped (see fixtures.ts), established once
-    // when the worker starts. Over a long nightly run that session can expire,
-    // so by the time this test runs /v2/authentication/me returns 401 and
-    // Operate renders its login screen instead of the home page: the banner
-    // never appears, or the header is swapped out mid-navigation and the
-    // Processes tab click times out. Re-establish the session over the API
-    // before loading the UI when it has gone stale, mirroring the login the
-    // page fixture performs. A healthy session returns 200 and is untouched.
-    const authCheck = await page
-      .context()
-      .request.get(`${baseURL}/v2/authentication/me`);
-    if (authCheck.status() === 401) {
-      const {csrfToken} = await logInViaApi(page.context().request, baseURL, {
-        username: process.env.TEST_USERNAME ?? 'demo',
-        password: process.env.TEST_PASSWORD ?? 'demo',
-      });
-      await page.addInitScript((token) => {
-        sessionStorage.setItem('X-CSRF-TOKEN', token);
-      }, csrfToken);
-    }
-
     await navigateToAppHome(page, 'operate');
     // Operate can be slow to render its header banner on first load under
     // load; give it a wider budget than the default expect timeout.
