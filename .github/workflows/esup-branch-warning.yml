@@ -34,7 +34,7 @@ jobs:
         (github.event.action == 'opened' && startsWith(github.event.pull_request.base.ref, 'stable/')) ||
         (github.event.action == 'edited' && github.event.changes.base &&
           startsWith(github.event.pull_request.base.ref, 'stable/')))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
       pull-requests: write  # comment on the PR and read the label
