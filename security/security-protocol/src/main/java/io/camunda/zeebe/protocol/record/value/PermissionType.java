@@ -53,6 +53,7 @@ public enum PermissionType {
   READ_USER_TASK(true),
   READ_TASK_LISTENER(true),
 
+  SUSPEND_PROCESS_DEFINITION,
   SUSPEND_PROCESS_INSTANCE,
 
   UPDATE,
