@@ -327,6 +327,37 @@ final class GeneratedOpsTest {
   }
 
   @Test
+  void shouldCompareBuffersByBytesWhateverTheirClass() throws Exception {
+    for (final var field : List.of("name", "payload", "raw", "doc")) {
+      // given
+      final var a = instance();
+      final var b = instance();
+      final var expandable = new ExpandableArrayBuffer(1);
+      expandable.putByte(0, (byte) 0x80);
+      set(a, field, expandable);
+      set(b, field, new UnsafeBuffer(new byte[] {(byte) 0x80}));
+
+      // then
+      assertThat(a).as(field).isEqualTo(b).hasSameHashCodeAs(b);
+      assertThat(b).as(field).isEqualTo(a);
+    }
+  }
+
+  @Test
+  void shouldCompareBufferListsByBytesWhateverTheirClass() throws Exception {
+    // given
+    final var a = instance();
+    final var b = instance();
+    final var expandable = new ExpandableArrayBuffer(1);
+    expandable.putByte(0, (byte) 'x');
+    ((List<DirectBuffer>) get(a, "ids")).add(expandable);
+    ((List<DirectBuffer>) get(b, "ids")).add(utf8("x"));
+
+    // then
+    assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+  }
+
+  @Test
   void shouldPrintTheStoredPropertiesAsJson() throws Exception {
     // given
     final var sample = read(message(0));

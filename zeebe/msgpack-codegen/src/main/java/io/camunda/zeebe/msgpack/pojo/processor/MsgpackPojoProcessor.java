@@ -502,10 +502,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var differs =
           switch (p.type()) {
             case LONG, INT, BOOLEAN, ENUM -> "%s != %s".formatted(x, y);
-            case STRING, BINARY, RAW, DOCUMENT ->
-                "!java.util.Objects.equals(%s, %s)".formatted(x, y);
-            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
-                "!%s.equals(%s)".formatted(x, y);
+            case STRING, BINARY, RAW, DOCUMENT -> "!Decoding.equalContent(%s, %s)".formatted(x, y);
+            case STRING_LIST -> "!Decoding.equalContents(%s, %s)".formatted(x, y);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "!%s.equals(%s)".formatted(x, y);
             case NESTED ->
                 p.pojo()
                     ? "!%sOps.equals(%s, %s)".formatted(p.javaType(), x, y)
@@ -613,10 +612,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case LONG -> "Long.hashCode(%s)".formatted(x);
             case INT -> x;
             case BOOLEAN -> "Boolean.hashCode(%s)".formatted(x);
-            case ENUM, STRING, BINARY, RAW, DOCUMENT ->
-                "java.util.Objects.hashCode(%s)".formatted(x);
-            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
-                "%s.hashCode()".formatted(x);
+            case ENUM -> "java.util.Objects.hashCode(%s)".formatted(x);
+            case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(%s)".formatted(x);
+            case STRING_LIST -> "Decoding.contentHash(%s)".formatted(x);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "%s.hashCode()".formatted(x);
             // the hash code of a BaseValue is not consistent with its equals (it includes whether
             // a property was set and the recycled ones), so it is not used: equal values must hash
             // alike
