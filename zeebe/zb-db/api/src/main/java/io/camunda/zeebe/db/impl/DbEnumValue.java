@@ -15,11 +15,9 @@ import org.agrona.MutableDirectBuffer;
 /** Stores enums with up to 255 variants in a single byte. */
 public final class DbEnumValue<T extends Enum<T>> implements DbKey, DbValue {
   private final DbByte value = new DbByte();
-  private final Class<T> enumType;
   private final T[] variants;
 
   public DbEnumValue(final Class<T> enumType) {
-    this.enumType = enumType;
     variants = enumType.getEnumConstants();
     if (variants.length == 0) {
       throw new IllegalArgumentException("Enum type cannot be empty: " + enumType);
@@ -29,11 +27,6 @@ public final class DbEnumValue<T extends Enum<T>> implements DbKey, DbValue {
       throw new IllegalArgumentException(
           "Enum type cannot have more than %s values: %s".formatted(Byte.MAX_VALUE, enumType));
     }
-  }
-
-  /** The enum class whose variants this value stores, e.g. to create another instance like it. */
-  public Class<T> getEnumType() {
-    return enumType;
   }
 
   public T getValue() {
