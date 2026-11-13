@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -69,6 +71,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
   private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
   private static final StringValue START_TIME_KEY = new StringValue("startTime");
+  private static final StringValue OPERATION_REFERENCE_KEY = new StringValue("operationReference");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
@@ -111,16 +114,20 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
   private final LongProperty startTimeProperty = new LongProperty(START_TIME_KEY, -1L);
+  private final LongProperty operationReferenceProperty =
+      new LongProperty(
+          OPERATION_REFERENCE_KEY, RecordMetadataDecoder.operationReferenceNullValue());
 
   public CommandDistributionRecord() {
-    super(7);
+    super(8);
     declareProperty(partitionIdProperty)
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
         .declareProperty(commandValueProperty)
         .declareProperty(authInfoProperty)
-        .declareProperty(startTimeProperty);
+        .declareProperty(startTimeProperty)
+        .declareProperty(operationReferenceProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
@@ -129,7 +136,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
         .setCommandValue(other.getCommandValue())
-        .setAuthInfo(other.getAuthInfo());
+        .setAuthInfo(other.getAuthInfo())
+        .setOperationReference(other.getOperationReference());
     return this;
   }
 
@@ -240,6 +248,16 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setStartTime(final long startTimeProperty) {
     this.startTimeProperty.setValue(startTimeProperty);
+    return this;
+  }
+
+  @JsonIgnore
+  public long getOperationReference() {
+    return operationReferenceProperty.getValue();
+  }
+
+  public CommandDistributionRecord setOperationReference(final long operationReference) {
+    operationReferenceProperty.setValue(operationReference);
     return this;
   }
 

@@ -230,6 +230,11 @@ final class InterPartitionCommandReceiverImpl {
       final var value = decodeCommand(messageDecoder, recordMetadata);
       decodeAuthInfo(messageDecoder, recordMetadata);
 
+      final var operationReference = messageDecoder.operationReference();
+      if (operationReference != InterPartitionMessageDecoder.operationReferenceNullValue()) {
+        recordMetadata.operationReference(operationReference);
+      }
+
       // Default to MANUAL_BACKUP if no checkpoint type is set for backward compatibility
       final CheckpointType checkpointType;
       if (messageDecoder.checkpointType()

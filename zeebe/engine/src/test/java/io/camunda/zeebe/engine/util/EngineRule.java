@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.message.PendingSubscriptions;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
 import io.camunda.zeebe.engine.util.client.AgentHistoryClient;
 import io.camunda.zeebe.engine.util.client.AgentInstanceClient;
@@ -108,6 +109,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
@@ -707,6 +709,11 @@ public final class EngineRule extends ExternalResource {
   public long writeCommandOnPartition(
       final int partitionId, final long key, final Intent intent, final UnifiedRecordValue value) {
     return environmentRule.writeCommandOnPartition(partitionId, key, intent, value);
+  }
+
+  public long writeCommandOnPartition(
+      final int partitionId, final UnaryOperator<FluentLogWriter> builder) {
+    return environmentRule.writeCommandOnPartition(partitionId, builder);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {
