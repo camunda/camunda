@@ -28,8 +28,13 @@ def grafana_url($branch):
   "https://dashboard.int.camunda.com/d/ae2j69npxh3b4f/flaky-tests-camunda-camunda-monorepo"
   + "?orgId=1&from=\(config.window)&to=\(config.window)&timezone=browser&var-branch=\($branch | @uri)";
 
-def link_url:
-  "https://github.com/camunda/camunda/actions/runs/\(.run_id)/attempts/\(.run_attempt)";
+# The job when its ID is known, else the run attempt, marked "(run)" so readers know to look for
+# the job in the run
+def link:
+  "https://github.com/camunda/camunda/actions/runs/\(.run_id)" as $run
+  | if .job_id then "<\($run)/job/\(.job_id)|#\(.n)>"
+    else "<\($run)/attempts/\(.run_attempt)|#\(.n) (run)>"
+    end;
 
 # "↳ `job-a` <url|#1> <url|#2> · `job-b` <url|#3>", jobs in the order of their first link
 def links_line($max_links):
@@ -38,7 +43,7 @@ def links_line($max_links):
       (map(.job) | index($link.job_name)) as $i
       | if $i == null then . + [{job: $link.job_name, links: [$link]}] else .[$i].links += [$link] end)
   | if length == 0 then empty
-    else "      ↳ " + (map("`\(.job | escape)` " + (.links | map("<\(link_url)|#\(.n)>") | join(" "))) | join(" · "))
+    else "      ↳ " + (map("`\(.job | escape)` " + (.links | map(link) | join(" "))) | join(" · "))
     end;
 
 def test_lines($max_links; $max_name):

@@ -74,12 +74,12 @@ EOF
   echo '[]' > fixtures/top-tests.json
 }
 
-# top_tests <branch>|<class>|<test>|<count>|<tests on branch>|<run>:<attempt>:<job>,...
+# top_tests <branch>|<class>|<test>|<count>|<tests on branch>|<run>:<attempt>:<job>[:<job id>],...
 top_tests() {
   printf '%s\n' "$@" | jq -R -s -c '
     split("\n") | map(select(. != "") | split("|")) | map({
       branch: .[0], test_class_name: .[1], test_name: .[2], occurrences: .[3], tests_on_branch: .[4],
-      links: (.[5] | split(",") | map(split(":") | {run_id: .[0], run_attempt: .[1], job_name: .[2]}))
+      links: (.[5] | split(",") | map(split(":") | {run_id: .[0], run_attempt: .[1], job_name: .[2], job_id: .[3]}))
     })' > fixtures/top-tests.json
 }
 
@@ -107,9 +107,9 @@ block() {
 @test "should post main in the top-level message and stable branches with tests in its thread" {
   # given
   top_tests \
-    "main|io.camunda.it.FooIT|shouldFoo|12|2|101:1:integration-tests/es,102:2:integration-tests/os,103:1:integration-tests/es" \
-    "main|io.camunda.it.BarIT|shouldBar|4|2|104:1:unit-tests" \
-    "stable/8.9|io.camunda.it.FooIT|shouldFoo|1|1|105:1:integration-tests/es"
+    "main|io.camunda.it.FooIT|shouldFoo|12|2|101:1:integration-tests/es:9001,102:2:integration-tests/os,103:1:integration-tests/es:9003" \
+    "main|io.camunda.it.BarIT|shouldBar|4|2|104:1:unit-tests:9004" \
+    "stable/8.9|io.camunda.it.FooIT|shouldFoo|1|1|105:1:integration-tests/es:9005"
   owned_test io.camunda.it.FooIT
   owned_test io.camunda.it.BarIT
   issue "in:title BarIT AND (label:kind/flake OR in:title flaky)" 4711
@@ -124,16 +124,16 @@ block() {
   [ "$(jq -r '.[0].blocks[1].type' "$MESSAGES")" = "divider" ]
   [ "$(block 0 2)" = "🥇 *\`main\`*: top 3 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=main|Grafana>)
 • 12x \`FooIT.shouldFoo\`
-      ↳ \`integration-tests/es\` <${RUNS}/101/attempts/1|#1> <${RUNS}/103/attempts/1|#3> · \`integration-tests/os\` <${RUNS}/102/attempts/2|#2>
+      ↳ \`integration-tests/es\` <${RUNS}/101/job/9001|#1> <${RUNS}/103/job/9003|#3> · \`integration-tests/os\` <${RUNS}/102/attempts/2|#2 (run)>
 :arrow_right:  ${DATA_LAYER_MEDIC}
 • 4x \`BarIT.shouldBar\` (<${ISSUES}/4711|GH issue>)
-      ↳ \`unit-tests\` <${RUNS}/104/attempts/1|#1>" ]
+      ↳ \`unit-tests\` <${RUNS}/104/job/9004|#1>" ]
   [ "$(block 0 3)" = ":thread: Stable branches in the thread: \`stable/8.10\` (none) · \`stable/8.9\` (1 flaky test) · \`stable/8.8\` (none)" ]
 
   [ "$(jq -r '.[1].text' "$MESSAGES")" = "Flaky tests yesterday on stable/8.9" ]
   [ "$(block 1 0)" = "🥇 *\`stable/8.9\`*: top 3 flaky tests yesterday (<${GRAFANA}?orgId=1&from=now-1d%2Fd&to=now-1d%2Fd&timezone=browser&var-branch=stable%2F8.9|Grafana>)
 • 1x \`FooIT.shouldFoo\`
-      ↳ \`integration-tests/es\` <${RUNS}/105/attempts/1|#1>" ]
+      ↳ \`integration-tests/es\` <${RUNS}/105/job/9005|#1>" ]
 }
 
 @test "should count flaky tests of push, merge queue and PR runs of the previous day" {
@@ -164,7 +164,7 @@ block() {
   [ "$(jq '.[0].blocks | length' "$MESSAGES")" -eq 2 ]
   [ "$(block 0 0)" = ":fire: *\`main\`*: top 3 failing tests last week (<${GRAFANA}?orgId=1&from=now-1w%2Fw&to=now-1w%2Fw&timezone=browser&var-branch=main|Grafana>)
 • 3x \`FooIT.shouldFoo\`
-      ↳ \`integration-tests/es\` <${RUNS}/101/attempts/1|#1>
+      ↳ \`integration-tests/es\` <${RUNS}/101/attempts/1|#1 (run)>
 :arrow_right:  ${DATA_LAYER_MEDIC}" ]
   [ "$(block 0 1)" = ":thread: Stable branches in the thread: \`stable/8.10\` (none) · \`stable/8.9\` (none) · \`stable/8.8\` (none)" ]
   ! grep -q "flake" fixtures/gh-searches.txt
@@ -274,8 +274,8 @@ in:title FooIT AND (label:kind/flake OR in:title flaky)" ]
   section="$(block 0 2)"
   [ "${#section}" -le 3000 ]
   [[ "$section" == *"• 3x \`FooIT.xxxx"*"…\`"* ]]
-  [[ "$section" == *"|#1>"* ]]
-  [[ "$section" != *"|#2>"* ]]
+  [[ "$section" == *"|#1"* ]]
+  [[ "$section" != *"|#2"* ]]
   [[ "$output" == *'::warning::Shortened the Slack message "Flaky tests yesterday" to fit the block size limit'* ]]
 }
 
