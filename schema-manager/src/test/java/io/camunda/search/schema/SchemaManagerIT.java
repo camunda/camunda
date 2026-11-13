@@ -1817,6 +1817,52 @@ public class SchemaManagerIT {
     return deletedTransition.at("/conditions/min_index_age").asText();
   }
 
+  @TestTemplate
+  void shouldTruncateIndicesByRecreatingThemEmptyWhenRetried(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws Exception {
+    // given
+    config.schemaManager().setCreateSchema(true);
+    final var schemaManager =
+        new SchemaManager(
+            getSearchEngineClient(config),
+            Set.of(index, metadataIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+    initialiseResources(schemaManager);
+    final var liveIndices =
+        List.of(index.getFullQualifiedName(), indexTemplate.getFullQualifiedName());
+    for (final var liveIndex : liveIndices) {
+      searchClientAdapter.index("1", liveIndex, Map.of("hello", "foo", "world", "bar"));
+    }
+    searchClientAdapter.refresh();
+    // a failed earlier attempt deleted this index already
+    searchClientAdapter.deleteIndex(indexTemplate.getFullQualifiedName());
+
+    // when
+    schemaManager.truncateIndices();
+    searchClientAdapter.index(
+        "2", indexTemplate.getFullQualifiedName(), Map.of("hello", "foo", "world", "bar"));
+    searchClientAdapter.refresh();
+    schemaManager.truncateIndices();
+
+    // then
+    searchClientAdapter.refresh();
+    for (final var liveIndex : liveIndices) {
+      assertThat(searchClientAdapter.searchAll(liveIndex, Map.class)).isEmpty();
+      final var recreated = searchClientAdapter.getIndexAsNode(liveIndex);
+      assertThat(mappingsMatch(recreated.get("mappings"), "/mappings.json")).isTrue();
+    }
+    assertThat(
+            searchClientAdapter
+                .getIndexAsNode(index.getFullQualifiedName())
+                .get("aliases")
+                .has(index.getAlias()))
+        .isTrue();
+    assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+  }
+
   private void initialiseResources(final SchemaManager schemaManager) {
     schemaManager.initialiseIndexTemplates();
     schemaManager.initialiseIndices();

@@ -351,6 +351,20 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public boolean deleteIndexIfExists(final String indexName) {
+    try {
+      deleteIndex(indexName);
+      return true;
+    } catch (final OpenSearchException e) {
+      if (e.status() == 404) {
+        return false;
+      }
+
+      throw e;
+    }
+  }
+
+  @Override
   public void truncateIndex(final String indexName) {
     final DeleteByQueryRequest request =
         new DeleteByQueryRequest.Builder()
