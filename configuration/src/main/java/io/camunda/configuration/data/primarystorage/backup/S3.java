@@ -13,7 +13,6 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.DefaultsMode;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import org.springframework.util.unit.DataSize;
 
 public class S3 {
   private static final String PREFIX = "camunda.data.primary-storage.backup.s3";
@@ -185,18 +184,6 @@ public class S3 {
    */
   private String ssecKey;
 
-  /**
-   * Maximum number of bytes per second that all backups of this broker together read from the local
-   * disk to upload them, for example '100MB'. Backups read every journal segment since the last
-   * snapshot; without a limit, this can use up the disk throughput when the segments are not in the
-   * page cache, so that journal writes wait and all partitions stall. Set it well below the
-   * throughput of the data volume. When not set, the read rate is not limited. Uploads that read
-   * through the limit get their api-call-timeout extended by the time the limit adds for one
-   * partition; when a broker leads several partitions, they share the rate, so raise
-   * api-call-timeout accordingly.
-   */
-  private DataSize maxReadRate;
-
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrderingUnsafe(
         PREFIX + ".bucket-name",
@@ -359,14 +346,6 @@ public class S3 {
 
   public void setBasePath(final String basePath) {
     this.basePath = basePath;
-  }
-
-  public DataSize getMaxReadRate() {
-    return maxReadRate;
-  }
-
-  public void setMaxReadRate(final DataSize maxReadRate) {
-    this.maxReadRate = maxReadRate;
   }
 
   public String getSsecKey() {

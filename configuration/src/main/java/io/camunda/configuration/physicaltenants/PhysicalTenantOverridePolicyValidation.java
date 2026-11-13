@@ -128,9 +128,10 @@ final class PhysicalTenantOverridePolicyValidation {
               // safety cap on the same shared memory pool as memory-fraction above, not a
               // per-partition setting
               "data.primary-storage.rocks-db.max-memory-fraction",
-              // caps the backup reads of the whole broker on the shared data disk; tenants with
-              // different values would each get their own budget and together exceed the cap
-              "data.primary-storage.backup.s3.max-read-rate",
+              // caps the backup reads of the whole broker on the shared data disk: one limiter is
+              // built from the root config at broker startup, so a per-tenant override would be
+              // silently ignored
+              "data.primary-storage.backup.max-read-rate",
               // uniform-policy call, not a technical constraint: all tenants share one heap, so a
               // tenant with soft values disabled would push GC reclamation onto the others. Bound a
               // single tenant's cache with the overridable process-cache-capacity instead

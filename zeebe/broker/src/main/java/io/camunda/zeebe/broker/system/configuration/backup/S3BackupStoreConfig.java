@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import org.springframework.util.unit.DataSize;
 
 public class S3BackupStoreConfig implements ConfigurationEntry {
 
@@ -38,8 +37,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private String basePath;
 
   private String ssecKey;
-
-  private @Nullable DataSize maxReadRate;
 
   public String getBucketName() {
     return bucketName;
@@ -157,14 +154,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.defaultsMode = defaultsMode;
   }
 
-  public @Nullable DataSize getMaxReadRate() {
-    return maxReadRate;
-  }
-
-  public void setMaxReadRate(final @Nullable DataSize maxReadRate) {
-    this.maxReadRate = maxReadRate;
-  }
-
   public static S3BackupConfig toStoreConfig(
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
@@ -205,7 +194,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (ssecKey != null ? ssecKey.hashCode() : 0);
     result = 31 * result + maxConcurrentConnections;
     result = 31 * result + defaultsMode.hashCode();
-    result = 31 * result + (maxReadRate != null ? maxReadRate.hashCode() : 0);
     result =
         31 * result
             + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
@@ -236,7 +224,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(ssecKey, that.ssecKey)
         && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
         && Objects.equals(defaultsMode, that.defaultsMode)
-        && Objects.equals(maxReadRate, that.maxReadRate)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
@@ -274,8 +261,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + supportLegacyMd5
         + ", defaultsMode="
         + defaultsMode
-        + ", maxReadRate="
-        + maxReadRate
         + ", ssecKey='"
         + (ssecKey != null ? "<redacted>" : "null")
         + '\''
