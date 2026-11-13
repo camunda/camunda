@@ -15,9 +15,7 @@ export class OperateProcessInstanceViewModificationModePage {
   readonly addModificationButtononPopup: Locator;
   readonly moveAllButtononPopup: Locator;
   readonly cancelButtonPopup: Locator;
-  readonly cancelAllButtonPopup: Locator;
   readonly reviewModificationsButton: Locator;
-  readonly discardAllModificationsButton: Locator;
   readonly cancelButtonModificationDialog: Locator;
   readonly applyButtonModificationsDialog: Locator;
   readonly moveTokensMessage: Locator;
@@ -102,15 +100,8 @@ export class OperateProcessInstanceViewModificationModePage {
     this.cancelButtonPopup = page.getByRole('button', {
       name: /Cancel selected instance in this (flow node|element)/i,
     });
-    this.cancelAllButtonPopup = page.getByRole('button', {
-      name: /Cancel all running (flow node|element) instances in this (flow node|element)/i,
-    });
     this.reviewModificationsButton = page.getByRole('button', {
       name: /Apply Modifications|Review Modifications/,
-    });
-    this.discardAllModificationsButton = page.getByRole('button', {
-      name: 'Discard All',
-      exact: true,
     });
     this.cancelButtonModificationDialog = page
       .getByRole('dialog')
@@ -362,16 +353,8 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.cancelButtonPopup.click();
   }
 
-  async clickCancelAllButtononPopup(): Promise<void> {
-    await this.cancelAllButtonPopup.click();
-  }
-
   async clickReviewModificationsButton(): Promise<void> {
     await this.reviewModificationsButton.click();
-  }
-
-  async clickDiscardAllModificationsButton(): Promise<void> {
-    await this.discardAllModificationsButton.click();
   }
 
   async clickCancelButtonDialog(): Promise<void> {
@@ -526,10 +509,6 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.undoModificationButton.click();
   }
 
-  async clickAddVariable() {
-    await this.addVariableModificationButton.click();
-  }
-
   async clickDeleteVariableModification() {
     await this.deleteVariableModificationButton.click();
   }
@@ -561,19 +540,8 @@ export class OperateProcessInstanceViewModificationModePage {
     return this.modalDialog.getByText(`${variableName}: ${value}`);
   }
 
-  getDialogDeleteVariableModificationButton(index?: number) {
-    const button = this.modalDialog.getByRole('button', {
-      name: 'Delete variable modification',
-    });
-    return index !== undefined ? button.nth(index) : button;
-  }
-
   getDialogCancelButton() {
     return this.modalDialog.getByRole('button', {name: 'Cancel'});
-  }
-
-  async clickDialogDeleteVariableModification(index?: number) {
-    await this.getDialogDeleteVariableModificationButton(index).click();
   }
 
   async clickDialogCancel() {
@@ -631,10 +599,6 @@ export class OperateProcessInstanceViewModificationModePage {
         ? this.newVariableByIndex(variableIndex).nameErrorMessage
         : this.newVariableByIndex(variableIndex).valueErrorMessage;
     await expect(errorMessage!).toHaveText(message);
-  }
-
-  async deleteNewVariableModification(variableIndex: number) {
-    await this.newVariableByIndex(variableIndex).deleteButton.click();
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
