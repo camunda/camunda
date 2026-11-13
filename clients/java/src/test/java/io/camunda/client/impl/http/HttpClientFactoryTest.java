@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpException;
@@ -77,6 +78,7 @@ class HttpClientFactoryTest {
   @TempDir Path tempDir;
 
   private final AtomicInteger connectedSessions = new AtomicInteger();
+  private PoolingAsyncClientConnectionManager pool;
   private HttpAsyncServer server;
   private int port;
   private Path certificatePath;
@@ -151,10 +153,10 @@ class HttpClientFactoryTest {
     // given
     try (final CamundaClient client = buildClient(TimeValue.ofMinutes(5))) {
 
-      // when, with a pause so that the connection is back in the pool before the next request
+      // when, waiting until the connection is back in the pool before the next request
       for (int i = 0; i < 3; i++) {
         client.newTopologyRequest().send().join();
-        await().pollDelay(Duration.ofMillis(200)).until(() -> true);
+        await().until(() -> pool.getTotalStats().getLeased() == 0);
       }
 
       // then
@@ -170,12 +172,12 @@ class HttpClientFactoryTest {
                 .preferRestOverGrpc(true)
                 .restAddress(new URI("https://localhost:" + port))
                 .caCertificatePath(certificatePath.toString());
-    return new CamundaClientImpl(
-        configuration,
-        CamundaClientImpl.buildChannel(configuration),
+    final HttpClientFactory factory =
         new HttpClientFactory(
-                configuration, ResponseDeadlineChainHandler.DEFAULT_MARGIN, connectionTimeToLive)
-            .createClient());
+            configuration, ResponseDeadlineChainHandler.DEFAULT_MARGIN, connectionTimeToLive);
+    pool = factory.createConnectionManager();
+    return new CamundaClientImpl(
+        configuration, CamundaClientImpl.buildChannel(configuration), factory.createClient(pool));
   }
 
   /** Counts the connections the server accepted. */
