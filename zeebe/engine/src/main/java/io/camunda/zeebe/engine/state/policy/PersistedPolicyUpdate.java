@@ -60,4 +60,13 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
   public boolean hasAllChunksBuffered() {
     return getBufferedChunkCount() == getUpdate().getChunkCount();
   }
+
+  /**
+   * Whether the update is being applied. Applying starts when its last chunk is buffered and ends
+   * when its version is committed, which removes the update. While it is applied, its identity
+   * commands may already be written, and nothing can undo them, so the update must not fail.
+   */
+  public boolean isApplying() {
+    return hasAllChunksBuffered();
+  }
 }
