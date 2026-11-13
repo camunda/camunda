@@ -31,11 +31,15 @@ public final class EngineKeyIndexPolicies {
    * them although they hold more keys than the cap.
    *
    * <p>The {@link KeyIndexPolicy#KEEP_LOWEST} group is scanned from the lowest key (next due
-   * entry). The {@link KeyIndexPolicy#KEEP_HIGHEST} group has keys that start with an element
-   * instance, scope, job or process instance key, which grows with time, so the engine reads and
-   * scans the newest keys. Most of their lookups and scans find nothing: the engine checks for
-   * variables, event triggers, timers and subscriptions when an element ends. With one tenant the
-   * same holds for {@code COMPENSATION_SUBSCRIPTION}, whose keys start with the tenant. {@code
+   * entry). This includes {@code JOB_ACTIVATABLE_BY_PRIORITY}, a queue keyed by job type, inverted
+   * priority and job key: job activation scans a type from its front and every activated job leaves
+   * a delete there, so without the window each scan steps over the deletes of all earlier jobs.
+   * With several job types the window covers the front of the lowest types only. The {@link
+   * KeyIndexPolicy#KEEP_HIGHEST} group has keys that start with an element instance, scope, job or
+   * process instance key, which grows with time, so the engine reads and scans the newest keys.
+   * Most of their lookups and scans find nothing: the engine checks for variables, event triggers,
+   * timers and subscriptions when an element ends. With one tenant the same holds for {@code
+   * COMPENSATION_SUBSCRIPTION}, whose keys start with the tenant. {@code
    * PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY} is left out, because the definition key comes first.
    */
   public static final Map<ZbColumnFamilies, KeyIndexPolicy> DEFAULT =
@@ -46,6 +50,8 @@ public final class EngineKeyIndexPolicies {
                   Map.entry(ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
                   Map.entry(ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
                   Map.entry(ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST),
+                  Map.entry(
+                      ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY, KeyIndexPolicy.KEEP_LOWEST),
                   Map.entry(
                       ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST),
                   Map.entry(
