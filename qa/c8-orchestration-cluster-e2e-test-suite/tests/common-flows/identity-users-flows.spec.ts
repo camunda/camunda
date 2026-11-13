@@ -204,13 +204,8 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step(`Logout, login with demo and delete the created authorization`, async () => {
-      // The previous step's `page.goto(/tasklist)` doesn't share the testUser
-      // session with the /admin app, so by the time we get here the page is
-      // actually on /tasklist/login (verifyAccess passes because it only
-      // checks that the URL contains "tasklist"). That means there's no
-      // Settings/Log out header to click — `identityHeader.logout()` would
-      // time out. Clearing cookies reaches the logged-out state regardless of
-      // whether the prior step left us authenticated.
+      // The previous step left the page on /tasklist/login with no header to log
+      // out from, so clear cookies instead of calling logout().
       await page.context().clearCookies();
       await identityAuthorizationsPage.navigateToAuthorizations();
       await loginPage.login('demo', 'demo');
@@ -422,13 +417,8 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can view the userTask in Tasklist', async () => {
       await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
       await expect(page).toHaveURL(new RegExp(`tasklist`));
-      // Go through the task panel rather than asserting on the card here: on
-      // top of waiting out the group authorization's propagation (Tasklist's
-      // task search doesn't poll aggressively enough to always pick it up in
-      // one wait, unlike Operate's process-instance list in the step above),
-      // the available-tasks list is virtualized, so under parallel load this
-      // task can sit below the rendered window where no wait or reload will
-      // ever reveal it.
+      // Use the task panel: Tasklist's search may not pick up the new authorization
+      // in one wait, and the virtualized list may not render this row.
       await taskPanelPage.assertTaskCardVisible('identityProcess', {
         timeout: 20000,
       });

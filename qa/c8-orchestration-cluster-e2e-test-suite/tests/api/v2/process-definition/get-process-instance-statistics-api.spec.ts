@@ -187,14 +187,6 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   test('Get process instance statistics sort by processDefinitionId - Success', async ({
     request,
   }) => {
-    // processDefinitionId is a string, so its ordering is decided by the backing
-    // database's collation: Oracle/Postgres sort case-sensitively (code point order)
-    // while MySQL/MSSQL/MariaDB default to case-insensitive collations. Reproducing
-    // that order with a JS `.sort()` is therefore unreliable across databases.
-    // Instead, verify the sort is applied consistently: the ASC result must be the
-    // exact reverse of the DESC result. Results are aggregated per definition, so
-    // processDefinitionId is unique per item and the ordering is total, making the
-    // reverse relationship exact regardless of collation.
     const fetchProcessDefinitionIds = async (order: 'ASC' | 'DESC') => {
       const res = await request.post(
         buildUrl('/process-definitions/statistics/process-instances'),

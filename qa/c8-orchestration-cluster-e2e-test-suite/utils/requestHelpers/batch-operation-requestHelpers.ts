@@ -39,12 +39,8 @@ export async function cancelBatchOperation(
   return result.response as APIResponse;
 }
 
-// A freshly created batch operation can take longer than the default 30s
-// to be visible to the suspend/resume commands on a loaded shared cluster
-// (404 → 204). Use a more generous budget here for batch operation lifecycle
-// actions while the engine catches up. The 180s budget proved tight when
-// multiple cancellation batches (30 instances each) accumulate within a
-// single spec file, so allow up to 240s with a longer tail interval.
+// A new batch can take minutes to become visible to suspend/resume (404 until
+// then) on a loaded cluster, and several batches in one spec stretch it further.
 const batchOperationLifecycleOptions = {
   intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000, 45_000],
   timeout: 240_000,

@@ -173,10 +173,8 @@ export async function completeJob(
 
 /**
  * Activates jobs of a given type and returns those belonging to the given
- * process instance. Optionally fetches specific variables per job.
- *
- * NOTE: /jobs/activation has no processInstanceKey filter — results are
- * filtered client-side using the processInstanceKey field on each activated job.
+ * process instance, filtered client-side since /jobs/activation has no
+ * processInstanceKey filter. Optionally fetches specific variables per job.
  *
  * `requestTimeoutMs` caps the broker's long poll. Without it activation blocks
  * for about 10s when no job matches, which exceeds the suite's action timeout —
@@ -280,10 +278,7 @@ export function setupProcessInstanceForTests(
   };
 }
 
-/**
- * Searches for jobs by type and returns their count. Asserts that
- * /v2/jobs/search returns HTTP 200 (never 500).
- */
+/** Counts jobs of a type; asserts the search returns 200, not 500. */
 export async function countJobsByType(
   request: APIRequestContext,
   processInstanceKey: string,

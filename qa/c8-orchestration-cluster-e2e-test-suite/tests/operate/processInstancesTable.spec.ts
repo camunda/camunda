@@ -64,16 +64,9 @@ test.beforeAll(async ({request}) => {
     processInstanceKey: Number(instance.processInstanceKey),
   }));
 
-  // Wait until the LAST created instance is indexed by Operate before any
-  // test runs. The scrolling test asserts "350 results" with a short retry
-  // budget and would otherwise race against the exporter/importer pipeline
-  // on slow runners.
-  //
-  // Filter by processInstanceKey rather than processDefinitionId: the latter
-  // returns one record per partition for the same instance on multi-partition
-  // clusters (see https://github.com/camunda/camunda/issues/52778 for the
-  // analogous bug in the MCP Processes search). Instances are created
-  // sequentially, so once the last one is indexed, the earlier ones are too.
+  // Wait for the last instance to be indexed so the 350-results test does not
+  // race indexing. Filter by key: filtering by definition id returns one record
+  // per partition (see #52778).
   const lastInstanceKey =
     scrollingInstances[
       scrollingInstances.length - 1
@@ -143,10 +136,6 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Check default sorting of processes', async () => {
-      // All three polls share the same source of flake (table re-renders
-      // while default sort settles) — use the same timeout budget for the
-      // first row check as the next two, otherwise it races at the default
-      // 5s timeout while the page is still sorting.
       await expect
         .poll(
           () => operateProcessesPage.processInstancesTable.nth(0).innerText(),

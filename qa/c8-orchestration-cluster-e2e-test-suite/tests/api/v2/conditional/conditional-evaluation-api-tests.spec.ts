@@ -168,9 +168,8 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
   });
 
   test('Evaluate Conditional By Process Definition Key', async ({request}) => {
-    // First, evaluate conditionals to get a process definition key from the response
-    // We cannot use getProcessDefinitionKey() because processes with conditional start events
-    // cannot be started via the regular /process-instances endpoint
+    // Conditional-start processes cannot start via /process-instances, so take the
+    // process definition key from an evaluation response.
     const initialRes = await request.post(
       buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
       {

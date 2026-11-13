@@ -28,28 +28,15 @@ test.describe('settings', () => {
     await expect(
       page.getByRole('heading', {name: 'Bienvenue dans Tasklist'}),
     ).toBeVisible();
-    // "Tâches ouvertes" ("All open tasks") is not a page heading post-redesign
-    // -- FilterSelect.tsx renders every built-in filter, including the
-    // default one, as plain visible text inside the filter-select trigger
-    // button (id="filter-select"). The button's accessible name is the
-    // static "Filtres" (taskFiltersHeaderAria) aria-label, not the filter
-    // label, so this has to be a text lookup scoped to that button rather
-    // than a heading/accessible-name lookup.
+    // The active filter is plain text inside #filter-select; the trigger's
+    // accessible name is the static "Filtres".
     await expect(
       page.locator('#filter-select').getByText('Tâches ouvertes', {
         exact: true,
       }),
     ).toBeVisible();
-    // changeLanguage() explicitly closes the settings dropdown before
-    // returning (see its own comment in TasklistHeader.ts), so the logout
-    // entry isn't on screen right now -- reopen the menu to check it. It's
-    // also a Radix DropdownMenuItem (role="menuitem"), not a <button> like
-    // the old Carbon menu item, and TasklistHeader.logoutButton can't be
-    // reused here since it's hardcoded to the English "Log out" label.
-    // The account-menu trigger itself is likewise now localized -- after the
-    // switch to French its accessible name is "Paramètres", not "Settings", so
-    // tasklistHeader.openSettingsButton (hardcoded English "Settings") no
-    // longer matches. Reopen it by its French label.
+    // changeLanguage() closed the menu. Reopen it by its French label; the
+    // header locators are hardcoded to English.
     await page.getByRole('button', {name: 'Paramètres'}).click();
     await expect(
       page.getByRole('menuitem', {name: 'Déconnexion'}),

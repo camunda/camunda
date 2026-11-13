@@ -39,15 +39,6 @@ test.describe('Task History Audit Log', () => {
       await loginPage.login('demo', 'demo');
       await expect(page).toHaveURL('/tasklist');
 
-      // A task per test, rather than one shared across the file. Every test
-      // here only reads the audit log, but each needs its own assignment entry
-      // in it, and with a shared task that meant unassigning again in
-      // afterEach purely to hand the next test an unassigned task. That
-      // cleanup step was the one that kept failing: the first test's unassign
-      // sat unsettled for the whole retry budget while its siblings' own
-      // assignments settled in seconds. Nothing here asserts on unassigning --
-      // task-details.spec.ts's 'assign and unassign task' covers that -- so
-      // isolating the tests removes the step instead of waiting longer on it.
       processInstanceKey = undefined;
       const processInstance: ProcessInstance = await createSingleInstance(
         'usertask_for_task_history',
