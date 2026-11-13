@@ -20,6 +20,6 @@ public enum ProcessDefinitionSuspensionOutcome {
   SUSPENDED,
   RESUMED,
   ALREADY_SUSPENDED,
-  ALREADY_ACTIVE,
+  ALREADY_RESUMED,
   DRAINING
 }
