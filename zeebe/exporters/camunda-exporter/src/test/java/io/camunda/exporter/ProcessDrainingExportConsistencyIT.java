@@ -9,6 +9,8 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
+import static io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome.RESUMED;
+import static io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.impl.util.VersionUtil;
@@ -25,11 +27,17 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessDefinitionSuspensionResolvedVersionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -109,6 +117,34 @@ final class ProcessDrainingExportConsistencyIT {
         .isEqualTo(ProcessDefinitionState.DRAINING);
   }
 
+  @TestTemplate
+  void shouldSuspendThenResumeProcessDefinition(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    prepareConfig(config);
+    createSchemas(config);
+    exportOnPartition(config, DEPLOYMENT_PARTITION, processRecord(ProcessIntent.CREATED));
+
+    // when
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(SUSPENDED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.SUSPENDED);
+
+    // when
+    exportOnPartition(
+        config, DEPLOYMENT_PARTITION, suspensionRecord(RESUMED, PROCESS_DEFINITION_KEY));
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    assertThat(stateOf(config, clientAdapter, PROCESS_DEFINITION_KEY))
+        .isEqualTo(ProcessDefinitionState.ACTIVE);
+  }
+
   private void prepareConfig(final ExporterConfiguration config) {
     config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfReplicas(0);
@@ -132,11 +168,76 @@ final class ProcessDrainingExportConsistencyIT {
     }
   }
 
+  private void exportOnPartition(
+      final ExporterConfiguration config, final int partitionId, final Record<?>... records)
+      throws IOException {
+    final var exporter = new CamundaExporter();
+    exporter.configure(
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>(config.getConnect().getType(), config))
+            .setPartitionId(partitionId));
+    exporter.open(new ExporterTestController());
+    try {
+      for (final var record : records) {
+        exporter.export(record);
+      }
+    } finally {
+      exporter.close();
+    }
+  }
+
+  private Record<ProcessDefinitionSuspensionRecordValue> suspensionRecord(
+      final ProcessDefinitionSuspensionOutcome outcome, final long processDefinitionKey) {
+    final var intent =
+        outcome == SUSPENDED
+            ? ProcessDefinitionSuspensionIntent.SUSPENDED
+            : ProcessDefinitionSuspensionIntent.RESUMED;
+    final var value =
+        ImmutableProcessDefinitionSuspensionRecordValue.builder()
+            .from(factory.generateObject(ImmutableProcessDefinitionSuspensionRecordValue.class))
+            .withResolvedVersions(
+                List.of(
+                    ImmutableProcessDefinitionSuspensionResolvedVersionValue.builder()
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .withVersion(1)
+                        .withOutcome(outcome)
+                        .build()))
+            .build();
+    return factory.generateRecord(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        r ->
+            r.withIntent(intent)
+                .withPartitionId(DEPLOYMENT_PARTITION)
+                .withBrokerVersion(VersionUtil.getVersion())
+                .withTimestamp(System.currentTimeMillis())
+                .withValue(value));
+  }
+
+  private ProcessDefinitionState stateOf(
+      final ExporterConfiguration config,
+      final SearchClientAdapter clientAdapter,
+      final long processDefinitionKey)
+      throws IOException {
+    return clientAdapter
+        .get(String.valueOf(processDefinitionKey), processIndexName(config), ProcessEntity.class)
+        .getState();
+  }
+
+  private Record<Process> processRecord(final ProcessIntent intent) {
+    return processRecord(intent, DEPLOYMENT_PARTITION, PROCESS_DEFINITION_KEY);
+  }
+
   private Record<Process> processRecord(final ProcessIntent intent, final int partitionId) {
+    return processRecord(intent, partitionId, PROCESS_DEFINITION_KEY);
+  }
+
+  private Record<Process> processRecord(
+      final ProcessIntent intent, final int partitionId, final long key) {
     final Process value =
         ImmutableProcess.builder()
             .from(factory.generateObject(ImmutableProcess.class))
-            .withProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .withProcessDefinitionKey(key)
             .withBpmnProcessId("testProcessId")
             .withResource(bpmnXml)
             .build();
@@ -144,7 +245,7 @@ final class ProcessDrainingExportConsistencyIT {
         ValueType.PROCESS,
         r ->
             r.withIntent(intent)
-                .withKey(PROCESS_DEFINITION_KEY)
+                .withKey(key)
                 .withPartitionId(partitionId)
                 .withBrokerVersion(VersionUtil.getVersion())
                 .withTimestamp(System.currentTimeMillis())
