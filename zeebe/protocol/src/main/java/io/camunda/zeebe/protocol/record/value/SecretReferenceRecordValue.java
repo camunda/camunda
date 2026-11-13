@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 
 /**
  * The record value for a secret reference — a record that tracks the lifecycle of resolving a named
- * secret from an external secret store on behalf of paused jobs.
+ * secret from an external secret store on behalf of paused jobs and parked probes.
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableSecretReferenceRecordValue.Builder.class)
@@ -42,4 +42,7 @@ public interface SecretReferenceRecordValue extends RecordValue {
 
   /** The keys of the jobs that were non-activatable while awaiting this secret to be resolved. */
   List<Long> getJobKeys();
+
+  /** The keys of the probes that were parked while awaiting this secret to be resolved. */
+  List<Long> getProbeKeys();
 }

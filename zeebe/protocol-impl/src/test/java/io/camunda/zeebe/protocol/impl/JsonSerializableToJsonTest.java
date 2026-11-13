@@ -6425,7 +6425,8 @@ final class JsonSerializableToJsonTest {
           "storeId": "default",
           "secretReference": "",
           "resolutionState": "UNSPECIFIED",
-          "jobKeys": []
+          "jobKeys": [],
+          "probeKeys": []
         }
         """
       },
@@ -6439,6 +6440,7 @@ final class JsonSerializableToJsonTest {
               record.setResolutionState(ResolutionState.SUCCESS);
               record.addJobKey(100L);
               record.addJobKey(200L);
+              record.addProbeKey(300L);
               return record;
             },
         """
@@ -6446,7 +6448,8 @@ final class JsonSerializableToJsonTest {
           "storeId": "my-store",
           "secretReference": "my-secret",
           "resolutionState": "SUCCESS",
-          "jobKeys": [100, 200]
+          "jobKeys": [100, 200],
+          "probeKeys": [300]
         }
         """
       },
