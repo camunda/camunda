@@ -23,6 +23,19 @@ public final class UnknownProperties {
     count++;
   }
 
+  /** Replaces the entries by a copy of the ones of {@code other}. */
+  public void copyFrom(final UnknownProperties other) {
+    if (other == this) {
+      return;
+    }
+    clear();
+    if (other.length > 0) {
+      entries.putBytes(0, other.entries, 0, other.length);
+    }
+    length = other.length;
+    count = other.count;
+  }
+
   public int count() {
     return count;
   }

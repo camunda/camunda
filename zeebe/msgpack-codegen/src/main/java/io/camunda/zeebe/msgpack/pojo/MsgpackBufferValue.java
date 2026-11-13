@@ -58,6 +58,16 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     }
   }
 
+  /**
+   * Replaces the stored properties by a deep copy of the ones of {@code source}: nothing is shared
+   * with it, so it may be modified or its buffer reused afterwards. Allocates a copy of every
+   * string, binary, raw value and document. State that is not stored ({@link MsgpackIgnore}) is not
+   * copied: override this method to copy it as well, and call {@code super}.
+   */
+  public void copyFrom(final T source) {
+    ops.copy(source, self());
+  }
+
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {
