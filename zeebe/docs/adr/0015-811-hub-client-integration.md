@@ -46,25 +46,37 @@ starts in `onBecomingLeader`, and stops in `onBecomingFollower` and `onBecomingI
 partition number and cannot tell the tenants apart.
 - A new broker startup step (`AbstractBrokerStartupStep`) creates the receivers before the
 `PartitionManagerStep`, as the `JobStreamServiceStep` does for job streams.
-- The receiver works on its own actor and never blocks the leader transition of the partition.
+- The partition notifies its listeners only after the leader transition is complete, so the state of
+partition 1 is open by then.
+- The receiver works on its own actor and never blocks the leader transition of the partition. Its
+`onBecomingLeader` future always completes successfully, because a failed listener future fails
+the leader transition of the partition.
 
-**D2. The receiver reads the policy state through the partition's `QueryService`.**
-- `onBecomingLeader` passes the `QueryService` of the partition: a read-only view on its RocksDB,
-created when the partition becomes leader and closed when it steps down.
-- The `QueryService` gets a `getPolicyState()` method that returns the policy version, the Hub
-sequence and the status of the last update.
+**D2. The receiver reads the policy state through a `PolicyStateReader` of the partition.**
+- `PolicyStateReader` is a small broker class with one method, `getPolicyState()`. It returns the
+policy version, the Hub sequence and the status of the last update.
+- Each `ZeebePartition` creates one next to its `ZeebePartitionAdminAccess`, with the same
+`PartitionAdminControl`. A read runs on the partition's actor and takes the `ZeebeDb` that is open at
+that moment, as `ZeebePartitionAdminAccess.readMigrationStatus()` does. The reader is not part of
+the operator API of `PartitionAdminAccess`.
+- The startup step of D1 gives the receiver a lookup through its constructor. At call time, the
+lookup finds partition 1 in the partition manager of the physical tenant and returns its reader,
+as `BrokerAdminServiceImpl` finds the admin access of a partition. The receiver is created before
+partition 1 exists, and the `ZeebeDb` is opened again on every leader transition, so neither can
+be passed in directly.
+- The `PartitionListener` interface does not change.
 - A read shows the state after the last processed command. It is used to read start values and to
 wait for `COMMITTED`, never to decide something that must be exact. Those decisions are made by
 the engine while it processes a command (D4).
-- While an update is `APPLYING`, the receiver reads the `QueryService` every few seconds until the
-update is `COMMITTED`, and only then polls Hub again.
+- While an update is `APPLYING`, the receiver reads the state every few seconds until the update is
+`COMMITTED`, and only then polls Hub again.
 
 **D3. The `PolicyInPort` sends the chunks with the `BrokerClient`, one at a time.**
 - The request's `partitionGroup` is the physical tenant, so the command reaches partition 1 of that
 tenant.
 - The receiver waits for the response to each chunk before it sends the next one. The engine sends
 a response only after it has processed the command and committed the state. So after the
-response to the last chunk, the `QueryService` already shows `APPLYING`.
+response to the last chunk, the `PolicyStateReader` already shows `APPLYING`.
 - Backpressure, a missing partition leader and a timeout are retried. They say nothing about the
 update itself.
 - A chunk sent again for the same `updateId` and index is accepted, not rejected. After a timeout
@@ -72,10 +84,10 @@ the receiver does not know whether the chunk arrived, and a rejection would repo
 never happened.
 
 **D4. On every start, the receiver aborts a pending update and lets the engine decide.**
-- The receiver sends `ABORT` without first reading the state. The engine processes it in log order:
-- a `PENDING` update becomes `ABORTED`, and its buffer is deleted;
-- an `APPLYING` update is not aborted, and the receiver waits for `COMMITTED` (D2);
-- with no open update, nothing happens, and the receiver polls Hub.
+- The receiver sends `ABORT` without first reading the state. The engine processes it in log order.
+- A `PENDING` update becomes `ABORTED`, and its buffer is deleted.
+- An `APPLYING` update is not aborted, and the receiver waits for `COMMITTED` (D2).
+- With no open update, nothing happens, and the receiver polls Hub.
 - The response tells the receiver which case applies. The engine decides, because the last chunk can
 be in the log but not yet processed when the receiver starts.
 
@@ -112,8 +124,26 @@ public API.
 - **Gossip of the policy state between brokers.** Eventually consistent, and sent to every node.
   Only the leader of partition 1 needs the state, and that node can read it locally.
 - **A `BrokerAdminRequest` to read the policy state.** A network request to a partition on the same
-  node. It only helps if the receiver runs on another node. It can still be useful later for
-  debugging.
+  node. It only helps if the receiver runs on another node. `BrokerAdminRequest` also lives in
+  `zeebe/gateway`, so the broker would need a dependency on the gateway. It can still be useful
+  later for debugging.
+- **The `QueryService` passed to `onBecomingLeader`.** It is deprecated for removal, and its Javadoc
+  limits it to the broker's temporary query API.
+- **A new read interface built like `StateQueryService`.** The same approach as the deprecated
+  `QueryService` under a new name, so it solves no architectural problem.
+- **A `getPolicyState()` method on `PartitionAdminAccess`.** Uses the same reading mechanism as D2,
+  but puts a product feature into the operator API (pause, snapshot, ban instance).
+- **A new parameter for `onBecomingLeader`.** Changes the listener interface and all its
+  implementations, for one listener. The constructor lookup of D2 needs no interface change.
+- **`TopologyPartitionListener` instead of `PartitionListener`.** Its leader updates come from
+  gossip. They arrive later, and two nodes can briefly both believe they lead partition 1.
+- **A `PartitionTransitionStep` instead of a listener.** Gets the full transition context, including
+  the `ZeebeDb`, but is core partition machinery. A slow or failing Hub start would delay or fail
+  the leader transition.
+- **Read the state with an `ABORT` or a status command.** A command is an intent to change state,
+  not a query. The `ABORT` of D4 stays a real abort and is not used to read the start values.
+- **Notify the receiver from a processor side effect to read the start state.** Side effects follow
+  processed commands, so they cannot provide the state when the receiver starts.
 - **The Hub client inside the engine, in the stream processor of partition 1.** Gives exact state
   access, but puts the network calls to Hub and the Hub client dependency into the engine.
 - **Report results from a processor side effect only.** Reaches Hub at once, but is lost on a
@@ -135,7 +165,8 @@ public API.
 - All communication with Hub stays in the receiver.
 - Hub can receive the same report more than once, and must ignore repeats.
 - After a failover, a failed update is validated a second time before Hub learns the reason.
-- Waiting for `COMMITTED` costs a read of the `QueryService` every few seconds.
+- Waiting for `COMMITTED` costs a read on the actor of partition 1 every few seconds.
+- `ZeebePartition` gets one more small component, the `PolicyStateReader`, next to its admin access.
 
 ## Open questions
 
