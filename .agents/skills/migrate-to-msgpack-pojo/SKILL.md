@@ -40,7 +40,8 @@ unmigrated records mix wherever a `MsgpackRecordValue` is taken.
 ## Rules
 
 - Migrate exactly one class per run and one commit per class.
-- Keep every public/protected method and constructor with the same behavior. Do not rename, remove
+- Keep every public/protected method and constructor with the same behavior (a constructor that only
+  declared properties or called `reset()` is dropped, see step 3). Do not rename, remove
   or change signatures (for B also not the getters of the `<Name>Value` interface). Only the
   read/write plumbing may change. If a signature has to change, STOP and ask the user.
 - The stored format is: map keys, their order, the default values and the msgpack types. Never
@@ -193,9 +194,18 @@ Edit the class in place:
    `@MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();`
    It keeps keys written by newer versions and writes them back (`UnpackedObject` did the same
    with its undeclared properties). A field that must not be stored gets `@MsgpackIgnore`.
-4. Delete the `declareProperty` calls and `super(n)`. Keep all constructors; the no-arg
-   constructor must remain, reachable from the same package. Constructors do NOT call `reset()`,
-   the initializers set the defaults.
+4. Delete the `declareProperty` calls and `super(n)`. Then delete the constructor too, unless
+   it takes parameters or is called by other code; if it stays, a no-arg constructor must remain,
+   reachable from the same package.
+
+   > **WARNING: the constructor must NOT call `reset()`, `copyFrom`, `equals`, `hashCode` or
+   > `toString`, and normally should not exist at all.** The field initializers ARE the defaults.
+   > `NameOps` builds its prototype with `DEFAULTS = new Name()` in its static initializer. A
+   > constructor that calls any of these methods runs before `DEFAULTS` is set, so it throws a
+   > `NullPointerException`, which becomes an `ExceptionInInitializerError`, and every later use
+   > of the class fails with `NoClassDefFoundError`. Legacy constructors that end with `reset()`
+   > or that declare properties must be dropped, not copied. Do not call `codec()` or `ops()` from
+   > the constructor either.
 5. Add the two required overrides (the compiler fails without them), each returning a static
    instance of the generated classes:
    ```java
