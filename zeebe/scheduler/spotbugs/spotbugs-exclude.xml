@@ -24,6 +24,10 @@
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
   <Match>
+    <Class name="io.camunda.zeebe.scheduler.ActorThread$ActorTaskRunnerIdleStrategy"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
+  <Match>
     <Class name="io.camunda.zeebe.scheduler.ActorConditionImpl"/>
     <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
   </Match>
