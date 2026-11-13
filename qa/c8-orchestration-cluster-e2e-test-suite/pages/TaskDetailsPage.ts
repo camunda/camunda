@@ -127,8 +127,6 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    // Same TabListNav migration as the history tab below: this is now a
-    // `role="tab"`, not a Carbon-era nav link.
     this.processTab = page.getByRole('tab', {
       name: 'Show associated BPMN process',
       exact: true,
@@ -343,9 +341,6 @@ class TaskDetailsPage {
     await this.driveNumberInputToValue(target, 'increment');
   }
 
-  /**
-   * Repeatedly press decrement until the input shows the target value.
-   */
   async decrementUntilValue(target: string): Promise<void> {
     await this.driveNumberInputToValue(target, 'decrement');
   }
@@ -511,7 +506,7 @@ class TaskDetailsPage {
         await expect(this.detailsPanel.getByText(priority)).toBeVisible({
           timeout: 45000,
         });
-        return; // Exit the function if the expectation is met
+        return;
       } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
@@ -530,7 +525,7 @@ class TaskDetailsPage {
         await expect(this.detailsInfo.getByText(name)).toBeVisible({
           timeout: 45000,
         });
-        return; // Exit the function if the expectation is met
+        return;
       } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
@@ -654,13 +649,10 @@ class TaskDetailsPage {
   }
 
   async unassignReassignToMeAndComplete(): Promise<void> {
-    // Unassign from the current assignee
     await this.clickUnassignButton();
 
-    // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
 
-    // Complete the task, wait for the banner to appear, then disappear
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
     await this.clickCompleteTaskButton();
     await expect(this.taskCompletedBanner).toBeVisible();

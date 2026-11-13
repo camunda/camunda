@@ -663,7 +663,6 @@ class OperateProcessesPage {
             .nth(i)
             .getByRole('checkbox');
 
-          // Wait for the element to be attached and stable
           await checkbox.waitFor({state: 'attached'});
           await sleep(200);
           if (!(await checkbox.isChecked())) {

@@ -48,8 +48,6 @@ class TasklistProcessesPage {
       .locator(
         'xpath=ancestor::div[.//button[contains(., "Start process")]][1]',
       );
-    // The start-form filter is now a Carbon Dropdown exposed as a combobox
-    // labelled "Filter processes" (was data-testid="process-filters").
     this.processFilterDropdown = page.getByRole('combobox', {
       name: 'Filter processes',
     });

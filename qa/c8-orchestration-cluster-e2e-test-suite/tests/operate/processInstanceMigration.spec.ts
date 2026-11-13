@@ -120,7 +120,6 @@ test.describe.serial('Process Instance Migration', () => {
       // Wait for the process to be selected and version dropdown to be populated
       await sleep(1000);
 
-      // Ensure we're selecting the correct source version (version 1)
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
       await expect

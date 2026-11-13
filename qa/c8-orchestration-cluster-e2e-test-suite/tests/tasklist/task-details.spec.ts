@@ -456,8 +456,6 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    // See the 'processWithDeployedForm' comment below for why this needs
-    // more than the default 10s.
     await taskPanelPage.openTask('UserTask_Number_Input', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -480,8 +478,6 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    // See the 'processWithDeployedForm' comment below for why this needs
-    // more than the default 10s.
     await taskPanelPage.openTask('UserTask_Number_Buttons', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -517,8 +513,6 @@ test.describe('task details page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
-    // See the 'processWithDeployedForm' comment below for why this needs
-    // more than the default 10s.
     await taskPanelPage.openTask('Date and Time Task', {timeout: 60000});
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.fillDatetimeField('Date', '1/1/3000');

@@ -193,12 +193,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     const processDefinitionKey =
       initialJson.processInstances[0].processDefinitionKey;
 
-    // Track initial instances for cleanup
     for (const instance of initialJson.processInstances) {
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
 
-    // Now test the conditional evaluation with a specific process definition key
     const requestBody =
       EVALUATE_CONDITIONAL_WITH_PROCESS_DEF_KEY(processDefinitionKey);
     const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
