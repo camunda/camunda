@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 export type PageSearchParams = {
@@ -61,8 +61,17 @@ const useSearch = (
     Record<string, SearchFilterValue> | undefined
   >(undefined);
 
+  const currentSearch = useRef<string | undefined>(undefined);
+
   const handleSearchChange = useCallback(
     (newSearch: Record<string, SearchFilterValue> | undefined) => {
+      const serialized = JSON.stringify(newSearch);
+
+      if (serialized === currentSearch.current) {
+        return;
+      }
+
+      currentSearch.current = serialized;
       setSearch(newSearch);
       reset();
     },
@@ -89,23 +98,33 @@ const usePagination = (
     setPage(config);
   }, [config]);
 
-  const [sortParams, setSort] = useSorting();
+  const [sortParams, setSortParams] = useSorting();
 
   const [searchParams, setSearch] = useSearch(resetPageState);
 
   const setPageNumber = useCallback((newPage: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageNumber: newPage,
-    }));
+    setPage((prevState) =>
+      prevState.pageNumber === newPage
+        ? prevState
+        : { ...prevState, pageNumber: newPage },
+    );
   }, []);
 
   const setPageSize = useCallback((newPageSize: number) => {
-    setPage((prevState) => ({
-      ...prevState,
-      pageSize: newPageSize,
-    }));
+    setPage((prevState) =>
+      prevState.pageSize === newPageSize
+        ? prevState
+        : { ...prevState, pageSize: newPageSize },
+    );
   }, []);
+
+  const setSort = useCallback(
+    (newSort: SortConfig[] | undefined) => {
+      setSortParams(newSort);
+      setPageNumber(1);
+    },
+    [setSortParams, setPageNumber],
+  );
 
   const pageParams = useMemo(() => {
     const result: PaginationRequestParams = {

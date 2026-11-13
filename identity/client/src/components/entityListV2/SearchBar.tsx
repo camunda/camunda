@@ -7,7 +7,7 @@
  */
 
 import { SearchInput } from "@camunda/design-system";
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import useDebounce from "react-debounced";
 import useTranslate from "src/utility/localization";
 import { SearchFilterValue } from "src/utility/api/hooks/usePagination";
@@ -29,6 +29,8 @@ function escapeWildcards(value: string): string {
     .replace(/\?/g, "\\?");
 }
 
+const NOT_EMITTED = "";
+
 export default function SearchBar({
   searchPlaceholder,
   searchKey,
@@ -39,14 +41,24 @@ export default function SearchBar({
   const { t } = useTranslate("components");
   const [search, setSearchState] = useState<string>("");
   const debounceFn = useDebounce(debounce);
+  const emittedSearch = useRef(NOT_EMITTED);
 
   useEffect(() => {
     if (!searchKey) {
       return;
     }
 
+    const emit = (value: Record<string, SearchFilterValue> | undefined) => {
+      const serialized = JSON.stringify(value) ?? "undefined";
+
+      if (serialized !== emittedSearch.current) {
+        emittedSearch.current = serialized;
+        onSearch(value);
+      }
+    };
+
     if (!search || search.trim().length === 0) {
-      debounceFn(() => onSearch(undefined));
+      debounceFn(() => emit(undefined));
       return;
     }
 
@@ -54,7 +66,7 @@ export default function SearchBar({
       searchOperator === "like"
         ? { $like: `*${escapeWildcards(search)}*` }
         : search;
-    debounceFn(() => onSearch({ [searchKey]: value }));
+    debounceFn(() => emit({ [searchKey]: value }));
   }, [debounceFn, onSearch, search, searchKey, searchOperator]);
 
   return (

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useMemo } from "react";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
@@ -23,6 +23,11 @@ import AddModal from "src/pages/groups/modalsV2/AddModal";
 import PageEmptyState from "src/components/layoutV2/PageEmptyState";
 import type { Group } from "@camunda/camunda-api-zod-schemas/8.10";
 
+const addGroupId = <T extends { items: Group[] }>(data: T) => ({
+  ...data,
+  items: data.items.map((item) => ({ ...item, id: item.groupId })),
+});
+
 const List: FC = () => {
   const { t } = useTranslate("groups");
   const navigate = useNavigate();
@@ -36,11 +41,16 @@ const List: FC = () => {
     refetch: reload,
   } = useQuery({
     ...groupQueries.search(pageParams),
-    select: (data) => ({
-      ...data,
-      items: data.items.map((item) => ({ ...item, id: item.groupId })),
-    }),
+    select: addGroupId,
   });
+
+  const headers = useMemo(
+    () => [
+      { header: t("groupId"), key: "groupId" as const, isSortable: true },
+      { header: t("groupName"), key: "name" as const, isSortable: true },
+    ],
+    [t],
+  );
 
   const [addGroup, addModal] = useModal(AddModal, noop);
   const [updateGroup, editModal] = useEntityModal(EditModal, noop);
@@ -77,10 +87,7 @@ const List: FC = () => {
       {pageHeader}
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
-        headers={[
-          { header: t("groupId"), key: "groupId", isSortable: true },
-          { header: t("groupName"), key: "name", isSortable: true },
-        ]}
+        headers={headers}
         onEntityClick={showDetails}
         addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}

@@ -44,6 +44,8 @@ import { Select } from "src/components/formV2/Select";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
+const PAGE_SIZES = [50, 100, 200];
+
 const DEFAULT_SORT: AuditLogSort[] = [{ field: "timestamp", order: "desc" }];
 
 const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
@@ -133,6 +135,27 @@ const List: FC = () => {
         limit: pageParams.page.limit,
       },
     }),
+  );
+
+  const headers = useMemo(
+    () => [
+      { header: "", key: "result" as const },
+      {
+        header: t("operationType"),
+        key: "operationType" as const,
+        isSortable: true,
+      },
+      {
+        header: t("entityType"),
+        key: "entityType" as const,
+        isSortable: true,
+      },
+      { header: t("reference"), key: "reference" as const },
+      { header: t("property"), key: "property" as const },
+      { header: t("actor"), key: "actorId" as const, isSortable: true },
+      { header: t("date"), key: "timestamp" as const, isSortable: true },
+    ],
+    [t],
   );
 
   const handleSort = useCallback(
@@ -322,27 +345,11 @@ const List: FC = () => {
               timestamp: new Date(log.timestamp).toLocaleString(),
             })) || []
           }
-          headers={[
-            { header: "", key: "result" },
-            {
-              header: t("operationType"),
-              key: "operationType",
-              isSortable: true,
-            },
-            {
-              header: t("entityType"),
-              key: "entityType",
-              isSortable: true,
-            },
-            { header: t("reference"), key: "reference" },
-            { header: t("property"), key: "property" },
-            { header: t("actor"), key: "actorId", isSortable: true },
-            { header: t("date"), key: "timestamp", isSortable: true },
-          ]}
+          headers={headers}
           loading={loading}
           setSort={handleSort}
           page={{ ...page, ...auditLogs?.page }}
-          pageSizes={[50, 100, 200]}
+          pageSizes={PAGE_SIZES}
           setPageNumber={setPageNumber}
           setPageSize={setPageSize}
         />
