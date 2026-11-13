@@ -68,10 +68,8 @@ public final class InclusiveGatewayProcessor
                               .ifRight(
                                   notInterrupted -> {
                                     if (optFlows != null) {
-                                      optFlows.forEach(
-                                          flow ->
-                                              stateTransitionBehavior.takeSequenceFlow(
-                                                  completed, flow));
+                                      stateTransitionBehavior.takeSequenceFlows(
+                                          completed, optFlows);
                                     }
                                   }));
             });

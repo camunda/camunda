@@ -212,6 +212,59 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
+  public void shouldCompleteWhenParallelGatewayJoinsElementsActivatedSeparately() {
+    // given
+    final var joinProcessId = "join-" + UUID.randomUUID();
+    deployProcess(
+        joinProcessId,
+        adHocSubProcess -> {
+          adHocSubProcess.manualTask("task1").parallelGateway("join").manualTask("downstream");
+          adHocSubProcess.manualTask("task2").connectTo("join");
+          adHocSubProcess.completionCondition(COMPLETION_CONDITION_VAR);
+        });
+    final var joinProcessInstanceKey = getProcessInstanceKey(joinProcessId);
+    final var joinAdHocSubProcessInstanceKey =
+        getAdHocSubProcessInstanceKey(joinProcessInstanceKey);
+
+    // when
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(joinAdHocSubProcessInstanceKey)
+        .withElementIdAndVariables("task1", Map.of("x", 1))
+        .activate();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(joinProcessInstanceKey)
+        .withElementId("task1")
+        .await();
+
+    ENGINE
+        .adHocSubProcessActivity()
+        .withAdHocSubProcessInstanceKey(joinAdHocSubProcessInstanceKey)
+        .withElementIdAndVariables("task2", Map.of("x", 2))
+        .activate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(joinProcessInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("join", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("downstream", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(joinProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(joinProcessInstanceKey)
+                .withName("x")
+                .limit(2))
+        .describedAs("Expected each activation to keep its variables in its own inner instance")
+        .extracting(r -> r.getValue().getScopeKey())
+        .doesNotHaveDuplicates();
+  }
+
+  @Test
   public void shouldRejectCommandIfElementDoesntExist() {
     final var nonExistingActivities = List.of("does_not_exist");
     final var rejection =
