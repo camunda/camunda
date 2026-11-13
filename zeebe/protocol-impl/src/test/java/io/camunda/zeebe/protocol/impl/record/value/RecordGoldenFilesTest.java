@@ -322,7 +322,8 @@ public class RecordGoldenFilesTest {
    * none of the known ones is an enum or a nested object, which cannot be told apart in the source:
    * it is returned with a prefix and accepted for both by {@link #sameType}.
    */
-  private static String pojoFieldType(final String type, final String annotations) {
+  private static String pojoFieldType(final String declaredType, final String annotations) {
+    final var type = simpleName(declaredType);
     return switch (type) {
       case "long" -> "LongProperty";
       case "int" -> "IntegerProperty";
@@ -332,12 +333,22 @@ public class RecordGoldenFilesTest {
               ? "PackedProperty"
               : annotations.matches("(?s).*binary\\s*=\\s*true.*")
                   ? "BinaryProperty"
-                  : "StringProperty";
+                  : annotations.matches("(?s).*document\\s*=\\s*true.*")
+                      ? "DocumentProperty"
+                      : "StringProperty";
       case "List<DirectBuffer>" -> "ArrayProperty<StringValue>";
       case "List<Long>", "LongArrayList" -> "ArrayProperty<LongValue>";
       case "IntArrayList" -> "ArrayProperty<IntegerValue>";
-      default -> POJO_TYPE_PREFIX + type;
+      default ->
+          type.startsWith("List<") && type.endsWith(">")
+              ? "ArrayProperty<" + type.substring("List<".length()) // items are nested objects
+              : POJO_TYPE_PREFIX + type;
     };
+  }
+
+  /** Drops package or outer class qualifiers and type annotations, as the old declarations had. */
+  private static String simpleName(final String type) {
+    return type.replaceAll("@\\w+", "").replaceAll("\\b(?:\\w+\\.)+(?=\\w)", "");
   }
 
   /**
@@ -859,6 +870,56 @@ public class RecordGoldenFilesTest {
     // when - then
     assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
     assertThatCode(() -> validateNew(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptPojoDocumentAndNestedListFields() {
+    // given
+    final var golden =
+        """
+        private final DocumentProperty variablesProp = new DocumentProperty("variables");
+        private final PackedProperty valueProp = new PackedProperty("value");
+        private final ArrayProperty<TenantRecord> tenantsProp = new ArrayProperty<>("tenants", TenantRecord::new);
+        private final ArrayProperty<Item> itemsProp = new ArrayProperty<>("items", Item::new);
+        private final ObjectProperty<Legacy> legacyProp = new ObjectProperty<>("legacy", new Legacy());
+        private final ArrayProperty<LongValue> pathProp = new ArrayProperty<>("path", new LongValue());
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          @MsgpackProperty(document = true) DirectBuffer variables = Decoding.EMPTY;
+          @MsgpackProperty(raw = true) UnsafeBuffer value = new UnsafeBuffer();
+          final List<TenantRecord> tenants = new ArrayList<>();
+          final List<Outer.Item> items = new ArrayList<>();
+          final Legacy legacy = new Legacy();
+          final List<Long> path = new ArrayList<>();
+        }
+        """;
+
+    // when - then
+    assertThatCode(() -> validate(golden, source)).doesNotThrowAnyException();
+    assertThatCode(() -> validateNew(golden, source)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldDetectPojoDocumentFieldDeclaredAsString() {
+    // given
+    final var golden =
+        """
+        private final DocumentProperty variablesProp = new DocumentProperty("variables");
+        """;
+    final var source =
+        """
+        @MsgpackPojo
+        public final class TestRecord extends MsgpackBufferValue<TestRecord> {
+          DirectBuffer variables = Decoding.EMPTY;
+        }
+        """;
+
+    // when - then
+    assertThatThrownBy(() -> validate(golden, source))
+        .hasMessageContaining("Property variablesProp type changed");
   }
 
   @Test
