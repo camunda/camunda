@@ -163,6 +163,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var annotation = field.getAnnotation(MsgpackProperty.class);
       final var raw = annotation != null && annotation.raw();
       final var binary = annotation != null && annotation.binary();
+      final var required = annotation != null && annotation.required();
       final var key =
           annotation == null || annotation.value().isEmpty() ? fieldName : annotation.value();
       if (!keys.add(key)) {
@@ -188,10 +189,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
-      properties.add(new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace));
+      properties.add(
+          new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
+    }
+    if (properties.stream().filter(Property::required).count() > Long.SIZE) {
+      throw new IllegalArgumentException(
+          "@MsgpackPojo class has more than %d required properties".formatted(Long.SIZE));
     }
     if (unknownField == null) {
       throw new IllegalArgumentException(
@@ -437,11 +443,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("    return n;\n  }\n\n");
 
     // read
+    // a bit per required property, set when its key is read
+    final var hasRequired = m.properties().stream().anyMatch(Property::required);
     s.append(
         "  @Override\n  public void read(final MsgPackReader r, final %s target) {\n"
             .formatted(pojo));
     s.append(
         "    final int size = r.readMapHeader();\n"
+            + (hasRequired ? "    long seen = 0;\n" : "")
             + "    for (int i = 0; i < size; i++) {\n"
             + "      final int entryStart = r.getOffset();\n"
             + "      final int keyLength = r.readStringLength();\n"
@@ -449,6 +458,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             + "      r.skipBytes(keyLength);\n"
             + "      switch (indexOf(r.getBuffer(), keyOffset, keyLength, i)) {\n");
     i = 0;
+    int bit = 0;
     for (final var p : m.properties()) {
       final var f = "target." + p.field();
       final var line =
@@ -475,13 +485,34 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     .formatted(f, addElement(p.type()));
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
           };
-      s.append("        case %d -> %s\n".formatted(i, line));
+      if (p.required()) {
+        s.append(
+            "        case %d -> {\n          %s\n          seen |= 1L << %d;\n        }\n"
+                .formatted(i, line, bit++));
+      } else {
+        s.append("        case %d -> %s\n".formatted(i, line));
+      }
       i++;
     }
     s.append(
         "        default -> {\n          r.skipValue();\n          target.%s.append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n"
             .formatted(unknown));
-    s.append("      }\n    }\n  }\n\n");
+    s.append("      }\n    }\n");
+    // like ObjectValue, a property without default must be in the input: an enum field holds no
+    // value if neither the input nor its initializer gave it one
+    bit = 0;
+    for (final var p : m.properties()) {
+      if (p.required()) {
+        s.append(
+            "    if ((seen & 1L << %d) == 0) {\n      throw missing(%s);\n    }\n"
+                .formatted(bit++, p.keyLiteral()));
+      } else if (p.type() == Type.ENUM) {
+        s.append(
+            "    if (target.%s == null) {\n      throw missing(%s);\n    }\n"
+                .formatted(p.field(), p.keyLiteral()));
+      }
+    }
+    s.append("  }\n\n");
 
     s.append(
         """
@@ -503,6 +534,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               throw new IllegalStateException("Property '" + key + "' holds no encoded value");
             }
             return value;
+          }
+
+          private static IllegalStateException missing(final String key) {
+            return new IllegalStateException("Property '" + key + "' has no valid value");
           }
 
           private static <E> E requireEnum(final E value, final String key) {
@@ -614,9 +649,15 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    * @param keyLiteral the key as an escaped Java string literal, to be pasted into generated code
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
+   * @param required reading fails if the key is missing
    */
   private record Property(
-      String keyLiteral, Type type, String field, String javaType, boolean inPlace) {}
+      String keyLiteral,
+      Type type,
+      String field,
+      String javaType,
+      boolean inPlace,
+      boolean required) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

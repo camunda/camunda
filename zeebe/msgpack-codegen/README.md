@@ -42,6 +42,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `DirectBuffer` field gets a new view per read, and so does every element of a list). A non-final
   one would be the shared default after a reset, so wrapping it would change the default.
   Compilation fails if a field breaks these rules.
+- A key missing in the input keeps the default. `@MsgpackProperty(required = true)` makes reading
+  fail instead ("Property 'key' has no valid value"), like a property of an `UnpackedObject`
+  without default. Use it for a property that had no default in the class it replaces: a
+  primitive always has a Java default, so without it a missing key is read as `0` or `false`. An
+  enum field without initializer is required without the annotation, as it holds no value then.
 - String, binary and raw fields need an initializer. The resetter assigns (or wraps) the default of
   a shared prototype instance, so a default buffer must never be modified in place.
 - Codecs and resetters are found with `Codecs.of(Type.class)` and `Codecs.resetterOf(Type.class)`

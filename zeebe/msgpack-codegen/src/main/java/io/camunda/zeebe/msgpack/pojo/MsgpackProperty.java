@@ -37,4 +37,12 @@ public @interface MsgpackProperty {
    * view on the source buffer, without copying.
    */
   boolean binary() default false;
+
+  /**
+   * The property has no default: reading a value without this key fails, like it does for a
+   * property of an {@code UnpackedObject} that is declared without a default. Every field has a
+   * Java default, so a missing key is otherwise read as that default, e.g. {@code 0}. An enum field
+   * without initializer is required without this, as it holds no value then.
+   */
+  boolean required() default false;
 }
