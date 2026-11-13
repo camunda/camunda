@@ -26,11 +26,19 @@ public final class WriteBehindZeebeDbFactory<
 
   private final ZeebeDbFactory<ColumnFamilyType> delegate;
   private final WriteBehindConfiguration config;
+  private final String name;
 
+  /**
+   * @param name tells the writer thread of the DB apart from those of other DBs, for example by the
+   *     partition that the DB belongs to
+   */
   public WriteBehindZeebeDbFactory(
-      final ZeebeDbFactory<ColumnFamilyType> delegate, final WriteBehindConfiguration config) {
+      final ZeebeDbFactory<ColumnFamilyType> delegate,
+      final WriteBehindConfiguration config,
+      final String name) {
     this.delegate = delegate;
     this.config = config;
+    this.name = name;
   }
 
   @Override
@@ -53,7 +61,7 @@ public final class WriteBehindZeebeDbFactory<
       }
       throw failure;
     }
-    return new WriteBehindZeebeDb<>(rawAccessibleDb, config);
+    return new WriteBehindZeebeDb<>(rawAccessibleDb, config, name);
   }
 
   @Override

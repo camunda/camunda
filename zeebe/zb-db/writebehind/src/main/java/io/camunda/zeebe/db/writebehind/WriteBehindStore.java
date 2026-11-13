@@ -63,7 +63,17 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
 
   private volatile long committedSeq;
 
+  /** A store whose writer thread has no name that tells it apart from those of other stores. */
   public WriteBehindStore(final Backend<K, V, T> backend, final WriteBehindConfiguration config) {
+    this(backend, config, "store");
+  }
+
+  /**
+   * @param name tells the writer thread of this store apart from those of other stores, for example
+   *     by the partition that the store belongs to
+   */
+  public WriteBehindStore(
+      final Backend<K, V, T> backend, final WriteBehindConfiguration config, final String name) {
     this.backend = backend;
     cache =
         config.cacheMaxBytes() > 0
@@ -74,7 +84,13 @@ public final class WriteBehindStore<K extends Comparable<K>, V, T> implements Au
             : null;
     flusher =
         new AsyncFlusher<>(
-            backend, config, metrics, this::ensureUsable, this::sealBatch, this::releaseBatch);
+            backend,
+            config,
+            metrics,
+            name,
+            this::ensureUsable,
+            this::sealBatch,
+            this::releaseBatch);
     flusher.start();
   }
 

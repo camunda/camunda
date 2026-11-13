@@ -93,6 +93,8 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   private volatile @Nullable PendingTransaction<K, V> oldestTaken;
 
   /**
+   * @param name tells the writer thread apart from those of other stores in thread dumps and
+   *     profiles
    * @param ensureUsable throws if the store can't be used any more; called while waiting, so that
    *     waiters fail fast
    * @param sealBatch called on the writer thread to take the batch of the queued commits away from
@@ -105,6 +107,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
       final Backend<K, V, ?> backend,
       final WriteBehindConfiguration config,
       final WriteBehindMetrics metrics,
+      final String name,
       final Runnable ensureUsable,
       final Function<Runnable, NavigableMap<K, Version<V>>> sealBatch,
       final Consumer<NavigableMap<K, Version<V>>> releaseBatch) {
@@ -117,7 +120,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
     flushThresholdBytes = Math.min(config.flushThresholdBytes(), config.maxPendingBytes());
     flushDelayNanos = Math.max(0, config.flushDelay().toNanos());
     idleParkNanos = Math.max(flushDelayNanos, MIN_IDLE_PARK_NANOS);
-    writer = new Thread(this::runWriter, "zb-db-write-behind");
+    writer = new Thread(this::runWriter, "zb-db-write-behind-" + name);
     writer.setDaemon(true);
   }
 

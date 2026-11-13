@@ -35,11 +35,17 @@ public final class WriteBehindZeebeDb<
   private final ConsistencyChecksSettings consistencyChecks;
   private final WriteBehindStore<RawKey, HeldValue, DbValue> store;
 
+  /**
+   * @param name tells the writer thread of this DB apart from those of other DBs, for example by
+   *     the partition that the DB belongs to
+   */
   WriteBehindZeebeDb(
-      final RawAccessibleDb<ColumnFamilyType> delegate, final WriteBehindConfiguration config) {
+      final RawAccessibleDb<ColumnFamilyType> delegate,
+      final WriteBehindConfiguration config,
+      final String name) {
     this.delegate = delegate;
     consistencyChecks = delegate.consistencyChecksSettings();
-    store = new WriteBehindStore<>(new RawBackend(delegate.rawAccess()), config);
+    store = new WriteBehindStore<>(new RawBackend(delegate.rawAccess()), config, name);
   }
 
   @Override
