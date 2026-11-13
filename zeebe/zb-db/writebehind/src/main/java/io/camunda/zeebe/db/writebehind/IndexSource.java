@@ -106,7 +106,7 @@ final class IndexSource<K extends Comparable<K>, V, T> implements CommittedSourc
       return false;
     } else {
       storageReads++;
-      value = store.readStorage(key, target);
+      value = store.readStorage(key);
     }
 
     // a key of the index without a value means that a commit deleted it; that commit changed the

@@ -134,7 +134,7 @@ final class IndexedScanTest {
 
     // then
     assertThat(store.exists(key(INDEXED, 99))).isFalse();
-    assertThat(store.get(key(INDEXED, 99), new DbLong())).isNull();
+    assertThat(store.get(key(INDEXED, 99))).isNull();
     assertThat(access.gets()).isEqualTo(gets);
 
     // and a key of the index is not answered as absent

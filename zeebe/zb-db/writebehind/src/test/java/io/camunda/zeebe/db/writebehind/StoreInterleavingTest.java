@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.ZeebeDbConstants;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -199,7 +198,7 @@ final class StoreInterleavingTest {
 
       // when
       final boolean exists = indexedStore.exists(key(1));
-      final var value = TestValues.longOf(indexedStore.get(key(1), new DbLong()));
+      final var value = TestValues.longOf(indexedStore.get(key(1)));
       pause.release();
       committer.join();
 
