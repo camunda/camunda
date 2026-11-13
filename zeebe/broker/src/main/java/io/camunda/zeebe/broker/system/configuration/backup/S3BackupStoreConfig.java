@@ -14,7 +14,6 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import org.springframework.util.unit.DataSize;
 
 public class S3BackupStoreConfig implements ConfigurationEntry {
 
@@ -42,7 +41,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private boolean waitForReplication = false;
   private Duration replicationPollInterval = S3BackupConfig.DEFAULT_REPLICATION_POLL_INTERVAL;
   private Duration replicationTimeout = S3BackupConfig.DEFAULT_REPLICATION_TIMEOUT;
-  private @Nullable DataSize maxReadRate;
 
   public String getBucketName() {
     return bucketName;
@@ -184,19 +182,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.replicationTimeout = replicationTimeout;
   }
 
-  public @Nullable DataSize getMaxReadRate() {
-    return maxReadRate;
-  }
-
-  public void setMaxReadRate(final @Nullable DataSize maxReadRate) {
-    this.maxReadRate = maxReadRate;
-  }
-
   public static S3BackupConfig toStoreConfig(
       final S3BackupStoreConfig config,
       final @Nullable Duration readTimeout,
       final @Nullable Duration writeTimeout) {
-    final var maxReadRate = config.getMaxReadRate();
     final var builder =
         new Builder()
             .withReadTimeout(readTimeout)
@@ -215,8 +204,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withDefaultsMode(config.getDefaultsMode())
             .withWaitForReplication(config.isWaitForReplication())
             .withReplicationPollInterval(config.getReplicationPollInterval())
-            .withReplicationTimeout(config.getReplicationTimeout())
-            .withMaxReadRate(maxReadRate == null ? 0 : maxReadRate.toBytes());
+            .withReplicationTimeout(config.getReplicationTimeout());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -240,7 +228,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (waitForReplication ? 1 : 0);
     result = 31 * result + Objects.hashCode(replicationPollInterval);
     result = 31 * result + Objects.hashCode(replicationTimeout);
-    result = 31 * result + (maxReadRate != null ? maxReadRate.hashCode() : 0);
     result =
         31 * result
             + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
@@ -274,7 +261,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         && waitForReplication == that.waitForReplication
         && Objects.equals(replicationPollInterval, that.replicationPollInterval)
         && Objects.equals(replicationTimeout, that.replicationTimeout)
-        && Objects.equals(maxReadRate, that.maxReadRate)
         && supportLegacyMd5 == that.supportLegacyMd5;
   }
 
@@ -318,8 +304,6 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + replicationPollInterval
         + ", replicationTimeout="
         + replicationTimeout
-        + ", maxReadRate="
-        + maxReadRate
         + ", ssecKey='"
         + (ssecKey != null ? "<redacted>" : "null")
         + '\''
