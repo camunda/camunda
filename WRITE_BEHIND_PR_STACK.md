@@ -182,3 +182,19 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
   - Flush delay sweep with the non-blocking flusher (50k + prefill + revisit, wb-default,
     inst/s; old flusher delay 0 = 522, 5s = 501): 0 -> 569 (563 profiled), 100ms -> 591,
     1s -> 537. Flushes 207k (old 0) / 115k / 1.4k / 156; filter misses 113 / 12k / 17k / 30k.
+- [x] PR 4 pushed: `cs/wb-4-broker-integration` on PR 3 `c6ba067f66b`, draft PR camunda/camunda#69326
+  - `cd625e9130f` refactor: 24-CF key index list moved to main (`ColumnFamilyAccessPatterns`)
+  - `c86e2b305f9` perf: `WriteBehindConfiguration.defaults()` flush delay 100ms, threshold 16MB
+  - `a08880900f5` feat: `WriteBehindCfg` in `RocksdbCfg`; `ZeebePartitionFactory.selectDbFactory`
+    wraps RocksDB factory when enabled; snapshot copy + recovery stay on raw RocksDB; broker dep
+    on `zeebe-db-writebehind` (pom + Gradle)
+  - `ca8a02cc9b0` feat: unified config `camunda.data.primary-storage.rocks-db.write-behind.*`
+    (enabled=false, flush-delay=100ms, flush-threshold=16MB, max-pending=32MB, cache-size=64MB,
+    key-index-max-keys=10000, key-index.<CF>=DISABLE|KEEP_LOWEST|KEEP_HIGHEST, default 24 CFs;
+    single-CF override keeps the rest). Env prefix `CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_`.
+  - Tests (Gradle): broker 12, writebehind 104, configuration 283, dist DefaultConfigTest 1 green.
+    Maven pipeline / full build not run.
+  - Open: memory keys tenant-overridable (deny-list like memory-limit?); legacy
+    `zeebe.broker.experimental.rocksdb.writeBehind` binds but is overwritten by unified; unified
+    defaults duplicate `WriteBehindConfiguration.DEFAULT_*` (test guards drift); memory per
+    partition ~96MB + key indexes on top of RocksDB limit.
