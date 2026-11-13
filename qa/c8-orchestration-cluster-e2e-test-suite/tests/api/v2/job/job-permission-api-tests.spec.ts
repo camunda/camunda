@@ -133,7 +133,17 @@ test.describe('Job Permission API - Forbidden', () => {
     const body = await res.json();
     expect(body.jobs).toHaveLength(0);
     // The job was not consumed by the unauthorized request.
-    await activateJobToObtainAValidJobKey(request, restrictedTaskType);
+    const adminRes = await request.post(buildUrl('/jobs/activation'), {
+      headers: jsonHeaders(),
+      data: {
+        type: restrictedTaskType,
+        timeout: 10_000,
+        maxJobsToActivate: 1,
+        requestTimeout: -1,
+      },
+    });
+    await assertStatusCode(adminRes, 200);
+    expect((await adminRes.json()).jobs).toHaveLength(1);
   });
 
   test('Search jobs - filtered out without READ_PROCESS_INSTANCE permission', async ({
