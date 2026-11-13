@@ -266,33 +266,6 @@ public final class EventHandle {
     return Tuple.of(newProcessInstanceKey, storageOrdinal);
   }
 
-  public boolean activateProcessInstanceForStartEvent(
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer,
-      final String tenantId) {
-    return activateProcessInstanceForStartEvent(
-        processDefinitionKey, processInstanceKey, targetElementId, variablesBuffer, tenantId, null);
-  }
-
-  public boolean activateProcessInstanceForStartEvent(
-      final long processDefinitionKey,
-      final long processInstanceKey,
-      final DirectBuffer targetElementId,
-      final DirectBuffer variablesBuffer,
-      final String tenantId,
-      final DirectBuffer businessId) {
-    return activateProcessInstanceForStartEvent(
-        processDefinitionKey,
-        processInstanceKey,
-        targetElementId,
-        variablesBuffer,
-        tenantId,
-        businessId,
-        storageOrdinalProvider.getStorageOrdinal());
-  }
-
   /**
    * Activates a new root process instance for a start event with an already resolved storage
    * ordinal.
