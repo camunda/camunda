@@ -578,6 +578,11 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceBusinessIdIntent.ASSIGNED,
         1,
         new ProcessInstanceBusinessIdAssignedV1Applier(state.getElementInstanceState()));
+    register(
+        ProcessInstanceBusinessIdIntent.ASSIGNED,
+        2,
+        new ProcessInstanceBusinessIdAssignedV2Applier(
+            state.getElementInstanceState(), state.getCaseState()));
   }
 
   private void registerBufferedCommandAppliers(final MutableProcessingState state) {
