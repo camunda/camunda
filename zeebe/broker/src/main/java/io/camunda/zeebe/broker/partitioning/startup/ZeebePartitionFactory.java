@@ -14,6 +14,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -111,6 +112,7 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final BackupReadRateLimiter backupReadRateLimiter;
 
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
@@ -135,6 +137,7 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
+      final BackupReadRateLimiter backupReadRateLimiter,
       final SecretStoreRegistry secretStoreRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
@@ -154,6 +157,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.backupReadRateLimiter = backupReadRateLimiter;
     this.secretStoreRegistry = secretStoreRegistry;
   }
 
@@ -228,7 +232,7 @@ public final class ZeebePartitionFactory {
         new ZeebeDbPartitionTransitionStep(),
         new MigrationTransitionStep(),
         new QueryServicePartitionTransitionStep(),
-        new BackupStoreTransitionStep(),
+        new BackupStoreTransitionStep(backupReadRateLimiter),
         new BackupServiceTransitionStep(),
         new InterPartitionCommandServiceStep(),
         new StreamProcessorTransitionStep(),

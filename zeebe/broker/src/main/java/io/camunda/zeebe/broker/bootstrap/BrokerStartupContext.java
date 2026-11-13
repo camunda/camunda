@@ -13,6 +13,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -136,6 +137,13 @@ public interface BrokerStartupContext {
   RocksDbResources getRocksDbResources();
 
   void setRocksDbResources(RocksDbResources sharedRocksDbResources);
+
+  /**
+   * The limiter for how fast backups read from the data disk. Like {@link #getRocksDbResources()},
+   * it is created once per broker and shared across every physical tenant's partition manager, so
+   * that all backups of the broker together stay within the configured rate.
+   */
+  BackupReadRateLimiter getBackupReadRateLimiter();
 
   BrokerAdminServiceImpl getBrokerAdminService(String physicalTenantId);
 

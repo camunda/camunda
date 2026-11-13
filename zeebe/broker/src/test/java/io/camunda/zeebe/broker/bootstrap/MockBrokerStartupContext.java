@@ -20,6 +20,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.backup.common.BackupReadRateLimiter;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -287,6 +288,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
     this.sharedRocksDbResources = sharedRocksDbResources;
+  }
+
+  @Override
+  public BackupReadRateLimiter getBackupReadRateLimiter() {
+    return BackupReadRateLimiter.unlimited();
   }
 
   @Override

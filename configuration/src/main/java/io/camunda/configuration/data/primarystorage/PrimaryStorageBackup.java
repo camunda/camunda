@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.unit.DataSize;
 
 public class PrimaryStorageBackup implements Cloneable {
   private static final String PREFIX = "camunda.data.primary-storage.backup";
@@ -53,6 +54,16 @@ public class PrimaryStorageBackup implements Cloneable {
   private long offset;
   private @Nullable Duration readTimeout;
   private @Nullable Duration writeTimeout;
+
+  /**
+   * Maximum number of bytes per second that all backups of this broker together read from the local
+   * disk to upload them, for example '100MB'. Backups read every journal segment since the last
+   * snapshot; without a limit, this can use up the disk throughput when the segments are not in the
+   * page cache, so that journal writes wait and all partitions stall. Set it well below the
+   * throughput of the data volume. When not set, the read rate is not limited. Only the S3 backup
+   * store limits its reads so far; the other backup stores ignore this setting.
+   */
+  private @Nullable DataSize maxReadRate;
 
   /** Configuration for backup store AWS S3 */
   @NestedConfigurationProperty private S3 s3 = new S3();
@@ -173,6 +184,14 @@ public class PrimaryStorageBackup implements Cloneable {
 
   public void setWriteTimeout(final @Nullable Duration writeTimeout) {
     this.writeTimeout = writeTimeout;
+  }
+
+  public @Nullable DataSize getMaxReadRate() {
+    return maxReadRate;
+  }
+
+  public void setMaxReadRate(final @Nullable DataSize maxReadRate) {
+    this.maxReadRate = maxReadRate;
   }
 
   @Override
