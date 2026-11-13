@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -54,9 +56,9 @@ class RateLimitedInputStreamTest {
 
     // when
     final int firstRead = stream.read(new byte[1_000_000]);
-    limiter.acquire(1);
+    readOneMoreByte();
 
-    // then - the next caller pays for the 100 bytes read, not for the buffer size
+    // then - the next read waits for the 100 bytes read, not for the buffer size
     assertThat(firstRead).isEqualTo(100);
     assertThat(clock.slept()).isEqualTo(Duration.ofMillis(100));
   }
@@ -99,11 +101,51 @@ class RateLimitedInputStreamTest {
 
     // when
     final long skipped = stream.skip(10_000);
-    limiter.acquire(1);
+    readOneMoreByte();
 
     // then
     assertThat(skipped).isEqualTo(500);
     assertThat(clock.slept()).isEqualTo(Duration.ofMillis(500));
+  }
+
+  /** A read waits for the bytes charged before it, so one more read shows what was charged. */
+  private void readOneMoreByte() throws IOException {
+    limiter.wrap(new ByteArrayInputStream(new byte[1])).read();
+  }
+
+  @Test
+  void shouldReportHowLongItsReadsWaited() throws Exception {
+    // given - another stream uses the same limiter
+    final var stream = limiter.wrap(new ByteArrayInputStream(new byte[300]));
+    final var other = limiter.wrap(new ByteArrayInputStream(new byte[300]));
+
+    // when - the first read of the limiter is free, each later one waits for the reads before it
+    stream.read(new byte[100]);
+    other.read(new byte[100]);
+    stream.read(new byte[100]);
+
+    // then - each stream reports its own waits, including those caused by the other stream
+    assertThat(other.waited()).isEqualTo(Duration.ofMillis(100));
+    assertThat(stream.waited()).isEqualTo(Duration.ofMillis(100));
+    assertThat(clock.slept()).isEqualTo(Duration.ofMillis(200));
+  }
+
+  @Test
+  void shouldReportAWaitAsSoonAsItStarts() throws Exception {
+    // given - a limiter that lets the test look at the stream while a read is waiting
+    final var waitedWhileWaiting = new AtomicReference<Duration>();
+    final var stream = new AtomicReference<RateLimitedInputStream>();
+    final var observingLimiter =
+        new BackupReadRateLimiter(
+            BYTES_PER_SECOND, clock::nanos, nanos -> waitedWhileWaiting.set(stream.get().waited()));
+    stream.set(observingLimiter.wrap(new ByteArrayInputStream(new byte[200])));
+    stream.get().read(new byte[100]);
+
+    // when
+    stream.get().read(new byte[100]);
+
+    // then - a deadline that leaves out the waits must not expire in the middle of one
+    assertThat(waitedWhileWaiting).hasValue(Duration.ofMillis(100));
   }
 
   @Test

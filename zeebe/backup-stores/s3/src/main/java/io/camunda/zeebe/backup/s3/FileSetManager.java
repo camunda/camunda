@@ -25,10 +25,14 @@ import java.time.Duration;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,7 @@ import software.amazon.awssdk.core.FileTransformerConfiguration.FailureBehavior;
 import software.amazon.awssdk.core.FileTransformerConfiguration.FileWriteOption;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
+import software.amazon.awssdk.core.exception.ApiCallTimeoutException;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 /** Can save and restore {@link NamedFileSet NamedFileSets}. */
@@ -46,9 +51,14 @@ final class FileSetManager {
   private static final String TMP_COMPRESSION_PREFIX = "zb-backup-compress-";
   private static final String TMP_DECOMPRESSION_PREFIX = "zb-backup-decompress-";
 
+  /**
+   * The SDK cannot switch off the client-wide API call timeout for a single request, only replace
+   * it. No upload gets near this value, so {@link #joinWithin} is what ends a stuck one.
+   */
+  private static final Duration SDK_API_CALL_TIMEOUT_DISABLED = Duration.ofDays(1);
+
   private final S3AsyncClient client;
   private final S3BackupConfig config;
-  private final int maxConcurrentUploads;
   private final Semaphore concurrencyLimit;
   private final ExecutorService schedulerExecutor;
   private final BackupReadRateLimiter readRateLimiter;
@@ -64,8 +74,7 @@ final class FileSetManager {
     // concurrent uploads to half of the number of available connections.
     // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
     // where we would otherwise occupy all connections, preventing some uploads from starting.
-    maxConcurrentUploads = Math.max(1, config.maxConcurrentConnections() / 2);
-    concurrencyLimit = new Semaphore(maxConcurrentUploads);
+    concurrencyLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
     schedulerExecutor =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("zeebe-backup-s3-", 0).factory());
@@ -106,16 +115,25 @@ final class FileSetManager {
       // check: https://github.com/camunda/camunda/issues/44035
       try (final var inputStream = readRateLimiter.wrap(Files.newInputStream(filePath))) {
         final var fileSize = Files.size(filePath);
-        final var apiCallTimeout = limitedApiCallTimeout(fileSize);
-        client
-            .putObject(
+        // The SDK counts the time an upload waits for the read limit towards its API call timeout,
+        // and that time depends on how many other uploads share the limit. Take the SDK's timeout
+        // out of the way and enforce the configured one here, where the waits can be left out.
+        final var apiCallTimeout =
+            readRateLimiter.isUnlimited() ? Optional.<Duration>empty() : config.apiCallTimeout();
+        final var upload =
+            client.putObject(
                 put -> {
                   put.bucket(config.bucketName()).key(prefix + fileName);
-                  apiCallTimeout.ifPresent(
-                      timeout -> put.overrideConfiguration(c -> c.apiCallTimeout(timeout)));
+                  if (apiCallTimeout.isPresent()) {
+                    put.overrideConfiguration(c -> c.apiCallTimeout(SDK_API_CALL_TIMEOUT_DISABLED));
+                  }
                 },
-                AsyncRequestBody.fromInputStream(inputStream, fileSize, schedulerExecutor))
-            .join();
+                AsyncRequestBody.fromInputStream(inputStream, fileSize, schedulerExecutor));
+        if (apiCallTimeout.isPresent()) {
+          joinWithin(upload, apiCallTimeout.get(), inputStream::waited);
+        } else {
+          upload.join();
+        }
       } catch (final IOException e) {
         throw new UncheckedIOException("Failed to upload file: " + filePath, e);
       }
@@ -124,19 +142,42 @@ final class FileSetManager {
   }
 
   /**
-   * The read limit slows down the upload while the request is in flight, so the configured API call
-   * timeout alone could expire before a large file has been read. Extends it by the time reading
-   * the file takes when all concurrent uploads of this store share the budget.
+   * Waits for the upload like {@link CompletableFuture#join()}, but fails it once it took longer
+   * than the timeout, not counting the time it was held back by the read limit. An upload that
+   * shares the limit with many others is slow without being stuck, and how many share it changes
+   * while it runs; only the time it actually waited tells the two apart.
+   *
+   * @param waitedForReadLimit how long the upload was held back by the read limit so far
    */
-  private Optional<Duration> limitedApiCallTimeout(final long fileSize) {
-    if (readRateLimiter.isUnlimited()) {
-      return Optional.empty();
+  static <T> T joinWithin(
+      final CompletableFuture<T> upload,
+      final Duration timeout,
+      final Supplier<Duration> waitedForReadLimit) {
+    final long startNanos = System.nanoTime();
+    while (true) {
+      final var waited = waitedForReadLimit.get();
+      final long remainingNanos = timeout.plus(waited).toNanos() - (System.nanoTime() - startNanos);
+      if (remainingNanos <= 0) {
+        upload.cancel(true);
+        throw new CompletionException(
+            ApiCallTimeoutException.builder()
+                .message(
+                    "Upload did not complete within the API call timeout of %s, not counting the %s it waited for the backup read limit"
+                        .formatted(timeout, waited))
+                .build());
+      }
+      try {
+        return upload.get(remainingNanos, TimeUnit.NANOSECONDS);
+      } catch (final TimeoutException e) {
+        // the upload may have waited for the read limit in the meantime, which moves the deadline
+      } catch (final ExecutionException e) {
+        throw new CompletionException(e.getCause());
+      } catch (final InterruptedException e) {
+        upload.cancel(true);
+        Thread.currentThread().interrupt();
+        throw new CompletionException(e);
+      }
     }
-    final long readMillis =
-        Math.ceilDiv(
-            Math.multiplyExact(fileSize, maxConcurrentUploads) * 1000,
-            readRateLimiter.bytesPerSecond());
-    return config.apiCallTimeout().map(timeout -> timeout.plusMillis(readMillis));
   }
 
   private void cleanupCompressedFile(final Path compressedFile) {

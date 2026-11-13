@@ -11,15 +11,27 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Pays for every byte read from or skipped in the wrapped stream with a shared limiter. */
-final class RateLimitedInputStream extends FilterInputStream {
+public final class RateLimitedInputStream extends FilterInputStream {
 
   private final BackupReadRateLimiter limiter;
+  private final AtomicLong waitedNanos = new AtomicLong();
 
   RateLimitedInputStream(final InputStream in, final BackupReadRateLimiter limiter) {
     super(in);
     this.limiter = limiter;
+  }
+
+  /**
+   * Returns how long the reads of this stream were held back by the limiter so far. A wait counts
+   * from the moment it starts, so a caller that enforces a deadline on the consumer of this stream
+   * can add this time to the deadline at any moment. Safe to call from any thread.
+   */
+  public Duration waited() {
+    return Duration.ofNanos(waitedNanos.get());
   }
 
   @Override
@@ -50,8 +62,13 @@ final class RateLimitedInputStream extends FilterInputStream {
   }
 
   private void pay(final long bytes) throws InterruptedIOException {
+    final long waitNanos = limiter.reserve(bytes);
+    if (waitNanos <= 0) {
+      return;
+    }
+    waitedNanos.addAndGet(waitNanos);
     try {
-      limiter.acquire(bytes);
+      limiter.sleep(waitNanos);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       final var exception = new InterruptedIOException("Interrupted while limiting backup reads");
