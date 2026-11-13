@@ -11,6 +11,7 @@ import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -41,7 +42,9 @@ import org.springframework.test.context.TestPropertySource;
     properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
 public class HistoryCleanupIT {
 
-  @Autowired JdbcTemplate jdbcTemplate;
+  @Autowired RdbmsDataSources rdbmsDataSources;
+  // reads through the exporter's pool to see what the writers flushed in this test transaction
+  JdbcTemplate jdbcTemplate;
 
   @Autowired RdbmsServiceFactory rdbmsServiceFactory;
   RdbmsService rdbmsService;
@@ -52,6 +55,8 @@ public class HistoryCleanupIT {
 
   @BeforeEach
   void setUp() {
+    jdbcTemplate =
+        new JdbcTemplate(rdbmsDataSources.exporterDataSourceFor(DEFAULT_PHYSICAL_TENANT_ID));
     rdbmsService =
         rdbmsServiceFactory.createRdbmsService(
             DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());

@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.configuration.data.secondarystorage.Rdbms;
+import io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -48,6 +49,7 @@ public final class RdbmsDataSources implements AutoCloseable {
   private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
 
   private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, HikariDataSource> exporterDataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
 
@@ -70,8 +72,20 @@ public final class RdbmsDataSources implements AutoCloseable {
       try {
         final var tenantMeterRegistry =
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
-        final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
+        final var ds =
+            buildDataSource(
+                "camunda-rdbms-" + currentPhysicalTenantId,
+                rdbms,
+                rdbms.getConnectionPool(),
+                tenantMeterRegistry);
         result.dataSources.put(currentPhysicalTenantId, ds);
+        result.exporterDataSources.put(
+            currentPhysicalTenantId,
+            buildDataSource(
+                "camunda-rdbms-exporter-" + currentPhysicalTenantId,
+                rdbms,
+                rdbms.getExporterConnectionPool(),
+                tenantMeterRegistry));
         final var databaseId =
             vendorIdFor(currentPhysicalTenantId, rdbms, ds, physicalTenantConfigs.size());
         result.vendorProperties.put(
@@ -160,6 +174,16 @@ public final class RdbmsDataSources implements AutoCloseable {
     return ds;
   }
 
+  /** The pool used only by the RDBMS exporter, so that readers cannot starve it. */
+  public DataSource exporterDataSourceFor(final String physicalTenantId) {
+    final var ds = exporterDataSources.get(physicalTenantId);
+    if (ds == null) {
+      throw new IllegalArgumentException(
+          "No exporter DataSource configured for physical tenant " + physicalTenantId);
+    }
+    return ds;
+  }
+
   public Map<String, DataSource> dataSources() {
     return Map.copyOf(dataSources);
   }
@@ -175,18 +199,19 @@ public final class RdbmsDataSources implements AutoCloseable {
 
   @Override
   public void close() {
-    // close each tenant's pool together with its wrapped registry so neither is left dangling
-    dataSources.forEach(
-        (tenantId, ds) -> {
-          closeQuietly(ds);
-          MicrometerUtil.close(tenantMeterRegistries.get(tenantId));
-        });
+    // close the pools before their wrapped registries so neither is left dangling
+    dataSources.values().forEach(RdbmsDataSources::closeQuietly);
+    exporterDataSources.values().forEach(RdbmsDataSources::closeQuietly);
+    tenantMeterRegistries.values().forEach(MicrometerUtil::close);
   }
 
   private static HikariDataSource buildDataSource(
-      final String physicalTenantId, final Rdbms rdbms, final MeterRegistry meterRegistry) {
+      final String poolName,
+      final Rdbms rdbms,
+      final RdbmsConnectionPool pool,
+      final MeterRegistry meterRegistry) {
     final var ds = new HikariDataSource();
-    ds.setPoolName("camunda-rdbms-" + physicalTenantId);
+    ds.setPoolName(poolName);
     ds.setJdbcUrl(rdbms.getUrl());
     ds.setUsername(rdbms.getUsername());
     ds.setPassword(rdbms.getPassword());
@@ -197,7 +222,6 @@ public final class RdbmsDataSources implements AutoCloseable {
     }
     enableVendorBatchStatements(rdbms, driver, ds);
 
-    final var pool = rdbms.getConnectionPool();
     ds.setMaximumPoolSize(pool.getMaximumPoolSize());
     ds.setMinimumIdle(pool.getMinimumIdle());
     ds.setConnectionTimeout(pool.getConnectionTimeout().toMillis());

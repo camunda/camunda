@@ -19,6 +19,7 @@ import io.camunda.configuration.data.secondarystorage.Rdbms;
 import io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.sql.SQLTransientConnectionException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -106,6 +107,60 @@ class RdbmsDataSourcesTest {
       assertThat(ds.getLeakDetectionThreshold()).isEqualTo(2_500);
       assertThat(ds.getKeepaliveTime()).isEqualTo(30_000);
       assertThat(ds.getValidationTimeout()).isEqualTo(3_000);
+    }
+  }
+
+  @Test
+  void shouldBuildSeparateExporterPoolWithItsOwnSettings() throws Exception {
+    final var rdbms = h2Rdbms();
+    final var exporterPool = new RdbmsConnectionPool();
+    exporterPool.setMaximumPoolSize(3);
+    rdbms.setExporterConnectionPool(exporterPool);
+
+    try (final var registry =
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+            new SimpleMeterRegistry())) {
+
+      final var ds =
+          (HikariDataSource)
+              registry.exporterDataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      assertThat(ds)
+          .isNotSameAs(registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+      assertThat(ds.getJdbcUrl()).isEqualTo(rdbms.getUrl());
+      assertThat(ds.getPoolName()).isEqualTo("camunda-rdbms-exporter-default");
+      assertThat(ds.getMaximumPoolSize()).isEqualTo(3);
+    }
+  }
+
+  @Test
+  void shouldHandOutExporterConnectionsWhileMainPoolIsExhausted() throws Exception {
+    // given: a main pool whose only connection is taken
+    final var rdbms = h2Rdbms();
+    rdbms.getConnectionPool().setMaximumPoolSize(1);
+    rdbms.getConnectionPool().setMinimumIdle(1);
+    rdbms.getConnectionPool().setConnectionTimeout(Duration.ofMillis(250));
+
+    try (final var registry =
+            RdbmsDataSources.of(
+                Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms),
+                new SimpleMeterRegistry());
+        final var held =
+            registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getConnection()) {
+      assertThatThrownBy(
+              () ->
+                  registry
+                      .dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                      .getConnection())
+          .isInstanceOf(SQLTransientConnectionException.class);
+
+      // then: the exporter still gets one
+      try (final var exporterConnection =
+          registry
+              .exporterDataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .getConnection()) {
+        assertThat(exporterConnection.isValid(1)).isTrue();
+      }
     }
   }
 
@@ -266,15 +321,19 @@ class RdbmsDataSourcesTest {
 
     final HikariDataSource dsA;
     final HikariDataSource dsB;
+    final HikariDataSource exporterDsA;
     try (final var registry = RdbmsDataSources.of(configs, new SimpleMeterRegistry())) {
       dsA = (HikariDataSource) registry.dataSourceFor("tenant-a");
       dsB = (HikariDataSource) registry.dataSourceFor("tenant-b");
+      exporterDsA = (HikariDataSource) registry.exporterDataSourceFor("tenant-a");
       assertThat(dsA.isClosed()).isFalse();
       assertThat(dsB.isClosed()).isFalse();
+      assertThat(exporterDsA.isClosed()).isFalse();
     }
 
     assertThat(dsA.isClosed()).isTrue();
     assertThat(dsB.isClosed()).isTrue();
+    assertThat(exporterDsA.isClosed()).isTrue();
   }
 
   static Stream<BatchRewritingCase> batchRewritingCases() {
@@ -410,7 +469,8 @@ class RdbmsDataSourcesTest {
           .hasMessageContaining("unsupported");
 
       final var captor = ArgumentCaptor.forClass(HikariDataSource.class);
-      spy.verify(() -> RdbmsDataSources.closeQuietly(captor.capture()), times(2));
+      // a main and an exporter pool per tenant
+      spy.verify(() -> RdbmsDataSources.closeQuietly(captor.capture()), times(4));
       for (final var dataSource : captor.getAllValues()) {
         assertThat(dataSource.isClosed())
             .as("opened HikariDataSource should be closed on failure")

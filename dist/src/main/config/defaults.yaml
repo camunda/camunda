@@ -1235,6 +1235,28 @@ camunda: # Type: io.camunda.configuration.Camunda
         # to true, this ensures that the items are available when the batch operation is created, but it may
         # lead to a delay in the creation of the batch operation if there are many items to create.
         export-batch-operation-items-on-creation: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTBATCHOPERATIONITEMSONCREATION
+        exporter-connection-pool: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsConnectionPool  
+          # Maximum time the pool waits for a connection before throwing.
+          connection-timeout: "30000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_CONNECTIONTIMEOUT
+          # Maximum time a connection is allowed to sit idle in the pool before being evicted.
+          idle-timeout: "600000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_IDLETIMEOUT
+          # Interval at which the pool probes idle connections for aliveness, evicting dead ones before they are
+          # handed out. Set to {@link Duration#ZERO} (the HikariCP default) to disable. Useful with
+          # failover-aware JDBC drivers (e.g. AWS Aurora) so connections bound to a demoted writer are discarded
+          # proactively instead of only on borrow.
+          keepalive-time: 0 # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_KEEPALIVETIME
+          # Threshold for logging a possible connection leak. Set to {@link Duration#ZERO} (the HikariCP
+          # default) to disable leak detection.
+          leak-detection-threshold: 0 # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_LEAKDETECTIONTHRESHOLD
+          # Maximum lifetime of a connection in the pool.
+          max-lifetime: "1800000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_MAXLIFETIME
+          # Maximum number of connections kept by the pool.
+          maximum-pool-size: 10 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_MAXIMUMPOOLSIZE
+          # Minimum number of idle connections kept by the pool.
+          minimum-idle: 2 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_MINIMUMIDLE
+          # Maximum time the pool waits for a connection to be validated as alive.
+          validation-timeout: "5000ms" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_EXPORTERCONNECTIONPOOL_VALIDATIONTIMEOUT
+        
         # The interval at which the exporters execution queue is flushed.
         flush-interval: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_FLUSHINTERVAL
         history: # Type: io.camunda.configuration.data.secondarystorage.rdbms.RdbmsHistory  
