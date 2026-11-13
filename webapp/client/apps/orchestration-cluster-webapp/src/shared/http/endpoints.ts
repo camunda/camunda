@@ -942,8 +942,8 @@ const endpoints = {
 			},
 		),
 
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl()), {
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.searchClusterVariables.getUrl(options)), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.searchClusterVariables.method,
 			body: JSON.stringify(body),

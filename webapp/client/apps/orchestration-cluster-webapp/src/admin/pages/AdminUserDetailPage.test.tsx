@@ -13,7 +13,7 @@ import {afterEach, describe, expect, vi} from 'vitest';
 import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockDeleteUserEndpoint, mockGetUserEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockDeleteUserEndpoint, mockQueryUsersEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
 import {AdminUserDetailPage} from './AdminUserDetailPage';
 
@@ -60,7 +60,7 @@ describe('<AdminUserDetailPage />', () => {
 		const onDeleted = vi.fn();
 		worker.use(
 			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 
 		const screen = await renderPage(user, onDeleted);

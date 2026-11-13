@@ -22,7 +22,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
-import {waitUntilGone, waitUntilReady} from '#/shared/http/waitUntilReady';
+import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
 function compareRolesBySort(a: Role, b: Role, queryKey: QueryKey): number {
 	const body = queryKey[1] as QueryRolesRequestBody | undefined;
@@ -47,6 +47,8 @@ function canInsertRole(_role: Role, queryKey: QueryKey, currentItemCount: number
 function useRoleMutations() {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
+
+	const searchRole = (roleId: string) => queries.queryRoles({filter: {roleId}, page: {limit: 1}});
 
 	const invalidateRoles = () => queryClient.invalidateQueries({queryKey: ['queryRoles']});
 
@@ -78,9 +80,9 @@ function useRoleMutations() {
 			});
 			toast.success(t('admin.roles.roleCreated', {name: role.name}));
 
-			void waitUntilReady(queryClient, queries.getRole(role.roleId)).then((ready) =>
-				reconcileRoles(ready !== undefined),
-			);
+			void waitUntilReady(queryClient, searchRole(role.roleId), {
+				isReady: ({items}) => items.some((item) => item.roleId === role.roleId),
+			}).then((ready) => reconcileRoles(ready !== undefined));
 		},
 		onError: async (error) => {
 			if (isDuplicateRoleIdError(error)) {
@@ -109,8 +111,11 @@ function useRoleMutations() {
 			queryClient.setQueryData(queries.getRole(role.roleId).queryKey, role);
 			toast.success(t('admin.roles.roleUpdated', {name: role.name}));
 
-			void waitUntilReady(queryClient, queries.getRole(role.roleId), {
-				isReady: (data) => data.name === role.name && data.description === role.description,
+			void waitUntilReady(queryClient, searchRole(role.roleId), {
+				isReady: ({items}) =>
+					items.some(
+						(item) => item.roleId === role.roleId && item.name === role.name && item.description === role.description,
+					),
 			}).then((ready) => reconcileRoles(ready !== undefined));
 		},
 		onError: async (error) => {
@@ -134,16 +139,9 @@ function useRoleMutations() {
 			});
 			toast.success(t('admin.roles.roleDeleted', {roleId}));
 
-			void waitUntilGone(queryClient, {
-				queryKey: ['roleGone', roleId],
-				queryFn: async () => {
-					const {response, error} = await request(endpoints.getRole({roleId}));
-					if (error !== null) {
-						throw mapQueryError(error);
-					}
-					return response.json();
-				},
-			}).then(reconcileRoles);
+			void waitUntilReady(queryClient, searchRole(roleId), {
+				isReady: ({items}) => items.every((item) => item.roleId !== roleId),
+			}).then((ready) => reconcileRoles(ready !== undefined));
 		},
 		onError: async (error) => {
 			toast.error(t('admin.roles.deleteRoleFailed'), {description: await getErrorMessage(error)});

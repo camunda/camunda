@@ -17,7 +17,7 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockAssignUserToTenantEndpoint,
 	mockDeleteTenantEndpoint,
-	mockGetTenantEndpoint,
+	mockQueryTenantsEndpoint,
 	mockQueryClientsByTenantEndpoint,
 	mockQueryGroupsByTenantEndpoint,
 	mockQueryRolesByTenantEndpoint,
@@ -317,7 +317,7 @@ describe('<AdminTenantDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByTenantEndpoint({successResponse: HttpResponse.json(createQueryUsersByTenantResponse())}),
 			mockDeleteTenantEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 
 		const {screen, onDeleted} = await renderPage();
