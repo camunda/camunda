@@ -1008,6 +1008,54 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldStoreAnIntArrayListLikeAnArrayPropertyOfIntegers() throws Exception {
+    // given the generated class and the ArrayProperty it replaces
+    final var codec =
+        codecOf(
+            valid(
+                "final org.agrona.collections.IntArrayList ids = new org.agrona.collections.IntArrayList();"));
+    final var generated = codec.newInstance();
+    final var ids = (IntArrayList) get(generated, "ids");
+    final int[] values = {Integer.MIN_VALUE, -1, 0, 127, 128, 70_000, Integer.MAX_VALUE};
+    final var twin = new IdsTwin();
+    for (final int value : values) {
+      ids.addInt(value);
+      twin.ids.add().setValue(value);
+    }
+
+    // when
+    final var bytes = codec.write(generated);
+    final var twinBytes = new byte[twin.getLength()];
+    twin.write(new UnsafeBuffer(twinBytes), 0);
+
+    // then both write the same bytes and each reads the other's
+    assertThat(bytes).isEqualTo(twinBytes);
+    final var read = codec.newInstance();
+    codec.read(read, twinBytes);
+    assertThat(((IntArrayList) get(read, "ids")).toIntArray()).containsExactly(values);
+    final var twinRead = new IdsTwin();
+    twinRead.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+    final var readValues = new java.util.ArrayList<Integer>();
+    twinRead.ids.forEach(v -> readValues.add(v.getValue()));
+    assertThat(readValues)
+        .containsExactly(java.util.Arrays.stream(values).boxed().toArray(Integer[]::new));
+  }
+
+  /** The implementation a field of integers had before: an ArrayProperty of IntegerValue. */
+  private static final class IdsTwin extends io.camunda.zeebe.msgpack.UnpackedObject {
+    private final io.camunda.zeebe.msgpack.property.ArrayProperty<
+            io.camunda.zeebe.msgpack.value.IntegerValue>
+        ids =
+            new io.camunda.zeebe.msgpack.property.ArrayProperty<>(
+                "ids", io.camunda.zeebe.msgpack.value.IntegerValue::new);
+
+    IdsTwin() {
+      super(1);
+      declareProperty(ids);
+    }
+  }
+
+  @Test
   void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
     final var result = compile(pojo(valid("DirectBuffer name;")));
