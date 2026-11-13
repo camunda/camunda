@@ -14,7 +14,12 @@ on:
       - '.ci/scripts/ci/setup-medic-lookup.sh'
       - '.ci/scripts/ci/create-ci-slo-report.sh'
       - '.github/scripts/test-stats-summary/**'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      slack_channel_id:
+        description: 'Slack channel ID for the failed tests summary, e.g. a private test channel. Empty posts to #top-monorepo-ci. The CI SLO report always posts to #top-monorepo-ci.'
+        required: false
+        type: string
 
 env:
   TEST_OWNER: '@camunda/engineering-operations'
@@ -43,7 +48,8 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+            secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_CHANNEL_ID;
             secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
 
       - name: Login to Google Cloud
@@ -60,41 +66,25 @@ jobs:
         run: |
           gcloud info
 
-      - name: Create message with BigQuery data
-        id: message
+      - name: Create messages with BigQuery data
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
-        run: |
-          set -euo pipefail
-          MESSAGE="$(bash .github/scripts/test-stats-summary/build.sh failure)"
-          {
-            echo "MESSAGE<<EOF"
-            echo "$MESSAGE"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+        run: bash .github/scripts/test-stats-summary/build.sh failure "$RUNNER_TEMP/slack-messages.json"
 
       - name: Debug notification
         if: github.event_name == 'pull_request'
         shell: bash
-        env:
-          MESSAGE: ${{ steps.message.outputs.MESSAGE }}
         run: |
-          echo "$MESSAGE"
+          jq -r '.[] | "=== \(.text)", (.blocks[] | .text.text // .elements[0].text // "---")' "$RUNNER_TEMP/slack-messages.json"
 
       - name: Send notification
         if: github.event_name != 'pull_request'
-        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
-        with:
-          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
-          webhook-type: webhook-trigger
-          # For posting a rich message using Block Kit
-          payload: |
-            blocks:
-              - type: "section"
-                text:
-                  type: "mrkdwn"
-                  text: ${{ toJSON(steps.message.outputs.MESSAGE) }}
+        shell: bash
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}
+        run: bash .github/scripts/test-stats-summary/post.sh "$RUNNER_TEMP/slack-messages.json"
 
       - name: Observe build status
         if: always()
