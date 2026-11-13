@@ -187,7 +187,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       if (isFinal && mutable) {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
-      properties.add(new Property(key, kind, fieldName, javaType(mirror, kind), inPlace));
+      final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
+      properties.add(new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -372,10 +373,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case BOOLEAN -> "    n += w.writeBoolean(%s);\n".formatted(get);
             case STRING -> "    n += w.writeString(%s);\n".formatted(get);
             case BINARY -> "    n += w.writeBinary(%s);\n".formatted(get);
-            case RAW -> "    n += w.writeRaw(requireRaw(%s, \"%s\"));\n".formatted(get, p.key());
+            case RAW -> "    n += w.writeRaw(requireRaw(%s, %s));\n".formatted(get, p.keyLiteral());
             case ENUM ->
-                "    n += w.writeString(ENUM_NAMES_%d[requireEnum(%s, \"%s\").ordinal()]);\n"
-                    .formatted(i, get, p.key());
+                "    n += w.writeString(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()]);\n"
+                    .formatted(i, get, p.keyLiteral());
             case STRING_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
@@ -412,10 +413,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case BINARY ->
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(%s.capacity());\n"
                     .formatted(get);
-            case RAW -> "    n += requireRaw(%s, \"%s\").capacity();\n".formatted(get, p.key());
+            case RAW -> "    n += requireRaw(%s, %s).capacity();\n".formatted(get, p.keyLiteral());
             case ENUM ->
-                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[requireEnum(%s, \"%s\").ordinal()].capacity());\n"
-                    .formatted(i, get, p.key());
+                "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()].capacity());\n"
+                    .formatted(i, get, p.keyLiteral());
             case STRING_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
                     + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
@@ -539,8 +540,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     int i = 0;
     for (final var p : m.properties()) {
       s.append(
-          "  private static final UnsafeBuffer KEY_%d = Decoding.encodedKey(\"%s\");\n"
-              .formatted(i, p.key()));
+          "  private static final UnsafeBuffer KEY_%d = Decoding.encodedKey(%s);\n"
+              .formatted(i, p.keyLiteral()));
       i++;
     }
     s.append("  private static final UnsafeBuffer[] KEYS = {");
@@ -610,10 +611,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   /**
+   * @param keyLiteral the key as an escaped Java string literal, to be pasted into generated code
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
    */
-  private record Property(String key, Type type, String field, String javaType, boolean inPlace) {}
+  private record Property(
+      String keyLiteral, Type type, String field, String javaType, boolean inPlace) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

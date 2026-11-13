@@ -321,7 +321,7 @@ final class GeneratedCodecPropertyTest {
                 fields.add(
                     Arbitraries.strings()
                         .withCharRange('a', 'z')
-                        .withChars('-', '_', 'é')
+                        .withChars('-', '_', 'é', '"', '\\')
                         .ofMaxLength(40)
                         .injectNull(0.5)
                         .map(suffix -> new FieldSpec(index, type, suffix)));
@@ -786,7 +786,8 @@ final class GeneratedCodecPropertyTest {
     String declaration(final boolean emptyLists) {
       final var attributes = new ArrayList<String>();
       if (keySuffix != null) {
-        attributes.add("value = \"" + key() + "\"");
+        final var escaped = key().replace("\\", "\\\\").replace("\"", "\\\"");
+        attributes.add("value = \"" + escaped + "\"");
       }
       if (type == Type.BINARY) {
         attributes.add("binary = true");
