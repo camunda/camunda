@@ -16,15 +16,7 @@ export async function navigateToApp(
   page: Page,
   appName: string,
 ): Promise<void> {
-  if (appName == 'operate') {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  } else if (appName == 'tasklist') {
-    await page.goto(
-      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
-    );
-  } else if (appName == 'admin') {
+  if (['operate', 'tasklist', 'admin'].includes(appName)) {
     await page.goto(
       process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
     );
@@ -80,11 +72,6 @@ export async function gotoProcessesPage(
     : baseUrl;
 
   await page.goto(url);
-}
-
-export async function validateURL(page: Page, URL: RegExp): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises, playwright/missing-playwright-await
-  expect(page).toHaveURL(URL);
 }
 
 export async function completeTaskWithRetry(
