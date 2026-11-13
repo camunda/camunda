@@ -16,8 +16,7 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
  * Finds the {@link MsgpackCodec} of a class: the generated {@code <Name>Codec} of a {@link
  * MsgpackPojo}, or an adapter for a {@link BaseValue} (e.g. an {@code UnpackedObject}). Only exact
  * classes are supported. Look-ups are not meant for the hot path: generated code resolves the
- * codecs of its nested objects once, when it is initialized, and {@link MsgpackBufferValue} once
- * per instance.
+ * codecs of its nested objects once, when it is initialized.
  */
 public final class Codecs {
 

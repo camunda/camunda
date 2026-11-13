@@ -12,7 +12,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   final Bar bar = new Bar();              // another @MsgpackPojo, or a BaseValue
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  // nothing else: FooCodec and FooOps are generated and found by MsgpackBufferValue
+  @Override protected MsgpackCodec<Foo> codec() { return FooCodec.INSTANCE; }
+  @Override protected MsgpackOps<Foo> ops() { return FooOps.INSTANCE; }
+  // nothing else: FooCodec and FooOps are generated
 }
 ```
 
@@ -64,9 +66,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   enum field without initializer is required without the annotation, as it holds no value then.
 - String, binary and raw fields need an initializer. `reset` assigns (or wraps) the default of
   a shared prototype instance, so a default buffer must never be modified in place.
-- Codecs and ops are found with `Codecs.of(Type.class)` and `Codecs.opsOf(Type.class)`
-  (`ClassValue`s, by naming convention). Generated code resolves its nested codecs once, when the
-  generated class is initialized.
+- Generated code finds the codecs of its nested values with `Codecs.of(Type.class)`
+  (a `ClassValue`, by naming convention) once, when the generated class is initialized. A
+  `MsgpackBufferValue` does no look-up: it declares abstract `codec()` and `ops()`, which every
+  POJO overrides to return `FooCodec.INSTANCE` and `FooOps.INSTANCE`. They must not be called from
+  the constructor: `FooOps` creates its defaults with `new Foo()` in its static initializer.
 - `copyFrom(source)` of `MsgpackBufferValue` (`NameOps.copy(source, target)`) is a deep copy of the
   stored properties: the target loses its previous ones, shares nothing with the source, and does
   not depend on the buffer the source was read from. It allocates a copy of every string, binary,

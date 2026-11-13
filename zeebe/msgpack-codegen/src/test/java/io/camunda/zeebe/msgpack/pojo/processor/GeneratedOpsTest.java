@@ -67,6 +67,16 @@ final class GeneratedOpsTest {
                     + """
                     @MsgpackPojo
                     public final class Inner extends MsgpackBufferValue<Inner> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Inner> codec() {
+                        return InnerCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Inner> ops() {
+                        return InnerOps.INSTANCE;
+                      }
+
                       int value = 3;
                       @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                     }
@@ -91,6 +101,16 @@ final class GeneratedOpsTest {
                     + """
                     @MsgpackPojo
                     public final class Secret extends MsgpackBufferValue<Secret> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Secret> codec() {
+                        return SecretCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Secret> ops() {
+                        return SecretOps.INSTANCE;
+                      }
+
                       long id = 1;
                       @MsgpackSanitized DirectBuffer password = Decoding.EMPTY;
                       @MsgpackSanitized int pin = 4;
@@ -104,6 +124,16 @@ final class GeneratedOpsTest {
                     + """
                     @MsgpackPojo
                     public final class Holder extends MsgpackBufferValue<Holder> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Holder> codec() {
+                        return HolderCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Holder> ops() {
+                        return HolderOps.INSTANCE;
+                      }
+
                       final Secret secret = new Secret();
                       final List<Secret> secrets = new ArrayList<>();
                       @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
@@ -115,6 +145,16 @@ final class GeneratedOpsTest {
                     + """
                     @MsgpackPojo
                     public final class Sample extends MsgpackBufferValue<Sample> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() {
+                        return SampleCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() {
+                        return SampleOps.INSTANCE;
+                      }
+
                       long key = -1L;
                       int count = 7;
                       boolean flag = true;

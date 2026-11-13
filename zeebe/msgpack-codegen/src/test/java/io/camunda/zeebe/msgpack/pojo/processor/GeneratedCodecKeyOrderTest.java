@@ -62,6 +62,16 @@ final class GeneratedCodecKeyOrderTest {
                     + """
                     @MsgpackPojo
                     public final class Inner extends MsgpackBufferValue<Inner> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Inner> codec() {
+                        return InnerCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Inner> ops() {
+                        return InnerOps.INSTANCE;
+                      }
+
                       int value = 3;
                       @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                     }
@@ -72,6 +82,16 @@ final class GeneratedCodecKeyOrderTest {
                     + """
                     @MsgpackPojo
                     public final class Sample extends MsgpackBufferValue<Sample> {
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() {
+                        return SampleCodec.INSTANCE;
+                      }
+
+                      @Override
+                      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() {
+                        return SampleOps.INSTANCE;
+                      }
+
                       long key = -1L;
                       int count = 7;
                       boolean flag = true;

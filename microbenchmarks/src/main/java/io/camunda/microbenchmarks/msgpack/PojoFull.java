@@ -9,6 +9,8 @@ package io.camunda.microbenchmarks.msgpack;
 
 import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
@@ -25,6 +27,15 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 @MsgpackPojo
 public final class PojoFull extends MsgpackBufferValue<PojoFull> {
+  @Override
+  protected MsgpackCodec<PojoFull> codec() {
+    return PojoFullCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PojoFull> ops() {
+    return PojoFullOps.INSTANCE;
+  }
 
   /** The msgpack encoding of the string "abc". */
   static final DirectBuffer RAW = new UnsafeBuffer(new byte[] {(byte) 0xa3, 'a', 'b', 'c'});

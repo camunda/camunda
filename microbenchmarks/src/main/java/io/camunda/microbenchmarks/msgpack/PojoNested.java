@@ -9,6 +9,8 @@ package io.camunda.microbenchmarks.msgpack;
 
 import io.camunda.zeebe.msgpack.pojo.Decoding;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
@@ -18,6 +20,15 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** Plain data nested in {@link PojoFull}, stores the same bytes as {@link UnpackedNested}. */
 @MsgpackPojo
 public final class PojoNested extends MsgpackBufferValue<PojoNested> {
+  @Override
+  protected MsgpackCodec<PojoNested> codec() {
+    return PojoNestedCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PojoNested> ops() {
+    return PojoNestedOps.INSTANCE;
+  }
 
   long id = -1L;
   final UnsafeBuffer label = new UnsafeBuffer(Decoding.EMPTY);

@@ -493,6 +493,16 @@ final class MsgpackPojoProcessorTest {
                 public class Outer {
                   @MsgpackPojo
                   public static final class Sample extends MsgpackBufferValue<Sample> {
+                    @Override
+                    protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() {
+                      return SampleCodec.INSTANCE;
+                    }
+
+                    @Override
+                    protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() {
+                      return SampleOps.INSTANCE;
+                    }
+
                     long key;
                   }
                 }
@@ -945,6 +955,16 @@ final class MsgpackPojoProcessorTest {
                 + """
                 @MsgpackPojo
                 public final class Hidden extends MsgpackBufferValue<Hidden> {
+                  @Override
+                  protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Hidden> codec() {
+                    return HiddenCodec.INSTANCE;
+                  }
+
+                  @Override
+                  protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Hidden> ops() {
+                    return HiddenOps.INSTANCE;
+                  }
+
                   int value;
                   Hidden() {}
                 }
@@ -1100,8 +1120,12 @@ final class MsgpackPojoProcessorTest {
         new Source(
             "sample.Sample",
             IMPORTS
-                + "@MsgpackPojo public final class Sample extends Base { long key; %s }"
-                    .formatted(UNKNOWN)));
+                + "@MsgpackPojo public final class Sample extends Base { long key; "
+                + "@Override protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() "
+                + "{ return SampleCodec.INSTANCE; } "
+                + "@Override protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() "
+                + "{ return SampleOps.INSTANCE; } "
+                + "%s }".formatted(UNKNOWN)));
   }
 
   private static SampleCodec codecOf(final String classSource, final Source... others) {
@@ -1192,6 +1216,16 @@ final class MsgpackPojoProcessorTest {
     return """
     @MsgpackPojo
     public final class Sample extends MsgpackBufferValue<Sample> {
+      @Override
+      protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Sample> codec() {
+        return SampleCodec.INSTANCE;
+      }
+
+      @Override
+      protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Sample> ops() {
+        return SampleOps.INSTANCE;
+      }
+
       %s
     }
     """
@@ -1210,6 +1244,16 @@ final class MsgpackPojoProcessorTest {
             + """
             @MsgpackPojo
             public final class Inner extends MsgpackBufferValue<Inner> {
+              @Override
+              protected io.camunda.zeebe.msgpack.pojo.MsgpackCodec<Inner> codec() {
+                return InnerCodec.INSTANCE;
+              }
+
+              @Override
+              protected io.camunda.zeebe.msgpack.pojo.MsgpackOps<Inner> ops() {
+                return InnerOps.INSTANCE;
+              }
+
               int value = 3;
               @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
             }

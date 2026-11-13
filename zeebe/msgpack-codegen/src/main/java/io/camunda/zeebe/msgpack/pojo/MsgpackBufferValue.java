@@ -18,8 +18,9 @@ import org.agrona.MutableDirectBuffer;
  * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
  * MsgpackScratch}.
  *
- * <p>The generated codec and ops of the concrete class are found with {@link Codecs}, so the class
- * does not have to mention them. {@link #reset()} is called before every read.
+ * <p>The concrete class returns its generated codec and ops from {@link #codec()} and {@link
+ * #ops()}, which only return static instances: they must not be called from the constructor. {@link
+ * #reset()} is called before every read.
  *
  * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
  * scratch state.
@@ -29,18 +30,20 @@ import org.agrona.MutableDirectBuffer;
 public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     implements BufferReader, BufferWriter, Recyclable {
 
-  // resolved once per instance, so that reads and writes do not look them up
-  private final MsgpackCodec<T> codec = Codecs.of(type());
-  private final MsgpackOps<T> ops = Codecs.opsOf(type());
+  /** The generated {@code <Name>Codec}: return {@code <Name>Codec.INSTANCE}. */
+  protected abstract MsgpackCodec<T> codec();
+
+  /** The generated {@code <Name>Ops}: return {@code <Name>Ops.INSTANCE}. */
+  protected abstract MsgpackOps<T> ops();
 
   @Override
   public int getLength() {
-    return codec.getLength(self());
+    return codec().getLength(self());
   }
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    return codec.write(MsgpackScratch.writer(buffer, offset), self());
+    return codec().write(MsgpackScratch.writer(buffer, offset), self());
   }
 
   @Override
@@ -48,7 +51,7 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     reset();
     final var reader = MsgpackScratch.reader(buffer, offset, length);
     try {
-      codec.read(reader, self());
+      codec().read(reader, self());
     } catch (final RuntimeException e) {
       // the same context as UnpackedObject, which this replaces
       throw new RuntimeException(
@@ -65,7 +68,7 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
    * copied: override this method to copy it as well, and call {@code super}.
    */
   public void copyFrom(final T source) {
-    ops.copy(source, self());
+    ops().copy(source, self());
   }
 
   /**
@@ -83,29 +86,24 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     }
     @SuppressWarnings("unchecked")
     final T other = (T) o;
-    return ops.equals(self(), other);
+    return ops().equals(self(), other);
   }
 
   @Override
   public int hashCode() {
-    return ops.hashCode(self());
+    return ops().hashCode(self());
   }
 
   /** The stored properties as JSON, with {@link MsgpackSanitized} ones masked. */
   @Override
   public String toString() {
-    return ops.toString(self());
+    return ops().toString(self());
   }
 
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {
-    ops.reset(self());
-  }
-
-  @SuppressWarnings("unchecked")
-  private Class<T> type() {
-    return (Class<T>) getClass();
+    ops().reset(self());
   }
 
   @SuppressWarnings("unchecked")

@@ -196,9 +196,22 @@ Edit the class in place:
 4. Delete the `declareProperty` calls and `super(n)`. Keep all constructors; the no-arg
    constructor must remain, reachable from the same package. Constructors do NOT call `reset()`,
    the initializers set the defaults.
-5. Do NOT write `reset()` or a `codec()` method. `MsgpackBufferValue` provides `reset()` by
-   delegating to the generated `NameOps`, which restores initializers, clears lists, resets nested
-   fields and clears `unknownProperties`; it finds the generated `NameCodec` itself. Only if the
+5. Add the two required overrides (the compiler fails without them), each returning a static
+   instance of the generated classes:
+   ```java
+   @Override
+   protected MsgpackCodec<Name> codec() {
+     return NameCodec.INSTANCE;
+   }
+
+   @Override
+   protected MsgpackOps<Name> ops() {
+     return NameOps.INSTANCE;
+   }
+   ```
+   Import `io.camunda.zeebe.msgpack.pojo.MsgpackCodec` and `MsgpackOps`. Do NOT write `reset()`:
+   `MsgpackBufferValue` provides it by delegating to the generated `NameOps`, which restores
+   initializers, clears lists, resets nested fields and clears `unknownProperties`. Only if the
    class has `@MsgpackIgnore`d state, override `reset()` as
    `{ super.reset(); /* reset ignored state */ }`.
 6. Rewrite every method that used a property. Mechanical translations:
