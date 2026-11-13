@@ -42,7 +42,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * with the {@code gc} profiler to see the allocation rate. {@code required} has only properties
  * without a default, which are checked to be set on write and read; {@code requiredPlain} stores
  * the same bytes with defaults, so the generated codec checks nothing; {@code requiredBoxed} is
- * {@code required} with {@code @Nullable Long} and {@code Integer} fields instead of holders.
+ * {@code required} with {@code @Nullable Long} and {@code Integer} fields instead of holders, and
+ * {@code requiredSentinel} with {@code @MsgpackRequired} primitives, unset while 0. The {@code big}
+ * values have the same four variants for a value shaped like an element instance, with 20
+ * properties of which only 4 have no default.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -107,7 +110,18 @@ public class StateValueBenchmark {
     private static final int BUFFER_CAPACITY = 1024;
     private static final int BATCH_SIZE = 10_000;
 
-    @Param({"variable", "full", "required", "requiredPlain", "requiredBoxed"})
+    @Param({
+      "variable",
+      "full",
+      "required",
+      "requiredPlain",
+      "requiredBoxed",
+      "requiredSentinel",
+      "big",
+      "bigPlain",
+      "bigBoxed",
+      "bigSentinel"
+    })
     public String value;
 
     @Param({"unpacked", "generated"})
@@ -142,7 +156,10 @@ public class StateValueBenchmark {
             init(UnpackedFull::new, i -> new UnpackedFull().fill(i), UnpackedFull::copyFrom);
         case "full/generated" ->
             init(PojoFull::new, i -> new PojoFull().fill(i), PojoFull::copyFrom);
-        case "required/unpacked", "requiredPlain/unpacked", "requiredBoxed/unpacked" ->
+        case "required/unpacked",
+            "requiredPlain/unpacked",
+            "requiredBoxed/unpacked",
+            "requiredSentinel/unpacked" ->
             init(Pojo::new, StateValueBenchmark::pojo, Pojo::copyFrom);
         case "required/generated" ->
             init(PojoRequired::new, i -> new PojoRequired().fill(i), PojoRequired::copyFrom);
@@ -156,6 +173,23 @@ public class StateValueBenchmark {
                 PojoRequiredBoxed::new,
                 i -> new PojoRequiredBoxed().fill(i),
                 PojoRequiredBoxed::copyFrom);
+        case "requiredSentinel/generated" ->
+            init(
+                PojoRequiredSentinel::new,
+                i -> new PojoRequiredSentinel().fill(i),
+                PojoRequiredSentinel::copyFrom);
+        case "big/unpacked", "bigPlain/unpacked", "bigBoxed/unpacked", "bigSentinel/unpacked" ->
+            init(UnpackedBig::new, i -> new UnpackedBig().fill(i), UnpackedBig::copyFrom);
+        case "big/generated" -> init(PojoBig::new, i -> new PojoBig().fill(i), PojoBig::copyFrom);
+        case "bigPlain/generated" ->
+            init(PojoBigPlain::new, i -> new PojoBigPlain().fill(i), PojoBigPlain::copyFrom);
+        case "bigBoxed/generated" ->
+            init(PojoBigBoxed::new, i -> new PojoBigBoxed().fill(i), PojoBigBoxed::copyFrom);
+        case "bigSentinel/generated" ->
+            init(
+                PojoBigSentinel::new,
+                i -> new PojoBigSentinel().fill(i),
+                PojoBigSentinel::copyFrom);
         default -> throw new IllegalArgumentException(value + "/" + impl);
       }
     }
