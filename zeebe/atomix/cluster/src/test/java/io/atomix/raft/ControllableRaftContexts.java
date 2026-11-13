@@ -466,11 +466,12 @@ public final class ControllableRaftContexts {
     final var failNext = failNextFlush.computeIfAbsent(memberId, m -> new AtomicBoolean());
     return new RaftLogFlusher() {
       @Override
-      public void flush(final Journal journal) throws FlushException {
+      public CompletableFuture<Void> flush(final Journal journal, final long index) {
         if (failNext.getAndSet(false)) {
-          throw new FlushException(new IOException("Injected flush failure"));
+          return CompletableFuture.failedFuture(
+              new FlushException(new IOException("Injected flush failure")));
         }
-        journal.flush();
+        return RaftLogFlusher.Factory.DIRECT.flush(journal, index);
       }
 
       @Override
