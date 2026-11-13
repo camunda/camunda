@@ -221,3 +221,18 @@ ending 11:54Z. Namespaces `c8-cs-wb700-20261113-1121-wb` / `-base`
 Neither run reached 700 PI/s; backpressure throttled the starter in both. Single run
 each, no repeat yet: confirm with a second pair and broker CPU/disk IOPS before
 drawing conclusions. Data-availability p99 not reported (no secondary storage).
+
+Follow-up, 600s window ending 12:48Z (metrics runs 43428155927 / 43428161458):
+
+| Metric | WB on | Baseline | Delta |
+|---|---:|---:|---:|
+| Throughput (PI/s) | 454.94 | 408.89 | +11% |
+| Completion ratio | 99.85% | 100.00% | |
+| Backpressure | 7.36% | 7.98% | -0.6pp |
+
+The gap shrank mostly because the baseline went up (324 -> 409, +26%); WB moved
+468 -> 455 (-3%, likely noise). The first window started ~13 min after deploy and
+caught the baseline still warming up (completion 98.8%, i.e. a backlog it was
+still working off). WB hides that cold start because reads are served from memory.
+Treat ~+11% as the current steady-state estimate, pending a longer window.
+
