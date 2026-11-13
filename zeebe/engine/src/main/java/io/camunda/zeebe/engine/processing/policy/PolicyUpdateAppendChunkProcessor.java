@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.PolicyUpdateState;
 import io.camunda.zeebe.engine.state.policy.PersistedPolicyUpdate;
@@ -37,7 +38,9 @@ import org.jspecify.annotations.NullMarked;
  * be written, and nothing can undo them. A chunk of it is then only rejected, and the update never
  * fails, whatever is wrong with the chunk.
  *
- * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
+ * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}. The broker's Hub
+ * receiver sends the chunks as requests and waits for each response, so the processor answers every
+ * chunk: with the appended event, or with the rejection.
  */
 @ExcludeAuthorizationCheck
 @NullMarked
@@ -49,6 +52,7 @@ public final class PolicyUpdateAppendChunkProcessor
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
 
   public PolicyUpdateAppendChunkProcessor(
       final PolicyUpdateState policyUpdateState,
@@ -59,13 +63,14 @@ public final class PolicyUpdateAppendChunkProcessor
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
   }
 
   @Override
   public void processRecord(final TypedRecord<PolicyUpdateRecord> command) {
-    final var rejection = PolicyUpdateGuard.checkInternal(command);
+    final var rejection = PolicyUpdateGuard.checkOnDeploymentPartition(command);
     if (rejection.isPresent()) {
-      rejectionWriter.appendRejection(command, rejection.get().type(), rejection.get().reason());
+      reject(command, rejection.get().type(), rejection.get().reason());
       return;
     }
 
@@ -73,7 +78,7 @@ public final class PolicyUpdateAppendChunkProcessor
     final var openUpdate = policyUpdateState.getOpenUpdate();
     if (openUpdate.isEmpty()) {
       if (chunk.getChunkIndex() != 0) {
-        rejectionWriter.appendRejection(
+        reject(
             command,
             RejectionType.INVALID_STATE,
             "Expected policy update '%s' to start with chunk 0, but chunk %d was received first"
@@ -86,6 +91,8 @@ public final class PolicyUpdateAppendChunkProcessor
 
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, PolicyUpdateIntent.CHUNK_APPENDED, chunk);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, PolicyUpdateIntent.CHUNK_APPENDED, chunk, command);
     completeUpdate()
         .ifPresent(
             update ->
@@ -105,7 +112,7 @@ public final class PolicyUpdateAppendChunkProcessor
     final var chunk = command.getValue();
     final var openUpdate = persistedUpdate.getUpdate();
     if (!openUpdate.getUpdateId().equals(chunk.getUpdateId())) {
-      rejectionWriter.appendRejection(
+      reject(
           command,
           RejectionType.INVALID_STATE,
           ("Expected no other policy update to be open when chunk %d of policy update '%s' is"
@@ -115,7 +122,7 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     if (persistedUpdate.isApplying()) {
-      rejectionWriter.appendRejection(
+      reject(
           command,
           RejectionType.INVALID_STATE,
           ("Expected policy update '%s' to still receive chunks when chunk %d is received, but it"
@@ -160,7 +167,15 @@ public final class PolicyUpdateAppendChunkProcessor
         PolicyUpdateRecords.withoutPolicyData(openUpdate, command.getValue().getChunkIndex())
             .setErrorMessage(reason);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
+    reject(command, rejectionType, reason);
+  }
+
+  private void reject(
+      final TypedRecord<PolicyUpdateRecord> command,
+      final RejectionType rejectionType,
+      final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 
   /** The open update, if every one of its chunks is buffered. */
