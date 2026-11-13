@@ -29,6 +29,10 @@ public class ProcessDefinitionSuspensionRecordStream
     return valueFilter(v -> v.getBpmnProcessId().equals(bpmnProcessId));
   }
 
+  public ProcessDefinitionSuspensionRecordStream withVersion(final int version) {
+    return valueFilter(v -> v.getVersion() == version);
+  }
+
   @Override
   protected ProcessDefinitionSuspensionRecordStream supply(
       final Stream<Record<ProcessDefinitionSuspensionRecordValue>> wrappedStream) {
