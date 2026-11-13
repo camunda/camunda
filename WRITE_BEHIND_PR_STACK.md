@@ -134,6 +134,11 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
   - `RocksDbVsWriteBehindDifferentialTest` committed as the last PR 2 commit (`a55cbe190c5`),
     300 tries green. NOTE: differential/property tests are tagged `randomized` and are skipped
     unless Gradle gets `-PincludeRandomTests` (Maven: `-Pinclude-random-tests`).
+  - `c3da3c4ed3a` perf: stop waking the write-behind writer on every commit (2026-11-13).
+    Agrona ManyToOneConcurrentLinkedQueue; writer parks until the oldest commit is due
+    (idle park = max(flushDelay, 1ms)); only threshold/snapshot/close unpark it. Delay 0
+    now means "within 1ms". Profile: commit->unpark samples 198 -> 4.
+    PR 2b/3 rebased on it: PR 2b `d95d6ce61d0`, PR 3 `c6ba067f66b`.
   - Follow-ups: seek copies dirty range into a TreeMap; put does a full decode, miss decodes twice;
     weight ignores decoded heap size.
 - [x] PR 2b pushed: `cs/wb-2b-engine-load-runner` on PR 2 `a55cbe190c5`, draft PR camunda/camunda#69247
@@ -174,3 +179,6 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     skipped keys 14.6M -> 0, seek time 2691 -> 2, 651 -> 694 inst/s.
   - Remaining: flush delay defaults to 0 in engine tests (no coalescing, ~700k real
     deletes); PR 4 candidate: in-memory Bloom filter over all CFs (design open).
+  - Flush delay sweep with the non-blocking flusher (50k + prefill + revisit, wb-default,
+    inst/s; old flusher delay 0 = 522, 5s = 501): 0 -> 569 (563 profiled), 100ms -> 591,
+    1s -> 537. Flushes 207k (old 0) / 115k / 1.4k / 156; filter misses 113 / 12k / 17k / 30k.
