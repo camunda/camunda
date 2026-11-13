@@ -420,6 +420,17 @@ test('errorSummary keeps the first two lines of the error, without colours, log 
     errorSummary({errors: [{message: 'TimeoutError: locator.click: Timeout 10000ms exceeded.\n  > 12 |   await x'}]}),
     'TimeoutError: locator.click: Timeout 10000ms exceeded.',
   );
+  // A locator timeout: its call log heading, lowercase "log", comes right
+  // after the one message line.
+  assert.equal(
+    errorSummary({
+      error: {
+        message:
+          'TimeoutError: locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for getByRole(\'button\')',
+      },
+    }),
+    'TimeoutError: locator.click: Timeout 10000ms exceeded.',
+  );
   assert.equal(errorSummary({}), '');
   assert.equal(errorSummary(undefined), '');
   const long = errorSummary({error: {message: `Error: ${'x'.repeat(500)}`}});

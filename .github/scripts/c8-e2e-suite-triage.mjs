@@ -62,7 +62,8 @@ export function errorSummary(result) {
   for (const raw of String(message).replace(ANSI, '').split('\n')) {
     const line = raw.trim();
     if (!line) continue;
-    if (/^(Call Log:|at |>|\d+ \|)/.test(line)) break;
+    // "Call log:" (locator timeouts) or "Call Log:" (expect.toPass).
+    if (/^(call log:|at |>|\d+ \|)/i.test(line)) break;
     lines.push(line);
     if (lines.length === 2) break;
   }
