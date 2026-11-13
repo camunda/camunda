@@ -242,6 +242,7 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 |----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
 | `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+| `c8-orchestration-cluster-e2e-tests-pr.yml`        | PRs changing the suite | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-pr.yml)        |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results` and TestRail.
 
@@ -272,7 +273,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **If your PR changes non-Markdown files of the suite, wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`, which runs this version's test matrix for your branch through main's test workflow) to complete before requesting review; for a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the on-demand workflow against that branch instead.** A Markdown-only PR does not trigger the check and needs no run. PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable

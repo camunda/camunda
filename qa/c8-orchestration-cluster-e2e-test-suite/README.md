@@ -20,6 +20,7 @@ Follow the steps below to get started and run the tests locally.
   - [C8 SM Requirements (Self-Managed)](#c8-sm-requirements-self-managed)
 - [Test Suite Structure (Page Object Model)](#test-suite-structure-page-object-model)
 - [GitHub Actions for Testing](#github-actions-for-testing)
+  - [Automatic PR Check](#automatic-pr-check)
   - [Running the On-Demand Workflow](#running-the-on-demand-workflow)
   - [Automated Nightly Test Runs](#automated-nightly-test-runs)
   - [CI Test Results](#ci-test-results)
@@ -215,6 +216,22 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ## GitHub Actions for Testing
 
+### Automatic PR Check
+
+When a pull request to `stable/8.10` changes non-Markdown files under
+`qa/c8-orchestration-cluster-e2e-test-suite/`, `c8-orchestration-cluster-e2e-tests-pr.yml` runs
+this version's test matrix for the PR's head commit, as jobs of the check, so each job's result
+shows on the PR. This branch has no suite workflows of its own: the check uses `main`'s test
+workflow. A newer push cancels the PR's run in progress. The check is **not** required: a red
+result does not block the merge, but any failure must be reviewed and documented in the PR
+description. It does not run for pull requests from forks, which get no secrets: for those,
+a maintainer reviews the PR, pushes its head commit to a branch in `camunda/camunda` and runs the
+on-demand workflow against that branch.
+
+When a suite job fails, its failed tests are also re-run with the base branch's test code, and a
+comment on the PR tags the author with the result for each test: a regression from the PR's test
+changes, a new test, failing with the base test code too, or not verified, with the reason.
+
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
@@ -256,10 +273,11 @@ We welcome contributions! To contribute:
 - Reviewers must include someone from the Test Automation Team and a product team developer
 
 > [!IMPORTANT]
-> **Do not request a review until the on-demand workflow has been run and the results have been verified.**
+> **Do not request a review until the suite has run and the results have been verified.**
 > Before assigning reviewers to your PR:
-> 1. Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against your branch.
-> 2. Wait for the workflow to complete.
+> 1. Wait for the [Automatic PR Check](#automatic-pr-check) to complete. For a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) against that branch instead; wait for it to complete. A PR that changes only Markdown files
+> does not trigger the check and needs no run.
+> 2. Make sure every suite job has finished.
 > 3. Check the results. If there are failures, document each one in the PR description and confirm they are pre-existing issues not caused by your changes (not regressions).
 > 4. Only then request a review.
 >
