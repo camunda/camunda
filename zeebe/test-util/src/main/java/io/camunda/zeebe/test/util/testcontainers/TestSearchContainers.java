@@ -30,7 +30,7 @@ public final class TestSearchContainers {
   private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(5);
   // Keep in sync with version.elasticsearch.container in parent/pom.xml
   private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("9.5.5");
+      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("9.5.6");
   // Keep in sync with version.opensearch.container in parent/pom.xml
   private static final DockerImageName OPENSEARCH_IMAGE =
       DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.6");

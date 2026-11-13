@@ -20,7 +20,6 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ElasticSearchConfiguration;
 import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
-import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
@@ -185,11 +184,8 @@ public class ElasticsearchClientBuilder {
     }
 
     restClientBuilder.setHttpClientConfigCallback(
-        httpClientBuilder -> {
-          applyHttpClientConfig(httpClientBuilder, configurationService, requestInterceptors);
-          httpClientBuilder.addRequestInterceptorLast(
-              ElasticsearchCompatibilityInterceptor.INSTANCE);
-        });
+        httpClientBuilder ->
+            applyHttpClientConfig(httpClientBuilder, configurationService, requestInterceptors));
 
     // Credentials go out with every request instead of in answer to a 401 challenge. A server that
     // lets anonymous users through for some requests never challenges them, so those requests
