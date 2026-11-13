@@ -38,6 +38,37 @@ describe("Client constructor", () => {
   });
 });
 
+describe("Client with an environment variable prefix", () => {
+  it("should read its settings from the prefixed variables, and send the scope", () => {
+    // given
+    globalThis.__ENV.OPTIMIZE_BASE_URL = "http://optimize";
+    globalThis.__ENV.OPTIMIZE_CLIENT_ID = "optimize-client";
+    globalThis.__ENV.OPTIMIZE_CLIENT_SECRET = "optimize-secret";
+    globalThis.__ENV.OPTIMIZE_OAUTH_URL = "http://keycloak/optimize-token";
+    globalThis.__ENV.OPTIMIZE_TOKEN_AUDIENCE = "optimize-api";
+    globalThis.__ENV.OPTIMIZE_TOKEN_SCOPE = "openid";
+    const client = new Client("OPTIMIZE");
+
+    // when
+    client.get("/api/process/overview");
+
+    // then
+    const [tokenUrl, tokenPayload] = http.post.mock.calls[0].arguments;
+    assert.equal(tokenUrl, "http://keycloak/optimize-token");
+    assert.deepEqual(tokenPayload, {
+      grant_type: "client_credentials",
+      audience: "optimize-api",
+      client_id: "optimize-client",
+      client_secret: "optimize-secret",
+      scope: "openid",
+    });
+    assert.equal(
+      http.request.mock.calls[0].arguments[1],
+      "http://optimize/api/process/overview",
+    );
+  });
+});
+
 describe("Client.request", () => {
   it("should fetch a token then send an authenticated request", () => {
     // given
