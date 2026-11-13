@@ -22,4 +22,11 @@ public interface MsgpackOps<T extends Recyclable> {
 
   /** Restores the field initializers. */
   void reset(T target);
+
+  /**
+   * Copies the stored properties of {@code source} into {@code target}, which loses its previous
+   * ones. The copy is deep: it shares no state with the source, and it does not look at the buffer
+   * the source was read from. Fields that are not stored ({@link MsgpackIgnore}) are left alone.
+   */
+  void copy(T source, T target);
 }

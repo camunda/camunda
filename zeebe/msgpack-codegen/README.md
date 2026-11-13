@@ -21,8 +21,8 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - The annotation processor generates a stateless `<Name>Codec implements MsgpackCodec<Name>` per
   `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
 - Defaults are the field initializers. The processor also generates a `<Name>Ops` with the other
-  operations on the class. For now that is `reset`, which copies the defaults from a prototype
-  instance (plain field assignments, no reflection). The operations are static methods, so generated
+  operations on the class: `reset`, which copies the defaults from a prototype instance (plain field
+  assignments, no reflection), and `copy`. The operations are static methods, so generated
   code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
   for code that is generic in the type. It is separate from the codec.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
@@ -67,6 +67,13 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - Codecs and ops are found with `Codecs.of(Type.class)` and `Codecs.opsOf(Type.class)`
   (`ClassValue`s, by naming convention). Generated code resolves its nested codecs once, when the
   generated class is initialized.
+- `copyFrom(source)` of `MsgpackBufferValue` (`NameOps.copy(source, target)`) is a deep copy of the
+  stored properties: the target loses its previous ones, shares nothing with the source, and does
+  not depend on the buffer the source was read from. It allocates a copy of every string, binary,
+  raw value and document, and one object per item of a list of nested objects. A nested value that
+  is not a POJO and has no copy of its own is copied by writing it to a new array and reading it
+  back. `@MsgpackIgnore`d fields are not copied: a class with such state overrides `copyFrom` and
+  calls `super`.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
   written back, so a read-modify-write by an older version does not drop them. Every
   `@MsgpackPojo` needs exactly one `final` `@MsgpackUnknownProperties UnknownProperties` field,

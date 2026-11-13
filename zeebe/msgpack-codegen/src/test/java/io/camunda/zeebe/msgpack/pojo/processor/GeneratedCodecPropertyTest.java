@@ -114,9 +114,47 @@ final class GeneratedCodecPropertyTest {
       throws Exception {
     assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(scenario);
     assertWritesTheMsgpackFormatAndReadsItBack(scenario);
+    assertCopiesIntoAnIndependentInstance(scenario);
     if (scenario.schema().emptyLists()) {
       assertMatchesAnUnpackedObject(scenario);
     }
+  }
+
+  /** A copy stores the same bytes, whatever the target held, and survives reuse of the source. */
+  private static void assertCopiesIntoAnIndependentInstance(final Scenario scenario)
+      throws Exception {
+    // given a source read from a message, and a target that holds another value
+    final var compiled = compiled(scenario.schema());
+    final var source = compiled.newInstance();
+    final var message = randomOrderMessage(scenario, false);
+    final var sourceBuffer = new UnsafeBuffer(new byte[scenario.offset() + message.length + 8]);
+    sourceBuffer.putBytes(scenario.offset(), message);
+    ((MsgpackBufferValue<?>) source).wrap(sourceBuffer, scenario.offset(), message.length);
+    final var expected = new ExpandableArrayBuffer();
+    final int expectedLength = write(source, expected, scenario.offset());
+    final var target = compiled.newInstance();
+    wrap(
+        target,
+        declaredOrderMessage(scenario.schema(), scenario.previousValues()),
+        scenario.offset());
+
+    // when it is copied, and the buffer it was read from is reused
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final MsgpackBufferValue<?> copying = (MsgpackBufferValue) target;
+    copyFrom(copying, source);
+    sourceBuffer.setMemory(0, sourceBuffer.capacity(), (byte) 0xc1);
+
+    // then
+    final var actual = new ExpandableArrayBuffer();
+    final int actualLength = write(target, actual, scenario.offset());
+    assertThat(new UnsafeBuffer(actual, scenario.offset(), actualLength))
+        .as("copy%n%s", scenario.schema().source())
+        .isEqualTo(new UnsafeBuffer(expected, scenario.offset(), expectedLength));
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void copyFrom(final MsgpackBufferValue target, final Object source) {
+    target.copyFrom((MsgpackBufferValue) source);
   }
 
   private static void assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(final Scenario scenario)
