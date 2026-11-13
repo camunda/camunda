@@ -75,8 +75,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   back. `@MsgpackIgnore`d fields are not copied: a class with such state overrides `copyFrom` and
   calls `super`.
 - `equals` and `hashCode` of `MsgpackBufferValue` (`NameOps.equals`/`hashCode`) compare the stored
-  properties by content, like `UnpackedObject` does: buffers by their bytes, lists and nested values
-  by their elements, unknown properties by their bytes. `hashCode` does not look inside a nested
+  properties by content, like `UnpackedObject` does: buffers by their bytes, lists by
+  their elements, unknown properties by their bytes. A nested `BaseValue` is compared with its
+  own `equals`, like `UnpackedObject` does. `hashCode` does not look inside a nested
   `BaseValue` (an `UnpackedObject`), only at the size of a list of them: their own `hashCode` is not
   consistent with their `equals`, and equal values must hash alike. Unlike `UnpackedObject`, an instance is
   only equal to one of exactly the same class. `@MsgpackIgnore`d fields are not compared: a class with such
