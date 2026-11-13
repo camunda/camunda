@@ -240,7 +240,19 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
     }
   }
 
+  /**
+   * Whatever ends the writer must fail the store: nobody else would wake the committing thread that
+   * waits for capacity, or tell a snapshot why it times out.
+   */
   private void runWriter() {
+    try {
+      runWriterLoop();
+    } catch (final Throwable e) {
+      fail(e);
+    }
+  }
+
+  private void runWriterLoop() {
     final var group = new ArrayList<PendingTransaction<K, V>>();
     final Runnable takeQueued =
         () -> {
