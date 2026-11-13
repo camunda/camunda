@@ -1,0 +1,116 @@
+# description: Mirrors incident.io incidents into GitHub issues and keeps them in sync
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+#
+# Triggered by an incident.io workflow ("Send HTTP request" action) that POSTs a
+# repository_dispatch event with the incident's current state. The job upserts one
+# GitHub issue per incident, keyed by the incident reference in the issue title,
+# and closes/reopens it following the incident status.
+#
+# Expected client_payload:
+#   reference  incident reference, e.g. "INC-123" (required, used as the sync key)
+#   name       incident title
+#   status     incident status, e.g. "Investigating", "Closed"
+#   severity   incident severity
+#   commander  name of the incident commander
+#   permalink  link to the incident in incident.io
+#   slack_url  incident.io's Slack channel URL for the incident (optional — see below)
+#   summary    incident summary
+#
+# slack_url may be empty on the very first event, because the incident channel is
+# still being provisioned when the "incident created" trigger fires. The sync is
+# idempotent, so the link fills itself in on the next incident update.
+---
+name: incident.io issue sync
+
+on:
+  repository_dispatch:
+    types: [incident-io-sync]
+
+jobs:
+  sync-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      # Payload values are passed via env, never interpolated into the script, so a
+      # crafted incident title cannot inject shell commands.
+      - name: Upsert the incident issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          REFERENCE: ${{ github.event.client_payload.reference }}
+          NAME: ${{ github.event.client_payload.name }}
+          STATUS: ${{ github.event.client_payload.status }}
+          SEVERITY: ${{ github.event.client_payload.severity }}
+          COMMANDER: ${{ github.event.client_payload.commander }}
+          PERMALINK: ${{ github.event.client_payload.permalink }}
+          SLACK_URL: ${{ github.event.client_payload.slack_url }}
+          SUMMARY: ${{ github.event.client_payload.summary }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${REFERENCE:-}" ]]; then
+            echo "::error::client_payload.reference is required as the sync key"
+            exit 1
+          fi
+
+          title="[$REFERENCE] ${NAME:-untitled incident}"
+
+          # Rendered only once incident.io has provisioned the incident channel, so
+          # the issue never shows a dead "Slack" link.
+          slack_line=""
+          if [[ -n "${SLACK_URL:-}" ]]; then
+            slack_line="**Slack:** [incident channel]($SLACK_URL)"
+          fi
+
+          body=$(cat <<EOF
+          **Incident:** [$REFERENCE](${PERMALINK:-https://app.incident.io})
+          **Status:** ${STATUS:-unknown}
+          **Severity:** ${SEVERITY:-unknown}
+          **Incident commander:** ${COMMANDER:-unassigned}
+          $slack_line
+
+          ${SUMMARY:-_No summary yet._}
+
+          <!-- Managed by .github/workflows/incident-io-issue-sync.yml. Edits above are overwritten on the next incident update. -->
+          EOF
+          )
+
+          gh label create incident.io --repo "$REPOSITORY" --color B60205 \
+            --description "Mirrored from an incident.io incident" 2>/dev/null || true
+
+          # ponytail: the issue title is the incident -> issue mapping, so no state
+          # store is needed. Move to a mapping file only if titles stop being unique.
+          issue=$(gh issue list --repo "$REPOSITORY" --state all --limit 1 \
+                    --search "\"[$REFERENCE]\" in:title" --json number --jq '.[0].number // empty')
+
+          if [[ -z "$issue" ]]; then
+            issue_url=$(gh issue create --repo "$REPOSITORY" --title "$title" \
+                          --body "$body" --label incident.io)
+            issue="${issue_url##*/}"
+            echo "Created issue #$issue for $REFERENCE"
+          else
+            gh issue edit "$issue" --repo "$REPOSITORY" --title "$title" --body "$body"
+            echo "Updated issue #$issue for $REFERENCE"
+          fi
+
+          case "${STATUS:-}" in
+            Closed | Resolved | Declined | Canceled | Cancelled | Merged)
+              gh issue close "$issue" --repo "$REPOSITORY" --reason completed || true
+              ;;
+            *)
+              # Reopen if a previously closed incident became active again; a no-op
+              # error on an already-open issue is expected and ignored.
+              gh issue reopen "$issue" --repo "$REPOSITORY" 2>/dev/null || true
+              ;;
+          esac
