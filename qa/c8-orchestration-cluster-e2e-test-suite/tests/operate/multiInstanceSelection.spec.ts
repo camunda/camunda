@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
 import {waitForIncidents} from 'utils/incidentsHelper';
 import {extendedAssertionOptions} from 'utils/constants';
+import {logInViaApi} from 'utils/logInViaApi';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -53,6 +54,26 @@ test.beforeAll(async ({request}) => {
 test.describe('Multi Instance Flow Node Selection', () => {
   test.beforeEach(
     async ({page, operateHomePage, operateProcessInstancePage}) => {
+      // The login session is worker-scoped (see loginState in fixtures.ts) and
+      // established once at worker start. This describe's beforeAll then idles
+      // the browser session while it polls the API for 25 incidents, so by the
+      // time the test navigates the server-side session can already have timed
+      // out: /v2/authentication/me returns 401 (the cookie is still sent) and
+      // the app redirects to the login screen, leaving the instance-history
+      // tree empty. Re-establish the session on this context before navigating
+      // -- refreshing both the camunda-session cookie (via the shared cookie
+      // jar) and the CSRF token the app sends on its requests -- mirroring the
+      // logInViaApi pattern used by processInstanceWaitStatesFlagOff.spec.ts.
+      const baseURL =
+        process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
+      const {csrfToken} = await logInViaApi(page.context().request, baseURL, {
+        username: process.env.TEST_USERNAME ?? 'demo',
+        password: process.env.TEST_PASSWORD ?? 'demo',
+      });
+      await page.addInitScript((token) => {
+        sessionStorage.setItem('X-CSRF-TOKEN', token);
+      }, csrfToken);
+
       await navigateToAppHome(page, 'operate');
       await expect(operateHomePage.operateBanner).toBeVisible();
 
