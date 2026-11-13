@@ -10,7 +10,6 @@ import {Page, Locator, expect} from '@playwright/test';
 
 export class OperateProcessMigrationModePage {
   private page: Page;
-  readonly targetVersionCombo: Locator;
   readonly nextButton: Locator;
   readonly confirmButton: Locator;
   readonly migrationConfirmationInput: Locator;
@@ -22,9 +21,6 @@ export class OperateProcessMigrationModePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.targetVersionCombo = page.getByRole('combobox', {
-      name: 'Target Version',
-    });
     this.nextButton = this.page.getByRole('button', {name: 'Next'});
     this.confirmButton = this.page.getByRole('button', {name: 'Confirm'});
     this.migrationConfirmationInput = this.page
@@ -47,7 +43,7 @@ export class OperateProcessMigrationModePage {
   }
 
   async clickTargetVersionCombo(): Promise<void> {
-    await this.targetVersionCombo.click();
+    await this.targetVersionDropdown.click();
   }
 
   getOptionByName(name: string): Locator {
