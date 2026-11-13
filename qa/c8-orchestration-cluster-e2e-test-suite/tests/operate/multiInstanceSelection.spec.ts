@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from 'fixtures';
+import {publicTest as test} from 'fixtures';
 import {expect} from '@playwright/test';
 import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -54,15 +54,17 @@ test.beforeAll(async ({request}) => {
 test.describe('Multi Instance Flow Node Selection', () => {
   test.beforeEach(
     async ({page, operateHomePage, operateProcessInstancePage}) => {
-      // The login session is worker-scoped (see loginState in fixtures.ts) and
-      // established once at worker start. This describe's beforeAll then idles
-      // the browser session while it polls the API for 25 incidents, so by the
-      // time the test navigates the server-side session can already have timed
-      // out: /v2/authentication/me returns 401 (the cookie is still sent) and
-      // the app redirects to the login screen, leaving the instance-history
-      // tree empty. Re-establish the session on this context before navigating
-      // -- refreshing both the camunda-session cookie (via the shared cookie
-      // jar) and the CSRF token the app sends on its requests -- mirroring the
+      // This spec uses publicTest, so the browser context carries no
+      // pre-authenticated session and the logInViaApi call below is the single
+      // source of browser authentication. An inherited worker-scoped session
+      // would not help here anyway: this describe's beforeAll idles the browser
+      // while it polls the API for 25 incidents, long enough for a session
+      // established at worker start to time out, after which
+      // /v2/authentication/me returns 401 (the cookie is still sent) and the
+      // app redirects to the login screen, leaving the instance-history tree
+      // empty. Establish the session on this context before navigating --
+      // seeding both the camunda-session cookie (via the shared cookie jar) and
+      // the CSRF token the app sends on its requests -- mirroring the
       // logInViaApi pattern used by processInstanceWaitStatesFlagOff.spec.ts.
       const baseURL =
         process.env.CORE_APPLICATION_URL ?? 'http://localhost:8080';
