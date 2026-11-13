@@ -44,8 +44,8 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
 
   /**
    * The variables to complete the job with. Optional. Mutually exclusive with {@link
-   * #getVariablesExpression()} and a non-empty {@link #getVariablesTable()}. The legacy combination
-   * with {@link #getUseExampleData()} still ignores these variables.
+   * #getVariablesExpression()} and a non-empty {@link #getVariablesTable()}. The variables are
+   * ignored if {@link #getUseExampleData()} is set to true.
    *
    * @return the variables or an empty map if no variables are set
    */

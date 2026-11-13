@@ -23,7 +23,6 @@ import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJ
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -93,14 +92,9 @@ public class MockJobWorkerCompleteJobInstructionHandler
   }
 
   private VariablesTable toVariablesTable(final List<VariablesTableRow> tableRows) {
-    final Iterator<VariablesTableRow> rows = tableRows.iterator();
-    final VariablesTableRow firstRow = rows.next();
 
-    VariablesTable.Builder builder =
-        VariablesTable.when(firstRow.getWhen()).thenReturn(firstRow.getVariables());
-
-    while (rows.hasNext()) {
-      final VariablesTableRow row = rows.next();
+    VariablesTable.Builder builder = VariablesTable.create();
+    for (VariablesTableRow row : tableRows) {
       builder = builder.when(row.getWhen()).thenReturn(row.getVariables());
     }
 

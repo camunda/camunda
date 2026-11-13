@@ -49,6 +49,16 @@ import java.util.Map;
 public interface VariablesTable {
 
   /**
+   * Creates a new {@link VariablesTable.Builder} to build a table of {@code when}/{@code variables}
+   * rows.
+   *
+   * @return a new {@link VariablesTable.Builder}
+   */
+  static Builder create() {
+    return VariablesTableImpl.EMPTY;
+  }
+
+  /**
    * Starts building a new {@link VariablesTable} with a first row that matches the given {@code
    * when} map.
    *
