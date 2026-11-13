@@ -32,8 +32,12 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessDefinitionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class ProcessDefinitionServices
     extends SearchQueryService<
@@ -164,4 +168,42 @@ public class ProcessDefinitionServices
                         authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
                 .getProcessDefinitionMessageSubscriptionStatistics(query));
   }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> suspendProcessDefinitions(
+      final ProcessDefinitionStateChangeRequest request,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerSuspendProcessDefinitionRequest()
+            .setProcessDefinitionKey(request.processDefinitionKey())
+            .setBpmnProcessId(request.processDefinitionId())
+            .setVersion(request.processDefinitionVersion())
+            .setTenantId(request.tenantId())
+            .setIncludeProcessInstances(request.includeProcessInstances()),
+        authentication);
+  }
+
+  public CompletableFuture<ProcessDefinitionSuspensionRecord> resumeProcessDefinitions(
+      final ProcessDefinitionStateChangeRequest request,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerResumeProcessDefinitionRequest()
+            .setProcessDefinitionKey(request.processDefinitionKey())
+            .setBpmnProcessId(request.processDefinitionId())
+            .setVersion(request.processDefinitionVersion())
+            .setTenantId(request.tenantId())
+            .setIncludeProcessInstances(request.includeProcessInstances()),
+        authentication);
+  }
+
+  /**
+   * Selects the process definition versions to suspend or resume: either a single version by key
+   * (the ID, version and tenant are then unset) or by ID with an optional version ({@code -1} for
+   * all versions) and tenant.
+   */
+  public record ProcessDefinitionStateChangeRequest(
+      long processDefinitionKey,
+      String processDefinitionId,
+      int processDefinitionVersion,
+      String tenantId,
+      boolean includeProcessInstances) {}
 }

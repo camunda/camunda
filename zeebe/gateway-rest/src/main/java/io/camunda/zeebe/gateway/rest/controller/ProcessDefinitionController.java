@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.gateway.mapping.http.mapper.ProcessDefinitionMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.FormResult;
@@ -20,21 +21,27 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatist
 import io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstruction;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionSuspensionInstruction;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
+import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,13 +54,63 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProcessDefinitionController {
 
   private final ServiceRegistry serviceRegistry;
+  private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final ProcessDefinitionMapper processDefinitionMapper = new ProcessDefinitionMapper();
 
   public ProcessDefinitionController(
       final ServiceRegistry serviceRegistry,
+      final MultiTenancyConfiguration multiTenancyCfg,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
+    this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+  }
+
+  @CamundaPostMapping(
+      path = "/suspension",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> suspendProcessDefinitions(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final ProcessDefinitionSuspensionInstruction request) {
+    return processDefinitionMapper
+        .toSuspendProcessDefinitions(request, multiTenancyCfg.isChecksEnabled())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> suspendProcessDefinitions(physicalTenantId, mapped));
+  }
+
+  @CamundaPostMapping(
+      path = "/resumption",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> resumeProcessDefinitions(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final ProcessDefinitionResumptionInstruction request) {
+    return processDefinitionMapper
+        .toResumeProcessDefinitions(request, multiTenancyCfg.isChecksEnabled())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> resumeProcessDefinitions(physicalTenantId, mapped));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> suspendProcessDefinitions(
+      final String physicalTenantId, final ProcessDefinitionStateChangeRequest request) {
+    final var services = serviceRegistry.processDefinitionServices(physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> services.suspendProcessDefinitions(request, authentication),
+        processDefinitionMapper::toSuspensionResult,
+        HttpStatus.OK);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> resumeProcessDefinitions(
+      final String physicalTenantId, final ProcessDefinitionStateChangeRequest request) {
+    final var services = serviceRegistry.processDefinitionServices(physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> services.resumeProcessDefinitions(request, authentication),
+        processDefinitionMapper::toResumptionResult,
+        HttpStatus.OK);
   }
 
   @RequiresSecondaryStorage
