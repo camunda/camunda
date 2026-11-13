@@ -149,9 +149,14 @@ the state, and then the cache fills up and slows down processing.
   changelogs have run. Partitions wait for it (§12).
 
 This removes version 1's own `StateSchemaManager`, its own tracking tables, and the risk of two
-Liquibase runs overlapping in one JVM (version 1 §11 risk 5). Until that step (§19 step 7), version
-1's `StateSchemaManager` runs the new changelog, so the storage itself can be built and measured
-first.
+Liquibase runs overlapping in one JVM (version 1 §11 risk 5). Liquibase keeps its lock bookkeeping
+for the whole JVM, so when two runs with different locks overlap, one of them can leave its
+database lock taken, and the next start waits for it.
+
+Until the changelog moves (§19 step 8), version 1's `StateSchemaManager` runs it when the state's
+storage opens, so the storage itself could be built and measured first. The partitions already wait
+for the history's schema before they open the storage (§12), so within a tenant the two runs no
+longer overlap. Two tenants with RDBMS state in one JVM still can.
 
 ### 6.2 Generated changesets
 
@@ -448,21 +453,25 @@ change.
 
 - The state's data source comes from Spring: `RdbmsDataSources`, per physical tenant (§5).
   `PartitionManagerImpl` no longer builds a pool.
-- The broker gets a lookup per tenant that returns the data source, vendor, prefix and a future that
-  completes when the schema is ready (§6.1). It's a small interface in `zeebe-db-rdbms`, so the
-  broker doesn't depend on `db/rdbms`, and it's passed in the way `BrokerModuleConfiguration`
-  already passes the RDBMS exporter's position suppliers and the schema initializer lookup.
+- The broker gets an `RdbmsStateDatabase` per tenant: the data source, the prefix and a check that
+  tells whether the tenant's schema is ready (§6.1). It's a record in the broker, built by
+  `BrokerModuleConfiguration` the way it already builds the RDBMS exporter's position suppliers, so
+  the broker doesn't depend on `db/rdbms`. The vendor comes from the data source's metadata.
 - **No Spring cycle:** the `rdbmsSchemaInitializer` bean depends on the broker, so that it starts
   after it and its recovery check reads the broker's cluster configuration. The broker must
   therefore not depend on the initializer. It only depends on `RdbmsDataSources` and the registry
   (`LazyInitializedRdbmsSchemaRegistry`), which the initializer binds itself to later. Creating
   the broker bean only starts the broker; it doesn't wait for partitions.
-- **Waiting for the schema:** the ZeebeDb transition step of a leader waits for the tenant's schema
-  future without blocking its actor, then opens the DB. Meanwhile the partition is reported as
-  starting, waiting for the state schema. The schema initializer keeps retrying with backoff, per
-  tenant, as it does today.
-- The `restore` profile doesn't create the schema initializer. That's fine while RDBMS state
-  doesn't support backups.
+- **Waiting for the schema:** before it opens the state and starts the tenant's partitions, the
+  partition manager waits until the registry reports the tenant's schema as ready. It checks again
+  every 250 ms on its actor instead of blocking it. Until then the tenant hasn't registered its
+  partitions with the health check, so the broker isn't reported ready. The schema initializer
+  keeps retrying with backoff, per tenant, as it does today. Waiting in each leader's ZeebeDb
+  transition step instead would let followers replicate meanwhile, but the state's storage is
+  opened once per partition group, and the wait is short: the initializer starts right after the
+  broker bean is created.
+- A restore runs in recovery mode, whose partition manager brings the schema up to date itself, so
+  it never waits for it. The `restore` profile doesn't create the schema initializer either.
 
 ## 13. Snapshots, recovery, backups and tests
 
@@ -582,9 +591,13 @@ commits.
 5. **perf:** point reads in auto-commit.
 6. **feat:** key layouts and views, the hot column families first.
 7. **refactor:** RDBMS state requires RDBMS secondary storage and uses its settings; the data
-   source comes from `RdbmsDataSources` and reaches the broker through the new lookup.
-8. **feat:** the state's changelog moves to `db/rdbms-schema` and `LiquibaseSchemaManager` runs it;
-   partitions wait until the schema is ready.
+   source comes from `RdbmsDataSources` and reaches the broker as an `RdbmsStateDatabase`; the
+   `primary-storage.rdbms` settings go.
+8. **feat:** partitions wait until the schema is ready; the state's changelog moves to
+   `db/rdbms-schema` and `LiquibaseSchemaManager` runs it.
 9. **test:** the PostgreSQL and broker tests on the new tables.
 10. Benchmark against version 1's single table and against RocksDB, then decide.
+
+Status: steps 1 to 7 are done, and so is the wait in step 8. Moving the changelog, the state
+scripts for `auto-ddl: false` and the PostgreSQL runs of the broker tests are still to do.
 
