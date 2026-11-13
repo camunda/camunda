@@ -1,0 +1,4 @@
+orchestration:
+  extraConfiguration:
+    - file: test-file
+      content: |
