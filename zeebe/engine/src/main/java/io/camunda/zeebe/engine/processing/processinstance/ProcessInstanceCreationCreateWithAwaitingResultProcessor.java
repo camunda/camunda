@@ -51,7 +51,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
       final Writers writers,
       final ProcessEngineMetrics metrics,
       final ProcessInstanceCreationHelper processInstanceCreationHelper,
-      final MutableElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState,
+      final CaseCreationBehavior caseCreationBehavior) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -59,7 +60,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
-    caseCreationBehavior = new CaseCreationBehavior(stateWriter);
+    this.caseCreationBehavior = caseCreationBehavior;
     this.elementInstanceState = elementInstanceState;
   }
 

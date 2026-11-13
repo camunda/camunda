@@ -9,9 +9,8 @@ package io.camunda.zeebe.engine.processing.conditional;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
@@ -70,12 +69,9 @@ public class ConditionalEvaluationEvaluateProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final BpmnStateBehavior stateBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck,
-      final ExpressionProcessor expressionProcessor,
-      final StorageOrdinalProvider storageOrdinalProvider) {
+      final CslTenantCheck tenantCheck) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -84,17 +80,18 @@ public class ConditionalEvaluationEvaluateProcessor
     this.keyGenerator = keyGenerator;
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
-    this.expressionProcessor = expressionProcessor;
-    this.storageOrdinalProvider = storageOrdinalProvider;
+    expressionProcessor = bpmnBehaviors.expressionProcessor();
+    storageOrdinalProvider = bpmnBehaviors.storageOrdinalProvider();
     eventHandle =
         new EventHandle(
             keyGenerator,
             processingState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior,
-            stateBehavior,
-            storageOrdinalProvider);
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
   }
 
   @Override

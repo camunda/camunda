@@ -48,7 +48,8 @@ public final class ProcessInstanceCreationCreateProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessEngineMetrics metrics,
-      final ProcessInstanceCreationHelper processInstanceCreationHelper) {
+      final ProcessInstanceCreationHelper processInstanceCreationHelper,
+      final CaseCreationBehavior caseCreationBehavior) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -56,7 +57,7 @@ public final class ProcessInstanceCreationCreateProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
-    caseCreationBehavior = new CaseCreationBehavior(stateWriter);
+    this.caseCreationBehavior = caseCreationBehavior;
   }
 
   @Override
