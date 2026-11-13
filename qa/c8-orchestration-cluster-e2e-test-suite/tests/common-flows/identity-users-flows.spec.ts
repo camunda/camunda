@@ -181,7 +181,7 @@ test.describe('Identity User Flows', () => {
         shouldBeVisible: true,
         timeout: 10000,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+          identityAuthorizationsPage.selectResourceType('Component'),
         clickNext: true,
       });
     });
@@ -220,7 +220,7 @@ test.describe('Identity User Flows', () => {
         new RegExp(`${relativizePath(Paths.authorizations())}(/|$)`),
       );
 
-      await identityAuthorizationsPage.selectResourceTypeTab('Component');
+      await identityAuthorizationsPage.selectResourceType('Component');
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
         testUser!.username,
       );
@@ -240,7 +240,7 @@ test.describe('Identity User Flows', () => {
         shouldBeVisible: false,
         timeout: 15000,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+          identityAuthorizationsPage.selectResourceType('Component'),
       });
     });
 
@@ -351,7 +351,7 @@ test.describe('Identity User Flows', () => {
         shouldBeVisible: true,
         timeout: 10000,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+          identityAuthorizationsPage.selectResourceType('Component'),
         clickNext: true,
       });
     });
