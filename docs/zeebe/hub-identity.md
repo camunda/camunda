@@ -170,6 +170,10 @@ sequenceDiagram
     `chunkCount` than its update, its index is out of range, or it is already buffered: the update
     ends with `FAILED`, which removes its chunks, and the chunk is rejected.
 
+  Once every chunk is buffered, the update is being applied, and its identity commands cannot be
+  undone. A chunk of it is then only rejected, whatever is wrong with it, and the update does not
+  fail.
+
   So every buffered chunk has a distinct index from 0 to `chunkCount - 1`, and an update has all its
   chunks once as many chunks are buffered as its `chunkCount`.
 

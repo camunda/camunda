@@ -256,8 +256,12 @@ public final class PolicyUpdateMultiChunkTest {
     // when
     apply(ENGINE, chunk(updateId, 1, 2));
 
-    // then the failed update's chunks are gone, so the last chunk cannot complete it
+    // then the failed update's chunks are gone, and the last chunk neither reopens nor completes it
     final var records = recordsUntilAMarkerUpdateIsApplied();
+    assertThat(records)
+        .filteredOn(record -> isPolicyUpdate(record, PolicyUpdateIntent.CHUNK_APPENDED, updateId))
+        .extracting(record -> ((PolicyUpdateRecordValue) record.getValue()).getChunkIndex())
+        .containsExactly(0);
     assertThat(records)
         .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.CHUNK_APPLIED, updateId));
     assertThat(records)

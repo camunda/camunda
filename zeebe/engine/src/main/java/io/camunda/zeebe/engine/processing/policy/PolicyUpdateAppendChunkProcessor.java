@@ -32,6 +32,10 @@ import org.jspecify.annotations.NullMarked;
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
  * update if it cannot belong to it.
  *
+ * <p>Once every chunk is buffered, the update is being applied: its identity commands may already
+ * be written, and nothing can undo them. A chunk of it is then only rejected, and the update never
+ * fails, whatever is wrong with the chunk.
+ *
  * <p>The processor checks no user authorization; see {@link PolicyUpdateGuard}.
  */
 @ExcludeAuthorizationCheck
@@ -65,7 +69,7 @@ public final class PolicyUpdateAppendChunkProcessor
     }
 
     final var chunk = command.getValue();
-    final var openUpdate = policyUpdateState.getOpenUpdate().map(PersistedPolicyUpdate::getUpdate);
+    final var openUpdate = policyUpdateState.getOpenUpdate();
     if (openUpdate.isEmpty()) {
       if (!isChunkIndexInRange(chunk)) {
         rejectionWriter.appendRejection(
@@ -102,11 +106,13 @@ public final class PolicyUpdateAppendChunkProcessor
 
   /**
    * Checks the chunk against the open update. Returns {@code true} if the chunk may be buffered;
-   * otherwise it has rejected the chunk, and failed the update if the chunk belongs to it.
+   * otherwise it has rejected the chunk, and failed the update if the chunk belongs to it and the
+   * update is not being applied yet.
    */
   private boolean rejectOrFailForOpenUpdate(
-      final TypedRecord<PolicyUpdateRecord> command, final PolicyUpdateRecord openUpdate) {
+      final TypedRecord<PolicyUpdateRecord> command, final PersistedPolicyUpdate persistedUpdate) {
     final var chunk = command.getValue();
+    final var openUpdate = persistedUpdate.getUpdate();
     if (!openUpdate.getUpdateId().equals(chunk.getUpdateId())) {
       rejectionWriter.appendRejection(
           command,
@@ -114,6 +120,16 @@ public final class PolicyUpdateAppendChunkProcessor
           ("Expected no other policy update to be open when chunk %d of policy update '%s' is"
                   + " received, but policy update '%s' is open")
               .formatted(chunk.getChunkIndex(), chunk.getUpdateId(), openUpdate.getUpdateId()));
+      return false;
+    }
+
+    if (persistedUpdate.isApplying()) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.INVALID_STATE,
+          ("Expected policy update '%s' to still receive chunks when chunk %d is received, but it"
+                  + " is already being applied")
+              .formatted(chunk.getUpdateId(), chunk.getChunkIndex()));
       return false;
     }
 
