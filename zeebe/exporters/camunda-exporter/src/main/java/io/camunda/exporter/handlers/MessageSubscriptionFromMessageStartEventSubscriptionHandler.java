@@ -28,9 +28,14 @@ import java.util.Set;
 
 public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
     extends AbstractEventHandler<MessageStartEventSubscriptionRecordValue>
-    implements MainIndexExporterHandler<
+    implements NotOrdinalControlledIndexExportHandler<
         MessageSubscriptionEntity, MessageStartEventSubscriptionRecordValue> {
 
+  // NB ensure STATES only has Intents that will have storage ordinals set to
+  // StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED. The engine guarantees this for CREATED and
+  // DELETED (see StorageOrdinalAssignmentTest, e.g.
+  // shouldMarkDeploymentScopedMessageStartEventSubscriptionsAsNotOrdinalControlled);
+  // CORRELATED carries a real ordinal and must not be added.
   static final Set<Intent> STATES =
       Set.of(
           MessageStartEventSubscriptionIntent.CREATED, MessageStartEventSubscriptionIntent.DELETED);
