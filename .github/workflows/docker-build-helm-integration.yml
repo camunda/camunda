@@ -641,7 +641,9 @@ jobs:
   helm-deploy-status:
     name: Observe Helm chart Integration Tests status
     needs: helm-deploy
-    if: always()
+    # `always()` alone would still run this on the skipped helm-deploy and report a
+    # `skipped` build status to the observability endpoint every push to main.
+    if: always() && needs.helm-deploy.result != 'skipped'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     continue-on-error: ${{ github.event_name == 'merge_group' }}
