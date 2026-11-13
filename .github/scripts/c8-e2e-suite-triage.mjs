@@ -253,8 +253,16 @@ export function baseOutcome(statuses) {
 const DECISIVE = new Set(['passed', 'failed', 'absent']);
 
 export function classify(prLegs) {
-  const buckets = {regression: [], newTest: [], baseFails: [], unverified: []};
+  const buckets = {regression: [], intermittent: [], newTest: [], baseFails: [], unverified: []};
   const seen = new Map();
+  // Jobs whose base re-run ran the very same test code as the PR's (the PR
+  // does not change the suite): there, passing with the base code shows the
+  // failure is intermittent and not caused by the PR's test changes. It does
+  // not rule out a product or workflow change in the PR: both runs share the
+  // job's Camunda stack, which the H2/RDBMS jobs build from the PR.
+  const sameTestCode = new Set(
+    prLegs.filter(({rerun}) => rerun?.sameTestCode === true).map(({leg}) => leg),
+  );
   for (const {leg, failures, rerun} of prLegs) {
     const onBase = new Map(
       (rerun?.status === 'done' ? rerun.results ?? [] : []).map((r) => [key(r), r.base]),
@@ -278,7 +286,9 @@ export function classify(prLegs) {
     entry.basePassedIn = entry.legs.filter((l) => outcome(l) === 'passed');
     entry.baseFailedIn = entry.legs.filter((l) => outcome(l) === 'failed');
     const allDecisive = entry.legs.every((l) => DECISIVE.has(outcome(l)));
-    if (entry.basePassedIn.length) buckets.regression.push(entry);
+    if (entry.basePassedIn.length && entry.basePassedIn.every((l) => sameTestCode.has(l))) {
+      buckets.intermittent.push(entry);
+    } else if (entry.basePassedIn.length) buckets.regression.push(entry);
     else if (allDecisive && entry.legs.every((l) => outcome(l) === 'absent')) buckets.newTest.push(entry);
     else if (allDecisive && entry.legs.every((l) => outcome(l) === 'failed')) buckets.baseFails.push(entry);
     else {
@@ -303,7 +313,11 @@ function whyNotVerified(rerun, outcome) {
 }
 
 export const totalFailing = (b) =>
-  b.regression.length + b.newTest.length + b.baseFails.length + b.unverified.length;
+  b.regression.length +
+  (b.intermittent?.length ?? 0) +
+  b.newTest.length +
+  b.baseFails.length +
+  b.unverified.length;
 
 const fmt = (t) => {
   const notes = [];
@@ -339,7 +353,7 @@ const cap = (body, runUrl) =>
       `\n\n_Comment truncated, see the [run's reports](${runUrl})._\n`;
 
 export function render({buckets, missingLegs, errorLegs = [], base, runUrl, mentions = [], runFailed = false}) {
-  buckets = {regression: [], newTest: [], baseFails: [], unverified: [], ...buckets};
+  buckets = {regression: [], intermittent: [], newTest: [], baseFails: [], unverified: [], ...buckets};
   const total = totalFailing(buckets);
   const lines = [COMMENT_MARKER];
   if (total === 0 && missingLegs.length === 0 && errorLegs.length === 0 && !runFailed) {
@@ -363,6 +377,13 @@ export function render({buckets, missingLegs, errorLegs = [], base, runUrl, ment
     lines.push(
       `**Regression from this PR's test changes (${buckets.regression.length})**: observed in this run: these tests failed with this PR's test code in every attempt (including any retry) and passed first time with the \`${base}\` test code, re-run in the same job and environment. An intermittent test can rarely do this too; if you doubt it, re-run the check.`,
       ...listed(buckets.regression, runUrl),
+      '',
+    );
+  }
+  if (buckets.intermittent.length) {
+    lines.push(
+      `**Intermittent, not caused by this PR's test changes (${buckets.intermittent.length})**: these tests failed with this PR's test code in every attempt and passed first time with the \`${base}\` test code, re-run in the same job and environment. This PR does not change the suite's test code, so both runs used the same test code against the same Camunda instance: the test or the product behaves intermittently. A product or workflow change in this PR can still be the cause, notably in the H2/RDBMS jobs, which build Camunda from this PR.`,
+      ...listed(buckets.intermittent, runUrl),
       '',
     );
   }
@@ -529,6 +550,7 @@ function main(argv) {
     JSON.stringify({
       failing,
       regression: buckets.regression.length,
+      intermittent: buckets.intermittent.length,
       newTest: buckets.newTest.length,
       baseFails: buckets.baseFails.length,
       unverified: buckets.unverified.length,
@@ -552,6 +574,7 @@ function main(argv) {
 //     base code
 // Both read RERUN_PROJECTS: the projects the job selected, comma-separated.
 //   rerun-compare <results.json> <base-suite-dir> <base-sha> <out.json> <base-results.json>...
+//     (RERUN_SAME_TEST_CODE=true when the PR does not change the suite)
 //     writes the leg's base-rerun.json from the base run's report
 const rerunProjects = () => (process.env.RERUN_PROJECTS ?? '').split(',').filter(Boolean);
 
@@ -565,6 +588,7 @@ function cli(argv) {
     const out = baseReports.length
       ? {
           status: 'done',
+          sameTestCode: process.env.RERUN_SAME_TEST_CODE === 'true',
           base: baseSha,
           results: compareWithBase(
             readReport(reportPath),

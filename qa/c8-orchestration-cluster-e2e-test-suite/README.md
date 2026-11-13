@@ -236,6 +236,10 @@ bot PR, its assignees) with what that showed:
 - **Regression from this PR's test changes**: observed in that run: failed with the PR's test code
   in every attempt (including any retry) and passed first time with the base test code. An
   intermittent test can rarely do this too; re-run the PR check if in doubt.
+- **Intermittent, not caused by this PR's test changes**: the same, but the PR does not change the
+  suite's test code, so both runs used identical test code against the same Camunda instance. A
+  product or workflow change in the PR can still be the cause, notably in the H2/RDBMS jobs, which
+  build Camunda from the PR.
 - **New tests failing**: the spec does not exist on the base branch.
 - **Also fails with the base test code**: failed with it in every job it failed in, so the PR's test
   changes are not the cause. The base re-run uses the same Camunda instance, so a test that needs a
