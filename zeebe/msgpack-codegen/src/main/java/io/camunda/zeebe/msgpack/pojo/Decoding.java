@@ -13,8 +13,10 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
@@ -24,6 +26,48 @@ public final class Decoding {
   public static final DirectBuffer EMPTY = new UnsafeBuffer(new byte[0]);
 
   private Decoding() {}
+
+  /**
+   * Compares two buffers by their bytes, whatever their class, like the {@code StringValue}, {@code
+   * BinaryValue} and {@code PackedValue} they replace.
+   */
+  public static boolean equalContent(
+      final @Nullable DirectBuffer a, final @Nullable DirectBuffer b) {
+    return a == b || a != null && b != null && BufferUtil.contentsEqual(a, b);
+  }
+
+  /** Hash code of the bytes of a buffer, consistent with {@link #equalContent}. */
+  public static int contentHash(final @Nullable DirectBuffer buffer) {
+    if (buffer == null) {
+      return 0;
+    }
+    int hash = 1;
+    for (int i = 0; i < buffer.capacity(); i++) {
+      hash = 31 * hash + buffer.getByte(i);
+    }
+    return hash;
+  }
+
+  public static boolean equalContents(
+      final List<? extends DirectBuffer> a, final List<? extends DirectBuffer> b) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    for (int i = 0; i < a.size(); i++) {
+      if (!equalContent(a.get(i), b.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static int contentHash(final List<? extends DirectBuffer> buffers) {
+    int hash = 1;
+    for (int i = 0; i < buffers.size(); i++) {
+      hash = 31 * hash + contentHash(buffers.get(i));
+    }
+    return hash;
+  }
 
   public static UnsafeBuffer encodedKey(final String key) {
     return new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8));
