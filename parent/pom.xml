@@ -142,6 +142,9 @@
     <version.google-sdk>26.64.0</version.google-sdk>
     <version.azure-sdk>1.2.38</version.azure-sdk>
     <version.awssdk>2.32.33</version.awssdk>
+    <!-- Pinned above the AWS SDK BOM: the SDK 2.32.x copy embeds jackson-core 2.15.2 (CVE-2026-18401).
+         2.54.20 embeds 2.21.6. Drop once version.awssdk is >= 2.54.20. -->
+    <version.awssdk-third-party-jackson-core>2.54.20</version.awssdk-third-party-jackson-core>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.13</version.jackson-databind-nullable>
@@ -1087,6 +1090,12 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-actuator</artifactId>
         <version>${version.spring-boot}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>third-party-jackson-core</artifactId>
+        <version>${version.awssdk-third-party-jackson-core}</version>
       </dependency>
 
       <dependency>
