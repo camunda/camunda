@@ -32,6 +32,7 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,10 +74,20 @@ import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.opensearch.client.transport.httpclient5.ResponseException;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
+
   public static final String ISM_POLICIES_ENDPOINT = "/_plugins/_ism/policies";
+
+  private static final String HEALTH_CHECK_FORBIDDEN_MESSAGE =
+      "GET /_cluster/health returned HTTP 403: the OpenSearch service account lacks the "
+          + "'monitor' cluster privilege required to verify cluster health during startup. "
+          + "The Camunda readiness probe will not pass until this is resolved. "
+          + "To fix: grant the 'monitor' cluster privilege to the service account, "
+          + "or disable the check by setting "
+          + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.";
   private static final SuppressLogger LOG =
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
@@ -433,6 +444,48 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
+  public void awaitActivePrimaries(final Collection<String> indexNames) {
+    if (indexNames.isEmpty()) {
+      return;
+    }
+    final var timeout = Duration.ofSeconds(10);
+    try {
+      for (final String batch :
+          SearchEngineClientUtils.batchPatterns(String.join(",", indexNames))) {
+        final var existing = getIndexNames(batch);
+        if (existing.isEmpty()) {
+          continue;
+        }
+        final HealthResponse response =
+            client
+                .cluster()
+                .health(
+                    h ->
+                        h.index(List.copyOf(existing))
+                            .waitForStatus(HealthStatus.Yellow)
+                            .timeout(t -> t.time(timeout.toMillis() + "ms")));
+        if (response.timedOut()) {
+          throw new SearchEngineException(
+              "Expected primary shards of indices %s to be active within %s, but status is '%s'"
+                  .formatted(batch, timeout, response.status()));
+        }
+      }
+    } catch (final OpenSearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    } catch (final IOException e) {
+      if (isForbidden(e)) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
+      throw new SearchEngineException(
+          "Failed to wait for active primary shards of indices " + indexNames, e);
+    }
+  }
+
+  @Override
   public boolean isHealthy() {
     try {
       final HealthResponse response = client.cluster().health(h -> h.timeout(t -> t.time("500ms")));
@@ -441,22 +494,33 @@ public class OpensearchEngineClient implements SearchEngineClient {
           && !response.status().equals(HealthStatus.Red);
     } catch (final OpenSearchException e) {
       if (e.status() == 403) {
-        throw new SearchEngineHealthCheckPermissionException(
-            "GET /_cluster/health returned HTTP 403: the OpenSearch service account lacks the "
-                + "'monitor' cluster privilege required to verify cluster health during startup. "
-                + "The Camunda readiness probe will not pass until this is resolved. "
-                + "To fix: grant the 'monitor' cluster privilege to the service account, "
-                + "or disable the check by setting "
-                + "'camunda.data.secondary-storage.opensearch.health-check-enabled=false'.",
-            e);
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
       }
       LOG.warn(
           "OpenSearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
       return false;
     } catch (final IOException e) {
+      if (isForbidden(e)) {
+        throw new SearchEngineHealthCheckPermissionException(HEALTH_CHECK_FORBIDDEN_MESSAGE, e);
+      }
       LOG.warn("Couldn't connect to OpenSearch: {}. Returning unhealthy.", e.getMessage(), e);
       return false;
     }
+  }
+
+  /**
+   * The OpenSearch client reports an HTTP 403 as an {@link IOException} wrapping a {@link
+   * ResponseException}, rather than as an {@link OpenSearchException}, so the status has to be
+   * looked up in the cause chain.
+   */
+  private static boolean isForbidden(final IOException exception) {
+    for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+      if (cause instanceof final ResponseException responseException
+          && responseException.status() == 403) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

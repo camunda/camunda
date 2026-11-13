@@ -396,6 +396,13 @@ public class SchemaManager implements CloseableSilently {
     // We need to wait for the completion, to make sure all indices has been created successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+
+    if (config.schemaManager().isHealthCheckEnabled()) {
+      // Wait for the primary shards to be active
+      final var indexNames =
+          allIndexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).toList();
+      searchEngineClient.awaitActivePrimaries(indexNames);
+    }
   }
 
   private List<IndexDescriptor> getMissingIndices(
