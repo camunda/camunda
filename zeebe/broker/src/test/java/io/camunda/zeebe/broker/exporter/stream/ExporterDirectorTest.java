@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExpor
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.encoding.MigrationStatusCode;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -1051,6 +1052,163 @@ public final class ExporterDirectorTest {
     assertThat(exporter0.getExportedRecords())
         .extracting(Record::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
+  }
+
+  @Test
+  public void shouldReopenExporterWhenScheduledTaskRequestsReopen() {
+    // given
+    final ControlledTestExporter exporter0 = exporters.get(0);
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean wasClosed = new AtomicBoolean(false);
+
+    exporter0
+        .onOpen(
+            controller -> {
+              if (openCount.incrementAndGet() == 1) {
+                controller.scheduleCancellableTask(
+                    Duration.ofSeconds(1),
+                    () -> {
+                      throw new ExporterException(
+                          "position mismatch", ExporterException.Compensation.REOPEN);
+                    });
+              }
+            })
+        .onClose(() -> wasClosed.set(true))
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+
+    // when
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(r -> openCount.get() == 2);
+
+    // then
+    assertThat(wasClosed.get())
+        .describedAs("exporter was closed as part of REOPEN compensation")
+        .isTrue();
+    final long eventPosition = writeEvent();
+    waitUntil(
+        () ->
+            exporter0.getExportedRecords().stream()
+                .anyMatch(r -> r.getPosition() == eventPosition));
+  }
+
+  @Test
+  public void shouldReplayFromScheduledTaskReopenWithoutNewRecords() {
+    // given - write and export 4 events
+    writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    final ControlledTestExporter exporter0 = exporters.get(0);
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean scheduleReopen = new AtomicBoolean(false);
+    final AtomicReference<Controller> controllerRef = new AtomicReference<>();
+
+    exporter0
+        .onOpen(
+            controller -> {
+              controllerRef.set(controller);
+              if (openCount.incrementAndGet() > 1) {
+                controller.requestReplay(eventPosition2);
+              }
+            })
+        .onExport(
+            record -> {
+              if (scheduleReopen.compareAndSet(true, false)) {
+                controllerRef
+                    .get()
+                    .scheduleCancellableTask(
+                        Duration.ofSeconds(1),
+                        () -> {
+                          throw new ExporterException(
+                              "position mismatch", ExporterException.Compensation.REOPEN);
+                        });
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+    waitUntil(() -> exporter0.getExportedRecords().size() == 4);
+    scheduleReopen.set(true);
+    final long eventPosition5 = writeEvent();
+    waitUntil(() -> exporter0.getExportedRecords().size() == 5);
+    exporter0.getExportedRecords().clear();
+
+    // when - the scheduled task reopens the exporter, which requests a replay, and no new record
+    // is written
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(r -> exporter0.getExportedRecords().size() >= 3);
+
+    // then
+    assertThat(openCount.get()).isEqualTo(2);
+    assertThat(exporter0.getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition3, eventPosition4, eventPosition5);
+  }
+
+  @Test
+  public void shouldAbandonRetriedRecordWhenScheduledTaskReopenRequestsReplay() {
+    // given - write and export 4 events
+    writeEvent();
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    final ControlledTestExporter exporter0 = exporters.get(0);
+    final AtomicInteger openCount = new AtomicInteger(0);
+    final AtomicBoolean failExport = new AtomicBoolean(false);
+    final AtomicBoolean scheduleReopen = new AtomicBoolean(false);
+    final AtomicReference<Controller> controllerRef = new AtomicReference<>();
+
+    exporter0
+        .onOpen(
+            controller -> {
+              controllerRef.set(controller);
+              if (openCount.incrementAndGet() > 1) {
+                failExport.set(false);
+                controller.requestReplay(eventPosition2);
+              }
+            })
+        .onExport(
+            record -> {
+              if (scheduleReopen.compareAndSet(true, false)) {
+                controllerRef
+                    .get()
+                    .scheduleCancellableTask(
+                        Duration.ofSeconds(1),
+                        () -> {
+                          throw new ExporterException(
+                              "position mismatch", ExporterException.Compensation.REOPEN);
+                        });
+              }
+              if (failExport.get()) {
+                throw new RuntimeException("expected failure, the record is retried");
+              }
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    startExporterDirector(exporterDescriptors);
+    waitUntil(() -> exporter0.getExportedRecords().size() == 4);
+    exporter0.getExportedRecords().clear();
+
+    // when - the next record fails and is retried, and while it is retried a scheduled task
+    // reopens the exporter, which requests a replay from eventPosition2
+    failExport.set(true);
+    scheduleReopen.set(true);
+    final long eventPosition5 = writeEvent();
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until(r -> exporter0.getExportedRecords().size() >= 3);
+
+    // then - the retried record is abandoned and redelivered in order after the replayed ones
+    assertThat(openCount.get()).isEqualTo(2);
+    assertThat(exporter0.getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition3, eventPosition4, eventPosition5);
   }
 
   @Test

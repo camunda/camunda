@@ -89,6 +89,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private volatile HealthReport healthReport;
 
   private boolean inExportingPhase;
+  private boolean replayRequestedWhileExporting;
   private ExporterPhase exporterPhase;
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
@@ -680,6 +681,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return false;
     }
 
+    if (inExportingPhase) {
+      // the record being exported is abandoned, so the rewound reader redelivers it in order
+      replayRequestedWhileExporting = true;
+    } else {
+      // e.g. requested by a scheduled task: nothing else may read the rewound records
+      actor.submit(this::readNextEvent);
+    }
     return true;
   }
 
@@ -771,9 +779,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     final AtomicReference<ExportOutcome> lastOutcome = new AtomicReference<>();
+    replayRequestedWhileExporting = false;
     final ActorFuture<Boolean> retryFuture =
         exportingRetryStrategy.runWithRetry(
             () -> {
+              if (replayRequestedWhileExporting) {
+                // a replay was accepted between two attempts, e.g. by an exporter that reopened
+                // from a scheduled task, so this record must not be exported out of order
+                lastOutcome.set(ExportOutcome.ABORT_REPLAY);
+                return true;
+              }
               final ExportOutcome outcome = recordExporter.export();
               lastOutcome.set(outcome);
               return outcome != ExportOutcome.RETRY;

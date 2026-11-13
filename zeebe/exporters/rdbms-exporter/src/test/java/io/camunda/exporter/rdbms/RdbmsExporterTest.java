@@ -548,6 +548,30 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRequestReopenWhenIntervalFlushDetectsPositionMismatch() {
+    // given
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+    final var initialScheduleCount = 1; // only flush task
+    doAnswer(
+            invocation -> {
+              throw new ExporterPositionMismatchException(1, 4, 3);
+            })
+        .when(rdbmsWriters)
+        .flush(true);
+
+    // when + then
+    assertThatThrownBy(() -> exporter.flushAndReschedule())
+        .isInstanceOf(ExporterException.class)
+        .hasCauseInstanceOf(ExporterPositionMismatchException.class)
+        .satisfies(
+            e ->
+                assertThat(((ExporterException) e).getCompensation())
+                    .isEqualTo(ExporterException.Compensation.REOPEN));
+    verify(controller, times(initialScheduleCount + 1))
+        .scheduleCancellableTask(any(Duration.class), any());
+  }
+
+  @Test
   void shouldDelayNextIntervalFlushByFlushDurationWhenFlushIsSlow() {
     // given - the flush blocks for longer than the 500ms flush interval, as against a
     // high-latency database

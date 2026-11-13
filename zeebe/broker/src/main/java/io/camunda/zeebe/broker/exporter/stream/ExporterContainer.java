@@ -209,8 +209,32 @@ final class ExporterContainer implements Controller {
 
   @Override
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
-    final var scheduledTimer = actor.schedule(delay, task);
+    final var scheduledTimer = actor.schedule(delay, () -> runScheduledTask(task));
     return scheduledTimer::cancel;
+  }
+
+  /**
+   * Runs a task the exporter scheduled through its controller. An {@link ExporterException} with
+   * {@link ExporterException.Compensation#REOPEN} reopens the exporter, as it does when thrown from
+   * {@link #exportRecord}, so that an exporter can also recover from a problem found outside of
+   * exporting a record, e.g. in a periodic flush.
+   */
+  private void runScheduledTask(final Runnable task) {
+    try {
+      task.run();
+    } catch (final ExporterException ex) {
+      if (ex.getCompensation() != ExporterException.Compensation.REOPEN) {
+        throw ex;
+      }
+      context
+          .getLogger()
+          .warn("Scheduled task of exporter '{}' requires reopen to re-sync position", getId(), ex);
+      try {
+        reopenExporter();
+      } catch (final Exception reopenEx) {
+        context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
+      }
+    }
   }
 
   @Override
