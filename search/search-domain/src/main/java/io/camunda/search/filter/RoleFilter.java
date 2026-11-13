@@ -31,17 +31,19 @@ public record RoleFilter(
     List<RoleFilter> orFilters)
     implements OrFilter<RoleFilter> {
 
+  // An explicitly supplied empty memberIds or roleIds set matches no role rather than every role,
+  // so each is a criterion as soon as it is non-null.
   @Override
   public boolean isEmpty() {
-    return !FilterUtil.hasAnyNonEmpty(
-        roleIdOperations,
-        nameOperations,
-        description,
-        memberIds,
-        roleIds,
-        childMemberType,
-        tenantId,
-        memberIdsByType);
+    return memberIds == null
+        && roleIds == null
+        && !FilterUtil.hasAnyNonEmpty(
+            roleIdOperations,
+            nameOperations,
+            description,
+            childMemberType,
+            tenantId,
+            memberIdsByType);
   }
 
   public static RoleFilter of(

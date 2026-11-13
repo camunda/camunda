@@ -10,6 +10,7 @@ package io.camunda.search.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -48,6 +49,24 @@ class OrFilterTest {
   void shouldConsiderUserTaskFilterEmptyIgnoringType() {
     // no search backend filters on type, so a group carrying only type matches everything
     assertThat(new UserTaskFilter.Builder().type("type").build().isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldConsiderExplicitlyEmptyMatchNoneSetsACriterion() {
+    // an empty set on these fields matches nothing rather than everything, so the group carrying
+    // it must not be treated as empty, which would drop the whole $or clause and broaden results
+    assertThat(new GroupFilter.Builder().memberIds(Set.of()).build().isEmpty()).isFalse();
+    assertThat(new RoleFilter.Builder().roleIds(Set.of()).build().isEmpty()).isFalse();
+    assertThat(new MappingRuleFilter.Builder().mappingRuleIds(Set.of()).build().isEmpty())
+        .isFalse();
+  }
+
+  @Test
+  void shouldConsiderIdentityFiltersEmptyOnlyWithoutCriteria() {
+    assertThat(new GroupFilter.Builder().build().isEmpty()).isTrue();
+    assertThat(new RoleFilter.Builder().build().isEmpty()).isTrue();
+    assertThat(new MappingRuleFilter.Builder().build().isEmpty()).isTrue();
+    assertThat(new UserFilter.Builder().build().isEmpty()).isTrue();
   }
 
   @Test

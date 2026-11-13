@@ -39,7 +39,8 @@ public final class FilterUtil {
    * non-null — an explicitly supplied empty string ("") is a meaningful exact-match criterion, not
    * an absent one. Collections/maps/arrays keep the generic null-or-empty-means-absent semantics,
    * since some filter fields are normalized to an empty collection rather than left null when
-   * unset.
+   * unset. A field whose explicitly empty collection means "match none" is a criterion as soon as
+   * it is non-null, so the caller must check it for null instead of passing it here.
    */
   public static boolean hasAnyNonEmpty(final Object... values) {
     for (final var value : values) {

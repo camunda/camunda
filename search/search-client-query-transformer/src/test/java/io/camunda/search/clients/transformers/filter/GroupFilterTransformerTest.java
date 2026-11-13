@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
@@ -123,6 +124,40 @@ class GroupFilterTransformerTest extends AbstractTransformerTest {
               // no-op: only the top-level groupId and the unconditional JOIN term remain
               assertThat(bool.must()).hasSize(2);
               assertThat(termValue(bool.must().get(0))).isEqualTo("group-top");
+            });
+  }
+
+  @Test
+  void shouldKeepOrClauseWhenAGroupHasExplicitlyEmptyMemberIds() {
+    // given
+    final var filter =
+        FilterBuilders.group(
+            f ->
+                f.orFilters(
+                    List.of(
+                        new GroupFilter.Builder().memberIds(Set.of()).build(),
+                        FilterBuilders.group(f1 -> f1.groupIds("group-1")))));
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    assertThat(searchQuery.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            bool -> {
+              // empty memberIds matches no group, so the $or clause must survive as
+              // (match none) OR (groupId = group-1) instead of collapsing into a no-op
+              assertThat(bool.must()).hasSize(2);
+              assertThat(bool.must().getLast().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      or -> {
+                        assertThat(or.should()).hasSize(2);
+                        assertThat(or.should().get(0).queryOption())
+                            .isInstanceOf(SearchMatchNoneQuery.class);
+                        assertThat(termValue(or.should().get(1))).isEqualTo("group-1");
+                      });
             });
   }
 

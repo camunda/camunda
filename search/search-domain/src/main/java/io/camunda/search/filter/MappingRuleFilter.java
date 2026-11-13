@@ -30,19 +30,21 @@ public record MappingRuleFilter(
     List<MappingRuleFilter> orFilters)
     implements OrFilter<MappingRuleFilter> {
 
+  // An explicitly supplied empty mappingRuleIds set matches no mapping rule rather than every
+  // mapping rule, so it is a criterion as soon as it is non-null.
   @Override
   public boolean isEmpty() {
-    return !FilterUtil.hasAnyNonEmpty(
-        mappingRuleIdOperations,
-        claimName,
-        claimNames,
-        claimValue,
-        nameOperations,
-        claims,
-        tenantId,
-        mappingRuleIds,
-        groupId,
-        roleId);
+    return mappingRuleIds == null
+        && !FilterUtil.hasAnyNonEmpty(
+            mappingRuleIdOperations,
+            claimName,
+            claimNames,
+            claimValue,
+            nameOperations,
+            claims,
+            tenantId,
+            groupId,
+            roleId);
   }
 
   public MappingRuleFilter.Builder toBuilder() {

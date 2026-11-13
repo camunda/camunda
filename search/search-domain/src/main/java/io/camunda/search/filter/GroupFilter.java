@@ -31,17 +31,19 @@ public record GroupFilter(
     List<GroupFilter> orFilters)
     implements OrFilter<GroupFilter> {
 
+  // An explicitly supplied empty memberIds set matches no group rather than every group, so it is
+  // a criterion as soon as it is non-null.
   @Override
   public boolean isEmpty() {
-    return !FilterUtil.hasAnyNonEmpty(
-        groupIdOperations,
-        nameOperations,
-        description,
-        memberIds,
-        tenantId,
-        childMemberType,
-        roleId,
-        memberIdsByType);
+    return memberIds == null
+        && !FilterUtil.hasAnyNonEmpty(
+            groupIdOperations,
+            nameOperations,
+            description,
+            tenantId,
+            childMemberType,
+            roleId,
+            memberIdsByType);
   }
 
   public static GroupFilter of(
