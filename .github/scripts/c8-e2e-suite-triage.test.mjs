@@ -1,5 +1,5 @@
 // Run with: node --test .github/scripts/c8-e2e-suite-triage.test.mjs
-import {test} from 'node:test';
+import {after, test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,9 +31,21 @@ const rep = (...tests) => ({
   })),
 });
 
+// Temporary directories made by the tests, removed when the file's tests end,
+// whether they passed or failed.
+const tempDirs = [];
+const tempDir = () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
+  tempDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of tempDirs) fs.rmSync(dir, {recursive: true, force: true});
+});
+
 // A base suite where tests/a.spec.ts exists and tests/new.spec.ts does not.
 function baseSuite() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'base-'));
+  const root = tempDir();
   fs.mkdirSync(path.join(root, 'tests'));
   fs.writeFileSync(path.join(root, 'tests/a.spec.ts'), '');
   return root;
@@ -341,4 +353,57 @@ test('a test whose base run ran out of time is not verified, never "fails with t
   const b = classify([{leg: 'API', failures: failedTests(pr), rerun: done(...results)}]);
   assert.equal(b.baseFails.length, 1);
   assert.match(b.unverified[0].notVerified[0], /ran out of time/);
+});
+
+// --- spec paths across testDir layouts ---------------------------------------
+
+test('normalizeSpec resolves a path against the report rootDir, whatever the testDir', () => {
+  const suite = '/home/runner/work/camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite';
+  // main, stable/8.9+: testDir ./ (rootDir is the suite directory)
+  assert.equal(normalizeSpec('tests/api/a.spec.ts', suite), 'tests/api/a.spec.ts');
+  // stable/8.7, stable/8.8: testDir ./tests/
+  assert.equal(normalizeSpec('api/a.spec.ts', `${suite}/tests`), 'tests/api/a.spec.ts');
+  // the base suite checked out elsewhere on the runner
+  assert.equal(
+    normalizeSpec('api/a.spec.ts', '/home/runner/work/_temp/c8-e2e-base-suite/qa/c8-orchestration-cluster-e2e-test-suite/tests'),
+    'tests/api/a.spec.ts',
+  );
+  // no rootDir: as before
+  assert.equal(normalizeSpec('tests/api/a.spec.ts'), 'tests/api/a.spec.ts');
+});
+
+test('a report with testDir ./tests/ is matched to the base suite, not read as a new test', () => {
+  const root = tempDir();
+  const base = path.join(root, 'qa/c8-orchestration-cluster-e2e-test-suite');
+  fs.mkdirSync(path.join(base, 'tests/api'), {recursive: true});
+  fs.writeFileSync(path.join(base, 'tests/api/operate-api-tests.spec.ts'), '');
+  // As stable/8.7 reports it: the spec relative to rootDir .../tests.
+  const report = (rootDir, status) => ({
+    config: {rootDir},
+    suites: [
+      {
+        title: 'api/operate-api-tests.spec.ts',
+        file: 'api/operate-api-tests.spec.ts',
+        suites: [
+          {
+            title: 'API tests',
+            specs: [
+              {
+                title: 'Get a process definition via key',
+                file: 'api/operate-api-tests.spec.ts',
+                tests: [{projectName: 'api-tests', status}],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  const pr = report('/home/runner/work/camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/tests', 'unexpected');
+  const plan = rerunPlan(pr, base, ['api-tests']);
+  assert.deepEqual(plan.files, ['tests/api/operate-api-tests.spec.ts']);
+  const onBase = report(`${base}/tests`, 'expected');
+  const [r] = compareWithBase(pr, [onBase], base, ['api-tests']);
+  assert.equal(r.file, 'tests/api/operate-api-tests.spec.ts');
+  assert.equal(r.base, 'passed');
 });
