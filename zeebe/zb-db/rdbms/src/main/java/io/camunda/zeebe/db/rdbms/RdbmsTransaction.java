@@ -1,0 +1,425 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.rdbms;
+
+import io.camunda.zeebe.db.RawWrite;
+import io.camunda.zeebe.db.TransactionOperation;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.OptionalLong;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ibatis.exceptions.PersistenceException;
+import org.apache.ibatis.executor.BatchResult;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.ResultContext;
+import org.apache.ibatis.session.SqlSession;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A database transaction on the state of one partition.
+ *
+ * <p>It borrows a connection only when it first needs the database, so a transaction that only
+ * writes holds none until it commits. Writes wait in a {@link WriteBuffer} and go to the database
+ * as one batch before every scan and at commit. Point reads look at the buffer first. Outside a
+ * transaction, a point read runs alone in auto-commit.
+ *
+ * <p>Before its first writes reach the database, it updates the state row only if its term still
+ * owns the state, which locks the row until it ends. A newer leader's claim waits for it, and once
+ * claimed, writes of the older term throw {@link StateFencedException}. Transactions that only read
+ * never check. Without a term, it only reads: writing throws right away.
+ *
+ * <p>The write-behind cache's batches skip the buffer: {@link #writeBatch} writes each in a
+ * database transaction of its own, and sets the position the state tables stand at in the same
+ * statement that fences it.
+ *
+ * <p>Like RocksDB's, it is used by one thread at a time and is reused for the next transaction.
+ */
+final class RdbmsTransaction implements ZeebeDbTransaction {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsTransaction.class);
+
+  private final RdbmsStorage storage;
+  private final int partitionId;
+  private final String stateId;
+  private final OptionalLong term;
+  private final WriteBuffer buffer = new WriteBuffer();
+  private @Nullable Connection connection;
+  private @Nullable SqlSession session;
+  private @Nullable StateMapper mapper;
+  private boolean inCurrentTransaction;
+  private boolean ownerChecked;
+
+  /**
+   * @param stateId the state the term must own to write
+   * @param term the term to write with, or empty to only read
+   */
+  RdbmsTransaction(
+      final RdbmsStorage storage,
+      final int partitionId,
+      final String stateId,
+      final OptionalLong term) {
+    this.storage = storage;
+    this.partitionId = partitionId;
+    this.stateId = stateId;
+    this.term = term;
+  }
+
+  int partitionId() {
+    return partitionId;
+  }
+
+  /** Returns the value of the key, or {@code null} if it doesn't exist. */
+  byte @Nullable [] get(final int columnFamily, final byte[] key) {
+    final var write = buffer.get(columnFamily, key);
+    if (write != null) {
+      final var value = write.value();
+      // the caller may wrap and change it, while the buffer still has to send the original
+      return value == null ? null : value.clone();
+    }
+    final var table = StateTables.of(columnFamily);
+    return read(state -> state.get(partitionId, table.name(), table.shared(), columnFamily, key))
+        .orElse(null);
+  }
+
+  void put(final int columnFamily, final byte[] key, final byte[] value) {
+    checkWritable();
+    buffer.put(columnFamily, key, value);
+  }
+
+  void delete(final int columnFamily, final byte[] key) {
+    checkWritable();
+    buffer.delete(columnFamily, key);
+  }
+
+  /**
+   * Visits the rows of the range in its order, until the visitor returns {@code false}. With {@code
+   * keysOnly}, the visitor gets {@code null} for every value. Writes made while the scan runs don't
+   * show up in it.
+   */
+  void scan(final StateRange range, final boolean keysOnly, final RowVisitor visitor) {
+    flush();
+    final var handler = new VisitingHandler(visitor);
+    execute(
+        state -> {
+          if (keysOnly) {
+            state.scanKeys(
+                range, context -> handler.visit(context, context.getResultObject(), null));
+          } else {
+            state.scan(
+                range,
+                context -> {
+                  final var row = context.getResultObject();
+                  handler.visit(context, row.key(), row.value());
+                });
+          }
+        });
+    handler.rethrowFailure();
+  }
+
+  long count(final StateRange range) {
+    flush();
+    return read(state -> state.count(range));
+  }
+
+  boolean exists(final StateRange range) {
+    flush();
+    return read(state -> state.exists(range));
+  }
+
+  boolean isInCurrentTransaction() {
+    return inCurrentTransaction;
+  }
+
+  void resetTransaction() {
+    rollbackInternal();
+    inCurrentTransaction = true;
+  }
+
+  @Override
+  public void run(final TransactionOperation operations) throws Exception {
+    operations.run();
+  }
+
+  @Override
+  public void commit() {
+    commitInternal();
+  }
+
+  @Override
+  public void rollback() {
+    rollbackInternal();
+  }
+
+  void commitInternal() {
+    inCurrentTransaction = false;
+    flush();
+    final var current = connection;
+    if (current != null) {
+      try {
+        current.commit();
+      } catch (final SQLException e) {
+        throw SqlErrors.translate(e);
+      }
+      release();
+    }
+  }
+
+  /**
+   * Writes a batch that's already merged, one write per key, and commits it.
+   *
+   * @param position the log position the state tables stand at once the batch is written
+   */
+  void writeBatch(final List<RawWrite> writes, final long position) {
+    checkWritable();
+    resetTransaction();
+    try {
+      execute(
+          state -> {
+            fence(state, OptionalLong.of(position));
+            sendTo(state, writes);
+            session().flushStatements();
+          });
+      commitInternal();
+    } finally {
+      rollbackInternal();
+    }
+  }
+
+  /**
+   * Discards the writes and rolls the database transaction back. It doesn't throw: once the
+   * connection is gone, the database rolls back by itself.
+   */
+  void rollbackInternal() {
+    inCurrentTransaction = false;
+    buffer.clear();
+    final var current = connection;
+    if (current != null) {
+      try {
+        current.rollback();
+      } catch (final SQLException e) {
+        LOG.warn(
+            "Failed to roll back the transaction on the state of partition {}", partitionId, e);
+      } finally {
+        release();
+      }
+    }
+  }
+
+  private void flush() {
+    if (buffer.isEmpty()) {
+      return;
+    }
+    execute(
+        state -> {
+          if (!ownerChecked) {
+            fence(state, OptionalLong.empty());
+            ownerChecked = true;
+          }
+          buffer.sendTo(state, partitionId);
+          session().flushStatements();
+        });
+    buffer.clear();
+  }
+
+  private void checkWritable() {
+    if (term.isEmpty()) {
+      throw new UnsupportedOperationException(
+          "Expected to write to the state of partition %d, but it was opened for reading only"
+              .formatted(partitionId));
+    }
+  }
+
+  /** Locks the state row if the term owns the state, and sets the position if there is one. */
+  private void fence(final StateMapper state, final OptionalLong position) {
+    final long writeTerm = term.orElseThrow();
+    if (position.isPresent()) {
+      state.fenceAndSetPosition(partitionId, stateId, writeTerm, position.getAsLong());
+    } else {
+      state.fence(partitionId, stateId, writeTerm);
+    }
+    if (updatedRows(session().flushStatements()) != 1) {
+      final var ownerTerm = state.findOwnerTerm(partitionId, stateId);
+      throw new StateFencedException(
+          "Expected to write to the state %s of partition %d with term %d, but %s"
+              .formatted(
+                  stateId,
+                  partitionId,
+                  writeTerm,
+                  ownerTerm
+                      .map(owner -> "a leader of term " + owner + " owns it")
+                      .orElse("the state doesn't exist")));
+    }
+  }
+
+  /** Sends the deletes, then the upserts, so that each kind of write to a table is one batch. */
+  private void sendTo(final StateMapper state, final List<RawWrite> writes) {
+    for (final var write : writes) {
+      if (write.value() == null) {
+        final int columnFamily = write.columnFamily().getValue();
+        final var table = StateTables.of(columnFamily);
+        state.delete(partitionId, table.name(), table.shared(), columnFamily, write.key());
+      }
+    }
+    for (final var write : writes) {
+      final var value = write.value();
+      if (value != null) {
+        final int columnFamily = write.columnFamily().getValue();
+        final var table = StateTables.of(columnFamily);
+        state.upsert(
+            partitionId,
+            table.name(),
+            table.shared(),
+            columnFamily,
+            write.key(),
+            value,
+            write.position());
+      }
+    }
+  }
+
+  private static int updatedRows(final List<BatchResult> results) {
+    int rows = 0;
+    for (final var result : results) {
+      for (final int count : result.getUpdateCounts()) {
+        rows += count;
+      }
+    }
+    return rows;
+  }
+
+  /**
+   * Runs a read of one statement. In a transaction, it sees the transaction's writes. Outside one,
+   * it runs alone in auto-commit on a connection of its own, which is one round trip, where a
+   * transaction would add a commit. A single statement sees the same committed rows either way.
+   */
+  private <T> T read(final Function<StateMapper, T> statement) {
+    if (inCurrentTransaction) {
+      return query(statement);
+    }
+    final var borrowed = storage.borrowAutoCommitConnection();
+    try (final var readSession =
+        storage.sqlSessionFactory().openSession(ExecutorType.SIMPLE, borrowed)) {
+      return statement.apply(readSession.getMapper(StateMapper.class));
+    } catch (final PersistenceException e) {
+      throw SqlErrors.translate(e);
+    } finally {
+      closeQuietly(borrowed);
+    }
+  }
+
+  /** Runs statements on this transaction's connection. */
+  private <T> T query(final Function<StateMapper, T> statements) {
+    final var state = mapper();
+    try {
+      return statements.apply(state);
+    } catch (final PersistenceException e) {
+      throw SqlErrors.translate(e);
+    }
+  }
+
+  private void execute(final Consumer<StateMapper> statements) {
+    query(
+        state -> {
+          statements.accept(state);
+          return Boolean.TRUE;
+        });
+  }
+
+  private StateMapper mapper() {
+    final var current = mapper;
+    if (current != null) {
+      return current;
+    }
+    final var borrowed = storage.borrowConnection();
+    connection = borrowed;
+    final var opened = storage.sqlSessionFactory().openSession(ExecutorType.BATCH, borrowed);
+    session = opened;
+    final var openedMapper = opened.getMapper(StateMapper.class);
+    mapper = openedMapper;
+    return openedMapper;
+  }
+
+  private SqlSession session() {
+    final var current = session;
+    if (current == null) {
+      throw new IllegalStateException("Expected an open session, but the transaction has none");
+    }
+    return current;
+  }
+
+  /** Closes the session, which leaves the connection open, then returns the connection. */
+  private void release() {
+    final var openSession = session;
+    final var borrowed = connection;
+    session = null;
+    mapper = null;
+    connection = null;
+    ownerChecked = false;
+    if (openSession != null) {
+      openSession.close();
+    }
+    if (borrowed != null) {
+      closeQuietly(borrowed);
+    }
+  }
+
+  private void closeQuietly(final Connection borrowed) {
+    try {
+      borrowed.close();
+    } catch (final SQLException e) {
+      LOG.warn("Failed to return the connection of the state of partition {}", partitionId, e);
+    }
+  }
+
+  /** Visits a key and its value, or {@code null} for a scan of keys only. */
+  @FunctionalInterface
+  interface RowVisitor {
+    boolean visit(byte[] key, byte @Nullable [] value);
+  }
+
+  /**
+   * Stops the query when the visitor returns {@code false} or throws. MyBatis would wrap what the
+   * visitor throws, so it is kept and thrown as it is once the query is over.
+   */
+  private static final class VisitingHandler {
+
+    private final RowVisitor visitor;
+    private @Nullable Throwable failure;
+
+    private VisitingHandler(final RowVisitor visitor) {
+      this.visitor = visitor;
+    }
+
+    private void visit(
+        final ResultContext<?> context, final byte[] key, final byte @Nullable [] value) {
+      try {
+        if (!visitor.visit(key, value)) {
+          context.stop();
+        }
+      } catch (final RuntimeException | Error e) {
+        failure = e;
+        context.stop();
+      }
+    }
+
+    private void rethrowFailure() {
+      final var thrown = failure;
+      if (thrown instanceof final RuntimeException e) {
+        throw e;
+      }
+      if (thrown instanceof final Error e) {
+        throw e;
+      }
+    }
+  }
+}

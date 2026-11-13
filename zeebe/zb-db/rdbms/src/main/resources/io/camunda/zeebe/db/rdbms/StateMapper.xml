@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.zeebe.db.rdbms.StateMapper">
+
+  <resultMap id="stateRow" type="io.camunda.zeebe.db.rdbms.StateRow">
+    <constructor>
+      <arg column="STATE_KEY" javaType="_byte[]"/>
+      <arg column="STATE_VALUE" javaType="_byte[]"/>
+    </constructor>
+  </resultMap>
+
+  <select id="findStateId" resultType="string">
+    SELECT STATE_ID
+    FROM ${prefix}ZS_PARTITION
+    WHERE PARTITION_ID = #{partitionId}
+  </select>
+
+  <insert id="createState">
+    INSERT INTO ${prefix}ZS_PARTITION (PARTITION_ID, STATE_ID, OWNER_TERM, WRITTEN_POSITION)
+    VALUES (#{partitionId}, #{stateId}, #{term}, -1)
+  </insert>
+
+  <update id="claim">
+    UPDATE ${prefix}ZS_PARTITION
+    SET OWNER_TERM = #{term}
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
+      AND OWNER_TERM &lt;= #{term}
+  </update>
+
+  <!--
+    Like any update, they lock the row until the transaction ends, so a newer leader's claim waits
+    for the write in progress. After the claim, they update no row.
+  -->
+  <sql id="ownedByTerm">
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
+      AND OWNER_TERM = #{term}
+  </sql>
+
+  <update id="fence">
+    UPDATE ${prefix}ZS_PARTITION
+    SET OWNER_TERM = OWNER_TERM
+    <include refid="ownedByTerm"/>
+  </update>
+
+  <update id="fenceAndSetPosition">
+    UPDATE ${prefix}ZS_PARTITION
+    SET WRITTEN_POSITION = #{position}
+    <include refid="ownedByTerm"/>
+  </update>
+
+  <select id="findOwnerTerm" resultType="long">
+    SELECT OWNER_TERM
+    FROM ${prefix}ZS_PARTITION
+    WHERE PARTITION_ID = #{partitionId}
+      AND STATE_ID = #{stateId}
+  </select>
+
+  <!--
+    The statements below run on the table of a column family. ${table} is always a name from
+    StateTables, never input, so it's safe to write it into the SQL. Only a shared table has the
+    COLUMN_FAMILY column.
+  -->
+
+  <sql id="keyColumns">PARTITION_ID, <if test="shared">COLUMN_FAMILY, </if>STATE_KEY</sql>
+
+  <sql id="keyValues">#{partitionId}, <if test="shared">#{columnFamily}, </if>#{key}</sql>
+
+  <sql id="inColumnFamily">
+    WHERE PARTITION_ID = #{partitionId}
+    <if test="shared">
+      AND COLUMN_FAMILY = #{columnFamily}
+    </if>
+  </sql>
+
+  <sql id="inRange">
+    <include refid="inColumnFamily"/>
+    <if test="from != null">
+      AND STATE_KEY &gt;= #{from}
+    </if>
+    <if test="to != null">
+      AND STATE_KEY &lt; #{to}
+    </if>
+  </sql>
+
+  <delete id="deleteRows">
+    DELETE FROM ${prefix}${table}
+    WHERE PARTITION_ID = #{partitionId}
+  </delete>
+
+  <select id="get" resultType="_byte[]">
+    SELECT STATE_VALUE
+    FROM ${prefix}${table}
+    <include refid="inColumnFamily"/>
+      AND STATE_KEY = #{key}
+  </select>
+
+  <update id="upsert" databaseId="h2">
+    MERGE INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE, UPDATED_POSITION)
+    KEY (<include refid="keyColumns"/>)
+    VALUES (<include refid="keyValues"/>, #{value}, #{position})
+  </update>
+
+  <update id="upsert" databaseId="postgresql">
+    INSERT INTO ${prefix}${table} (<include refid="keyColumns"/>, STATE_VALUE, UPDATED_POSITION)
+    VALUES (<include refid="keyValues"/>, #{value}, #{position})
+    ON CONFLICT (<include refid="keyColumns"/>)
+    DO UPDATE SET STATE_VALUE = EXCLUDED.STATE_VALUE, UPDATED_POSITION = EXCLUDED.UPDATED_POSITION
+  </update>
+
+  <delete id="delete">
+    DELETE FROM ${prefix}${table}
+    <include refid="inColumnFamily"/>
+      AND STATE_KEY = #{key}
+  </delete>
+
+  <select id="scan" resultMap="stateRow" fetchSize="256">
+    SELECT STATE_KEY, STATE_VALUE
+    FROM ${prefix}${table}
+    <include refid="inRange"/>
+    ORDER BY STATE_KEY <if test="descending">DESC</if>
+  </select>
+
+  <select id="scanKeys" resultType="_byte[]" fetchSize="256">
+    SELECT STATE_KEY
+    FROM ${prefix}${table}
+    <include refid="inRange"/>
+    ORDER BY STATE_KEY <if test="descending">DESC</if>
+  </select>
+
+  <select id="count" resultType="_long">
+    SELECT COUNT(*)
+    FROM ${prefix}${table}
+    <include refid="inRange"/>
+  </select>
+
+  <select id="exists" resultType="_boolean">
+    SELECT EXISTS (
+      SELECT 1
+      FROM ${prefix}${table}
+      <include refid="inRange"/>
+    )
+  </select>
+
+</mapper>

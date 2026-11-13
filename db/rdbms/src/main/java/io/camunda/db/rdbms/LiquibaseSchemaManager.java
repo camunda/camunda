@@ -68,6 +68,13 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       "db/changelog/rdbms-exporter/schema-version-seed.xml";
 
   /**
+   * The tables of the partitions' state, for a tenant that keeps that state in this database.
+   * Applied after {@link #CHANGE_LOG}, as a run of its own, so the history's changelog stays the
+   * same for every tenant.
+   */
+  private static final String STATE_CHANGE_LOG = "db/changelog/zeebe-state/changelog-master.xml";
+
+  /**
    * Forces Liquibase runs in this JVM to execute one at a time, because two of them overlapping
    * corrupts each other's lock bookkeeping — even against entirely separate databases.
    *
@@ -110,6 +117,7 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final String prefix;
   private final Duration ddlLockWaitTimeout;
+  private final boolean partitionState;
 
   /**
    * The current application version, supplied at construction time. Must not be {@code null}; a
@@ -158,6 +166,7 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     vendorDatabaseProperties = config.vendorDatabaseProperties();
     prefix = StringUtils.trimToEmpty(config.prefix());
     ddlLockWaitTimeout = config.ddlLockWaitTimeout();
+    partitionState = config.partitionState();
     this.applicationVersion = applicationVersion;
     this.versionStore = versionStore;
   }
@@ -175,6 +184,9 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
       seedSchemaVersion();
       versionStore.checkCompatibility();
       performMigrationWithRetry(runner);
+      if (partitionState) {
+        performMigrationWithRetry(buildRunner(STATE_CHANGE_LOG));
+      }
     } catch (final Exception e) {
       throw isDeterministicFailure(e)
           ? new RdbmsSchemaMigrationFailedException(

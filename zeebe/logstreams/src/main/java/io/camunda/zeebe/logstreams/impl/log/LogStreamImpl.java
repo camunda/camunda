@@ -115,6 +115,11 @@ public final class LogStreamImpl implements LogStream, CommitListener, AppendedL
   }
 
   @Override
+  public long getLastWrittenPosition() {
+    return sequencer.getLastWrittenPosition();
+  }
+
+  @Override
   public FlowControl getFlowControl() {
     return flowControl;
   }

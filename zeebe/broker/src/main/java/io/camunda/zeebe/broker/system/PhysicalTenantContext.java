@@ -11,8 +11,10 @@ import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.FeatureFlags;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Bundles all per-physical-tenant objects required to bootstrap the services for a given physical
@@ -26,6 +28,9 @@ import io.camunda.zeebe.util.FeatureFlags;
  *
  * <p>secretStoreRegistry holds the tenant's configured secret stores and their caches, read on job
  * activation to inject resolved secrets.
+ *
+ * <p>rdbmsStateDatabase is where the tenant's partitions keep their state when its primary storage
+ * is {@code rdbms}, and null otherwise.
  */
 public record PhysicalTenantContext(
     EngineSecurityConfig securityConfig,
@@ -33,4 +38,24 @@ public record PhysicalTenantContext(
     FeatureFlags featureFlags,
     BrokerCfg config,
     ExporterRepository exporterRepository,
-    SecretStoreRegistry secretStoreRegistry) {}
+    SecretStoreRegistry secretStoreRegistry,
+    @Nullable RdbmsStateDatabase rdbmsStateDatabase) {
+
+  /** A context for a tenant that keeps its partitions' state in RocksDB. */
+  public PhysicalTenantContext(
+      final EngineSecurityConfig securityConfig,
+      final BrokerRequestAuthorizationConverter authorizationConverter,
+      final FeatureFlags featureFlags,
+      final BrokerCfg config,
+      final ExporterRepository exporterRepository,
+      final SecretStoreRegistry secretStoreRegistry) {
+    this(
+        securityConfig,
+        authorizationConverter,
+        featureFlags,
+        config,
+        exporterRepository,
+        secretStoreRegistry,
+        null);
+  }
+}

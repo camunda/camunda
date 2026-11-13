@@ -63,6 +63,16 @@ public interface LogStream extends AutoCloseable {
   LogStreamWriter newLogStreamWriter();
 
   /**
+   * Returns the position of the last record written to the log, which may not be committed yet. A
+   * record counts as written once the log stream hands it to the storage, which is before {@link
+   * FlowControl} learns about it. Before this log stream writes anything, it is the last committed
+   * record the log stream found when it opened.
+   *
+   * @return the position of the last written record, or 0 if the log is empty
+   */
+  long getLastWrittenPosition();
+
+  /**
    * @return a handle to the flow control used by this log stream.
    */
   FlowControl getFlowControl();

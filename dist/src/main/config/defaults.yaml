@@ -674,6 +674,10 @@ camunda: # Type: io.camunda.configuration.Camunda
       # be copied to data directory while taking snapshot. This may impact disk i/o or performance during
       # snapshotting.
       runtime-directory: null # Type: String, Env: CAMUNDA_DATA_PRIMARYSTORAGE_RUNTIMEDIRECTORY
+      # Where the partitions keep their state: `rocksdb` on local disk, or `rdbms` in the secondary
+      # storage's relational database, using its settings. The partitions' logs stay on local disk either
+      # way. The `rdbms` type needs an `rdbms` secondary storage, the write-behind cache and no backups.
+      type: "rocksdb" # Type: io.camunda.configuration.data.PrimaryStorage$PrimaryStorageType, Env: CAMUNDA_DATA_PRIMARYSTORAGE_TYPE
       # The number of versioned data directories to retain when garbage collection runs. This only applies
       # when using the S3-based node ID provider with versioned directories enabled. Older versions beyond
       # this count will be deleted after the current version is validated.

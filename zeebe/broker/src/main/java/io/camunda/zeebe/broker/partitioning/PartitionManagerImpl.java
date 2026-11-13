@@ -29,10 +29,13 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateStorage;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -65,6 +68,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +76,7 @@ public final class PartitionManagerImpl
     implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManagerImpl.class);
+  private static final Duration SCHEMA_READY_CHECK_INTERVAL = Duration.ofMillis(250);
 
   private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
@@ -92,6 +97,7 @@ public final class PartitionManagerImpl
   private final PartitionScalingChangeExecutor scalingExecutor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final ExporterHistoryPurger exporterHistoryPurger;
+  private final @Nullable RdbmsStateStorage rdbmsStateStorage;
 
   public PartitionManagerImpl(
       final String partitionGroup,
@@ -111,6 +117,7 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
+      final @Nullable RdbmsStateDatabase rdbmsStateDatabase,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -137,6 +144,15 @@ public final class PartitionManagerImpl
     final List<PartitionListener> listeners = new ArrayList<>(partitionListeners);
     listeners.add(topologyManager);
 
+    rdbmsStateStorage =
+        brokerCfg.getData().getPrimaryStorageType() == PrimaryStorageType.RDBMS
+            ? new RdbmsStateStorage(
+                partitionGroup,
+                Objects.requireNonNull(
+                    rdbmsStateDatabase,
+                    "Expected a database for the state of partition group '%s', but none was given"
+                        .formatted(partitionGroup)))
+            : null;
     zeebePartitionFactory =
         new ZeebePartitionFactory(
             actorSchedulingService,
@@ -159,6 +175,7 @@ public final class PartitionManagerImpl
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
             rocksDbResources,
+            rdbmsStateStorage,
             secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
@@ -333,6 +350,7 @@ public final class PartitionManagerImpl
     concurrencyControl.runOnCompletion(
         stop,
         (ok, error) -> {
+          closeRdbmsStateStorage();
           if (error != null) {
             LOGGER.error("Failed to stop partitions", error);
             result.completeExceptionally(error);
@@ -344,6 +362,12 @@ public final class PartitionManagerImpl
     return result;
   }
 
+  private void closeRdbmsStateStorage() {
+    if (rdbmsStateStorage != null) {
+      rdbmsStateStorage.close();
+    }
+  }
+
   private ActorFuture<Void> startPartitions(final CurrentClusterConfiguration configuration) {
     if (stopped) {
       LOGGER.info(
@@ -351,6 +375,62 @@ public final class PartitionManagerImpl
           partitionGroup);
       return CompletableActorFuture.completed();
     }
+    if (rdbmsStateStorage == null) {
+      return bootstrapPartitions(configuration);
+    }
+    final var result = concurrencyControl.<Void>createFuture();
+    startPartitionsOnceTheSchemaIsReady(rdbmsStateStorage, configuration, result, true);
+    return result;
+  }
+
+  /**
+   * The application creates the state's tables with the rest of the tenant's schema, and only after
+   * the broker has started. So the partitions wait for it, checking again later rather than
+   * blocking the actor.
+   */
+  private void startPartitionsOnceTheSchemaIsReady(
+      final RdbmsStateStorage storage,
+      final CurrentClusterConfiguration configuration,
+      final ActorFuture<Void> result,
+      final boolean firstCheck) {
+    if (stopped) {
+      LOGGER.info(
+          "Not starting the partitions of partition group {}, the manager was stopped",
+          partitionGroup);
+      result.complete(null);
+      return;
+    }
+    if (!storage.isSchemaReady()) {
+      if (firstCheck) {
+        LOGGER.info(
+            "Waiting for the schema of partition group {} before starting its partitions",
+            partitionGroup);
+      }
+      concurrencyControl.schedule(
+          SCHEMA_READY_CHECK_INTERVAL,
+          () -> startPartitionsOnceTheSchemaIsReady(storage, configuration, result, false));
+      return;
+    }
+    try {
+      storage.open();
+    } catch (final RuntimeException e) {
+      LOGGER.error(
+          "Failed to open the database for the state of partition group {}", partitionGroup, e);
+      result.completeExceptionally(e);
+      return;
+    }
+    concurrencyControl.runOnCompletion(
+        bootstrapPartitions(configuration),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+  }
+
+  private ActorFuture<Void> bootstrapPartitions(final CurrentClusterConfiguration configuration) {
     final var localMemberId = localMemberId();
     final var memberPartitions = localPartitions(configuration);
 

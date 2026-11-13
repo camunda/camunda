@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
@@ -203,6 +204,7 @@ public final class SystemContext {
     physicalTenantContexts.forEach(
         (tenantId, ctx) -> {
           validateTenantMatchesRootConfig(tenantId, ctx.config());
+          validatePrimaryStorageType(tenantId, ctx);
           validatePerTenantConfiguration(tenantId, ctx.config());
         });
 
@@ -261,6 +263,43 @@ public final class SystemContext {
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
     validatePerTenantExperimentalConfigs(
         tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
+  }
+
+  /**
+   * Keeping the state in a relational database works only with the parts that exist so far: the
+   * state lives in the tenant's history database, it is written through the write-behind cache, and
+   * there are no backups of it yet.
+   */
+  private void validatePrimaryStorageType(
+      final String tenantId, final PhysicalTenantContext tenantContext) {
+    final var data = tenantContext.config().getData();
+    if (data.getPrimaryStorageType() != PrimaryStorageType.RDBMS) {
+      return;
+    }
+
+    final var errors = new ArrayList<String>();
+    if (tenantContext.rdbmsStateDatabase() == null) {
+      errors.add("camunda.data.secondary-storage.type must be rdbms");
+    }
+    if (!data.getWriteBehindCache().isEnabled()) {
+      errors.add("camunda.data.primary-storage.write-behind-cache.enabled must be true");
+    }
+    if (data.getBackup().getStore() != BackupCfg.BackupStoreType.NONE) {
+      errors.add("camunda.data.primary-storage.backup.store must be NONE");
+    }
+    if (data.getBackup().isContinuous()) {
+      errors.add("camunda.data.primary-storage.backup.continuous must be false");
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidConfigurationException(
+          tenantScopedMessage(
+              tenantId,
+              "Expected a configuration that supports keeping the state in a relational database "
+                  + "(camunda.data.primary-storage.type is rdbms), but: "
+                  + String.join(", ", errors)),
+          null);
+    }
   }
 
   private static String tenantScopedMessage(final String tenantId, final String message) {

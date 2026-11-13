@@ -21,7 +21,7 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
 
   private final Supplier<StreamProcessor> streamProcessorSupplier;
   private final Supplier<@Nullable ExporterDirector> exporterDirectorSupplier;
-  private final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier;
+  private final Supplier<@Nullable AsyncSnapshotDirector> snapshotDirectorSupplier;
   private final Supplier<PartitionProcessingState> partitionProcessingStateSupplier;
   private final Supplier<ZeebeDb> zeebeDbSupplier;
   private final Supplier<LogStream> logStreamSupplier;
@@ -30,7 +30,7 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
   public PartitionAdminControlImpl(
       final Supplier<StreamProcessor> streamProcessorSupplier,
       final Supplier<@Nullable ExporterDirector> exporterDirectorSupplier,
-      final Supplier<AsyncSnapshotDirector> snapshotDirectorSupplier,
+      final Supplier<@Nullable AsyncSnapshotDirector> snapshotDirectorSupplier,
       final Supplier<PartitionProcessingState> partitionProcessingStateSupplier,
       final Supplier<ZeebeDb> zeebeDbSupplier,
       final Supplier<LogStream> logStreamSupplier,
@@ -64,9 +64,16 @@ public class PartitionAdminControlImpl implements PartitionAdminControl {
     return exporterDirectorSupplier.get();
   }
 
+  /**
+   * Does nothing without a snapshot director, as on followers when the partition state is in a
+   * relational database.
+   */
   @Override
   public void triggerSnapshot() {
-    snapshotDirectorSupplier.get().forceSnapshot();
+    final var snapshotDirector = snapshotDirectorSupplier.get();
+    if (snapshotDirector != null) {
+      snapshotDirector.forceSnapshot();
+    }
   }
 
   @Override

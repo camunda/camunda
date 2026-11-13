@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -76,6 +77,7 @@ public final class SystemContextLoader {
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
   private Map<String, IntFunction<Long>> exportedPositionSuppliers = Map.of();
+  private Map<String, RdbmsStateDatabase> rdbmsStateDatabases = Map.of();
   private SecretStoreRegistries secretStoreRegistries = new SecretStoreRegistries(Map.of());
   private ResolvedDataDirectory resolvedDataDirectory;
 
@@ -186,6 +188,13 @@ public final class SystemContextLoader {
     return this;
   }
 
+  /** Where the physical tenants whose primary storage is rdbms keep their partitions' state. */
+  public SystemContextLoader withRdbmsStateDatabases(
+      final Map<String, RdbmsStateDatabase> rdbmsStateDatabases) {
+    this.rdbmsStateDatabases = rdbmsStateDatabases;
+    return this;
+  }
+
   /**
    * The configured secret stores and their caches per physical tenant. The same instances back the
    * Spring-side bean and the broker partitions, so the background secret-resolution flow and job
@@ -275,7 +284,8 @@ public final class SystemContextLoader {
         featureFlags,
         brokerConfig,
         exporterRepository,
-        secretStoreRegistries.forPhysicalTenant(physicalTenantId));
+        secretStoreRegistries.forPhysicalTenant(physicalTenantId),
+        rdbmsStateDatabases.get(physicalTenantId));
   }
 
   private ExporterRepository predefinedExporterRepository() {

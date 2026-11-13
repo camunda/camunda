@@ -555,6 +555,30 @@ public abstract class DbCompositeKeyColumnFamilyContractTest {
   }
 
   @Test
+  public void shouldStopAtFirstKeyWithoutPrefixWhenStartAtIsBeforePrefix() {
+    // given
+    upsertKeyValuePair("bar", 2, "second");
+    upsertKeyValuePair("foo", 3, "third");
+    final var prefix = new DbString();
+    prefix.wrapString("foo");
+
+    // when
+    firstKey.wrapString("bar");
+    secondKey.wrapLong(1L);
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileEqualPrefix(
+        prefix,
+        compositeKey,
+        (key, value) -> {
+          values.add(value.toString());
+          return true;
+        });
+
+    // then
+    assertThat(values).isEmpty();
+  }
+
+  @Test
   public void shouldCount() {
     // given
     upsertKeyValuePair("foo", 12, "baring");

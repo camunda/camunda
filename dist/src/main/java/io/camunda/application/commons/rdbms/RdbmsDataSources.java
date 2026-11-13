@@ -39,6 +39,11 @@ import org.springframework.boot.jdbc.DatabaseDriver;
  * <p>While the per-physical-tenant configuration surface (see {@code camunda.physical-tenants.*})
  * is being delivered as a separate prerequisite, this class is wired with a single {@code default}
  * physical tenant built from the cluster-wide {@code camunda.data.secondary-storage.rdbms.*} block.
+ *
+ * <p>A physical tenant that keeps its partitions' state in the same database ({@code
+ * camunda.data.primary-storage.type: rdbms}) gets a second pool, built from the same settings. The
+ * stream processor waits for every state read that misses its cache, so its connections must not be
+ * taken by queries or the exporter.
  */
 public final class RdbmsDataSources implements AutoCloseable {
 
@@ -47,13 +52,36 @@ public final class RdbmsDataSources implements AutoCloseable {
       "rewriteBatchedStatements";
   private static final String MARIADB_USE_BULK_STMTS_PROPERTY = "useBulkStmts";
 
+  /**
+   * The state has about 145 tables with a few statements each, more than the 256 statements the
+   * PostgreSQL driver keeps prepared per connection by default.
+   */
+  private static final String POSTGRESQL_PREPARED_STATEMENT_CACHE_PROPERTY =
+      "preparedStatementCacheQueries";
+
+  private static final String STATE_PREPARED_STATEMENT_CACHE_SIZE = "1024";
+
   private final Map<String, HikariDataSource> dataSources = new LinkedHashMap<>();
+  private final Map<String, HikariDataSource> stateDataSources = new LinkedHashMap<>();
   private final Map<String, MeterRegistry> tenantMeterRegistries = new LinkedHashMap<>();
   private final Map<String, VendorDatabaseProperties> vendorProperties = new LinkedHashMap<>();
 
   private RdbmsDataSources() {}
 
   /**
+   * Builds the pools of physical tenants that keep only their history in the database.
+   *
+   * @see #of(Map, Set, MeterRegistry)
+   */
+  public static RdbmsDataSources of(
+      final Map<String, Rdbms> physicalTenantConfigs, final MeterRegistry meterRegistry)
+      throws IOException {
+    return of(physicalTenantConfigs, Set.of(), meterRegistry);
+  }
+
+  /**
+   * @param stateTenantIds the physical tenants that also keep their partitions' state in the
+   *     database, which get a second pool for it
    * @param meterRegistry the cluster-wide registry each physical tenant's HikariCP metrics are
    *     forwarded to. Each tenant gets its own {@link MicrometerUtil#wrap wrapped registry} tagging
    *     metrics with {@link PartitionKeyNames#PHYSICAL_TENANT}, consistent with the other
@@ -61,7 +89,9 @@ public final class RdbmsDataSources implements AutoCloseable {
    *     PhysicalTenantsRdbmsTableRowCountMetrics}).
    */
   public static RdbmsDataSources of(
-      final Map<String, Rdbms> physicalTenantConfigs, final MeterRegistry meterRegistry)
+      final Map<String, Rdbms> physicalTenantConfigs,
+      final Set<String> stateTenantIds,
+      final MeterRegistry meterRegistry)
       throws IOException {
     final var result = new RdbmsDataSources();
     for (final var entry : physicalTenantConfigs.entrySet()) {
@@ -70,8 +100,14 @@ public final class RdbmsDataSources implements AutoCloseable {
       try {
         final var tenantMeterRegistry =
             result.registerTenantMeterRegistry(currentPhysicalTenantId, meterRegistry);
-        final var ds = buildDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry);
+        final var ds =
+            buildDataSource("camunda-rdbms-" + currentPhysicalTenantId, rdbms, tenantMeterRegistry);
         result.dataSources.put(currentPhysicalTenantId, ds);
+        if (stateTenantIds.contains(currentPhysicalTenantId)) {
+          result.stateDataSources.put(
+              currentPhysicalTenantId,
+              buildStateDataSource(currentPhysicalTenantId, rdbms, tenantMeterRegistry));
+        }
         final var databaseId =
             vendorIdFor(currentPhysicalTenantId, rdbms, ds, physicalTenantConfigs.size());
         result.vendorProperties.put(
@@ -164,6 +200,14 @@ public final class RdbmsDataSources implements AutoCloseable {
     return Map.copyOf(dataSources);
   }
 
+  /**
+   * @return the pool for the physical tenant's partition state, or empty if the tenant keeps its
+   *     state elsewhere
+   */
+  public Optional<DataSource> stateDataSourceFor(final String physicalTenantId) {
+    return Optional.ofNullable(stateDataSources.get(physicalTenantId));
+  }
+
   public VendorDatabaseProperties vendorPropertiesFor(final String physicalTenantId) {
     final var props = vendorProperties.get(physicalTenantId);
     if (props == null) {
@@ -179,14 +223,38 @@ public final class RdbmsDataSources implements AutoCloseable {
     dataSources.forEach(
         (tenantId, ds) -> {
           closeQuietly(ds);
+          final var stateDs = stateDataSources.get(tenantId);
+          if (stateDs != null) {
+            closeQuietly(stateDs);
+          }
           MicrometerUtil.close(tenantMeterRegistries.get(tenantId));
         });
   }
 
-  private static HikariDataSource buildDataSource(
+  /**
+   * Like the history's pool, but with {@code READ COMMITTED} set explicitly, so that a read sees
+   * what other transactions committed before it even where the database defaults to {@code
+   * REPEATABLE READ}, and with more prepared statements kept on PostgreSQL.
+   */
+  private static HikariDataSource buildStateDataSource(
       final String physicalTenantId, final Rdbms rdbms, final MeterRegistry meterRegistry) {
+    final var ds = buildDataSource("camunda-rdbms-state-" + physicalTenantId, rdbms, meterRegistry);
+    ds.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
+    final var vendor =
+        RdbmsVendorIdProvider.unwrapVendorDriver(
+            DatabaseDriver.fromJdbcUrl(rdbms.getUrl()), rdbms.getUrl());
+    if (vendor == DatabaseDriver.POSTGRESQL
+        && !urlSpecifiesProperty(rdbms.getUrl(), POSTGRESQL_PREPARED_STATEMENT_CACHE_PROPERTY)) {
+      ds.addDataSourceProperty(
+          POSTGRESQL_PREPARED_STATEMENT_CACHE_PROPERTY, STATE_PREPARED_STATEMENT_CACHE_SIZE);
+    }
+    return ds;
+  }
+
+  private static HikariDataSource buildDataSource(
+      final String poolName, final Rdbms rdbms, final MeterRegistry meterRegistry) {
     final var ds = new HikariDataSource();
-    ds.setPoolName("camunda-rdbms-" + physicalTenantId);
+    ds.setPoolName(poolName);
     ds.setJdbcUrl(rdbms.getUrl());
     ds.setUsername(rdbms.getUsername());
     ds.setPassword(rdbms.getPassword());

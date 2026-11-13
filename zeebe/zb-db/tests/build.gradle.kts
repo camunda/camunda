@@ -4,9 +4,17 @@ dependencies {
   testImplementation(project(":zeebe-db-api"))
   testImplementation(project(":zeebe-db-rocksdb"))
   testImplementation(project(":zeebe-db-cache"))
+  testImplementation(project(":zeebe-db-rdbms"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.io.micrometer.micrometer.core)
   testImplementation(libs.org.agrona.agrona)
+  testImplementation(libs.org.liquibase.liquibase.core)
+  testRuntimeOnly(project(":camunda-db-rdbms-schema")) {
+    exclude(group = "com.github.vertical-blank", module = "sql-formatter")
+  }
+  testImplementation(libs.com.h2database.h2)
+  testImplementation(libs.org.postgresql.postgresql)
+  testImplementation(libs.org.testcontainers.testcontainers.postgresql)
   testImplementation(libs.junit.junit)
   testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
   testImplementation(libs.net.jqwik.jqwik)

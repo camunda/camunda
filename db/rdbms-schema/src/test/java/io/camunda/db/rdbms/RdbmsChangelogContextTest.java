@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import liquibase.Liquibase;
 import liquibase.changelog.ChangeSet;
@@ -31,12 +32,15 @@ import org.junit.jupiter.api.Test;
 class RdbmsChangelogContextTest {
 
   private static final Path MAIN_RESOURCES_DIRECTORY = Path.of("src", "main", "resources");
-  private static final Path CHANGELOG_DIRECTORY =
-      MAIN_RESOURCES_DIRECTORY.resolve("db/changelog/rdbms-exporter");
+  private static final List<Path> CHANGELOG_DIRECTORIES =
+      List.of(
+          MAIN_RESOURCES_DIRECTORY.resolve("db/changelog/rdbms-exporter"),
+          MAIN_RESOURCES_DIRECTORY.resolve("db/changelog/zeebe-state"));
 
   @Test
   void shouldNotFilterRdbmsChangelogsByContext() throws Exception {
-    // given every production changelog, including the master, seed, and included changesets
+    // given every production changelog, including the master, seed, and included changesets, and
+    // the partition state's
     final List<Path> changelogFiles = changelogFiles();
     assertThat(changelogFiles).isNotEmpty();
     for (final var changelog : changelogFiles) {
@@ -55,12 +59,16 @@ class RdbmsChangelogContextTest {
   }
 
   private static List<Path> changelogFiles() throws IOException {
-    try (final var paths = Files.walk(CHANGELOG_DIRECTORY)) {
-      return paths
-          .filter(Files::isRegularFile)
-          .filter(path -> path.getFileName().toString().endsWith(".xml"))
-          .toList();
+    final var files = new ArrayList<Path>();
+    for (final var directory : CHANGELOG_DIRECTORIES) {
+      try (final var paths = Files.walk(directory)) {
+        paths
+            .filter(Files::isRegularFile)
+            .filter(path -> path.getFileName().toString().endsWith(".xml"))
+            .forEach(files::add);
+      }
     }
+    return files;
   }
 
   private static boolean hasContextFilter(final ChangeSet changeSet) {

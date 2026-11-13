@@ -819,7 +819,9 @@ against the cache wrapped around RocksDB.
 10. **The storage contracts the cache relies on** (§4.1): byte-ordered iteration, atomic
     transactions, a `createSnapshot` that captures one consistent point while the writer keeps
     writing, and fixing a scan's view before its first callback. An RDBMS storage has to meet all
-    four. The contract tests check the first two.
+    four. The contract tests check the first two. The RDBMS storage
+    ([design](rdbms-storage-design.md)) keeps one shared state per partition and replaces the
+    point-in-time snapshot with a marker.
 11. **Approvals:** the config keys were approved in Phase 6 as unified configuration rather than
     experimental settings. The EhCache dependency was approved in Phase 2.
 

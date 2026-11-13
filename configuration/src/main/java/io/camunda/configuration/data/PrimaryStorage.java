@@ -64,6 +64,14 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private WriteBehindCache writeBehindCache = new WriteBehindCache();
   @NestedConfigurationProperty private PrimaryStorageBackup backup = new PrimaryStorageBackup();
 
+  /**
+   * Where the partitions keep their state: `rocksdb` on local disk, or `rdbms` in the secondary
+   * storage's relational database, using its settings. The partitions' logs stay on local disk
+   * either way. The `rdbms` type needs an `rdbms` secondary storage, the write-behind cache and no
+   * backups.
+   */
+  private PrimaryStorageType type = PrimaryStorageType.rocksdb;
+
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         PREFIX + ".directory",
@@ -130,6 +138,14 @@ public class PrimaryStorage {
     backup = primaryStorageBackup;
   }
 
+  public PrimaryStorageType getType() {
+    return type;
+  }
+
+  public void setType(final PrimaryStorageType type) {
+    this.type = type;
+  }
+
   public boolean disableVersionedDirectory() {
     return disableVersionedDirectory;
   }
@@ -144,5 +160,10 @@ public class PrimaryStorage {
 
   public void setVersionedDirectoryRetentionCount(final int versionedDirectoryRetentionCount) {
     this.versionedDirectoryRetentionCount = versionedDirectoryRetentionCount;
+  }
+
+  public enum PrimaryStorageType {
+    rocksdb,
+    rdbms
   }
 }

@@ -82,6 +82,7 @@ data.primary-storage.rocks-db.sst-partitioning-enabled
 data.primary-storage.rocks-db.statistics-enabled
 data.primary-storage.rocks-db.wal-disabled
 data.primary-storage.runtime-directory
+data.primary-storage.type
 data.primary-storage.write-behind-cache.batch-size
 data.primary-storage.write-behind-cache.cache-size
 data.primary-storage.write-behind-cache.enabled

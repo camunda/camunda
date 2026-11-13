@@ -9,11 +9,15 @@ package io.camunda.zeebe.broker.partitioning.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.cache.CommitGate;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -21,6 +25,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -128,7 +134,7 @@ class ZeebePartitionFactoryTest {
     final ZeebeDbFactory<ZbColumnFamilies> storage = mock(ZeebeDbFactory.class);
 
     // when
-    final var factory = ZeebePartitionFactory.stateDbFactory(brokerCfg, storage);
+    final var factory = ZeebePartitionFactory.stateDbFactory(brokerCfg, storage, null);
 
     // then
     assertThat(factory).isSameAs(storage);
@@ -143,11 +149,39 @@ class ZeebePartitionFactoryTest {
 
     // when
     final var factory =
-        ZeebePartitionFactory.stateDbFactory(brokerCfg, DefaultZeebeDbFactory.defaultFactory());
+        ZeebePartitionFactory.stateDbFactory(
+            brokerCfg, DefaultZeebeDbFactory.defaultFactory(), null);
 
     // then - the partition registers it with its health monitor, so a failing writer shows up
     try (final var db = factory.createDb(runtime.toFile())) {
       assertThat(db).isInstanceOf(HealthMonitorable.class);
+    }
+  }
+
+  @Test
+  void shouldGiveEachDatabaseInTheCacheItsOwnCommitGate(@TempDir final Path runtime)
+      throws Exception {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getWriteBehindCache().setEnabled(true);
+    final List<CommitGate> gates = new ArrayList<>();
+    final var factory =
+        ZeebePartitionFactory.stateDbFactory(
+            brokerCfg,
+            DefaultZeebeDbFactory.defaultFactory(),
+            () -> {
+              final var gate = mock(CommitGate.class);
+              gates.add(gate);
+              return gate;
+            });
+
+    // when
+    try (final var first = factory.createDb(runtime.resolve("first").toFile());
+        final var second = factory.createDb(runtime.resolve("second").toFile())) {
+
+      // then - each database waits for the log through its own gate
+      assertThat(gates).hasSize(2);
+      gates.forEach(gate -> verify(gate, atLeastOnce()).addCommitListener(any()));
     }
   }
 }

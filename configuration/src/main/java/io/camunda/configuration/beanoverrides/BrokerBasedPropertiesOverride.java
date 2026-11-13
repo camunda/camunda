@@ -48,6 +48,7 @@ import io.camunda.configuration.security.KeyStore;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
@@ -892,6 +893,12 @@ public class BrokerBasedPropertiesOverride {
     brokerWriteBehindCache.setBatchSize(writeBehindCache.getBatchSize());
     brokerWriteBehindCache.setMaxWriteDelay(writeBehindCache.getMaxWriteDelay());
     brokerWriteBehindCache.setSnapshotCatchUpTimeout(writeBehindCache.getSnapshotCatchUpTimeout());
+
+    data.setPrimaryStorageType(
+        switch (primaryStorage.getType()) {
+          case rocksdb -> DataCfg.PrimaryStorageType.ROCKSDB;
+          case rdbms -> DataCfg.PrimaryStorageType.RDBMS;
+        });
 
     populateBackupScheduler(override, primaryStorage.getBackup(), camunda);
   }

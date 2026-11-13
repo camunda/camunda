@@ -11,6 +11,7 @@ import static io.camunda.zeebe.db.cache.TestColumnFamily.FIRST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.db.ZeebeDbException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -167,6 +168,53 @@ final class WriteBehindStoreConcurrencyTest {
     assertThat(committer.done()).succeedsWithin(Duration.ofSeconds(10));
   }
 
+  @Test
+  void shouldLetACommitWaitingForRoomThroughOnceTheGateStops() throws Exception {
+    // given - the log commits nothing, so the first transaction stays held back, and the second
+    // commit waits for room
+    final var gate = new TestCommitGate();
+    final var store = store(new TestConfiguration().maxWriteDelay(QUICK).maxPendingBytes(0), gate);
+    gate.write(5);
+    store.commit(Map.of(key(1), new Op(bytes(1))));
+    final var committer = inBackgroundThread(() -> store.commit(Map.of(key(2), new Op(bytes(2)))));
+    awaitWaiting(committer, Thread.State.WAITING);
+
+    // when
+    gate.stop();
+
+    // then
+    assertThat(committer.done()).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(store.get(key(2), reader())).containsExactly(2);
+    assertThat(storage.get(FIRST, bytes(1))).isNull();
+  }
+
+  @Test
+  void shouldFailASnapshotWaitingForTheLogOnceTheGateStops() throws Exception {
+    // given - the log commits nothing, and the snapshot would wait for it for minutes
+    final var gate = new TestCommitGate();
+    final var store =
+        store(
+            new TestConfiguration()
+                .maxWriteDelay(QUICK)
+                .snapshotCatchUpTimeout(Duration.ofMinutes(5)),
+            gate);
+    gate.write(5);
+    store.commit(Map.of(key(1), new Op(bytes(1))));
+    final var catchingUp = inBackgroundThread(store::catchUp);
+    awaitWaiting(catchingUp, Thread.State.TIMED_WAITING);
+
+    // when
+    gate.stop();
+
+    // then
+    assertThat(catchingUp.done())
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .havingCause()
+        .isInstanceOf(ZeebeDbException.class);
+    assertThat(storage.get(FIRST, bytes(1))).isNull();
+  }
+
   /**
    * Starts a committer that ends up blocked on {@code maxPendingBytes}, which the store sets to 0:
    * the writer is paused writing the first commit, and the second commit waits for the writer while
@@ -183,18 +231,26 @@ final class WriteBehindStoreConcurrencyTest {
               }
             });
     storage.awaitPausedTransaction();
-    await()
-        .until(
-            () ->
-                !committer.done().isDone()
-                    && committer.thread().getState() == Thread.State.WAITING);
+    awaitWaiting(committer, Thread.State.WAITING);
     return committer;
+  }
+
+  private static void awaitWaiting(final Background background, final Thread.State state) {
+    await().until(() -> !background.done().isDone() && background.thread().getState() == state);
   }
 
   private WriteBehindStore<TestColumnFamily> store(
       final TestConfiguration configuration, final int optimisticReadAttempts) {
     final var store =
-        new WriteBehindStore<>(storage.db(), configuration.build(), optimisticReadAttempts);
+        new WriteBehindStore<>(
+            storage.db(), configuration.build(), NoCommitGate.INSTANCE, optimisticReadAttempts);
+    stores.add(store);
+    return store;
+  }
+
+  private WriteBehindStore<TestColumnFamily> store(
+      final TestConfiguration configuration, final CommitGate commitGate) {
+    final var store = new WriteBehindStore<>(storage.db(), configuration.build(), commitGate);
     stores.add(store);
     return store;
   }
