@@ -95,7 +95,8 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
-    return writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options));
+    // passing the options to the batch iterator too makes it honour the same iteration bounds
+    return writeBatch.newIteratorWithBase(handle, db.newIterator(handle, options), options);
   }
 
   void resetTransaction() {
