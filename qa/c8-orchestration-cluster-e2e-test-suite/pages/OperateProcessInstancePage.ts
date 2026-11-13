@@ -348,9 +348,7 @@ class OperateProcessInstancePage {
       readModeValue: this.variableValueCellLocator(name).getByTestId(
         'edit-variable-value-readonly',
       ),
-      // See the comment on `this.editor` below: the inline variable editor is
-      // CodeMirror now (#62782), not Monaco, so it no longer exposes
-      // `role="code"`.
+      // CodeMirror (#62782) has no role="code", so target its testid.
       editor:
         this.variableValueCellLocator(name).getByTestId('code-mirror-editor'),
       editVariableModal: {
@@ -397,11 +395,7 @@ class OperateProcessInstancePage {
       },
     });
     this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
-    // Operate's inline variable-value editor (InlineJsonEditor) migrated
-    // from Monaco to CodeMirror in #62782. Monaco's container exposed
-    // `role="code"`; CodeMirror's `.cm-content` is `role="textbox"` instead
-    // and isn't uniquely named, so target the CodeMirror instance by the
-    // data-testid it sets explicitly rather than by role.
+    // CodeMirror (#62782) has no role="code", so target its testid.
     this.editor = page.getByTestId('code-mirror-editor');
     this.openButtonLast = page.locator('[aria-label="Open variable"]').last();
     this.openButtonFirst = page.locator('[aria-label="Open variable"]').first();
@@ -454,13 +448,7 @@ class OperateProcessInstancePage {
     await this.waitForIconWithRetry(this.activeIcon, 'Active', 90000);
   }
   getEditVariableFieldSelector(variableName: string) {
-    // After the inline editor migrated to CodeMirror (#62782), the
-    // `edit-variable-value` group also contains a visually-hidden accessibility
-    // region (e.g. the "Selection deleted" live announcement emitted when the
-    // value is cleared) alongside the actual value, so reading the group's text
-    // returns noise like "fooSelection deleted3". Target the CodeMirror content
-    // textbox instead, which holds just the value -- clicking it also focuses
-    // the editor exactly as clicking the group did.
+    // Read the CodeMirror textbox: the group's text includes hidden a11y announcements.
     return this.page
       .getByTestId(`variable-${variableName}`)
       .getByTestId('edit-variable-value')

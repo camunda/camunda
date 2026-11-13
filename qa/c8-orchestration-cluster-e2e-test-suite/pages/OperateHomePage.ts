@@ -52,11 +52,7 @@ class OperateHomePage {
     });
     this.editVariableButton = page.getByTestId('edit-variable-button');
     this.variableValueInput = page.getByTestId('edit-variable-value');
-    // The inline variable-value editor migrated from Monaco (which exposed
-    // its container with `role="code"`) to CodeMirror as part of #62782.
-    // CodeMirror's content editable renders `role="textbox"`, not "code", so
-    // this has to target the editor by the explicit data-testid the
-    // InlineJsonEditor component sets on the CodeMirror instance instead.
+    // CodeMirror (#62782) has no role="code", so target its testid.
     this.variableValueEditor = page.getByTestId('code-mirror-editor');
     this.saveVariableButton = page.getByLabel('Save');
     this.editVariableSpinner = page
