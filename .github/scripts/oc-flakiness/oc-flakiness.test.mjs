@@ -293,7 +293,8 @@ test('should build iteration 2 on iteration 1 unless it regressed', () => {
 test('should open a PR only above the floor and with enough improvement', () => {
   assert.equal(final({baseline: pass(60), iter1: pass(92)}).action, 'open_pr');
   assert.equal(final({baseline: pass(60), iter1: pass(75)}).action, 'delete_branch');
-  assert.equal(final({baseline: pass(85), iter1: pass(90)}).action, 'delete_branch');
+  assert.equal(final({baseline: pass(85), iter1: pass(90)}).action, 'open_pr');
+  assert.equal(final({baseline: pass(85), iter1: pass(89)}).action, 'delete_branch');
   assert.equal(
     final({
       baseline: pass(60),

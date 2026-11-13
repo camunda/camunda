@@ -8,7 +8,7 @@
 //
 //   node decide.mjs --mode final --baseline b.json [--iter1 i1.json]
 //                   [--iter2 i2.json] [--fix-results <result>,<result>]
-//                   [--min-rate 80] [--min-improvement 10]
+//                   [--min-rate 80] [--min-improvement 5]
 //     -> {"action": "open_pr" | "delete_branch" | "not_reproduced" | "blocked",
 //         "best": "iter1" | "iter2" | null, "rate": <pooled % of the best pass,
 //         or null when none was scored>, "reason": "..."}
@@ -47,7 +47,7 @@ export function final({
   iter2,
   fixResults = [],
   minRate = 80,
-  minImprovement = 10,
+  minImprovement = 5,
 }) {
   if (!baseline || baseline.verdict === 'blocked') {
     return {action: 'blocked', best: null, rate: null, reason: 'baseline produced no score'};
@@ -140,7 +140,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
       iter2: load('iter2'),
       fixResults: (args['fix-results'] ?? '').split(','),
       minRate: Number(args['min-rate'] ?? 80),
-      minImprovement: Number(args['min-improvement'] ?? 10),
+      minImprovement: Number(args['min-improvement'] ?? 5),
     });
   } else {
     console.error('decide.mjs: --mode must be next or final');

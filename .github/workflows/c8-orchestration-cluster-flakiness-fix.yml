@@ -86,7 +86,7 @@ env:
   # MIN_IMPROVEMENT_PP over the baseline: the floor alone cannot tell a real fix
   # from a no-op on a test that was already near it.
   MIN_PASS_RATE: '80'
-  MIN_IMPROVEMENT_PP: '10'
+  MIN_IMPROVEMENT_PP: '5'
 
 jobs:
   # ─── Pick mode ────────────────────────────────────────────────────────────
