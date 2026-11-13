@@ -68,6 +68,29 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     ops.copy(source, self());
   }
 
+  /**
+   * Equal if the other is of the same class and has the same stored properties, compared by
+   * content. State that is not stored ({@link MsgpackIgnore}) is not compared: override {@code
+   * equals} and {@code hashCode} together to include it.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || o.getClass() != getClass()) {
+      return false;
+    }
+    @SuppressWarnings("unchecked")
+    final T other = (T) o;
+    return ops.equals(self(), other);
+  }
+
+  @Override
+  public int hashCode() {
+    return ops.hashCode(self());
+  }
+
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {

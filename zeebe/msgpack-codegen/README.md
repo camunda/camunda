@@ -22,7 +22,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
 - Defaults are the field initializers. The processor also generates a `<Name>Ops` with the other
   operations on the class: `reset`, which copies the defaults from a prototype instance (plain field
-  assignments, no reflection), and `copy`. The operations are static methods, so generated
+  assignments, no reflection), `copy`, `equals` and `hashCode`. The operations are static methods, so generated
   code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
   for code that is generic in the type. It is separate from the codec.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
@@ -74,6 +74,13 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   is not a POJO and has no copy of its own is copied by writing it to a new array and reading it
   back. `@MsgpackIgnore`d fields are not copied: a class with such state overrides `copyFrom` and
   calls `super`.
+- `equals` and `hashCode` of `MsgpackBufferValue` (`NameOps.equals`/`hashCode`) compare the stored
+  properties by content, like `UnpackedObject` does: buffers by their bytes, lists and nested values
+  by their elements, unknown properties by their bytes. `hashCode` does not look inside a nested
+  `BaseValue` (an `UnpackedObject`), only at the size of a list of them: their own `hashCode` is not
+  consistent with their `equals`, and equal values must hash alike. Unlike `UnpackedObject`, an instance is
+  only equal to one of exactly the same class. `@MsgpackIgnore`d fields are not compared: a class with such
+  state overrides both methods.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
   written back, so a read-modify-write by an older version does not drop them. Every
   `@MsgpackPojo` needs exactly one `final` `@MsgpackUnknownProperties UnknownProperties` field,

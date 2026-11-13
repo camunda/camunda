@@ -13,18 +13,26 @@ import static io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.Recyclable;
+import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.pojo.Codecs;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -209,6 +217,149 @@ final class GeneratedOpsTest {
 
     // then
     assertThat(bytes(target)).isEqualTo(bytes(source));
+  }
+
+  @Test
+  void shouldBeEqualToAnIndependentInstanceWithTheSameContent() throws Exception {
+    // given two instances read from different buffers
+    final var a = read(message(0));
+    final var b = read(message(0));
+
+    // then
+    assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+    assertThat(a).isNotSameAs(b);
+  }
+
+  @Test
+  void shouldBeEqualToACopy() throws Exception {
+    // given
+    final var source = read(message(0));
+    final var target = read(message(1));
+
+    // when
+    copy(source, target);
+
+    // then
+    assertThat(target).isEqualTo(source).hasSameHashCodeAs(source);
+  }
+
+  @Test
+  void shouldDifferWhenAnyStoredPropertyDiffers() throws Exception {
+    // given
+    final var mutations = mutations();
+    assertThat(mutations).hasSize(19);
+
+    for (final var mutation : mutations.entrySet()) {
+      final var a = read(message(0));
+      final var b = read(message(0));
+
+      // when
+      mutation.getValue().accept(b);
+
+      // then
+      assertThat(a).as("%s changed", mutation.getKey()).isNotEqualTo(b);
+      assertThat(b).as("%s changed", mutation.getKey()).isNotEqualTo(a);
+    }
+  }
+
+  @Test
+  void shouldIgnoreStateThatIsNotStoredWhenComparing() throws Exception {
+    // given
+    final var a = read(message(0));
+    final var b = read(message(0));
+
+    // when
+    set(b, "ignored", 5);
+
+    // then
+    assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+  }
+
+  @Test
+  void shouldNotBeEqualToNullOrAnotherClass() throws Exception {
+    // given
+    final var sample = read(message(0));
+
+    // then
+    assertThat(sample).isNotEqualTo(null).isNotEqualTo("sample");
+    assertThat(sample).isNotEqualTo(compiled.load("sample.Inner").getConstructor().newInstance());
+  }
+
+  @Test
+  void shouldCompareThroughTheOpsOfTheClass() throws Exception {
+    // given
+    final var type = compiled.load("sample.Sample");
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final MsgpackOps<Recyclable> ops = (MsgpackOps) Codecs.opsOf((Class) type);
+    final var a = (Recyclable) read(message(0));
+    final var b = (Recyclable) read(message(0));
+    final var other = (Recyclable) read(message(1));
+
+    // then
+    assertThat(ops.equals(a, b)).isTrue();
+    assertThat(ops.hashCode(a)).isEqualTo(ops.hashCode(b));
+    assertThat(ops.equals(a, other)).isFalse();
+    assertThat(ops.equals(a, a)).isTrue();
+  }
+
+  /** One change per stored property of the sample, each applied to an instance of message 0. */
+  @SuppressWarnings("unchecked")
+  private static Map<String, ThrowingConsumer<Object>> mutations() {
+    final var m = new LinkedHashMap<String, ThrowingConsumer<Object>>();
+    m.put("key", x -> set(x, "key", 43L));
+    m.put("count", x -> set(x, "count", 9));
+    m.put("flag", x -> set(x, "flag", true));
+    m.put("name", x -> set(x, "name", utf8("other")));
+    m.put("payload", x -> set(x, "payload", utf8("other")));
+    m.put("raw", x -> set(x, "raw", new UnsafeBuffer(new byte[] {1})));
+    m.put(
+        "doc",
+        x ->
+            set(
+                x,
+                "doc",
+                new UnsafeBuffer(
+                    encoded(
+                        d -> {
+                          d.writeMapHeader(1);
+                          d.writeString(utf8("a"));
+                          d.writeInteger(5);
+                        }))));
+    m.put("fixed", x -> ((UnsafeBuffer) get(x, "fixed")).wrap(new byte[] {1}));
+    m.put("kind", x -> set(x, "kind", compiled.load("sample.Kind").getEnumConstants()[1]));
+    m.put("ids", x -> ((List<DirectBuffer>) get(x, "ids")).add(utf8("z")));
+    m.put("versions", x -> ((List<Long>) get(x, "versions")).add(9L));
+    m.put("counts", x -> ((IntArrayList) get(x, "counts")).addInt(3));
+    m.put("keys", x -> ((LongArrayList) get(x, "keys")).addLong(3));
+    m.put("inner", x -> set(get(x, "inner"), "value", 99));
+    m.put(
+        "legacy",
+        x ->
+            ((UnpackedObject) get(x, "legacy"))
+                .wrap(new UnsafeBuffer(encoded(w -> item(w, 99, false)))));
+    m.put(
+        "items",
+        x ->
+            ((List<Object>) get(x, "items"))
+                .add(compiled.load("sample.Inner").getConstructor().newInstance()));
+    m.put(
+        "legacyItems",
+        x ->
+            ((List<Object>) get(x, "legacyItems"))
+                .add(compiled.load("sample.Legacy").getConstructor().newInstance()));
+    m.put(
+        "unknown",
+        x -> {
+          final var entry =
+              encoded(
+                  w -> {
+                    w.writeString(utf8("zz"));
+                    w.writeInteger(1);
+                  });
+          ((UnknownProperties) get(x, "unknown")).append(new UnsafeBuffer(entry), 0, entry.length);
+        });
+    m.put("item of a list", x -> set(((List<Object>) get(x, "items")).get(0), "value", 99));
+    return m;
   }
 
   // ---------------------------------------------------------------- helpers

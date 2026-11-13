@@ -29,4 +29,15 @@ public interface MsgpackOps<T extends Recyclable> {
    * the source was read from. Fields that are not stored ({@link MsgpackIgnore}) are left alone.
    */
   void copy(T source, T target);
+
+  /**
+   * Whether both have the same stored properties, compared by content: buffers by their bytes,
+   * lists and nested values by their elements. {@link MsgpackIgnore}d fields are not compared.
+   */
+  boolean equals(T a, T b);
+
+  /**
+   * A hash code of the stored properties, consistent with {@link #equals(Recyclable, Recyclable)}.
+   */
+  int hashCode(T value);
 }
