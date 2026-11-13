@@ -35,21 +35,22 @@ function renderModal(hasElementMapping: boolean, scope = SCOPE) {
 }
 
 describe('<MigrationConfirmationModal />', () => {
-	it.for([
-		{mapping: 'with mapped elements', hasElementMapping: true, expected: 'enabled'},
-		{mapping: 'without mapped elements', hasElementMapping: false, expected: 'disabled'},
-	] as const)('should keep Confirm $expected after typing MIGRATE $mapping', async ({hasElementMapping, expected}) => {
-		const screen = await renderModal(hasElementMapping);
+	it('should keep Confirm enabled after typing MIGRATE with mapped elements', async () => {
+		const screen = await renderModal(true);
 		await expect.element(screen.getByText(/^You are about to migrate 2 process instances /)).toBeVisible();
 
 		await userEvent.fill(screen.getByRole('textbox'), 'MIGRATE');
 
-		const confirm = screen.getByRole('button', {name: 'Confirm'});
-		if (expected === 'enabled') {
-			await expect.element(confirm).toBeEnabled();
-		} else {
-			await expect.element(confirm).toBeDisabled();
-		}
+		await expect.element(screen.getByRole('button', {name: 'Confirm'})).toBeEnabled();
+	});
+
+	it('should keep Confirm disabled after typing MIGRATE without mapped elements', async () => {
+		const screen = await renderModal(false);
+		await expect.element(screen.getByText(/^You are about to migrate 2 process instances /)).toBeVisible();
+
+		await userEvent.fill(screen.getByRole('textbox'), 'MIGRATE');
+
+		await expect.element(screen.getByRole('button', {name: 'Confirm'})).toBeDisabled();
 	});
 
 	it('should state a truncated number of instances with a plus sign', async () => {

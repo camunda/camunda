@@ -968,33 +968,34 @@ describe('Processes migration', () => {
 	});
 
 	it.for([
-		{
-			status: 403,
-			title: "You don't have permission to perform this operation",
-			subtitle: 'Contact the administrator if you need access.',
-		},
-		{status: 500, title: "Couldn't create operation", subtitle: undefined},
-	])(
-		'should stay on the summary when the migration fails with $status',
-		async ({status, title, subtitle}, {worker}) => {
-			mockPage(worker);
-			worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: new HttpResponse(null, {status})}));
-			const screen = await renderPage();
-			await enterSummary(screen);
+		{status: 403, title: "You don't have permission to perform this operation"},
+		{status: 500, title: "Couldn't create operation"},
+	])('should stay on the summary when the migration fails with $status', async ({status, title}, {worker}) => {
+		mockPage(worker);
+		worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: new HttpResponse(null, {status})}));
+		const screen = await renderPage();
+		await enterSummary(screen);
 
-			await confirmMigration(screen);
+		await confirmMigration(screen);
 
-			await expect.element(screen.getByText(title)).toBeVisible();
-			if (subtitle !== undefined) {
-				await expect.element(screen.getByText(subtitle)).toBeVisible();
-			}
-			await expect.element(screen.getByText('Failed')).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Confirm'}), {timeout: 3000}).toBeVisible();
-			await expect.element(screen.getByText('Failed')).not.toBeInTheDocument();
-			await expect.element(screen.getByText('Migration step 2 - confirm')).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Back'})).toBeEnabled();
-		},
-	);
+		await expect.element(screen.getByText(title)).toBeVisible();
+		await expect.element(screen.getByText('Failed')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Confirm'}), {timeout: 3000}).toBeVisible();
+		await expect.element(screen.getByText('Failed')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Migration step 2 - confirm')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Back'})).toBeEnabled();
+	});
+
+	it('should tell the user how to get access when the migration is forbidden', async ({worker}) => {
+		mockPage(worker);
+		worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+		const screen = await renderPage();
+		await enterSummary(screen);
+
+		await confirmMigration(screen);
+
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
+	});
 
 	it('should ask before navigating away from the summary', async ({worker}) => {
 		mockPage(worker);

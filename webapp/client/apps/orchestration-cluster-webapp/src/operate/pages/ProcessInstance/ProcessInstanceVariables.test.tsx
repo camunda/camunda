@@ -11,6 +11,7 @@ import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import type {SetupWorker} from 'msw/browser';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {DocumentReference, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -82,24 +83,55 @@ function renderVariables(search = '', {isModificationModeEnabled: initialModific
 }
 
 describe('<ProcessInstanceVariables />', () => {
-	it.for([
-		{description: '49 complete variables', count: 49, totalItems: 49, hasMoreTotalItems: false, canCopy: true},
-		{description: '50 complete variables', count: 50, totalItems: 50, hasMoreTotalItems: false, canCopy: true},
+	async function renderFirstPage(
+		worker: SetupWorker,
 		{
-			description: 'a 51st variable beyond the first page',
-			count: 50,
-			totalItems: 51,
-			hasMoreTotalItems: false,
-			canCopy: false,
-		},
-		{description: 'a capped total of 50 variables', count: 50, totalItems: 50, hasMoreTotalItems: true, canCopy: false},
+			count,
+			totalItems,
+			hasMoreTotalItems,
+			endCursor = 'last-item-cursor',
+		}: {count: number; totalItems: number; hasMoreTotalItems: boolean; endCursor?: string | null},
+	) {
+		const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+		onTestFinished(() => writeText.mockRestore());
+		const items = Array.from({length: count}, (_, index) =>
+			createVariable({
+				name: `value_${String(index).padStart(2, '0')}`,
+				value: String(index),
+				variableKey: String(index + 1),
+			}),
+		);
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse(items, {totalItems, hasMoreTotalItems, endCursor}),
+			}),
+		);
+		const screen = await renderVariables();
+		await expect.element(screen.getByTestId(`variable-${items.at(-1)!.name}`)).toBeVisible();
+		return {copy: screen.getByRole('button', {name: 'Copy variables'}), items, writeText};
+	}
+
+	it.for([
+		{description: '49 complete variables', count: 49, totalItems: 49, hasMoreTotalItems: false},
+		{description: '50 complete variables', count: 50, totalItems: 50, hasMoreTotalItems: false},
+	])('should copy all variables for $description', async (page, {worker}) => {
+		const {copy, items, writeText} = await renderFirstPage(worker, page);
+
+		await userEvent.click(copy);
+
+		const expected = JSON.stringify(Object.fromEntries(items.map(({name, value}) => [name, JSON.parse(value)])));
+		await expect.poll(() => writeText.mock.calls).toEqual([[expected]]);
+	});
+
+	it.for([
+		{description: 'a 51st variable beyond the first page', count: 50, totalItems: 51, hasMoreTotalItems: false},
+		{description: 'a capped total of 50 variables', count: 50, totalItems: 50, hasMoreTotalItems: true},
 		{
 			description: 'an incomplete total without a next cursor',
 			count: 50,
 			totalItems: 51,
 			hasMoreTotalItems: false,
 			endCursor: null,
-			canCopy: false,
 		},
 		{
 			description: 'a capped total without a next cursor',
@@ -107,42 +139,13 @@ describe('<ProcessInstanceVariables />', () => {
 			totalItems: 50,
 			hasMoreTotalItems: true,
 			endCursor: null,
-			canCopy: false,
 		},
-	])(
-		'should preserve safe aggregate copying for $description',
-		async ({count, totalItems, hasMoreTotalItems, endCursor = 'last-item-cursor', canCopy}, {worker}) => {
-			const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
-			onTestFinished(() => writeText.mockRestore());
-			const items = Array.from({length: count}, (_, index) =>
-				createVariable({
-					name: `value_${String(index).padStart(2, '0')}`,
-					value: String(index),
-					variableKey: String(index + 1),
-				}),
-			);
-			worker.use(
-				mockQueryVariablesEndpoint({
-					successResponse: variablesResponse(items, {totalItems, hasMoreTotalItems, endCursor}),
-				}),
-			);
-			const screen = await renderVariables();
-			await expect.element(screen.getByTestId(`variable-${items.at(-1)!.name}`)).toBeVisible();
-			const copy = screen.getByRole('button', {name: 'Copy variables'});
+	])('should not allow copying an incomplete set of variables for $description', async (page, {worker}) => {
+		const {copy, writeText} = await renderFirstPage(worker, page);
 
-			if (!canCopy) {
-				await expect.element(copy).toBeDisabled();
-				expect(writeText).not.toHaveBeenCalled();
-				return;
-			}
-
-			await expect.element(copy).toBeEnabled();
-			await userEvent.click(copy);
-
-			const expected = JSON.stringify(Object.fromEntries(items.map(({name, value}) => [name, JSON.parse(value)])));
-			await expect.poll(() => writeText.mock.calls).toEqual([[expected]]);
-		},
-	);
+		await expect.element(copy).toBeDisabled();
+		expect(writeText).not.toHaveBeenCalled();
+	});
 
 	it('should show the process instance variables sorted by name', async ({worker}) => {
 		worker.use(

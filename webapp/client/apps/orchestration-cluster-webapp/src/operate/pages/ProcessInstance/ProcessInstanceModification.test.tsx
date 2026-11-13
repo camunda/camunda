@@ -11,6 +11,7 @@ import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import type {SetupWorker} from 'msw/browser';
 import {useRouterState} from '@tanstack/react-router';
 import isEqual from 'lodash/isEqual';
 import {z} from 'zod';
@@ -291,32 +292,37 @@ describe('Process instance token modifications', () => {
 		await expect.element(screen.getByTestId('popover').getByRole('button')).not.toBeInTheDocument();
 	});
 
-	it.for([
-		{search: '?elementId=task_2', label: 'an inner instance', isAddAvailable: false},
-		{search: '?elementId=task_2&isMultiInstanceBody=true', label: 'the body', isAddAvailable: true},
-	])(
-		'should offer adding to a multi-instance element only through $label',
-		async ({search, isAddAvailable}, {worker}) => {
-			worker.use(
-				...handlers({
-					statistics: [createProcessDefinitionStatistic({elementId: 'task_2', active: 2})],
-					elementInstances: createTaskInstances(2),
-				}),
-			);
-			const screen = await renderModificationPage({search});
-			const dropdown = screen.getByTestId('popover');
-			const addButton = dropdown.getByRole('button', {name: 'Add single element instance'});
+	it('should not offer adding to a multi-instance element through an inner instance', async ({worker}) => {
+		worker.use(
+			...handlers({
+				statistics: [createProcessDefinitionStatistic({elementId: 'task_2', active: 2})],
+				elementInstances: createTaskInstances(2),
+			}),
+		);
+		const screen = await renderModificationPage({search: '?elementId=task_2'});
+		const dropdown = screen.getByTestId('popover');
 
-			await expect
-				.element(dropdown.getByRole('button', {name: 'Cancel all running element instances in this element'}))
-				.toBeVisible();
-			if (isAddAvailable) {
-				await expect.element(addButton).toBeVisible();
-			} else {
-				await expect.element(addButton).not.toBeInTheDocument();
-			}
-		},
-	);
+		await expect
+			.element(dropdown.getByRole('button', {name: 'Cancel all running element instances in this element'}))
+			.toBeVisible();
+		await expect.element(dropdown.getByRole('button', {name: 'Add single element instance'})).not.toBeInTheDocument();
+	});
+
+	it('should offer adding to a multi-instance element through the body', async ({worker}) => {
+		worker.use(
+			...handlers({
+				statistics: [createProcessDefinitionStatistic({elementId: 'task_2', active: 2})],
+				elementInstances: createTaskInstances(2),
+			}),
+		);
+		const screen = await renderModificationPage({search: '?elementId=task_2&isMultiInstanceBody=true'});
+		const dropdown = screen.getByTestId('popover');
+
+		await expect
+			.element(dropdown.getByRole('button', {name: 'Cancel all running element instances in this element'}))
+			.toBeVisible();
+		await expect.element(dropdown.getByRole('button', {name: 'Add single element instance'})).toBeVisible();
+	});
 
 	it('should add a token in the parent scope selected in the instance history', async ({worker}) => {
 		worker.use(
@@ -889,29 +895,16 @@ describe('Process instance modification summary', () => {
 		await expect.element(dialog.getByRole('button', {name: 'Apply'})).toBeDisabled();
 	});
 
-	it.for([
-		{
-			name: 'orphaned variable modifications',
-			modifications: [variable({operation: 'ADD_VARIABLE', scopeId: 'unknown-scope', name: 'foo', newValue: '1'})],
-			hasParent: false,
-			message: 'Some planned variable modifications cannot be applied.',
-			isApplyDisabled: true,
-		},
-		{
-			name: 'cancelling a child instance entirely',
-			modifications: [cancelToken({elementId: 'task_1', affectedTokenCount: 1})],
-			hasParent: true,
-			message: 'This instance is a child instance of Parent Process - 2251799813685270',
-			isApplyDisabled: true,
-		},
-		{
-			name: 'cancelling a root instance entirely',
-			modifications: [cancelToken({elementId: 'task_1', affectedTokenCount: 1})],
-			hasParent: false,
-			message: 'Applying these modifications will cancel the entire process instance.',
-			isApplyDisabled: false,
-		},
-	])('should validate $name', async ({modifications, hasParent, message, isApplyDisabled}, {worker}) => {
+	const ROOT_ANCESTORS = {parentProcessInstanceKey: null, rootProcessInstanceKey: null};
+	const CHILD_ANCESTORS = {
+		parentProcessInstanceKey: '2251799813685270',
+		rootProcessInstanceKey: '2251799813685260',
+	};
+	async function reviewModifications(
+		worker: SetupWorker,
+		modifications: Modification[],
+		ancestors: typeof ROOT_ANCESTORS | typeof CHILD_ANCESTORS,
+	) {
 		worker.use(
 			...handlers(),
 			mockGetProcessInstanceCallHierarchyEndpoint({
@@ -927,25 +920,59 @@ describe('Process instance modification summary', () => {
 			processInstance: createProcessInstance({
 				processInstanceKey: PROCESS_INSTANCE_ID,
 				processDefinitionId: 'Process_1',
-				parentProcessInstanceKey: hasParent ? '2251799813685270' : null,
-				rootProcessInstanceKey: hasParent ? '2251799813685260' : null,
+				...ancestors,
 			}),
 		});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Review Modifications'}));
-		const dialog = screen.getByRole('dialog', {name: 'Apply Modifications'});
+		return screen.getByRole('dialog', {name: 'Apply Modifications'});
+	}
+
+	it.for([
+		{
+			name: 'orphaned variable modifications',
+			modifications: [variable({operation: 'ADD_VARIABLE', scopeId: 'unknown-scope', name: 'foo', newValue: '1'})],
+			ancestors: ROOT_ANCESTORS,
+			message: 'Some planned variable modifications cannot be applied.',
+		},
+		{
+			name: 'cancelling a child instance entirely',
+			modifications: [cancelToken({elementId: 'task_1', affectedTokenCount: 1})],
+			ancestors: CHILD_ANCESTORS,
+			message: 'This instance is a child instance of Parent Process - 2251799813685270',
+		},
+	])('should block applying $name', async ({modifications, ancestors, message}, {worker}) => {
+		const dialog = await reviewModifications(worker, modifications, ancestors);
 
 		await expect.element(dialog.getByText(message, {exact: false})).toBeVisible();
-		if (isApplyDisabled) {
-			await expect.element(dialog.getByRole('button', {name: 'Apply'})).toBeDisabled();
-		} else {
-			await expect.element(dialog.getByRole('button', {name: 'Apply'})).toBeEnabled();
-		}
-		if (hasParent) {
-			await expect
-				.element(dialog.getByRole('link', {name: 'Root Process - 2251799813685260'}))
-				.toHaveAttribute('href', '/operate/processes/2251799813685260');
-		}
+		await expect.element(dialog.getByRole('button', {name: 'Apply'})).toBeDisabled();
+	});
+
+	it('should link to the root process when cancelling a child instance entirely', async ({worker}) => {
+		const dialog = await reviewModifications(
+			worker,
+			[cancelToken({elementId: 'task_1', affectedTokenCount: 1})],
+			CHILD_ANCESTORS,
+		);
+
+		await expect
+			.element(dialog.getByRole('link', {name: 'Root Process - 2251799813685260'}))
+			.toHaveAttribute('href', '/operate/processes/2251799813685260');
+	});
+
+	it('should warn but allow cancelling a root instance entirely', async ({worker}) => {
+		const dialog = await reviewModifications(
+			worker,
+			[cancelToken({elementId: 'task_1', affectedTokenCount: 1})],
+			ROOT_ANCESTORS,
+		);
+
+		await expect
+			.element(
+				dialog.getByText('Applying these modifications will cancel the entire process instance.', {exact: false}),
+			)
+			.toBeVisible();
+		await expect.element(dialog.getByRole('button', {name: 'Apply'})).toBeEnabled();
 	});
 
 	it.for([

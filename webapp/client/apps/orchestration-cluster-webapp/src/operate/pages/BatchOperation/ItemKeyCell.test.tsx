@@ -42,18 +42,24 @@ describe('<ItemKeyCell />', () => {
 		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
 	});
 
-	it.for(['123', '-1'])('should show custom content only for an associated item (%s)', async (itemKey) => {
+	it('should show custom content for an associated item', async () => {
 		const screen = await render(
-			<ItemKeyCell itemKey={itemKey} fallbackText="No process instance">
+			<ItemKeyCell itemKey="123" fallbackText="No process instance">
 				<a href="/operate/processes/123">View instance</a>
 			</ItemKeyCell>,
 		);
 
-		if (itemKey === '-1') {
-			await expect.element(screen.getByText('No process instance')).toBeVisible();
-			await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
-		} else {
-			await expect.element(screen.getByRole('link', {name: 'View instance'})).toBeVisible();
-		}
+		await expect.element(screen.getByRole('link', {name: 'View instance'})).toBeVisible();
+	});
+
+	it('should show the fallback text instead of custom content for an unassociated item', async () => {
+		const screen = await render(
+			<ItemKeyCell itemKey="-1" fallbackText="No process instance">
+				<a href="/operate/processes/123">View instance</a>
+			</ItemKeyCell>,
+		);
+
+		await expect.element(screen.getByText('No process instance')).toBeVisible();
+		await expect.element(screen.getByRole('link')).not.toBeInTheDocument();
 	});
 });
