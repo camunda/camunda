@@ -1458,6 +1458,7 @@ public class BrokerBasedPropertiesOverride {
     final StorageOrdinalsCfg overrideStorageOrdinals =
         override.getExperimental().getEngine().getStorageOrdinals();
     overrideStorageOrdinals.setEnableArchiverless(camundaStorageOrdinals.isEnableArchiverless());
-    overrideStorageOrdinals.setFixedStorageOrdinal(camundaStorageOrdinals.getFixedStorageOrdinal());
+    overrideStorageOrdinals.setFixedStorageOrdinals(
+        camundaStorageOrdinals.getFixedStorageOrdinals());
   }
 }

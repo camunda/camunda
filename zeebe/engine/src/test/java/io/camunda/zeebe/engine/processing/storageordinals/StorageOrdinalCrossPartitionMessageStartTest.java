@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,7 +42,7 @@ public final class StorageOrdinalCrossPartitionMessageStartTest {
               c ->
                   c.setBusinessIdUniquenessEnabled(true)
                       .setArchiverlessEnabled(true)
-                      .setFixedStorageOrdinal(FIXED_ORDINAL)
+                      .setFixedStorageOrdinals(List.of(FIXED_ORDINAL))
                       .setMessageStartLockReleasePollInterval(POLL_INTERVAL));
 
   @Before
