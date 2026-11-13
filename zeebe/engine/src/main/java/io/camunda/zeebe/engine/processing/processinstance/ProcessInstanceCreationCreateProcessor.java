@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -41,6 +42,7 @@ public final class ProcessInstanceCreationCreateProcessor
   private final ProcessEngineMetrics metrics;
 
   private final ProcessInstanceCreationHelper helper;
+  private final CaseCreationBehavior caseCreationBehavior;
 
   public ProcessInstanceCreationCreateProcessor(
       final KeyGenerator keyGenerator,
@@ -54,6 +56,7 @@ public final class ProcessInstanceCreationCreateProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
+    caseCreationBehavior = new CaseCreationBehavior(stateWriter);
   }
 
   @Override
@@ -112,6 +115,9 @@ public final class ProcessInstanceCreationCreateProcessor
             process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
 
     helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
+
+    caseCreationBehavior.createCaseIfMarked(
+        process.getProcess(), processInstance, record.getVariablesBuffer());
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
