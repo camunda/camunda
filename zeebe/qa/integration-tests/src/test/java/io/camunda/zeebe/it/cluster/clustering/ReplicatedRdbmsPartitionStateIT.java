@@ -15,6 +15,8 @@ final class ReplicatedRdbmsPartitionStateIT extends ReplicatedRdbmsPartitionStat
   StateDatabase createDatabase() {
     // the database lives as long as the JVM, so that it outlives the brokers' connection pools
     return new StateDatabase(
-        "jdbc:h2:mem:zeebe-state-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1", "sa", "");
+        "jdbc:h2:mem:zeebe-state-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+        "sa",
+        "");
   }
 }

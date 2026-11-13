@@ -7,51 +7,36 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
-import com.zaxxer.hikari.HikariDataSource;
-import io.camunda.zeebe.broker.system.configuration.RdbmsStorageCfg;
 import io.camunda.zeebe.db.rdbms.RdbmsStorage;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * The relational database that holds the state of one partition group's partitions, when {@code
- * camunda.data.primary-storage.type} is {@code rdbms}. It owns the group's connection pool: {@link
- * #open()} creates the pool and the schema before the partitions start, and {@link #close()} closes
- * the pool once they have stopped.
+ * camunda.data.primary-storage.type} is {@code rdbms}. {@link #open()} creates or updates the
+ * schema before the partitions start. The connection pool belongs to the application, which closes
+ * it after the broker has stopped.
  */
 @NullMarked
 public final class RdbmsStateStorage implements AutoCloseable {
 
   private final String partitionGroup;
-  private final RdbmsStorageCfg cfg;
-  private final MeterRegistry meterRegistry;
-  private volatile @Nullable HikariDataSource dataSource;
+  private final RdbmsStateDatabase database;
   private volatile @Nullable RdbmsStorage storage;
 
-  public RdbmsStateStorage(
-      final String partitionGroup, final RdbmsStorageCfg cfg, final MeterRegistry meterRegistry) {
+  public RdbmsStateStorage(final String partitionGroup, final RdbmsStateDatabase database) {
     this.partitionGroup = Objects.requireNonNull(partitionGroup, "must specify a partition group");
-    this.cfg = Objects.requireNonNull(cfg, "must specify the database settings");
-    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a meter registry");
+    this.database = Objects.requireNonNull(database, "must specify the database");
   }
 
   /**
-   * Creates the connection pool, then creates or updates the schema.
+   * Creates or updates the schema.
    *
-   * @throws RuntimeException if the database can't be reached or its schema can't be updated; the
-   *     pool is closed again
+   * @throws RuntimeException if the database can't be reached or its schema can't be updated
    */
   public void open() {
-    final var pool = createPool();
-    try {
-      storage = RdbmsStorage.open(pool, Objects.requireNonNullElse(cfg.getPrefix(), ""));
-      dataSource = pool;
-    } catch (final RuntimeException e) {
-      pool.close();
-      throw e;
-    }
+    storage = RdbmsStorage.open(database.dataSource(), database.prefix());
   }
 
   /**
@@ -70,32 +55,5 @@ public final class RdbmsStateStorage implements AutoCloseable {
   @Override
   public void close() {
     storage = null;
-    final var pool = dataSource;
-    dataSource = null;
-    if (pool != null) {
-      pool.close();
-    }
-  }
-
-  private HikariDataSource createPool() {
-    final var pool = new HikariDataSource();
-    pool.setPoolName("zeebe-state-" + partitionGroup);
-    pool.setJdbcUrl(cfg.getUrl());
-    pool.setUsername(cfg.getUsername());
-    pool.setPassword(cfg.getPassword());
-
-    final var poolCfg = cfg.getConnectionPool();
-    pool.setMaximumPoolSize(poolCfg.getMaximumPoolSize());
-    pool.setMinimumIdle(poolCfg.getMinimumIdle());
-    pool.setConnectionTimeout(poolCfg.getConnectionTimeout().toMillis());
-    pool.setIdleTimeout(poolCfg.getIdleTimeout().toMillis());
-    pool.setMaxLifetime(poolCfg.getMaxLifetime().toMillis());
-    pool.setLeakDetectionThreshold(poolCfg.getLeakDetectionThreshold().toMillis());
-    pool.setKeepaliveTime(poolCfg.getKeepaliveTime().toMillis());
-    pool.setValidationTimeout(poolCfg.getValidationTimeout().toMillis());
-
-    pool.setMetricRegistry(meterRegistry);
-    pool.setAutoCommit(false);
-    return pool;
   }
 }

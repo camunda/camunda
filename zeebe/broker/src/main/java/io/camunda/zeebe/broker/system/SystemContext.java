@@ -204,6 +204,7 @@ public final class SystemContext {
     physicalTenantContexts.forEach(
         (tenantId, ctx) -> {
           validateTenantMatchesRootConfig(tenantId, ctx.config());
+          validatePrimaryStorageType(tenantId, ctx);
           validatePerTenantConfiguration(tenantId, ctx.config());
         });
 
@@ -259,7 +260,6 @@ public final class SystemContext {
    * (snapshot period, backup, batch operations, listeners, fixed partition coverage) are validated.
    */
   private void validatePerTenantConfiguration(final String tenantId, final BrokerCfg tenantCfg) {
-    validatePrimaryStorageType(tenantId, tenantCfg);
     validatePerTenantDataConfig(tenantId, tenantCfg.getData());
     validatePerTenantExperimentalConfigs(
         tenantId, tenantCfg.getCluster(), tenantCfg.getExperimental());
@@ -267,18 +267,19 @@ public final class SystemContext {
 
   /**
    * Keeping the state in a relational database works only with the parts that exist so far: the
-   * state is written through the write-behind cache, and there are no backups of it yet.
+   * state lives in the tenant's history database, it is written through the write-behind cache, and
+   * there are no backups of it yet.
    */
-  private void validatePrimaryStorageType(final String tenantId, final BrokerCfg tenantCfg) {
-    final var data = tenantCfg.getData();
+  private void validatePrimaryStorageType(
+      final String tenantId, final PhysicalTenantContext tenantContext) {
+    final var data = tenantContext.config().getData();
     if (data.getPrimaryStorageType() != PrimaryStorageType.RDBMS) {
       return;
     }
 
     final var errors = new ArrayList<String>();
-    final var url = data.getRdbms().getUrl();
-    if (url == null || url.isBlank()) {
-      errors.add("camunda.data.primary-storage.rdbms.url must be set");
+    if (tenantContext.rdbmsStateDatabase() == null) {
+      errors.add("camunda.data.secondary-storage.type must be rdbms");
     }
     if (!data.getWriteBehindCache().isEnabled()) {
       errors.add("camunda.data.primary-storage.write-behind-cache.enabled must be true");

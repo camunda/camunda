@@ -17,6 +17,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -196,13 +197,15 @@ abstract class ReplicatedRdbmsPartitionStateTestBase {
                 broker
                     .withUnauthenticatedAccess()
                     .withWorkingDirectory(workingDirectory.resolve(memberId.id()))
+                    .withSecondaryStorageType(SecondaryStorageType.rdbms)
                     .withUnifiedConfig(
                         config -> {
+                          final var rdbms = config.getData().getSecondaryStorage().getRdbms();
+                          rdbms.setUrl(database.url());
+                          rdbms.setUsername(database.username());
+                          rdbms.setPassword(database.password());
                           final var primaryStorage = config.getData().getPrimaryStorage();
                           primaryStorage.setType(PrimaryStorageType.rdbms);
-                          primaryStorage.getRdbms().setUrl(database.url());
-                          primaryStorage.getRdbms().setUsername(database.username());
-                          primaryStorage.getRdbms().setPassword(database.password());
                           primaryStorage.getWriteBehindCache().setEnabled(true);
                           // small segments, so that a snapshot lets raft delete the oldest ones
                           primaryStorage.getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
@@ -229,8 +232,7 @@ abstract class ReplicatedRdbmsPartitionStateTestBase {
         final var statement = connection.createStatement();
         final var result =
             statement.executeQuery(
-                "SELECT OWNER_TERM FROM ZEEBE_STATE_PARTITION WHERE PARTITION_ID = "
-                    + PARTITION_ID)) {
+                "SELECT OWNER_TERM FROM ZS_PARTITION WHERE PARTITION_ID = " + PARTITION_ID)) {
       assertThat(result.next()).describedAs("a row for partition %d", PARTITION_ID).isTrue();
       return result.getLong(1);
     } catch (final SQLException e) {

@@ -29,6 +29,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.scaling.BrokerClientPartitionScalingExecutor;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
 import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateStorage;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -115,6 +116,7 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
+      final @Nullable RdbmsStateDatabase rdbmsStateDatabase,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -143,7 +145,12 @@ public final class PartitionManagerImpl
 
     rdbmsStateStorage =
         brokerCfg.getData().getPrimaryStorageType() == PrimaryStorageType.RDBMS
-            ? new RdbmsStateStorage(partitionGroup, brokerCfg.getData().getRdbms(), meterRegistry)
+            ? new RdbmsStateStorage(
+                partitionGroup,
+                Objects.requireNonNull(
+                    rdbmsStateDatabase,
+                    "Expected a database for the state of partition group '%s', but none was given"
+                        .formatted(partitionGroup)))
             : null;
     zeebePartitionFactory =
         new ZeebePartitionFactory(

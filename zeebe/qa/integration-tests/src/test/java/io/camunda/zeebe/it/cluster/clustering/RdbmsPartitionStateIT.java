@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -51,7 +52,7 @@ final class RdbmsPartitionStateIT {
 
   // the database lives as long as the JVM, so that it outlives the broker's connection pool
   private final String databaseUrl =
-      "jdbc:h2:mem:zeebe-state-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1";
+      "jdbc:h2:mem:zeebe-state-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
   private final String jobType = "task-" + UUID.randomUUID();
 
   @Test
@@ -60,11 +61,15 @@ final class RdbmsPartitionStateIT {
         new TestStandaloneBroker()
             .withUnauthenticatedAccess()
             .withWorkingDirectory(workingDirectory)
+            .withSecondaryStorageType(SecondaryStorageType.rdbms)
             .withUnifiedConfig(
                 config -> {
+                  final var rdbms = config.getData().getSecondaryStorage().getRdbms();
+                  rdbms.setUrl(databaseUrl);
+                  rdbms.setUsername("sa");
+                  rdbms.setPassword("");
                   final var primaryStorage = config.getData().getPrimaryStorage();
                   primaryStorage.setType(PrimaryStorageType.rdbms);
-                  primaryStorage.getRdbms().setUrl(databaseUrl);
                   primaryStorage.getWriteBehindCache().setEnabled(true);
                   // small segments, so that the snapshot lets raft delete the oldest ones
                   primaryStorage.getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
@@ -106,15 +111,15 @@ final class RdbmsPartitionStateIT {
   }
 
   private long ownerTermOfPartitionOne() {
-    return queryLong("SELECT OWNER_TERM FROM ZEEBE_STATE_PARTITION WHERE PARTITION_ID = 1");
+    return queryLong("SELECT OWNER_TERM FROM ZS_PARTITION WHERE PARTITION_ID = 1");
   }
 
   private long stateRows() {
-    return queryLong("SELECT COUNT(*) FROM ZEEBE_STATE");
+    return queryLong("SELECT COUNT(*) FROM ZS_JOBS");
   }
 
   private long queryLong(final String sql) {
-    try (final var connection = DriverManager.getConnection(databaseUrl);
+    try (final var connection = DriverManager.getConnection(databaseUrl, "sa", "");
         final var statement = connection.createStatement();
         final var result = statement.executeQuery(sql)) {
       assertThat(result.next()).describedAs("a row for: %s", sql).isTrue();

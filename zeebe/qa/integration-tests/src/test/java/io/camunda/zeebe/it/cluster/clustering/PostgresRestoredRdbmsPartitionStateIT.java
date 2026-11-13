@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.data.PrimaryStorage.PrimaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
@@ -100,13 +101,15 @@ final class PostgresRestoredRdbmsPartitionStateIT {
     return new TestStandaloneBroker()
         .withUnauthenticatedAccess()
         .withWorkingDirectory(workingDirectory)
+        .withSecondaryStorageType(SecondaryStorageType.rdbms)
         .withUnifiedConfig(
             config -> {
+              final var rdbms = config.getData().getSecondaryStorage().getRdbms();
+              rdbms.setUrl(databaseUrl());
+              rdbms.setUsername(SERVER.getUsername());
+              rdbms.setPassword(SERVER.getPassword());
               final var primaryStorage = config.getData().getPrimaryStorage();
               primaryStorage.setType(PrimaryStorageType.rdbms);
-              primaryStorage.getRdbms().setUrl(databaseUrl());
-              primaryStorage.getRdbms().setUsername(SERVER.getUsername());
-              primaryStorage.getRdbms().setPassword(SERVER.getPassword());
               primaryStorage.getWriteBehindCache().setEnabled(true);
             });
   }

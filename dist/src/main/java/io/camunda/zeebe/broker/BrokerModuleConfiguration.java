@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.pt.SchemaInitializer;
+import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -24,6 +25,7 @@ import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -78,6 +81,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final Map<String, IntFunction<Long>> rdbmsExportedPositionSuppliers;
+  private final Map<String, RdbmsStateDatabase> rdbmsStateDatabases;
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
   private final SecretStoreRegistries secretStoreRegistries;
@@ -105,6 +109,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      @Autowired(required = false) final RdbmsDataSources rdbmsDataSources,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory,
       final SecretStoreRegistries secretStoreRegistries,
@@ -125,6 +130,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
+    rdbmsStateDatabases = rdbmsStateDatabases(rdbmsDataSources, physicalTenantResolver);
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
     this.secretStoreRegistries = secretStoreRegistries;
@@ -161,6 +167,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
             .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
+            .withRdbmsStateDatabases(rdbmsStateDatabases)
             .withSecretStoreRegistries(secretStoreRegistries)
             .withResolvedDataDirectory(resolvedDataDirectory)
             .createSystemContext();
@@ -201,6 +208,33 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         (physicalTenantId, rdbmsMapperBundle) ->
             suppliers.put(physicalTenantId, exportedPositionSupplier(rdbmsMapperBundle)));
     return Map.copyOf(suppliers);
+  }
+
+  private static Map<String, RdbmsStateDatabase> rdbmsStateDatabases(
+      final @Nullable RdbmsDataSources rdbmsDataSources,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    if (rdbmsDataSources == null) {
+      return Map.of();
+    }
+    final Map<String, RdbmsStateDatabase> databases = new HashMap<>();
+    for (final var physicalTenantId : rdbmsDataSources.physicalTenantIds()) {
+      rdbmsDataSources
+          .stateDataSourceFor(physicalTenantId)
+          .ifPresent(
+              dataSource -> {
+                final var prefix =
+                    physicalTenantResolver
+                        .forPhysicalTenant(physicalTenantId)
+                        .getData()
+                        .getSecondaryStorage()
+                        .getRdbms()
+                        .getPrefix();
+                databases.put(
+                    physicalTenantId,
+                    new RdbmsStateDatabase(dataSource, StringUtils.trimToEmpty(prefix)));
+              });
+    }
+    return Map.copyOf(databases);
   }
 
   private static IntFunction<Long> exportedPositionSupplier(

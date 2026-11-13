@@ -31,6 +31,7 @@ import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.partitioning.startup.RdbmsStateDatabase;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg.PrimaryStorageType;
@@ -52,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -142,7 +144,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContainingAll(
-            "camunda.data.primary-storage.rdbms.url must be set",
+            "camunda.data.secondary-storage.type must be rdbms",
             "camunda.data.primary-storage.write-behind-cache.enabled must be true",
             "camunda.data.primary-storage.backup.store must be NONE",
             "camunda.data.primary-storage.backup.continuous must be false",
@@ -154,11 +156,12 @@ final class SystemContextTest {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
     brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.RDBMS);
-    brokerCfg.getData().getRdbms().setUrl("jdbc:postgresql://localhost:5432/camunda");
     brokerCfg.getData().getWriteBehindCache().setEnabled(true);
+    final var stateDatabase = new RdbmsStateDatabase(mock(DataSource.class), "");
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg)).doesNotThrowAnyException();
+    assertThatCode(() -> initSystemContextWithStateDatabase(brokerCfg, stateDatabase))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -918,6 +921,35 @@ final class SystemContextTest {
         (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
         mock(SearchClientsProxy.class),
         mock(BrokerRequestAuthorizationConverter.class),
+        mock(NodeIdProvider.class),
+        PhysicalTenantIds.DEFAULT);
+  }
+
+  private SystemContext initSystemContextWithStateDatabase(
+      final BrokerCfg brokerCfg, final RdbmsStateDatabase stateDatabase) {
+    return new SystemContext(
+        SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
+        brokerCfg,
+        mock(ActorScheduler.class),
+        mock(AtomixCluster.class),
+        mock(BrokerClient.class),
+        new SimpleMeterRegistry(),
+        Map.of(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            new PhysicalTenantContext(
+                EngineSecurityConfigurations.defaultConfig(),
+                mock(BrokerRequestAuthorizationConverter.class),
+                FeatureFlags.createDefaultForTests(),
+                brokerCfg,
+                new ExporterRepository(),
+                new SecretStoreRegistry(Map.of()),
+                stateDatabase)),
+        tenantId -> mock(UserServices.class),
+        mock(PasswordEncoder.class),
+        authConfig -> mock(JwtDecoder.class),
+        authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
+        mock(SearchClientsProxy.class),
+        Map.of(),
         mock(NodeIdProvider.class),
         PhysicalTenantIds.DEFAULT);
   }
