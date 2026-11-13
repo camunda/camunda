@@ -43,6 +43,14 @@ public class LiquibaseScriptGenerator {
   public static final String CHANGELOG_PATH = "db/changelog/rdbms-exporter/";
   public static final String CHANGESET_PATH = CHANGELOG_PATH + "changesets/";
 
+  /** The tables of the partitions' state, for the brokers that keep it in the database. */
+  public static final String STATE_CHANGELOG = "db/changelog/zeebe-state/changelog-master.xml";
+
+  /** The only databases the brokers can keep the partitions' state in so far. */
+  public static final DatabaseVersion[] STATE_DATABASE_VERSIONS = {
+    new DatabaseVersion(H2), new DatabaseVersion(POSTGRESQL),
+  };
+
   public static final DatabaseVersion[] DATABASE_VERSIONS = {
     new DatabaseVersion(H2),
     new DatabaseVersion(MARIADB),
@@ -110,6 +118,17 @@ public class LiquibaseScriptGenerator {
 
         previousVersion = fileName.replace(".xml", "");
       }
+    }
+
+    // For operators who turn auto-ddl off: the tables of the partitions' state, next to the
+    // master script. There is no upgrade script yet, as there is only one version of them.
+    for (final var databaseVersion : STATE_DATABASE_VERSIONS) {
+      generateLiquibaseScript(
+          databaseVersion,
+          STATE_CHANGELOG,
+          prefix,
+          targetDir + "/create",
+          databaseVersion.vendor() + "_zeebe_state.sql");
     }
   }
 
