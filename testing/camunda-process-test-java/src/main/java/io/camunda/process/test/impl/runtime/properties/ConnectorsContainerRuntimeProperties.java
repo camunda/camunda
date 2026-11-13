@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime.properties;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyListOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
+import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrNull;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
@@ -35,6 +36,11 @@ public class ConnectorsContainerRuntimeProperties {
   public static final String PROPERTY_NAME_CONNECTORS_SECRETS_PREFIX = "connectorsSecrets";
   public static final String PROPERTY_NAME_CONNECTORS_EXPOSED_PORTS_PREFIX =
       "connectorsExposedPorts";
+  public static final String PROPERTY_NAME_MANAGED_SCRIPTS_ENABLED = "managedScriptsEnabled";
+  public static final String PROPERTY_NAME_MANAGED_SCRIPTS_PYTHON_VERSION =
+      "managedScriptsPythonVersion";
+  public static final String PROPERTY_NAME_MANAGED_SCRIPTS_NODE_VERSION =
+      "managedScriptsNodeVersion";
 
   private final boolean isConnectorsEnabled;
   private final String connectorsDockerImageName;
@@ -42,6 +48,9 @@ public class ConnectorsContainerRuntimeProperties {
   private final Map<String, String> connectorsEnvVars;
   private final Map<String, String> connectorsSecrets;
   private final List<Integer> connectorsExposedPorts;
+  private final boolean isManagedScriptsEnabled;
+  private final String managedScriptsPythonVersion;
+  private final String managedScriptsNodeVersion;
 
   public ConnectorsContainerRuntimeProperties(
       final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
@@ -66,6 +75,16 @@ public class ConnectorsContainerRuntimeProperties {
     connectorsExposedPorts =
         getPropertyListOrEmpty(
             properties, PROPERTY_NAME_CONNECTORS_EXPOSED_PORTS_PREFIX, Integer::parseInt);
+
+    // managed scripts are disabled by default; no version means the latest of the image
+    isManagedScriptsEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_MANAGED_SCRIPTS_ENABLED, "false")
+            .trim()
+            .equalsIgnoreCase("true");
+    managedScriptsPythonVersion =
+        getPropertyOrNull(properties, PROPERTY_NAME_MANAGED_SCRIPTS_PYTHON_VERSION);
+    managedScriptsNodeVersion =
+        getPropertyOrNull(properties, PROPERTY_NAME_MANAGED_SCRIPTS_NODE_VERSION);
   }
 
   public boolean isConnectorsEnabled() {
@@ -90,5 +109,17 @@ public class ConnectorsContainerRuntimeProperties {
 
   public List<Integer> getConnectorsExposedPorts() {
     return connectorsExposedPorts;
+  }
+
+  public boolean isManagedScriptsEnabled() {
+    return isManagedScriptsEnabled;
+  }
+
+  public String getManagedScriptsPythonVersion() {
+    return managedScriptsPythonVersion;
+  }
+
+  public String getManagedScriptsNodeVersion() {
+    return managedScriptsNodeVersion;
   }
 }

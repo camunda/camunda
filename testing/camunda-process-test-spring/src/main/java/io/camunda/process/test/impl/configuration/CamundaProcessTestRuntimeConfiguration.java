@@ -41,6 +41,9 @@ public class CamundaProcessTestRuntimeConfiguration {
   private List<Integer> camundaExposedPorts = Collections.emptyList();
 
   private boolean connectorsEnabled = false;
+  private boolean managedScriptsEnabled = false;
+  private String managedScriptsPythonVersion;
+  private String managedScriptsNodeVersion;
   private String connectorsDockerImageName =
       CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME;
   private String connectorsDockerImageVersion =
@@ -161,6 +164,30 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setConnectorsEnabled(final boolean connectorsEnabled) {
     this.connectorsEnabled = connectorsEnabled;
+  }
+
+  public boolean isManagedScriptsEnabled() {
+    return managedScriptsEnabled;
+  }
+
+  public void setManagedScriptsEnabled(final boolean managedScriptsEnabled) {
+    this.managedScriptsEnabled = managedScriptsEnabled;
+  }
+
+  public String getManagedScriptsPythonVersion() {
+    return managedScriptsPythonVersion;
+  }
+
+  public void setManagedScriptsPythonVersion(final String managedScriptsPythonVersion) {
+    this.managedScriptsPythonVersion = managedScriptsPythonVersion;
+  }
+
+  public String getManagedScriptsNodeVersion() {
+    return managedScriptsNodeVersion;
+  }
+
+  public void setManagedScriptsNodeVersion(final String managedScriptsNodeVersion) {
+    this.managedScriptsNodeVersion = managedScriptsNodeVersion;
   }
 
   public String getConnectorsDockerImageName() {

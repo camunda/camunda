@@ -29,6 +29,7 @@ import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.images.RemoteDockerImage;
 import org.testcontainers.utility.DockerImageName;
 
 public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
@@ -44,6 +45,11 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
 
   public ConnectorsContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
+    applyDefaultConfiguration();
+  }
+
+  public ConnectorsContainer(final RemoteDockerImage image) {
+    super(image);
     applyDefaultConfiguration();
   }
 

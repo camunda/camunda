@@ -78,6 +78,11 @@ public class CamundaProcessTestRuntimeBuilder {
   private String connectorsLoggerName = CamundaProcessTestRuntimeDefaults.CONNECTORS_LOGGER_NAME;
 
   private boolean connectorsEnabled = CamundaProcessTestRuntimeDefaults.CONNECTORS_ENABLED;
+  private boolean managedScriptsEnabled = CamundaProcessTestRuntimeDefaults.MANAGED_SCRIPTS_ENABLED;
+  private String managedScriptsPythonVersion =
+      CamundaProcessTestRuntimeDefaults.MANAGED_SCRIPTS_PYTHON_VERSION;
+  private String managedScriptsNodeVersion =
+      CamundaProcessTestRuntimeDefaults.MANAGED_SCRIPTS_NODE_VERSION;
   private final Map<String, String> connectorsSecrets =
       new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
 
@@ -235,6 +240,21 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withManagedScriptsEnabled(final boolean enabled) {
+    managedScriptsEnabled = enabled;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withManagedScriptsPythonVersion(final String version) {
+    managedScriptsPythonVersion = version;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withManagedScriptsNodeVersion(final String version) {
+    managedScriptsNodeVersion = version;
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withConnectorsSecret(
       final String name, final String value) {
     connectorsSecrets.put(name, value);
@@ -361,6 +381,11 @@ public class CamundaProcessTestRuntimeBuilder {
       case MANAGED:
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
       case REMOTE:
+        if (managedScriptsEnabled) {
+          LOGGER.warn(
+              "Managed scripts are enabled but the runtime mode is REMOTE: the remote Connectors"
+                  + " runtime must be configured to run managed scripts.");
+        }
         return new CamundaProcessTestRemoteRuntime(this);
       case SHARED:
         return new CamundaProcessTestSharedRuntime(
@@ -435,6 +460,18 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public boolean isConnectorsEnabled() {
     return connectorsEnabled;
+  }
+
+  public boolean isManagedScriptsEnabled() {
+    return managedScriptsEnabled;
+  }
+
+  public String getManagedScriptsPythonVersion() {
+    return managedScriptsPythonVersion;
+  }
+
+  public String getManagedScriptsNodeVersion() {
+    return managedScriptsNodeVersion;
   }
 
   public boolean isMultiTenancyEnabled() {

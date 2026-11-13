@@ -68,6 +68,10 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout()).isEqualTo(Duration.ofMinutes(1));
     assertThat(propertiesUtil.isClockResetEnabled()).isTrue();
     assertThat(propertiesUtil.getDataDeletionMode()).isEqualTo(DataDeletionMode.CLUSTER_PURGE);
+
+    assertThat(propertiesUtil.isManagedScriptsEnabled()).isFalse();
+    assertThat(propertiesUtil.getManagedScriptsPythonVersion()).isNull();
+    assertThat(propertiesUtil.getManagedScriptsNodeVersion()).isNull();
   }
 
   @Test
@@ -361,6 +365,10 @@ public class ContainerRuntimePropertiesUtilTest {
       assertThat(propertiesUtil.getClusterSecrets()).containsAllEntriesOf(expectedClusterSecrets);
       assertThat(propertiesUtil.getConnectorsExposedPorts())
           .containsExactlyInAnyOrder(9080, 9081, 9088);
+
+      assertThat(propertiesUtil.isManagedScriptsEnabled()).isTrue();
+      assertThat(propertiesUtil.getManagedScriptsPythonVersion()).isEqualTo("3.12");
+      assertThat(propertiesUtil.getManagedScriptsNodeVersion()).isEqualTo("22");
 
       assertThat(propertiesUtil.getRuntimeMode()).isEqualTo(CamundaProcessTestRuntimeMode.REMOTE);
       assertThat(propertiesUtil.getRemoteCamundaMonitoringApiAddress())

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_managed_scripts" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.32.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="managed-scripts-process" name="Managed scripts" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>to_python</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="to_python" sourceRef="start" targetRef="python_script" />
+    <bpmn:serviceTask id="python_script" name="Sum in Python" zeebe:modelerTemplate="io.camunda.connectors.ManagedScript.v1" zeebe:modelerTemplateVersion="1">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:managed-script:1" retries="1" />
+        <zeebe:linkedResources>
+          <zeebe:linkedResource resourceId="sum.py" bindingType="latest" resourceType="ManagedScript" linkName="script" />
+        </zeebe:linkedResources>
+        <zeebe:ioMapping>
+          <zeebe:input source="={a: a, b: b}" target="scriptInput" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="1" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.ManagedScript.v1" />
+          <zeebe:header key="resultExpression" value="={sum: sum}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>to_python</bpmn:incoming>
+      <bpmn:outgoing>to_javascript</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="to_javascript" sourceRef="python_script" targetRef="javascript_script" />
+    <bpmn:serviceTask id="javascript_script" name="Greet in JavaScript" zeebe:modelerTemplate="io.camunda.connectors.ManagedScript.v1" zeebe:modelerTemplateVersion="1">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:managed-script:1" retries="1" />
+        <zeebe:linkedResources>
+          <zeebe:linkedResource resourceId="greet.js" bindingType="latest" resourceType="ManagedScript" linkName="script" />
+        </zeebe:linkedResources>
+        <zeebe:ioMapping>
+          <zeebe:input source="={name: name, sum: sum}" target="scriptInput" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="1" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.ManagedScript.v1" />
+          <zeebe:header key="resultExpression" value="={greeting: text}" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>to_javascript</bpmn:incoming>
+      <bpmn:outgoing>to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="to_end" sourceRef="javascript_script" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>

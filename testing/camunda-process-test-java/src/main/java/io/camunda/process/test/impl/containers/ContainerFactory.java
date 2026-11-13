@@ -35,6 +35,15 @@ public class ContainerFactory {
     return new ConnectorsContainer(asDockerImageName(imageName, imageVersion));
   }
 
+  /**
+   * @param image the Connectors image with the interpreters of managed scripts
+   * @param pullBaseImage whether to pull the Connectors image when building, for a mutable tag
+   */
+  public ConnectorsContainer createManagedScriptsConnectorsContainer(
+      final ManagedScriptsImage image, final boolean pullBaseImage) {
+    return new ConnectorsContainer(image.build(pullBaseImage));
+  }
+
   private static DockerImageName asDockerImageName(
       final String imageName, final String imageVersion) {
     return DockerImageName.parse(imageName).withTag(imageVersion);
