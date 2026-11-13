@@ -20,6 +20,7 @@ import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -322,6 +323,34 @@ final class MsgpackPojoProcessorTest {
   }
 
   @Test
+  void shouldNameTheObjectAndTheNestedPropertyThatCouldNotBeRead() throws Exception {
+    // given an inner value that is not an integer
+    final var result = compile(inner(), pojo(valid("final Inner inner = new Inner();")));
+    assertThat(result.errors()).isEmpty();
+    final var bytes = new ExpandableArrayBuffer();
+    final var writer = new MsgPackWriter().wrap(bytes, 0);
+    writer.writeMapHeader(1);
+    writer.writeString(buffer("inner"));
+    writer.writeMapHeader(1);
+    writer.writeString(buffer("value"));
+    writer.writeString(buffer("not a number"));
+    final int length = writer.getOffset();
+    final var sample = (BufferReader) result.load("sample.Sample").getConstructor().newInstance();
+
+    // when
+    final ThrowingCallable wrap = () -> sample.wrap(bytes, 0, length);
+
+    // then
+    assertThatThrownBy(wrap)
+        .hasMessageStartingWith("Could not deserialize object [Sample]")
+        .hasMessageContaining("of length " + length)
+        .cause()
+        .hasMessage("Could not read property 'inner'")
+        .cause()
+        .hasMessage("Could not read property 'value'");
+  }
+
+  @Test
   void shouldIgnoreFieldsMarkedAsIgnored() {
     // given a field of a type that would be rejected
     final var source = pojo(valid("long key; @MsgpackIgnore Thread ignored;"));
@@ -516,7 +545,11 @@ final class MsgpackPojoProcessorTest {
         () -> codec.read(new MsgPackReader().wrap(bytes, 0, length), target);
 
     // then
-    assertThatThrownBy(read).isInstanceOf(IllegalStateException.class).hasMessageContaining("int");
+    assertThatThrownBy(read)
+        .hasMessage("Could not read property 'count'")
+        .cause()
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("int");
   }
 
   @Test

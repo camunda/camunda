@@ -456,6 +456,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             + "      final int keyLength = r.readStringLength();\n"
             + "      final int keyOffset = r.getOffset();\n"
             + "      r.skipBytes(keyLength);\n"
+            + "      try {\n"
             + "      switch (indexOf(r.getBuffer(), keyOffset, keyLength, i)) {\n");
     i = 0;
     int bit = 0;
@@ -497,7 +498,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append(
         "        default -> {\n          r.skipValue();\n          target.%s.append(r.getBuffer(), entryStart, r.getOffset() - entryStart);\n        }\n"
             .formatted(unknown));
-    s.append("      }\n    }\n");
+    s.append(
+        "      }\n"
+            + "      } catch (final RuntimeException e) {\n"
+            + "        throw Decoding.propertyFailure(r.getBuffer(), keyOffset, keyLength, e);\n"
+            + "      }\n"
+            + "    }\n");
     // like ObjectValue, a property without default must be in the input: an enum field holds no
     // value if neither the input nor its initializer gave it one
     bit = 0;
