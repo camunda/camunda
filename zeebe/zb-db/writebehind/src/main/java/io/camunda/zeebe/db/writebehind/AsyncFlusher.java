@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
@@ -20,6 +19,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +29,12 @@ import org.slf4j.LoggerFactory;
  * writer thread, and every piece of state that the writer shares with the committing thread.
  *
  * <p>The committing thread (the stream processor) calls {@link #enqueue} under the store's publish
- * lock, and may call {@link #awaitCapacity}. It never waits for the writer in any other way. The
- * writer thread waits until the oldest queued transaction is due, takes everything that is queued,
- * writes it to the storage as one atomic batch, and then reports the flushed versions to the store
- * in small chunks, so that the store's publish lock is never held for long.
+ * lock, and may call {@link #awaitCapacity}. It never waits for the writer in any other way, and it
+ * doesn't wake the writer for each commit either: the writer sleeps until the oldest queued
+ * transaction is due and finds new commits when it wakes up. Only the rare events that make a
+ * transaction due early (the early-flush threshold, a snapshot, the close) wake it. The writer then
+ * takes everything that is queued, writes it to the storage as one atomic batch, and reports the
+ * flushed versions to the store, so that the store's publish lock is never held for long.
  *
  * <h2>Concurrency</h2>
  *
@@ -40,11 +42,12 @@ import org.slf4j.LoggerFactory;
  *   <li>{@link #queue} and {@link #pendingBytes} are the hand-over from the committing thread to
  *       the writer. Both are safe for concurrent use. The committing thread adds to the queue under
  *       the publish lock, so the queue order is the commit order.
- *   <li>{@link #flushLock} guards {@link #flushRequestedSeq} and is held for the conditions {@link
- *       #flushed} (the writer finished a batch) and {@link #flushWanted} (the writer must not wait
- *       any longer). Nobody does I/O or takes another lock while holding it.
- *   <li>{@link #flushedSeq}, {@link #failure} and {@link #stopping} are volatile: one writer, any
- *       number of readers.
+ *   <li>{@link #flushLock} is held for the condition {@link #flushed} (the writer finished a
+ *       batch), on which snapshots and full queues wait. Nobody does I/O or takes another lock
+ *       while holding it. The writer itself never waits on it: it parks, and whoever makes a
+ *       transaction due early unparks it.
+ *   <li>{@link #flushRequestedSeq}, {@link #flushedSeq}, {@link #failure} and {@link #stopping} are
+ *       volatile: one writer, any number of readers.
  * </ul>
  */
 final class AsyncFlusher<K extends Comparable<K>, V> {
@@ -52,6 +55,8 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   private static final Logger LOG = LoggerFactory.getLogger("io.camunda.zeebe.db.writebehind");
   private static final long INITIAL_RETRY_DELAY_NANOS = TimeUnit.MILLISECONDS.toNanos(10);
   private static final long MAX_RETRY_DELAY_NANOS = TimeUnit.SECONDS.toNanos(1);
+  // how long an idle writer sleeps when the flush delay is zero; bounds the delay of such a flush
+  private static final long MIN_IDLE_PARK_NANOS = TimeUnit.MILLISECONDS.toNanos(1);
 
   private final Backend<K, V, ?> backend;
   private final WriteBehindConfiguration config;
@@ -60,21 +65,25 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   private final Function<Runnable, NavigableMap<K, Version<V>>> sealBatch;
   private final Consumer<NavigableMap<K, Version<V>>> releaseBatch;
   private final long flushThresholdBytes;
+  private final long flushDelayNanos;
+  private final long idleParkNanos;
   private final Thread writer;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private final PendingTransaction<K, V> stop =
       new PendingTransaction<>(Long.MAX_VALUE, (K[]) new Comparable[0], new Version[0], 0, 0);
 
-  private final LinkedBlockingQueue<PendingTransaction<K, V>> queue = new LinkedBlockingQueue<>();
+  // many producers in principle, but they publish under the store's lock; the writer is the
+  // consumer
+  private final ManyToOneConcurrentLinkedQueue<PendingTransaction<K, V>> queue =
+      new ManyToOneConcurrentLinkedQueue<>();
   private final AtomicLong pendingBytes = new AtomicLong();
 
   private final ReentrantLock flushLock = new ReentrantLock();
   private final Condition flushed = flushLock.newCondition();
-  private final Condition flushWanted = flushLock.newCondition();
 
-  // guarded by flushLock: the commits up to this sequence must not wait for the flush delay
-  private long flushRequestedSeq;
+  // the commits up to this sequence must not wait for the flush delay; raised under flushLock
+  private volatile long flushRequestedSeq;
 
   private volatile long flushedSeq;
   private volatile @Nullable Throwable failure;
@@ -106,6 +115,8 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
     this.sealBatch = sealBatch;
     this.releaseBatch = releaseBatch;
     flushThresholdBytes = Math.min(config.flushThresholdBytes(), config.maxPendingBytes());
+    flushDelayNanos = Math.max(0, config.flushDelay().toNanos());
+    idleParkNanos = Math.max(flushDelayNanos, MIN_IDLE_PARK_NANOS);
     writer = new Thread(this::runWriter, "zb-db-write-behind");
     writer.setDaemon(true);
   }
@@ -130,6 +141,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   /** How long the oldest transaction that the storage doesn't hold yet has been committed. */
   long oldestUnflushedAgeNanos() {
     final var taken = oldestTaken;
+    // peek from another thread is racy but safe: at worst it misses a transaction for one read
     final var oldest = taken != null ? taken : queue.peek();
     if (oldest == null || oldest == stop) {
       return 0;
@@ -139,11 +151,11 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
 
   /**
    * Queues a transaction. Must be called under the store's publish lock, so that the queue order is
-   * the commit order. Never blocks: the only thing it can do beyond a queue insert is to wake the
-   * writer once, when the unflushed bytes cross the early-flush threshold.
+   * the commit order. Never blocks and makes no system call, except once to wake the writer when
+   * the unflushed bytes cross the early-flush threshold.
    */
   void enqueue(final long seq, final K[] keys, final Version<V>[] versions, final long bytes) {
-    queue.add(new PendingTransaction<>(seq, keys, versions, bytes, System.nanoTime()));
+    queue.offer(new PendingTransaction<>(seq, keys, versions, bytes, System.nanoTime()));
     final long after = pendingBytes.addAndGet(bytes);
     if (after >= flushThresholdBytes && after - bytes < flushThresholdBytes) {
       wakeWriter();
@@ -183,7 +195,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
     try {
       if (flushRequestedSeq < target) {
         flushRequestedSeq = target;
-        flushWanted.signalAll();
+        wakeWriter();
       }
       while (flushedSeq < target) {
         ensureUsable.run();
@@ -208,7 +220,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
    */
   void requestStop() {
     stopping = true;
-    queue.add(stop);
+    queue.offer(stop);
   }
 
   /** Wakes the writer and waits for it to finish; interrupts it after the flush timeout. */
@@ -230,63 +242,60 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
 
   private void runWriter() {
     final var group = new ArrayList<PendingTransaction<K, V>>();
-    try {
-      while (true) {
-        final var oldest = queue.take();
-        group.add(oldest);
-        if (oldest != stop) {
-          oldestTaken = oldest;
-          awaitFlushDue(oldest);
-        }
-        final var sealed = sealBatch.apply(() -> queue.drainTo(group));
-        final boolean stopAfter = group.getLast() == stop;
-        if (stopAfter) {
-          group.removeLast();
-        }
-        if (!flush(group, sealed)) {
-          return;
-        }
-        group.clear();
-        oldestTaken = null;
-        if (stopAfter) {
-          return;
-        }
+    final Runnable takeQueued =
+        () -> {
+          PendingTransaction<K, V> next;
+          while ((next = queue.poll()) != null) {
+            group.add(next);
+          }
+        };
+    while (!Thread.currentThread().isInterrupted()) {
+      final var oldest = queue.peek();
+      if (oldest == null) {
+        LockSupport.parkNanos(this, idleParkNanos);
+        continue;
       }
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+      oldestTaken = oldest;
+      final long untilDue = nanosUntilDue(oldest);
+      if (untilDue > 0) {
+        LockSupport.parkNanos(this, untilDue);
+        continue;
+      }
+      final var sealed = sealBatch.apply(takeQueued);
+      final boolean stopAfter = group.getLast() == stop;
+      if (stopAfter) {
+        group.removeLast();
+      }
+      if (!flush(group, sealed)) {
+        return;
+      }
+      group.clear();
+      oldestTaken = null;
+      if (stopAfter) {
+        return;
+      }
     }
   }
 
   /**
-   * Waits until the oldest queued transaction is due. This is the one place that decides when to
-   * flush, so a new policy changes the condition of the loop and nothing else. A transaction is due
-   * when it has waited for the flush delay, or earlier when a snapshot waits for it, when the
-   * unflushed bytes reach the flush threshold, or when the store stops or fails.
+   * How long the oldest queued transaction has to wait before it is due; zero or less when it is
+   * due. This is the one place that decides when to flush, so a new policy changes this and nothing
+   * else. A transaction is due when it has waited for the flush delay, or earlier when a snapshot
+   * waits for it, when the unflushed bytes reach the flush threshold, or when the store stops or
+   * fails. Each of these early cases wakes the writer, so it doesn't sleep through them.
    *
    * <p>The writer then takes everything that is queued, so a key that changed several times in the
    * delay is written once, and one that a commit deleted is not written at all.
    */
-  private void awaitFlushDue(final PendingTransaction<K, V> oldest) throws InterruptedException {
-    final long delay = config.flushDelay().toNanos();
-    if (delay <= 0) {
-      return;
+  private long nanosUntilDue(final PendingTransaction<K, V> oldest) {
+    if (oldest == stop
+        || stopping
+        || failure != null
+        || flushRequestedSeq >= oldest.seq()
+        || pendingBytes.get() >= flushThresholdBytes) {
+      return 0;
     }
-    final long deadline = oldest.committedAtNanos() + delay;
-    flushLock.lock();
-    try {
-      while (!stopping
-          && failure == null
-          && flushRequestedSeq < oldest.seq()
-          && pendingBytes.get() < flushThresholdBytes) {
-        final long remaining = deadline - System.nanoTime();
-        if (remaining <= 0) {
-          return;
-        }
-        flushWanted.awaitNanos(remaining);
-      }
-    } finally {
-      flushLock.unlock();
-    }
+    return oldest.committedAtNanos() + flushDelayNanos - System.nanoTime();
   }
 
   /**
@@ -372,12 +381,7 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
   }
 
   private void wakeWriter() {
-    flushLock.lock();
-    try {
-      flushWanted.signalAll();
-    } finally {
-      flushLock.unlock();
-    }
+    LockSupport.unpark(writer);
   }
 
   private void signalFlushed() {

@@ -19,7 +19,8 @@ import java.time.Duration;
  * @param flushTimeout how long a snapshot waits for the writer to flush what was committed before
  * @param flushDelay how long the writer waits after the oldest unflushed commit before it writes.
  *     State that a later commit deletes in this time never reaches the storage. A snapshot, a full
- *     pending queue and a close flush at once. Zero writes as soon as a commit is queued.
+ *     pending queue and a close flush at once. Zero writes at the writer's next wake-up, within a
+ *     millisecond, without waking it for each commit.
  * @param flushThresholdBytes the writer flushes without waiting for the delay when the unflushed
  *     transactions hold this many bytes. Never more than {@code maxPendingBytes}, so that commits
  *     do not wait for the limit before an early flush starts.
