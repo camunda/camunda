@@ -43,10 +43,10 @@ public interface ProcessingResultBuilder extends ProcessingSession {
   }
 
   /**
-   * Appends a record to the result, returns an {@link Either<RuntimeException,
-   * ProcessingResultBuilder>} which indicates whether the appending was successful or not. This is
-   * useful in case were potentially we could reach the record batch limit size. The return either
-   * allows to handle such error case gracefully.
+   * Appends a record to the result, returning an {@link Either} containing a {@link
+   * RuntimeException} or a {@link ProcessingResultBuilder} to indicate whether the append was
+   * successful. This is useful in case we could reach the record batch size limit. The result
+   * allows such errors to be handled gracefully.
    *
    * @return returns either a failure or itself for chaining
    */

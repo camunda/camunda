@@ -49,7 +49,7 @@ public interface Journal extends AutoCloseable {
    * append will fail.
    *
    * @deprecated This method was used to append entries received via replication. {@link
-   *     Journal#append(long, long, byte[])} must be used instead.
+   *     Journal#append(long, byte[])} must be used instead.
    * @param record the record to be appended
    * @exception InvalidIndex if the index of record is not the next expected index
    * @exception InvalidChecksum if the checksum in record does not match the checksum of the data

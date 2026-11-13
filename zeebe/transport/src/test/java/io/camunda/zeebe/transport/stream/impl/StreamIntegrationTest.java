@@ -130,8 +130,8 @@ final class StreamIntegrationTest {
 
     // then
     // verify client receives payload
-    latch.await();
-    assertThat(payloads.get()).asList().containsExactly(100, 200);
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(payloads.get()).containsExactly(100, 200);
   }
 
   @Test
