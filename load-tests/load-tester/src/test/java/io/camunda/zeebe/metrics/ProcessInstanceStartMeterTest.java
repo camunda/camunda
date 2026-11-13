@@ -15,6 +15,7 @@ import io.camunda.zeebe.metrics.ProcessInstanceStartMeter.AvailabilityChecker;
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -536,5 +537,181 @@ class ProcessInstanceStartMeterTest {
     await()
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(() -> assertThat(lastQueriedKeys.get()).containsExactly(freshKey));
+  }
+
+  @Test
+  void shouldCountTimedOutInstancesAndStillRecordTheirLatency() {
+    // given - an instance that is never found and is already past the maximum duration
+    final var clockNanos = new AtomicLong(TimeUnit.SECONDS.toNanos(1000));
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            clockNanos::get,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            (list) -> CompletableFuture.completedFuture(List.of()));
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), clockNanos.get() - TimeUnit.SECONDS.toNanos(120));
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then - the timeout is counted, and the latency is recorded as well
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      meterRegistry
+                          .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                          .tag("partition", "1")
+                          .counter()
+                          .count())
+                  .isOne();
+              assertThat(
+                      meterRegistry
+                          .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                          .timer()
+                          .count())
+                  .isOne();
+            });
+  }
+
+  @Test
+  void shouldNotCountAvailableInstancesAsTimedOut() {
+    // given
+    final long key = Protocol.encodePartitionId(1, 1);
+    availabilityChecker = (list) -> CompletableFuture.completedFuture(List.of(key));
+    processInstanceStartMeter.recordProcessInstanceStart(key, System.nanoTime());
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                            .timer()
+                            .count())
+                    .isOne());
+    assertThat(
+            meterRegistry
+                .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                .counters())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldCountCheckWithFullResultPage() {
+    // given - every queried instance of a full batch is available
+    final int batchSize = ProcessInstanceStartMeter.AVAILABILITY_CHECK_BATCH_SIZE;
+    availabilityChecker = (list) -> CompletableFuture.completedFuture(List.copyOf(list));
+    final long now = System.nanoTime();
+    for (int i = 0; i < batchSize; i++) {
+      processInstanceStartMeter.recordProcessInstanceStart(
+          Protocol.encodePartitionId(1, i + 1), now + i);
+    }
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_FULL_PAGE.getName())
+                            .counter()
+                            .count())
+                    .isGreaterThanOrEqualTo(1));
+  }
+
+  @Test
+  void shouldNotCountCheckWithPartialResultPage() {
+    // given - a full batch of which only one instance is found
+    final int batchSize = ProcessInstanceStartMeter.AVAILABILITY_CHECK_BATCH_SIZE;
+    final long now = System.nanoTime();
+    final long found = Protocol.encodePartitionId(1, 1);
+    final var queries = new AtomicInteger();
+    availabilityChecker =
+        (list) -> {
+          queries.incrementAndGet();
+          return CompletableFuture.completedFuture(List.of(found));
+        };
+    for (int i = 0; i < batchSize; i++) {
+      processInstanceStartMeter.recordProcessInstanceStart(
+          Protocol.encodePartitionId(1, i + 1), now + i);
+    }
+
+    // when - the meter has queried more than once
+    processInstanceStartMeter.start();
+    await().until(() -> queries.get() >= 2);
+
+    // then
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_FULL_PAGE.getName())
+                .counter()
+                .count())
+        .isZero();
+  }
+
+  @Test
+  void shouldRescheduleCheckWhenProcessingThrows() throws InterruptedException {
+    // given - the checker returns a null key, which makes processing the response throw
+    final var invocations = new CountDownLatch(2);
+    availabilityChecker =
+        (list) -> {
+          invocations.countDown();
+          final List<Long> withNull = new ArrayList<>();
+          withNull.add(null);
+          return CompletableFuture.completedFuture(withNull);
+        };
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+    processInstanceStartMeter.start();
+
+    // then - the check keeps running even though processing the first response threw
+    assertThat(invocations.await(2, TimeUnit.SECONDS))
+        .describedAs("availability check should be rescheduled even when processing throws")
+        .isTrue();
+  }
+
+  @Test
+  void shouldCleanUpStaleInstancesWhenProcessingThrows() {
+    // given - every response contains a null key, which makes processing throw
+    final var clockNanos = new AtomicLong(TimeUnit.SECONDS.toNanos(1000));
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            clockNanos::get,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            (list) -> {
+              final List<Long> withNull = new ArrayList<>();
+              withNull.add(null);
+              return CompletableFuture.completedFuture(withNull);
+            });
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), clockNanos.get() - TimeUnit.SECONDS.toNanos(120));
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then - the stale instance is still evicted and its latency recorded
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                            .timer()
+                            .count())
+                    .isOne());
   }
 }
