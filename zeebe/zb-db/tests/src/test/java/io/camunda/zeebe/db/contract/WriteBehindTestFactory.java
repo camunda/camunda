@@ -8,10 +8,12 @@
 package io.camunda.zeebe.db.contract;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.writebehind.KeyIndexPolicy;
 import io.camunda.zeebe.db.writebehind.WriteBehindConfiguration;
 import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
+import java.util.Map;
 
 /** Write-behind DB over the same RocksDB setup as {@link RocksDbTestFactory}. */
 final class WriteBehindTestFactory {
@@ -21,6 +23,36 @@ final class WriteBehindTestFactory {
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<ColumnFamilyType> create() {
     return create(WriteBehindConfiguration.defaults());
+  }
+
+  /** Indexes the keys of the column families with IDs 0 to 3, which the contract tests use. */
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> createWithKeyIndex() {
+    return create(
+        WriteBehindConfiguration.defaults()
+            .withKeyIndexPolicies(
+                Map.of(
+                    0L, KeyIndexPolicy.DISABLE,
+                    1L, KeyIndexPolicy.DISABLE,
+                    2L, KeyIndexPolicy.DISABLE,
+                    3L, KeyIndexPolicy.DISABLE)));
+  }
+
+  /**
+   * Indexes a window of at most 4 keys of the column families with IDs 0 to 3: the lowest keys for
+   * IDs 0 and 1, the highest for 2 and 3.
+   */
+  static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      ZeebeDbFactory<ColumnFamilyType> createWithKeyIndexWindow() {
+    return create(
+        WriteBehindConfiguration.defaults()
+            .withKeyIndexMaxKeys(4)
+            .withKeyIndexPolicies(
+                Map.of(
+                    0L, KeyIndexPolicy.KEEP_LOWEST,
+                    1L, KeyIndexPolicy.KEEP_LOWEST,
+                    2L, KeyIndexPolicy.KEEP_HIGHEST,
+                    3L, KeyIndexPolicy.KEEP_HIGHEST)));
   }
 
   static <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>

@@ -10,6 +10,9 @@ package io.camunda.zeebe.db.writebehind;
 import io.camunda.zeebe.db.DbIterator;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.RawDbAccess;
+import io.camunda.zeebe.db.impl.ZeebeDbConstants;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
@@ -26,6 +29,9 @@ final class RawBackend implements Backend<RawKey, HeldValue, DbValue> {
    */
   static final int ENTRY_OVERHEAD = 200;
 
+  // longer than any real key after the column family prefix
+  private static final int LAST_KEY_SUFFIX_LENGTH = 256;
+
   private final RawDbAccess storage;
 
   RawBackend(final RawDbAccess storage) {
@@ -40,6 +46,28 @@ final class RawBackend implements Backend<RawKey, HeldValue, DbValue> {
   @Override
   public long groupOf(final RawKey key) {
     return key.columnFamily();
+  }
+
+  @Override
+  public KeyRange<RawKey> groupRange(final long group) {
+    final var prefix = prefixOf(group);
+    return prefixRange(prefix, prefix.length);
+  }
+
+  @Override
+  public RawKey groupLastSeekKey(final long group) {
+    // the storage iterators only see keys with the seek key's column family prefix, so the seek
+    // key must stay in the column family
+    final var prefix = prefixOf(group);
+    final var last = Arrays.copyOf(prefix, prefix.length + LAST_KEY_SUFFIX_LENGTH);
+    Arrays.fill(last, prefix.length, last.length, (byte) 0xFF);
+    return RawKey.of(last);
+  }
+
+  private static byte[] prefixOf(final long columnFamily) {
+    final var prefix = new byte[Long.BYTES];
+    ByteBuffer.wrap(prefix).order(ZeebeDbConstants.ZB_DB_BYTE_ORDER).putLong(columnFamily);
+    return prefix;
   }
 
   @Override

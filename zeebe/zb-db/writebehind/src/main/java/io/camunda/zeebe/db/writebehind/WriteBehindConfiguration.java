@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.writebehind;
 
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Settings of one write-behind DB. All sizes are per DB, so per partition.
@@ -24,6 +25,10 @@ import java.time.Duration;
  * @param flushThresholdBytes the writer flushes without waiting for the delay when the unflushed
  *     transactions hold this many bytes. Never more than {@code maxPendingBytes}, so that commits
  *     do not wait for the limit before an early flush starts.
+ * @param keyIndexMaxKeys how many keys the key index of one column family holds at most; what
+ *     happens to a column family with more keys depends on its {@link KeyIndexPolicy}
+ * @param keyIndexPolicies the column families, by ID, whose committed keys are held in memory, and
+ *     the policy of each; a column family without an entry has no key index
  */
 public record WriteBehindConfiguration(
     long maxPendingBytes,
@@ -31,7 +36,11 @@ public record WriteBehindConfiguration(
     int maxWriteRetries,
     Duration flushTimeout,
     Duration flushDelay,
-    long flushThresholdBytes) {
+    long flushThresholdBytes,
+    int keyIndexMaxKeys,
+    Map<Long, KeyIndexPolicy> keyIndexPolicies) {
+
+  public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 10_000;
 
   public WriteBehindConfiguration {
     // a negative limit is always exceeded, so that the first commit would wait for a flush that
@@ -60,9 +69,33 @@ public record WriteBehindConfiguration(
       throw new IllegalArgumentException(
           "Expected flushThresholdBytes to be zero or positive, but was " + flushThresholdBytes);
     }
+    if (keyIndexMaxKeys <= 0) {
+      throw new IllegalArgumentException(
+          "Expected keyIndexMaxKeys to be positive, but was " + keyIndexMaxKeys);
+    }
+    keyIndexPolicies = Map.copyOf(keyIndexPolicies);
   }
 
-  /** No flush delay, and an early flush at half of {@code maxPendingBytes}. */
+  /** No key index. */
+  public WriteBehindConfiguration(
+      final long maxPendingBytes,
+      final long cacheMaxBytes,
+      final int maxWriteRetries,
+      final Duration flushTimeout,
+      final Duration flushDelay,
+      final long flushThresholdBytes) {
+    this(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        flushDelay,
+        flushThresholdBytes,
+        DEFAULT_KEY_INDEX_MAX_KEYS,
+        Map.of());
+  }
+
+  /** No flush delay, an early flush at half of {@code maxPendingBytes}, and no key index. */
   public WriteBehindConfiguration(
       final long maxPendingBytes,
       final long cacheMaxBytes,
@@ -88,7 +121,9 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         flushDelay,
-        flushThresholdBytes);
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withMaxPendingBytes(final long maxPendingBytes) {
@@ -98,7 +133,9 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         flushDelay,
-        flushThresholdBytes);
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withFlushDelay(final Duration flushDelay) {
@@ -108,7 +145,9 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         flushDelay,
-        flushThresholdBytes);
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        keyIndexPolicies);
   }
 
   public WriteBehindConfiguration withFlushThresholdBytes(final long flushThresholdBytes) {
@@ -118,6 +157,33 @@ public record WriteBehindConfiguration(
         maxWriteRetries,
         flushTimeout,
         flushDelay,
-        flushThresholdBytes);
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        keyIndexPolicies);
+  }
+
+  public WriteBehindConfiguration withKeyIndexMaxKeys(final int keyIndexMaxKeys) {
+    return new WriteBehindConfiguration(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        flushDelay,
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        keyIndexPolicies);
+  }
+
+  /** Replaces the column families that have a key index, and their policies. */
+  public WriteBehindConfiguration withKeyIndexPolicies(final Map<Long, KeyIndexPolicy> policies) {
+    return new WriteBehindConfiguration(
+        maxPendingBytes,
+        cacheMaxBytes,
+        maxWriteRetries,
+        flushTimeout,
+        flushDelay,
+        flushThresholdBytes,
+        keyIndexMaxKeys,
+        policies);
   }
 }

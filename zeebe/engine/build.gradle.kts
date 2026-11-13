@@ -73,6 +73,7 @@ tasks.withType<Test>().configureEach { jvmArgs("-Xmx4g") }
 
 // Single-threaded engine load without JMH, e.g.:
 // ZEEBE_DB_WRITE_BEHIND_ENABLED=true ./gradlew :zeebe-workflow-engine:engineLoad -Pinstances=100000
+// With write-behind on, the engine key index set is used unless -PkeyIndex=none.
 tasks.register<JavaExec>("engineLoad") {
   group = "verification"
   description = "Runs EngineLoadMain against the test runtime classpath"
@@ -89,6 +90,9 @@ tasks.register<JavaExec>("engineLoad") {
   project.findProperty("warmup")?.let { environment("LOAD_WARMUP", it) }
   project.findProperty("prefill")?.let { environment("LOAD_PREFILL", it) }
   project.findProperty("revisit")?.let { environment("LOAD_REVISIT", it) }
+  // default (when unset), none, or NAME[:POLICY],... e.g. -PkeyIndex=VARIABLES:KEEP_HIGHEST,JOBS
+  project.findProperty("keyIndex")?.let { environment("ZEEBE_DB_KEY_INDEX", it) }
+  project.findProperty("keyIndexMaxKeys")?.let { environment("ZEEBE_DB_KEY_INDEX_MAX_KEYS", it) }
 }
 
 description = "Zeebe Workflow Engine"
