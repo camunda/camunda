@@ -127,6 +127,7 @@ public final class OpenApiYamlLoader {
     final ParseOptions options = new ParseOptions();
     options.setResolve(true);
     options.setResolveFully(true);
+    options.setResolveCombinators(false);
 
     final Path filePath = Path.of(yamlPath);
     if (Files.exists(filePath) && Files.isRegularFile(filePath)) {
