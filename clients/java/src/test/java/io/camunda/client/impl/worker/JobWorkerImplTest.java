@@ -1387,10 +1387,6 @@ final class JobWorkerImplTest {
   }
 
   /**
-   * The first poll gets jobs 0 and 1, where job 0 is the one that fails to dispatch. Later polls
-   * get jobs 10 and 11, so a handled job 1 can only come from the first response.
-   */
-  /**
    * A handler executor that throws something other than a rejection for the first job only. The
    * client schedules its polls on the same executor, but through schedule, which does not go
    * through execute.
@@ -1408,6 +1404,10 @@ final class JobWorkerImplTest {
     };
   }
 
+  /**
+   * The first poll gets jobs 0 and 1, where job 0 is the one that fails to dispatch. Later polls
+   * get jobs 10 and 11, so a handled job 1 can only come from the first response.
+   */
   private void respondWithJobsAfterAFailingOne() {
     gateway.respondOnceWith(TestData.jobs(2));
     gateway.respondWith(Arrays.asList(TestData.job(10), TestData.job(11)));
