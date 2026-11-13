@@ -16,7 +16,7 @@ describe('<Frame />', () => {
 		const screen = await render(<Frame>content</Frame>);
 
 		await expect.element(screen.getByText('content')).toBeVisible();
-		expect(screen.getByTestId('frame-container').elements()).toHaveLength(0);
+		await expect.element(screen.getByTestId('frame-container')).not.toBeInTheDocument();
 	});
 
 	it('should render the header title when the frame is visible', async () => {
@@ -39,7 +39,7 @@ describe('<Frame />', () => {
 		);
 
 		await expect.element(screen.getByTestId('frame-container')).toBeVisible();
-		expect(screen.getByText('My Frame').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('My Frame')).not.toBeInTheDocument();
 		await expect.element(screen.getByText('content')).toBeVisible();
 	});
 });

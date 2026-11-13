@@ -139,7 +139,7 @@ describe('<SortableTable />', () => {
 
 		// then
 		await expect.element(screen.getByTestId('empty-state')).toBeVisible();
-		expect(screen.getByText('Name').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Name')).not.toBeInTheDocument();
 	});
 
 	it('should show a loading overlay while refetching with existing rows', async () => {
@@ -155,7 +155,7 @@ describe('<SortableTable />', () => {
 		const screen = await renderTable({isFetching: true, rows: []});
 
 		// then
-		expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
+		await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
 		expect(document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBeGreaterThan(0);
 	});
 
@@ -166,7 +166,7 @@ describe('<SortableTable />', () => {
 
 			// then
 			await expect.element(screen.getByTestId('table-loading-next')).toBeVisible();
-			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
+			await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
 			const rows = document.querySelectorAll('[data-slot="table-body"] [data-slot="table-row"]');
 			expect(rows[rows.length - 1]?.querySelector('[data-testid="table-loading-next"]')).not.toBeNull();
 		});
@@ -186,7 +186,8 @@ describe('<SortableTable />', () => {
 			const screen = await renderTable({isFetchingPreviousPage: true, isFetchingNextPage: true});
 
 			// then
-			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
+			await expect.element(screen.getByRole('table', {name: 'Process instances'})).toBeVisible();
+			await expect.element(screen.getByTestId('table-loading-overlay')).not.toBeInTheDocument();
 		});
 
 		it('should scroll down by the skeleton row height on mount, so inserting it above the rows does not shift them', async () => {
@@ -343,7 +344,8 @@ describe('<SortableTable />', () => {
 		const screen = await renderTable();
 
 		// then
-		expect(screen.getByRole('button', {name: 'Id'}).elements()).toHaveLength(0);
+		await expect.element(screen.getByRole('table', {name: 'Process instances'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Id'})).not.toBeInTheDocument();
 	});
 
 	it('should reflect the URL sort param for a non-default column', async () => {
@@ -456,6 +458,7 @@ describe('<SortableTable />', () => {
 			const screen = await renderWithBatchActions({checkIsRowSelected: () => false, selectedCount: 0});
 
 			// then
+			await expect.element(screen.getByRole('table', {name: 'Process instances'})).toBeVisible();
 			await expect.element(screen.getByRole('toolbar', {name: 'Bulk actions'})).not.toBeInTheDocument();
 		});
 
@@ -661,8 +664,9 @@ describe('<SortableTable />', () => {
 			const screen = await renderTable();
 
 			// then
-			expect(screen.getByTestId('sortable-table-top-sentinel').elements()).toHaveLength(0);
-			expect(screen.getByTestId('sortable-table-bottom-sentinel').elements()).toHaveLength(0);
+			await expect.element(screen.getByRole('table', {name: 'Process instances'})).toBeVisible();
+			await expect.element(screen.getByTestId('sortable-table-top-sentinel')).not.toBeInTheDocument();
+			await expect.element(screen.getByTestId('sortable-table-bottom-sentinel')).not.toBeInTheDocument();
 		});
 
 		it('should root the intersection observer on the scrollable container, not the viewport', async () => {

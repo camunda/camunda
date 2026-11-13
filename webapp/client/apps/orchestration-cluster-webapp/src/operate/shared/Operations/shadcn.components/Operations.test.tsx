@@ -239,7 +239,8 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		expect(screen.getByRole('status').elements()).toHaveLength(0);
+		await expect.element(screen.getByRole('button', {name: /cancel instance/i})).toBeVisible();
+		await expect.element(screen.getByRole('status')).not.toBeInTheDocument();
 	});
 
 	it('should show cancel confirmation modal', async ({worker}) => {
@@ -352,8 +353,8 @@ describe('<Operations />', () => {
 		await expect
 			.element(screen.getByRole('link', {name: '3'}))
 			.toHaveAttribute('href', expect.stringMatching(/\/processes\/3$/));
-		expect(screen.getByRole('button', {name: 'Cancel', exact: true}).elements()).toHaveLength(0);
-		expect(screen.getByRole('button', {name: 'Apply', exact: true}).elements()).toHaveLength(0);
+		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Apply', exact: true})).not.toBeInTheDocument();
 	});
 
 	it('should move focus into the root instance warning modal once the call hierarchy check resolves', async ({

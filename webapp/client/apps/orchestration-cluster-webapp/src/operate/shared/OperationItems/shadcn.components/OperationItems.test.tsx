@@ -37,7 +37,7 @@ describe('<OperationItems />', () => {
 			</OperationItems>,
 		);
 
-		expect(screen.getByRole('listitem').elements()).toHaveLength(1);
+		await expect.element(screen.getByRole('listitem')).toBeVisible();
 		await expect.element(screen.getByRole('listitem')).toHaveTextContent('Only action');
 	});
 });
