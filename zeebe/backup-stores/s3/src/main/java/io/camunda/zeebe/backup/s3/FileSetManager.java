@@ -54,10 +54,6 @@ final class FileSetManager {
   private final ExecutorService schedulerExecutor;
   private final BackupReadRateLimiter readRateLimiter;
 
-  public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
-    this(client, config, BackupReadRateLimiter.shared(config.maxReadRate()));
-  }
-
   FileSetManager(
       final S3AsyncClient client,
       final S3BackupConfig config,

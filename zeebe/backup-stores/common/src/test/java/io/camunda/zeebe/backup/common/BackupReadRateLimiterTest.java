@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.common;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -20,17 +22,19 @@ class BackupReadRateLimiterTest {
   private final FakeClock clock = new FakeClock();
 
   @Test
-  void shouldNeverWaitWhenUnlimited() throws InterruptedException {
+  void shouldNeverWaitWhenUnlimited() throws IOException {
     // given
-    final var limiter = new BackupReadRateLimiter(0, clock::nanos, clock::sleep);
+    final var limiter = BackupReadRateLimiter.unlimited();
+    final var stream = limiter.wrap(new ZeroInputStream(100 * MIB));
 
     // when
-    for (int i = 0; i < 100; i++) {
-      limiter.acquire(MIB);
-    }
+    final var read = stream.transferTo(OutputStream.nullOutputStream());
 
-    // then
-    assertThat(clock.slept()).isZero();
+    // then - the stream is not even wrapped, so nothing can wait
+    assertThat(read).isEqualTo(100 * MIB);
+    assertThat(stream).isInstanceOf(ZeroInputStream.class);
+    assertThat(limiter.isUnlimited()).isTrue();
+    assertThat(limiter).hasToString("BackupReadRateLimiter{unlimited}");
   }
 
   @Test
@@ -94,30 +98,42 @@ class BackupReadRateLimiterTest {
   }
 
   @Test
-  void shouldReturnTheSameSharedLimiterForTheSameRate() {
-    // when
-    final var first = BackupReadRateLimiter.shared(42 * MIB);
-    final var second = BackupReadRateLimiter.shared(42 * MIB);
+  void shouldNotShareTheBudgetBetweenLimiters() throws InterruptedException {
+    // given - two limiters of the same rate, as two brokers in one JVM would create them
+    final var first = new BackupReadRateLimiter(10 * MIB, clock::nanos, clock::sleep);
+    final var second = new BackupReadRateLimiter(10 * MIB, clock::nanos, clock::sleep);
+    first.acquire(10 * MIB);
 
-    // then
-    assertThat(first).isSameAs(second);
-    assertThat(first.bytesPerSecond()).isEqualTo(42 * MIB);
+    // when
+    second.acquire(10 * MIB);
+    second.acquire(1);
+
+    // then - the second limiter only waits for its own read
+    assertThat(clock.slept()).isEqualTo(Duration.ofSeconds(1));
   }
 
   @Test
-  void shouldReturnUnlimitedLimiterWhenSharedRateIsZero() {
+  void shouldCreateLimitedLimiter() {
     // when
-    final var limiter = BackupReadRateLimiter.shared(0);
+    final var limiter = BackupReadRateLimiter.of(42 * MIB);
 
     // then
-    assertThat(limiter).isSameAs(BackupReadRateLimiter.UNLIMITED);
-    assertThat(limiter.isUnlimited()).isTrue();
+    assertThat(limiter.isUnlimited()).isFalse();
+    assertThat(limiter).hasToString("BackupReadRateLimiter{bytesPerSecond=44040192}");
+  }
+
+  @Test
+  void shouldRejectZeroRate() {
+    // when - then
+    assertThatThrownBy(() -> BackupReadRateLimiter.of(0))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("positive");
   }
 
   @Test
   void shouldRejectNegativeRate() {
     // when - then
-    assertThatThrownBy(() -> BackupReadRateLimiter.shared(-1))
+    assertThatThrownBy(() -> BackupReadRateLimiter.of(-1))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("-1");
   }
