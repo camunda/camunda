@@ -233,7 +233,12 @@ final class AsyncFlusher<K extends Comparable<K>, V> {
         LOG.warn(
             "Write-behind writer didn't stop within {}; interrupting it", config.flushTimeout());
         writer.interrupt();
-        writer.join();
+        writer.join(config.flushTimeout().toMillis());
+        if (writer.isAlive()) {
+          LOG.error(
+              "Write-behind writer didn't stop within {} after an interrupt; giving up on it",
+              config.flushTimeout());
+        }
       }
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
