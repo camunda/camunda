@@ -11,6 +11,8 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.IntConsumer;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,9 +35,11 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 /**
  * Compares hand-written {@code UnpackedObject}s ({@code impl=unpacked}) with plain classes using a
  * generated codec ({@code impl=generated}) that store the same bytes, for the access patterns of
- * state values: writing a value, reading into a fresh instance and reading into a reused instance.
- * {@code variable} is a hot state value with a binary payload, {@code full} has every field type
- * the generator supports. Run with the {@code gc} profiler to see the allocation rate.
+ * state values: writing a value, reading into a fresh instance, reading into a reused instance and
+ * deep copying into a reused instance ({@code BufferReader.copyFrom} serializes to a new array and
+ * reads it back, the generated {@code copyFrom} copies field by field). {@code variable} is a hot
+ * state value with a binary payload, {@code full} has every field type the generator supports. Run
+ * with the {@code gc} profiler to see the allocation rate.
  */
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
@@ -77,6 +81,12 @@ public class StateValueBenchmark {
     return result;
   }
 
+  @Benchmark
+  public BufferReader copyIntoReusedInstance(final BenchmarkState state) {
+    state.copyAt.accept(state.nextIndex());
+    return state.reused;
+  }
+
   @State(Scope.Thread)
   public static class BenchmarkState {
 
@@ -94,6 +104,7 @@ public class StateValueBenchmark {
     int[] lengths;
     Supplier<BufferReader> factory;
     BufferReader reused;
+    IntConsumer copyAt;
     int index;
 
     @Setup
@@ -106,26 +117,40 @@ public class StateValueBenchmark {
         case "variable/unpacked" ->
             init(
                 UnpackedVariable::new,
-                i -> new UnpackedVariable().setKey(100L + i).setValue(json(i)));
+                i -> new UnpackedVariable().setKey(100L + i).setValue(json(i)),
+                UnpackedVariable::copyFrom);
         case "variable/generated" ->
-            init(PojoVariable::new, i -> new PojoVariable().setKey(100L + i).setValue(json(i)));
-        case "full/unpacked" -> init(UnpackedFull::new, i -> new UnpackedFull().fill(i));
-        case "full/generated" -> init(PojoFull::new, i -> new PojoFull().fill(i));
+            init(
+                PojoVariable::new,
+                i -> new PojoVariable().setKey(100L + i).setValue(json(i)),
+                PojoVariable::copyFrom);
+        case "full/unpacked" ->
+            init(UnpackedFull::new, i -> new UnpackedFull().fill(i), UnpackedFull::copyFrom);
+        case "full/generated" ->
+            init(PojoFull::new, i -> new PojoFull().fill(i), PojoFull::copyFrom);
         default -> throw new IllegalArgumentException(value + "/" + impl);
       }
     }
 
     private <T extends BufferReader & BufferWriter> void init(
-        final Supplier<T> newInstance, final IntFunction<T> filled) {
+        final Supplier<T> newInstance, final IntFunction<T> filled, final BiConsumer<T, T> copy) {
       factory = newInstance::get;
       final T instance = newInstance.get();
       reused = instance;
+      final Object[] sources = new Object[BATCH_SIZE];
+      copyAt = i -> copy.accept(instance, castToT(sources[i]));
       for (int i = 0; i < BATCH_SIZE; i++) {
         final T writer = filled.apply(i);
+        sources[i] = writer;
         writers[i] = writer;
         buffers[i] = new UnsafeBuffer(new byte[BUFFER_CAPACITY]);
         lengths[i] = writer.write(buffers[i], 0);
       }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T castToT(final Object o) {
+      return (T) o;
     }
 
     int nextIndex() {
