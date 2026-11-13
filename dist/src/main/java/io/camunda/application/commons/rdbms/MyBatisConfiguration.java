@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
@@ -59,10 +60,13 @@ import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -138,6 +142,42 @@ public class MyBatisConfiguration {
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
       @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+      throws Exception {
+    return buildSqlSessionFactory(dataSource, databaseIdProvider, databaseProperties, prefix);
+  }
+
+  /**
+   * Connection pool used only by the RDBMS exporter, so that search requests holding all
+   * connections of the main pool cannot block exporting. It connects like the main pool and takes
+   * its HikariCP settings from {@code
+   * camunda.data.secondary-storage.rdbms.exporter-connection-pool}.
+   */
+  @Bean(defaultCandidate = false)
+  @ConfigurationProperties("camunda.data.secondary-storage.rdbms.exporter-connection-pool")
+  public HikariDataSource rdbmsExporterDataSource(final DataSourceProperties dataSourceProperties) {
+    final var dataSource =
+        dataSourceProperties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
+    dataSource.setPoolName("camunda-rdbms-exporter");
+    dataSource.setMinimumIdle(2);
+    return dataSource;
+  }
+
+  @Bean(defaultCandidate = false)
+  public SqlSessionFactory rdbmsExporterSqlSessionFactory(
+      @Qualifier("rdbmsExporterDataSource") final DataSource rdbmsExporterDataSource,
+      final DatabaseIdProvider databaseIdProvider,
+      final VendorDatabaseProperties databaseProperties,
+      @Value("${camunda.data.secondary-storage.rdbms.prefix:}") final String prefix)
+      throws Exception {
+    return buildSqlSessionFactory(
+        rdbmsExporterDataSource, databaseIdProvider, databaseProperties, prefix);
+  }
+
+  private static SqlSessionFactory buildSqlSessionFactory(
+      final DataSource dataSource,
+      final DatabaseIdProvider databaseIdProvider,
+      final VendorDatabaseProperties databaseProperties,
+      final String prefix)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
@@ -344,7 +384,15 @@ public class MyBatisConfiguration {
     return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
   }
 
-  private <T> MapperFactoryBean<T> createMapperFactoryBean(
+  /** Creates a mapper like the mapper beans do, for a factory other than the default one. */
+  static <T> T createMapper(final SqlSessionFactory sqlSessionFactory, final Class<T> clazz)
+      throws Exception {
+    final var factoryBean = createMapperFactoryBean(sqlSessionFactory, clazz);
+    factoryBean.afterPropertiesSet();
+    return factoryBean.getObject();
+  }
+
+  private static <T> MapperFactoryBean<T> createMapperFactoryBean(
       final SqlSessionFactory sqlSessionFactory, final Class<T> clazz) {
     // Wrap so DB errors thrown by any mapper call are translated to CamundaSearchException
     final MapperFactoryBean<T> factoryBean =
