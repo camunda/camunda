@@ -137,6 +137,7 @@ public class ConfigurationService {
   private String digestCronTrigger;
   private EntityConfiguration entityConfiguration;
   private BusinessValueConfiguration businessValueConfiguration;
+  private AgenticPhase2Configuration agenticPhase2Configuration;
   private CsvConfiguration csvConfiguration;
   private Properties quartzProperties;
   // history cleanup
@@ -1029,6 +1030,21 @@ public class ConfigurationService {
   public void setBusinessValueConfiguration(
       final BusinessValueConfiguration businessValueConfiguration) {
     this.businessValueConfiguration = businessValueConfiguration;
+  }
+
+  public AgenticPhase2Configuration getAgenticPhase2Configuration() {
+    if (agenticPhase2Configuration == null) {
+      agenticPhase2Configuration =
+          configJsonContext.read(
+              ConfigurationServiceConstants.AGENTIC_PHASE2_CONFIGURATION,
+              AgenticPhase2Configuration.class);
+    }
+    return agenticPhase2Configuration;
+  }
+
+  public void setAgenticPhase2Configuration(
+      final AgenticPhase2Configuration agenticPhase2Configuration) {
+    this.agenticPhase2Configuration = agenticPhase2Configuration;
   }
 
   public CsvConfiguration getCsvConfiguration() {

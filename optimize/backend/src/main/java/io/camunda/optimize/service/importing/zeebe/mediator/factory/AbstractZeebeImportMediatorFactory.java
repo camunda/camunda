@@ -37,5 +37,13 @@ public abstract class AbstractZeebeImportMediatorFactory {
     this.databaseClient = databaseClient;
   }
 
+  /**
+   * Whether this factory's mediators are scheduled. Override to put an import behind a
+   * configuration switch; a disabled factory creates no mediators, so its import never runs.
+   */
+  public boolean isEnabled() {
+    return true;
+  }
+
   public abstract List<ImportMediator> createMediators(ZeebeDataSourceDto dataSourceDto);
 }

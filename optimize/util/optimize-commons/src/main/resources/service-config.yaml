@@ -617,6 +617,15 @@ businessValue:
   # only the numbers behind them freeze; a definition with no rows yet gets nothing.
   overviewComputeEnabled: ${CAMUNDA_OPTIMIZE_BUSINESS_VALUE_OVERVIEW_COMPUTE_ENABLED:true}
 
+agentic:
+  phase2:
+    # Enables agentic Phase 2: the agent definition and agent run imports and the agent insights
+    # endpoints. Off by default while Phase 2 is in development. When off, those imports do not run
+    # and the endpoints return 404; the Phase 1 agent import and agentic dashboard are unaffected.
+    # The upgrade step that creates the agent indices runs regardless of this flag. Requires an
+    # Optimize restart to take effect.
+    enabled: ${CAMUNDA_OPTIMIZE_AGENTIC_PHASE2_ENABLED:false}
+
 export:
   csv:
     # which users are authorized to download CSVs. Available options: 'all', 'none'

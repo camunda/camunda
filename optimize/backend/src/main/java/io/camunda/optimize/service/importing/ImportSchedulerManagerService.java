@@ -191,6 +191,7 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
         beanFactory.getBean(ZeebeImportIndexHandlerProvider.class, zeebeDataSourceDto));
 
     return zeebeMediatorFactories.stream()
+        .filter(AbstractZeebeImportMediatorFactory::isEnabled)
         .map(factory -> factory.createMediators(zeebeDataSourceDto))
         .flatMap(Collection::stream)
         .sorted(Comparator.comparing(ImportMediator::getRank))
