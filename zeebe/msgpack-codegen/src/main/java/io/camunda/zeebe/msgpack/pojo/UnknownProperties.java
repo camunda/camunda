@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -61,6 +62,27 @@ public final class UnknownProperties {
       hash = 31 * hash + entries.getByte(i);
     }
     return hash;
+  }
+
+  /**
+   * Appends every entry as {@code ,"key":[packed value (length=n)]}, the form in which an {@code
+   * UnpackedObject} prints properties it does not declare.
+   */
+  public void appendJson(final StringBuilder builder) {
+    final var reader = new MsgPackReader().wrap(entries, 0, length);
+    for (int i = 0; i < count; i++) {
+      final int keyLength = reader.readStringLength();
+      final String key = entries.getStringWithoutLengthUtf8(reader.getOffset(), keyLength);
+      reader.skipBytes(keyLength);
+      final int start = reader.getOffset();
+      reader.skipValue();
+      builder
+          .append(",\"")
+          .append(key)
+          .append("\":[packed value (length=")
+          .append(reader.getOffset() - start)
+          .append(")]");
+    }
   }
 
   public int count() {

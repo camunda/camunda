@@ -40,4 +40,12 @@ public interface MsgpackOps<T extends Recyclable> {
    * A hash code of the stored properties, consistent with {@link #equals(Recyclable, Recyclable)}.
    */
   int hashCode(T value);
+
+  /**
+   * The stored properties as JSON, like {@code ObjectValue#toString}: {@code {"key":value,...}}
+   * with strings and enums quoted, binaries and documents as quoted base64, raw values as {@code
+   * [packed value (length=n)]}, and the entries of unknown properties in the same form after the
+   * declared ones. Properties marked {@link MsgpackSanitized} print {@code "***"}.
+   */
+  String toString(T value);
 }

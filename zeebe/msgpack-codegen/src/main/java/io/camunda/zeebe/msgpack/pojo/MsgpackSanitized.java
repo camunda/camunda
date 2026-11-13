@@ -17,8 +17,9 @@ import java.lang.annotation.Target;
  * string representation, like a property declared with {@code sanitized()}. The stored format is
  * not affected: the value is written and read as any other.
  *
- * <p>The processor records the mark so that generated string representations can mask the value;
- * nothing generated uses it yet.
+ * <p>The generated {@code toString} prints {@code "***"} instead of the value. Unlike a nested
+ * {@code UnpackedObject}, which only masks its own properties at the top level, the value is also
+ * masked when its POJO is nested in another one.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)
