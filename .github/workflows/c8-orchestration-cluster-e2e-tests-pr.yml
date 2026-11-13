@@ -1,0 +1,42 @@
+# description: Runs the C8 Orchestration Cluster E2E test suite on pull requests that change it, as jobs of this check, and comments on its failures, through main's reusable PR check. Non-blocking: not part of the Unified CI and not a required status check.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: C8 Orchestration Cluster E2E Tests PR Check
+
+# The suite's own test code used to be validated only by the manual on-demand
+# run, which was often skipped, so PRs with red suite tests got merged
+# (camunda/team-test-automation#188). This runs this version's test matrix on
+# every PR that changes the suite, as jobs of this check.
+#
+# A pull_request workflow runs from the PR's target branch, so this branch
+# needs this file; it is only a thin caller. The check itself, with its test
+# matrix, triage comment and scripts, is main's
+# c8-orchestration-cluster-e2e-tests-pr-reusable.yml, so changes to it are made
+# on main only. This branch has no suite workflows of its own.
+#
+# It is not a required check: it never blocks a merge, and so is exempt from
+# the Unified CI rules.
+on:
+  pull_request:
+    paths:
+      - "qa/c8-orchestration-cluster-e2e-test-suite/**"
+      - "!qa/c8-orchestration-cluster-e2e-test-suite/**/*.md"
+      - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml"
+
+# A newer push cancels the PR's run in progress.
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.ref) }}
+
+permissions: {}
+
+jobs:
+  suite:
+    uses: camunda/camunda/.github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml@main
+    secrets: inherit
+    permissions:
+      actions: read # the triage job lists this run's jobs
+      contents: read
+      pull-requests: write # the triage job posts its comment

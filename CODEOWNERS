@@ -133,3 +133,6 @@
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
+
+# C8 Orchestration Cluster E2E test suite PR check (a thin caller of main's reusable PR check)
+/.github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml @camunda/test-automation-team
