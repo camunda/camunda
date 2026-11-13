@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -397,6 +398,50 @@ public final class StorageOrdinalAssignmentTest {
                 .getValue()
                 .getStorageOrdinal())
         .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldKeepRescheduledTimerStartEventWithoutProcessInstanceKey() {
+    // given
+    final long processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("timer-start-reschedule-key-process")
+                    .startEvent("timer-start")
+                    .timerWithCycle("R/PT10S")
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0)
+            .getProcessDefinitionKey();
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .getFirst();
+
+    // when
+    engine.increaseTime(Duration.ofSeconds(11));
+
+    // then
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+    assertThat(triggered.getValue().getProcessInstanceKey()).isPositive();
+
+    final var trigger =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+            .withRecordKey(triggered.getKey())
+            .getFirst();
+    assertThat(
+            RecordingExporter.timerRecords(TimerIntent.CREATED)
+                .withSourceRecordPosition(trigger.getPosition())
+                .getFirst()
+                .getValue()
+                .getProcessInstanceKey())
+        .isEqualTo(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 
   @Test
