@@ -1041,20 +1041,6 @@ final class MsgpackPojoProcessorTest {
         .containsExactly(java.util.Arrays.stream(values).boxed().toArray(Integer[]::new));
   }
 
-  /** The implementation a field of integers had before: an ArrayProperty of IntegerValue. */
-  private static final class IdsTwin extends io.camunda.zeebe.msgpack.UnpackedObject {
-    private final io.camunda.zeebe.msgpack.property.ArrayProperty<
-            io.camunda.zeebe.msgpack.value.IntegerValue>
-        ids =
-            new io.camunda.zeebe.msgpack.property.ArrayProperty<>(
-                "ids", io.camunda.zeebe.msgpack.value.IntegerValue::new);
-
-    IdsTwin() {
-      super(1);
-      declareProperty(ids);
-    }
-  }
-
   @Test
   void shouldFailToResetABufferFieldWithoutDefault() throws Exception {
     // given
@@ -1101,31 +1087,6 @@ final class MsgpackPojoProcessorTest {
             IMPORTS
                 + "@MsgpackPojo public final class Sample extends Base { long key; %s }"
                     .formatted(UNKNOWN)));
-  }
-
-  /** A compiled sample class with its codec, for tests that read and write bytes. */
-  private record SampleCodec(
-      InMemoryCompiler.Result result, Class<?> type, MsgpackCodec<Recyclable> codec) {
-
-    Recyclable newInstance(final String className) throws ReflectiveOperationException {
-      return (Recyclable) result.load(className).getConstructor().newInstance();
-    }
-
-    Recyclable newInstance() throws ReflectiveOperationException {
-      return (Recyclable) type.getConstructor().newInstance();
-    }
-
-    byte[] write(final Object value) {
-      final var bytes = new ExpandableArrayBuffer();
-      final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), (Recyclable) value);
-      return java.util.Arrays.copyOf(bytes.byteArray(), length);
-    }
-
-    void read(final Object target, final byte[] message) {
-      codec.read(
-          new MsgPackReader().wrap(new UnsafeBuffer(message), 0, message.length),
-          (Recyclable) target);
-    }
   }
 
   private static SampleCodec codecOf(final String classSource, final Source... others) {
@@ -1272,4 +1233,43 @@ final class MsgpackPojoProcessorTest {
   }
 
   private record SuperclassSources(Source base, Source pojo) {}
+
+  /** The implementation a field of integers had before: an ArrayProperty of IntegerValue. */
+  private static final class IdsTwin extends io.camunda.zeebe.msgpack.UnpackedObject {
+    private final io.camunda.zeebe.msgpack.property.ArrayProperty<
+            io.camunda.zeebe.msgpack.value.IntegerValue>
+        ids =
+            new io.camunda.zeebe.msgpack.property.ArrayProperty<>(
+                "ids", io.camunda.zeebe.msgpack.value.IntegerValue::new);
+
+    IdsTwin() {
+      super(1);
+      declareProperty(ids);
+    }
+  }
+
+  /** A compiled sample class with its codec, for tests that read and write bytes. */
+  private record SampleCodec(
+      InMemoryCompiler.Result result, Class<?> type, MsgpackCodec<Recyclable> codec) {
+
+    Recyclable newInstance(final String className) throws ReflectiveOperationException {
+      return (Recyclable) result.load(className).getConstructor().newInstance();
+    }
+
+    Recyclable newInstance() throws ReflectiveOperationException {
+      return (Recyclable) type.getConstructor().newInstance();
+    }
+
+    byte[] write(final Object value) {
+      final var bytes = new ExpandableArrayBuffer();
+      final int length = codec.write(new MsgPackWriter().wrap(bytes, 0), (Recyclable) value);
+      return java.util.Arrays.copyOf(bytes.byteArray(), length);
+    }
+
+    void read(final Object target, final byte[] message) {
+      codec.read(
+          new MsgPackReader().wrap(new UnsafeBuffer(message), 0, message.length),
+          (Recyclable) target);
+    }
+  }
 }
