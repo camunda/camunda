@@ -275,6 +275,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           }
         }
         if (element.getKind() == ElementKind.ENUM) {
+          requireNoToString(element, field);
           return Type.ENUM;
         }
         if (element.getAnnotation(MsgpackPojo.class) != null) {
@@ -288,6 +289,25 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         break;
     }
     throw new IllegalArgumentException("Unsupported type " + mirror + " of field " + field);
+  }
+
+  /**
+   * Enums are written by {@code toString()} and read by {@code name()}, like {@code EnumValue}, so
+   * an enum that overrides {@code toString()} could not be read back.
+   */
+  private static void requireNoToString(final TypeElement enumType, final String field) {
+    final boolean overridden =
+        enumType.getEnclosedElements().stream()
+            .anyMatch(
+                e ->
+                    e.getKind() == ElementKind.METHOD
+                        && e.getSimpleName().contentEquals("toString")
+                        && ((ExecutableElement) e).getParameters().isEmpty());
+    if (overridden) {
+      throw new IllegalArgumentException(
+          "Enum %s of field %s overrides toString(), but it is stored by toString() and read by name()"
+              .formatted(enumType.getQualifiedName(), field));
+    }
   }
 
   /** Items are created while reading, so the generated codec must be able to call {@code new}. */
@@ -918,7 +938,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
               static {
                 for (int i = 0; i < ENUM_VALUES_%2$d.length; i++) {
-                  ENUM_NAMES_%2$d[i] = Decoding.encodedKey(ENUM_VALUES_%2$d[i].toString());
+                  ENUM_NAMES_%2$d[i] = Decoding.encodedKey(ENUM_VALUES_%2$d[i].name());
                 }
               }
             """

@@ -33,7 +33,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
   names and their order are the stored format.
 - Supported field types: `long`, `int`, `boolean`, `DirectBuffer`/`UnsafeBuffer` (string, binary,
-  raw msgpack, or a document), enums (stored by `toString()`), `List<DirectBuffer>`, `List<Long>`, agrona's
+  raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must not be overridden), `List<DirectBuffer>`, `List<Long>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
   `@MsgpackPojo`s and `BaseValue`s, and lists of those (`List<Item>`, replacing an `ArrayProperty` of
   objects).
