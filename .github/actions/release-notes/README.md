@@ -6,7 +6,7 @@ package with two entrypoints that import **one** reference parser:
 
 - `lint/` — the **PR-gate** ([#53593](https://github.com/camunda/camunda/issues/53593)):
   validates that a PR links a tracked issue (or opts out) and lints its title;
-  syncs a sticky comment and a `no-issue` label. Live now, **enforcing** (fails the job; not yet a required status check).
+  syncs a sticky comment and a `no-issue` label. Live now, **enforcing** (fails the job).
 - `generate/` — the **release-notes generator**
   ([#57713](https://github.com/camunda/camunda/issues/57713)): builds the changelog
   from the PRs shipped in a release range. Documented in full in
@@ -212,6 +212,8 @@ The gate is one workflow, `release-notes-pr-gate.yml`, on plain **`pull_request`
 
 - **Metadata-only.** The action reads the PR through the API and never checks out
   or executes PR code.
+- **Merge queue.** On `merge_group` the job skips the lint step and passes: a
+  required check must report there, and the verdict was already given on the PR.
 - **No privileged token.** `GITHUB_TOKEN` only, with `pull-requests: write` (the
   comment and label) and `issues: write` (recreating a deleted `no-issue` label).
   No Vault, no App token.
@@ -221,11 +223,8 @@ The gate is one workflow, `release-notes-pr-gate.yml`, on plain **`pull_request`
 - **Accepted trade-off:** on `pull_request` the workflow and this action resolve
   from the PR head, so a PR can edit the code that judges it. That is the same
   trust model as every other lint in `ci.yml` (actionlint, spotless, commitlint),
-  and it is acceptable while this check is not a **required** status check, so it is
-  not a security boundary. `.github/**` is
-  CODEOWNERS-gated, so a tampering diff still needs review.
-  ⚠ **This must be resolved before the check is made required**, at which point a
-  PR could pass itself by editing the action. See epic #53605.
+  and it is accepted with the check **required** too: engineers are trusted, and
+  `.github/**` is CODEOWNERS-gated, so a tampering diff still needs review.
 
 ### Fork pull requests
 
