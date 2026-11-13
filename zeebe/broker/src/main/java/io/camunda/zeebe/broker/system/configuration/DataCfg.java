@@ -40,7 +40,6 @@ public final class DataCfg implements ConfigurationEntry {
   private BackupCfg backup = new BackupCfg();
   private WriteBehindCacheCfg writeBehindCache = new WriteBehindCacheCfg();
   private PrimaryStorageType primaryStorageType = PrimaryStorageType.ROCKSDB;
-  private RdbmsStorageCfg rdbms = new RdbmsStorageCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -183,14 +182,6 @@ public final class DataCfg implements ConfigurationEntry {
     this.primaryStorageType = primaryStorageType;
   }
 
-  public RdbmsStorageCfg getRdbms() {
-    return rdbms;
-  }
-
-  public void setRdbms(final RdbmsStorageCfg rdbms) {
-    this.rdbms = rdbms;
-  }
-
   @Override
   public String toString() {
     return "DataCfg{"
@@ -222,8 +213,6 @@ public final class DataCfg implements ConfigurationEntry {
         + writeBehindCache
         + ", primaryStorageType="
         + primaryStorageType
-        + ", rdbms="
-        + rdbms
         + '}';
   }
 
