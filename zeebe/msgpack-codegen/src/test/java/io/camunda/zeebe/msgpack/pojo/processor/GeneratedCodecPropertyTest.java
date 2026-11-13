@@ -142,6 +142,10 @@ final class GeneratedCodecPropertyTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     final MsgpackBufferValue<?> copying = (MsgpackBufferValue) target;
     copyFrom(copying, source);
+    assertThat(target)
+        .as("a copy equals its source%n%s", scenario.schema().source())
+        .isEqualTo(source)
+        .hasSameHashCodeAs(source);
     sourceBuffer.setMemory(0, sourceBuffer.capacity(), (byte) 0xc1);
 
     // then

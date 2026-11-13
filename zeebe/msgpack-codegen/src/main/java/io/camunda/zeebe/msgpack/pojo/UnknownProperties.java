@@ -36,6 +36,33 @@ public final class UnknownProperties {
     count = other.count;
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final UnknownProperties other)
+        || count != other.count
+        || length != other.length) {
+      return false;
+    }
+    for (int i = 0; i < length; i++) {
+      if (entries.getByte(i) != other.entries.getByte(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = count;
+    for (int i = 0; i < length; i++) {
+      hash = 31 * hash + entries.getByte(i);
+    }
+    return hash;
+  }
+
   public int count() {
     return count;
   }

@@ -388,6 +388,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("    target.%s.clear();\n".formatted(m.unknownField()));
     s.append("  }\n\n");
     copy(s, m);
+    equalsMethod(s, m);
+    hashCodeMethod(s, m);
     s.append(
         """
           /** Items are owned by one list, so a default with items would be shared by every reset. */
@@ -416,6 +418,16 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             @Override
             public void copy(final %1$s source, final %1$s target) {
               %1$sOps.copy(source, target);
+            }
+
+            @Override
+            public boolean equals(final %1$s a, final %1$s b) {
+              return %1$sOps.equals(a, b);
+            }
+
+            @Override
+            public int hashCode(final %1$s value) {
+              return %1$sOps.hashCode(value);
             }
           }
         }
@@ -475,6 +487,99 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       s.append("    target.%1$s.copyFrom(source.%1$s);\n".formatted(m.unknownField()));
     }
     s.append("  }\n\n");
+  }
+
+  /** The static {@code equals(a, b)} of the ops class. */
+  private static void equalsMethod(final StringBuilder s, final Model m) {
+    s.append("  /** Equality of the stored properties, see {@link MsgpackOps#equals}. */\n");
+    s.append("  public static boolean equals(final %1$s a, final %1$s b) {\n".formatted(m.name()));
+    s.append("    if (a == b) {\n      return true;\n    }\n");
+    s.append("    if (a == null || b == null) {\n      return false;\n    }\n");
+    for (final var p : m.properties()) {
+      final var x = "a." + p.field();
+      final var y = "b." + p.field();
+      final var differs =
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN, ENUM -> "%s != %s".formatted(x, y);
+            case STRING, BINARY, RAW, DOCUMENT ->
+                "!java.util.Objects.equals(%s, %s)".formatted(x, y);
+            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "!%s.equals(%s)".formatted(x, y);
+            case NESTED ->
+                p.pojo()
+                    ? "!%sOps.equals(%s, %s)".formatted(p.javaType(), x, y)
+                    : "!%s.equals(%s)".formatted(x, y);
+            case NESTED_LIST ->
+                p.pojo()
+                    ? "!equalItems_%s(%s, %s)".formatted(p.field(), x, y)
+                    : "!%s.equals(%s)".formatted(x, y);
+          };
+      s.append("    if (%s) {\n      return false;\n    }\n".formatted(differs));
+    }
+    if (m.unknownField() != null) {
+      s.append(
+          "    if (!a.%1$s.equals(b.%1$s)) {\n      return false;\n    }\n"
+              .formatted(m.unknownField()));
+    }
+    s.append("    return true;\n  }\n\n");
+    for (final var p : m.properties()) {
+      if (p.type() == Type.NESTED_LIST && p.pojo()) {
+        // List.equals would call equals() of the items, which a POJO need not implement
+        s.append(
+            """
+              private static boolean equalItems_%1$s(
+                  final java.util.List<%2$s> a, final java.util.List<%2$s> b) {
+                if (a.size() != b.size()) {
+                  return false;
+                }
+                for (int i = 0; i < a.size(); i++) {
+                  if (!%2$sOps.equals(a.get(i), b.get(i))) {
+                    return false;
+                  }
+                }
+                return true;
+              }
+
+            """
+                .formatted(p.field(), p.javaType()));
+      }
+    }
+  }
+
+  /** The static {@code hashCode(value)} of the ops class. */
+  private static void hashCodeMethod(final StringBuilder s, final Model m) {
+    s.append("  /** Hash code of the stored properties, see {@link MsgpackOps#hashCode}. */\n");
+    s.append("  public static int hashCode(final %s v) {\n".formatted(m.name()));
+    s.append("    int h = 1;\n");
+    for (final var p : m.properties()) {
+      final var x = "v." + p.field();
+      final var hash =
+          switch (p.type()) {
+            case LONG -> "Long.hashCode(%s)".formatted(x);
+            case INT -> x;
+            case BOOLEAN -> "Boolean.hashCode(%s)".formatted(x);
+            case ENUM, STRING, BINARY, RAW, DOCUMENT ->
+                "java.util.Objects.hashCode(%s)".formatted(x);
+            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "%s.hashCode()".formatted(x);
+            // the hash code of a BaseValue is not consistent with its equals (it includes whether
+            // a property was set and the recycled ones), so it is not used: equal values must hash
+            // alike
+            case NESTED -> p.pojo() ? "%sOps.hashCode(%s)".formatted(p.javaType(), x) : "0";
+            case NESTED_LIST -> p.pojo() ? null : "%s.size()".formatted(x);
+          };
+      if (hash != null) {
+        s.append("    h = 31 * h + %s;\n".formatted(hash));
+      } else {
+        s.append(
+            "    for (int i = 0; i < %1$s.size(); i++) {\n      h = 31 * h + %2$sOps.hashCode(%1$s.get(i));\n    }\n"
+                .formatted(x, p.javaType()));
+      }
+    }
+    if (m.unknownField() != null) {
+      s.append("    h = 31 * h + v.%s.hashCode();\n".formatted(m.unknownField()));
+    }
+    s.append("    return h;\n  }\n\n");
   }
 
   private static String codec(final Model m) {
