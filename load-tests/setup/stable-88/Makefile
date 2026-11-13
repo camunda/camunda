@@ -11,4 +11,6 @@ physical_tenants_supported = false
 scenario_max_override_key = orchestration.extraConfiguration.application-override\.yml=
 cluster_rebalance_supported = false
 
+# No Camunda Exporter helm value for the archiver wait in this version.
+scenario_max_archive_wait_flag =
 include ../common.mk

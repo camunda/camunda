@@ -92,8 +92,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: ATOMIX_LOG_LEVEL
-              value: INFO
             - name: SPRING_CONFIG_ADDITIONALLOCATION
               value: /usr/local/zeebe/config/application.yml
             - name: CAMUNDA_REST_QUERY_ENABLED

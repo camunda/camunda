@@ -310,7 +310,7 @@ To bump the deadline of an existing namespace without re-scaffolding, edit `dead
 make install-load-test-setup
 ```
 
-The load-test-setup chart deploys a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders.
+The load-test-setup chart can deploy a leader balancing cronjob that runs every 10 minutes to rebalance cluster leaders. It is off by default, so the long running tests run without it, and the `max` scenario (regression and performance tests) turns it on.
 
 #### Optional chaos-killer
 

@@ -36,6 +36,10 @@ camundaManagementUrl: http://camunda:9600
 # -- Configuration for the `leader-balancer` CronJob, which periodically triggers
 # Zeebe partition leadership rebalancing.
 leaderBalancer:
+  # -- Deploy the CronJob. Off by default, so the long running tests run without periodic leader
+  # rebalancing. The `max` scenario (regression and performance tests) turns it on, see `common.mk`.
+  enabled: false
+
   # -- Which endpoint the CronJob calls to trigger a rebalance:
   # - `v2`: the coordinated `POST {{ zeebeRestAddress }}/cluster/v2/rebalance` endpoint
   #   (Camunda 8.10+). Authenticated with the dedicated `leaderBalancer.client.oidc` client's
