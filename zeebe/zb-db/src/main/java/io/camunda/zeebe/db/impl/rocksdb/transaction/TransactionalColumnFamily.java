@@ -29,6 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
@@ -311,12 +312,18 @@ class TransactionalColumnFamily<
 
   @Override
   public long count() {
-    return countEachInPrefix(new DbNullKey());
+    return countInOpenTransaction(new DbNullKey());
   }
 
   @Override
   public long countEqualPrefix(final DbKey prefix) {
-    return countEachInPrefix(prefix);
+    return countInOpenTransaction(prefix);
+  }
+
+  private long countInOpenTransaction(final DbKey prefix) {
+    final var count = new MutableLong(0);
+    ensureInOpenTransaction(transaction -> count.set(countEachInPrefix(prefix)));
+    return count.get();
   }
 
   private void assertForeignKeysExist(final ZeebeTransaction transaction, final Object... keys)
