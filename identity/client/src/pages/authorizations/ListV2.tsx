@@ -98,7 +98,7 @@ const List: FC<ListProps> = ({
   } = useQuery({
     ...authorizationQueries.search({
       ...pageParams,
-      filter: { resourceType: selectedResourceType },
+      filter: { ...pageParams.filter, resourceType: selectedResourceType },
     }),
     select: (data) => ({
       ...data,

@@ -81,7 +81,7 @@ const List: FC<ListProps> = ({
   } = useQuery(
     authorizationQueries.search({
       ...pageParams,
-      filter: { resourceType: activeTab },
+      filter: { ...pageParams.filter, resourceType: activeTab },
     }),
   );
   const paginationProps = {
