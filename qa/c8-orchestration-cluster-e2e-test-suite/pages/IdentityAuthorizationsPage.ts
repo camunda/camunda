@@ -156,9 +156,9 @@ export class IdentityAuthorizationsPage {
     }
   }
 
-  async clickCreateAuthorizationSubmitButton() {
-    await this.createAuthorizationSubmitButton.click();
-    await expect(this.createAuthorizationModal).toBeHidden();
+  async clickCreateAuthorizationSubmitButton(timeout?: number) {
+    await this.createAuthorizationSubmitButton.click({timeout});
+    await expect(this.createAuthorizationModal).toBeHidden({timeout});
   }
 
   async clickDeleteAuthorizationButton(name: string) {
@@ -182,7 +182,7 @@ export class IdentityAuthorizationsPage {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         await this.selectResourceTypeTab(authorization.resourceType);
-        await this.createAuthorizationButton.click();
+        await this.clickCreateAuthorizationButton();
         await expect(this.createAuthorizationModal).toBeVisible({
           timeout: 15000,
         });
@@ -194,10 +194,7 @@ export class IdentityAuthorizationsPage {
         });
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
-        await this.createAuthorizationSubmitButton.click({timeout: 15000});
-        await expect(this.createAuthorizationModal).toBeHidden({
-          timeout: 15000,
-        });
+        await this.clickCreateAuthorizationSubmitButton(15000);
 
         await this.selectResourceTypeTab(authorization.resourceType);
         const item = this.getAuthorizationCell(authorization.ownerId);
@@ -233,7 +230,7 @@ export class IdentityAuthorizationsPage {
   }
 
   async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
-    await this.createAuthorizationOwnerTypeComboBox.click();
+    await this.clickOwnerTypeDropdown();
     await this.selectOwnerTypeFromDrowdown(authorization.ownerType);
     // Selecting an owner type re-renders the owner field. User, Group and Role
     // owners render the design-system entity Combobox, whose closed trigger
