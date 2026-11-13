@@ -43,8 +43,11 @@ public class CommandDistributionAcknowledgeProcessor
     final var distributionKey = record.getKey();
     final var recordValue = record.getValue();
     final var partitionId = recordValue.getPartitionId();
+    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
 
-    commandDistributionBehavior.getMetrics().receivedAcknowledgeDistribution(partitionId);
+    commandDistributionBehavior
+        .getMetrics()
+        .receivedAcknowledgeDistribution(partitionId, queueId.orElse(null));
 
     if (!distributionState.hasPendingDistribution(distributionKey, partitionId)) {
       rejectionWriter.appendRejection(
