@@ -21,26 +21,26 @@ import org.junit.jupiter.api.Test;
 class OrFilterTest {
 
   @Test
-  void flowNodeInstanceFilterIsEmptyOnlyWithoutCriteria() {
+  void shouldConsiderFlowNodeInstanceFilterEmptyOnlyWithoutCriteria() {
     assertThat(new FlowNodeInstanceFilter.Builder().build().isEmpty()).isTrue();
     assertThat(new FlowNodeInstanceFilter.Builder().tenantIds("tenant").build().isEmpty())
         .isFalse();
   }
 
   @Test
-  void processInstanceFilterIsEmptyOnlyWithoutCriteria() {
+  void shouldConsiderProcessInstanceFilterEmptyOnlyWithoutCriteria() {
     assertThat(new ProcessInstanceFilter.Builder().build().isEmpty()).isTrue();
     assertThat(new ProcessInstanceFilter.Builder().tenantIds("tenant").build().isEmpty()).isFalse();
   }
 
   @Test
-  void userTaskFilterIsEmptyOnlyWithoutCriteria() {
+  void shouldConsiderUserTaskFilterEmptyOnlyWithoutCriteria() {
     assertThat(new UserTaskFilter.Builder().build().isEmpty()).isTrue();
     assertThat(new UserTaskFilter.Builder().tenantIds("tenant").build().isEmpty()).isFalse();
   }
 
   @Test
-  void processDefinitionStatisticsFilterIsEmptyIgnoringProcessDefinitionKey() {
+  void shouldConsiderProcessDefinitionStatisticsFilterEmptyIgnoringProcessDefinitionKey() {
     // processDefinitionKey is the mandatory join key shared by every $or group, not a filter
     // criterion, so a filter carrying only that field must still be considered empty.
     assertThat(new ProcessDefinitionStatisticsFilter.Builder(123L).build().isEmpty()).isTrue();
@@ -50,7 +50,7 @@ class OrFilterTest {
   }
 
   @Test
-  void hasEmptyOrFilterDetectsAGroupWithNoCriteria() {
+  void shouldDetectOrGroupWithNoCriteria() {
     final var withEmptyGroup =
         new ProcessInstanceFilter.Builder()
             .orFilters(List.of(new ProcessInstanceFilter.Builder().build()))
