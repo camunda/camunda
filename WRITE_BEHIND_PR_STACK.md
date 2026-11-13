@@ -192,6 +192,10 @@ Living notes to resume work across sessions. Last update: 2026-11-12.
     (enabled=false, flush-delay=100ms, flush-threshold=16MB, max-pending=32MB, cache-size=64MB,
     key-index-max-keys=10000, key-index.<CF>=DISABLE|KEEP_LOWEST|KEEP_HIGHEST, default 24 CFs;
     single-CF override keeps the rest). Env prefix `CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_`.
+  - `4a50b8ac686` docs: `zeebe/zb-db/writebehind/AGENTS.md` (+ `CLAUDE.md`) requires README updates
+    on behaviour/bounds/config/metrics changes
+  - `45c423104a0` docs: `zeebe/zb-db/writebehind/README.md` (architecture diagram, read/write/scan/
+    flush paths, key index, consistency/durability, backpressure, config, metrics, caveats, code map)
   - Tests (Gradle): broker 12, writebehind 104, configuration 283, dist DefaultConfigTest 1 green.
     Maven pipeline / full build not run.
   - Open: memory keys tenant-overridable (deny-list like memory-limit?); legacy
