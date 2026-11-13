@@ -323,14 +323,6 @@ test.describe.parallel('Process Definition Draining Deletion API', () => {
 
     await drainProcessDefinition(request, child.processDefinitionKey);
 
-    // The parent is untouched, so starting it still succeeds — it is the call
-    // activity that cannot resolve the draining child, and that failure has to
-    // surface as an incident rather than silently skipping the child.
-    //
-    // Which message the incident carries depends on the serving partition:
-    // only the partition holding the child instance is still draining, the
-    // others finalized the delete at once and no longer hold the definition.
-    // Three instances per partition exercise both.
     const parentCount = 3 * (await partitionsCount(request));
     const parents = await createInstances(parentId, 1, parentCount);
     instancesToCancel.push(

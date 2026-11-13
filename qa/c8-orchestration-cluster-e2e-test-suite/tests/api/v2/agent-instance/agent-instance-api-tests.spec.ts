@@ -30,38 +30,13 @@ import {
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 
-// The ad-hoc sub-process is one of the element types the engine accepts as the
-// owner of an agent instance (see AgentInstanceCreateProcessor#SUPPORTED_ELEMENT_TYPES:
-// AD_HOC_SUB_PROCESS, SERVICE_TASK). It also carries a zeebe:taskDefinition, so entering
-// it produces an activatable job — CREATE/UPDATE must be attributed to the active job
-// that produced them (jobKey + jobLeaseToken), so a real activation is required.
-//
-// /jobs/activation has no way to target a specific element/process instance, so every
-// seeded instance gets its OWN job type (via a substituted redeploy of the same process
-// id): otherwise, activating a job "by type" while several instances share one type could
-// hand back a different instance's job, which AgentInstanceCreateProcessor#validateJobContext
-// then rejects as a job/element mismatch.
 const RESOURCE_PATH =
   './resources/agent_instance_ad_hoc_sub_process_api_test.bpmn';
 const JOB_TYPE_PLACEHOLDER = 'agent-instance-api-test';
 const PROCESS_DEFINITION_ID = 'AgentInstance_AdHocSubProcess_API_Test';
 const AGENT_ELEMENT_ID = 'AdHoc_Subprocess';
 
-// A well-formed but out-of-range key, far beyond anything the key generator
-// could reach during a test run — see the convention used across tests/api/v2
-// (e.g. resource-get-api.spec.ts, user-task-get-api-tests.spec.ts). A key from
-// the same numeric neighborhood as real generated keys risks colliding with
-// one actually allocated during the run. Safe for GET/search endpoints, which
-// query secondary storage directly and never route by partition.
 const NON_EXISTENT_KEY = '9999999999999999';
-// CREATE is a command that the gateway must route to the partition owning
-// elementInstanceKey (key = partitionId << 51 | sequence, see
-// io.camunda.zeebe.protocol.Protocol). NON_EXISTENT_KEY decodes to partition 4,
-// which doesn't exist in this suite's single-partition cluster (see
-// config/application.yaml's cluster.partitionsCount), so the command can't be
-// delivered and the gateway returns a retryable 503 instead of a 404 — the
-// same issue tracked for user tasks in user-task-assign-api-tests.spec.ts
-// (bug #56635). Use the highest key that still decodes to partition 1 instead.
 const NON_EXISTENT_PARTITION_1_KEY = '4503599627370495';
 
 const CREATE_ENDPOINT = '/agent-instances';

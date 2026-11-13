@@ -35,11 +35,6 @@ export class IdentityRolesDetailsPage {
     this.assignUserButton = page.getByRole('button', {
       name: 'assign user',
     });
-    // The row's "Remove" action is a design-system EntityList row action
-    // (Members.tsx's menuItems), rendered inline (only one action, below the
-    // 3-action overflow-menu threshold) as a button with visible text
-    // "Remove" -- not an icon-only button with an explicit aria-label like
-    // the old Carbon row action, which is why getByLabel no longer matches.
     this.unassignUserButton = (rowName) =>
       this.assignedUsersList
         .getByRole('row', {name: rowName})
@@ -103,16 +98,6 @@ export class IdentityRolesDetailsPage {
       name: user.email,
     });
 
-    // The assign-user modal's cmdk search is debounced + server-driven, and the
-    // option for a just-created user is eventually consistent: a single query
-    // can return empty and get cached by react-query, so waiting longer on one
-    // search does not recover. Mirror the authorizations owner search (#51442)
-    // remedy and reload between attempts to reset the query cache.
-    //
-    // Only the modal interaction is retried, and only while the user is still
-    // unassigned: `AssignMembersModal` passes the assigned users as `excluded`,
-    // so once a submit has landed the option is gone from the results for good
-    // and re-running the search could only ever fail.
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
