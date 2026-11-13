@@ -15,6 +15,7 @@ import io.camunda.zeebe.metrics.ProcessInstanceStartMeter.AvailabilityChecker;
 import io.camunda.zeebe.protocol.Protocol;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -536,5 +537,61 @@ class ProcessInstanceStartMeterTest {
     await()
         .atMost(Duration.ofSeconds(5))
         .untilAsserted(() -> assertThat(lastQueriedKeys.get()).containsExactly(freshKey));
+  }
+
+  @Test
+  void shouldRescheduleCheckWhenProcessingThrows() throws InterruptedException {
+    // given - the checker returns a null key, which makes processing the response throw
+    final var invocations = new CountDownLatch(2);
+    availabilityChecker =
+        (list) -> {
+          invocations.countDown();
+          final List<Long> withNull = new ArrayList<>();
+          withNull.add(null);
+          return CompletableFuture.completedFuture(withNull);
+        };
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+    processInstanceStartMeter.start();
+
+    // then - the check keeps running even though processing the first response threw
+    assertThat(invocations.await(2, TimeUnit.SECONDS))
+        .describedAs("availability check should be rescheduled even when processing throws")
+        .isTrue();
+  }
+
+  @Test
+  void shouldCleanUpStaleInstancesWhenProcessingThrows() {
+    // given - every response contains a null key, which makes processing throw
+    final var clockNanos = new AtomicLong(TimeUnit.SECONDS.toNanos(1000));
+    processInstanceStartMeter =
+        new ProcessInstanceStartMeter(
+            clockNanos::get,
+            meterRegistry,
+            Executors.newScheduledThreadPool(1),
+            Duration.ofMillis(1),
+            (list) -> {
+              final List<Long> withNull = new ArrayList<>();
+              withNull.add(null);
+              return CompletableFuture.completedFuture(withNull);
+            });
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), clockNanos.get() - TimeUnit.SECONDS.toNanos(120));
+
+    // when
+    processInstanceStartMeter.start();
+
+    // then - the stale instance is still evicted and its latency recorded
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_LATENCY.getName())
+                            .timer()
+                            .count())
+                    .isOne());
   }
 }

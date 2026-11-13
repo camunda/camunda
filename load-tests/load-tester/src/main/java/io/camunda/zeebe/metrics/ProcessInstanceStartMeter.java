@@ -192,23 +192,38 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
               final long duration = endQueryTime - startQueryTime;
               dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
 
-              final boolean resultPageFull =
-                  error == null && availableInstances.size() >= AVAILABILITY_CHECK_BATCH_SIZE;
-              if (error == null) {
-                LOG.debug("Available process instances items: {}", availableInstances.size());
-                processAvailableInstances(availableInstances);
-              } else {
-                LOG.error("Error while checking for available process instances", error);
-              }
+              // The reschedule must always run, or the meter silently stops. Processing and
+              // cleanup are guarded separately, so a response that keeps failing to process
+              // cannot stop stale instances from being evicted.
+              boolean checkAgainImmediately = false;
+              try {
+                try {
+                  final boolean resultPageFull =
+                      error == null && availableInstances.size() >= AVAILABILITY_CHECK_BATCH_SIZE;
+                  if (error == null) {
+                    LOG.debug("Available process instances items: {}", availableInstances.size());
+                    processAvailableInstances(availableInstances);
+                  } else {
+                    LOG.error("Error while checking for available process instances", error);
+                  }
+                  checkAgainImmediately = resultPageFull;
+                } catch (final Exception e) {
+                  LOG.error("Failed to process availability check response. Will retry...", e);
+                }
 
-              cleanUpStaleInstances();
-              if (resultPageFull) {
-                // every queried instance was available, so more are likely available beyond the
-                // batch: don't wait for the interval. Otherwise (errors, data not yet searchable,
-                // few confirmed) keep the interval to not hammer a struggling backend.
-                scheduleCheck(0);
-              } else {
-                rescheduleCheck(duration);
+                cleanUpStaleInstances();
+              } catch (final Exception e) {
+                LOG.error("Failed to clean up stale instances. Will retry...", e);
+              } finally {
+                if (checkAgainImmediately) {
+                  // every queried instance was available, so more are likely available beyond the
+                  // batch: don't wait for the interval. Otherwise (errors, data not yet
+                  // searchable, few confirmed) keep the interval to not hammer a struggling
+                  // backend.
+                  scheduleCheck(0);
+                } else {
+                  rescheduleCheck(duration);
+                }
               }
             },
             piCheckExecutorService);
