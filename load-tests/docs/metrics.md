@@ -222,6 +222,7 @@ exporting, ES indexing, REST layer, and the ES index fresh interval.
 - **Unit:** seconds (quantiles)
 - **Measurement:** p50, p90, p99
 - **Threshold:** p99 < 5 s
+- **Sampled:** only a share of the started instances is tracked (`monitor-data-availability-sampling-percentage`, 10 by default, as every n-th instance of each partition, derived from the starter rate, and at least one instance per second at the configured rate), so the histogram count is lower than the number of started instances. The effective share is exposed as `starter_data_availability_sampling_percentage`. The pending gauge `starter_data_availability_pending_process_instances` counts only tracked instances.
 
 ```promql
 histogram_quantile(0.99, sum by (le) (rate(starter_data_availability_latency_seconds_bucket{namespace=~"$namespace"}[$__rate_interval])))
