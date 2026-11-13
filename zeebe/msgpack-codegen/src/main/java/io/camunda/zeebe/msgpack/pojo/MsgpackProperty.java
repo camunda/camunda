@@ -21,7 +21,8 @@ import java.lang.annotation.Target;
  * List<Long>}, {@code org.agrona.collections.IntArrayList} and {@code LongArrayList} (arrays of
  * integers, the agrona ones without boxing), other {@link MsgpackPojo} types and {@code
  * io.camunda.zeebe.msgpack.value.BaseValue}s (e.g. an {@code UnpackedObject}, embedded as a nested
- * map that references the source buffer).
+ * map that references the source buffer), and {@code final List}s of those, stored as an array of
+ * maps. A list starts empty and its items need a public constructor without parameters.
  */
 @Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.FIELD)
