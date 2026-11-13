@@ -81,6 +81,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -96,6 +97,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableStatusMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -1557,6 +1559,55 @@ class RdbmsExporterIT {
     assertThat(rdbmsPosition.lastExportedPosition()).isEqualTo(42L);
   }
 
+  @Test
+  public void shouldExportUserTaskUpdatesOfSeveralUserTasksWithinOneFlush() {
+    // given - an exporter that batches records into interval flushes instead of flushing each one
+    final var batchingController = new ExporterTestController();
+    final var batchingConfiguration =
+        new ExporterConfiguration("user-task-batching-test", Map.of("queueSize", 100));
+    final var batchingExporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                batchingConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
+    batchingExporter.configure(
+        new ExporterContext(
+            null,
+            batchingConfiguration,
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+            "",
+            null,
+            Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
+            InstantSource.system()));
+    batchingExporter.open(batchingController);
+    final var taskA = FIXTURES.getUserTaskCreatingRecord();
+    final var taskB = FIXTURES.getUserTaskCreatingRecord();
+
+    // when - both user tasks are created and their candidates are replaced, task A twice
+    batchingExporter.export(taskA);
+    batchingExporter.export(taskB);
+    batchingExporter.export(userTaskUpdated(taskA, "a1"));
+    batchingExporter.export(userTaskUpdated(taskB, "b1"));
+    batchingExporter.export(userTaskUpdated(taskA, "a2"));
+    batchingController.runScheduledTasks(Duration.ofSeconds(1));
+
+    // then - each user task has the candidates of its last update
+    assertThat(batchingController.getPosition()).isEqualTo(FIXTURES.currentPosition());
+    final var userTaskA = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskA));
+    assertThat(userTaskA).isNotEmpty();
+    assertThat(userTaskA.get().candidateUsers()).containsExactly("a2-user");
+    assertThat(userTaskA.get().candidateGroups()).containsExactly("a2-group");
+    final var userTaskB = rdbmsService.getUserTaskReader().findOne(userTaskKey(taskB));
+    assertThat(userTaskB).isNotEmpty();
+    assertThat(userTaskB.get().candidateUsers()).containsExactly("b1-user");
+    assertThat(userTaskB.get().candidateGroups()).containsExactly("b1-group");
+
+    batchingExporter.close();
+  }
+
   @ParameterizedTest
   @ValueSource(longs = {-2L, 2L})
   public void shouldThrowWhenRdbmsPositionDiffersFromExpected(final long positionDifference) {
@@ -1666,5 +1717,24 @@ class RdbmsExporterIT {
     return rdbmsService
         .getBatchOperationItemReader()
         .search(BatchOperationItemQuery.of(b -> b.filter(f -> f.itemKeys(itemKey))));
+  }
+
+  private static long userTaskKey(final ImmutableRecord<RecordValue> userTaskRecord) {
+    return ((UserTaskRecordValue) userTaskRecord.getValue()).getUserTaskKey();
+  }
+
+  private static ImmutableRecord<RecordValue> userTaskUpdated(
+      final ImmutableRecord<RecordValue> userTaskRecord, final String candidatePrefix) {
+    return ImmutableRecord.builder()
+        .from(userTaskRecord)
+        .withIntent(UserTaskIntent.UPDATED)
+        .withPosition(FIXTURES.nextPosition())
+        .withValue(
+            ImmutableUserTaskRecordValue.builder()
+                .from((UserTaskRecordValue) userTaskRecord.getValue())
+                .withCandidateUsersList(List.of(candidatePrefix + "-user"))
+                .withCandidateGroupsList(List.of(candidatePrefix + "-group"))
+                .build())
+        .build();
   }
 }
