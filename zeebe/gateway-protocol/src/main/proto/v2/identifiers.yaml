@@ -248,6 +248,15 @@ components:
       minLength: 1
       example: "550e8400-e29b-41d4-a716-446655440000"
 
+    JobDeactivationId:
+      description: An id minted by the client for a single job deactivation, so that a retried request is recognised as a repeat.
+      type: string
+      format: JobDeactivationId
+      x-semantic-type: JobDeactivationId
+      minLength: 1
+      maxLength: 256
+      example: deactivation-1
+
     ## Filters
 
     ElementIdFilterProperty:

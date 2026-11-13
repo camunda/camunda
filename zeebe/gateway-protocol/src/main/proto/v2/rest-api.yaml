@@ -300,6 +300,8 @@ paths:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}'
   /jobs/{jobKey}/completion:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1completion'
+  /jobs/{jobKey}/deactivate:
+    $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1deactivate'
   /jobs/{jobKey}/error:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1error'
   /jobs/{jobKey}/failure:

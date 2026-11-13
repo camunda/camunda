@@ -241,6 +241,50 @@ paths:
       x-added-in-version: "8.6"
       x-scope: physical-tenant
 
+  /jobs/{jobKey}/deactivate:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process instance
+      operationId: deactivateJob
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Deactivate job
+      description: Gives an activated job back so that any worker can activate it again.
+      parameters:
+        - name: jobKey
+          in: path
+          required: true
+          description: The key of the job to deactivate.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/JobKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobDeactivationRequest'
+      responses:
+        "201":
+          description: The job was deactivated.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The job with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
   /jobs/{jobKey}:
     patch:
       x-eventually-consistent: false
@@ -1305,6 +1349,28 @@ components:
           additionalProperties: true
           description: Variables for the element.
           nullable: true
+
+    JobDeactivationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.jobLeaseToken`. A job that was activated without a lease requires no token.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        deactivationId:
+          description: The id minted by the client for this deactivation, so that a retried request is recognised.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/JobDeactivationId'
+        retries:
+          description: The number of retries the job has left once it is deactivated. Specify either this or `consumeRetry`, not both.
+          type: integer
+          format: int32
+        consumeRetry:
+          description: Whether the deactivation counts as a failed attempt and takes one retry. Specify either this or `retries`, not both.
+          type: boolean
 
     JobUpdateRequest:
       type: object
