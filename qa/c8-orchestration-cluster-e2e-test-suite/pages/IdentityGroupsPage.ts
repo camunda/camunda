@@ -209,10 +209,6 @@ export class IdentityGroupsPage {
     await expect(this.deleteGroupModal).toBeHidden();
   }
 
-  async assertGroupExists(groupName: string) {
-    await expect(this.selectGroupRow(groupName)).toBeVisible();
-  }
-
   async clickGroupId(groupName: string) {
     await findLocatorInPaginatedList(this.page, this.groupCell(groupName));
     await this.selectGroupRow(groupName).click();
