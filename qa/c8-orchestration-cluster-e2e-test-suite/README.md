@@ -246,7 +246,8 @@ than 15 failures in a job, not enough time left in the job, a renamed test, a te
 with the base test code or passed in one base run and failed in another, a test in a teardown
 project (it needs its parent project's tests first), or a job that was not compared. Tests in
 serial specs are compared by re-running the whole spec, since they depend on the earlier tests.
-When a later run passes, it posts one comment saying so.
+Each failed test is listed with the first lines of its error. When a later run passes, it posts
+one comment saying so.
 
 ### Running the On-Demand Workflow
 
