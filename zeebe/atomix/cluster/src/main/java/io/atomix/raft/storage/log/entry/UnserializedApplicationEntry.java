@@ -10,6 +10,7 @@ package io.atomix.raft.storage.log.entry;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.UUID;
 
 /**
  * An {@link ApplicationEntry} with unserialized application data. Used for writing new entries to
@@ -20,9 +21,10 @@ public record UnserializedApplicationEntry(
     implements ApplicationEntry {
 
   @Override
-  public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
+  public BufferWriter toSerializable(
+      final long term, final UUID epoch, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
         () -> serializer.getApplicationEntrySerializedLength(this),
-        (buffer, offset) -> serializer.writeApplicationEntry(term, this, buffer, offset));
+        (buffer, offset) -> serializer.writeApplicationEntry(term, epoch, this, buffer, offset));
   }
 }
