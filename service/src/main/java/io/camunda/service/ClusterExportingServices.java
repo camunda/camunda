@@ -65,9 +65,10 @@ public final class ClusterExportingServices {
     try {
       return action
           .get()
-          .exceptionallyCompose(e -> CompletableFuture.failedFuture(ErrorMapper.mapError(e)));
+          .exceptionallyCompose(
+              e -> CompletableFuture.failedFuture(ErrorMapper.mapCoordinatorError(e)));
     } catch (final RuntimeException e) {
-      return CompletableFuture.failedFuture(ErrorMapper.mapError(e));
+      return CompletableFuture.failedFuture(ErrorMapper.mapCoordinatorError(e));
     }
   }
 }

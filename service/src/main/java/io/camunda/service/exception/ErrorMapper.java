@@ -38,6 +38,7 @@ import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -53,6 +54,62 @@ public class ErrorMapper {
     return error instanceof ServiceException
         ? (ServiceException) error
         : new ServiceException(mapErrorToServiceError(error));
+  }
+
+  /**
+   * Maps a failure only when the cluster-configuration coordinator is unreachable, not a known
+   * member, or not ready, so those surface as {@code UNAVAILABLE}. Any other failure passes through
+   * unchanged, so endpoints that adopt this keep their existing status and title for it.
+   */
+  public static <T> CompletableFuture<T> mapCoordinatorUnavailable(
+      final CompletableFuture<T> future) {
+    return future.exceptionallyCompose(
+        e ->
+            isCoordinatorUnavailable(e)
+                ? CompletableFuture.failedFuture(mapCoordinatorError(e))
+                : CompletableFuture.failedFuture(e));
+  }
+
+  /**
+   * Maps a failure from a request sent to the cluster-configuration coordinator. Unlike {@link
+   * #mapError(Throwable)}, a member that is not known or not ready is {@code UNAVAILABLE} here,
+   * because the coordinator is the only member these requests are sent to. Other failures are
+   * mapped exactly as {@link #mapError(Throwable)} maps them.
+   */
+  public static ServiceException mapCoordinatorError(final Throwable error) {
+    if (error instanceof ServiceException serviceException) {
+      return serviceException;
+    }
+    final var cause = unwrap(error);
+    if (cause instanceof MessagingException.NoSuchMemberException) {
+      final var message =
+          "Expected to handle request, but the coordinator is not a known member of the cluster";
+      LOGGER.warn(message, error);
+      return new ServiceException(new ServiceError(message, UNAVAILABLE));
+    }
+    if (cause instanceof MessagingException.NoRemoteHandler) {
+      final var message =
+          "Expected to handle request, but the coordinator is not ready to handle requests yet";
+      LOGGER.warn(message, error);
+      return new ServiceException(new ServiceError(message, UNAVAILABLE));
+    }
+    return mapError(error);
+  }
+
+  private static boolean isCoordinatorUnavailable(final Throwable error) {
+    final var cause = unwrap(error);
+    return cause instanceof ConnectException
+        || cause instanceof MessagingException.NoSuchMemberException
+        || cause instanceof MessagingException.NoRemoteHandler;
+  }
+
+  private static Throwable unwrap(final Throwable error) {
+    Throwable cause = error;
+    while ((cause instanceof CompletionException || cause instanceof ExecutionException)
+        && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 
   public static ServiceException mapBrokerError(final BrokerError error) {

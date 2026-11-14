@@ -18,6 +18,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -401,6 +402,43 @@ public class RecoveryServicesTest {
 
   private static RestoreParameters restoreParameters() {
     return new RestoreParameters(List.of(100L), null, null);
+  }
+
+  @Test
+  public void shouldMapUnreadyCoordinatorToUnavailableOnRestoreStatus() {
+    // given -- the coordinator is up but has not registered its topology handler yet
+    when(clusterConfigurationRequestSender.getTopology())
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new MessagingException.NoRemoteHandler("topology-query")));
+
+    // when
+    final var failure = catchThrowable(() -> services.restoreStatus(authentication).join());
+
+    // then -- a retryable status, not an internal error
+    assertThat(failure).hasCauseInstanceOf(ServiceException.class);
+    assertThat(((ServiceException) failure.getCause()).getStatus()).isEqualTo(Status.UNAVAILABLE);
+  }
+
+  @Test
+  public void shouldPassUnrelatedRestoreFailureThroughUnchanged() {
+    // given -- only an unavailable coordinator is mapped; any other failure keeps its own type
+    stubRestoreFailure(new IllegalStateException("boom"));
+
+    // when
+    final var future = services.restore(restoreParameters(), false, authentication);
+
+    // then
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .isInstanceOf(IllegalStateException.class);
+  }
+
+  private void stubRestoreFailure(final Throwable failure) {
+    when(clusterConfigurationRequestSender.restore(any()))
+        .thenReturn(CompletableFuture.failedFuture(failure));
   }
 
   private CurrentClusterConfiguration stubTopologySuccess() {
