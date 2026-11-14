@@ -110,6 +110,36 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
+  public void shouldActivateSingleElementWithTags() {
+    // Given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent("end").done())
+        .deploy();
+
+    // When
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("end")
+            .withTags("tag1", "tag2")
+            .create();
+
+    // Then
+    final var processActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    Assertions.assertThat(processActivating.getValue().getTags())
+        .containsExactlyInAnyOrder("tag1", "tag2");
+  }
+
+  @Test
   public void shouldActivateMultipleElements() {
     // Given
     ENGINE
