@@ -130,6 +130,37 @@ public class CommandRedistributionSchedulerTest {
             RecordMetadataDecoder.operationReferenceNullValue());
   }
 
+  @Test
+  public void shouldRetryWithPersistedOperationReference() {
+    // given
+    final long operationReference = 4242L;
+    final long otherDistributionKey = Protocol.encodePartitionId(1, 200);
+    distributionState.addCommandDistribution(
+        otherDistributionKey,
+        new CommandDistributionRecord()
+            .setPartitionId(1)
+            .setValueType(ValueType.USER)
+            .setIntent(UserIntent.CREATE)
+            .setCommandValue(recordValue)
+            .setOperationReference(operationReference));
+    distributionState.addRetriableDistribution(otherDistributionKey, 2);
+
+    // when
+    commandRedistributor.runRetryCycle();
+    commandRedistributor.runRetryCycle();
+
+    // then
+    verify(mockCommandSender, times(1))
+        .sendCommand(
+            2,
+            ValueType.USER,
+            UserIntent.CREATE,
+            otherDistributionKey,
+            recordValue,
+            AuthInfo.EMPTY,
+            operationReference);
+  }
+
   private CommandRedistributionScheduler getCommandRedistributor(
       final boolean commandDistributionPaused,
       final Duration redistributionInterval,
