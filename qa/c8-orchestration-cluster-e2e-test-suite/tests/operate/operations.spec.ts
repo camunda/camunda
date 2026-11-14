@@ -60,8 +60,21 @@ test.beforeAll(async () => {
 });
 
 test.describe('Operations', () => {
-  test.beforeEach(async ({page, operateHomePage}) => {
+  test.beforeEach(async ({page, operateHomePage, loginPage, loginUser}) => {
     await navigateToAppHome(page, 'operate');
+    // The session cookie is worker-scoped and reused across this worker's
+    // tests. It can be invalidated mid-run (another worker re-authenticating
+    // the shared `demo` user, or a session timeout), which bounces this
+    // navigation to the login screen — the banner then never renders and the
+    // assertion below would wait out its full budget before failing. Wait for
+    // whichever of the authenticated header or the login form appears first,
+    // and re-establish the session through the UI if we were bounced.
+    await expect(
+      operateHomePage.operateBanner.or(loginPage.usernameInput),
+    ).toBeVisible({timeout: 90000});
+    if (await loginPage.usernameInput.isVisible()) {
+      await loginPage.login(loginUser.username, loginUser.password);
+    }
     // Operate can be slow to render its header banner on first load under
     // load; give it a wider budget than the default expect timeout.
     await expect(operateHomePage.operateBanner).toBeVisible({timeout: 90000});
