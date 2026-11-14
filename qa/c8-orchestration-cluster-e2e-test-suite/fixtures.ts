@@ -24,7 +24,6 @@ import {OperateProcessInstanceViewModificationModePage} from '@pages/OperateProc
 import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
-import {PublicFormsPage} from '@pages/PublicFormsPage';
 import {IdentityHeader} from '@pages/IdentityHeader';
 import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
 import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
@@ -64,7 +63,6 @@ type PlaywrightFixtures = {
   tasklistHeader: TasklistHeader;
   tasklistProcessesPage: TasklistProcessesPage;
   resetData: () => Promise<void>;
-  publicFormsPage: PublicFormsPage;
   identityHeader: IdentityHeader;
   identityMappingRulesPage: IdentityMappingRulesPage;
   identityUsersPage: IdentityUsersPage;
@@ -167,9 +165,6 @@ const publicTest = base.extend<PlaywrightFixtures>({
   },
   tasklistProcessesPage: async ({page}, use) => {
     await use(new TasklistProcessesPage(page));
-  },
-  publicFormsPage: async ({page}, use) => {
-    await use(new PublicFormsPage(page));
   },
 
   identityHeader: async ({page}, use) => {

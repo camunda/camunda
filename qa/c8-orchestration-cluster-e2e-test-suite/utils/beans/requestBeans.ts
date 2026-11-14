@@ -42,63 +42,7 @@ export const jobResponseFields = [
   'kind',
   'listenerEventType',
 ];
-export const jobSearchPageResponseRequiredFields = ['totalItems'];
 export const userTaskSearchPageResponseRequiredFields = ['totalItems'];
-export const jobSearchItemResponseFields = [
-  'customHeaders',
-  'elementInstanceKey',
-  'hasFailedWithRetriesLeft',
-  'jobKey',
-  'kind',
-  'listenerEventType',
-  'processDefinitionId',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'retries',
-  'state',
-  'tenantId',
-  'type',
-  'worker',
-];
-export const userTaskSearchItemResponseFields = [
-  'name',
-  'state',
-  'assignee',
-  'elementId',
-  'candidateGroups',
-  'candidateUsers',
-  'processDefinitionId',
-  'creationDate',
-  'completionDate',
-  'followUpDate',
-  'dueDate',
-  'tenantId',
-  'externalFormReference',
-  'processDefinitionVersion',
-  'priority',
-  'userTaskKey',
-  'elementInstanceKey',
-  'processName',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'formKey',
-];
-export const clusterTopologyResponseFields = [
-  'brokers',
-  'clusterSize',
-  'partitionsCount',
-  'replicationFactor',
-  'gatewayVersion',
-  'lastCompletedChangeId',
-];
-export const brokerResponseFields = [
-  'nodeId',
-  'host',
-  'port',
-  'partitions',
-  'version',
-];
-export const partitionsResponseFields = ['partitionId', 'role', 'health'];
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',
@@ -113,14 +57,6 @@ export const mappingRuleRequiredFields: string[] = [
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
 export const authorizedComponentRequiredFields: string[] = ['authorizationKey'];
-export const authorizationRequiredFields: string[] = [
-  'ownerId',
-  'ownerType',
-  'resourceType',
-  'resourceId',
-  'permissionTypes',
-  'authorizationKey',
-];
 export const authorizationRequiredFieldsWithoutPermissionTypes: string[] = [
   'ownerId',
   'ownerType',
@@ -163,40 +99,6 @@ export const decisionInstanceRequiredFields: string[] = [
   'elementInstanceKey',
   'rootDecisionDefinitionKey',
 ];
-export const getDecisionInstanceResponseRequiredFields: string[] = [
-  'decisionEvaluationInstanceKey',
-  'state',
-  'evaluationDate',
-  'decisionDefinitionId',
-  'decisionDefinitionName',
-  'decisionDefinitionVersion',
-  'decisionDefinitionType',
-  'result',
-  'tenantId',
-  'decisionEvaluationKey',
-  'processDefinitionKey',
-  'processInstanceKey',
-  'decisionDefinitionKey',
-  'elementInstanceKey',
-  'evaluatedInputs',
-  'matchedRules',
-  'rootDecisionDefinitionKey',
-];
-export const evaluateDecisionRequiredFields: string[] = [
-  'decisionDefinitionId',
-  'decisionDefinitionName',
-  'decisionDefinitionVersion',
-  'decisionRequirementsId',
-  'output',
-  'failedDecisionDefinitionId',
-  'failureMessage',
-  'tenantId',
-  'decisionDefinitionKey',
-  'decisionRequirementsKey',
-  'decisionInstanceKey',
-  'decisionEvaluationKey',
-  'evaluatedDecisions',
-];
 export const authenticationRequiredFields: string[] = [
   'username',
   'displayName',
@@ -208,58 +110,10 @@ export const authenticationRequiredFields: string[] = [
   'c8Links',
   'canLogout',
 ];
-export const licenseRequiredFields: string[] = [
-  'validLicense',
-  'licenseType',
-  'isCommercial',
-];
-export const messageSubscriptionRequiredFields = [
-  'messageSubscriptionKey',
-  'processDefinitionId',
-  'processInstanceKey',
-  'elementId',
-  'elementInstanceKey',
-  'messageSubscriptionState',
-  'lastUpdatedDate',
-  'messageName',
-  'correlationKey',
-  'tenantId',
-];
-export const documentRequiredFields = [
-  'camunda.document.type',
-  'storeId',
-  'documentId',
-  'contentHash',
-  'metadata',
-];
-export const multipleDocumentsRequiredFields = [
-  'createdDocuments',
-  'failedDocuments',
-];
 export const correlateMessageRequiredFields: string[] = [
   'tenantId',
   'messageKey',
   'processInstanceKey',
-];
-export const correlatedMessageSubscriptionRequiredFields: string[] = [
-  'correlationKey',
-  'correlationTime',
-  'elementId',
-  'elementInstanceKey',
-  'messageKey',
-  'messageName',
-  'partitionId',
-  'processDefinitionId',
-  'processInstanceKey',
-  'subscriptionKey',
-  'tenantId',
-];
-export const usageMetricsGetResponseRequiredFields: string[] = [
-  'activeTenants',
-  'tenants',
-  'processInstances',
-  'decisionInstances',
-  'assignees',
 ];
 export const expectedMessageSubscription1 = {
   messageName: 'Message_143t419',

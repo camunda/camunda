@@ -25,21 +25,6 @@ export async function resolveAdHocSubProcessInstanceKey(
   return result.body.items[0].elementInstanceKey;
 }
 
-export function createFilter(
-  filterKey: string,
-  filterValue: string,
-  state: Record<string, unknown>,
-): {key: string; value: unknown} {
-  if (filterValue === '') {
-    if (filterKey === 'processDefinitionKey')
-      // Use value from state
-      return {key: filterKey, value: state.processDefinitionKey};
-    else if (filterKey === 'processInstanceKey')
-      return {key: filterKey, value: state.processInstanceKey};
-    else throw new Error('Unsupported filter key for empty value');
-  } else return {key: filterKey, value: filterValue};
-}
-
 export async function searchActiveElementInstance(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -65,15 +50,6 @@ export async function searchElementInstanceByElementIdAndState(
       state: state,
     })
   ).body.items[0].elementInstanceKey;
-}
-
-export async function searchElementInstanceByProcessInstance(
-  request: APIRequestContext,
-  processInstanceKey: string,
-) {
-  return searchElementInstanceByFilter(request, {
-    processInstanceKey: processInstanceKey,
-  });
 }
 
 async function searchElementInstanceByFilter(

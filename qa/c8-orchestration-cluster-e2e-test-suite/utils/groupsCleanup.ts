@@ -36,7 +36,9 @@ export async function cleanupGroups(
             `Unexpected response status ${response.status()} for group ${groupId}`,
           );
         }
-      } catch {}
+      } catch (error) {
+        console.error(`Failed to delete group ${groupId}:`, error);
+      }
     }),
   );
 }

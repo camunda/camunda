@@ -29,7 +29,7 @@ export class IdentityAuthorizationsPage {
   readonly deleteAuthorizationSubButton: Locator;
   readonly selectAuthorizationRow: (name: string) => Locator;
   readonly authorizationRowByOwnerId: (ownerId: string) => Locator;
-  readonly selectResourceTypeTab: (resourceType: string) => Promise<void>;
+  readonly selectResourceType: (resourceType: string) => Promise<void>;
   readonly resourceTypeComboBox: Locator;
   readonly getAuthorizationCell: (ownerId: string) => Locator;
   readonly resourceTypeOption: (resourceType: string) => Locator;
@@ -107,7 +107,7 @@ export class IdentityAuthorizationsPage {
       this.page.getByRole('option', {
         name: new RegExp(`^${resourceType}$`, 'i'),
       });
-    this.selectResourceTypeTab = async (resourceType) => {
+    this.selectResourceType = async (resourceType) => {
       await this.resourceTypeComboBox.click();
       await this.resourceTypeOption(resourceType).click();
     };
@@ -115,10 +115,6 @@ export class IdentityAuthorizationsPage {
 
   async navigateToAuthorizations() {
     await this.page.goto(relativizePath(Paths.authorizations()));
-  }
-
-  async clickResourceType(resourceType: string) {
-    await this.selectResourceTypeTab(resourceType);
   }
 
   async clickCreateAuthorizationButton() {
@@ -156,9 +152,9 @@ export class IdentityAuthorizationsPage {
     }
   }
 
-  async clickCreateAuthorizationSubmitButton() {
-    await this.createAuthorizationSubmitButton.click();
-    await expect(this.createAuthorizationModal).toBeHidden();
+  async clickCreateAuthorizationSubmitButton(timeout?: number) {
+    await this.createAuthorizationSubmitButton.click({timeout});
+    await expect(this.createAuthorizationModal).toBeHidden({timeout});
   }
 
   async clickDeleteAuthorizationButton(name: string) {
@@ -181,8 +177,8 @@ export class IdentityAuthorizationsPage {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.selectResourceTypeTab(authorization.resourceType);
-        await this.createAuthorizationButton.click();
+        await this.selectResourceType(authorization.resourceType);
+        await this.clickCreateAuthorizationButton();
         await expect(this.createAuthorizationModal).toBeVisible({
           timeout: 15000,
         });
@@ -194,18 +190,15 @@ export class IdentityAuthorizationsPage {
         });
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
-        await this.createAuthorizationSubmitButton.click({timeout: 15000});
-        await expect(this.createAuthorizationModal).toBeHidden({
-          timeout: 15000,
-        });
+        await this.clickCreateAuthorizationSubmitButton(15000);
 
-        await this.selectResourceTypeTab(authorization.resourceType);
+        await this.selectResourceType(authorization.resourceType);
         const item = this.getAuthorizationCell(authorization.ownerId);
         await waitForItemInList(this.page, item, {
           timeout: 30000,
           clickNext: true,
           onAfterReload: () =>
-            this.selectResourceTypeTab(authorization.resourceType),
+            this.selectResourceType(authorization.resourceType),
         });
         return;
       } catch (error) {
@@ -222,18 +215,8 @@ export class IdentityAuthorizationsPage {
     );
   }
 
-  async selectResourceType(resourceType: string) {
-    await this.resourceTypeComboBox.click({timeout: 90000});
-    try {
-      await this.resourceTypeOption(resourceType).click({timeout: 5000});
-    } catch {
-      await this.resourceTypeComboBox.click();
-      await this.resourceTypeOption(resourceType).click();
-    }
-  }
-
   async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
-    await this.createAuthorizationOwnerTypeComboBox.click();
+    await this.clickOwnerTypeDropdown();
     await this.selectOwnerTypeFromDrowdown(authorization.ownerType);
     // Selecting an owner type re-renders the owner field. User, Group and Role
     // owners render the design-system entity Combobox, whose closed trigger
@@ -272,7 +255,7 @@ export class IdentityAuthorizationsPage {
         timeout: 30000,
         onAfterReload: async () => {
           if (resourceType) {
-            await this.selectResourceTypeTab(resourceType);
+            await this.selectResourceType(resourceType);
           }
         },
       });

@@ -77,7 +77,7 @@ test.describe.serial('component authorizations CRUD', () => {
   test('tries to create an authorization with invalid id', async ({
     identityAuthorizationsPage,
   }) => {
-    await identityAuthorizationsPage.selectResourceTypeTab(
+    await identityAuthorizationsPage.selectResourceType(
       NEW_COMPONENT_AUTHORIZATION.resourceType,
     );
     await identityAuthorizationsPage.createAuthorizationButton.click();
@@ -185,7 +185,7 @@ test.describe.serial('component authorizations CRUD', () => {
       await identityHeader.navigateToAuthorizations();
       const componentAuth = NEW_COMPONENT_AUTHORIZATION;
       const resourceType = componentAuth.resourceType;
-      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      await identityAuthorizationsPage.selectResourceType(resourceType);
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(role.id);
 
       await expect(
@@ -196,12 +196,12 @@ test.describe.serial('component authorizations CRUD', () => {
         identityAuthorizationsPage.deleteAuthorizationModal,
       ).toBeHidden();
 
-      await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
+      await identityAuthorizationsPage.selectResourceType(resourceType);
       const item = identityAuthorizationsPage.getAuthorizationCell(role.id);
       await waitForItemInList(page, item, {
         shouldBeVisible: false,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab(resourceType),
+          identityAuthorizationsPage.selectResourceType(resourceType),
       });
     });
 
@@ -288,7 +288,7 @@ test.describe('authorization scenarios', () => {
         shouldBeVisible: true,
         timeout: 10000,
         onAfterReload: () =>
-          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+          identityAuthorizationsPage.selectResourceType('Component'),
         clickNext: true,
       });
     });
@@ -319,7 +319,7 @@ test.describe('create authorization modal — resource type field', () => {
   test('prefills resource type from the active tab and disables the dropdown', async ({
     identityAuthorizationsPage,
   }) => {
-    await identityAuthorizationsPage.selectResourceTypeTab('Component');
+    await identityAuthorizationsPage.selectResourceType('Component');
 
     await identityAuthorizationsPage.createAuthorizationButton.click();
     await expect(
@@ -361,7 +361,7 @@ test.describe('secret authorizations', () => {
   test('renders READ and REVEAL as independent checkboxes on the SECRET tab', async ({
     identityAuthorizationsPage,
   }) => {
-    await identityAuthorizationsPage.selectResourceTypeTab('Secret');
+    await identityAuthorizationsPage.selectResourceType('Secret');
     await identityAuthorizationsPage.createAuthorizationButton.click();
     await expect(
       identityAuthorizationsPage.createAuthorizationModal,
