@@ -16,7 +16,7 @@ import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateRoleEndpoint,
 	mockDeleteRoleEndpoint,
-	mockGetRoleEndpoint,
+	mockQueryRolesEndpoint,
 	mockUpdateRoleEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createRole} from '#/shared-test-modules/api-mocks/roles';
@@ -139,7 +139,7 @@ describe('<AdminRolesPage />', () => {
 		const role = createRole({roleId: 'ops', name: 'Operations'});
 		worker.use(
 			mockCreateRoleEndpoint({successResponse: HttpResponse.json(role, {status: 201})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json(role)}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [role], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: []});
 
@@ -221,7 +221,7 @@ describe('<AdminRolesPage />', () => {
 		const updated = {...role, name: 'Ops team'};
 		worker.use(
 			mockUpdateRoleEndpoint({successResponse: HttpResponse.json(updated)}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({roles: [role]});
 
@@ -237,7 +237,7 @@ describe('<AdminRolesPage />', () => {
 		const role = createRole({roleId: 'ops'});
 		worker.use(
 			mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen} = await renderPage({roles: [role]});
 
@@ -252,7 +252,7 @@ describe('<AdminRolesPage />', () => {
 		// given
 		worker.use(
 			mockCreateRoleEndpoint({successResponse: HttpResponse.json(createRole({roleId: 'ops'}), {status: 201})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const {screen} = await renderPage({roles: []});
 

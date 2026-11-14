@@ -57,6 +57,7 @@ public class EngineMessagesTest {
       properties = {
         "zeebe.broker.experimental.engine.messages.ttlCheckerBatchLimit=50",
         "zeebe.broker.experimental.engine.messages.ttlCheckerInterval=2m",
+        "zeebe.broker.experimental.engine.messages.pendingSubscriptionRecoveryBatchLimit=7000",
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -69,7 +70,8 @@ public class EngineMessagesTest {
     void shouldSetMessagesFromLegacy() {
       assertThat(brokerCfg.getExperimental().getEngine().getMessages())
           .returns(50, MessagesCfg::getTtlCheckerBatchLimit)
-          .returns(Duration.ofMinutes(2), MessagesCfg::getTtlCheckerInterval);
+          .returns(Duration.ofMinutes(2), MessagesCfg::getTtlCheckerInterval)
+          .returns(7000, MessagesCfg::getPendingSubscriptionRecoveryBatchLimit);
     }
   }
 
@@ -83,6 +85,7 @@ public class EngineMessagesTest {
         // legacy
         "zeebe.broker.experimental.engine.messages.ttlCheckerBatchLimit=500",
         "zeebe.broker.experimental.engine.messages.ttlCheckerInterval=20m",
+        "zeebe.broker.experimental.engine.messages.pendingSubscriptionRecoveryBatchLimit=9000",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;

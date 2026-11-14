@@ -15,7 +15,7 @@ import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockDeleteGlobalClusterVariableEndpoint,
-	mockGetGlobalClusterVariableEndpoint,
+	mockQueryClusterVariablesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
 import {DeleteClusterVariableModal} from './DeleteClusterVariableModal';
@@ -60,7 +60,7 @@ describe('<DeleteClusterVariableModal />', () => {
 		const onClose = vi.fn();
 		worker.use(
 			mockDeleteGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryClusterVariablesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const screen = await render(
 			<DeleteClusterVariableModal clusterVariable={createClusterVariable()} onClose={onClose} />,

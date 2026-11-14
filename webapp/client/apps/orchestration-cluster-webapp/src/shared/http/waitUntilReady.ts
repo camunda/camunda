@@ -7,7 +7,6 @@
  */
 
 import type {QueryClient, QueryFunction, QueryKey} from '@tanstack/react-query';
-import {requestErrorSchema} from './request';
 
 type WaitUntilReadyOptions<TData> = {
 	isReady?: (data: TData) => boolean;
@@ -15,20 +14,8 @@ type WaitUntilReadyOptions<TData> = {
 	retryDelay?: number;
 };
 
-type WaitUntilGoneOptions = {
-	retry?: number;
-	retryDelay?: number;
-};
-
 const DEFAULT_RETRY = 5;
 const DEFAULT_RETRY_DELAY = 1000;
-
-function isNotFoundError(error: unknown): boolean {
-	const requestError = requestErrorSchema.safeParse(error);
-	return (
-		requestError.success && requestError.data.variant === 'failed-response' && requestError.data.response.status === 404
-	);
-}
 
 // Each call polls under a private key of its own. A retrying query re-reads its options on every
 // attempt, so an observer of the real key re-rendering mid-wait would swap in its own `queryFn` and
@@ -72,37 +59,4 @@ async function waitUntilReady<TData, TQueryKey extends QueryKey = QueryKey>(
 	}
 }
 
-async function waitUntilGone(
-	queryClient: QueryClient,
-	query: {queryKey: QueryKey; queryFn?: (() => Promise<unknown>) | undefined},
-	{retry = DEFAULT_RETRY, retryDelay = DEFAULT_RETRY_DELAY}: WaitUntilGoneOptions = {},
-): Promise<boolean> {
-	const {queryFn} = query;
-	if (queryFn === undefined) {
-		return false;
-	}
-
-	try {
-		await queryClient.query({
-			queryKey: query.queryKey,
-			queryFn: async () => {
-				try {
-					await queryFn();
-				} catch (error) {
-					if (isNotFoundError(error)) {
-						return true;
-					}
-					throw error;
-				}
-				throw new Error('Still visible');
-			},
-			retry,
-			retryDelay,
-		});
-		return true;
-	} catch {
-		return false;
-	}
-}
-
-export {waitUntilReady, waitUntilGone};
+export {waitUntilReady};

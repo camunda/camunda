@@ -10,6 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
@@ -19,9 +20,9 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Per-tenant {@link Secrets} resolution: registers the {@code stores.file}, {@code stores.aws},
- * {@code stores.gcp} and {@code stores.env} named maps so that {@link PhysicalTenantMapOverlay}
- * deep-merges them per physical tenant (the generic two-bind has a defect that drops unmentioned
- * root entries when a tenant overrides only some map keys).
+ * {@code stores.gcp}, {@code stores.env} and {@code stores.azure} named maps so that {@link
+ * PhysicalTenantMapOverlay} deep-merges them per physical tenant (the generic two-bind has a defect
+ * that drops unmentioned root entries when a tenant overrides only some map keys).
  */
 @NullMarked
 final class PhysicalTenantSecretConfigurations {
@@ -37,7 +38,9 @@ final class PhysicalTenantSecretConfigurations {
                   "stores.aws", AwsSecretsManagerStore.class, s -> s.getStores().getAws()),
               new MapDescriptor<>(
                   "stores.gcp", GcpSecretManagerStore.class, s -> s.getStores().getGcp()),
-              new MapDescriptor<>("stores.env", EnvStore.class, s -> s.getStores().getEnv())),
+              new MapDescriptor<>("stores.env", EnvStore.class, s -> s.getStores().getEnv()),
+              new MapDescriptor<>(
+                  "stores.azure", AzureKeyVaultStore.class, s -> s.getStores().getAzure())),
           MapOverlaySpec.noHook(),
           Camunda::setSecrets);
 

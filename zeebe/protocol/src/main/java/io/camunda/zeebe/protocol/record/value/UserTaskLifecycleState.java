@@ -36,11 +36,11 @@ public enum UserTaskLifecycleState {
   /** The task is created and no change is in progress. */
   CREATED,
 
-  /** The task is being assigned. */
+  /**
+   * The task is being assigned or claimed. A claim is reported as {@code ASSIGNING}, as secondary
+   * storage records it.
+   */
   ASSIGNING,
-
-  /** The task is being claimed. */
-  CLAIMING,
 
   /** The task is being updated. */
   UPDATING,

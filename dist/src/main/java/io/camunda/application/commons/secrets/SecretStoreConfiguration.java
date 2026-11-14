@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.AzureKeyVaultStore;
 import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
@@ -23,6 +24,8 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
+import io.camunda.secretstore.azure.AzureKeyVaultSecretStore;
+import io.camunda.secretstore.azure.AzureKeyVaultStoreConfig;
 import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.env.EnvVarSecretStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
@@ -69,7 +72,9 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
           new StoreBinding<>(
-              "env", "environment variable", Stores::getEnv, SecretStoreConfiguration::envStore));
+              "env", "environment variable", Stores::getEnv, SecretStoreConfiguration::envStore),
+          new StoreBinding<>(
+              "azure", "Azure Key Vault", Stores::getAzure, SecretStoreConfiguration::azureStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -126,7 +131,11 @@ public class SecretStoreConfiguration {
               + tenantId
               + "' has "
               + totalStores
-              + " secret stores configured, but only one is supported at this time");
+              + " secret stores configured, but only one is supported at this time"
+              + (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+                  ? ""
+                  : "; stores under camunda.secrets.stores.* are inherited by every physical"
+                      + " tenant and count towards this limit"));
     }
     // both rules are checked before any store is built, so the operator gets the configuration
     // error rather than whatever the store's own construction fails with — an AWS or GCP store
@@ -324,6 +333,33 @@ public class SecretStoreConfiguration {
             config.getContainerSecretId(),
             false,
             config.getCallTimeout()));
+  }
+
+  private static SecretStore azureStore(
+      final String storeId, final String tenantId, final AzureKeyVaultStore config) {
+    final var property = storesProperty(tenantId, "azure") + "." + storeId;
+    final var vaultUrl = config.getVaultUrl();
+    if (vaultUrl == null || vaultUrl.isEmpty()) {
+      throw new IllegalStateException(
+          "Azure Key Vault store '%s' for physical tenant '%s' has no %s.vault-url configured"
+              .formatted(storeId, tenantId, property));
+    }
+    config.validate(property);
+    LOG.warn(
+        "Azure Key Vault store '{}' for physical tenant '{}' does not read the vault yet: every"
+            + " secret reference it serves resolves as not found",
+        storeId,
+        tenantId);
+    return AzureKeyVaultSecretStore.fromConfig(
+        new AzureKeyVaultStoreConfig(
+            vaultUrl,
+            config.getPathPrefix(),
+            config.getContainerSecretId(),
+            config.getManagedIdentityClientId(),
+            config.getAuthorityHost(),
+            config.getMaxRetries(),
+            config.getCallTimeout(),
+            config.getAttemptTimeout()));
   }
 
   private static SecretStore envStore(

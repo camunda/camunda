@@ -143,7 +143,10 @@ const queryKeys = {
 		['groupMembers', groupId, 'roles', body] as const,
 	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
 		['groupMembers', groupId, 'mappingRules', body] as const,
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		options === undefined
+			? (['queryClusterVariables', body] as const)
+			: (['queryClusterVariables', body, options] as const),
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
@@ -652,11 +655,11 @@ const queries = {
 			},
 		}),
 
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
 		queryOptions({
-			queryKey: queryKeys.queryClusterVariables(body),
+			queryKey: queryKeys.queryClusterVariables(body, options),
 			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
-				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				const {response, error} = await request(endpoints.queryClusterVariables(body, options));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

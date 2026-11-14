@@ -16,7 +16,7 @@ import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateUserEndpoint,
 	mockDeleteUserEndpoint,
-	mockGetUserEndpoint,
+	mockQueryUsersEndpoint,
 	mockUpdateUserEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
@@ -150,7 +150,9 @@ describe('<AdminUsersPage />', () => {
 	it('should create a user', async ({worker}) => {
 		worker.use(
 			mockCreateUserEndpoint({successResponse: HttpResponse.json(createUser({username: 'new.user'}))}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json(createUser({username: 'new.user'}))}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json({items: [createUser({username: 'new.user'})], page: {totalItems: 1}}),
+			}),
 		);
 
 		const {screen} = await renderPage({users: []});
@@ -210,7 +212,9 @@ describe('<AdminUsersPage />', () => {
 		const user = createUser({username: 'john.doe', name: 'John Doe'});
 		worker.use(
 			mockUpdateUserEndpoint({successResponse: HttpResponse.json({...user, name: 'Johnny Doe'})}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json({...user, name: 'Johnny Doe'})}),
+			mockQueryUsersEndpoint({
+				successResponse: HttpResponse.json({items: [{...user, name: 'Johnny Doe'}], page: {totalItems: 1}}),
+			}),
 		);
 
 		const {screen} = await renderPage({users: [user]});
@@ -227,7 +231,7 @@ describe('<AdminUsersPage />', () => {
 		const user = createUser({username: 'john.doe'});
 		worker.use(
 			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 
 		const {screen} = await renderPage({users: [user]});
@@ -243,7 +247,7 @@ describe('<AdminUsersPage />', () => {
 		// given
 		worker.use(
 			mockCreateUserEndpoint({successResponse: HttpResponse.json(createUser({username: 'new.user'}))}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const {screen} = await renderPage({users: []});
 
@@ -265,7 +269,7 @@ describe('<AdminUsersPage />', () => {
 		const user = createUser({username: 'john.doe'});
 		worker.use(
 			mockDeleteUserEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetUserEndpoint({successResponse: HttpResponse.json(user)}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json({items: [user], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({users: [user]});
 

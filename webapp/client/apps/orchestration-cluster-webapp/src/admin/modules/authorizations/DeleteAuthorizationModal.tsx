@@ -47,7 +47,7 @@ const DeleteAuthorizationModal: React.FC<Props> = ({authorization, onClose}) => 
 			if (authorization === null) {
 				return;
 			}
-			remove.mutate({authorizationKey: authorization.authorizationKey}, {onSuccess: onClose});
+			remove.mutate(authorization, {onSuccess: onClose});
 		},
 		[authorization, onClose, remove],
 	);

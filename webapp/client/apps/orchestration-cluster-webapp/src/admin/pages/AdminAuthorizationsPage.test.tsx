@@ -18,7 +18,6 @@ import {it} from '#/vitest-modules/test-extend';
 import {
 	mockCreateAuthorizationEndpoint,
 	mockDeleteAuthorizationEndpoint,
-	mockGetAuthorizationEndpoint,
 	mockQueryAuthorizationsEndpoint,
 	mockQueryGroupsEndpoint,
 	mockQueryRolesEndpoint,
@@ -237,7 +236,6 @@ describe('<AdminAuthorizationsPage />', () => {
 
 	it('should create an authorization', async ({worker}) => {
 		worker.use(
-			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
 				schema: z.strictObject({
 					ownerType: z.literal('USER'),
@@ -249,7 +247,12 @@ describe('<AdminAuthorizationsPage />', () => {
 				failureResponse: HttpResponse.json({}, {status: 400}),
 				successResponse: HttpResponse.json({authorizationKey: '42'}),
 			}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '42'}))}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createAuthorization({authorizationKey: '42'})],
+					page: {totalItems: 1},
+				}),
+			}),
 		);
 		const {screen} = await renderPage();
 
@@ -264,7 +267,6 @@ describe('<AdminAuthorizationsPage />', () => {
 
 	it('should prefix secret names with camunda.secrets. when creating a secret authorization', async ({worker}) => {
 		worker.use(
-			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
 				schema: z.strictObject({
 					ownerType: z.literal('USER'),
@@ -276,7 +278,12 @@ describe('<AdminAuthorizationsPage />', () => {
 				failureResponse: HttpResponse.json({}, {status: 400}),
 				successResponse: HttpResponse.json({authorizationKey: '43'}),
 			}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '43'}))}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createAuthorization({authorizationKey: '43'})],
+					page: {totalItems: 1},
+				}),
+			}),
 		);
 		const {screen} = await renderPage({resourceType: 'SECRET'});
 
@@ -314,7 +321,6 @@ describe('<AdminAuthorizationsPage />', () => {
 
 	it('should send the property name instead of a resource ID for user task authorizations', async ({worker}) => {
 		worker.use(
-			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockCreateAuthorizationEndpoint({
 				schema: z.strictObject({
 					ownerType: z.literal('USER'),
@@ -326,7 +332,12 @@ describe('<AdminAuthorizationsPage />', () => {
 				failureResponse: HttpResponse.json({}, {status: 400}),
 				successResponse: HttpResponse.json({authorizationKey: '44'}),
 			}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(createAuthorization({authorizationKey: '44'}))}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createAuthorization({authorizationKey: '44'})],
+					page: {totalItems: 1},
+				}),
+			}),
 		);
 		const {screen} = await renderPage({resourceType: 'USER_TASK'});
 
@@ -372,9 +383,8 @@ describe('<AdminAuthorizationsPage />', () => {
 
 	it('should delete an authorization', async ({worker}) => {
 		worker.use(
-			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json(createQueryAuthorizationsResponse())}),
 			mockDeleteAuthorizationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen} = await renderPage({authorizations: [createAuthorization({ownerId: 'john.doe'})]});
 
@@ -387,7 +397,7 @@ describe('<AdminAuthorizationsPage />', () => {
 	it('should warn when a created authorization cannot be confirmed on the server', async ({worker}) => {
 		worker.use(
 			mockCreateAuthorizationEndpoint({successResponse: HttpResponse.json({authorizationKey: '45'})}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockQueryAuthorizationsEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const {screen} = await renderPage();
 
@@ -405,7 +415,9 @@ describe('<AdminAuthorizationsPage />', () => {
 		const authorization = createAuthorization({ownerId: 'john.doe'});
 		worker.use(
 			mockDeleteAuthorizationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetAuthorizationEndpoint({successResponse: HttpResponse.json(authorization)}),
+			mockQueryAuthorizationsEndpoint({
+				successResponse: HttpResponse.json({items: [authorization], page: {totalItems: 1}}),
+			}),
 		);
 		const {screen} = await renderPage({authorizations: [authorization]});
 

@@ -11,7 +11,7 @@ import {HttpResponse} from 'msw';
 import {cleanup, renderHook} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
-import {mockDeleteTenantEndpoint, mockGetTenantEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockDeleteTenantEndpoint, mockQueryTenantsEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createTenant} from '#/shared-test-modules/api-mocks/tenants';
 import {useTenantMutations} from './useTenantMutations';
 
@@ -36,7 +36,7 @@ describe('useTenantMutations', () => {
 		});
 		worker.use(
 			mockDeleteTenantEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {result} = await renderHook(() => useTenantMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
@@ -63,7 +63,7 @@ describe('useTenantMutations', () => {
 		const unsubscribe = observer.subscribe(() => {});
 		worker.use(
 			mockDeleteTenantEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetTenantEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {result} = await renderHook(() => useTenantMutations(), {
 			wrapper: ({children}) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
