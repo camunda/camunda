@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starter
+  labels:
+    {{- include "c7.labels" . | nindent 4 }}
+    app.kubernetes.io/component: starter
+spec:
+  replicas: {{ .Values.starter.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: c7-benchmark
+      app.kubernetes.io/component: starter
+  template:
+    metadata:
+      labels:
+        {{- include "c7.labels" . | nindent 8 }}
+        app.kubernetes.io/component: starter
+    spec:
+      {{- include "c7.podSpecCommon" . | nindent 6 }}
+      containers:
+        - name: starter
+          image: {{ include "c7.image" (dict "root" . "image" .Values.starter.image) }}
+          imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+          env:
+            - {name: SPRING_PROFILES_ACTIVE, value: starter}
+            - {name: ENGINE_URL, value: {{ include "c7.engineUrl" . | quote }}}
+            - {name: LOAD_TESTER_STARTER_RATE, value: {{ .Values.starter.rate | quote }}}
+            - {name: LOAD_TESTER_STARTER_RATE_DURATION, value: {{ .Values.starter.rateDuration | quote }}}
+            - {name: LOAD_TESTER_STARTER_THREADS, value: {{ .Values.starter.threads | quote }}}
+            - {name: LOAD_TESTER_STARTER_PROCESS_ID, value: {{ .Values.starter.processId | quote }}}
+            - {name: LOAD_TESTER_STARTER_BPMN_XML_PATH, value: {{ .Values.starter.bpmnXmlPath | quote }}}
+            - {name: LOAD_TESTER_STARTER_PAYLOAD_PATH, value: {{ .Values.starter.payloadPath | quote }}}
+            - {name: LOAD_TESTER_STARTER_HISTORY_TTL, value: {{ .Values.starter.historyTimeToLive | quote }}}
+            - {name: LOAD_TESTER_STARTER_WORKLOAD_MODEL, value: {{ .Values.starter.workloadModel | quote }}}
+            - {name: LOAD_TESTER_STARTER_DURATION_LIMIT, value: {{ .Values.starter.durationLimit | quote }}}
+            {{- with .Values.starter.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            - {name: metrics, containerPort: 9600}
+          resources:
+            {{- toYaml .Values.starter.resources | nindent 12 }}

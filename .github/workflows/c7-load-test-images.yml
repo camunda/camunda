@@ -1,0 +1,73 @@
+# description: Builds the Camunda 7 load test images (engine, load-tester, results) from load-tests/c7. Pull requests only build; workflow_dispatch pushes to registry.camunda.cloud/team-zeebe for the GKE and ECS C7 benchmarks.
+# type: CI
+# owner: @camunda/reliability-testing
+---
+name: "Load test: C7 images"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to push, e.g. 7.24.0-SNAPSHOT or a run-specific tag.
+        type: string
+        required: true
+        default: "7.24.0-SNAPSHOT"
+  pull_request:
+    paths:
+      - "load-tests/c7/**"
+      - ".github/workflows/c7-load-test-images.yml"
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
+  PUSH: ${{ github.event_name == 'workflow_dispatch' }}
+  IMAGE_TAG: ${{ inputs.tag || 'ci' }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.image.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - name: c7-benchmark-engine
+            context: load-tests/c7
+            dockerfile: load-tests/c7/engine/Dockerfile
+          - name: c7-benchmark-load-tester
+            context: load-tests/c7
+            dockerfile: load-tests/c7/load-tester/Dockerfile
+          - name: c7-benchmark-results
+            context: load-tests/c7/results
+            dockerfile: load-tests/c7/results/Dockerfile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        if: ${{ env.PUSH == 'true' }}
+        with:
+          dockerhub-readonly: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build${{ env.PUSH == 'true' && ' and push' || '' }}
+        env:
+          IMAGE: ${{ env.IMAGE_REPOSITORY }}/${{ matrix.image.name }}:${{ env.IMAGE_TAG }}
+          CONTEXT: ${{ matrix.image.context }}
+          DOCKERFILE: ${{ matrix.image.dockerfile }}
+        run: |
+          output="--load"
+          if [ "$PUSH" = "true" ]; then output="--push"; fi
+          docker buildx build --platform linux/amd64 -f "$DOCKERFILE" -t "$IMAGE" $output "$CONTEXT"
+          echo "### ${IMAGE}" >> "$GITHUB_STEP_SUMMARY"

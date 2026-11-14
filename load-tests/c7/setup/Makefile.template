@@ -1,0 +1,52 @@
+namespace ?= __NAMESPACE__
+chart ?= ../charts/c7-load-test
+# Extra helm flags, e.g. additional_configuration="--set starter.rate=500"
+additional_configuration ?=
+
+.PHONY: install
+install: check-deadline create-namespace
+	helm upgrade c7-load-test $(chart) \
+		--install \
+		--namespace $(namespace) \
+		--take-ownership \
+		--values values.yaml \
+		$(additional_configuration)
+
+.PHONY: template
+template:
+	helm template c7-load-test $(chart) --namespace $(namespace) --values values.yaml $(additional_configuration)
+
+# Same guard as the camunda/camunda load tests: refuse to install into a namespace about to be deleted.
+.PHONY: check-deadline
+check-deadline:
+	@deadline_date=$$(awk -F'"' '/^deadlineDate:/ {print $$2; exit}' values.yaml); \
+	today=$$(date +%Y-%m-%d); \
+	if [ -z "$$deadline_date" ] || [ "$$today" \> "$$deadline_date" ] || [ "$$today" = "$$deadline_date" ]; then \
+		echo "ERROR: deadlineDate ($$deadline_date) is missing, today or earlier. Edit values.yaml."; exit 1; \
+	fi
+
+.PHONY: create-namespace
+create-namespace:
+	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || (kubectl create namespace "$(namespace)" && sleep 1)
+
+# Change the load without reinstalling: make rate rate=500
+.PHONY: rate
+rate:
+	kubectl -n $(namespace) set env deployment/starter LOAD_TESTER_STARTER_RATE=$(rate)
+
+# Current state size, for the growing-state analysis.
+.PHONY: state
+state:
+	kubectl -n $(namespace) exec postgresql-1 -c postgres -- psql -U postgres -d camunda -c \
+	"SELECT relname, n_live_tup, pg_size_pretty(pg_total_relation_size(relid)) FROM pg_stat_user_tables WHERE relname LIKE 'act_%' ORDER BY pg_total_relation_size(relid) DESC LIMIT 15;"
+
+# Top statements by total time (pg_stat_statements).
+.PHONY: top-queries
+top-queries:
+	kubectl -n $(namespace) exec postgresql-1 -c postgres -- psql -U postgres -d camunda -c \
+	"SELECT calls, round(mean_exec_time::numeric, 2) AS mean_ms, round(total_exec_time::numeric) AS total_ms, left(query, 120) AS query FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 20;"
+
+.PHONY: clean
+clean:
+	helm uninstall c7-load-test --namespace $(namespace) || true
+	kubectl delete namespace $(namespace) --wait=false || true
