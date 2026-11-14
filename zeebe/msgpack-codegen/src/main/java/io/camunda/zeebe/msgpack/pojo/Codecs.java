@@ -22,7 +22,6 @@ import io.camunda.zeebe.msgpack.value.BaseValue;
 public final class Codecs {
 
   private static final MsgpackCodec<BaseValue> BASE_VALUE_CODEC = new BaseValueCodec();
-  private static final MsgpackResetter<BaseValue> BASE_VALUE_RESETTER = BaseValue::reset;
 
   private static final ClassValue<MsgpackCodec<?>> CODECS =
       new ClassValue<>() {
@@ -35,14 +34,11 @@ public final class Codecs {
         }
       };
 
-  private static final ClassValue<MsgpackResetter<?>> RESETTERS =
+  private static final ClassValue<MsgpackOps<?>> OPS =
       new ClassValue<>() {
         @Override
-        protected MsgpackResetter<?> computeValue(final Class<?> type) {
-          if (BaseValue.class.isAssignableFrom(type)) {
-            return BASE_VALUE_RESETTER;
-          }
-          return generated(type, "Resetter", MsgpackResetter.class);
+        protected MsgpackOps<?> computeValue(final Class<?> type) {
+          return generated(type, "Ops", MsgpackOps.class);
         }
       };
 
@@ -53,10 +49,10 @@ public final class Codecs {
     return (MsgpackCodec<T>) CODECS.get(type);
   }
 
-  /** Finds the generated {@code <Name>Resetter}, which restores the field initializers. */
+  /** Finds the generated {@code <Name>Ops}, which restores the field initializers. */
   @SuppressWarnings("unchecked")
-  public static <T extends Recyclable> MsgpackResetter<T> resetterOf(final Class<T> type) {
-    return (MsgpackResetter<T>) RESETTERS.get(type);
+  public static <T extends Recyclable> MsgpackOps<T> opsOf(final Class<T> type) {
+    return (MsgpackOps<T>) OPS.get(type);
   }
 
   private static <R> R generated(final Class<?> type, final String suffix, final Class<R> role) {

@@ -11,10 +11,13 @@ import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
+import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** Helpers called by generated deserializers. Not meant to be used directly. */
 public final class Decoding {
@@ -120,6 +123,76 @@ public final class Decoding {
       target.wrap(document);
     }
     return target;
+  }
+
+  /**
+   * Returns a view on a new array holding the bytes of {@code source}, or null for null. Used to
+   * copy a string, binary, raw value or document, which are only views on another buffer.
+   */
+  public static @Nullable UnsafeBuffer copy(final @Nullable DirectBuffer source) {
+    if (source == null) {
+      return null;
+    }
+    final byte[] bytes = new byte[source.capacity()];
+    source.getBytes(0, bytes);
+    return new UnsafeBuffer(bytes);
+  }
+
+  /** Wraps {@code target} around a new array holding the bytes of {@code source}. */
+  public static void copyInto(final DirectBuffer source, final UnsafeBuffer target) {
+    final byte[] bytes = new byte[source.capacity()];
+    source.getBytes(0, bytes);
+    target.wrap(bytes);
+  }
+
+  /**
+   * Copies a nested value that is not a generated POJO and has no copy of its own: it is written to
+   * a new array and read from it. {@code target} is reset first and then references the array,
+   * which nothing else uses, so it is independent of {@code source}.
+   */
+  public static void copyValue(final BaseValue source, final BaseValue target) {
+    final int length = source.getEncodedLength();
+    final var buffer = new UnsafeBuffer(new byte[length]);
+    source.write(MsgpackScratch.writer(buffer, 0));
+    target.reset();
+    target.read(MsgpackScratch.reader(buffer, 0, length));
+  }
+
+  /** Appends a string as JSON like {@code StringValue}: quoted, and not escaped. */
+  public static void appendString(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    if (value == null) {
+      builder.append("null");
+    } else {
+      builder.append('"').append(value.getStringWithoutLengthUtf8(0, value.capacity())).append('"');
+    }
+  }
+
+  /** Appends a binary or document as JSON like {@code BinaryValue}: quoted base64. */
+  public static void appendBinary(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    if (value == null) {
+      builder.append("null");
+      return;
+    }
+    final byte[] bytes = new byte[value.capacity()];
+    value.getBytes(0, bytes);
+    builder.append('"').append(Base64.getEncoder().encodeToString(bytes)).append('"');
+  }
+
+  /** Appends a raw value as JSON like {@code PackedValue}: only its length. */
+  public static void appendRaw(final StringBuilder builder, final @Nullable DirectBuffer value) {
+    builder
+        .append("[packed value (length=")
+        .append(value == null ? 0 : value.capacity())
+        .append(")]");
+  }
+
+  /** Appends an enum constant as JSON like {@code EnumValue}: quoted name, or null. */
+  public static void appendEnum(final StringBuilder builder, final @Nullable Enum<?> value) {
+    if (value == null) {
+      builder.append("null");
+    } else {
+      builder.append('"').append(value).append('"');
+    }
   }
 
   /** Reads a string and resolves it to the constant with the same name, without allocating. */

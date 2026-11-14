@@ -114,9 +114,51 @@ final class GeneratedCodecPropertyTest {
       throws Exception {
     assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(scenario);
     assertWritesTheMsgpackFormatAndReadsItBack(scenario);
+    assertCopiesIntoAnIndependentInstance(scenario);
     if (scenario.schema().emptyLists()) {
       assertMatchesAnUnpackedObject(scenario);
     }
+  }
+
+  /** A copy stores the same bytes, whatever the target held, and survives reuse of the source. */
+  private static void assertCopiesIntoAnIndependentInstance(final Scenario scenario)
+      throws Exception {
+    // given a source read from a message, and a target that holds another value
+    final var compiled = compiled(scenario.schema());
+    final var source = compiled.newInstance();
+    final var message = randomOrderMessage(scenario, false);
+    final var sourceBuffer = new UnsafeBuffer(new byte[scenario.offset() + message.length + 8]);
+    sourceBuffer.putBytes(scenario.offset(), message);
+    ((MsgpackBufferValue<?>) source).wrap(sourceBuffer, scenario.offset(), message.length);
+    final var expected = new ExpandableArrayBuffer();
+    final int expectedLength = write(source, expected, scenario.offset());
+    final var target = compiled.newInstance();
+    wrap(
+        target,
+        declaredOrderMessage(scenario.schema(), scenario.previousValues()),
+        scenario.offset());
+
+    // when it is copied, and the buffer it was read from is reused
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final MsgpackBufferValue<?> copying = (MsgpackBufferValue) target;
+    copyFrom(copying, source);
+    assertThat(target)
+        .as("a copy equals its source%n%s", scenario.schema().source())
+        .isEqualTo(source)
+        .hasSameHashCodeAs(source);
+    sourceBuffer.setMemory(0, sourceBuffer.capacity(), (byte) 0xc1);
+
+    // then
+    final var actual = new ExpandableArrayBuffer();
+    final int actualLength = write(target, actual, scenario.offset());
+    assertThat(new UnsafeBuffer(actual, scenario.offset(), actualLength))
+        .as("copy%n%s", scenario.schema().source())
+        .isEqualTo(new UnsafeBuffer(expected, scenario.offset(), expectedLength));
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private static void copyFrom(final MsgpackBufferValue target, final Object source) {
+    target.copyFrom((MsgpackBufferValue) source);
   }
 
   private static void assertReadsAnyKeyOrderMissingKeysAndUnknownKeys(final Scenario scenario)
@@ -205,6 +247,15 @@ final class GeneratedCodecPropertyTest {
    * same, and each must read what the other wrote. Both keep unknown keys and write them after the
    * declared ones.
    */
+  /**
+   * ObjectValue prints the properties it does not declare right after the declared ones, without a
+   * separator, which is not valid JSON. The generated string has the comma. The unknown keys of the
+   * scenarios start with {@code u} or, in a nested value, with {@code nu}.
+   */
+  private static String withSeparators(final String objectValueString) {
+    return objectValueString.replaceAll("(?<![,{])(\"(?:u\\d|nu)[^\"]*\":\\[packed)", ",$1");
+  }
+
   private static void assertMatchesAnUnpackedObject(final Scenario scenario) throws Exception {
     final var schema = scenario.schema();
     final var compiled = compiled(schema);
@@ -232,6 +283,8 @@ final class GeneratedCodecPropertyTest {
     final var twinBytes = new byte[twin.getLength()];
     twin.write(new UnsafeBuffer(twinBytes), 0);
     assertThat(generatedBytes).as(schema.source()).isEqualTo(twinBytes);
+    // and print the same JSON, which logs and assertion messages show
+    assertThat(generated.toString()).as(schema.source()).isEqualTo(withSeparators(twin.toString()));
 
     // and each reads what the other wrote, as a rolled back version does
     final var readTwinBytes = compiled.newInstance();

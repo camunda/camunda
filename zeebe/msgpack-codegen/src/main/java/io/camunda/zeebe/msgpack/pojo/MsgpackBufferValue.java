@@ -18,8 +18,8 @@ import org.agrona.MutableDirectBuffer;
  * delegate to its generated codec. The reader and writer are the per-thread instances of {@link
  * MsgpackScratch}.
  *
- * <p>The generated codec and resetter of the concrete class are found with {@link Codecs}, so the
- * class does not have to mention them. {@link #reset()} is called before every read.
+ * <p>The generated codec and ops of the concrete class are found with {@link Codecs}, so the class
+ * does not have to mention them. {@link #reset()} is called before every read.
  *
  * <p>Temporary: it goes away once the code storing these objects owns the codec call and the
  * scratch state.
@@ -31,7 +31,7 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
 
   // resolved once per instance, so that reads and writes do not look them up
   private final MsgpackCodec<T> codec = Codecs.of(type());
-  private final MsgpackResetter<T> resetter = Codecs.resetterOf(type());
+  private final MsgpackOps<T> ops = Codecs.opsOf(type());
 
   @Override
   public int getLength() {
@@ -58,10 +58,49 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     }
   }
 
+  /**
+   * Replaces the stored properties by a deep copy of the ones of {@code source}: nothing is shared
+   * with it, so it may be modified or its buffer reused afterwards. Allocates a copy of every
+   * string, binary, raw value and document. State that is not stored ({@link MsgpackIgnore}) is not
+   * copied: override this method to copy it as well, and call {@code super}.
+   */
+  public void copyFrom(final T source) {
+    ops.copy(source, self());
+  }
+
+  /**
+   * Equal if the other is of the same class and has the same stored properties, compared by
+   * content. State that is not stored ({@link MsgpackIgnore}) is not compared: override {@code
+   * equals} and {@code hashCode} together to include it.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || o.getClass() != getClass()) {
+      return false;
+    }
+    @SuppressWarnings("unchecked")
+    final T other = (T) o;
+    return ops.equals(self(), other);
+  }
+
+  @Override
+  public int hashCode() {
+    return ops.hashCode(self());
+  }
+
+  /** The stored properties as JSON, with {@link MsgpackSanitized} ones masked. */
+  @Override
+  public String toString() {
+    return ops.toString(self());
+  }
+
   /** Restores the field initializers. Override to also reset state that is not stored. */
   @Override
   public void reset() {
-    resetter.reset(self());
+    ops.reset(self());
   }
 
   @SuppressWarnings("unchecked")

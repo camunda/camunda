@@ -34,8 +34,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 
 /**
- * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code
- * <Pojo>Resetter}.
+ * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code <Pojo>Ops}.
  */
 @SupportedAnnotationTypes("io.camunda.zeebe.msgpack.pojo.MsgpackPojo")
 public final class MsgpackPojoProcessor extends AbstractProcessor {
@@ -79,7 +78,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         requireNoInheritedFields((TypeElement) element);
         final var model = buildModel((TypeElement) element);
         write(model.pkg(), model.name() + "Codec", codec(model), element);
-        write(model.pkg(), model.name() + "Resetter", resetter(model), element);
+        write(model.pkg(), model.name() + "Ops", ops(model), element);
       } catch (final IllegalArgumentException e) {
         error(element, String.valueOf(e.getMessage()));
       }
@@ -202,9 +201,19 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
       final var sanitized = field.getAnnotation(MsgpackSanitized.class) != null;
+      final var pojo =
+          (kind == Type.NESTED || kind == Type.NESTED_LIST)
+              && nestedType(mirror, kind).getAnnotation(MsgpackPojo.class) != null;
       properties.add(
           new Property(
-              keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required, sanitized));
+              keyLiteral,
+              kind,
+              fieldName,
+              javaType(mirror, kind),
+              inPlace,
+              required,
+              sanitized,
+              pojo));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -322,35 +331,39 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     return false;
   }
 
+  /** The class of a nested value, or of the items of a list of them. */
+  private static TypeElement nestedType(final TypeMirror mirror, final Type kind) {
+    final var declared = (DeclaredType) mirror;
+    final var type = kind == Type.NESTED_LIST ? declared.getTypeArguments().get(0) : declared;
+    return (TypeElement) ((DeclaredType) type).asElement();
+  }
+
   private String javaType(final TypeMirror mirror, final Type kind) {
-    if (kind == Type.NESTED_LIST) {
-      final var item = ((DeclaredType) mirror).getTypeArguments().get(0);
-      return ((TypeElement) ((DeclaredType) item).asElement()).getQualifiedName().toString();
-    }
-    return kind == Type.ENUM || kind == Type.NESTED
-        ? ((TypeElement) ((DeclaredType) mirror).asElement()).getQualifiedName().toString()
+    return kind == Type.ENUM || kind == Type.NESTED || kind == Type.NESTED_LIST
+        ? nestedType(mirror, kind).getQualifiedName().toString()
         : mirror.toString();
   }
 
   // --------------------------------------------------------------------- codec
 
-  private static String resetter(final Model m) {
+  private static String ops(final Model m) {
     final var pojo = m.name();
     final var s = new StringBuilder();
     s.append(HEADER);
     s.append("package %s;\n\n".formatted(m.pkg()));
-    s.append("import io.camunda.zeebe.msgpack.pojo.MsgpackResetter;\n\n");
     s.append(
-        "/** Generated and stateless. Restores the field initializers of {@link %s}. */\n"
+        "import io.camunda.zeebe.msgpack.pojo.Decoding;\nimport io.camunda.zeebe.msgpack.pojo.MsgpackOps;\n\n");
+    s.append(
+        "/** Generated and stateless. The operations on {@link %s} besides reading and writing. */\n"
             .formatted(pojo));
+    s.append("public final class %1$sOps {\n".formatted(pojo));
     s.append(
-        "public final class %1$sResetter implements MsgpackResetter<%1$s> {\n".formatted(pojo));
-    s.append(
-        "  public static final %1$sResetter INSTANCE = new %1$sResetter();\n\n".formatted(pojo));
+        "  public static final MsgpackOps<%1$s> INSTANCE = new Instance();\n\n".formatted(pojo));
     // INSTANCE must be initialized before DEFAULTS: the constructor of the POJO may resolve it
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
-    s.append("  private %sResetter() {}\n\n".formatted(pojo));
-    s.append("  @Override\n  public void reset(final %s target) {\n".formatted(pojo));
+    s.append("  private %sOps() {}\n\n".formatted(pojo));
+    s.append("  /** Restores the field initializers. */\n");
+    s.append("  public static void reset(final %s target) {\n".formatted(pojo));
     for (final var p : m.properties()) {
       final var f = p.field();
       switch (p.type()) {
@@ -359,7 +372,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
         // checked on every reset: an exception in the static initializer is not reliably
-        // propagated, as the class is initialized while Codecs resolves this resetter
+        // propagated, as the class is initialized while Codecs resolves these ops
         case NESTED_LIST ->
             s.append(
                 "    requireEmpty(DEFAULTS.%1$s, \"%1$s\");\n    target.%1$s.clear();\n"
@@ -374,6 +387,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     }
     s.append("    target.%s.clear();\n".formatted(m.unknownField()));
     s.append("  }\n\n");
+    copy(s, m);
+    equalsMethod(s, m);
+    hashCodeMethod(s, m);
+    toStringMethod(s, m);
     s.append(
         """
           /** Items are owned by one list, so a default with items would be shared by every reset. */
@@ -387,14 +404,237 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           private static <T> T requireDefault(final T value, final String field) {
             if (value == null) {
               throw new IllegalStateException(
-                  "Field " + field + " of %s has no default: give it an initializer");
+                  "Field " + field + " of %1$s has no default: give it an initializer");
             }
             return value;
+          }
+
+          /** For code that is generic in the type; it delegates to the static methods. */
+          private static final class Instance implements MsgpackOps<%1$s> {
+            @Override
+            public void reset(final %1$s target) {
+              %1$sOps.reset(target);
+            }
+
+            @Override
+            public void copy(final %1$s source, final %1$s target) {
+              %1$sOps.copy(source, target);
+            }
+
+            @Override
+            public boolean equals(final %1$s a, final %1$s b) {
+              return %1$sOps.equals(a, b);
+            }
+
+            @Override
+            public int hashCode(final %1$s value) {
+              return %1$sOps.hashCode(value);
+            }
+
+            @Override
+            public String toString(final %1$s value) {
+              return %1$sOps.toString(value);
+            }
           }
         }
         """
             .formatted(pojo));
     return s.toString();
+  }
+
+  /** The static {@code copy(source, target)} of the ops class. */
+  private static void copy(final StringBuilder s, final Model m) {
+    s.append("  /** Deep copy of the stored properties, see {@link MsgpackOps#copy}. */\n");
+    s.append(
+        "  public static void copy(final %1$s source, final %1$s target) {\n".formatted(m.name()));
+    s.append("    if (source == target) {\n      return;\n    }\n");
+    for (final var p : m.properties()) {
+      final var from = "source." + p.field();
+      final var to = "target." + p.field();
+      s.append(
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN, ENUM -> "    %s = %s;\n".formatted(to, from);
+            case STRING, BINARY, RAW, DOCUMENT ->
+                p.inPlace()
+                    ? "    Decoding.copyInto(%s, %s);\n".formatted(from, to)
+                    : "    %s = Decoding.copy(%s);\n".formatted(to, from);
+            case STRING_LIST ->
+                "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.add(Decoding.copy(%2$s.get(i)));\n    }\n"
+                    .formatted(to, from);
+            case LONG_LIST -> "    %1$s.clear();\n    %1$s.addAll(%2$s);\n".formatted(to, from);
+            case INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.%3$s(%2$s.%4$s(i));\n    }\n"
+                    .formatted(
+                        to,
+                        from,
+                        p.type() == Type.INT_ARRAY_LIST ? "addInt" : "addLong",
+                        getter(p.type()));
+            case NESTED ->
+                p.pojo()
+                    ? "    %sOps.copy(%s, %s);\n".formatted(p.javaType(), from, to)
+                    : "    Decoding.copyValue(%s, %s);\n".formatted(from, to);
+            case NESTED_LIST ->
+                "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      final %3$s item = new %3$s();\n      %4$s;\n      %1$s.add(item);\n    }\n"
+                    .formatted(
+                        to,
+                        from,
+                        p.javaType(),
+                        p.pojo()
+                            ? "%sOps.copy(%s.get(i), item)".formatted(p.javaType(), from)
+                            : "Decoding.copyValue(%s.get(i), item)".formatted(from));
+          });
+    }
+    if (m.unknownField() != null) {
+      s.append("    target.%1$s.copyFrom(source.%1$s);\n".formatted(m.unknownField()));
+    }
+    s.append("  }\n\n");
+  }
+
+  /** The static {@code equals(a, b)} of the ops class. */
+  private static void equalsMethod(final StringBuilder s, final Model m) {
+    s.append("  /** Equality of the stored properties, see {@link MsgpackOps#equals}. */\n");
+    s.append("  public static boolean equals(final %1$s a, final %1$s b) {\n".formatted(m.name()));
+    s.append("    if (a == b) {\n      return true;\n    }\n");
+    s.append("    if (a == null || b == null) {\n      return false;\n    }\n");
+    for (final var p : m.properties()) {
+      final var x = "a." + p.field();
+      final var y = "b." + p.field();
+      final var differs =
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN, ENUM -> "%s != %s".formatted(x, y);
+            case STRING, BINARY, RAW, DOCUMENT ->
+                "!java.util.Objects.equals(%s, %s)".formatted(x, y);
+            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "!%s.equals(%s)".formatted(x, y);
+            case NESTED ->
+                p.pojo()
+                    ? "!%sOps.equals(%s, %s)".formatted(p.javaType(), x, y)
+                    : "!%s.equals(%s)".formatted(x, y);
+            case NESTED_LIST ->
+                p.pojo()
+                    ? "!equalItems_%s(%s, %s)".formatted(p.field(), x, y)
+                    : "!%s.equals(%s)".formatted(x, y);
+          };
+      s.append("    if (%s) {\n      return false;\n    }\n".formatted(differs));
+    }
+    if (m.unknownField() != null) {
+      s.append(
+          "    if (!a.%1$s.equals(b.%1$s)) {\n      return false;\n    }\n"
+              .formatted(m.unknownField()));
+    }
+    s.append("    return true;\n  }\n\n");
+    for (final var p : m.properties()) {
+      if (p.type() == Type.NESTED_LIST && p.pojo()) {
+        // List.equals would call equals() of the items, which a POJO need not implement
+        s.append(
+            """
+              private static boolean equalItems_%1$s(
+                  final java.util.List<%2$s> a, final java.util.List<%2$s> b) {
+                if (a.size() != b.size()) {
+                  return false;
+                }
+                for (int i = 0; i < a.size(); i++) {
+                  if (!%2$sOps.equals(a.get(i), b.get(i))) {
+                    return false;
+                  }
+                }
+                return true;
+              }
+
+            """
+                .formatted(p.field(), p.javaType()));
+      }
+    }
+  }
+
+  /** The static {@code toString(value)} and {@code appendTo(builder, value)} of the ops class. */
+  private static void toStringMethod(final StringBuilder s, final Model m) {
+    s.append("  /** JSON of the stored properties, see {@link MsgpackOps#toString}. */\n");
+    s.append("  public static String toString(final %s v) {\n".formatted(m.name()));
+    s.append("    final StringBuilder sb = new StringBuilder();\n");
+    s.append("    appendTo(sb, v);\n    return sb.toString();\n  }\n\n");
+    s.append(
+        "  /** Appends {@link #toString} to a builder, for the string of a nested value. */\n");
+    s.append(
+        "  public static void appendTo(final StringBuilder sb, final %s v) {\n"
+            .formatted(m.name()));
+    boolean first = true;
+    for (final var p : m.properties()) {
+      final var x = "v." + p.field();
+      s.append(
+          "    sb.append(\"%s\\\"\").append(%s).append(\"\\\":\");\n"
+              .formatted(first ? "{" : ",", p.keyLiteral()));
+      first = false;
+      if (p.sanitized()) {
+        s.append("    sb.append(\"\\\"***\\\"\");\n");
+        continue;
+      }
+      s.append(
+          switch (p.type()) {
+            case LONG, INT, BOOLEAN -> "    sb.append(%s);\n".formatted(x);
+            case STRING -> "    Decoding.appendString(sb, %s);\n".formatted(x);
+            case BINARY, DOCUMENT -> "    Decoding.appendBinary(sb, %s);\n".formatted(x);
+            case RAW -> "    Decoding.appendRaw(sb, %s);\n".formatted(x);
+            case ENUM -> "    Decoding.appendEnum(sb, %s);\n".formatted(x);
+            case STRING_LIST ->
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      Decoding.appendString(sb, %1$s.get(i));\n    }\n    sb.append(']');\n"
+                    .formatted(x);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append(%1$s.%2$s(i));\n    }\n    sb.append(']');\n"
+                    .formatted(x, getter(p.type()));
+            case NESTED ->
+                p.pojo()
+                    ? "    %sOps.appendTo(sb, %s);\n".formatted(p.javaType(), x)
+                    : "    %s.writeJSON(sb);\n".formatted(x);
+            case NESTED_LIST ->
+                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      %2$s;\n    }\n    sb.append(']');\n"
+                    .formatted(
+                        x,
+                        p.pojo()
+                            ? "%sOps.appendTo(sb, %s.get(i))".formatted(p.javaType(), x)
+                            : "%s.get(i).writeJSON(sb)".formatted(x));
+          });
+    }
+    if (m.unknownField() != null) {
+      s.append("    v.%s.appendJson(sb);\n".formatted(m.unknownField()));
+    }
+    s.append("    sb.append('}');\n  }\n\n");
+  }
+
+  /** The static {@code hashCode(value)} of the ops class. */
+  private static void hashCodeMethod(final StringBuilder s, final Model m) {
+    s.append("  /** Hash code of the stored properties, see {@link MsgpackOps#hashCode}. */\n");
+    s.append("  public static int hashCode(final %s v) {\n".formatted(m.name()));
+    s.append("    int h = 1;\n");
+    for (final var p : m.properties()) {
+      final var x = "v." + p.field();
+      final var hash =
+          switch (p.type()) {
+            case LONG -> "Long.hashCode(%s)".formatted(x);
+            case INT -> x;
+            case BOOLEAN -> "Boolean.hashCode(%s)".formatted(x);
+            case ENUM, STRING, BINARY, RAW, DOCUMENT ->
+                "java.util.Objects.hashCode(%s)".formatted(x);
+            case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
+                "%s.hashCode()".formatted(x);
+            // the hash code of a BaseValue is not consistent with its equals (it includes whether
+            // a property was set and the recycled ones), so it is not used: equal values must hash
+            // alike
+            case NESTED -> p.pojo() ? "%sOps.hashCode(%s)".formatted(p.javaType(), x) : "0";
+            case NESTED_LIST -> p.pojo() ? null : "%s.size()".formatted(x);
+          };
+      if (hash != null) {
+        s.append("    h = 31 * h + %s;\n".formatted(hash));
+      } else {
+        s.append(
+            "    for (int i = 0; i < %1$s.size(); i++) {\n      h = 31 * h + %2$sOps.hashCode(%1$s.get(i));\n    }\n"
+                .formatted(x, p.javaType()));
+      }
+    }
+    if (m.unknownField() != null) {
+      s.append("    h = 31 * h + v.%s.hashCode();\n".formatted(m.unknownField()));
+    }
+    s.append("    return h;\n  }\n\n");
   }
 
   private static String codec(final Model m) {
@@ -737,6 +977,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    *     being replaced by a new view
    * @param required reading fails if the key is missing
    * @param sanitized the value must not appear in a string representation
+   * @param pojo a nested value, or the items of a nested list, is a generated POJO, whose {@code
+   *     <Name>Ops} is called directly; otherwise it is a {@code BaseValue}
    */
   private record Property(
       String keyLiteral,
@@ -745,7 +987,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       String javaType,
       boolean inPlace,
       boolean required,
-      boolean sanitized) {}
+      boolean sanitized,
+      boolean pojo) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

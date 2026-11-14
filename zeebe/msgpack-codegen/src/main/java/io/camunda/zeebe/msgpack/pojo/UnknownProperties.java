@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo;
 
+import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -21,6 +22,67 @@ public final class UnknownProperties {
     entries.putBytes(length, source, offset, entryLength);
     length += entryLength;
     count++;
+  }
+
+  /** Replaces the entries by a copy of the ones of {@code other}. */
+  public void copyFrom(final UnknownProperties other) {
+    if (other == this) {
+      return;
+    }
+    clear();
+    if (other.length > 0) {
+      entries.putBytes(0, other.entries, 0, other.length);
+    }
+    length = other.length;
+    count = other.count;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final UnknownProperties other)
+        || count != other.count
+        || length != other.length) {
+      return false;
+    }
+    for (int i = 0; i < length; i++) {
+      if (entries.getByte(i) != other.entries.getByte(i)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int hash = count;
+    for (int i = 0; i < length; i++) {
+      hash = 31 * hash + entries.getByte(i);
+    }
+    return hash;
+  }
+
+  /**
+   * Appends every entry as {@code ,"key":[packed value (length=n)]}, the form in which an {@code
+   * UnpackedObject} prints properties it does not declare.
+   */
+  public void appendJson(final StringBuilder builder) {
+    final var reader = new MsgPackReader().wrap(entries, 0, length);
+    for (int i = 0; i < count; i++) {
+      final int keyLength = reader.readStringLength();
+      final String key = entries.getStringWithoutLengthUtf8(reader.getOffset(), keyLength);
+      reader.skipBytes(keyLength);
+      final int start = reader.getOffset();
+      reader.skipValue();
+      builder
+          .append(",\"")
+          .append(key)
+          .append("\":[packed value (length=")
+          .append(reader.getOffset() - start)
+          .append(")]");
+    }
   }
 
   public int count() {

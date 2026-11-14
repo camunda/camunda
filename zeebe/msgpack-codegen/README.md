@@ -12,7 +12,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   final Bar bar = new Bar();              // another @MsgpackPojo, or a BaseValue
   @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  // nothing else: FooCodec and FooResetter are generated and found by MsgpackBufferValue
+  // nothing else: FooCodec and FooOps are generated and found by MsgpackBufferValue
 }
 ```
 
@@ -20,12 +20,14 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 
 - The annotation processor generates a stateless `<Name>Codec implements MsgpackCodec<Name>` per
   `@MsgpackPojo` (`write`, `getLength`, `read`). The caller owns the `MsgPackWriter`/`MsgPackReader`.
-- Defaults are the field initializers. The processor also generates a `<Name>Resetter implements
-  MsgpackResetter<Name>`, which copies them from a prototype instance (plain field assignments, no
-  reflection). It is separate from the codec.
+- Defaults are the field initializers. The processor also generates a `<Name>Ops` with the other
+  operations on the class: `reset`, which copies the defaults from a prototype instance (plain field
+  assignments, no reflection), `copy`, `equals`, `hashCode` and `toString`. The operations are static methods, so generated
+  code calls them directly where the type is known; `NameOps.INSTANCE` implements `MsgpackOps<Name>`
+  for code that is generic in the type. It is separate from the codec.
 - Resetting belongs to the class: it must be `Recyclable`, and `reset()` is called before every
   read, so properties missing in the input keep their default. `MsgpackBufferValue` implements it by
-  calling the generated resetter. `MsgpackCodec<T extends Recyclable>` and the processor make a class
+  calling the generated ops. `MsgpackCodec<T extends Recyclable>` and the processor make a class
   that is not `Recyclable` fail compilation.
 - Every non-static field is stored under its field name, in declaration order, unless it is
   `@MsgpackIgnore`d. `@MsgpackProperty("key")` overrides the key or marks a `raw` value. The key
@@ -60,11 +62,32 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   without default. Use it for a property that had no default in the class it replaces: a
   primitive always has a Java default, so without it a missing key is read as `0` or `false`. An
   enum field without initializer is required without the annotation, as it holds no value then.
-- String, binary and raw fields need an initializer. The resetter assigns (or wraps) the default of
+- String, binary and raw fields need an initializer. `reset` assigns (or wraps) the default of
   a shared prototype instance, so a default buffer must never be modified in place.
-- Codecs and resetters are found with `Codecs.of(Type.class)` and `Codecs.resetterOf(Type.class)`
+- Codecs and ops are found with `Codecs.of(Type.class)` and `Codecs.opsOf(Type.class)`
   (`ClassValue`s, by naming convention). Generated code resolves its nested codecs once, when the
   generated class is initialized.
+- `copyFrom(source)` of `MsgpackBufferValue` (`NameOps.copy(source, target)`) is a deep copy of the
+  stored properties: the target loses its previous ones, shares nothing with the source, and does
+  not depend on the buffer the source was read from. It allocates a copy of every string, binary,
+  raw value and document, and one object per item of a list of nested objects. A nested value that
+  is not a POJO and has no copy of its own is copied by writing it to a new array and reading it
+  back. `@MsgpackIgnore`d fields are not copied: a class with such state overrides `copyFrom` and
+  calls `super`.
+- `equals` and `hashCode` of `MsgpackBufferValue` (`NameOps.equals`/`hashCode`) compare the stored
+  properties by content, like `UnpackedObject` does: buffers by their bytes, lists and nested values
+  by their elements, unknown properties by their bytes. `hashCode` does not look inside a nested
+  `BaseValue` (an `UnpackedObject`), only at the size of a list of them: their own `hashCode` is not
+  consistent with their `equals`, and equal values must hash alike. Unlike `UnpackedObject`, an instance is
+  only equal to one of exactly the same class. `@MsgpackIgnore`d fields are not compared: a class with such
+  state overrides both methods.
+- `toString` of `MsgpackBufferValue` prints the stored properties as JSON in the format of
+  `UnpackedObject`: `{"key":value,...}` in declaration order, strings and enums quoted, binaries and
+  documents as quoted base64, raw values as `[packed value (length=n)]`, and the entries of unknown
+  properties last, in the same form. Unlike `UnpackedObject`, which leaves out the comma before the
+  first unknown entry, the result is valid JSON. A field annotated `@MsgpackSanitized` prints
+  `"***"` instead of its value, also when its POJO is nested in another one (a nested
+  `UnpackedObject` only masks at the top level). The stored format is not affected.
 - Keys of a newer version that this class does not declare are kept in `UnknownProperties` and
   written back, so a read-modify-write by an older version does not drop them. Every
   `@MsgpackPojo` needs exactly one `final` `@MsgpackUnknownProperties UnknownProperties` field,
