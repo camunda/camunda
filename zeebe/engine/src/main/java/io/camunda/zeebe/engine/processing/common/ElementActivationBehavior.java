@@ -438,6 +438,11 @@ public final class ElementActivationBehavior {
         .setBpmnEventType(elementToActivate.getEventType())
         .setTenantId(processInstanceRecord.getTenantId());
 
+    if (isProcess(elementToActivate)) {
+      // wrap() skips tags since only the process element's records carry them
+      elementInstanceRecord.setTags(processInstanceRecord.getTags());
+    }
+
     return elementInstanceRecord;
   }
 
