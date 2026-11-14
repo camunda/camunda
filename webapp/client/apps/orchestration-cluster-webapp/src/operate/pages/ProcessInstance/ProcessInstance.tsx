@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useRef} from 'react';
-import {useBlocker, useNavigate} from '@tanstack/react-router';
+import {useEffect, useRef} from 'react';
+import {useNavigate} from '@tanstack/react-router';
 import {Modal} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -25,6 +25,7 @@ import {ProcessInstanceHeaderSkeleton} from './ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceBreadcrumb} from './ProcessInstanceBreadcrumb';
 import {ProcessInstanceModificationFooter} from './ProcessInstanceModificationFooter';
 import {useModificationController} from './useProcessInstanceModification';
+import {useModificationLeaveBlocker} from './useModificationLeaveBlocker';
 import {ProcessInstanceHelperModal} from './ProcessInstanceHelperModal';
 import {useProcessInstance} from './processInstance.queries';
 import {
@@ -50,16 +51,9 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 	const {data: diagram, isPending: isDiagramPending} = useDiagramXml(processInstance?.processDefinitionKey);
 	const modification = useModificationController(processInstanceId);
 	const {isModificationModeEnabled} = modification;
-	const isLeavingInstance = useCallback(
-		({next}: {next: {params: object}}) =>
-			!('processInstanceId' in next.params) || next.params.processInstanceId !== processInstanceId,
-		[processInstanceId],
-	);
-	const blocker = useBlocker({
-		shouldBlockFn: isLeavingInstance,
+	const blocker = useModificationLeaveBlocker({
+		processInstanceId,
 		disabled: !isModificationModeEnabled || isUnauthorized || isNotFound,
-		enableBeforeUnload: false,
-		withResolver: true,
 	});
 	const previousSelection = useRef({
 		processInstanceId,

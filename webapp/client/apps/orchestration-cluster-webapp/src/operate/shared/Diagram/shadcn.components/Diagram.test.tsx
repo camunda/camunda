@@ -495,6 +495,17 @@ describe('<Diagram />', () => {
 		await expect.element(screen.getByRole('button', {name: 'start event', exact: true})).not.toBeInTheDocument();
 	});
 
+	it('should take elements that stop being selectable out of the tab order', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} />);
+		await expect
+			.element(screen.getByRole('button', {name: 'start event', exact: true}))
+			.toHaveAttribute('tabindex', '0');
+
+		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['endEvent_1']} />);
+
+		await expect.element(screen.getByRole('img', {name: 'start event', exact: true})).not.toHaveAttribute('tabindex');
+	});
+
 	it('should drop the restriction announcement when no elements are restricted anymore', async () => {
 		const screen = await render(
 			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} nonSelectableNodeTooltipText="Not selectable" />,

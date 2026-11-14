@@ -1987,6 +1987,7 @@
 					"discard": "Discard",
 					"discardDescription": "About to discard all added modifications for instance {{processInstanceKey}}.",
 					"discardHint": "Click \"Discard\" to proceed.",
+					"applying": "Applying modifications",
 					"leaveTitle": "Leave Modification Mode",
 					"stay": "Stay",
 					"leave": "Leave",
