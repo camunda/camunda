@@ -61,11 +61,11 @@
       "task details page",
       "task completion with number form by buttons"
     ],
-    "last_action": "blocked",
-    "last_reason": "baseline produced no score",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43167802684",
-    "updated_at": "2026-11-12T06:27:01Z",
-    "cooldown_until": "2026-11-13T06:27:01Z"
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43565924657",
+    "updated_at": "2026-11-14T06:45:06Z",
+    "cooldown_until": "2026-11-17T06:45:06Z"
   },
   "9b1634b4": {
     "version": "8.10",
