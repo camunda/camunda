@@ -236,6 +236,16 @@ public final class FilterBuilders {
     return fn.apply(new AuditLogFilter.Builder()).build();
   }
 
+  public static VariableHistoryItemFilter.Builder variableHistoryItem() {
+    return new VariableHistoryItemFilter.Builder();
+  }
+
+  public static VariableHistoryItemFilter variableHistoryItem(
+      final Function<VariableHistoryItemFilter.Builder, ObjectBuilder<VariableHistoryItemFilter>>
+          fn) {
+    return fn.apply(variableHistoryItem()).build();
+  }
+
   public static VariableFilter.Builder variable() {
     return new VariableFilter.Builder();
   }

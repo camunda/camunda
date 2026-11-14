@@ -60,6 +60,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableHistoryItemEntity;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -119,6 +120,7 @@ import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableHistoryItemQuery;
 import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.WaitStateStatisticsQuery;
@@ -597,6 +599,18 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public VariableEntity getVariable(final long key) {
     return doGetWithReader(requireScopedReaders().variableReader(), key)
         .orElseThrow(() -> entityByKeyNotFoundException("Variable", key));
+  }
+
+  @Override
+  public SearchQueryResult<VariableHistoryItemEntity> searchVariableHistoryItems(
+      final VariableHistoryItemQuery query) {
+    return doSearchWithReader(requireScopedReaders().variableHistoryReader(), query);
+  }
+
+  @Override
+  public VariableHistoryItemEntity getVariableHistoryItem(final long key) {
+    return doGetWithReader(requireScopedReaders().variableHistoryReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Variable history item", key));
   }
 
   @Override
