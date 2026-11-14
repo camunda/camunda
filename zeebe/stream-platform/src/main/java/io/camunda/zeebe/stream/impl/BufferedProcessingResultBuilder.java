@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -58,7 +58,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
     metadataDecorators.forEach(m -> m.accept(metadata));
 
-    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
+    if (value instanceof final MsgpackRecordValue unifiedRecordValue) {
       final var valueType = unifiedRecordValue.valueType();
       if (valueType == null) {
         // usually happens when the record is not registered at the TypedStreamEnvironment
@@ -74,7 +74,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     } else {
       throw new IllegalStateException(
           String.format(
-              "The record value %s is not a UnifiedRecordValue",
+              "The record value %s is not a MsgpackRecordValue",
               StringUtil.limitString(value.toString(), 1024)));
     }
 
@@ -86,7 +86,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final RecordType recordType,
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final BufferWriter value,
       final ValueType valueType,
       final RejectionType rejectionType,
       final String rejectionReason,

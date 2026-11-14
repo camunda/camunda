@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -196,7 +196,7 @@ public final class IncidentResolveProcessor
             });
   }
 
-  private void processFailedCommand(final TypedRecord<? extends UnifiedRecordValue> failedCommand) {
+  private void processFailedCommand(final TypedRecord<? extends MsgpackRecordValue> failedCommand) {
     if (failedCommand.getValue() instanceof ProcessInstanceRecord) {
       bpmnStreamProcessor.processRecord((TypedRecord<ProcessInstanceRecord>) failedCommand);
     } else if (failedCommand.getValue() instanceof UserTaskRecord) {
@@ -226,7 +226,7 @@ public final class IncidentResolveProcessor
     return isExpressionFailure && isCamundaUserTask && isInRelevantState;
   }
 
-  private Either<String, TypedRecord<? extends UnifiedRecordValue>> getFailedCommand(
+  private Either<String, TypedRecord<? extends MsgpackRecordValue>> getFailedCommand(
       final IncidentRecord incidentRecord) {
     final long elementInstanceKey = incidentRecord.getElementInstanceKey();
     final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
@@ -242,7 +242,7 @@ public final class IncidentResolveProcessor
         : createProcessInstanceCommand(elementInstance);
   }
 
-  private Either<String, TypedRecord<? extends UnifiedRecordValue>> createUserTaskCommand(
+  private Either<String, TypedRecord<? extends MsgpackRecordValue>> createUserTaskCommand(
       final ElementInstance elementInstance) {
 
     final var userTaskKey = elementInstance.getUserTaskKey();
@@ -262,7 +262,7 @@ public final class IncidentResolveProcessor
             });
   }
 
-  private Either<String, TypedRecord<? extends UnifiedRecordValue>> createProcessInstanceCommand(
+  private Either<String, TypedRecord<? extends MsgpackRecordValue>> createProcessInstanceCommand(
       final ElementInstance elementInstance) {
 
     return getFailedProcessInstanceCommandIntent(elementInstance)

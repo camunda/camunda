@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -344,7 +344,7 @@ public final class ProtocolFactory {
   }
 
   private Class<? extends RecordValue> getRecordValueImplClass(final ValueType valueType) {
-    final var newInstance = UnifiedRecordValue.fromValueType(valueType);
+    final var newInstance = MsgpackRecordValue.fromValueType(valueType);
     if (newInstance == null) {
       throw new IllegalArgumentException(
           "No implementation class found for value type: " + valueType);

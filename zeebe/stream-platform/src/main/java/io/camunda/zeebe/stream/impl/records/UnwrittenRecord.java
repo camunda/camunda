@@ -8,8 +8,8 @@
 package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -23,13 +23,13 @@ import java.util.Map;
 public class UnwrittenRecord implements TypedRecord {
   private final long key;
   private final int partitionId;
-  private final UnifiedRecordValue value;
+  private final MsgpackRecordValue value;
   private final RecordMetadata metadata;
 
   public UnwrittenRecord(
       final long key,
       final int partitionId,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final RecordMetadata metadata) {
     this.key = key;
     this.partitionId = partitionId;
@@ -128,7 +128,7 @@ public class UnwrittenRecord implements TypedRecord {
   }
 
   @Override
-  public UnifiedRecordValue getValue() {
+  public MsgpackRecordValue getValue() {
     return value;
   }
 

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.jspecify.annotations.Nullable;
@@ -21,21 +21,21 @@ public interface InterPartitionCommandSender {
   /**
    * Sends a command without a specific record key or authentication info to the given partition.
    *
-   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
+   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, MsgpackRecordValue,
    *     AuthInfo)
    */
   default void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, null, command, null);
   }
 
   /**
    * Sends a command without authentication info to the given partition.
    *
-   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
+   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, MsgpackRecordValue,
    *     AuthInfo)
    */
   default void sendCommand(
@@ -43,7 +43,7 @@ public interface InterPartitionCommandSender {
       final ValueType valueType,
       final Intent intent,
       final @Nullable Long recordKey,
-      final UnifiedRecordValue command) {
+      final MsgpackRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
   }
 
@@ -62,6 +62,6 @@ public interface InterPartitionCommandSender {
       final ValueType valueType,
       final Intent intent,
       final @Nullable Long recordKey,
-      final UnifiedRecordValue command,
+      final MsgpackRecordValue command,
       final @Nullable AuthInfo authInfo);
 }

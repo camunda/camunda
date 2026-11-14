@@ -8,7 +8,7 @@
 package io.camunda.zeebe.stream.impl.records;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.Map;
@@ -16,15 +16,15 @@ import org.jspecify.annotations.Nullable;
 
 public final class RecordValues {
 
-  private final Map<ValueType, UnifiedRecordValue> eventCache;
+  private final Map<ValueType, MsgpackRecordValue> eventCache;
 
   public RecordValues() {
-    eventCache = Collections.unmodifiableMap(UnifiedRecordValue.allRecordsMap());
+    eventCache = Collections.unmodifiableMap(MsgpackRecordValue.allRecordsMap());
   }
 
-  public @Nullable UnifiedRecordValue readRecordValue(
+  public @Nullable MsgpackRecordValue readRecordValue(
       final LoggedEvent event, final ValueType valueType) {
-    final UnifiedRecordValue value = eventCache.get(valueType);
+    final MsgpackRecordValue value = eventCache.get(valueType);
     if (value != null) {
       value.reset();
       event.readValue(value);

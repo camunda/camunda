@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -21,6 +20,7 @@ import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -87,7 +87,7 @@ record MockProcessingResult(
         final RecordType type,
         final long key,
         final Intent intent,
-        final UnpackedObject value,
+        final BufferWriter value,
         final ValueType valueType,
         final RejectionType rejectionType,
         final String rejectionReason,

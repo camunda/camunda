@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public final class TypedRecordStream<T extends UnifiedRecordValue>
+public final class TypedRecordStream<T extends MsgpackRecordValue>
     extends StreamWrapper<Record<T>, TypedRecordStream<T>> {
 
   public TypedRecordStream(final Stream<Record<T>> wrappedStream) {

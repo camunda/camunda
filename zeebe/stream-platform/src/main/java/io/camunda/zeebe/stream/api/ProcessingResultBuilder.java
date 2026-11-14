@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /** Builder to compose the processing result */
 public interface ProcessingResultBuilder extends ProcessingSession {
@@ -62,7 +62,7 @@ public interface ProcessingResultBuilder extends ProcessingSession {
       final RecordType type,
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final BufferWriter value,
       final ValueType valueType,
       final RejectionType rejectionType,
       final String rejectionReason,

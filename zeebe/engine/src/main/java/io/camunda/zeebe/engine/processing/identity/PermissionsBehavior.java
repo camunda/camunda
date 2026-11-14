@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -61,14 +61,14 @@ public class PermissionsBehavior {
     return isAuthorized(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
   }
 
-  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+  public <R extends MsgpackRecordValue> Either<Rejection, R> isAuthorized(
       final TypedRecord<R> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return isAuthorized(command, resourceType, permissionType, AuthorizationScope.WILDCARD_CHAR);
   }
 
-  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+  public <R extends MsgpackRecordValue> Either<Rejection, R> isAuthorized(
       final TypedRecord<R> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
@@ -96,7 +96,7 @@ public class PermissionsBehavior {
    * message, matching the pre-migration engine-internal path used by process/resource domain
    * processors (as opposed to the bare identity-processor message).
    */
-  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorizedWithResourceIdentifiers(
+  public <R extends MsgpackRecordValue> Either<Rejection, R> isAuthorizedWithResourceIdentifiers(
       final TypedRecord<R> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,

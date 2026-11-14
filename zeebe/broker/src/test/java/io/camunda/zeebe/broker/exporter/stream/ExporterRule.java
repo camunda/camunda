@@ -20,7 +20,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -175,16 +175,16 @@ public final class ExporterRule implements TestRule {
     return new ExportersState(capturedZeebeDb, capturedZeebeDb.createContext());
   }
 
-  public long writeEvent(final Intent intent, final UnifiedRecordValue value) {
+  public long writeEvent(final Intent intent, final MsgpackRecordValue value) {
     return writeRecord(RecordType.EVENT, intent, value);
   }
 
-  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
+  public long writeCommand(final Intent intent, final MsgpackRecordValue value) {
     return writeRecord(RecordType.COMMAND, intent, value);
   }
 
   public long writeRecord(
-      final RecordType recordType, final Intent intent, final UnifiedRecordValue value) {
+      final RecordType recordType, final Intent intent, final MsgpackRecordValue value) {
     return streams
         .newRecord(STREAM_NAME)
         .recordType(recordType)
@@ -195,7 +195,7 @@ public final class ExporterRule implements TestRule {
 
   /** Writes an event as though it had been written by a broker running {@code brokerVersion}. */
   public long writeEventWithBrokerVersion(
-      final Intent intent, final UnifiedRecordValue value, final VersionInfo brokerVersion) {
+      final Intent intent, final MsgpackRecordValue value, final VersionInfo brokerVersion) {
     return streams
         .newRecord(STREAM_NAME)
         .recordType(RecordType.EVENT)

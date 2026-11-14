@@ -7,11 +7,10 @@
  */
 package io.camunda.zeebe.engine.util.stream;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +34,7 @@ import java.util.List;
  *     to reduce the need for casting in tests if you know that only a specific value type is
  *     appended.
  */
-public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
+public class FakeProcessingResultBuilder<V extends MsgpackRecordValue>
     implements ProcessingResultBuilder {
 
   private final List<Record<V>> followupRecords = new ArrayList<>();
@@ -70,7 +70,7 @@ public class FakeProcessingResultBuilder<V extends UnifiedRecordValue>
       final RecordType type,
       final long key,
       final Intent intent,
-      final UnpackedObject value,
+      final BufferWriter value,
       final ValueType valueType,
       final RejectionType rejectionType,
       final String rejectionReason,

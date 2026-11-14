@@ -39,10 +39,9 @@ import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcess
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -60,6 +59,7 @@ import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
@@ -282,7 +282,7 @@ public class DeploymentCreateProcessorBenchmark {
     @Override
     public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
         final long key, final RecordValue value, final RecordMetadata metadata) {
-      final var unifiedValue = (UnifiedRecordValue) value;
+      final var unifiedValue = (MsgpackRecordValue) value;
       return recordBatch
           .appendRecord(key, metadata.valueType(unifiedValue.valueType()), -1, unifiedValue)
           .map(ignored -> this);
@@ -293,7 +293,7 @@ public class DeploymentCreateProcessorBenchmark {
         final RecordType type,
         final long key,
         final Intent intent,
-        final UnpackedObject value,
+        final BufferWriter value,
         final ValueType valueType,
         final RejectionType rejectionType,
         final String rejectionReason,

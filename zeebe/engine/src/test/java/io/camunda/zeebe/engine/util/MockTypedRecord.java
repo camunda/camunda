@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Map;
 
-public final class MockTypedRecord<T extends UnifiedRecordValue> implements TypedRecord<T> {
+public final class MockTypedRecord<T extends MsgpackRecordValue> implements TypedRecord<T> {
 
   private final long timestamp;
   private long key;

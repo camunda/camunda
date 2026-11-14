@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,7 +32,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   private final int partitionId;
   private @Nullable LoggedEvent rawEvent;
   private @Nullable RecordMetadata metadata;
-  private @Nullable UnifiedRecordValue value;
+  private @Nullable MsgpackRecordValue value;
 
   public TypedRecordImpl(final int partitionId) {
     this.partitionId = partitionId;
@@ -40,7 +40,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
 
   @SuppressWarnings("NullAway.Init")
   public void wrap(
-      final LoggedEvent rawEvent, final RecordMetadata metadata, final UnifiedRecordValue value) {
+      final LoggedEvent rawEvent, final RecordMetadata metadata, final MsgpackRecordValue value) {
     this.rawEvent = rawEvent;
     this.metadata = metadata;
     this.value = value;
@@ -147,7 +147,7 @@ public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   }
 
   @Override
-  public UnifiedRecordValue getValue() {
+  public MsgpackRecordValue getValue() {
     return requireNonNull(value);
   }
 

@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Supplier;
 
 public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilderBackedWriter
@@ -56,7 +56,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   public void writeRejectedResponse(
       final long key,
       final Intent intent,
-      final UnifiedRecordValue value,
+      final MsgpackRecordValue value,
       final ValueType valueType,
       final RejectionType type,
       final String reason,
@@ -90,7 +90,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   public void writeAcceptedResponseOnCommand(
       final long eventKey,
       final Intent eventState,
-      final UnpackedObject eventValue,
+      final BufferWriter eventValue,
       final TypedRecord<?> command) {
     writeAcceptedResponse(
         eventKey,
@@ -105,7 +105,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   public void writeAcceptedResponse(
       final long eventKey,
       final Intent eventState,
-      final UnpackedObject eventValue,
+      final BufferWriter eventValue,
       final ValueType valueType,
       final long requestId,
       final int requestStreamId) {

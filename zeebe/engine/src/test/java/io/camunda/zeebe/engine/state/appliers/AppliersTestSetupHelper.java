@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
 class AppliersTestSetupHelper {
@@ -28,7 +28,7 @@ class AppliersTestSetupHelper {
    * @param recordValue data of the event to apply
    */
   void applyEventToState(
-      final long key, final Intent intent, final UnifiedRecordValue recordValue) {
+      final long key, final Intent intent, final MsgpackRecordValue recordValue) {
     final int latestVersion = eventAppliers.getLatestVersion(intent);
     eventAppliers.applyState(key, intent, recordValue, latestVersion);
   }

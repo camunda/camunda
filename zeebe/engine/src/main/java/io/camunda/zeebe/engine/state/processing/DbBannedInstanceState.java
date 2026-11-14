@@ -15,8 +15,8 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.BannedInstanceMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
@@ -76,7 +76,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
 
   @Override
   public boolean isBanned(final TypedRecord record) {
-    final UnpackedObject value = record.getValue();
+    final MsgpackRecordValue value = record.getValue();
     if (value instanceof ProcessInstanceRelated) {
       final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
       if (processInstanceKey >= 0) {
@@ -98,7 +98,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
       final TypedRecord<?> typedRecord, final Consumer<Long> onBanningInstance) {
     final Intent intent = typedRecord.getIntent();
     if (shouldBeBanned(intent)) {
-      final UnpackedObject value = typedRecord.getValue();
+      final MsgpackRecordValue value = typedRecord.getValue();
       if (value instanceof ProcessInstanceRelated) {
         final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
         banInstance(processInstanceKey);

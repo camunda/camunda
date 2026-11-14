@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistribu
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -163,7 +163,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
    *     partitions to check authorizations. May be null to not distribute any auth info.
    * @param partitions the partitions to distribute the command to
    */
-  private <T extends UnifiedRecordValue> void distributeCommand(
+  private <T extends MsgpackRecordValue> void distributeCommand(
       final String queue,
       final long distributionKey,
       final ValueType valueType,
@@ -318,7 +318,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
    *
    * @param command the command that was distributed
    */
-  public <T extends UnifiedRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
+  public <T extends MsgpackRecordValue> void acknowledgeCommand(final TypedRecord<T> command) {
     final long distributionKey = command.getKey();
 
     // ACKNOWLEDGE must be a new record as it is transmitted as a side effect
@@ -342,7 +342,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     getMetrics().sentAcknowledgeDistribution(receiverPartitionId);
   }
 
-  private <T extends UnifiedRecordValue> void requestContinuation(
+  private <T extends MsgpackRecordValue> void requestContinuation(
       final String queue,
       final long key,
       final ValueType valueType,
@@ -466,10 +466,10 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     DistributionRequestBuilder forOtherPartitions();
 
     /** Distributes the command as specified. */
-    <T extends UnifiedRecordValue> void distribute(TypedRecord<T> command);
+    <T extends MsgpackRecordValue> void distribute(TypedRecord<T> command);
 
     /** Distributes the command as specified. */
-    <T extends UnifiedRecordValue> void distribute(
+    <T extends MsgpackRecordValue> void distribute(
         final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
   }
 
@@ -479,13 +479,13 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
      * Write this command once the queue is empty. If the queue is already empty, the command will
      * be written immediately.
      */
-    <T extends UnifiedRecordValue> void continueWith(TypedRecord<T> command);
+    <T extends MsgpackRecordValue> void continueWith(TypedRecord<T> command);
 
     /**
      * Write this command once the queue is empty. If the queue is already empty, the command will
      * be written immediately.
      */
-    <T extends UnifiedRecordValue> void continueWith(
+    <T extends MsgpackRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
   }
 
@@ -536,7 +536,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     }
 
     @Override
-    public <T extends UnifiedRecordValue> void distribute(final TypedRecord<T> command) {
+    public <T extends MsgpackRecordValue> void distribute(final TypedRecord<T> command) {
       distributeCommand(
           queue,
           key,
@@ -548,7 +548,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     }
 
     @Override
-    public <T extends UnifiedRecordValue> void distribute(
+    public <T extends MsgpackRecordValue> void distribute(
         final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
       distributeCommand(
           queue,
@@ -561,7 +561,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     }
 
     @Override
-    public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
+    public <T extends MsgpackRecordValue> void continueWith(final TypedRecord<T> command) {
       requestContinuation(
           queue,
           key,
@@ -572,7 +572,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     }
 
     @Override
-    public <T extends UnifiedRecordValue> void continueWith(
+    public <T extends MsgpackRecordValue> void continueWith(
         final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
       requestContinuation(queue, key, valueType, intent, value, authInfo);
     }
