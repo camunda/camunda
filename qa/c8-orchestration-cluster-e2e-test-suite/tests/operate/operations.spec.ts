@@ -65,19 +65,31 @@ test.describe('Operations', () => {
     // The session cookie is worker-scoped and reused across this worker's
     // tests. It can be invalidated mid-run (another worker re-authenticating
     // the shared `demo` user, or a session timeout), which bounces this
-    // navigation to the login screen — the banner then never renders and the
-    // assertion below would wait out its full budget before failing. Wait for
-    // whichever of the authenticated header or the login form appears first,
-    // and re-establish the session through the UI if we were bounced.
+    // navigation to the login screen — the banner then never renders.
+    // Crucially, that bounce can happen *after* the page first settles on the
+    // authenticated shell, so a single isVisible() check of the login form
+    // races the late redirect: it reads false, login is skipped, and the
+    // banner assertion then waits out its full budget on the login screen.
+    // Keep (re-)establishing the session until the authenticated banner is
+    // actually present, logging in through the UI whenever we find the form.
     await expect(
       operateHomePage.operateBanner.or(loginPage.usernameInput),
     ).toBeVisible({timeout: 90000});
-    if (await loginPage.usernameInput.isVisible()) {
-      await loginPage.login(loginUser.username, loginUser.password);
-    }
-    // Operate can be slow to render its header banner on first load under
-    // load; give it a wider budget than the default expect timeout.
-    await expect(operateHomePage.operateBanner).toBeVisible({timeout: 90000});
+    await waitForAssertion({
+      assertion: async () => {
+        if (await loginPage.usernameInput.isVisible()) {
+          await loginPage.login(loginUser.username, loginUser.password);
+        }
+        // Operate can be slow to render its header banner on first load under
+        // load; give it a wider budget than the default expect timeout.
+        await expect(operateHomePage.operateBanner).toBeVisible({
+          timeout: 30000,
+        });
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
     await operateHomePage.clickProcessesTab();
   });
 
