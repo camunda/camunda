@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
 
 @Configuration(proxyBeanMethods = false)
 @Import(io.camunda.security.spring.CamundaSecurityConfiguration.class)
@@ -77,8 +78,8 @@ public class CamundaSecurityConfiguration {
   }
 
   @Bean
-  public MappingRuleMembershipPolicy mappingRuleMembershipPolicy() {
-    return MappingRuleMembershipPolicy.of(properties);
+  public MappingRuleMembershipPolicy mappingRuleMembershipPolicy(final Environment environment) {
+    return MappingRuleMembershipPolicy.of(properties, environment);
   }
 
   @PostConstruct
