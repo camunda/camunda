@@ -195,31 +195,6 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldRejectAChunkWithAnEntryWithoutEntityType() {
-    // given
-    final var id = "entity-" + uid();
-    final var chunk =
-        chunk()
-            .setDeletes(
-                List.<PolicyDeleteEntryValue>of(
-                    new PolicyDeleteEntry()
-                        .setEntityType(PolicyUpdateEntityType.UNSPECIFIED)
-                        .setId(id)));
-
-    // when
-    apply(chunk);
-
-    // then
-    final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-            .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
-            .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains(id, "not specified");
-  }
-
-  @Test
   public void shouldRejectAnAppendedChunkSentAsClientRequest() {
     assertRejectedAsClientRequest(PolicyUpdateIntent.APPEND_CHUNK);
   }

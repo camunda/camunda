@@ -19,8 +19,14 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public interface PolicyUpdateState {
 
-  /** The buffered update, if at least one of its chunks is buffered. */
-  Optional<PersistedPolicyUpdate> getUpdate(String updateId);
+  /**
+   * The update that is buffering or being applied, if there is one. Only one update is open at a
+   * time.
+   */
+  Optional<PersistedPolicyUpdate> getOpenUpdate();
+
+  /** Whether the chunk of the update is buffered. */
+  boolean hasChunk(String updateId, int chunkIndex);
 
   /** The buffered chunk of the update, if it is there. */
   Optional<PolicyUpdateRecord> getChunk(String updateId, int chunkIndex);

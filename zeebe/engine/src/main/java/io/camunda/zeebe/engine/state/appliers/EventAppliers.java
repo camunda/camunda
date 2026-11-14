@@ -221,7 +221,10 @@ public final class EventAppliers implements EventApplier {
         PolicyUpdateIntent.VERSION_COMMITTED,
         new PolicyUpdateVersionCommittedApplier(
             state.getPolicyState(), state.getPolicyUpdateState()));
-    register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
+    register(
+        PolicyUpdateIntent.CANCELED, new PolicyUpdateCanceledApplier(state.getPolicyUpdateState()));
+    register(
+        PolicyUpdateIntent.FAILED, new PolicyUpdateFailedApplier(state.getPolicyUpdateState()));
   }
 
   private void registerProbeAppliers() {

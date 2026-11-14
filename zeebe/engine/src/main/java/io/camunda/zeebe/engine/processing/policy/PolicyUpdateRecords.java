@@ -9,6 +9,10 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -31,5 +35,30 @@ final class PolicyUpdateRecords {
         .setUpdateId(update.getUpdateId())
         .setChunkIndex(chunkIndex)
         .setChunkCount(update.getChunkCount());
+  }
+
+  /**
+   * The identifiers and chunk count in which the chunk differs from its update, each as {@code
+   * "<name> <chunk's value> instead of <update's value>"}. Empty if the chunk matches its update.
+   */
+  static List<String> differingIdentifiers(
+      final PolicyUpdateRecordValue update, final PolicyUpdateRecordValue chunk) {
+    return Stream.of(
+            difference("policyId", chunk.getPolicyId(), update.getPolicyId()),
+            difference("policyVersion", chunk.getPolicyVersion(), update.getPolicyVersion()),
+            difference(
+                "basePolicyVersion", chunk.getBasePolicyVersion(), update.getBasePolicyVersion()),
+            difference("seqNo", chunk.getSeqNo(), update.getSeqNo()),
+            difference("chunkCount", chunk.getChunkCount(), update.getChunkCount()))
+        .flatMap(Optional::stream)
+        .toList();
+  }
+
+  /** The difference as {@code "<name> <chunk's value> instead of <update's value>"}, if any. */
+  private static Optional<String> difference(
+      final String name, final Object chunkValue, final Object updateValue) {
+    return Objects.equals(chunkValue, updateValue)
+        ? Optional.empty()
+        : Optional.of("%s %s instead of %s".formatted(name, chunkValue, updateValue));
   }
 }

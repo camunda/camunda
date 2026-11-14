@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutablePolicyUpdateState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
@@ -49,9 +50,23 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
   }
 
   @Override
-  public Optional<PersistedPolicyUpdate> getUpdate(final String updateId) {
+  public Optional<PersistedPolicyUpdate> getOpenUpdate() {
+    final var openUpdate = new PersistedPolicyUpdate();
+    final var found = new boolean[1];
+    updateColumnFamily.whileTrue(
+        (key, update) -> {
+          BufferUtil.copy(update, openUpdate);
+          found[0] = true;
+          return false;
+        });
+    return found[0] ? Optional.of(openUpdate) : Optional.empty();
+  }
+
+  @Override
+  public boolean hasChunk(final String updateId, final int chunkIndex) {
     this.updateId.wrapString(updateId);
-    return Optional.ofNullable(updateColumnFamily.get(this.updateId, PersistedPolicyUpdate::new));
+    this.chunkIndex.wrapInt(chunkIndex);
+    return chunkColumnFamily.exists(updateIdAndChunkIndex);
   }
 
   @Override

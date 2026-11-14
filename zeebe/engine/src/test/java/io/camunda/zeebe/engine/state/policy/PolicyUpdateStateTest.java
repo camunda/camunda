@@ -32,15 +32,6 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
-  void shouldHaveNoUpdateBeforeItsFirstChunk() {
-    // when
-    final var openUpdate = state.getUpdate("update-1");
-
-    // then
-    assertThat(openUpdate).isEmpty();
-  }
-
-  @Test
   void shouldOpenTheUpdateWithItsFirstChunk() {
     // given
     final var chunk = chunk("update-1", 1, 3).setRoles(List.<RoleRecordValue>of(role("role-1")));
@@ -49,7 +40,7 @@ final class PolicyUpdateStateTest {
     state.bufferChunk(chunk);
 
     // then
-    final var openUpdate = state.getUpdate("update-1").orElseThrow();
+    final var openUpdate = state.getOpenUpdate().orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isOne();
     assertThat(openUpdate.hasAllChunksBuffered()).isFalse();
     final var update = openUpdate.getUpdate();
@@ -72,7 +63,7 @@ final class PolicyUpdateStateTest {
     state.bufferChunk(chunk("update-1", 1, 3));
 
     // then
-    final var openUpdate = state.getUpdate("update-1").orElseThrow();
+    final var openUpdate = state.getOpenUpdate().orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isEqualTo(3);
     assertThat(openUpdate.hasAllChunksBuffered()).isTrue();
   }
@@ -86,7 +77,7 @@ final class PolicyUpdateStateTest {
     state.bufferChunk(chunk("update-1", 0, 2).setRoles(List.<RoleRecordValue>of(role("role-b"))));
 
     // then
-    final var openUpdate = state.getUpdate("update-1").orElseThrow();
+    final var openUpdate = state.getOpenUpdate().orElseThrow();
     assertThat(openUpdate.getBufferedChunkCount()).isOne();
     assertThat(openUpdate.hasAllChunksBuffered()).isFalse();
     assertThat(state.getChunk("update-1", 0).orElseThrow().getRoles())
@@ -112,6 +103,20 @@ final class PolicyUpdateStateTest {
   }
 
   @Test
+  void shouldKnowWhichChunksAreBuffered() {
+    // given
+    state.bufferChunk(chunk("update-1", 0, 2));
+
+    // when
+    final boolean hasChunk0 = state.hasChunk("update-1", 0);
+    final boolean hasChunk1 = state.hasChunk("update-1", 1);
+
+    // then
+    assertThat(hasChunk0).isTrue();
+    assertThat(hasChunk1).isFalse();
+  }
+
+  @Test
   void shouldNotReturnAChunkThatIsNotBuffered() {
     // given
     state.bufferChunk(chunk("update-1", 0, 2));
@@ -121,6 +126,27 @@ final class PolicyUpdateStateTest {
 
     // then
     assertThat(chunk).isEmpty();
+  }
+
+  @Test
+  void shouldHaveNoOpenUpdateWhenNothingIsBuffered() {
+    // when
+    final var openUpdate = state.getOpenUpdate();
+
+    // then
+    assertThat(openUpdate).isEmpty();
+  }
+
+  @Test
+  void shouldHaveNoOpenUpdateOnceAllAreRemoved() {
+    // given
+    state.bufferChunk(chunk("update-1", 0, 1));
+
+    // when
+    state.removeAll();
+
+    // then
+    assertThat(state.getOpenUpdate()).isEmpty();
   }
 
   @Test
@@ -134,8 +160,7 @@ final class PolicyUpdateStateTest {
     state.removeAll();
 
     // then
-    assertThat(state.getUpdate("update-1")).isEmpty();
-    assertThat(state.getUpdate("update-10")).isEmpty();
+    assertThat(state.getOpenUpdate()).isEmpty();
     assertThat(state.getChunk("update-1", 0)).isEmpty();
     assertThat(state.getChunk("update-1", 1)).isEmpty();
     assertThat(state.getChunk("update-10", 0)).isEmpty();

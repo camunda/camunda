@@ -79,14 +79,14 @@ polling cursor advances in the same step as the version.
 
 **D9. Validation happens in the policy update processor before any chunk is applied.**
 - Before any chunk is applied, the update processor validates the whole update and only then starts processing.
-- If validation fails, the whole update is `ABORTED` and all chunks are removed from the buffer.
+- If validation fails, the whole update is `FAILED` and all chunks are removed from the buffer.
 - The Hub client receives the failure through `errorMessage` and can retry the update.
 
-**D10. A policy update can be aborted externally while still buffering.**
+**D10. A policy update can be canceled externally while still buffering.**
 
 - If a leader transition happens while the transformer is still sending chunks, the policy update
   may be stuck in the buffer forever because the missing chunks are never sent. The new leader can
-  abort that pending update and start a new one.
+  cancel that pending update and start a new one.
 
 ## Alternatives considered
 
