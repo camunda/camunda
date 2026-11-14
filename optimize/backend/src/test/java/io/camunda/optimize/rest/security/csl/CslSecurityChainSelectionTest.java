@@ -271,6 +271,46 @@ class CslSecurityChainSelectionTest {
             });
   }
 
+  @Test
+  void shouldRegisterCcsmPublicApiAccessFilterForCcsm() {
+    ccsmRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).hasBean("ccsmPublicApiAccessFilterCustomizer");
+              assertThat(context).doesNotHaveBean("ccsaasPublicApiAccessFilterCustomizer");
+            });
+  }
+
+  @Test
+  void shouldRegisterCcsaasPublicApiAccessFilterForCcsaas() {
+    ccsaasRunner
+        .withPropertyValues(STATIC_OIDC_PROPERTIES)
+        .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).hasBean("ccsaasPublicApiAccessFilterCustomizer");
+              assertThat(context).doesNotHaveBean("ccsmPublicApiAccessFilterCustomizer");
+            });
+  }
+
+  @Test
+  void shouldNotRegisterPublicApiAccessFilterWhenFlagExplicitlyDisabled() {
+    // Legacy mode keeps the public API on its own bearer-only chain.
+    ccsmRunner
+        .withPropertyValues(CSL_FLAG_DISABLED)
+        .withUserConfiguration(OptimizePublicApiAccessConfiguration.class)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              assertThat(context).doesNotHaveBean(OptimizePublicApiAccessConfiguration.class);
+              assertThat(context).doesNotHaveBean("ccsmPublicApiAccessFilterCustomizer");
+            });
+  }
+
   /**
    * External sharing is served by a request-adjustment filter that each legacy adapter registers
    * for itself. Both back off in CSL mode, so {@link OptimizeCamundaSecurityConfig} must register
