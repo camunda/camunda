@@ -33,7 +33,7 @@ public final class VersionUtil {
   /**
    * @return the current version or 'development' if none can be determined.
    */
-  public static String getVersion() {
+  public static synchronized String getVersion() {
     if (version != null) {
       return version;
     }
@@ -61,7 +61,7 @@ public final class VersionUtil {
     return SemanticVersion.parse(getVersion());
   }
 
-  public static String getVersionLowerCase() {
+  public static synchronized String getVersionLowerCase() {
     if (versionLowerCase == null) {
       versionLowerCase = getVersion().toLowerCase();
     }
@@ -94,7 +94,7 @@ public final class VersionUtil {
    * @return the configured backwards-compatibility baseline, or {@code null} if the property is not
    *     set or the properties file cannot be read.
    */
-  public static @Nullable String getPreviousVersion() {
+  public static synchronized @Nullable String getPreviousVersion() {
     if (lastVersion == null) {
       lastVersion = readProperty(LAST_VERSION_PROPERTY_NAME);
     }
@@ -114,7 +114,7 @@ public final class VersionUtil {
    * re-read from the normal sources.
    */
   @VisibleForTesting("Allow tests to override the version to a non-prerelease version")
-  public static void overridePrerelease() {
+  public static synchronized void overridePrerelease() {
     final SemanticVersion semanticVersion = getSemanticVersion().orElseThrow();
     version =
         semanticVersion.major() + "." + semanticVersion.minor() + "." + semanticVersion.patch();
@@ -126,7 +126,7 @@ public final class VersionUtil {
    * the normal sources (env var, properties file, or package). This is intended for testing only.
    */
   @VisibleForTesting("Allow tests to reset the version after overriding it")
-  public static void resetVersionForTesting() {
+  public static synchronized void resetVersionForTesting() {
     version = null;
     versionLowerCase = null;
   }

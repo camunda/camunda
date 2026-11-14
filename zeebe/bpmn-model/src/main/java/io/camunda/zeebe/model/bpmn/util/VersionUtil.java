@@ -28,7 +28,7 @@ public final class VersionUtil {
   private static final String VERSION_PROPERTY_NAME = "zeebe.version";
   private static final String VERSION_DEV = "development";
 
-  private static String version;
+  private static final String VERSION = resolveVersion();
 
   private VersionUtil() {}
 
@@ -36,17 +36,18 @@ public final class VersionUtil {
    * @return the current version or 'development' if none can be determined.
    */
   public static String getVersion() {
-    if (version == null) {
-      // read version from file
-      version = readProperty(VERSION_PROPERTY_NAME);
-      if (version == null) {
-        LOG.warn("Version is not found in version file.");
-        version = VersionUtil.class.getPackage().getImplementationVersion();
-      }
+    return VERSION;
+  }
 
-      if (version == null) {
-        version = VERSION_DEV;
-      }
+  private static String resolveVersion() {
+    String version = readProperty(VERSION_PROPERTY_NAME);
+    if (version == null) {
+      LOG.warn("Version is not found in version file.");
+      version = VersionUtil.class.getPackage().getImplementationVersion();
+    }
+
+    if (version == null) {
+      version = VERSION_DEV;
     }
 
     return version;
