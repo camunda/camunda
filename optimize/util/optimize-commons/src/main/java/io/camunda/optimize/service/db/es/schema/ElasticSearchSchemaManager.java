@@ -22,6 +22,8 @@ import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
@@ -384,6 +386,8 @@ public class ElasticSearchSchemaManager
         new BusinessKeyIndexES(),
         new BusinessValueOverviewIndexES(),
         new BusinessValueTargetIndexES(),
+        new AgentRunIndexES(),
+        new AgentDefinitionIndexES(),
         new CollectionIndexES(),
         new DashboardIndexES(),
         new DashboardShareIndexES(),

@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_OrderSupportAgent" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="order-support-agent-mock" name="Order Support Agent (mock LLM)" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_TicketReceived" name="Support ticket received">
+      <bpmn:outgoing>Flow_ToAgent</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToAgent" sourceRef="StartEvent_TicketReceived" targetRef="Agent_OrderSupport" />
+    <bpmn:adHocSubProcess id="Agent_OrderSupport" name="Order support agent" zeebe:modelerTemplate="io.camunda.connectors.agenticai.ai-agent-subprocess.v2" zeebe:modelerTemplateVersion="1">
+      <bpmn:extensionElements><zeebe:taskDefinition type="io.camunda.agenticai:aiagent:subprocess:2" retries="3" /><zeebe:adHoc outputCollection="toolCallResults" outputElement="={&#10;  id: toolCall._meta.id,&#10;  name: toolCall._meta.name,&#10;  content: toolCallResult,&#10;  completedAt: now()&#10;}" /><zeebe:agentDefinition agentType="aiAgentSubProcess" /><zeebe:ioMapping><zeebe:input source="anthropic" target="provider.type" /><zeebe:input source="custom" target="provider.anthropic.backend.type" /><zeebe:input source="http://host.docker.internal:8099" target="provider.anthropic.backend.custom.endpoint" /><zeebe:input source="none" target="provider.anthropic.backend.custom.authentication.type" /><zeebe:input source="mock-claude" target="provider.anthropic.model.model" /><zeebe:input source="modelDefault" target="provider.anthropic.model.parameters.effort" /><zeebe:input source="modelDefault" target="provider.anthropic.model.parameters.thinking.mode" /><zeebe:input source="=false" target="provider.anthropic.model.parameters.promptCaching.enabled" /><zeebe:input source="=&quot;You are a customer support agent for an online shop. Use the tools to look up the order, check refund eligibility, and create a refund only when the order is eligible. Answer the customer briefly with the outcome.&quot;" target="data.systemPrompt.prompt" /><zeebe:input source="=ticket" target="data.userPrompt.prompt" /><zeebe:input source="in-process" target="data.memory.storage.type" /><zeebe:input source="=20" target="data.memory.contextWindowSize" /><zeebe:input source="=10" target="data.limits.maxModelCalls" /><zeebe:input source="WAIT_FOR_TOOL_CALL_RESULTS" target="data.events.behavior" /><zeebe:input source="text" target="data.response.format.type" /><zeebe:output source="=agent" target="agent" /></zeebe:ioMapping><zeebe:taskHeaders><zeebe:header key="elementTemplateVersion" value="1" /><zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.ai-agent-subprocess.v2" /><zeebe:header key="retryBackoff" value="PT30S" /></zeebe:taskHeaders><zeebe:properties><zeebe:property name="io.camunda.agenticai.toolContainer" value="true" /></zeebe:properties></bpmn:extensionElements><bpmn:incoming>Flow_ToAgent</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+      <bpmn:scriptTask id="Tool_GetOrderStatus" name="Get order status">
+        <bpmn:documentation>Returns the shipping status, carrier and delivery date of an order.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="=if starts with(orderId, &quot;A&quot;) then {orderId: orderId, status: &quot;DELIVERED&quot;, carrier: &quot;DHL&quot;, deliveredDaysAgo: 3} else if starts with(orderId, &quot;B&quot;) then {orderId: orderId, status: &quot;IN_TRANSIT&quot;, carrier: &quot;UPS&quot;, expectedInDays: 2} else {orderId: orderId, status: &quot;NOT_FOUND&quot;}" resultVariable="toolCallResult" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.orderId, &quot;The order ID from the customer's message, for example A-1001&quot;, &quot;string&quot;)" target="orderId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+      <bpmn:scriptTask id="Tool_CheckRefundPolicy" name="Check refund eligibility">
+        <bpmn:documentation>Checks whether a delivered order can still be refunded. Orders delivered within the last 14 days are eligible.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="={orderId: orderId, eligible: deliveredDaysAgo &lt;= 14, reason: if deliveredDaysAgo &lt;= 14 then &quot;Within 14-day window&quot; else &quot;Outside 14-day window&quot;}" resultVariable="toolCallResult" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.orderId, &quot;The order ID to check&quot;, &quot;string&quot;)" target="orderId" />
+            <zeebe:input source="=fromAi(toolCall.deliveredDaysAgo, &quot;Days since the order was delivered, from the order status&quot;, &quot;number&quot;)" target="deliveredDaysAgo" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+      <bpmn:scriptTask id="Tool_CreateRefund" name="Create refund">
+        <bpmn:documentation>Creates a refund for an eligible order and returns the refund ID. Only call this after the order was confirmed eligible.</bpmn:documentation>
+        <bpmn:extensionElements>
+          <zeebe:script expression="={orderId: orderId, refundId: &quot;R-&quot; + orderId, status: &quot;CREATED&quot;}" resultVariable="toolCallResult" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=fromAi(toolCall.orderId, &quot;The order ID to refund&quot;, &quot;string&quot;)" target="orderId" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+      </bpmn:scriptTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Agent_OrderSupport" targetRef="EndEvent_TicketAnswered" />
+    <bpmn:endEvent id="EndEvent_TicketAnswered" name="Ticket answered">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="order-support-agent-mock">
+      <bpmndi:BPMNShape id="StartEvent_TicketReceived_di" bpmnElement="StartEvent_TicketReceived">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="128" y="245" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Agent_OrderSupport_di" bpmnElement="Agent_OrderSupport" isExpanded="true">
+        <dc:Bounds x="250" y="80" width="520" height="280" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Tool_GetOrderStatus_di" bpmnElement="Tool_GetOrderStatus">
+        <dc:Bounds x="290" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Tool_CheckRefundPolicy_di" bpmnElement="Tool_CheckRefundPolicy">
+        <dc:Bounds x="460" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Tool_CreateRefund_di" bpmnElement="Tool_CreateRefund">
+        <dc:Bounds x="630" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_TicketAnswered_di" bpmnElement="EndEvent_TicketAnswered">
+        <dc:Bounds x="842" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="821" y="245" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToAgent_di" bpmnElement="Flow_ToAgent">
+        <di:waypoint x="188" y="220" />
+        <di:waypoint x="250" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="770" y="220" />
+        <di:waypoint x="842" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

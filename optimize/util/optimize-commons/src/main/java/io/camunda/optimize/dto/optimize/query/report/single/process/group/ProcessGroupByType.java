@@ -7,16 +7,19 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.process.group;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_AGENT;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_MODEL;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_PROCESS_DEFINITION_VERSION;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_RUNNING_DATE_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_TOOL;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_USER_TASKS_TYPE;
 import static io.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABLE_TYPE;
 
@@ -34,7 +37,10 @@ public enum ProcessGroupByType {
   CANDIDATE_GROUP(GROUP_BY_CANDIDATE_GROUP),
   DURATION(GROUP_BY_DURATION),
   PROCESS_DEFINITION_KEY(GROUP_BY_PROCESS_DEFINITION_KEY),
-  PROCESS_DEFINITION_VERSION(GROUP_BY_PROCESS_DEFINITION_VERSION);
+  PROCESS_DEFINITION_VERSION(GROUP_BY_PROCESS_DEFINITION_VERSION),
+  AGENT(GROUP_BY_AGENT),
+  MODEL(GROUP_BY_MODEL),
+  TOOL(GROUP_BY_TOOL);
 
   private final String id;
 

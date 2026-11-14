@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -37,12 +38,37 @@ public class ZeebeIncidentImportService
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ZeebeIncidentImportService.class);
 
+  private final AgentRunEnrichmentService agentRunEnrichmentService;
+  private final LongSupplier agentRunImportPosition;
+
   public ZeebeIncidentImportService(
       final ConfigurationService configurationService,
       final ProcessInstanceWriter processInstanceWriter,
       final int partitionId,
       final ProcessDefinitionReader processDefinitionReader,
       final DatabaseClient databaseClient) {
+    this(
+        configurationService,
+        processInstanceWriter,
+        partitionId,
+        processDefinitionReader,
+        databaseClient,
+        null,
+        () -> Long.MIN_VALUE);
+  }
+
+  /**
+   * @param agentRunImportPosition the position up to which the agent run import of the partition
+   *     has fetched records
+   */
+  public ZeebeIncidentImportService(
+      final ConfigurationService configurationService,
+      final ProcessInstanceWriter processInstanceWriter,
+      final int partitionId,
+      final ProcessDefinitionReader processDefinitionReader,
+      final DatabaseClient databaseClient,
+      final AgentRunEnrichmentService agentRunEnrichmentService,
+      final LongSupplier agentRunImportPosition) {
     super(
         configurationService,
         processInstanceWriter,
@@ -50,6 +76,47 @@ public class ZeebeIncidentImportService
         processDefinitionReader,
         databaseClient,
         ZEEBE_INCIDENT_INDEX_NAME);
+    this.agentRunEnrichmentService = agentRunEnrichmentService;
+    this.agentRunImportPosition = agentRunImportPosition;
+  }
+
+  /**
+   * Incidents are imported before the agent runs of their process instance, which wait for this
+   * import. Only when the Zeebe exporter retried a partly failed bulk can an incident become
+   * visible after the agent run import passed it; its runs are then enriched again once it is
+   * stored.
+   */
+  @Override
+  public void executeImport(
+      final List<ZeebeIncidentRecordDto> zeebeRecords, final Runnable importCompleteCallback) {
+    final Map<String, String> late =
+        lateIncidentProcessInstances(zeebeRecords, agentRunImportPosition.getAsLong());
+    if (late.isEmpty() || agentRunEnrichmentService == null) {
+      super.executeImport(zeebeRecords, importCompleteCallback);
+      return;
+    }
+    super.executeImport(
+        zeebeRecords,
+        () -> {
+          try {
+            agentRunEnrichmentService.reEnrichAfterLateIncidents(late);
+          } catch (final RuntimeException e) {
+            LOG.warn("Could not re-enrich agent runs after late incidents", e);
+          }
+          importCompleteCallback.run();
+        });
+  }
+
+  /** processDefinitionKey by processInstanceId of incidents the agent run import already passed. */
+  static Map<String, String> lateIncidentProcessInstances(
+      final List<ZeebeIncidentRecordDto> records, final long agentRunPosition) {
+    return records.stream()
+        .filter(record -> record.getPosition() <= agentRunPosition)
+        .collect(
+            Collectors.toMap(
+                record -> String.valueOf(record.getValue().getProcessInstanceKey()),
+                record -> record.getValue().getBpmnProcessId(),
+                (a, b) -> a));
   }
 
   @Override

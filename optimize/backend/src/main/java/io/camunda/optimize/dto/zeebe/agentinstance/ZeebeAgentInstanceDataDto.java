@@ -22,6 +22,7 @@ import org.apache.commons.lang3.StringUtils;
 public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
 
   private long agentInstanceKey;
+  private long agentDefinitionKey = -1L;
   private long elementInstanceKey;
   private List<Long> elementInstanceKeys = new ArrayList<>();
   private String elementId;
@@ -36,6 +37,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   private AgentInstanceStatus status;
   private AgentDefinitionValueDto definition = new AgentDefinitionValueDto();
   private AgentMetricsValueDto metrics = new AgentMetricsValueDto();
+  private AgentLimitsValueDto limits = new AgentLimitsValueDto();
   private List<AgentToolValueDto> tools = new ArrayList<>();
   private List<String> changedAttributes = new ArrayList<>();
 
@@ -55,11 +57,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.agentInstanceKey = agentInstanceKey;
   }
 
-  // Not tracked — Optimize's agent-instance import doesn't use the link back to the agent
-  // definition, so this identity is intentionally left unset rather than deserialized.
   @Override
   public long getAgentDefinitionKey() {
-    return -1;
+    return agentDefinitionKey;
+  }
+
+  public void setAgentDefinitionKey(final long agentDefinitionKey) {
+    this.agentDefinitionKey = agentDefinitionKey;
   }
 
   @Override
@@ -199,12 +203,13 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     this.definition = definition;
   }
 
-  // Not tracked — Optimize's import doesn't need the configured limits. Ignored by Jackson so
-  // a real exporter record carrying this field doesn't fail as an unrecognized property (#62414).
   @Override
-  @JsonIgnore
-  public AgentInstanceLimitsValue getLimits() {
-    return null;
+  public AgentLimitsValueDto getLimits() {
+    return limits;
+  }
+
+  public void setLimits(final AgentLimitsValueDto limits) {
+    this.limits = limits;
   }
 
   @Override
@@ -238,6 +243,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   public int hashCode() {
     return Objects.hash(
         agentInstanceKey,
+        agentDefinitionKey,
         elementInstanceKey,
         elementInstanceKeys,
         elementId,
@@ -252,6 +258,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         status,
         definition,
         metrics,
+        limits,
         tools,
         changedAttributes);
   }
@@ -263,6 +270,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     }
     final ZeebeAgentInstanceDataDto that = (ZeebeAgentInstanceDataDto) o;
     return agentInstanceKey == that.agentInstanceKey
+        && agentDefinitionKey == that.agentDefinitionKey
         && elementInstanceKey == that.elementInstanceKey
         && processInstanceKey == that.processInstanceKey
         && rootProcessInstanceKey == that.rootProcessInstanceKey
@@ -277,6 +285,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
         && Objects.equals(status, that.status)
         && Objects.equals(definition, that.definition)
         && Objects.equals(metrics, that.metrics)
+        && Objects.equals(limits, that.limits)
         && Objects.equals(tools, that.tools)
         && Objects.equals(changedAttributes, that.changedAttributes);
   }
@@ -320,6 +329,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
   public static final class Fields {
 
     public static final String agentInstanceKey = "agentInstanceKey";
+    public static final String agentDefinitionKey = "agentDefinitionKey";
     public static final String elementInstanceKey = "elementInstanceKey";
     public static final String elementId = "elementId";
     public static final String processInstanceKey = "processInstanceKey";
@@ -333,6 +343,7 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     public static final String status = "status";
     public static final String definition = "definition";
     public static final String metrics = "metrics";
+    public static final String limits = "limits";
     public static final String tools = "tools";
     public static final String changedAttributes = "changedAttributes";
   }
@@ -509,6 +520,69 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
           + modelCalls
           + ", toolCalls="
           + toolCalls
+          + ")";
+    }
+  }
+
+  public static class AgentLimitsValueDto implements AgentInstanceLimitsValue {
+
+    private long maxTokens = -1L;
+    private int maxModelCalls = -1;
+    private int maxToolCalls = -1;
+
+    public AgentLimitsValueDto() {}
+
+    @Override
+    public long getMaxTokens() {
+      return maxTokens;
+    }
+
+    public void setMaxTokens(final long maxTokens) {
+      this.maxTokens = maxTokens;
+    }
+
+    @Override
+    public int getMaxModelCalls() {
+      return maxModelCalls;
+    }
+
+    public void setMaxModelCalls(final int maxModelCalls) {
+      this.maxModelCalls = maxModelCalls;
+    }
+
+    @Override
+    public int getMaxToolCalls() {
+      return maxToolCalls;
+    }
+
+    public void setMaxToolCalls(final int maxToolCalls) {
+      this.maxToolCalls = maxToolCalls;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(maxTokens, maxModelCalls, maxToolCalls);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final AgentLimitsValueDto that = (AgentLimitsValueDto) o;
+      return maxTokens == that.maxTokens
+          && maxModelCalls == that.maxModelCalls
+          && maxToolCalls == that.maxToolCalls;
+    }
+
+    @Override
+    public String toString() {
+      return "AgentLimitsValueDto(maxTokens="
+          + maxTokens
+          + ", maxModelCalls="
+          + maxModelCalls
+          + ", maxToolCalls="
+          + maxToolCalls
           + ")";
     }
   }

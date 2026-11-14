@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import io.camunda.optimize.service.db.reader.importindex.PositionBasedImportIndexReader;
 import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
+import io.camunda.optimize.service.security.util.LocalDateUtil;
 import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.Optional;
@@ -30,11 +31,14 @@ public abstract class PositionBasedImportIndexHandler
   protected ZeebeDataSourceDto dataSource;
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
-  private long persistedPositionOfLastEntity = 0;
+  private volatile long persistedPositionOfLastEntity = 0;
   private long persistedSequenceOfLastEntity = 0;
-  private long pendingPositionOfLastEntity = 0;
+  private volatile long pendingPositionOfLastEntity = 0;
   private long pendingSequenceOfLastEntity = 0;
   private boolean hasSeenSequenceField = false;
+  // Not persisted: after a restart every mediator fetches again before it counts as idle.
+  private volatile OffsetDateTime lastPageRequestedAt;
+  private volatile OffsetDateTime lastEmptyFetchStartedAt;
   @Autowired private PositionBasedImportIndexReader positionBasedImportIndexReader;
 
   public PositionBasedImportIndexHandler() {}
@@ -62,6 +66,7 @@ public abstract class PositionBasedImportIndexHandler
 
   @Override
   public PositionBasedImportPage getNextPage() {
+    lastPageRequestedAt = LocalDateUtil.getCurrentDateTime();
     final PositionBasedImportPage page = new PositionBasedImportPage();
     page.setPosition(pendingPositionOfLastEntity);
     page.setSequence(pendingSequenceOfLastEntity);
@@ -147,6 +152,26 @@ public abstract class PositionBasedImportIndexHandler
 
   public long getPendingSequenceOfLastEntity() {
     return pendingSequenceOfLastEntity;
+  }
+
+  /** Called with the page fetched for the last {@link #getNextPage()}. */
+  public void recordFetchResult(final boolean empty) {
+    lastEmptyFetchStartedAt = empty ? lastPageRequestedAt : null;
+  }
+
+  public OffsetDateTime getLastPageRequestedAt() {
+    return lastPageRequestedAt;
+  }
+
+  /**
+   * When the last fetch started, if it found no new record and every fetched page is written: from
+   * then on nothing older than what was visible at that moment is left to import.
+   */
+  public Optional<OffsetDateTime> getIdleSince() {
+    return lastEmptyFetchStartedAt != null
+            && pendingPositionOfLastEntity == persistedPositionOfLastEntity
+        ? Optional.of(lastEmptyFetchStartedAt)
+        : Optional.empty();
   }
 
   public boolean isHasSeenSequenceField() {
