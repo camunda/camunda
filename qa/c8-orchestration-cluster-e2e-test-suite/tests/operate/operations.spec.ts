@@ -138,7 +138,10 @@ test.describe('Operations', () => {
 
       await expect(instanceRow.getByText(instance.bpmnProcessId)).toBeVisible();
       await expect(
-        instanceRow.getByText(instance.processInstanceKey),
+        instanceRow.getByRole('link', {
+          name: `View instance ${instance.processInstanceKey}`,
+          exact: true,
+        }),
       ).toBeVisible();
     });
   });
