@@ -277,7 +277,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, run the on-demand workflow against your branch instead.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **If your PR changes non-Markdown files of the suite, wait for the automatic suite PR check (`c8-orchestration-cluster-e2e-tests-pr.yml`) to complete before requesting review; for a PR from a fork, a maintainer reviews it, pushes its head commit to a branch in `camunda/camunda` and runs the on-demand workflow against that branch instead.** A Markdown-only PR does not trigger the check and needs no run. PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -1323,10 +1323,30 @@ show other keys, such as `group` or `source`.
 
 ## Review-Response Agent
 
-This section is read by the second Claude invocation in
-`.github/workflows/c8-orchestration-cluster-e2e-nightly-fix.yml`, the one dispatched after Copilot
-has reviewed the PR the Nightly Fix Agent just opened. It applies to every dispatched version,
-`main` and `stable/<version>` alike.
+This section is read by the second Claude invocation of two workflows -- the one dispatched after
+Copilot has reviewed the PR that agent just opened:
+
+- `.github/workflows/c8-orchestration-cluster-e2e-nightly-fix.yml`, for a PR from the Nightly Fix
+  Agent;
+- `.github/workflows/c8-orchestration-cluster-flakiness-fix.yml`, for a PR from the Flakiness Fix
+  Agent.
+
+It applies to every dispatched version, `main` and `stable/<version>` alike. Where the two differ,
+the dispatch-specific part of your prompt says so; everything in this section binds you in both.
+
+**One difference is structural.** The flakiness caller runs you with **no GitHub credentials**, the
+same boundary its fix agent draws: you edit files and write your verdicts and reply bodies to a
+manifest, and a separate job — on a runner you never touched — then validates the diff against the
+fix agent's own allowlist, lints it, commits, pushes, posts each reply in its thread and resolves
+what it should. Which verdict each thread gets, and what a reply has to say, is unchanged — only
+who performs the mutation differs, so read "push it, reply, resolve" below as "the workflow does
+this with what you wrote".
+
+Two consequences for how you write the manifest. The replies are posted against the thread ids the
+workflow gathered, not the ones you name: an id it did not gather reaches nothing, and a thread you
+leave out gets a placeholder reply and stays open — so answer every thread you were given. And a
+verdict outside `accepted`, `rejected` and `left_open` is read as `left_open`, so a thread whose
+verdict you cannot spell exactly will never be resolved.
 
 ### Why the PR is open and not a draft
 
@@ -1372,7 +1392,7 @@ job ends — so an accepted thread resolved against an unpushed commit is a fals
 will catch. Push first, verify it succeeded, then resolve. The workflow pushes anything you left
 behind and warns about it, but that is a backstop, not the contract.
 
-**A code change here invalidates Live Docker Verify.** If the fix agent verified its fix against a
+**A code change here invalidates Live Docker Verify (nightly only).** If the fix agent verified its fix against a
 local Docker environment and you then change code, that result describes the previous commit — and
 you are not allowed to stand up an environment or run Playwright, so nothing re-measures it. The
 workflow handles this: it drops the `verified` label for that head rather than claiming a
@@ -1388,8 +1408,8 @@ stated reason** — Copilot does not know this suite's rules, and "the reviewer 
 override them.
 
 Also: do not stand up a Docker environment or run Playwright, do not open another PR, do not change
-the PR's draft state (the Finalize PR verification status step owns that), do not touch the backport
-labels, and do not touch threads a human opened.
+the PR's draft state (nightly: the Finalize PR verification status step owns that), do not touch the
+PR's labels, and do not touch threads a human opened.
 
 ### Mechanics
 
@@ -1411,8 +1431,9 @@ a couple of files changed.
 ### Result manifest
 
 Write `/tmp/review-response.json` when you are done. The counts must add up to the number of
-threads you were given — the workflow folds this into `fix-meta.json`, the job summary and the
-Slack thread reply, where `left_open` is the only part still waiting on a person:
+threads you were given — the workflow folds this into the job summary (and, for the nightly,
+`fix-meta.json` and the Slack thread reply), where `left_open` is the only part still waiting on a
+person:
 
 ```json
 {"pr": 1234, "threads": 3, "accepted": 2, "rejected": 1, "left_open": 0,

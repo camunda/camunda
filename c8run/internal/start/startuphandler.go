@@ -516,7 +516,7 @@ func (s *StartupHandler) startConnectors(ctx context.Context, stop context.Cance
 		defer wg.Done()
 		s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
 			connectorsCmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Connectors.Version, state.Settings.Port)
-			connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings.ConnectorsPort)
+			connectorsCmd.Env = defaultConnectorsEnv(connectorsCmd.Env, state.Settings)
 			connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 			err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
 			if err != nil {
@@ -563,18 +563,24 @@ func withTenantEnv(env []string, tenantEnv map[string]string) []string {
 	return env
 }
 
-// connectorsEnv returns a connectors runtime environment without any per-tenant properties.
-func connectorsEnv(env []string) []string {
+// connectorsEnv returns the environment of the connectors runtime of tenant own, without any
+// per-tenant properties or other tenants' secret variables.
+func connectorsEnv(env []string, settings types.C8RunSettings, own string) []string {
 	if env == nil {
 		env = os.Environ()
 	}
+	tenantIDs := make([]string, 0, len(settings.PhysicalTenants))
+	for _, tenant := range settings.PhysicalTenants {
+		tenantIDs = append(tenantIDs, tenant.ID)
+	}
+	env = physicaltenants.ScrubOtherTenantSecrets(env, settings.SecretsEnvPrefix, tenantIDs, own)
 	return physicaltenants.ScrubTenantEnv(env)
 }
 
-func defaultConnectorsEnv(env []string, port int) []string {
-	env = connectorsEnv(env)
-	if port != health.DefaultConnectorsPort {
-		env = append(env, "SERVER_PORT="+strconv.Itoa(port))
+func defaultConnectorsEnv(env []string, settings types.C8RunSettings) []string {
+	env = connectorsEnv(env, settings, physicaltenants.DefaultID)
+	if settings.ConnectorsPort != health.DefaultConnectorsPort {
+		env = append(env, "SERVER_PORT="+strconv.Itoa(settings.ConnectorsPort))
 	}
 	return env
 }
@@ -598,7 +604,7 @@ func (s *StartupHandler) startTenantConnectors(ctx context.Context, stop context
 	}
 	s.ProcessHandler.AttemptToStartProcess(pidPath, name, func() {
 		cmd := state.C8.ConnectorsCmd(ctx, javaBinary, parentDir, state.ProcessInfo.Connectors.Version, state.Settings.Port)
-		cmd.Env = append(connectorsEnv(cmd.Env), TenantConnectorsEnv(tenant, state.Settings)...)
+		cmd.Env = append(connectorsEnv(cmd.Env, state.Settings, tenant.ID), TenantConnectorsEnv(tenant, state.Settings)...)
 		logPath := filepath.Join(parentDir, "log", "connectors-"+tenant.ID+".log")
 		if err := s.startApplication(cmd, pidPath, logPath, stop); err != nil {
 			log.Err(err).Str("tenant", tenant.ID).Msg("Failed to start tenant Connectors process")

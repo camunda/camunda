@@ -17,7 +17,6 @@ import {
   EmptyMessageWrapper,
   DimmableResults,
   VariablesSearch,
-  RedactedValue,
 } from './styled';
 import {
   FilterSwitcher,
@@ -44,7 +43,6 @@ import {parseDocumentVariable} from './parseDocumentVariable';
 import {DownloadDocumentButton} from 'App/ProcessInstance/DocumentsView/DownloadDocumentButton';
 import {PreviewDocumentButton} from 'App/ProcessInstance/DocumentsView/DocumentPreview/PreviewDocumentButton';
 import {ViewDocumentListButton} from './ViewDocumentListButton';
-import {isRedactedVariable} from 'modules/utils/redactedVariable';
 
 type Props = {
   scopeId: string | null;
@@ -88,22 +86,16 @@ const VariablesTable: React.FC<Props> = ({
       variablesData?.pages.flatMap((page) => page.items) ?? [];
 
     return allVariables
-      .map((variable) => {
-        const isRedacted = isRedactedVariable(variable);
-        return {
-          name: variable.name,
-          value: variable.value,
-          variableKey: variable.variableKey,
-          isTruncated: Boolean(variable.isTruncated),
-          isRedacted,
-          documentResult: isRedacted
-            ? null
-            : parseDocumentVariable(
-                variable.value,
-                Boolean(variable.isTruncated),
-              ),
-        };
-      })
+      .map((variable) => ({
+        name: variable.name,
+        value: variable.value,
+        variableKey: variable.variableKey,
+        isTruncated: Boolean(variable.isTruncated),
+        documentResult: parseDocumentVariable(
+          variable.value,
+          Boolean(variable.isTruncated),
+        ),
+      }))
       .filter((variable) =>
         showDocumentsOnly ? variable.documentResult !== null : true,
       );
@@ -114,7 +106,7 @@ const VariablesTable: React.FC<Props> = ({
     isVariableModificationAllowed;
 
   const rows = processedVariables.map(
-    ({name, value, variableKey, isTruncated, isRedacted, documentResult}) => ({
+    ({name, value, variableKey, isTruncated, documentResult}) => ({
       key: name,
       dataTestId: `variable-${name}`,
       columns: [
@@ -127,9 +119,7 @@ const VariablesTable: React.FC<Props> = ({
           width: '35%',
         },
         {
-          cellContent: isRedacted ? (
-            <RedactedValue>[REDACTED]</RedactedValue>
-          ) : isEditMode(name) ? (
+          cellContent: isEditMode(name) ? (
             <ExistingVariableValue
               id={variableKey}
               variableName={name}
@@ -151,9 +141,7 @@ const VariablesTable: React.FC<Props> = ({
           width: 'auto',
         },
         {
-          cellContent: isRedacted ? (
-            <Operations />
-          ) : (
+          cellContent: (
             <Operations>
               <ViewFullVariableButton
                 variableName={name}

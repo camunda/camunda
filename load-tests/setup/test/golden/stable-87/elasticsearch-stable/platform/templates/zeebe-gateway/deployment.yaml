@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: docker.io/camunda/zeebe:8.7.44
+          image: docker.io/camunda/zeebe:8.7.45
           imagePullPolicy: Always
           ports:
             - containerPort: 9600
@@ -177,4 +177,4 @@ spec:
         - effect: NoSchedule
           key: nodepool
           operator: Equal
-          value: n2-standard-4-stable
+          value: n2-standard-8-stable

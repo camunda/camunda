@@ -10,6 +10,7 @@ import {HttpResponse, http} from 'msw';
 import {cleanup} from 'vitest-browser-react';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
+import {useCallback, useState} from 'react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
@@ -20,7 +21,7 @@ import {
 	mockAssignMappingToRoleEndpoint,
 	mockAssignUserToRoleEndpoint,
 	mockDeleteRoleEndpoint,
-	mockGetRoleEndpoint,
+	mockQueryRolesEndpoint,
 	mockQueryClientsByRoleEndpoint,
 	mockQueryGroupsByRoleEndpoint,
 	mockQueryGroupsEndpoint,
@@ -34,15 +35,22 @@ import {
 import {createMembersPage, createRole} from '#/shared-test-modules/api-mocks/roles';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {createUser} from '#/shared-test-modules/api-mocks/users';
+import type {RoleDetailSearch} from '#/admin/modules/roles/detailSearchSchema';
 import {AdminRoleDetailPage, type AdminRoleDetailPageProps} from './AdminRoleDetailPage';
 
 const RETRY_BUDGET = {timeout: 10_000};
 
 async function renderPage(overrides: Partial<AdminRoleDetailPageProps> = {}) {
-	const onTabChange = vi.fn();
+	const onSearchChange = vi.fn();
 	const onDeleted = vi.fn();
-	const screen = await renderWithRouter(
-		() => (
+	const Page = () => {
+		const [search, setSearch] = useState<RoleDetailSearch>(overrides.search ?? {});
+		const handleSearchChange = useCallback((next: Partial<RoleDetailSearch>) => {
+			onSearchChange(next);
+			setSearch((previous) => ({...previous, ...next}));
+		}, []);
+
+		return (
 			<>
 				<AdminRoleDetailPage
 					role={createRole({roleId: 'ops', name: 'Operations', description: 'The ops role'})}
@@ -50,18 +58,18 @@ async function renderPage(overrides: Partial<AdminRoleDetailPageProps> = {}) {
 					canManageMappingRules={overrides.isOidc ?? false}
 					isCamundaGroupsEnabled={true}
 					defaultRoleIds={[]}
-					activeTab="users"
-					onTabChange={onTabChange}
 					onDeleted={onDeleted}
 					{...overrides}
+					search={search}
+					onSearchChange={handleSearchChange}
 				/>
 				<Toaster />
 			</>
-		),
-		{path: '/admin/roles'},
-	);
+		);
+	};
+	const screen = await renderWithRouter(() => <Page />, {path: '/admin/roles'});
 
-	return {screen, onTabChange, onDeleted};
+	return {screen, onSearchChange, onDeleted};
 }
 
 // Searches like the real backend: applies the id filter's $notIn, then the page limit.
@@ -125,7 +133,7 @@ describe('<AdminRoleDetailPage />', () => {
 	it('should offer clients but not mapping rules when mapping rules cannot be managed', async ({worker}) => {
 		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
 
-		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, search: {tab: 'mappingRules'}});
 
 		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).not.toBeInTheDocument();
@@ -140,7 +148,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 		);
 
-		const {screen} = await renderPage({isOidc: false, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: false, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'john.doe'})).toBeVisible();
 	});
@@ -173,12 +181,15 @@ describe('<AdminRoleDetailPage />', () => {
 	});
 
 	it('should report the selected tab', async ({worker}) => {
-		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
-		const {screen, onTabChange} = await renderPage();
+		worker.use(
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
+		);
+		const {screen, onSearchChange} = await renderPage();
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Groups'}));
 
-		expect(onTabChange).toHaveBeenCalledWith('groups');
+		expect(onSearchChange).toHaveBeenCalledWith({tab: 'groups', page: undefined, pageSize: undefined});
 	});
 
 	it('should show the name of each group when Camunda groups are enabled', async ({worker}) => {
@@ -189,7 +200,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 		);
 
-		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: true});
+		const {screen} = await renderPage({search: {tab: 'groups'}, isCamundaGroupsEnabled: true});
 
 		await expect.element(screen.getByRole('cell', {name: 'eng', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Engineering'})).toBeVisible();
@@ -200,7 +211,7 @@ describe('<AdminRoleDetailPage />', () => {
 			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{groupId: 'eng'}]))}),
 		);
 
-		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: false});
+		const {screen} = await renderPage({search: {tab: 'groups'}, isCamundaGroupsEnabled: false});
 
 		await expect.element(screen.getByRole('cell', {name: 'eng', exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Group name'})).not.toBeInTheDocument();
@@ -215,7 +226,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 		);
 
-		const {screen} = await renderPage({isOidc: true, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'rule-1'})).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Rule one'})).toBeVisible();
@@ -230,7 +241,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 		);
 
-		const {screen} = await renderPage({isOidc: true, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
 
 		await expect.element(screen.getByRole('cell', {name: 'my-client'})).toBeVisible();
 	});
@@ -357,7 +368,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 			mockAssignGroupToRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: true});
+		const {screen} = await renderPage({search: {tab: 'groups'}, isCamundaGroupsEnabled: true});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
@@ -379,7 +390,7 @@ describe('<AdminRoleDetailPage />', () => {
 			mockQueryGroupsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
 			mockAssignGroupToRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: false});
+		const {screen} = await renderPage({search: {tab: 'groups'}, isCamundaGroupsEnabled: false});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
@@ -406,7 +417,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 			mockAssignMappingToRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({isOidc: true, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
@@ -444,7 +455,7 @@ describe('<AdminRoleDetailPage />', () => {
 			mockQueryClientsByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
 			mockAssignClientToRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({isOidc: true, activeTab: 'clients'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'clients'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign client'}));
@@ -536,7 +547,7 @@ describe('<AdminRoleDetailPage />', () => {
 				{groupId: 'ops', name: 'Operations'},
 			]),
 		);
-		const {screen} = await renderPage({activeTab: 'groups', isCamundaGroupsEnabled: true});
+		const {screen} = await renderPage({search: {tab: 'groups'}, isCamundaGroupsEnabled: true});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign group'}));
@@ -558,7 +569,7 @@ describe('<AdminRoleDetailPage />', () => {
 				createMappingRule({mappingRuleId: 'free-rule'}),
 			]),
 		);
-		const {screen} = await renderPage({isOidc: true, activeTab: 'mappingRules'});
+		const {screen} = await renderPage({isOidc: true, search: {tab: 'mappingRules'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Assign mapping rule'}));
@@ -644,12 +655,13 @@ describe('<AdminRoleDetailPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'user-0', exact: true})).toBeVisible();
 	});
 
-	it('should report a failed member lookup instead of an empty role', async ({worker}) => {
+	it('should report a failed user lookup instead of showing members without names', async ({worker}) => {
 		// given
 		worker.use(
-			mockQueryUsersByRoleEndpoint({
+			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([{username: 'john.doe'}]))}),
+			mockQueryUsersEndpoint({
 				successResponse: HttpResponse.json(
-					{type: 'about:blank', title: 'UNAVAILABLE', status: 503, detail: 'Unavailable', instance: '/v2/roles'},
+					{type: 'about:blank', title: 'UNAVAILABLE', status: 503, detail: 'Unavailable', instance: '/v2/users'},
 					{status: 503},
 				),
 			}),
@@ -660,7 +672,7 @@ describe('<AdminRoleDetailPage />', () => {
 
 		// then
 		await expect.element(screen.getByRole('alert')).toHaveTextContent('Members could not be loaded');
-		await expect.element(screen.getByText('No users assigned to this role yet')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('john.doe')).not.toBeInTheDocument();
 	});
 
 	it('should report a failed candidate lookup in the assign dialog', async ({worker}) => {
@@ -709,7 +721,7 @@ describe('<AdminRoleDetailPage />', () => {
 			}),
 			mockUnassignGroupFromRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
-		const {screen} = await renderPage({activeTab: 'groups'});
+		const {screen} = await renderPage({search: {tab: 'groups'}});
 
 		// when
 		await userEvent.click(screen.getByRole('button', {name: 'Remove group eng', exact: true}));
@@ -765,7 +777,7 @@ describe('<AdminRoleDetailPage />', () => {
 		worker.use(
 			mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}),
 			mockDeleteRoleEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetRoleEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryRolesEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen, onDeleted} = await renderPage();
 

@@ -21,18 +21,32 @@ import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTem
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class FlownodeInstanceFilterTransformer
     extends IndexFilterTransformer<FlowNodeInstanceFilter> {
 
   public FlownodeInstanceFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
+  }
+
+  @Override
+  protected boolean matchesOnlyRuntimeData(final FlowNodeInstanceFilter filter) {
+    return matchesOnlyActiveFlowNodeInstances(filter)
+        || allMatch(
+            filter.orFilters(),
+            FlownodeInstanceFilterTransformer::matchesOnlyActiveFlowNodeInstances);
+  }
+
+  private static boolean matchesOnlyActiveFlowNodeInstances(final FlowNodeInstanceFilter filter) {
+    return restrictsTo(filter.stateOperations(), Set.of(FlowNodeState.ACTIVE.name()));
   }
 
   @Override

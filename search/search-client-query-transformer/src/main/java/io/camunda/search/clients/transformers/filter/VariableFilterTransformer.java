@@ -20,7 +20,6 @@ import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KE
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.PROTECTION_MODES;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VALUE;
 import static java.util.Optional.ofNullable;
@@ -51,7 +50,6 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
     queries.addAll(getVariableKeyQuery(filter.variableKeyOperations()));
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
-    queries.addAll(stringOperations(PROTECTION_MODES, filter.protectionModeOperations()));
     return and(queries);
   }
 

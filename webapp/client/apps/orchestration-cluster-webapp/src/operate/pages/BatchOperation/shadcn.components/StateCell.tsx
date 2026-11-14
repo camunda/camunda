@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useTranslation} from 'react-i18next';
 import type {BatchOperationItem} from '@camunda/camunda-api-zod-schemas/8.11';
 import {BatchStateIndicator} from '#/operate/shared/BatchStateIndicator/shadcn.components/BatchStateIndicator';
 
@@ -13,6 +14,19 @@ type Props = {
 	item: BatchOperationItem;
 };
 
-const StateCell: React.FC<Props> = ({item}) => <BatchStateIndicator state={item.state} ariaLabelPrefix="Item status" />;
+const StateCell: React.FC<Props> = ({item}) => {
+	const {t} = useTranslation();
+
+	const outcome = item.state === 'COMPLETED' ? 'completed' : item.errorMessage ? 'failed' : undefined;
+
+	return (
+		<div data-item-outcome={outcome}>
+			<BatchStateIndicator
+				state={item.state}
+				ariaLabelPrefix={t('operate.batchOperation.ds.itemsTable.itemStatusPrefix')}
+			/>
+		</div>
+	);
+};
 
 export {StateCell};

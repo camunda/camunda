@@ -4,6 +4,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {test} from 'node:test';
 
+import {initBoard, mergeTargets, render, setRow} from './board.mjs';
 import {final, next} from './decide.mjs';
 import {pick} from './pick.mjs';
 import {fingerprint} from './report.mjs';
@@ -90,7 +91,7 @@ test('should leave a test that never passed to the nightly fix agent', () => {
   assert.deepEqual(pick({reportsDir: dir, now: '2026-11-10T00:00:00Z'}), []);
 });
 
-test('should skip a test under cooldown and ignore hits before verified_at', () => {
+test('should skip a test under cooldown and keep hits a green baseline did not reproduce', () => {
   // given
   const runs = [
     {version: '8.10', cell: 'api-profiles', runId: '1', createdAt: '2026-11-01T00:00:00Z', tests: [flaky]},
@@ -105,15 +106,16 @@ test('should skip a test under cooldown and ignore hits before verified_at', () 
     ledger: {[fp]: {cooldown_until: '2026-11-20T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
-  const verified = pick({
+  const cooledDown = pick({
     reportsDir: dir,
-    ledger: {[fp]: {verified_at: '2026-11-01T12:00:00Z'}},
+    ledger: {[fp]: {cooldown_until: '2026-11-05T00:00:00Z', verified_at: '2026-11-03T00:00:00Z'}},
     now: '2026-11-10T00:00:00Z',
   });
 
   // then
   assert.deepEqual(cooling, []);
-  assert.deepEqual(verified, [], 'one hit after verification is below min score');
+  assert.equal(cooledDown.length, 1, 'a stale verified_at no longer discounts nightly hits');
+  assert.equal(cooledDown[0].score, 2);
 });
 
 test('should not count an interrupted nightly run as a failure', () => {
@@ -154,6 +156,24 @@ test('should score passes and failures and group errors', () => {
   assert.equal(result.verdict, 'scored');
   assert.deepEqual(result.pooled, {passed: 3, failed: 1, rate: 75});
   assert.deepEqual(result.topErrors, [{cell: 'e2e-v2', count: 1, message: 'Error: boom'}]);
+  assert.deepEqual(result.failingShards, ['flaky-baseline-e2e-v2-s1']);
+});
+
+test('should group the same error across runs whose ids differ', () => {
+  // given
+  const notFound = (key) => failed(`HTTPError: 404 - no process instance with key '${key}'`);
+  const dir = shardDir([
+    {cell: 'e2e-v2', tests: [notFound('2251799813693602')]},
+    {cell: 'e2e-v2', tests: [notFound('2251799813693589')]},
+  ]);
+
+  // when
+  const result = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(result.topErrors, [
+    {cell: 'e2e-v2', count: 2, message: "HTTPError: 404 - no process instance with key '<n>'"},
+  ]);
 });
 
 test('should not count interrupted runs or a sibling test with another title', () => {
@@ -209,6 +229,45 @@ test('should count a repeat skipped after a serial prerequisite failed as a fail
   assert.match(scored.topErrors[0].message, /serial block/);
 });
 
+test('should count a first-attempt pass even when a serial retry reran the test', () => {
+  // given
+  const rerunFailed = {
+    projectName: 'chromium',
+    status: 'unexpected',
+    results: [result('passed'), result('failed', 'Error: later test broke the block')],
+  };
+  const rerunSkipped = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('passed'), result('skipped')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, rerunFailed, rerunSkipped]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 3});
+
+  // then
+  assert.equal(scored.verdict, 'green');
+  assert.deepEqual(scored.pooled, {passed: 3, failed: 0, rate: 100});
+});
+
+test('should count a serial skip as a failure even when the retry passed', () => {
+  // given
+  const skippedThenPassed = {
+    projectName: 'chromium',
+    status: 'expected',
+    results: [result('skipped'), result('passed')],
+  };
+  const dir = shardDir([{cell: 'e2e-v2', tests: [passed, skippedThenPassed]}]);
+
+  // when
+  const scored = score({dir, ...scoreArgs, planned: 2});
+
+  // then
+  assert.deepEqual(scored.pooled, {passed: 1, failed: 1, rate: 50});
+  assert.deepEqual(scored.failingShards, ['flaky-baseline-e2e-v2-s0']);
+});
+
 test('should report green when every scored run passed', () => {
   // given
   const dir = shardDir([{cell: 'e2e-v2', tests: [passed, passed, passed, passed]}]);
@@ -234,7 +293,8 @@ test('should build iteration 2 on iteration 1 unless it regressed', () => {
 test('should open a PR only above the floor and with enough improvement', () => {
   assert.equal(final({baseline: pass(60), iter1: pass(92)}).action, 'open_pr');
   assert.equal(final({baseline: pass(60), iter1: pass(75)}).action, 'delete_branch');
-  assert.equal(final({baseline: pass(85), iter1: pass(90)}).action, 'delete_branch');
+  assert.equal(final({baseline: pass(85), iter1: pass(90)}).action, 'open_pr');
+  assert.equal(final({baseline: pass(85), iter1: pass(89)}).action, 'delete_branch');
   assert.equal(
     final({
       baseline: pass(60),
@@ -266,7 +326,214 @@ test('should prefer an iteration that clears every gate over a higher pooled rat
 
 test('should not judge the test when the baseline did not score or was green', () => {
   assert.equal(final({baseline: pass(0, 'blocked')}).action, 'blocked');
-  assert.equal(final({baseline: pass(100, 'green')}).action, 'verified_green');
+  assert.equal(final({baseline: pass(100, 'green')}).action, 'not_reproduced');
   assert.equal(final({baseline: pass(60)}).action, 'delete_branch');
   assert.equal(final({baseline: pass(60), iter1: pass(0, 'blocked')}).action, 'blocked');
+});
+
+test('should block, not give up, when the agent job failed before producing a patch', () => {
+  assert.equal(final({baseline: pass(60), fixResults: ['failure', '']}).action, 'blocked');
+  assert.equal(final({baseline: pass(60), fixResults: ['success', '']}).action, 'delete_branch');
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(75), fixResults: ['success', 'failure']}).action,
+    'blocked',
+    'attempt 2 never finished, so attempt 1 falling short does not settle it',
+  );
+  assert.equal(
+    final({baseline: pass(60), iter1: pass(92), fixResults: ['success', 'failure']}).action,
+    'open_pr',
+  );
+});
+
+// ── daily Slack board ───────────────────────────────────────────────────────
+
+const targets = [
+  {fp: 'aaaa1111', version: '8.10', file: FILE, titlePath: ['Operations', TITLE], cells: ['e2e-v2']},
+  {fp: 'bbbb2222', version: '8.9', file: 'tests/api/jobs.spec.ts', titlePath: ['Jobs', 'activate'], cells: ['api-profiles']},
+];
+
+test('should list every dispatched test as still running', () => {
+  const board = initBoard({targets, date: '2026-11-12', runUrl: 'https://run'});
+  assert.equal(board.rows.length, 2);
+  assert.deepEqual(
+    board.rows.map((r) => r.status),
+    ['dispatched', 'dispatched'],
+  );
+  const text = render(board, {now: new Date('2026-11-12T09:21:00Z')});
+  assert.match(text, /OC Flakiness Fix Agent — 2026-11-12\* _\(updated 09:21 UTC\)_/);
+  assert.match(text, /\*0\/2 run\(s\) resolved\* — :hourglass: 2 still running/);
+  assert.match(text, /\*8\.10\* — 1 test\(s\)/);
+  assert.match(text, /Operations › Retry and cancel single instance \(e2e-v2\)/);
+});
+
+test('should replace only the row of the test that finished', () => {
+  const board = setRow(initBoard({targets, date: '2026-11-12'}), {
+    fp: 'aaaa1111',
+    status: 'open_pr',
+    detail: 'iter1 100% vs baseline 40% (+60pp)',
+    pr: 'https://github.com/camunda/camunda/pull/123',
+    rate: 100,
+  });
+  assert.equal(board.rows[0].status, 'open_pr');
+  assert.equal(board.rows[1].status, 'dispatched');
+
+  const text = render(board);
+  // The 100% case is what the channel scans for, so it is named twice: in the
+  // headline and on the row.
+  assert.match(text, /:white_check_mark: 1 fixed \(1 at 100%\)/);
+  assert.match(text, /<https:\/\/github\.com\/camunda\/camunda\/pull\/123\|PR #123 fixed — 100% pass rate>/);
+  assert.match(text, /\*1\/2 run\(s\) resolved\*/);
+});
+
+test('should report a fix that only cleared the threshold without claiming it is fixed outright', () => {
+  const board = setRow(initBoard({targets: [targets[0]], date: '2026-11-12'}), {
+    fp: 'aaaa1111',
+    status: 'open_pr',
+    pr: 'https://github.com/camunda/camunda/pull/9',
+    rate: 90,
+  });
+  const text = render(board);
+  assert.match(text, /PR #9 fixed — 90% pass rate/);
+  assert.doesNotMatch(text, /at 100%/);
+});
+
+test('should call out a target that never reached a verdict', () => {
+  let board = initBoard({targets, date: '2026-11-12'});
+  board = setRow(board, {
+    fp: 'aaaa1111',
+    status: 'blocked',
+    detail: 'baseline produced no score',
+    run: 'https://run/1',
+  });
+  board = setRow(board, {fp: 'bbbb2222', status: 'infra', run: 'https://run/2'});
+
+  const text = render(board);
+  assert.match(text, /:wrench: 2 never reached a verdict/);
+  assert.match(text, /:rotating_light: \*2 target\(s\) never reached a verdict/);
+  assert.match(text, /• 8\.10 `tests\/operate\/operations\.spec\.ts` — baseline produced no score \(<https:\/\/run\/1\|run>\)/);
+  // A row with no detail of its own still says what happened.
+  assert.match(text, /• 8\.9 .* — the run failed before any verdict/);
+});
+
+test('should ignore a verdict for a test the board does not carry', () => {
+  const board = initBoard({targets, date: '2026-11-12'});
+  const after = setRow(board, {fp: 'cccc3333', status: 'open_pr'});
+  assert.deepEqual(after.rows, board.rows);
+});
+
+test('should refuse a status it cannot render', () => {
+  assert.throws(
+    () => setRow(initBoard({targets, date: '2026-11-12'}), {fp: 'aaaa1111', status: 'done'}),
+    /unknown status "done"/,
+  );
+});
+
+test('should say so when the pick found nothing to dispatch', () => {
+  const text = render(initBoard({targets: [], date: '2026-11-12', runUrl: 'https://run'}));
+  assert.match(text, /No test met the bar today/);
+  assert.match(text, /<https:\/\/run\|Pick run> :arrow_right:/);
+});
+
+test('should not let a test title inject Slack markup', () => {
+  const board = initBoard({
+    targets: [{...targets[0], titlePath: ['<http://evil|click> & co']}],
+    date: '2026-11-12',
+  });
+  const text = render(board);
+  assert.match(text, /&lt;http:\/\/evil\|click&gt; &amp; co/);
+});
+
+test('should report the pass rate of the iteration it picked', () => {
+  // The Slack board names a 100% fix differently from one that merely cleared
+  // the threshold, so the rate has to survive the decision.
+  assert.equal(final({baseline: pass(40), iter1: pass(100)}).rate, 100);
+  assert.equal(final({baseline: pass(40), iter1: pass(45)}).rate, 45);
+  assert.equal(final({baseline: pass(40)}).rate, null);
+});
+
+test('should link a row to its run as soon as the dispatch resolved it', () => {
+  const board = setRow(initBoard({targets, date: '2026-11-12'}), {
+    fp: 'aaaa1111',
+    status: 'dispatched',
+    run: 'https://run/7',
+  });
+  const text = render(board);
+  assert.match(text, /<https:\/\/run\/7\|still running>/);
+  // The one the pick could not resolve still reads, just without a link.
+  assert.match(text, /tests\/api\/jobs\.spec\.ts.*— still running$/m);
+});
+
+test('should keep the message and the finished rows when the pick runs twice in a day', () => {
+  const posted = {
+    ...setRow(initBoard({targets, date: '2026-11-12'}), {
+      fp: 'aaaa1111',
+      status: 'open_pr',
+      pr: 'https://github.com/camunda/camunda/pull/7',
+      rate: 100,
+    }),
+    ts: '1794464394.303089',
+    channel: 'C06KV5G5PD5',
+  };
+  const again = mergeTargets(posted, [
+    ...targets,
+    {fp: 'dddd4444', version: 'main', file: 'tests/new.spec.ts', titlePath: ['New'], cells: ['e2e']},
+  ]);
+
+  assert.equal(again.ts, posted.ts, 'the message already in the channel is kept');
+  assert.equal(again.channel, posted.channel);
+  assert.equal(again.rows.length, 3, 'only the test it did not already carry is added');
+  assert.equal(again.rows[0].status, 'open_pr', 'a finished row is not reset');
+  assert.equal(again.rows[2].fp, 'dddd4444');
+  assert.equal(again.rows[2].status, 'dispatched');
+});
+
+test('should bump the revision on every change so a stale writer can tell', () => {
+  const board = initBoard({targets, date: '2026-11-12'});
+  const once = setRow(board, {fp: 'aaaa1111', status: 'blocked'});
+  const twice = setRow(once, {fp: 'bbbb2222', status: 'blocked'});
+  assert.ok(once.rev > board.rev);
+  assert.ok(twice.rev > once.rev);
+  assert.ok(mergeTargets(board, []).rev > board.rev);
+});
+
+test('a late dispatched write does not undo a verdict already on the board', () => {
+  const board = initBoard({
+    targets: [{fp: 'aa', version: '8.8', file: 'a.spec.ts', titlePath: ['A'], cells: []}],
+    date: '2026-11-12',
+  });
+  const reported = setRow(board, {
+    fp: 'aa',
+    status: 'skipped',
+    run: 'https://example.test/runs/1',
+  });
+  const late = setRow(reported, {
+    fp: 'aa',
+    status: 'dispatched',
+    run: 'https://example.test/runs/1',
+  });
+  assert.equal(late.rows[0].status, 'skipped');
+  assert.equal(late.rev, reported.rev, 'an ignored write must not bump rev');
+  assert.match(render(late), /skipped — a fix branch already covers this test/);
+});
+
+test('the run link still reaches a row that is still dispatched', () => {
+  const board = initBoard({
+    targets: [{fp: 'aa', version: '8.8', file: 'a.spec.ts', titlePath: ['A'], cells: []}],
+    date: '2026-11-12',
+  });
+  const linked = setRow(board, {
+    fp: 'aa',
+    status: 'dispatched',
+    run: 'https://example.test/runs/1',
+  });
+  assert.equal(linked.rows[0].run, 'https://example.test/runs/1');
+  assert.match(render(linked), /<https:\/\/example\.test\/runs\/1\|still running>/);
+});
+
+test('version groups are separated by a blank line', () => {
+  const board = initBoard({targets, date: '2026-11-12'});
+  const lines = render(board).split('\n');
+  const second = lines.findIndex((l) => l.startsWith('*8.9*'));
+  assert.ok(second > 0);
+  assert.equal(lines[second - 1], '');
 });

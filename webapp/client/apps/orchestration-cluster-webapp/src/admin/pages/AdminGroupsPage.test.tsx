@@ -16,7 +16,7 @@ import {createAdminPageWrapper} from '#/vitest-modules/admin-page-wrapper';
 import {
 	mockCreateGroupEndpoint,
 	mockDeleteGroupEndpoint,
-	mockGetGroupEndpoint,
+	mockQueryGroupsEndpoint,
 	mockUpdateGroupEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createGroup} from '#/shared-test-modules/api-mocks/groups';
@@ -139,7 +139,7 @@ describe('<AdminGroupsPage />', () => {
 		const group = createGroup({groupId: 'ops', name: 'Operations'});
 		worker.use(
 			mockCreateGroupEndpoint({successResponse: HttpResponse.json(group, {status: 201})}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json(group)}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [group], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({groups: []});
 
@@ -221,7 +221,7 @@ describe('<AdminGroupsPage />', () => {
 		const updated = {...group, name: 'Ops team'};
 		worker.use(
 			mockUpdateGroupEndpoint({successResponse: HttpResponse.json(updated)}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json(updated)}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [updated], page: {totalItems: 1}})}),
 		);
 		const {screen} = await renderPage({groups: [group]});
 
@@ -237,7 +237,7 @@ describe('<AdminGroupsPage />', () => {
 		const group = createGroup({groupId: 'ops'});
 		worker.use(
 			mockDeleteGroupEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json({}, {status: 404})}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 		const {screen} = await renderPage({groups: [group]});
 
@@ -252,7 +252,7 @@ describe('<AdminGroupsPage />', () => {
 		// given
 		worker.use(
 			mockCreateGroupEndpoint({successResponse: HttpResponse.json(createGroup({groupId: 'ops'}), {status: 201})}),
-			mockGetGroupEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
+			mockQueryGroupsEndpoint({successResponse: HttpResponse.json({}, {status: 503})}),
 		);
 		const {screen} = await renderPage({groups: []});
 

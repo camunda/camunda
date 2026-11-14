@@ -42,10 +42,6 @@ public final class ErrorMessages {
       "The provided %s contains illegal characters. It must match the pattern '%s'";
   public static final String ERROR_MESSAGE_NULL_VARIABLE_NAME = "Variable name must not be null";
   public static final String ERROR_MESSAGE_NULL_VARIABLE_VALUE = "Variable value must not be null";
-  public static final String ERROR_MESSAGE_NULL_VARIABLES_METADATA_ENTRY =
-      "The variablesMetadata entry for variable '%s' must not be null";
-  public static final String ERROR_MESSAGE_INVALID_PROTECTION_MODES =
-      "The variablesMetadata entry for variable '%s' must provide protectionModes without null values";
   public static final String ERROR_MESSAGE_INVALID_KEY_FORMAT =
       "The provided %s '%s' is not a valid key. Expected a numeric value. Did you pass an entity id instead of an entity key?";
   public static final String ERROR_MESSAGE_INVALID_DECISION_EVALUATION_INSTANCE_KEY_FORMAT =
@@ -71,4 +67,7 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_INVALID_SECRET_RESOURCE_ID =
       "The provided resourceId '%s' cannot match any secret reference. It must be '*' or the full "
           + "reference in the form 'camunda.secrets.<name>', where <name> matches the pattern '%s'";
+  public static final String ERROR_MESSAGE_INVALID_PROBE_RESOURCE_ID =
+      "The provided resourceId '%s' is not a valid probe ID. It must be '*' or 1 to 256 "
+          + "characters without whitespace";
 }

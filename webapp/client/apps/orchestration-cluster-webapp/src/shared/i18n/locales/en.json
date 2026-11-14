@@ -2,7 +2,6 @@
 	"translation": {
 		"globalDatePlaceholder": "mm/dd/yyyy",
 		"globalWrittenCalendarDateFormat": "m/d/Y",
-		"globalRedactedValueLabel": "[REDACTED]",
 		"headerSidebarDocumentationLink": "Documentation",
 		"headerSidebarCamundaAcademyLink": "Camunda Academy",
 		"headerSidebarFeedbackAndSupportLink": "Feedback and Support",
@@ -261,7 +260,6 @@
 					"assignedMany": "{{count}} members assigned",
 					"assignedPartial": "{{assigned}} of {{total}} assigned",
 					"removeFailed": "Failed to remove",
-					"loadError": "Members could not be loaded",
 					"candidatesLoadError": "Options could not be loaded",
 					"users": {
 						"tab": "Users",
@@ -2151,7 +2149,8 @@
 					"actor": "Actor",
 					"actorPlaceholder": "Username or client ID",
 					"timestampDateRange": "Timestamp date range",
-					"filterByTimestampDateRange": "Filter by timestamp date range"
+					"filterByTimestampDateRange": "Filter by timestamp date range",
+					"noProcessesFound": "No processes found"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "View batch operation {{key}}",
@@ -2271,7 +2270,8 @@
 						"loadingPreviousPage": "Loading previous items",
 						"loadingNextPage": "Loading more items",
 						"expandFailure": "Show failure details",
-						"collapseFailure": "Hide failure details"
+						"collapseFailure": "Hide failure details",
+						"itemStatusPrefix": "Item status"
 					}
 				},
 				"actions": {
@@ -2404,6 +2404,12 @@
 					"lastDays_one": "Last {{count}} day",
 					"lastDays_other": "Last {{count}} days"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Clear date and time range",
+					"selectEndDate": "Pick end date",
+					"pickDayFirst": "Pick a date first",
+					"pickEndDay": "Pick end date"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",
 					"operatorNotEquals": "does not equal",
@@ -2445,7 +2451,9 @@
 					"copyFailed": "Couldn't copy to clipboard"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choose option(s)"
+					"chooseOption": "Choose option(s)",
+					"search": "Search...",
+					"noResults": "No results found"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Delete",

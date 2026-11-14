@@ -15,6 +15,7 @@ runs:
       uses: ./.github/actions/apt-install
       with:
         packages: libxml2-utils
+        skip-if-exists: /usr/bin/xmllint
 
     - name: Validate flattened POM metadata
       shell: bash

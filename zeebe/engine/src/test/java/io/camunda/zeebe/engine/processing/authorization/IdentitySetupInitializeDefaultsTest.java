@@ -223,6 +223,10 @@ public class IdentitySetupInitializeDefaultsTest {
                     .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.REVEAL),
             auth ->
                 Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROBE)
+                    .hasOnlyPermissionTypes(PermissionType.CREATE, PermissionType.ANSWER),
+            auth ->
+                Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.BACKUP)
                     .hasOnlyPermissionTypes(
                         PermissionType.CREATE,
@@ -398,6 +402,11 @@ public class IdentitySetupInitializeDefaultsTest {
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SECRET)
                     .hasOnlyPermissionTypes(PermissionType.REVEAL),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROBE)
+                    .hasResourceId(WILDCARD.getResourceId())
+                    .hasOnlyPermissionTypes(PermissionType.ANSWER),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.RESOURCE)

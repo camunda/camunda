@@ -34,9 +34,6 @@
             "variables": {
               "enabled": false
             },
-            "variablesMetadata": {
-              "enabled": false
-            },
             "deadline": {
               "type": "long"
             },

@@ -30,7 +30,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
@@ -446,8 +445,7 @@ public final class BpmnStreamProcessor
                       context.getStorageOrdinal(),
                       context.getBpmnProcessId(),
                       context.getTenantId(),
-                      eventTrigger.getVariables(),
-                      VariableMetadataLookup.NONE);
+                      eventTrigger.getVariables());
                 } catch (final ValidationException e) {
                   throw new IllegalArgumentException(
                       "Failed to merge variables produced by execution listener into scope "

@@ -205,8 +205,8 @@ public final class UserTaskLookupFetchProcessor
     return switch (lifecycleState) {
       case CREATING -> UserTaskLifecycleState.CREATING;
       case CREATED -> UserTaskLifecycleState.CREATED;
-      case ASSIGNING -> UserTaskLifecycleState.ASSIGNING;
-      case CLAIMING -> UserTaskLifecycleState.CLAIMING;
+      // the exporters store a claim as ASSIGNING too, so the lookup agrees with the search API
+      case ASSIGNING, CLAIMING -> UserTaskLifecycleState.ASSIGNING;
       case UPDATING -> UserTaskLifecycleState.UPDATING;
       case COMPLETING -> UserTaskLifecycleState.COMPLETING;
       case CANCELING -> UserTaskLifecycleState.CANCELING;

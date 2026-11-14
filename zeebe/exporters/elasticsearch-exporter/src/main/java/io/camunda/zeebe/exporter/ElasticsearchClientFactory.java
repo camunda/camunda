@@ -13,7 +13,6 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.es.ElasticsearchCompatibilityInterceptor;
 import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
@@ -24,7 +23,6 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.hc.core5.http.HttpRequestInterceptor;
-import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.util.Timeout;
 
@@ -65,10 +63,6 @@ final class ElasticsearchClientFactory {
       final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final var defaultHeaders = new ArrayList<Header>();
-    defaultHeaders.add(
-        new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"));
-    defaultHeaders.add(
-        new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8"));
     // Credentials go out with every request instead of in answer to a 401 challenge. A server
     // that lets anonymous users through for some requests never challenges them, so those
     // requests would run as anonymous. The Elasticsearch 8 client sent credentials with every
@@ -83,10 +77,7 @@ final class ElasticsearchClientFactory {
                 b ->
                     b.setConnectTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs))
                         .setSocketTimeout(Timeout.ofMilliseconds(config.requestTimeoutMs)))
-            .setHttpClientConfigCallback(
-                b ->
-                    configureHttpClient(config, b, interceptors)
-                        .addRequestInterceptorLast(ElasticsearchCompatibilityInterceptor.INSTANCE));
+            .setHttpClientConfigCallback(b -> configureHttpClient(config, b, interceptors));
 
     return builder.build();
   }

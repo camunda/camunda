@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useMemo} from 'react';
 import {isEqual} from 'lodash';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {useQuery} from '@tanstack/react-query';
-import {Field, Form} from 'react-final-form';
+import {Field, Form, useField, useForm} from 'react-final-form';
+import {isValid, parseISO} from 'date-fns';
 import {
-	Alert,
 	Combobox,
+	DateTimeRangePicker,
 	Heading,
 	Label,
 	Select,
@@ -37,7 +38,9 @@ import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/Fi
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import {TenantField} from '#/operate/shared/TenantField/shadcn.components/TenantField';
 import {TextInputField} from '#/operate/shared/TextInputField/shadcn.components/TextInputField';
-import {DateRangeField} from '#/operate/shared/DateRangeField/shadcn.components/DateRangeField';
+import {formatISODate} from '#/operate/shared/DateRangeField/formatDate';
+import {getTimeZoneLabel} from '#/operate/shared/DateRangeField/getTimeZoneLabel';
+import {getCurrentDateLocale} from '#/shared/i18n';
 import {FilterMultiSelect} from '#/operate/shared/FilterMultiSelect/shadcn.components/FilterMultiSelect';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES, AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES} from '../operationsLogFilters';
@@ -46,6 +49,7 @@ import {
 	selectedDefinitionsQuery,
 } from '#/operate/shared/queries/processDefinitions.queries';
 import type {OperationsLogSearch} from '../operationsLog.schema';
+import {DefinitionAlert} from './DefinitionAlert';
 
 const ALL_VERSIONS = 'all';
 const ALL_RESULTS = 'all';
@@ -79,10 +83,51 @@ const EMPTY_FILTERS: FormValues = {};
 
 const getProcessItemKey = ({tenantId, id}: Pick<ProcessItem, 'tenantId' | 'id'>) => JSON.stringify([tenantId, id]);
 
+const toDate = (value: string | undefined) => {
+	if (value === undefined || value === '') {
+		return undefined;
+	}
+	const date = parseISO(value);
+	return isValid(date) ? date : undefined;
+};
+
+const TimestampRangeField: React.FC = () => {
+	const {t} = useTranslation();
+	const form = useForm();
+	const after = useField<string | undefined>('timestampAfter').input.value;
+	const before = useField<string | undefined>('timestampBefore').input.value;
+	const value = useMemo(() => ({from: toDate(after), to: toDate(before)}), [after, before]);
+
+	return (
+		<DateTimeRangePicker
+			id="timestamp-range"
+			label={t('operate.operationsLog.filters.timestampDateRange')}
+			value={value}
+			locale={getCurrentDateLocale()}
+			messages={{
+				placeholder: t('operate.shared.dateRangeField.enterDateRange'),
+				fromTime: t('operate.shared.dateRangeField.fromTime'),
+				toTime: t('operate.shared.dateRangeField.toTime'),
+				timeZone: t('operate.shared.dateTimeRangeField.timeZone', {timeZone: getTimeZoneLabel()}),
+				endBeforeStart: t('operate.shared.dateTimeRangeField.endBeforeStart'),
+				apply: t('operate.shared.dateRangeField.apply'),
+				cancel: t('operate.shared.dateRangeField.cancel'),
+				clearRange: t('operate.shared.dateTimeRangePicker.clearRange'),
+				selectEndDate: t('operate.shared.dateTimeRangePicker.selectEndDate'),
+				pickDayFirst: t('operate.shared.dateTimeRangePicker.pickDayFirst'),
+				pickEndDay: t('operate.shared.dateTimeRangePicker.pickEndDay'),
+			}}
+			onChange={(range) => {
+				form.change('timestampAfter', range.from ? formatISODate(range.from) : undefined);
+				form.change('timestampBefore', range.to ? formatISODate(range.to) : undefined);
+			}}
+		/>
+	);
+};
+
 const Filters: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 
 	const {sort: _sort, ...filterValues} = search;
@@ -209,8 +254,9 @@ const Filters: React.FC<Props> = ({search}) => {
 													size="sm"
 													options={options}
 													value={selectedItem ? getProcessItemKey(selectedItem) : ''}
-													placeholder={t('operate.processes.filters.searchByName')}
-													searchPlaceholder={t('operate.processes.filters.searchByName')}
+													placeholder={t('operate.processes.ds.filters.searchByName')}
+													searchPlaceholder={t('operate.processes.ds.filters.searchByName')}
+													emptyIndicator={t('operate.operationsLog.filters.noProcessesFound')}
 													disabled={
 														isProcessListPending || isProcessListError || (isMultiTenancyEnabled && !values.tenantId)
 													}
@@ -250,9 +296,8 @@ const Filters: React.FC<Props> = ({search}) => {
 									)}
 								</Field>
 								{isProcessListError && (
-									<Alert
+									<DefinitionAlert
 										variant="destructive"
-										role="alert"
 										title={t('operate.operationsLog.filters.definitionsListFailed')}
 									/>
 								)}
@@ -324,16 +369,7 @@ const Filters: React.FC<Props> = ({search}) => {
 										</div>
 									)}
 								</Field>
-								<DateRangeField
-									isModalOpen={isDateRangeModalOpen}
-									onModalClose={() => setIsDateRangeModalOpen(false)}
-									onClick={() => setIsDateRangeModalOpen(true)}
-									filterName="timestamp"
-									popoverTitle={t('operate.operationsLog.filters.filterByTimestampDateRange')}
-									label={t('operate.operationsLog.filters.timestampDateRange')}
-									fromDateTimeKey="timestampAfter"
-									toDateTimeKey="timestampBefore"
-								/>
+								<TimestampRangeField />
 							</section>
 						</div>
 					</FilterSidebar>
@@ -394,7 +430,7 @@ const ProcessVersionSelect: React.FC<{
 					}}
 				>
 					<SelectTrigger id="process-version-filter" size="sm" className="w-full">
-						<SelectValue placeholder={t('operate.processes.filters.selectVersion')} />
+						<SelectValue placeholder={t('operate.processes.ds.filters.selectVersion')} />
 					</SelectTrigger>
 					<SelectContent>
 						{items.map((item) => (
@@ -413,7 +449,7 @@ const ProcessVersionSelect: React.FC<{
 				</Select>
 			</div>
 			{isError && (
-				<Alert variant="destructive" role="alert" title={t('operate.operationsLog.filters.definitionsListFailed')} />
+				<DefinitionAlert variant="destructive" title={t('operate.operationsLog.filters.definitionsListFailed')} />
 			)}
 		</>
 	);

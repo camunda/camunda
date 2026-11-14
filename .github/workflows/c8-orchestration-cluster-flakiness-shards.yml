@@ -1,6 +1,6 @@
 # description: Reusable workflow — one validation pass of the OC flakiness fix agent.
-#              Runs ONE test N times per shard, each shard on its own docker-compose
-#              stack started the way the matching nightly starts it, for every cell
+#              Each shard runs the matching nightly's whole test selection on its own
+#              docker-compose stack started the way that nightly starts it, for every cell
 #              (e2e-v1 / e2e-v2 / e2e / api-profiles / api-all-in-one) the test was
 #              flaky in. Called only by c8-orchestration-cluster-flakiness-fix.yml.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
@@ -29,9 +29,6 @@ on:
         required: true
         type: string
       repeat_each:
-        required: true
-        type: number
-      workers:
         required: true
         type: number
       spec:
@@ -250,23 +247,23 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ env.SUITE }}/package-lock.json
 
+      # Same as the nightlies: resolve the newest versions in package.json's
+      # ranges. Stable branches lock Playwright releases that cannot install
+      # Chromium on the current ubuntu-latest image.
       - name: Install dependencies and Chromium
         working-directory: ${{ env.SUITE }}
         run: |
-          npm ci
+          rm -rf node_modules package-lock.json
+          npm install
           npx playwright install --with-deps chromium
 
-      # Selection, on THIS ref because a fix can move the test:
-      # - by file:line, not --grep alone: --grep is case-insensitive and the
-      #   suite has sibling titles that differ only in case;
-      # - a test in a serial block runs with its whole outermost describe (or
-      #   the whole file when the file itself is serial), because its earlier
-      #   tests create the data it uses; the score counts the target only;
-      # - when one line declares several tests (a test() in a loop), an
-      #   anchored --grep on the title narrows it to the target.
-      # --no-deps keeps the project's teardown project from running its own
-      # specs in full.
-      - name: Run the test ${{ inputs.repeat_each }} times
+      # Each shard runs what the matching nightly runs (same projects, filters,
+      # workers and retries), not the target alone: the nightly flakes come
+      # from the rest of the suite (other files' data and cleanup, full-suite
+      # load), and the target alone or its spec file alone passed 50/50 for
+      # tests flaky on most nights. The score counts the target only. The list
+      # check runs on THIS ref because a fix can rename or move the test.
+      - name: Run the nightly test selection
         working-directory: ${{ env.SUITE }}
         env:
           LOCAL_TEST: "false"
@@ -275,67 +272,73 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           INCLUDE_SLACK_REPORTER: "false"
           C8E2E_GLOBAL_TIMEOUT_MIN: "50"
+          VERSION: ${{ inputs.version }}
+          CELL: ${{ matrix.cell }}
           SPEC: ${{ inputs.spec }}
           TITLE_PATH: ${{ inputs.title_path }}
           PROJECT: ${{ inputs.project }}
           REPEAT_EACH: ${{ inputs.repeat_each }}
-          WORKERS: ${{ inputs.workers }}
           TEST_REF: ${{ inputs.test_ref }}
         run: |
           set -euo pipefail
-          npx playwright test --list --reporter=json \
-            --no-deps --project="$PROJECT" "$SPEC" > "$RUNNER_TEMP/list.json" 2>/dev/null || true
-          target=$(jq -c --argjson path "$TITLE_PATH" '
-            def walk($p; $lines): (.specs[]? | {path: ($p + [.title]), line, file, suites: $lines}),
-                                  (.suites[]? as $s | $s | walk($p + [$s.title]; $lines + [$s.line]));
-            [.suites[] | walk([]; [])] as $all
-            | ($all | map(select(.path == $path)) | first) as $t
-            | if $t == null then empty
-              else $t + {siblings: ($all | map(select(.file == $t.file and .line == $t.line)) | length)}
-              end
-          ' "$RUNNER_TEMP/list.json")
-          if [[ -z "$target" ]]; then
+          PLAYWRIGHT_JSON_OUTPUT_NAME="$RUNNER_TEMP/list.json" npx playwright test --list --reporter=json \
+            --no-deps --project="$PROJECT" "$SPEC" > /dev/null 2>&1 || true
+          found=$(jq --argjson path "$TITLE_PATH" '
+            def walk($p): (.specs[]? | $p + [.title]), (.suites[]? as $s | $s | walk($p + [$s.title]));
+            [.suites[]? | walk([])] | any(. == $path)
+          ' "$RUNNER_TEMP/list.json" 2>/dev/null || echo false)
+          if [[ "$found" != "true" ]]; then
             echo "::error::test $(jq -r 'join(" › ")' <<< "$TITLE_PATH") not found in $SPEC on $TEST_REF"
             exit 1
           fi
 
-          file_path=$(find . -path ./node_modules -prune -o -type f -path "*${SPEC}" -print | head -1)
-          location="${SPEC}:$(jq -r .line <<< "$target")"
-          grep_args=()
-          if [[ -n "$file_path" ]] && grep -qE '^test\.describe\.configure\(\{ *mode: *.serial' "$file_path"; then
-            echo "The whole file is serial: running all of it."
-            location="$SPEC"
-          elif [[ -n "$file_path" ]] && grep -qE "describe\.serial|mode: *'serial'" "$file_path" \
-              && [[ $(jq '.suites | length' <<< "$target") -gt 0 ]]; then
-            echo "Serial describe: running the outermost describe so its earlier tests set up the data."
-            location="${SPEC}:$(jq -r '.suites[0]' <<< "$target")"
-          elif [[ $(jq .siblings <<< "$target") -gt 1 ]]; then
-            title=$(jq -r '.path[-1]' <<< "$target")
-            escaped=$(printf '%s' "$title" | sed -E 's/[][\.^$*+?(){}|/]/\\&/g')
-            echo "Several tests share this line: narrowing with --grep."
-            grep_args=(--grep "${escaped}\$")
-          fi
+          # Mirrors the run step of c8-orchestration-cluster-reusable-e2e-tests.yml
+          # and c8-orchestration-cluster-reusable-api-tests.yml.
+          args=()
+          case "$CELL" in
+            api-*) args=(--project=api-tests) ;;
+            *)
+              args=(--project=chromium)
+              if docker ps --format '{{.Names}}' | grep -qx optimize; then
+                args+=(--project=optimize-startup)
+              fi
+              case "${VERSION}/${CELL}" in
+                main/e2e) ;;
+                8.9/e2e-v2) args+=(--grep-invert "tests/(common-flows/v1|tasklist/v1)/") ;;
+                */e2e-v2) args+=(--grep-invert "@v1-only") ;;
+                8.9/e2e-v1) args=(--project=chromium tests/common-flows/v1/ tests/tasklist/v1/) ;;
+                8.8/e2e-v1) args=(--project=chromium tests/tasklist/ tests/common-flows/) ;;
+                */e2e-v1) ;;
+                *) echo "::error::no nightly selection for ${VERSION}/${CELL}"; exit 1 ;;
+              esac
+              ;;
+          esac
 
-          echo "Running ${location} ${REPEAT_EACH} times on ${WORKERS} worker(s) (project ${PROJECT})"
+          echo "Running the ${VERSION}/${CELL} nightly selection ${REPEAT_EACH} time(s): ${args[*]}"
           rc=0
-          npx playwright test "$location" "${grep_args[@]}" \
-            --no-deps --project="$PROJECT" --forbid-only \
-            --repeat-each="$REPEAT_EACH" --retries=0 --workers="$WORKERS" || rc=$?
+          npx playwright test "${args[@]}" --forbid-only --repeat-each="$REPEAT_EACH" || rc=$?
           echo "Playwright exited ${rc}; the score reads the report, not the exit code."
 
+      # Every artifact holds one top folder named after itself and is
+      # downloaded with merge-multiple, so it lands in <path>/<name>/ whether
+      # a pattern matches one artifact (unpacked flat) or several.
       - name: Collect the shard's report
         if: always()
+        env:
+          ARTIFACT: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
         run: |
           mkdir -p "$RUNNER_TEMP/shard/json-report" "$RUNNER_TEMP/shard/test-results"
           cp -r "$SUITE/json-report/." "$RUNNER_TEMP/shard/json-report/" 2>/dev/null || true
           cp -r "$SUITE/test-results/." "$RUNNER_TEMP/shard/test-results/" 2>/dev/null || true
+          mkdir -p "$RUNNER_TEMP/shard-artifact"
+          cp -r "$RUNNER_TEMP/shard" "$RUNNER_TEMP/shard-artifact/${ARTIFACT}"
 
       - name: Upload the shard's report
         if: always()
         uses: ./.github/actions/upload-artifact-with-retry
         with:
           name: flaky-${{ inputs.label }}-${{ matrix.cell }}-s${{ matrix.shard }}
-          path: ${{ runner.temp }}/shard/**
+          path: ${{ runner.temp }}/shard-artifact/
           retention-days: "7"
 
   score:
@@ -348,18 +351,37 @@ jobs:
       verdict: ${{ steps.score.outputs.verdict }}
       rate: ${{ steps.score.outputs.rate }}
     steps:
-      - name: Checkout main for the scoring script
+      - name: Checkout the workflow's commit for the scoring script
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.sha }}
           persist-credentials: false
-          sparse-checkout: .github/scripts/oc-flakiness
+          sparse-checkout: |
+            .github/scripts/oc-flakiness
+            .github/actions
 
+      # One signed-URL request per shard artifact; GitHub intermittently
+      # answers one of them with an HTML error page, failing the whole step.
       - name: Download the shard reports
+        id: download
+        continue-on-error: true
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: flaky-${{ inputs.label }}-*
           path: ${{ runner.temp }}/shards
+          merge-multiple: true
+
+      - name: Wait before retrying the download
+        if: steps.download.outcome == 'failure'
+        run: sleep 60
+
+      - name: Download the shard reports (retry)
+        if: steps.download.outcome == 'failure'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: flaky-${{ inputs.label }}-*
+          path: ${{ runner.temp }}/shards
+          merge-multiple: true
 
       - name: Score the pass
         id: score
@@ -390,9 +412,40 @@ jobs:
             jq -r '.cells | to_entries[] | "| \(.key) | \(.value.passed) | \(.value.failed) | \(.value.notRun) | \(.value.rate)% | \(.value.shardsOk)/\(.value.shards) |"' "$RUNNER_TEMP/score/score.json"
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Wrap the score in its artifact folder
+        env:
+          ARTIFACT: flaky-score-${{ inputs.label }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/score-artifact/${ARTIFACT}"
+          cp "$RUNNER_TEMP/score/score.json" "$RUNNER_TEMP/score-artifact/${ARTIFACT}/"
+
       - name: Upload the score
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: flaky-score-${{ inputs.label }}
-          path: ${{ runner.temp }}/score/score.json
+          path: ${{ runner.temp }}/score-artifact/
           retention-days: 14
+
+      # The agent only needs the shards where the target failed, as one
+      # artifact per pass instead of one per shard.
+      - name: Keep the shards where the target failed
+        id: failing
+        env:
+          LABEL: ${{ inputs.label }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}"
+          jq -r '(.failingShards // [])[]' "$RUNNER_TEMP/score/score.json" | while read -r dir; do
+            cp -r "$RUNNER_TEMP/shards/${dir}" "$RUNNER_TEMP/evidence/flaky-evidence-${LABEL}/"
+          done
+          ls "$RUNNER_TEMP/evidence"
+          echo "count=$(jq '.failingShards // [] | length' "$RUNNER_TEMP/score/score.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Bundle the failing shards for the agent
+        if: steps.failing.outputs.count != '0'
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: flaky-evidence-${{ inputs.label }}
+          path: ${{ runner.temp }}/evidence/
+          retention-days: "14"
+          retry-jitter-seconds: "0"

@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
 class PhysicalTenantSecretsOverlayTest {
@@ -670,6 +672,57 @@ class PhysicalTenantSecretsOverlayTest {
       assertThat(cacheOf(resolver, tenantId).getTtl()).isEqualTo(Duration.ofMinutes(20));
       assertThat(cacheOf(resolver, tenantId).getMaxSize()).isEqualTo(1000);
     }
+  }
+
+  @Test
+  void shouldOverlayAzureStoreVaultAndIdentityPerTenant() {
+    // given a root azure store and a tenant that overrides its vault and managed identity
+    setProperties(
+        new HashMap<>(
+            Map.of(
+                "camunda.secrets.stores.azure.default.vault-url",
+                "https://root.vault.azure.net",
+                "camunda.physical-tenants.pt1.secrets.stores.azure.default.vault-url",
+                "https://pt1.vault.azure.net",
+                "camunda.physical-tenants.pt1.secrets.stores.azure.default.managed-identity-client-id",
+                "pt1-client-id")),
+        "pt1");
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then pt1 gets its own vault and identity while the default tenant keeps the root store
+    final var pt1Store = azureStoreOf(resolver, "pt1");
+    assertThat(pt1Store.getVaultUrl()).isEqualTo("https://pt1.vault.azure.net");
+    assertThat(pt1Store.getManagedIdentityClientId()).isEqualTo("pt1-client-id");
+    final var defaultStore = azureStoreOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(defaultStore.getVaultUrl()).isEqualTo("https://root.vault.azure.net");
+    assertThat(defaultStore.getManagedIdentityClientId()).isNull();
+  }
+
+  @Test
+  void shouldBindAzureStoreVaultUrlFromEnvironmentVariable() {
+    // given the vault URL comes from an environment variable
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of(
+                    "CAMUNDA_SECRETS_STORES_AZURE_DEFAULT_VAULTURL",
+                    "https://env.vault.azure.net")));
+
+    // when the resolver produces a Camunda per tenant
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then the default tenant's azure store reads the vault URL from it
+    assertThat(azureStoreOf(resolver, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID).getVaultUrl())
+        .isEqualTo("https://env.vault.azure.net");
+  }
+
+  private static Secrets.AzureKeyVaultStore azureStoreOf(
+      final PhysicalTenantResolver resolver, final String tenantId) {
+    return resolver.forPhysicalTenant(tenantId).getSecrets().getStores().getAzure().get("default");
   }
 
   private static String envPrefixOf(final PhysicalTenantResolver resolver, final String tenantId) {

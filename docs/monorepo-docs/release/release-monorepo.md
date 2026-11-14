@@ -23,13 +23,13 @@ Not in scope of this process are [SNAPSHOT releases](../ci.md#available-snapshot
 
 ### Release Types
 
-* [Minor](https://confluence.camunda.com/display/HAN/Product+Releases) (version format is 8.x.0):
+* [Minor](https://lamppost.camunda-it.rocks/handbook/#1392a98e/product-releases) (version format is 8.x.0):
   * includes new features, for production use
   * usually released every 6 months
   * supported for certain time with new patch releases after the minor release
   * code freeze before the release, to allow QA on a release candidate build
   * source branch is `stable/${minor_version}`
-* [Alpha](https://confluence.camunda.com/display/HAN/Alpha+Releases) (version format 8.x.0-alphaN)
+* [Alpha](https://lamppost.camunda-it.rocks/handbook/#23f4cddf/alpha-releases) (version format 8.x.0-alphaN)
   * includes new features to get early customer feedback, not for production use
   * usually released every 1 month
   * code freeze before the release, to allow QA on a release candidate build
@@ -226,6 +226,11 @@ Calling and integrating with GitHub Actions workflows:
   * Create 2nd BPMN activity that queries completion in a loop and makes the process wait for GHA
   * Send a Slack notification from GHA workflow in #top-monorepo-release to notify the release manager
 
+Scheduling releases:
+
+* When releases are in a rush (e.g. several patch releases in a row), aim to start the release builds in the
+**morning, UTC** (roughly 06:00–09:00 UTC). GitHub experiences fewer outages during that time, which reduces the chance of failed or retried release workflows.
+
 ## Change Management & Testing
 
 Changes to the release process are done in these steps:
@@ -318,7 +323,7 @@ Ownership model:
 
 #### 0. Prerequisites — dates and ownership
 
-- [ ] Confirm the minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) handbook — **not just `timeline.json`**. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases).
+- [ ] Confirm the minor release, feature freeze, and code freeze dates from the [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train) handbook — **not just `timeline.json`**. They can legitimately disagree: the Monorepo Release and the full-platform Release are different milestones, ~1 week apart. See [Feature Freeze vs Code Freeze](#feature-freeze-vs-code-freeze-minor-releases).
 - [ ] Confirm the MRM is available for feature freeze week, the cut / code freeze, and the final RC window. Check for holidays in those weeks — if any, align stakeholders on adjusted ETAs and document it.
 - [ ] Confirm the acting MRM (whoever pushes the branch) is in the `monorepo-release-manager` GitHub team — the bypass actor for creating `stable/**/*` under the `no-persistent-branch-creations-deletions` ruleset. Without it the `git push` is rejected.
 
@@ -404,8 +409,8 @@ Ownership model:
 ### Minor Release References
 
 - [Release process documentation](./index.md)
-- [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train)
-- [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze)
+- [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train)
+- [Minor Release Feature Freeze](https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze)
 - [Issue #46249](https://github.com/camunda/camunda/issues/46249)
 - [Issue #40009](https://github.com/camunda/camunda/issues/40009)
 - [Issue #37374](https://github.com/camunda/camunda/issues/37374)
@@ -520,8 +525,31 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
 
 **📅 Important References**
-- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
-- **Detailed Policy**: See [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze) for comprehensive guidelines
+- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://lamppost.camunda-it.rocks/handbook/#73405cf7/c8-release-train) page
+- **Detailed Policy**: See [Minor Release Feature Freeze](https://lamppost.camunda-it.rocks/handbook/#552a38af/minor-release-feature-freeze) for comprehensive guidelines
+
+## End of life (EOL) teardown
+
+A `stable/<minor>` branch on Extended Support (ESUP) reaches end of life (EOL) on the `end_of_life` date recorded in team-eng-ops [`esup/esup-minors.yml`](https://github.com/camunda/team-eng-ops/blob/main/esup/esup-minors.yml) ([how the date is picked](https://github.com/camunda/team-eng-ops/blob/main/esup/README.md#end-of-life)). The ESUP automation pings `@monorepo-release-manager` in `#top-monorepo-release` 14 days before that date and on it. The MRM on shift then works through this list by hand.
+
+The branch, its tags and its workflows are never deleted or renamed, so a branch can come back: [Reviving an EOL branch](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/processes-technical-processes-and-standards/standard-and-extended-support-periods/esup-playbook-for-engineers/index.md#reviving-an-eol-branch). Renovate stays off and the base-branch CI alert exclusion stays as it is.
+
+- [ ] **0. Before you start.** Re-read the [ESUP Case Registry](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/processes-technical-processes-and-standards/standard-and-extended-support-periods/esup-case-registry/index.md) for a case confirmed or extended since the reminder. If there is one, stop and update `end_of_life` by PR instead. Then check for work in progress on the branch (a running release, open `backport stable/<minor>` PRs, a requested CVE fix) and finish it first.
+- [ ] **1. Nightly dry-run.** Open a PR removing the minor from [`zeebe-release-stable-dry-run.yml`](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-release-stable-dry-run.yml). Search the file for `<minor>` and `dryrun-<NN>` / `dry-run-release-<NN>` (e.g. `8.7`, `dryrun-87`, `dry-run-release-87`): it appears in the branch and tag loops, the tag map, its `Release from stable/<minor>` job and that job's cleanup step, and in the `needs` lists of `cleanup-dry-run-branches` and `notify-camunda` and in `notify-camunda`'s failure condition. A `needs` entry left for the deleted job makes the workflow invalid.
+- [ ] **2. CI ruleset.** Open a `camunda/infra-core` PR removing `refs/heads/stable/<minor>` from the `unified_ci_merges_stable_branches` ruleset in `terraform/github/prod/rulesets-camunda-camunda.tf` ([example for 8.6](https://github.com/camunda/infra-core/pull/12288)). The no-deletion and no-force-push rules stay.
+- [ ] **3. Snyk.** In the `team-zeebe` Snyk organization, delete every project whose name starts with `zeebe(<minor>):` (release scans) or `zeebe(stable/<minor>):` (CI scans of the branch), for example `zeebe(<minor>):bom/pom.xml` and `zeebe(<minor>):camunda.Dockerfile`. Deleted projects can't be restored: the next release on the branch recreates the `zeebe(<minor>):` family, and any push to `stable/<minor>` recreates the `zeebe(stable/<minor>):` one.
+- [ ] **4. Backport label.** In [camunda/camunda labels](https://github.com/camunda/camunda/labels), set the description of `backport stable/<minor>` to `OUTDATED, DON'T USE (Backport a pull request to <minor>)`.
+- [ ] **5. Announce.** Post the message below to `#top-monorepo-release`, `#top-c8-release-train` and `#team-orchestration-cluster`.
+- [ ] **6. Ad-hoc release workflow.** Remove the minor's option from the ad-hoc release Slack workflow in `#top-c8-release-train`.
+
+Announcement template:
+
+> `stable/<minor>` reached end of life (EOL) on `<end_of_life>`. It gets no more releases; its nightly dry-run, CI ruleset and Snyk projects are removed. The branch stays, so it can be revived if needed ([Reviving an EOL branch](https://github.com/camunda/company-handbook/blob/main/departments/products/engineering/processes-technical-processes-and-standards/standard-and-extended-support-periods/esup-playbook-for-engineers/index.md#reviving-an-eol-branch)).
+>
+> - @qa-automated-release-manager @qa-release-manager: please check what this means for your testing and automation for `<minor>`.
+> - @reliability-testing-medic: please check your load tests and benchmarks for `<minor>`.
+> - @docs-release-manager: please check whether any documentation follow-up is needed.
+> - Teams with their own `<minor>` branches or jobs (Optimize, Connectors, Identity, Web Modeler, Helm): please decide what to do with yours.
 
 ## Troubleshooting
 

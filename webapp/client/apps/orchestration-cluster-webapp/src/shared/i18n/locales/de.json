@@ -2,7 +2,6 @@
 	"translation": {
 		"globalDatePlaceholder": "tt.mm.jjjj",
 		"globalWrittenCalendarDateFormat": "d.m.Y",
-		"globalRedactedValueLabel": "[GESCHWÄRZT]",
 		"headerSidebarDocumentationLink": "Dokumentation",
 		"headerSidebarCamundaAcademyLink": "Camunda Akademie",
 		"headerSidebarFeedbackAndSupportLink": "Feedback und Support",
@@ -261,7 +260,6 @@
 					"assignedMany": "{{count}} Mitglieder zugewiesen",
 					"assignedPartial": "{{assigned}} von {{total}} zugewiesen",
 					"removeFailed": "Entfernen fehlgeschlagen",
-					"loadError": "Mitglieder konnten nicht geladen werden",
 					"candidatesLoadError": "Optionen konnten nicht geladen werden",
 					"users": {
 						"tab": "Benutzer",
@@ -2139,7 +2137,8 @@
 					"actor": "Akteur",
 					"actorPlaceholder": "Benutzername oder Client-ID",
 					"timestampDateRange": "Zeitstempel-Datumsbereich",
-					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern"
+					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern",
+					"noProcessesFound": "Keine Prozesse gefunden"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Batch-Vorgang {{key}} anzeigen",
@@ -2259,7 +2258,8 @@
 						"loadingPreviousPage": "Vorherige Elemente werden geladen",
 						"loadingNextPage": "Weitere Elemente werden geladen",
 						"expandFailure": "Fehlerdetails anzeigen",
-						"collapseFailure": "Fehlerdetails ausblenden"
+						"collapseFailure": "Fehlerdetails ausblenden",
+						"itemStatusPrefix": "Status des Elements"
 					}
 				},
 				"actions": {
@@ -2392,6 +2392,12 @@
 					"lastDays_one": "Letzter {{count}} Tag",
 					"lastDays_other": "Letzte {{count}} Tage"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Datums- und Zeitbereich löschen",
+					"selectEndDate": "Enddatum wählen",
+					"pickDayFirst": "Zuerst ein Datum wählen",
+					"pickEndDay": "Enddatum wählen"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",
 					"operatorNotEquals": "ist nicht gleich",
@@ -2433,7 +2439,9 @@
 					"copyFailed": "Kopieren in die Zwischenablage fehlgeschlagen"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Option(en) auswählen"
+					"chooseOption": "Option(en) auswählen",
+					"search": "Suchen...",
+					"noResults": "Keine Ergebnisse gefunden"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Löschen",

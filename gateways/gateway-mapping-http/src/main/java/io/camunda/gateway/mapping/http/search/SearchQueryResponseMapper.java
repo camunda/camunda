@@ -146,7 +146,6 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
-import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -179,7 +178,6 @@ import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
-import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -261,7 +259,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -1647,12 +1644,8 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .metadata(toVariableMetadata(variableEntity))
         .isTruncated(truncateValues && variableEntity.isPreview())
-        .value(
-            withRedaction(
-                variableEntity,
-                !truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value()))
+        .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
   }
 
@@ -1682,34 +1675,7 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
-        .metadata(toVariableMetadata(variableEntity))
-        .value(withRedaction(variableEntity, getFullValueIfPresent(variableEntity)))
-        .build();
-  }
-
-  /**
-   * A redacted variable is stored with the JSON empty string {@code ""} as its value. The API
-   * returns an empty string instead, so that clients check {@code metadata.protectionModes} rather
-   * than read a value that looks real.
-   */
-  private static String withRedaction(final VariableEntity variableEntity, final String value) {
-    return variableEntity.protectionModes().contains(VariableEntity.ProtectionMode.REDACT)
-        ? ""
-        : value;
-  }
-
-  private static VariableMetadata toVariableMetadata(final VariableEntity variableEntity) {
-    final var protectionModes = ofNullable(variableEntity.protectionModes()).orElseGet(Set::of);
-    return VariableMetadata.Builder.create()
-        .protectionModes(
-            protectionModes.stream()
-                .sorted()
-                .map(
-                    mode ->
-                        switch (mode) {
-                          case REDACT -> ProtectionModeEnum.REDACT;
-                        })
-                .toList())
+        .value(getFullValueIfPresent(variableEntity))
         .build();
   }
 

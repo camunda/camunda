@@ -383,6 +383,50 @@ describe('Operations Log saved filters', () => {
 		await expect.element(screen.getByText('unscoped-actor')).not.toBeInTheDocument();
 	});
 
+	it('should let the user dismiss the unavailable definition alert', async ({worker}) => {
+		worker.use(
+			http.post(endpoints.queryProcessDefinitions.getUrl(), async ({request}) => {
+				const body = queryProcessDefinitionsRequestBodySchema.parse(await request.json());
+				return HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: body.filter?.isLatestVersion ? [A_VERSION_1] : [],
+					}),
+				);
+			}),
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryAuditLogsEndpoint({successResponse: AUDIT_WITH_ROW}),
+		);
+		const screen = await renderPage('?tenantId=%3Ctenant-A%3E&processDefinitionId=invoice&processDefinitionVersion=42');
+		await expect.element(screen.getByText(DEFINITION_UNAVAILABLE)).toBeVisible();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Dismiss'}));
+
+		await expect.element(screen.getByText(DEFINITION_UNAVAILABLE)).not.toBeInTheDocument();
+	});
+
+	it('should show the timestamp range in the picker and drop it from the query when cleared', async ({worker}) => {
+		let lastFilter: Record<string, unknown> | undefined;
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
+				const body = (await request.json()) as {filter?: Record<string, unknown>};
+				lastFilter = body.filter;
+				return HttpResponse.json(createQueryAuditLogsResponse());
+			}),
+		);
+
+		const screen = await renderPage('?timestampAfter=2024-06-10T12:00:00&timestampBefore=2024-06-20T18:30:00');
+		const picker = screen.getByRole('button', {name: /Timestamp date range/});
+		await expect.element(picker).toHaveTextContent('Jun 10, 2024 12:00:00 PM – Jun 20, 2024 06:30:00 PM');
+		await expect.poll(() => lastFilter?.['timestamp']).toBeDefined();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Clear date and time range'}));
+
+		await expect.element(picker).toHaveTextContent('Enter date range');
+		await expect.poll(() => lastFilter?.['timestamp']).toBeUndefined();
+	});
+
 	it('should block a selected version when process resolution fails even if decision names fail', async ({worker}) => {
 		worker.use(
 			mockQueryProcessDefinitionsEndpoint({successResponse: new HttpResponse(null, {status: 503})}),
@@ -586,7 +630,7 @@ describe('Operations Log saved filters', () => {
 		await userEvent.click(screen.getByRole('combobox', {name: 'Select a tenant'}));
 		await userEvent.click(screen.getByRole('option', {name: 'Tenant B'}));
 
-		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Search by Process Name');
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveTextContent('Search by process name');
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeDisabled();
 	});
 

@@ -164,6 +164,34 @@ describe('<BatchOperations /> (DS)', () => {
 		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
 	});
 
+	it('should clamp the item range when the requested page is past the last page', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
+
+		const screen = await renderRoute(`${PATH}?page=99`);
+
+		await expect.element(screen.getByText('25–25 of 25 items')).toBeVisible();
+		await expect.element(screen.getByText(/Page 99/)).not.toBeInTheDocument();
+	});
+
+	it('should display the first supported page size when the URL carries an unsupported one', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
+
+		const screen = await renderRoute(`${PATH}?pageSize=15`);
+
+		await expect.element(screen.getByText('1–20 of 25 items · Page 1 of 2')).toBeVisible();
+
+		worker.use(
+			mockQueryBatchOperationsEndpoint({
+				schema: z.object({page: z.object({from: z.literal(20), limit: z.literal(20)})}),
+				successResponse: responseExceedingPageSize('CANCEL_PROCESS_INSTANCE'),
+				failureResponse: HttpResponse.json({}, {status: 500}),
+			}),
+		);
+		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
+
+		await expect.element(screen.getByRole('link', {name: 'Cancel Process Instance'})).toBeVisible();
+	});
+
 	it('should update the document title when the language changes', async ({worker}) => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
 		document.title = 'Stale title';
@@ -221,6 +249,30 @@ describe('<BatchOperations /> (DS)', () => {
 
 		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
 		await expect.element(screen.getByRole('alert')).not.toBeInTheDocument();
+	});
+
+	it('should show no empty message when a refresh fails over a cached empty page', async ({worker}) => {
+		worker.use(
+			mockQueryBatchOperationsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationsResponse({
+						page: {totalItems: 25, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+		const screen = await renderRoute(`${PATH}?page=2`);
+		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Previous page'}));
+		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
+
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: HttpResponse.json({}, {status: 500})}));
+		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
+
+		await expect.element(screen.getByRole('alert')).toMatchTextContent('Failed to refresh batch operations');
+		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('No results.')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Actor'})).toBeVisible();
 	});
 
 	it('should request the clicked sort column and the next page of results', async ({worker}) => {

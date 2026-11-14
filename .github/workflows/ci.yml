@@ -397,7 +397,9 @@ jobs:
     name: "Lint / Flattened POM Metadata"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
@@ -405,6 +407,12 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      # Installed before the Maven build so an apt outage fails the job before
+      # spending minutes on the build; the composite below then skips its own install.
+      - name: Install xmllint
+        uses: ./.github/actions/apt-install
+        with:
+          packages: libxml2-utils
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: validate-pom-metadata
@@ -733,7 +741,7 @@ jobs:
           # ============================================================================
 
           # Zeebe modules owned by @camunda/core-features
-          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-micrometer',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp',':camunda-secret-store-env'"
+          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-micrometer',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp',':camunda-secret-store-env',':camunda-secret-store-azure'"
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
@@ -1203,7 +1211,6 @@ jobs:
       contents: read
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
-      elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
       elasticsearch-9: ${{ steps.db-versions.outputs.elasticsearch-9 }}
       opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
@@ -1312,11 +1319,6 @@ jobs:
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - type: "elasticsearch"
-            name: "ES 8.x"
-            it-type: "es"
-            image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
-            physical-tenant-elasticsearch-url: "http://localhost:9201"
           - type: "opensearch"
             name: "OS 3.x"
             it-type: "os"
@@ -1365,11 +1367,6 @@ jobs:
             it-database-type: "es"
             database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - database-type: "elasticsearch"
-            database-name: "ES 8.x"
-            it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
-            physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
             it-database-type: "os"
@@ -1409,11 +1406,6 @@ jobs:
             database-name: "ES 9.x"
             it-database-type: "es"
             database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-9 }}"
-            physical-tenant-elasticsearch-url: "http://localhost:9201"
-          - database-type: "elasticsearch"
-            database-name: "ES 8.x"
-            it-database-type: "es"
-            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
           - database-type: "opensearch"
             database-name: "OS 3.x"
@@ -2789,7 +2781,7 @@ jobs:
     env:
       CHECK_DIR: .github/scripts/oas-breaking-change-check
       # renovate: datasource=github-releases depName=oasdiff/oasdiff
-      OASDIFF_VERSION: '1.36.0'
+      OASDIFF_VERSION: '1.37.0'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2962,7 +2954,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: '44.222.5'
+      RENOVATE_VERSION: '44.224.1'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -3004,7 +2996,9 @@ jobs:
     name: "Shell / Script Tests"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Leaves room for checkout plus apt-install's full retry budget (~6.5 min), so an
+    # Ubuntu mirror outage fails with the apt error instead of a job-timeout cancel.
+    timeout-minutes: 12
     permissions: {}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
@@ -3043,6 +3037,8 @@ jobs:
 
       - name: Run Renovate assignee alignment tests
         run: node --test .github/scripts/align-renovate-assignees.test.mjs
+      - name: Run ESUP backport warning tests
+        run: node --test .github/scripts/esup-backport-warning.test.mjs
       - name: Run failing-test owner resolver tests
         run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
       - name: Run OC nightly suite-health tests

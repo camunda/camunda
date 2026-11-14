@@ -220,41 +220,13 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
-  public void shouldRejectAnUpdateOfMoreThanOneChunk() {
-    // given
-    final var chunk = chunk().setChunkIndex(0).setChunkCount(2);
-
-    // when
-    apply(chunk);
-
-    // then
-    final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-            .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
-            .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason()).contains("single chunk");
+  public void shouldRejectAnAppendedChunkSentAsClientRequest() {
+    assertRejectedAsClientRequest(PolicyUpdateIntent.APPEND_CHUNK);
   }
 
   @Test
-  public void shouldRejectAChunkSentAsClientRequest() {
-    // given
-    final var chunk = chunk();
-
-    // when
-    ENGINE.writeRecords(
-        RecordToWrite.commandFromRequest("user-" + uid())
-            .policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
-
-    // then
-    final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-            .onlyCommandRejections()
-            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
-            .getFirst();
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
-    assertThat(rejection.getRejectionReason()).contains("client request");
+  public void shouldRejectAnAppliedChunkSentAsClientRequest() {
+    assertRejectedAsClientRequest(PolicyUpdateIntent.APPLY_CHUNK);
   }
 
   @Test
@@ -272,9 +244,10 @@ public final class PolicyUpdateApplyTest {
         .setChunkCount(1);
   }
 
+  /** Appends the chunk, as the broker will; the last chunk of an update starts applying it. */
   static void apply(final EngineRule engine, final PolicyUpdateRecord chunk) {
     engine.writeRecords(
-        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPLY_CHUNK, chunk));
+        RecordToWrite.commandWithoutClaims().policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk));
   }
 
   private static void apply(final PolicyUpdateRecord chunk) {
@@ -285,6 +258,24 @@ public final class PolicyUpdateApplyTest {
     return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.CHUNK_APPLIED)
         .filter(record -> record.getValue().getUpdateId().equals(updateId))
         .getFirst();
+  }
+
+  private static void assertRejectedAsClientRequest(final PolicyUpdateIntent intent) {
+    // given
+    final var chunk = chunk();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.commandFromRequest("user-" + uid()).policyUpdate(intent, chunk));
+
+    // then
+    final var rejection =
+        RecordingExporter.policyUpdateRecords(intent)
+            .onlyCommandRejections()
+            .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+            .getFirst();
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("client request");
   }
 
   private static PolicyMembershipEntry membership(

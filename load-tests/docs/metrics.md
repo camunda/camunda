@@ -43,13 +43,14 @@ directly:
 
 ## SLO targets by test variant
 
-|      Variant      | PI/s target | FNI/s target |                    Notes                     |
-|-------------------|-------------|--------------|----------------------------------------------|
-| `typical`         | 50          | 500          | Straight-through process, 10 tasks, 2 timers |
-| `realistic`       | 50          | 100          | 1 PI/s created; multi-instance inflates FNI  |
-| `max` / stress    | 300         | 300          | Minimal process, stress ceiling              |
-| `latency`         | 1           | —            | No throughput SLO; focus on latency metrics  |
-| `rdbms-realistic` | 50          | 100          | Same as realistic, PostgreSQL backend        |
+|        Variant         | PI/s target | FNI/s target |                                                                      Notes                                                                       |
+|------------------------|-------------|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `typical`              | 50          | 500          | Straight-through process, 10 tasks, 2 timers                                                                                                     |
+| `realistic`            | 50          | 100          | 1 PI/s created; multi-instance inflates FNI                                                                                                      |
+| `max` / stress         | 300         | 300          | Minimal process, stress ceiling                                                                                                                  |
+| `max` / stress, `none` | 650         | 650          | Minimal process, below the capacity on purpose, see [regression test](../../docs/testing/reliability-testing.md#regression-test-vs-maximum-test) |
+| `latency`              | 1           | —            | No throughput SLO; focus on latency metrics                                                                                                      |
+| `rdbms-realistic`      | 50          | 100          | Same as realistic, PostgreSQL backend                                                                                                            |
 
 Latency and health thresholds apply to all variants — see the sections below.
 

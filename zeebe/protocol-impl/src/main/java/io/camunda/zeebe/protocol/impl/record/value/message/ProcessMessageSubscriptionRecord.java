@@ -9,17 +9,17 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -37,6 +37,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
   private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
   private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
   private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
@@ -58,7 +59,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
   private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
-  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
@@ -75,13 +76,14 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
       new BooleanProperty(CLOSED_FOR_SUSPEND_KEY, false);
 
   public ProcessMessageSubscriptionRecord() {
-    super(17);
+    super(18);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
+        .declareProperty(variablesProp)
         .declareProperty(interruptingProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(correlationKeyProp)
@@ -93,7 +95,6 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(elementTypeProp)
         .declareProperty(subscriptionKeyProp)
         .declareProperty(closedForSuspendProp);
-    declareProperties(variablesPropertyGroup);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -103,7 +104,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setProcessDefinitionKey(record.getProcessDefinitionKey());
     setMessageKey(record.getMessageKey());
     setMessageName(record.getMessageNameBuffer());
-    variablesPropertyGroup.copyFrom(record.variablesPropertyGroup);
+    setVariables(record.getVariablesBuffer());
     setInterrupting(record.isInterrupting());
     setBpmnProcessId(record.getBpmnProcessIdBuffer());
     setCorrelationKey(record.getCorrelationKeyBuffer());
@@ -139,28 +140,17 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    return variablesPropertyGroup.getVariables();
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
   public ProcessMessageSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesPropertyGroup.setVariables(variables);
+    variablesProp.setValue(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesPropertyGroup.getVariablesBuffer();
-  }
-
-  @Override
-  public Map<String, VariableMetadataValue> getVariablesMetadata() {
-    return variablesPropertyGroup.getMetadata();
-  }
-
-  public ProcessMessageSubscriptionRecord setVariablesMetadata(
-      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
-    variablesPropertyGroup.setMetadata(variablesMetadata);
-    return this;
+    return variablesProp.getValue();
   }
 
   @Override

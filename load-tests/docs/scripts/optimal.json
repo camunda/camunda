@@ -41,19 +41,19 @@
   "storage-type-overrides": {
     "none": {
       "process-instances-started": {
-        "expected": 900000
+        "expected": 1170000
       },
       "process-instances-completed": {
-        "expected": 900000
+        "expected": 1170000
       },
       "throughput-per-second": {
-        "expected": 500
+        "expected": 650
       },
       "completed-pi-rate-per-second": {
-        "expected": 500
+        "expected": 650
       },
       "starter-rate-per-second": {
-        "expected": 500
+        "expected": 650
       },
       "data-availability": {
         "expected": null

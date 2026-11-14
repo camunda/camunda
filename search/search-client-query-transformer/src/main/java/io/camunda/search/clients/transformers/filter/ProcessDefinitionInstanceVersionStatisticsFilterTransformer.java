@@ -33,6 +33,12 @@ public class ProcessDefinitionInstanceVersionStatisticsFilterTransformer
   }
 
   @Override
+  protected boolean matchesOnlyRuntimeData(
+      final ProcessDefinitionInstanceVersionStatisticsFilter filter) {
+    return true;
+  }
+
+  @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionInstanceVersionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     queries.add(term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));

@@ -93,7 +93,7 @@ flowchart LR
 
 A policy update passes through four steps. Steps 2 to 4 run in the engine of partition 1, which
 coordinates the update. Policy update records are only ever processed on partition 1; the other
-partitions only receive identity commands and the final version switch.
+partitions only receive identity commands and the final version commit.
 
 1. **Receive and split.** The Hub client hands the change set to the transformer in the broker,
    which maps the Hub DTOs to records. It accepts the update only while the broker leads
@@ -103,8 +103,8 @@ partitions only receive identity commands and the final version switch.
 3. **Apply.** The engine applies the buffered chunks one at a time. Each chunk becomes ordinary
    identity commands, written at the update's policy version. The existing identity processors
    handle them and distribute them to the other partitions.
-4. **Switch.** After the last chunk, the engine switches partition 1 to the new policy version and
-   distributes the switch. Only then does the new policy become visible.
+4. **Commit.** After the last chunk, the engine commits the new policy version on partition 1 and
+   distributes the commit. Only then does the new policy become visible.
 
 ```mermaid
 flowchart LR
@@ -115,8 +115,8 @@ flowchart LR
   Buffer -->|all chunks there| Apply[APPLY one chunk per command]
   Apply -->|identity commands<br/>at version v| Identity[Identity processors]
   Identity -->|identity queue| Others[Partitions 2..n]
-  Apply -->|last chunk| Switch[SWITCH_VERSION v]
-  Switch -->|identity queue| Others
+  Apply -->|last chunk| Commit[COMMIT_VERSION v]
+  Commit -->|identity queue| Others
 ```
 
 ### Splitting
@@ -153,9 +153,9 @@ sequenceDiagram
     P1 -->> Pn: distribute identity commands (identity queue)
     P1 ->> DB: APPLIED: chunk i done
   end
-  P1 ->> P1: SWITCH_VERSION(v) → VERSION_SWITCHED
-  P1 -->> Pn: distribute SWITCH_VERSION(v) (identity queue)
-  Pn ->> Pn: VERSION_SWITCHED
+  P1 ->> P1: COMMIT_VERSION(v) → VERSION_COMMITTED
+  P1 -->> Pn: distribute COMMIT_VERSION(v) (identity queue)
+  Pn ->> Pn: VERSION_COMMITTED
 ```
 
 - **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
@@ -184,18 +184,18 @@ The buffer uses two column families on partition 1:
 | `POLICY_UPDATE`       | `updateId`          | The open update: policy version, seqNo, chunk count, received and applied chunks, status. |
 | `POLICY_UPDATE_CHUNK` | (`updateId`, index) | A buffered chunk.                                                                         |
 
-### Version switch
+### Version commit
 
-The last `APPLY_CHUNK` writes the `SWITCH_VERSION` command. Partition 1 processes it first and writes
-`VERSION_SWITCHED`, which sets its current policy version and Hub sequence and removes the update's
-buffered chunks. It then distributes the command on the `IDENTITY` queue. Because the update's
-identity commands were distributed on the same queue before, every partition switches only after it
-has applied the whole update. A partition that is already at that version or a newer one rejects
-the switch and still acknowledges the distribution.
+The last `APPLY_CHUNK` writes the `COMMIT_VERSION` command. Partition 1 processes it first and writes
+`VERSION_COMMITTED`, which sets its current policy version and Hub sequence and removes all buffered
+updates and their chunks. It then distributes the command on the `IDENTITY` queue. Because the
+update's identity commands were distributed on the same queue before, every partition commits only
+after it has applied the whole update. The commit does not check that the version is newer: the
+first `APPEND_CHUNK` of an update does that before anything is buffered.
 
-The switch of versions automatically invalidates the identity caches of the engine.
+The commit of a version automatically invalidates the identity caches of the engine.
 
-Partitions switch independently, so for a short time some partitions may still authorize with the
+Partitions commit independently, so for a short time some partitions may still authorize with the
 old policy while others already use the new one.
 
 ## Records and intents
@@ -219,16 +219,16 @@ other intents control the update and carry only its identifiers.
 A membership is a `PolicyMembershipEntryValue`: target type and ID (tenant, role or group), member
 type and ID.
 
-|       Intent       |  Kind   |                                              Usage                                              |
-|--------------------|---------|-------------------------------------------------------------------------------------------------|
-| `APPEND_CHUNK`     | Command | Written by the transformer, one per chunk. Validated and buffered.                              |
-| `CHUNK_APPENDED`   | Event   | A chunk is stored. After the last chunk, the processor writes the first `APPLY_CHUNK`.          |
-| `APPLY_CHUNK`      | Command | Internal follow-up. Applies the next buffered chunk.                                            |
-| `CHUNK_APPLIED`    | Event   | A chunk is applied.                                                                             |
-| `SWITCH_VERSION`   | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
-| `VERSION_SWITCHED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
-| `ABORT`            | Command | Written by the transformer to abort a pending policy update (e.g. from a leader change).        |
-| `ABORTED`          | Event   | An open update was discarded; its buffered chunks are removed.                                  |
+|       Intent        |  Kind   |                                              Usage                                              |
+|---------------------|---------|-------------------------------------------------------------------------------------------------|
+| `APPEND_CHUNK`      | Command | Written by the transformer, one per chunk. Validated and buffered.                              |
+| `CHUNK_APPENDED`    | Event   | A chunk is stored. After the last chunk, the processor writes the first `APPLY_CHUNK`.          |
+| `APPLY_CHUNK`       | Command | Internal follow-up. Applies the next buffered chunk.                                            |
+| `CHUNK_APPLIED`     | Event   | A chunk is applied.                                                                             |
+| `COMMIT_VERSION`    | Command | Internal follow-up after the last chunk; distributed to all partitions on the `IDENTITY` queue. |
+| `VERSION_COMMITTED` | Event   | The partition's current policy version is set; the new policy becomes visible.                  |
+| `ABORT`             | Command | Written by the transformer to abort a pending policy update (e.g. from a leader change).        |
+| `ABORTED`           | Event   | An open update was discarded; its buffered chunks are removed.                                  |
 
 The identity record values (`TenantRecordValue`, `RoleRecordValue`, `GroupRecordValue`,
 `MappingRuleRecordValue`, `AuthorizationRecordValue`) carry an optional `policyVersion`, default 0.
@@ -237,7 +237,7 @@ Records without it read as version 0.
 ## Two-phase commit in the engine
 
 An update can span many commands and many partitions, but it must become visible all at once. The
-engine therefore writes the update first (phase 1) and makes it visible with a single version switch
+engine therefore writes the update first (phase 1) and makes it visible with a single version commit
 per partition (phase 2).
 
 ### Versioned identity state
@@ -287,8 +287,8 @@ visible = max(current policy version, policyVersion of the command)
 
 ### Commit
 
-`VERSION_SWITCHED` is the commit. Until a partition processes it, the update's rows exist in that
-partition's state but no authorization check sees them. A version that is never switched stays
+`VERSION_COMMITTED` is the commit. Until a partition processes it, the update's rows exist in that
+partition's state but no authorization check sees them. A version that is never committed stays
 invisible.
 
 The committed policy of a partition is stored in the `POLICY` column family under a constant key:
@@ -306,7 +306,7 @@ The committed policy of a partition is stored in the `POLICY` column family unde
 Only the last `PolicyUpdateRecordValue` of an update is kept in the `POLICY_UPDATE_ASSEMBLY` column family.
 
 All chunks of a policy update are removed when
-- the version switch, so they do not accumulate
+- the version is committed, so they do not accumulate
 - an update is aborted, so a failed update does not block the next one
 
 #### Identity State

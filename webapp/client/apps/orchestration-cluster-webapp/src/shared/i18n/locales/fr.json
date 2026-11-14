@@ -2,7 +2,6 @@
 	"translation": {
 		"globalDatePlaceholder": "jj/mm/aaaa",
 		"globalWrittenCalendarDateFormat": "d/m/Y",
-		"globalRedactedValueLabel": "[CAVIARDÉ]",
 		"headerSidebarDocumentationLink": "Documentation",
 		"headerSidebarCamundaAcademyLink": "Camunda Academy",
 		"headerSidebarFeedbackAndSupportLink": "Commentaires et assistance",
@@ -261,7 +260,6 @@
 					"assignedMany": "{{count}} membres attribués",
 					"assignedPartial": "{{assigned}} sur {{total}} attribués",
 					"removeFailed": "Échec du retrait",
-					"loadError": "Impossible de charger les membres",
 					"candidatesLoadError": "Impossible de charger les options",
 					"users": {
 						"tab": "Utilisateurs",
@@ -2142,7 +2140,8 @@
 					"actor": "Acteur",
 					"actorPlaceholder": "Nom d'utilisateur ou ID client",
 					"timestampDateRange": "Plage de dates de l'horodatage",
-					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage"
+					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage",
+					"noProcessesFound": "Aucun processus trouvé"
 				},
 				"entityLinks": {
 					"viewBatchOperation": "Afficher l'opération de lot {{key}}",
@@ -2262,7 +2261,8 @@
 						"loadingPreviousPage": "Chargement des éléments précédents",
 						"loadingNextPage": "Chargement d'autres éléments",
 						"expandFailure": "Afficher les détails de l'échec",
-						"collapseFailure": "Masquer les détails de l'échec"
+						"collapseFailure": "Masquer les détails de l'échec",
+						"itemStatusPrefix": "Statut de l'élément"
 					}
 				},
 				"actions": {
@@ -2395,6 +2395,12 @@
 					"lastDays_one": "Dernier {{count}} jour",
 					"lastDays_other": "Derniers {{count}} jours"
 				},
+				"dateTimeRangePicker": {
+					"clearRange": "Effacer la plage de dates et d'heures",
+					"selectEndDate": "Choisir la date de fin",
+					"pickDayFirst": "Choisissez d'abord une date",
+					"pickEndDay": "Choisir la date de fin"
+				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",
 					"operatorNotEquals": "n'est pas égal à",
@@ -2436,7 +2442,9 @@
 					"copyFailed": "Impossible de copier dans le presse-papiers"
 				},
 				"filterMultiSelect": {
-					"chooseOption": "Choisir une ou plusieurs options"
+					"chooseOption": "Choisir une ou plusieurs options",
+					"search": "Rechercher...",
+					"noResults": "Aucun résultat trouvé"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Supprimer",

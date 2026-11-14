@@ -15,7 +15,7 @@ import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	mockDeleteGlobalTaskListenerEndpoint,
-	mockGetGlobalTaskListenerEndpoint,
+	mockSearchGlobalTaskListenersEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createGlobalTaskListener} from '#/shared-test-modules/api-mocks/global-task-listeners';
 import {DeleteGlobalTaskListenerModal} from './DeleteGlobalTaskListenerModal';
@@ -62,7 +62,7 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 		const globalTaskListener = createGlobalTaskListener({id: 'my-listener'});
 		worker.use(
 			mockDeleteGlobalTaskListenerEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGlobalTaskListenerEndpoint({successResponse: new HttpResponse(null, {status: 404})}),
+			mockSearchGlobalTaskListenersEndpoint({successResponse: HttpResponse.json({items: [], page: {totalItems: 0}})}),
 		);
 
 		const screen = await render(
@@ -80,7 +80,9 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 		const globalTaskListener = createGlobalTaskListener({id: 'my-listener'});
 		worker.use(
 			mockDeleteGlobalTaskListenerEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
-			mockGetGlobalTaskListenerEndpoint({successResponse: HttpResponse.json(globalTaskListener)}),
+			mockSearchGlobalTaskListenersEndpoint({
+				successResponse: HttpResponse.json({items: [globalTaskListener], page: {totalItems: 1}}),
+			}),
 		);
 		const screen = await render(
 			<DeleteGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={() => {}} />,

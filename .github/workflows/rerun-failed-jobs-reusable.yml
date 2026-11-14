@@ -73,7 +73,7 @@ jobs:
       - name: Rerun failed jobs on runner shutdown
         id: rerun
         if: steps.detect-if-retry.outputs.should-retry == 'true'
-        uses: camunda/infra-global-github-actions/rerun-failed-run@379e8654a5f25f22566f80c2e99a611fca365263 # rerun-failed-run-1.1.4
+        uses: camunda/infra-global-github-actions/rerun-failed-run@6644ac7ceab8e1b32359cc25a5161c46156fc319 # rerun-failed-run-1.2.0
         with:
           run-id: ${{ github.run_id }}
           repository: ${{ github.repository }}

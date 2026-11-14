@@ -40,9 +40,6 @@
             "variables": {
               "enabled": false
             },
-            "variablesMetadata": {
-              "enabled": false
-            },
             "bpmnProcessId": {
               "type": "keyword"
             },

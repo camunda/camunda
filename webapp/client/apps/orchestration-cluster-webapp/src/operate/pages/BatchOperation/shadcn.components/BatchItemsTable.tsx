@@ -7,6 +7,7 @@
  */
 
 import {OPERATE_BASE} from '#/shared/operateBase';
+import {cn} from '#/shared/cn';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {createLink} from '@tanstack/react-router';
@@ -29,6 +30,9 @@ type Props = {
 const TABLE_CONTAINER_CLASSES = [
 	'[&_[data-slot=table-container]]:rounded-none! [&_[data-slot=table-container]]:border-0! [&_[data-slot=table-container]]:shadow-none!',
 	'[&_[data-slot=data-table]>div.rounded-xl]:rounded-none! [&_[data-slot=data-table]>div.rounded-xl]:border-0!',
+	'[&_tr:has([data-item-outcome=failed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
+	'[&_tr:has([data-item-outcome=failed])+tr[data-slot=data-table-expansion-row]>td:first-child]:[box-shadow:inset_3px_0_0_var(--danger-border-strong)]',
+	'[&_tr:has([data-item-outcome=completed])>td:first-child]:[box-shadow:inset_3px_0_0_var(--success-border-strong)]',
 ].join(' ');
 
 const TableLink: React.FC<React.ComponentProps<'a'>> = (props) => <Link className="underline" {...props} />;
@@ -210,6 +214,9 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 							{retryButton}
 						</div>
 					)}
+					<div role="status" className={cn('text-sm', isFetching && 'px-4 pb-4')}>
+						{isFetching ? t('operate.batchOperation.itemsTable.retrying') : null}
+					</div>
 				</div>
 			)}
 			{showItemsTable && (
@@ -231,7 +238,13 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 								</p>
 							) : null
 						}
-						isFetching={isFetching && !isError && !isFetchingPreviousPage && !isFetchingNextPage}
+						isFetching={
+							isFetching &&
+							!isError &&
+							!isFetchingPreviousPage &&
+							!isFetchingNextPage &&
+							(status === 'pending' || items.length > 0)
+						}
 						emptyState={
 							isError || status === 'pending' ? undefined : (
 								<EmptyMessage message={t('operate.batchOperation.itemsTable.emptyMessage')} />
@@ -242,6 +255,7 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 							hasNextPage,
 							isFetchingPreviousPage,
 							isFetchingNextPage,
+							isFetchPreviousPageError,
 							fetchPreviousPage,
 							fetchNextPage,
 						}}

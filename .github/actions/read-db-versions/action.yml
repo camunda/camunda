@@ -9,8 +9,6 @@ outputs:
   # db-versions.yml. Use these wherever a single representative version is needed
   # for a major series — e.g. service container images, docker checks, optimize
   # and identity workflow jobs that run against one version at a time.
-  elasticsearch-8:
-    value: ${{ steps.parse.outputs.elasticsearch-8 }}
   elasticsearch-9:
     value: ${{ steps.parse.outputs.elasticsearch-9 }}
   opensearch-2:
@@ -20,7 +18,7 @@ outputs:
 
   # ── SaaS version ─────────────────────────────────────────────────────────────
   # The Elasticsearch version recommended for SaaS deployments, as declared by
-  # the `saas` field in db-versions.yml. Always resolves to one of the es8 entries
+  # the `saas` field in db-versions.yml. Always resolves to one of the es9 entries
   # (enforced via a YAML anchor in the source file).
   saas:
     value: ${{ steps.parse.outputs.saas }}
@@ -30,7 +28,7 @@ outputs:
   # rdbms-matrix:   one entry per version of PostgreSQL, MySQL, MariaDB, MSSQL, Azure SQL, Oracle.
   #                 Fields: database-name, database-type, database-image-version, it-database-type.
   #                 Used by zeebe-rdbms-integration-tests.yml.
-  # es-os-matrix:   min and max entries per supported major series of ES8, ES9, OS2, OS3.
+  # es-os-matrix:   min and max entries per supported major series of ES9, OS2, OS3.
   #                 Fields: database-name, database-type, database-container, database-image-version, it-database-type.
   #                 Used by zeebe-search-integration-tests.yml.
   # ci-database-matrix: one entry per ES/OS major series (latest minor) plus H2.

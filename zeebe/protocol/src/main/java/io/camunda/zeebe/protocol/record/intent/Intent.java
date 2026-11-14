@@ -101,6 +101,8 @@ public interface Intent {
         MessageStartCorrelationKeyLockReleaseIntent.class);
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
+    map.put(ValueType.PROBE, ProbeIntent.class);
+    map.put(ValueType.PROBE_BATCH, ProbeBatchIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);
     map.put(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreIntent.class);
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);
@@ -108,6 +110,7 @@ public interface Intent {
     map.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.class);
     map.put(ValueType.ELEMENT_INSTANCE_WALK, ElementInstanceWalkIntent.class);
     map.put(ValueType.POLICY_UPDATE, PolicyUpdateIntent.class);
+    map.put(ValueType.PROCESS_DEFINITION_SUSPENSION, ProcessDefinitionSuspensionIntent.class);
     map.put(ValueType.BUFFERED_COMMAND, BufferedCommandIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_BUSINESS_ID, ProcessInstanceBusinessIdIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.class);

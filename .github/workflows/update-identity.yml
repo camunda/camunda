@@ -92,6 +92,27 @@ jobs:
           clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
           operation: publishMessage
           messageName: 'identity-workflow-completed'
+          correlationKey: 'identity-update-${{ inputs.targetBranch }}'
+          timeToLive: '240000'
+          variables: |
+            {
+              "workflow_run": {
+                "name": "Update Identity Version",
+                "conclusion": "success",
+                "head_branch": "${{ github.head_ref || github.ref_name }}",
+                "target_branch": "${{ inputs.targetBranch }}"
+              },
+              "action": "completed"
+            }
+      # Remove when no camunda-release instance waits on the version key any more: from 8.11 on,
+      # several releases can use the same Identity version, so only the branch key is unique.
+      - name: Notify Camunda of completion (version key)
+        if: success()
+        uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
+        with:
+          clientConfig: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
+          operation: publishMessage
+          messageName: 'identity-workflow-completed'
           correlationKey: 'identity-update-${{ inputs.identityVersion }}'
           timeToLive: '240000'
           variables: |

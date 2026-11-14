@@ -11,7 +11,7 @@ import {useNavigate, useSearch} from '@tanstack/react-router';
 import {z} from 'zod';
 import {DataTable, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
-import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
+import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/shadcn.components/InfiniteScroller';
 import {cn} from '#/shared/cn';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 
@@ -49,6 +49,11 @@ type BaseProps<TRow> = {
 	 * (initial load), or a dimming overlay over the existing rows otherwise (refetch).
 	 */
 	isFetching?: boolean;
+	/**
+	 * Compact initial-load skeleton: renders this many skeleton rows under blank, non-sortable headers
+	 * instead of the design system's default rows with live headers.
+	 */
+	loadingRowCount?: number;
 	/**
 	 * Whether a previous (older-scrolled-past) page is currently being fetched via
 	 * `onVerticalScrollStartReach`. Renders a single skeleton row above the existing rows,
@@ -585,6 +590,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		ariaLabel,
 		size = 'md',
 		isFetching = false,
+		loadingRowCount,
 		isFetchingPreviousPage = false,
 		isFetchingNextPage = false,
 		hasPreviousPage = true,
@@ -644,12 +650,24 @@ function SortableTable<TRow>(props: Props<TRow>) {
 
 	const hasSelectionColumn = selection !== undefined;
 
+	const columnsRef = useRef(columns);
+	// eslint-disable-next-line react-hooks/refs
+	columnsRef.current = columns;
+	const columnsSignature = columns
+		.map((column) => [column.key, column.sortKey ?? '', column.label].join('\u0000'))
+		.join('\u0001');
+
+	// `cell` is rendered by the DS as a component, so a new function per render would remount every cell
+	// (dropping focus and closing tooltips) on each refetch. Keep it stable and read the latest render from the ref.
+	const isInitialLoad = isFetching && rows.length === 0;
+	const isCompactLoad = isInitialLoad && loadingRowCount !== undefined;
+
 	const dataColumns: DataTableColumn<DisplayRow<TRow>>[] = useMemo(
 		() =>
-			columns.map((column, columnIndex) => ({
+			columnsRef.current.map((column, columnIndex) => ({
 				id: column.sortKey ?? `col-${column.key}`,
-				header: column.label,
-				enableSorting: column.sortKey !== undefined,
+				header: isCompactLoad ? '' : column.label,
+				enableSorting: column.sortKey !== undefined && !isCompactLoad,
 				accessorFn: column.sortKey !== undefined ? () => null : undefined,
 				cell: (info) => {
 					const displayRow = info.row.original;
@@ -665,10 +683,11 @@ function SortableTable<TRow>(props: Props<TRow>) {
 						);
 					}
 
-					return column.render(displayRow.row);
+					return columnsRef.current[columnIndex]?.render(displayRow.row);
 				},
 			})),
-		[columns, loadingPreviousTestId, loadingNextTestId],
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[columnsSignature, isCompactLoad, loadingPreviousTestId, loadingNextTestId],
 	);
 
 	const displayRows: DisplayRow<TRow>[] = useMemo(() => {
@@ -825,8 +844,6 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		);
 	}
 
-	const isInitialLoad = isFetching && rows.length === 0;
-
 	const dataTable = (
 		<DataTable<DisplayRow<TRow>>
 			columns={dataColumns}
@@ -836,6 +853,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			size={DS_TABLE_SIZE[size]}
 			emptyState={emptyState}
 			loading={isInitialLoad}
+			loadingRowCount={isCompactLoad ? loadingRowCount : undefined}
 			rowSelection={
 				selectedRowIds === undefined ? undefined : {selectedRowIds, onSelectedRowsChange: handleSelectedRowsChange}
 			}
@@ -862,7 +880,11 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			}
 			expandRowLabel={expandRowLabel}
 			collapseRowLabel={collapseRowLabel}
-			sorting={hasSortableColumns ? {manual: true, sortState, onSortingChange: handleSortingChange} : undefined}
+			sorting={
+				hasSortableColumns && !isCompactLoad
+					? {manual: true, sortState, onSortingChange: handleSortingChange}
+					: undefined
+			}
 		/>
 	);
 

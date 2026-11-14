@@ -34,4 +34,17 @@ final class PermissionTypeTest {
     assertThat(AuthorizationResourceType.BATCH.getSupportedPermissionTypes())
         .contains(PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE);
   }
+
+  @Test
+  void shouldSupportOnlyCreateAndAnswerOnProbeResourceType() {
+    // given / when / then
+    assertThat(AuthorizationResourceType.PROBE.getSupportedPermissionTypes())
+        .containsExactlyInAnyOrder(PermissionType.CREATE, PermissionType.ANSWER);
+  }
+
+  @Test
+  void shouldNotClassifyAnswerAsReadPermission() {
+    // given / when / then
+    assertThat(PermissionType.ANSWER.isReadPermission()).isFalse();
+  }
 }

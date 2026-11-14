@@ -61,7 +61,10 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -185,6 +188,8 @@ public final class EventAppliers implements EventApplier {
     registerSecretReferenceEventAppliers(state);
     registerProcessDefinitionRestoreAppliers(state);
     registerPolicyUpdateAppliers(state);
+    registerProbeAppliers();
+    registerProcessDefinitionSuspensionAppliers(state);
     return this;
   }
 
@@ -208,10 +213,30 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerPolicyUpdateAppliers(final MutableProcessingState state) {
-    register(PolicyUpdateIntent.CHUNK_APPENDED, NOOP_EVENT_APPLIER);
+    register(
+        PolicyUpdateIntent.CHUNK_APPENDED,
+        new PolicyUpdateChunkAppendedApplier(state.getPolicyUpdateState()));
     register(PolicyUpdateIntent.CHUNK_APPLIED, NOOP_EVENT_APPLIER);
-    register(PolicyUpdateIntent.VERSION_SWITCHED, NOOP_EVENT_APPLIER);
+    register(
+        PolicyUpdateIntent.VERSION_COMMITTED,
+        new PolicyUpdateVersionCommittedApplier(
+            state.getPolicyState(), state.getPolicyUpdateState()));
     register(PolicyUpdateIntent.ABORTED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProbeAppliers() {
+    // the engine does not process probes yet; their state comes with the probe processors
+    register(ProbeIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.YIELDED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.ANSWERED, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.TIMED_OUT, NOOP_EVENT_APPLIER);
+    register(ProbeIntent.CANCELED, NOOP_EVENT_APPLIER);
+    register(ProbeBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerProcessDefinitionSuspensionAppliers(final MutableProcessingState state) {
+    register(ProcessDefinitionSuspensionIntent.SUSPENDED, NOOP_EVENT_APPLIER);
+    register(ProcessDefinitionSuspensionIntent.RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {
@@ -371,9 +396,6 @@ public final class EventAppliers implements EventApplier {
     final var variableApplier = new VariableApplier(variableState);
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
-    final var variableV2Applier = new VariableV2Applier(variableState);
-    register(VariableIntent.CREATED, 2, variableV2Applier);
-    register(VariableIntent.UPDATED, 2, variableV2Applier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
     register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
     register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));

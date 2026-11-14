@@ -18,8 +18,7 @@ import {replaceMonacoValue} from '#/shared-test-modules/monaco';
 import {
 	mockCreateGlobalClusterVariableEndpoint,
 	mockCreateTenantClusterVariableEndpoint,
-	mockGetGlobalClusterVariableEndpoint,
-	mockGetTenantClusterVariableEndpoint,
+	mockQueryClusterVariablesEndpoint,
 	mockQueryTenantsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createClusterVariable} from '#/shared-test-modules/api-mocks/cluster-variables';
@@ -73,8 +72,11 @@ describe('<AddClusterVariableModal />', () => {
 				successResponse: HttpResponse.json(createClusterVariable({name: 'my-variable', value: '{"answer":42}'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalClusterVariableEndpoint({
-				successResponse: HttpResponse.json(createClusterVariable({name: 'my-variable', value: '{"answer":42}'})),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createClusterVariable({name: 'my-variable', value: '{"answer":42}'})],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();
@@ -100,10 +102,13 @@ describe('<AddClusterVariableModal />', () => {
 				),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetTenantClusterVariableEndpoint({
-				successResponse: HttpResponse.json(
-					createClusterVariable({name: 'my-variable', scope: 'TENANT', tenantId: 'tenant-a', value: '"hello"'}),
-				),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [
+						createClusterVariable({name: 'my-variable', scope: 'TENANT', tenantId: 'tenant-a', value: '"hello"'}),
+					],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();
@@ -184,8 +189,11 @@ describe('<AddClusterVariableModal />', () => {
 				successResponse: HttpResponse.json(createClusterVariable({name: 'aZ09_~@.+-', value: '1'})),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetGlobalClusterVariableEndpoint({
-				successResponse: HttpResponse.json(createClusterVariable({name: 'aZ09_~@.+-', value: '1'})),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createClusterVariable({name: 'aZ09_~@.+-', value: '1'})],
+					page: {totalItems: 1},
+				}),
 			}),
 		);
 		const {screen, onClose} = await renderModal();

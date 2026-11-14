@@ -367,9 +367,6 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
-    ofNullable(filter.getProtectionMode())
-        .map(mapToStringOperations())
-        .ifPresent(builder::protectionModeOperations);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

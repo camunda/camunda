@@ -17,6 +17,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
 import {
 	mockGetGlobalClusterVariableEndpoint,
+	mockQueryClusterVariablesEndpoint,
 	mockUpdateGlobalClusterVariableEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
@@ -114,6 +115,9 @@ describe('<EditClusterVariableModal />', () => {
 			mockGetGlobalClusterVariableEndpoint({
 				successResponse: HttpResponse.json(createClusterVariable({value: '42'})),
 			}),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({items: [createClusterVariable({value: '42'})], page: {totalItems: 1}}),
+			}),
 			mockUpdateGlobalClusterVariableEndpoint({
 				schema: z.object({value: z.literal(42), metadata: z.object({}).strict()}).strict(),
 				successResponse: HttpResponse.json(createClusterVariable({value: '42'})),
@@ -144,6 +148,12 @@ describe('<EditClusterVariableModal />', () => {
 			}),
 			mockGetGlobalClusterVariableEndpoint({
 				successResponse: HttpResponse.json(createClusterVariable({value: '42', metadata})),
+			}),
+			mockQueryClusterVariablesEndpoint({
+				successResponse: HttpResponse.json({
+					items: [createClusterVariable({value: '42', metadata})],
+					page: {totalItems: 1},
+				}),
 			}),
 			mockUpdateGlobalClusterVariableEndpoint({
 				schema: z

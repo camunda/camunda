@@ -66,12 +66,6 @@ const VariablesSearch = styled.div`
   width: 100%;
 `;
 
-const RedactedValue = styled.div`
-  ${styles.code01};
-  margin: var(--cds-spacing-02) 0;
-  color: var(--cds-text-secondary);
-`;
-
 export {
   VariablesContent,
   VariableName,
@@ -80,5 +74,4 @@ export {
   DimmableResults,
   FilterSwitcherContainer,
   VariablesSearch,
-  RedactedValue,
 };

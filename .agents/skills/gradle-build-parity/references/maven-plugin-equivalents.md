@@ -37,32 +37,34 @@ val pomVersions =
 Parse the resulting `String`; do not pass a raw `File` to the XML parser. The settings resolver
 implementation is in `gradle/build-logic/src/main/kotlin/io/camunda/gradle/pom/SettingsPomResolverPlugin.kt`.
 
-## `templating-maven-plugin` → `Sync` + `ReplaceTokens`
+## `templating-maven-plugin` → `Sync` + `filterMavenResources`
 
-For Maven template filtering, resolve the value before configuring the filter, register it as a
-task input, and attach the `Sync` task's output directory to the source set:
+For Maven template or resource filtering, use the `filterMavenResources` helper from
+`gradle/build-logic/conventions/src/main/kotlin/buildlogic/MavenResourceTokens.kt`. It replaces
+`${key}` tokens (or custom begin/end tokens) and registers the token map as a task input. Resolve
+values before configuring the filter, and attach the `Sync` task's output directory to the source
+set:
 
 ```kotlin
+import buildlogic.filterMavenResources
+
 val projectVersion = project.version.toString()
 val generateVersionJava =
   tasks.register<Sync>("generateVersionJava") {
     from("src/main/java-templates")
     into(layout.buildDirectory.dir("generated/sources/java-templates/java/main"))
-    inputs.property("projectVersion", projectVersion)
-
-    filter<org.apache.tools.ant.filters.ReplaceTokens>(
-      "beginToken" to "\${",
-      "endToken" to "}",
-      "tokens" to mapOf("project.version" to projectVersion),
-    )
+    filterMavenResources(this, "versionToken", mapOf("project.version" to projectVersion))
   }
 
 sourceSets { main { java { srcDir(generateVersionJava) } } }
 ```
 
-Do not read `project` state inside the filter action. Use a plain `String` or `Map` and register
-it as an input so changing the token invalidates the task. Wiring the task into `srcDir` carries
-the task dependency automatically.
+Do not read `project` state inside the filter action. Use a plain `String` or `Map` so the helper
+can register it as an input; changing a token then invalidates the task. Wiring the task into
+`srcDir` carries the task dependency automatically.
+
+Do not use Ant's `ReplaceTokens` (`filter<ReplaceTokens>(...)`): Gradle 9.9 deprecates implicit
+Ant classes on the build classpath, and Gradle 10 removes them.
 
 Current example: `optimize/util/optimize-commons/build.gradle.kts`. Do not add this task to
 `optimize/upgrade`; that module has no Maven template source.

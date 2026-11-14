@@ -16,6 +16,27 @@ applyTo: "load-tests/**,.github/workflows/*load-test*,.github/workflows/*load_te
   `load-tests/setup/stable-8X` from `main`): backport only when the wrapper shell itself changes,
   not when setup values change.
 
+## Configuration policy: test what we ship
+
+The general load test setup (`load-tests/setup/*/values/`, `common.mk`,
+`load-tests/setup/charts/load-test-setup/`) uses the Camunda defaults. Load test results drive
+sizing documentation and performance claims, so a custom setting that flatters the results hides
+what customers experience.
+
+- Do not add a setting that deviates from the Camunda default to the general setup. Configure what
+  a scenario needs in that scenario, with a clear name (for example a separate leader rebalancing
+  test, run with and without).
+- A deviation that stays needs a comment with the reason, prefixed `CUSTOMIZATION:` so
+  `grep -rn CUSTOMIZATION load-tests/setup` lists every one. When it deviates from the Camunda
+  default, it also needs a linked issue that decides whether the setting becomes the default or is
+  removed.
+- If a load test only works with a custom setting, that setting is a product problem: file an issue
+  to change the Camunda default instead of working around it here.
+- Flag a PR that adds a deviation without the comment and, where required, the linked issue.
+
+Settings that stay by design (cluster sizing baseline, retention to bound disk usage,
+observability flags) still carry the `CUSTOMIZATION:` comment.
+
 ## Review checks
 
 1. **Smoke test**: the smoke CI workflow runs on PRs touching `load-tests/setup/**` and covers

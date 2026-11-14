@@ -23,20 +23,6 @@
     resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
     SELECT * FROM (
     SELECT
-      v.VAR_KEY,
-      v.PROCESS_INSTANCE_KEY,
-      v.ROOT_PROCESS_INSTANCE_KEY,
-      v.SCOPE_KEY,
-      v.VAR_NAME,
-      v.VAR_VALUE,
-      v.VAR_FULL_VALUE,
-      v.TENANT_ID,
-      v.IS_PREVIEW,
-      v.PROCESS_DEFINITION_ID,
-      pm.PROTECTION_MODE AS PROTECTION_MODE
-    FROM (
-    SELECT * FROM (
-    SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
       ROOT_PROCESS_INSTANCE_KEY,
@@ -53,15 +39,6 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
-    ) v
-    LEFT JOIN ${prefix}VARIABLE_PROTECTION_MODE pm ON (pm.VAR_KEY = v.VAR_KEY)
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
-    <if test="_databaseId == 'mssql'">
-      <!-- MSSQL needs an OFFSET when sorting in subselects -->
-      OFFSET 0 ROWS
-    </if>
-    ) sorted
-    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
@@ -115,60 +92,6 @@
       </if>
       <if test="filter.isTruncated != null">
         AND IS_PREVIEW = #{filter.isTruncated}
-      </if>
-      <if
-        test="protectionModeCodeOperations != null and !protectionModeCodeOperations.isEmpty()">
-        <foreach collection="protectionModeCodeOperations" item="operation">
-          AND
-          <choose>
-            <when test="operation.operator.name().equals('EXISTS')">
-              EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-              )
-            </when>
-            <when test="operation.operator.name().equals('NOT_EXISTS')">
-              NOT EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-              )
-            </when>
-            <when test="operation.operator.name().equals('EQUALS')">
-              EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-                AND PM.PROTECTION_MODE = #{operation.value}
-              )
-            </when>
-            <when test="operation.operator.name().equals('NOT_EQUALS')">
-              NOT EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-                AND PM.PROTECTION_MODE = #{operation.value}
-              )
-            </when>
-            <when test="operation.operator.name().equals('IN')">
-              EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-                AND PM.PROTECTION_MODE IN
-                <foreach collection="operation.values" item="mode" open="(" separator="," close=")">
-                  #{mode}
-                </foreach>
-              )
-            </when>
-            <when test="operation.operator.name().equals('NOT_IN')">
-              NOT EXISTS (
-                SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
-                WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
-                AND PM.PROTECTION_MODE IN
-                <foreach collection="operation.values" item="mode" open="(" separator="," close=")">
-                  #{mode}
-                </foreach>
-              )
-            </when>
-          </choose>
-        </foreach>
       </if>
       <!-- advanced filters on variable name / values -->
       <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
@@ -225,13 +148,6 @@
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
         name="tenantId"/>
     </constructor>
-    <collection property="protectionModes"
-      ofType="io.camunda.search.entities.VariableEntity$ProtectionMode"
-      javaType="java.util.Set">
-      <id column="PROTECTION_MODE"
-        javaType="io.camunda.search.entities.VariableEntity$ProtectionMode"
-        typeHandler="io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler"/>
-    </collection>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
@@ -256,27 +172,6 @@
     </foreach>
     SELECT * FROM dual
   </insert>
-
-  <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModesDto">
-    INSERT INTO ${prefix}VARIABLE_PROTECTION_MODE (VAR_KEY, PROTECTION_MODE)
-    VALUES
-    <foreach collection="modes" item="mode" separator=",">
-      (#{variableKey}, #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler})
-    </foreach>
-  </insert>
-
-  <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModesDto" databaseId="oracle">
-    INSERT ALL
-    <foreach collection="modes" item="mode">
-      INTO ${prefix}VARIABLE_PROTECTION_MODE (VAR_KEY, PROTECTION_MODE)
-      VALUES (#{variableKey}, #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler})
-    </foreach>
-    SELECT * FROM dual
-  </insert>
-
-  <delete id="deleteProtectionModes" parameterType="java.lang.Long">
-    DELETE FROM ${prefix}VARIABLE_PROTECTION_MODE WHERE VAR_KEY = #{variableKey}
-  </delete>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
       UPDATE ${prefix}VARIABLE

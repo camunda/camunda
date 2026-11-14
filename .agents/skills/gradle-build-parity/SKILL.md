@@ -125,7 +125,7 @@ config drift, codegen input changes) and CI-shaped failures (concurrency misconf
 
 For replicating Maven **build-time plugins** (code generation, resource templating, per-module
 version pinning) see [references/maven-plugin-equivalents.md](references/maven-plugin-equivalents.md):
-config-cache-safe pom reads, `templating-maven-plugin` → `Sync`+`ReplaceTokens`,
+config-cache-safe pom reads, `templating-maven-plugin` → `Sync`+`filterMavenResources`,
 `openapi-generator` multi-spec `GenerateTask`, Spring version pinning, SBE tool isolation.
 
 ### Maven `<optional>true</optional>` → Gradle `compileOnly` + `testImplementation`

@@ -15,26 +15,13 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
-import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ConditionalEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
-import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
-import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
-import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -64,25 +51,11 @@ final class BulkIndexRequest {
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(JobRecordValue.class, JobMixin.class)
           .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
-          .addMixIn(UserTaskRecordValue.class, UserTaskMixin.class)
+          .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .addMixIn(ClusterVariableRecordValue.class, ClusterVariableMixin.class)
           .addMixIn(StorageOrdinalRelated.class, StorageOrdinalMixin.class)
-          .addMixIn(VariableRecordValue.class, VariableMixin.class)
           .addMixIn(ProcessInstanceRecordValue.class, ProcessInstanceMixin.class)
-          .addMixIn(CompensationSubscriptionRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(ConditionalEvaluationRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(MessageRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(MessageStartEventSubscriptionRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(
-              MessageStartProcessInstanceRequestRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(MessageSubscriptionRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(ProcessEventRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(ProcessInstanceCreationRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(ProcessInstanceResultRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(ProcessMessageSubscriptionRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(SignalRecordValue.class, VariablesMetadataMixin.class)
-          .addMixIn(VariableDocumentRecordValue.class, VariablesMetadataMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -105,7 +78,6 @@ final class BulkIndexRequest {
   private static final String STORAGE_ORDINAL_PROPERTY = "storageOrdinal";
   private static final String RESUME_FROM_JOB_KEY_PROPERTY = "resumeFromJobKey";
   private static final String RESUME_FROM_USER_TASK_KEY_PROPERTY = "resumeFromUserTaskKey";
-  private static final String VARIABLES_METADATA_PROPERTY = "variablesMetadata";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -245,19 +217,6 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({BUSINESS_ID_PROPERTY, STORAGE_ORDINAL_PROPERTY})
   private static final class BusinessIdMixin {}
 
-  /**
-   * Strips {@code businessId} and {@code variablesMetadata} for previous versions, whose strict
-   * user task index mapping knows neither. This mix-in is the most specific one for a user task
-   * value, so it shadows {@link StorageOrdinalMixin} and must also repeat the {@code
-   * storageOrdinal} ignoral it would otherwise inherit.
-   */
-  @JsonIgnoreProperties({
-    BUSINESS_ID_PROPERTY,
-    VARIABLES_METADATA_PROPERTY,
-    STORAGE_ORDINAL_PROPERTY
-  })
-  private static final class UserTaskMixin {}
-
   @JsonIgnoreProperties({METADATA_PROPERTY, KIND_PROPERTY, SECRET_REFERENCES_PROPERTY})
   private static final class ClusterVariableMixin {}
 
@@ -267,24 +226,6 @@ final class BulkIndexRequest {
    */
   @JsonIgnoreProperties({STORAGE_ORDINAL_PROPERTY})
   private static final class StorageOrdinalMixin {}
-
-  /**
-   * Strips {@code metadata} for previous versions, whose strict variable index mapping does not
-   * know it. This mix-in is the most specific one for a variable value, so it shadows {@link
-   * StorageOrdinalMixin} and must also repeat the {@code storageOrdinal} ignoral it would otherwise
-   * inherit.
-   */
-  @JsonIgnoreProperties({METADATA_PROPERTY, STORAGE_ORDINAL_PROPERTY})
-  private static final class VariableMixin {}
-
-  /**
-   * Strips {@code variablesMetadata} for previous versions, whose strict index mappings do not know
-   * it, from every value that carries a variables document. Some of these values are also {@link
-   * StorageOrdinalRelated}; this mix-in shadows {@link StorageOrdinalMixin} for them, so it must
-   * also repeat the {@code storageOrdinal} ignoral they would otherwise inherit.
-   */
-  @JsonIgnoreProperties({VARIABLES_METADATA_PROPERTY, STORAGE_ORDINAL_PROPERTY})
-  private static final class VariablesMetadataMixin {}
 
   /**
    * The resume-from cursors are transient values carried on RESUME_JOBS and RESUME_USER_TASKS

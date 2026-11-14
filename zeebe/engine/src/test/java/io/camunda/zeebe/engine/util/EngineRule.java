@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.state.message.PendingSubscriptions;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -504,21 +503,14 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.events();
   }
 
-  public ProcessingState getProcessingState() {
-    return environmentRule.getProcessingState();
-  }
-
-  public ProcessingState getProcessingState(final int partitionId) {
-    return environmentRule.getProcessingState(partitionId);
-  }
-
   /**
    * Returns the process message subscriptions waiting for a reply from the message partition. They
    * are kept in a thread-safe map in memory, so unlike the rest of the processing state they can be
    * read while the partition processes.
    */
   public List<PendingSubscription> getPendingProcessMessageSubscriptions() {
-    return PendingSubscriptions.of(getProcessingState().getTransientPendingSubscriptionState());
+    return PendingSubscriptions.of(
+        environmentRule.getProcessingState().getTransientPendingSubscriptionState());
   }
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
@@ -744,7 +736,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  ((ProcessingDbState) getProcessingState())
+                  ((ProcessingDbState) environmentRule.getProcessingState())
                       .forEach(
                           columnFamily,
                           keyInstance,

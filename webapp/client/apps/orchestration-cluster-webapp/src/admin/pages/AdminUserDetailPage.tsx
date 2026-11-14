@@ -8,6 +8,7 @@
 
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {Link} from '@tanstack/react-router';
 import {Pencil, Trash2} from '@camunda/design-system/icons';
 import {
 	Breadcrumb,
@@ -49,7 +50,9 @@ const AdminUserDetailPage: React.FC<AdminUserDetailPageProps> = ({user, onDelete
 						<Breadcrumb>
 							<BreadcrumbList>
 								<BreadcrumbItem>
-									<BreadcrumbLink href="/admin/users">{t('admin.headerNavItemUsers')}</BreadcrumbLink>
+									<BreadcrumbLink asChild>
+										<Link to="/admin/users">{t('admin.headerNavItemUsers')}</Link>
+									</BreadcrumbLink>
 								</BreadcrumbItem>
 								<BreadcrumbSeparator />
 								<BreadcrumbItem>

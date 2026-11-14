@@ -13,7 +13,6 @@ import {useTranslation} from 'react-i18next';
 import {Button} from '@carbon/react';
 import {RichTextEditorModal} from '#/operate/shared/Editors/RichTextEditorModal';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {isRedactedVariable} from '#/shared/variables/redactedVariable';
 import {variableQuery} from './variables.queries';
 import {MaximizeButton} from './MaximizeButton';
 import type {VariableFormValues} from './variableFormValues';
@@ -40,8 +39,7 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 		}
 		setIsLoading(true);
 		try {
-			const variable = await queryClient.fetchQuery(variableQuery(variableKey));
-			setFullValue(isRedactedVariable(variable) ? JSON.stringify(t('globalRedactedValueLabel')) : variable.value);
+			setFullValue((await queryClient.fetchQuery(variableQuery(variableKey))).value);
 		} catch {
 			notificationsStore.displayNotification({
 				kind: 'error',

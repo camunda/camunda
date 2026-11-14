@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.variable.MappingContext;
 import io.camunda.zeebe.engine.processing.variable.MappingExpressionProcessor;
 import io.camunda.zeebe.engine.processing.variable.MappingResolver;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -255,8 +254,7 @@ public final class BpmnVariableMappingBehavior {
             context.getStorageOrdinal(),
             context.getBpmnProcessId(),
             context.getTenantId(),
-            result,
-            VariableMetadataLookup.NONE);
+            result);
       } else {
         outputVariableBehavior.mergeDocument(
             scopeKey,
@@ -266,8 +264,7 @@ public final class BpmnVariableMappingBehavior {
             context.getStorageOrdinal(),
             context.getBpmnProcessId(),
             context.getTenantId(),
-            result,
-            VariableMetadataLookup.NONE);
+            result);
       }
       return Either.right(null);
 
@@ -295,8 +292,7 @@ public final class BpmnVariableMappingBehavior {
           context.getStorageOrdinal(),
           context.getBpmnProcessId(),
           context.getTenantId(),
-          result,
-          VariableMetadataLookup.NONE);
+          result);
       return Either.right(null);
     } catch (final ValidationException e) {
       return Either.left(

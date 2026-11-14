@@ -38,11 +38,9 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
-import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
-import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -737,36 +735,6 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
     }
 
     @Test
-    void shouldFailCreateProcessInstanceWithBadRequestWhenMetadataHasNoVariable() {
-      // given
-      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
-
-      final var message =
-          "Expected variables metadata to only describe variables set in the request, but found no variable for: 'ssn'";
-      when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
-          .thenThrow(new InvalidVariableRequestException(message));
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder("createProcessInstance")
-                  .arguments(Map.of("processDefinitionId", "processId"))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isTrue();
-
-      final var problemDetail =
-          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
-      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
-      assertThat(problemDetail.getDetail()).isEqualTo(message);
-
-      assertTextContentFallback(result);
-    }
-
-    @Test
     void shouldFailCreateProcessInstanceWhenNoDefinitionProvided() {
       // when
       final CallToolResult result =
@@ -980,91 +948,6 @@ class ProcessInstanceToolsTest extends OperationalToolsTest {
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
 
       assertTextContentFallback(result);
-    }
-
-    @Test
-    void shouldForwardVariablesMetadataOnCreateProcessInstance() {
-      // given
-      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
-      final var createResponse =
-          new ProcessInstanceCreationRecord()
-              .setProcessDefinitionKey(123L)
-              .setBpmnProcessId("testProcessId")
-              .setVersion(-1)
-              .setProcessInstanceKey(456L)
-              .setTenantId("<default>")
-              .setTags(Set.of());
-      when(processInstanceServices.createProcessInstance(
-              any(ProcessInstanceCreateRequest.class), any()))
-          .thenReturn(CompletableFuture.completedFuture(createResponse));
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder("createProcessInstance")
-                  .arguments(
-                      Map.of(
-                          "processDefinitionKey",
-                          "123",
-                          "variables",
-                          Map.of("secret", "value"),
-                          "variablesMetadata",
-                          Map.of("secret", Map.of("protectionModes", List.of("REDACT")))))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
-      assertThat(createRequestCaptor.getValue().variablesMetadata())
-          .containsOnlyKeys("secret")
-          .extractingByKey("secret")
-          .satisfies(
-              metadata ->
-                  assertThat(metadata.getProtectionModes()).containsExactly(ProtectionMode.REDACT));
-    }
-
-    @Test
-    void shouldForwardVariablesMetadataOnCreateProcessInstanceWithAwaitCompletion() {
-      // given
-      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
-      final var createResponse =
-          new ProcessInstanceResultRecord()
-              .setProcessDefinitionKey(123L)
-              .setBpmnProcessId("testProcessId")
-              .setVersion(7)
-              .setProcessInstanceKey(456L)
-              .setTenantId("<default>")
-              .setTags(Set.of());
-      when(processInstanceServices.createProcessInstanceWithResult(
-              any(ProcessInstanceCreateRequest.class), any()))
-          .thenReturn(CompletableFuture.completedFuture(createResponse));
-
-      // when
-      final CallToolResult result =
-          mcpClient.callTool(
-              CallToolRequest.builder("createProcessInstance")
-                  .arguments(
-                      Map.of(
-                          "processDefinitionKey",
-                          "123",
-                          "awaitCompletion",
-                          true,
-                          "variables",
-                          Map.of("secret", "value"),
-                          "variablesMetadata",
-                          Map.of("secret", Map.of("protectionModes", List.of("REDACT")))))
-                  .build());
-
-      // then
-      assertThat(result.isError()).isFalse();
-      verify(processInstanceServices)
-          .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
-      assertThat(createRequestCaptor.getValue().variablesMetadata())
-          .containsOnlyKeys("secret")
-          .extractingByKey("secret")
-          .satisfies(
-              metadata ->
-                  assertThat(metadata.getProtectionModes()).containsExactly(ProtectionMode.REDACT));
     }
 
     @Test

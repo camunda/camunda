@@ -64,7 +64,10 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceReques
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -139,6 +142,9 @@ import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequest
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
@@ -264,6 +270,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.MESSAGE_SUBSCRIPTION,
         new Mapping<>(MessageSubscriptionRecordValue.class, MessageSubscriptionIntent.class));
+    mapping.put(ValueType.PROBE, new Mapping<>(ProbeRecordValue.class, ProbeIntent.class));
+    mapping.put(
+        ValueType.PROBE_BATCH, new Mapping<>(ProbeBatchRecordValue.class, ProbeBatchIntent.class));
     mapping.put(ValueType.PROCESS, new Mapping<>(Process.class, ProcessIntent.class));
     mapping.put(
         ValueType.PROCESS_DEFINITION_RESTORE,
@@ -321,6 +330,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.POLICY_UPDATE,
         new Mapping<>(PolicyUpdateRecordValue.class, PolicyUpdateIntent.class));
+    mapping.put(
+        ValueType.PROCESS_DEFINITION_SUSPENSION,
+        new Mapping<>(
+            ProcessDefinitionSuspensionRecordValue.class, ProcessDefinitionSuspensionIntent.class));
     mapping.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         new Mapping<>(

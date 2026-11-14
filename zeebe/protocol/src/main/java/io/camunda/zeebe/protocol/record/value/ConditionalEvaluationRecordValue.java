@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -41,11 +40,4 @@ public interface ConditionalEvaluationRecordValue
    * @return the list of process instances that were started as a result of the evaluation
    */
   List<ConditionalStartedProcessInstanceValue> getStartedProcessInstances();
-
-  /**
-   * @return the metadata of the variables of this record by variable name, empty if none of the
-   *     variables comes with metadata
-   * @since 8.11
-   */
-  Map<String, VariableMetadataValue> getVariablesMetadata();
 }

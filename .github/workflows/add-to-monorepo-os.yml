@@ -1,0 +1,81 @@
+# description: Adds the Monorepo OS pilot users' issues and PRs in this repo to the Monorepo OS board and sets their Due Date
+# test location: https://github.com/camunda/infra-global-github-actions/tree/main/add-to-monorepo-os
+# type: Project Management
+# owner: @camunda/engineering-operations
+---
+name: Add to Monorepo OS
+
+on:
+  issues:
+    types: [assigned]
+  pull_request:
+    types: [opened, reopened, ready_for_review, review_requested]
+  pull_request_review:
+    types: [submitted]
+  # Backfill: adds every open item of pilot users in this repo that is not on the board yet.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Log what would be added and dated without writing to the board
+        type: boolean
+        default: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
+permissions: {}
+
+jobs:
+  add-to-monorepo-os:
+    name: Add to Monorepo OS board
+    # Pull requests from forks get no secrets, so no token can be minted for them; reviews only matter once they approve.
+    if: >-
+      github.event.pull_request.head.repo.fork != true &&
+      (github.event_name != 'pull_request_review' || github.event.review.state == 'approved')
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read # checkout for observe-build-status
+      id-token: write # mint GitHub OIDC token for Vault JWT auth
+    steps:
+      # Trusted default branch, not the PR merge ref: the job has an OIDC token and Vault credentials.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/actions
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6644ac7ceab8e1b32359cc25a5161c46156fc319 # generate-github-app-token-from-vault-secrets-1.3.0
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/github.com/apps/monorepo-os
+          github-app-private-key-vault-key: GITHUB_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/github.com/apps/monorepo-os
+          vault-auth-method: jwt
+          vault-auth-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          # Dedicated role bound to this workflow file, so no other workflow here can mint Monorepo OS App tokens.
+          vault-auth-jwt-role: monorepo-os-gha-add-to-board
+          vault-auth-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Add to Monorepo OS board
+        uses: camunda/infra-global-github-actions/add-to-monorepo-os@b0e719fb785b3a71c155e61abd8a25cf97e31741 # add-to-monorepo-os-1.0.0
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

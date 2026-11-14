@@ -19,7 +19,6 @@ import {DownloadDocumentButton} from '#/operate/shared/Documents/shadcn.componen
 import {StructuredList} from '#/operate/shared/StructuredList/shadcn.components/StructuredList';
 import {beautifyJSON} from '#/shared/json/beautifyJSON';
 import {beautifyTruncatedJSON} from '#/operate/shared/Editors/beautifyTruncatedJSON';
-import {isRedactedVariable} from '#/shared/variables/redactedVariable';
 import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 import {useProcessInstancePage} from '../useProcessInstancePage';
 import {useProcessInstanceModification} from '../useProcessInstanceModification';
@@ -69,14 +68,10 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 	const pages = useMemo(
 		() =>
 			(data?.pages ?? []).map((page) =>
-				page.items.map((variable) => {
-					const isRedacted = isRedactedVariable(variable);
-					return {
-						...variable,
-						isRedacted,
-						documentResult: isRedacted ? null : parseDocumentVariable(variable.value, variable.isTruncated),
-					};
-				}),
+				page.items.map((variable) => ({
+					...variable,
+					documentResult: parseDocumentVariable(variable.value, variable.isTruncated),
+				})),
 			),
 		[data],
 	);
@@ -174,9 +169,8 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 								void fetchNextPage();
 							}
 						}}
-						rows={variables.map(({name, value, variableKey, isTruncated, isRedacted, documentResult}) => {
+						rows={variables.map(({name, value, variableKey, isTruncated, documentResult}) => {
 							const isMultiLine =
-								!isRedacted &&
 								documentResult === null &&
 								(isTruncated ? beautifyTruncatedJSON(value) : beautifyJSON(value)).includes('\n');
 							const multiLineAlignment = isMultiLine ? 'align-top' : undefined;
@@ -196,7 +190,6 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 												value={value}
 												variableKey={variableKey}
 												isTruncated={isTruncated}
-												isRedacted={isRedacted}
 												documentResult={documentResult}
 												isEditing={isEditMode(name)}
 												canEdit={canEditRow}
@@ -206,9 +199,7 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 									},
 									{
 										className: multiLineAlignment,
-										cellContent: isRedacted ? (
-											<div className={OPERATIONS_CLASS} />
-										) : (
+										cellContent: (
 											<div className={OPERATIONS_CLASS}>
 												{isEditMode(name) ? (
 													<EditVariableModalButton

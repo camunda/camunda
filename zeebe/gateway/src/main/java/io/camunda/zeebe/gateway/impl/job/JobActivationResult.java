@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public interface JobActivationResult<T> {
   int getJobsCount();
@@ -18,5 +19,5 @@ public interface JobActivationResult<T> {
 
   List<ActivatedJob> getJobsToDefer();
 
-  record ActivatedJob(long key, int retries) {}
+  record ActivatedJob(long key, int retries, @Nullable String jobLeaseToken) {}
 }

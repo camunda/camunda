@@ -94,7 +94,7 @@ endif
 # Without secondary storage the exporters do no indexing work, so the cluster sustains a higher rate.
 # Keep the rates in sync with load-tests/docs/scripts/optimal.json, which the PR benchmark comment shows.
 ifeq ($(secondary_storage),none)
-_scenario_load_test_flags = --set load-tester.starter.rate=500
+_scenario_load_test_flags = --set load-tester.starter.rate=650
 else
 _scenario_load_test_flags = --set load-tester.starter.rate=300
 endif

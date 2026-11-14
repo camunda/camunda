@@ -82,12 +82,14 @@ ADR for that domain is written.
   store-owned per-store caching bounded by TTL and size, one store per physical
   tenant configured under `camunda.secrets.*`, and per-reference
   `SECRET:REVEAL` on the gateway path only (camunda/camunda#56572).
-- `data-protection/001-variable-redaction.md` — how a process variable is declared
-  sensitive through `variablesMetadata` protection modes, and how its value is
-  redacted once in the `ExporterDirector` before the export fan-out, with primary
-  storage keeping the plain value; delivered in milestones by variable-record
-  category, with explicit guarantees and known limitations
-  (camunda/camunda#64644).
+- `probes/001-probe-primitive.md` — probes, a request from a client to a worker
+  answered in the same HTTP request without a process instance or a job: routing
+  on an opaque `probeId`, REST long polling that mirrors job activation with one
+  poll for up to 100 probe IDs, an absolute deadline set by the gateway, secrets
+  detected at `CREATE` and injected at collection, `ANSWERED` never carrying
+  `data`, and the `PROBE` resource type with `CREATE` and `ANSWER`; the full
+  specification (decisions and acceptance tests) is in `probes/probes-specification.md`
+  (camunda/camunda#68861, camunda/product-hub#3433).
 - `orchestration-cluster/` — decisions spanning the broker, gateways, and
   auth/authz layer: JVM/JRE image strategy, physical-tenant request scoping,
   provider selection, authorization routing, gRPC authentication, configuration

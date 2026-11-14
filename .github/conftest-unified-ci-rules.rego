@@ -231,6 +231,12 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         # stale-backport-tracker.yml. Follow-up: amend this rule to accept a
         # dependent observer job natively instead of maintaining whitelist.
         job_id != "collect-stale-backports"
+        # observed via a dependent observer job because it runs a coding agent
+        # with a shell: anything secret-bearing scheduled after that step could
+        # be reached through $GITHUB_ENV, $GITHUB_PATH or the checked-out
+        # action itself. See `flaky-review-observe` in
+        # c8-orchestration-cluster-flakiness-fix.yml.
+        job_id != "flaky-review-agent"
         job_id != "compute-matrix"
         # static outputs only
         not is_scheduled_release_load_tests_versions_job(job_id)

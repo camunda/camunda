@@ -16,7 +16,9 @@
 package io.camunda.client.impl.worker;
 
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.client.impl.worker.SneakyThrow.sneakyThrow;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.client.CamundaClient;
@@ -54,6 +56,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -61,15 +64,18 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -77,15 +83,20 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.LongSupplier;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.migrationsupport.rules.ExternalResourceSupport;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
@@ -407,7 +418,8 @@ final class JobWorkerImplTest {
     // given a worker whose handler executor runs a job and then reports it as refused
     final int maxJobsActive = 3;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = new RunsThenRefusesExecutor();
+    final ExecutorService jobHandlingExecutor =
+        DecliningExecutor.runningThenDeclining(Decline.REFUSES);
     gateway.respondWith(TestData.jobs(maxJobsActive));
 
     try (final CamundaClient client =
@@ -598,13 +610,13 @@ final class JobWorkerImplTest {
     }
   }
 
-  @Test
-  void shouldFailRejectedJobsBackToTheBroker() {
-    // given a worker whose handler executor refuses every job
+  @ParameterizedTest
+  @EnumSource(Decline.class)
+  void shouldFailJobsTheExecutorTurnsDownBackToTheBroker(final Decline decline) {
+    // given a worker whose handler executor turns down every job
     final int maxJobsActive = 4;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
-    jobHandlingExecutor.shutdown();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.declining(decline);
     gateway.respondWith(TestData.jobs(maxJobsActive));
 
     try (final CamundaClient client =
@@ -622,9 +634,9 @@ final class JobWorkerImplTest {
                 .pollInterval(Duration.ofMillis(50))
                 .open()) {
 
-      // when the executor refuses the activated jobs
-      // then they are handed back so another worker can pick them up right away
-      Awaitility.await("Refused jobs should be failed back without using up a retry")
+      // when the executor turns down the activated jobs
+      // then they are handed back so another worker can pick them up right away, saying why
+      Awaitility.await("Turned down jobs should be failed back without using up a retry")
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(
               () -> {
@@ -637,19 +649,65 @@ final class JobWorkerImplTest {
                         request -> {
                           assertThat(request.getRetries()).isEqualTo(TestData.JOB_RETRIES);
                           assertThat(request.getRetryBackOff()).isZero();
+                          assertThat(request.getErrorMessage()).isEqualTo(decline.errorMessage);
                         });
               });
     }
   }
 
-  @Test
-  void shouldLeaveARefusedStreamedJobToTheBroker() {
-    // given a worker that streams jobs and whose handler executor refuses every job
+  @ParameterizedTest
+  @EnumSource(Decline.class)
+  void shouldHandAJobBackEvenWhenReportingItAsRefusedThrows(final Decline decline) {
+    // given a worker whose handler executor turns down every job, and whose metrics throw whenever
+    // a job is reported as refused
+    final int maxJobsActive = 4;
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.declining(decline);
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void jobRefused(final int count) {
+            throw new IllegalStateException("simulated metrics failure on refusal");
+          }
+        };
+    gateway.respondWith(TestData.jobs(maxJobsActive));
+
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler(NOOP_JOB_HANDLER)
+                .maxJobsActive(maxJobsActive)
+                .pollInterval(Duration.ofMillis(50))
+                .metrics(metrics)
+                .open()) {
+
+      // when the executor turns down the activated jobs
+      // then they are still handed back: a failing metric must not keep a job out of reach
+      Awaitility.await("Turned down jobs should be failed back although reporting them throws")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getFailedJobs())
+                      .extracting(FailJobRequest::getJobKey)
+                      .contains(0L, 1L, 2L, 3L));
+    }
+  }
+
+  @ParameterizedTest
+  @EnumSource(Decline.class)
+  void shouldLeaveAStreamedJobTheExecutorTurnsDownToTheBroker(final Decline decline) {
+    // given a worker that streams jobs and whose handler executor turns down every job
     final int maxJobsActive = 4;
     final long streamedJobKey = 777L;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
-    jobHandlingExecutor.shutdown();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.declining(decline);
     gateway.respondWith(TestData.jobs(maxJobsActive));
 
     try (final CamundaClient client =
@@ -669,12 +727,12 @@ final class JobWorkerImplTest {
                 .open()) {
       Awaitility.await("Stream should be open").until(() -> !gateway.openStreams.isEmpty());
 
-      // when a streamed job is refused by the handler executor. The push runs the worker's handling
-      // inline, so the job has been refused by the time this returns.
+      // when a streamed job is turned down by the handler executor. The push runs the worker's
+      // handling inline, so the job has been turned down by the time this returns.
       gateway.pushJob(TestData.job(streamedJobKey));
 
       // then the worker keeps handing polled jobs back, so the fail path is demonstrably live
-      Awaitility.await("Refused polled jobs should still be handed back")
+      Awaitility.await("Turned down polled jobs should still be handed back")
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(
               () -> assertThat(gateway.getFailedJobs()).hasSizeGreaterThanOrEqualTo(maxJobsActive));
@@ -727,13 +785,14 @@ final class JobWorkerImplTest {
     }
   }
 
-  @Test
-  void shouldNotHandBackAJobWhoseHandlerAlreadyRan() {
-    // given a worker whose handler executor runs a job and then reports it as refused
+  @ParameterizedTest
+  @EnumSource(Decline.class)
+  void shouldNotHandBackAJobWhoseHandlerAlreadyRan(final Decline decline) {
+    // given a worker whose handler executor runs a job and then turns it down
     final int maxJobsActive = 3;
     final AtomicInteger handledJobs = new AtomicInteger();
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = new RunsThenRefusesExecutor();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.runningThenDeclining(decline);
     gateway.respondWith(TestData.jobs(maxJobsActive));
 
     try (final CamundaClient client =
@@ -762,14 +821,14 @@ final class JobWorkerImplTest {
     }
   }
 
-  @Test
-  void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll() {
+  @ParameterizedTest
+  @EnumSource(Decline.class)
+  void shouldBackOffWhenTheHandlerExecutorTakesNoJobAtAll(final Decline decline) {
     // given a worker whose handler executor takes no job at all, so that nothing the worker
     // activates ever runs and nothing is left running to prompt the next poll
     final int maxJobsActive = 4;
     final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    final ExecutorService jobHandlingExecutor = Executors.newSingleThreadExecutor();
-    jobHandlingExecutor.shutdown();
+    final ExecutorService jobHandlingExecutor = DecliningExecutor.declining(decline);
     gateway.respondWith(TestData.jobs(maxJobsActive));
 
     try (final CamundaClient client =
@@ -900,6 +959,141 @@ final class JobWorkerImplTest {
           .untilAsserted(() -> assertThat(poller.getPollCount()).isGreaterThan(1));
     } finally {
       scheduler.shutdownNow();
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("metricsFailures")
+  void shouldKeepPollingWhenJobMetricsThrowOnActivation(final Runnable failure) {
+    // given metrics that throw for the first job the worker activates, before counting it
+    final AtomicBoolean metricsThrew = new AtomicBoolean();
+    final AtomicInteger activatedJobs = new AtomicInteger();
+    final AtomicInteger refusedJobs = new AtomicInteger();
+    final AtomicInteger handledJobs = new AtomicInteger();
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void jobActivated(final int count) {
+            if (metricsThrew.compareAndSet(false, true)) {
+              failure.run();
+            }
+            activatedJobs.addAndGet(count);
+          }
+
+          @Override
+          public void jobRefused(final int count) {
+            refusedJobs.addAndGet(count);
+          }
+
+          @Override
+          public void jobHandled(final int count) {
+            handledJobs.addAndGet(count);
+          }
+        };
+    final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
+    // and no jobs after the first response, so that the counts settle
+    gateway.respondOnceWith(TestData.jobs(2));
+
+    // when
+    try (final JobWorker ignored =
+        client
+            .newWorker()
+            .jobType("test")
+            .handler((c, job) -> handledJobKeys.add(job.getKey()))
+            .maxJobsActive(MAX_JOBS_ACTIVE)
+            .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+            .metrics(metrics)
+            .open()) {
+
+      // then
+      assertWorkerGetsPastTheFailingJob(handledJobKeys);
+      Awaitility.await("the job whose activation failed to be reported is handed back")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(
+              () ->
+                  assertThat(gateway.getFailedJobs())
+                      .filteredOn(request -> request.getJobKey() == 0L)
+                      .extracting(FailJobRequest::getErrorMessage)
+                      .containsExactly(JobWorkerImpl.FAILED_HAND_OFF_ERROR_MSG));
+      // and that job is not reported as refused either, since its activation never was, so that
+      // activated minus refused and handled still gives no jobs in flight once the other one is
+      // done
+      Awaitility.await("the other job is reported as handled")
+          .atMost(Duration.ofSeconds(5))
+          .untilAsserted(() -> assertThat(handledJobs).hasValue(1));
+      assertThat(activatedJobs).as("jobs reported as activated").hasValue(1);
+      assertThat(refusedJobs).as("jobs reported as refused").hasValue(0);
+    }
+  }
+
+  @Test
+  void shouldKeepPollingWhenTheHandlerExecutorThrows() {
+    // given a handler executor that throws something other than a rejection for the first job
+    final ExecutorService jobHandlingExecutor = throwingForTheFirstJob();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
+    respondWithJobsAfterAFailingOne();
+
+    // when
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler((c, job) -> handledJobKeys.add(job.getKey()))
+                .maxJobsActive(MAX_JOBS_ACTIVE)
+                .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+                .open()) {
+
+      // then
+      assertWorkerGetsPastTheFailingJob(handledJobKeys);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("metricsFailures")
+  void shouldKeepPollingWhenJobMetricsThrowWhileHandingAJobBack(final Runnable failure) {
+    // given a handler executor that throws for the first job, and metrics that throw when that job
+    // is reported as refused, so that the failure escapes the worker's own handling of it
+    final ExecutorService jobHandlingExecutor = throwingForTheFirstJob();
+    final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    final AtomicBoolean refusalThrew = new AtomicBoolean();
+    final JobWorkerMetrics metrics =
+        new JobWorkerMetrics() {
+          @Override
+          public void jobRefused(final int count) {
+            if (refusalThrew.compareAndSet(false, true)) {
+              failure.run();
+            }
+          }
+        };
+    final List<Long> handledJobKeys = new CopyOnWriteArrayList<>();
+    respondWithJobsAfterAFailingOne();
+
+    // when
+    try (final CamundaClient client =
+            new CamundaClientImpl(
+                new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
+                channel,
+                GatewayGrpc.newStub(channel),
+                new JobWorkerExecutors(scheduler, true, jobHandlingExecutor, true));
+        final JobWorker ignored =
+            client
+                .newWorker()
+                .jobType("test")
+                .handler((c, job) -> handledJobKeys.add(job.getKey()))
+                .maxJobsActive(MAX_JOBS_ACTIVE)
+                .pollInterval(Duration.ofMillis(POLL_INTERVAL_IN_MS))
+                .metrics(metrics)
+                .open()) {
+
+      // then
+      assertWorkerGetsPastTheFailingJob(handledJobKeys);
     }
   }
 
@@ -1352,6 +1546,40 @@ final class JobWorkerImplTest {
   }
 
   @Test
+  void shouldNotReserveThePollLaneForAPollWhoseJobFailedToReachItsHandler() {
+    // given a streaming worker with one of its four slots reservable for the poll, whose handler
+    // threads fail to take the first job they are given
+    final RecordingJobPoller poller = new RecordingJobPoller();
+    final RecordingJobRunnableFactory handlers = new RecordingJobRunnableFactory();
+    final DeterministicScheduler scheduler = new AlwaysRunningDeterministicScheduler();
+    final BusyHandlerThreads handlerThreads = new BusyHandlerThreads();
+    final AtomicBoolean handlerThreadsFailed = new AtomicBoolean();
+    final Executor failingOnceHandlerThreads =
+        command -> {
+          if (handlerThreadsFailed.compareAndSet(false, true)) {
+            throw new IllegalStateException("simulated executor failure");
+          }
+          handlerThreads.execute(command);
+        };
+    final RecordingJobStreamer streamer = new RecordingJobStreamer();
+    final BlockingExecutor executor =
+        new BlockingExecutor(failingOnceHandlerThreads, MAX_JOBS_ACTIVE, PUSH_WAIT, 1);
+
+    try (final JobWorkerImpl ignored =
+        streamingWorkerWith(scheduler, poller, handlers, streamer, executor)) {
+      // when a poll returns a job that fails to reach its handler
+      answerThePoll(scheduler, poller, TestData.jobs(1));
+
+      // then nothing is kept back from the push path: unlike a refusal, the failure does not show
+      // that pushed jobs took the slots the poll was sized for
+      for (int i = 0; i < MAX_JOBS_ACTIVE; i++) {
+        streamer.push(STREAMED_JOB_KEY_OFFSET + i);
+      }
+      assertThat(executor.freeCapacity()).isZero();
+    }
+  }
+
+  @Test
   void shouldReleaseThePollLaneOnlyOnTheThirdPollInARowWithoutRefusal() {
     // given a streaming worker with one of its four slots reservable for the poll, whose poll was
     // starved, so the push path is kept to three slots
@@ -1574,6 +1802,69 @@ final class JobWorkerImplTest {
     }
   }
 
+  /**
+   * What a faulty {@link JobWorkerMetrics} implementation may throw: a bug of its own, or an {@link
+   * Error} from a dependency version it was not built against.
+   */
+  private static Stream<Named<Runnable>> metricsFailures() {
+    return Stream.of(
+        Named.of(
+            "RuntimeException",
+            () -> {
+              throw new IllegalStateException("simulated metrics failure");
+            }),
+        Named.of(
+            "Error",
+            () -> {
+              throw new NoSuchMethodError("simulated metrics dependency version skew");
+            }),
+        Named.of(
+            "undeclared checked exception",
+            () -> sneakyThrow(new IOException("simulated metrics backend failure"))));
+  }
+
+  /** A handler executor that throws something other than a rejection for the first job only. */
+  private static ExecutorService throwingForTheFirstJob() {
+    final AtomicBoolean threw = new AtomicBoolean();
+    return new ThreadPoolExecutor(
+        MAX_JOBS_ACTIVE, MAX_JOBS_ACTIVE, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>()) {
+      @Override
+      public void execute(final Runnable command) {
+        if (threw.compareAndSet(false, true)) {
+          throw new IllegalStateException("simulated executor failure");
+        }
+        super.execute(command);
+      }
+    };
+  }
+
+  /**
+   * The first poll gets jobs 0 and 1, where job 0 is the one that fails to dispatch. Later polls
+   * get jobs 10 and 11, so a handled job 1 can only come from the first response.
+   */
+  private void respondWithJobsAfterAFailingOne() {
+    gateway.respondOnceWith(TestData.jobs(2));
+    gateway.respondWith(Arrays.asList(TestData.job(10), TestData.job(11)));
+  }
+
+  private void assertWorkerGetsPastTheFailingJob(final List<Long> handledJobKeys) {
+    Awaitility.await("the rest of the first response, and a poll after it")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertSoftly(
+                    softly -> {
+                      softly
+                          .assertThat(handledJobKeys)
+                          .as("handled the job after the failing one in the same response")
+                          .contains(1L);
+                      softly
+                          .assertThat(gateway.getRequestedJobCounts())
+                          .as("polled again after the response with the failing job")
+                          .hasSizeGreaterThan(1);
+                    }));
+  }
+
   private JobWorkerImpl streamingWorkerWith(
       final ScheduledExecutorService scheduler,
       final JobPoller poller,
@@ -1728,13 +2019,57 @@ final class JobWorkerImplTest {
     }
   }
 
-  /**
-   * An executor that runs the command and then reports it as refused. A saturated {@link
-   * java.util.concurrent.ThreadPoolExecutor} using {@link
-   * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} behaves this way when it is shut down
-   * while the caller is running the command.
-   */
-  private static final class RunsThenRefusesExecutor extends AbstractExecutorService {
+  /** The ways a job handler executor turns down a job, which the worker handles alike. */
+  private enum Decline {
+    /** It has no capacity left for the job. */
+    REFUSES(JobWorkerImpl.RETURN_JOB_ERROR_MSG) {
+      @Override
+      RuntimeException exception() {
+        return new RejectedExecutionException("simulated refusal: the executor is out of capacity");
+      }
+    },
+    /** It fails to take the job, for example because it is in a broken state. */
+    THROWS(JobWorkerImpl.FAILED_HAND_OFF_ERROR_MSG) {
+      @Override
+      RuntimeException exception() {
+        return new IllegalStateException("simulated executor failure");
+      }
+    };
+
+    /** What a polled job that was turned down this way is failed back to the broker with. */
+    private final String errorMessage;
+
+    Decline(final String errorMessage) {
+      this.errorMessage = errorMessage;
+    }
+
+    abstract RuntimeException exception();
+  }
+
+  /** An executor that turns down every command with the exception of the given {@link Decline}. */
+  private static final class DecliningExecutor extends AbstractExecutorService {
+    private final Decline decline;
+    private final boolean runsCommandsFirst;
+
+    private DecliningExecutor(final Decline decline, final boolean runsCommandsFirst) {
+      this.decline = decline;
+      this.runsCommandsFirst = runsCommandsFirst;
+    }
+
+    private static DecliningExecutor declining(final Decline decline) {
+      return new DecliningExecutor(decline, false);
+    }
+
+    /**
+     * Runs each command on the calling thread before turning it down. A saturated {@link
+     * java.util.concurrent.ThreadPoolExecutor} using {@link
+     * java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy} refuses this way when it is shut
+     * down while the caller is running the command.
+     */
+    private static DecliningExecutor runningThenDeclining(final Decline decline) {
+      return new DecliningExecutor(decline, true);
+    }
+
     @Override
     public void shutdown() {}
 
@@ -1760,8 +2095,10 @@ final class JobWorkerImplTest {
 
     @Override
     public void execute(final Runnable command) {
-      command.run();
-      throw new RejectedExecutionException("Command ran here, but the executor is out of capacity");
+      if (runsCommandsFirst) {
+        command.run();
+      }
+      throw decline.exception();
     }
   }
 
@@ -1940,6 +2277,7 @@ final class JobWorkerImplTest {
     private final Object responsesLock = new Object();
     private boolean isInErrorMode = false;
     private ActivateJobsResponse pollSuccessResponse = ActivateJobsResponse.newBuilder().build();
+    private final Queue<ActivateJobsResponse> oneOffPollResponses = new ArrayDeque<>();
     private StatusRuntimeException pollErrorResponse = new StatusRuntimeException(Status.UNKNOWN);
 
     private final Object requestedJobCountsLock = new Object();
@@ -1975,7 +2313,8 @@ final class JobWorkerImplTest {
         if (isInErrorMode) {
           responseObserver.onError(pollErrorResponse);
         } else {
-          responseObserver.onNext(pollSuccessResponse);
+          final ActivateJobsResponse oneOffResponse = oneOffPollResponses.poll();
+          responseObserver.onNext(oneOffResponse != null ? oneOffResponse : pollSuccessResponse);
           responseObserver.onCompleted();
         }
       }
@@ -1997,6 +2336,13 @@ final class JobWorkerImplTest {
         System.out.println("Now responding with jobs");
         isInErrorMode = false;
         pollSuccessResponse = ActivateJobsResponse.newBuilder().addAllJobs(jobs).build();
+      }
+    }
+
+    /** Answers the next poll with these jobs, ahead of the response set by respondWith. */
+    public void respondOnceWith(final List<ActivatedJob> jobs) {
+      synchronized (responsesLock) {
+        oneOffPollResponses.add(ActivateJobsResponse.newBuilder().addAllJobs(jobs).build());
       }
     }
 

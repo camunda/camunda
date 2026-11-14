@@ -1,4 +1,4 @@
-# description: Runs the C8 Orchestration Cluster E2E test suite on pull requests that change it. Non-blocking: not part of the Unified CI and not a required status check.
+# description: Runs the C8 Orchestration Cluster E2E test suite on pull requests that change it, as jobs of this check, and comments on its failures. Non-blocking: not part of the Unified CI and not a required status check.
 # test location: /qa/c8-orchestration-cluster-e2e-test-suite
 # type: CI
 # owner: @camunda/test-automation-team
@@ -7,12 +7,22 @@ name: C8 Orchestration Cluster E2E Tests PR Check
 
 # The suite's own test code used to be validated only by the manual on-demand
 # run, which was often skipped, so PRs with red suite tests got merged
-# (camunda/team-test-automation#188). This runs the same matrix automatically.
-# It stays outside ci.yml: the suite needs ~45 min per job, beyond the Unified
-# CI 30-minute budget, so it is visible on the PR but never blocks a merge.
+# (camunda/team-test-automation#188). This runs the same test matrix on every
+# PR that changes the suite, as jobs of this check, so each job's result shows
+# on the PR.
+#
+# A pull_request workflow runs from the PR's target branch, so every branch
+# needs this file. It is kept to a thin caller: the check itself is
+# c8-orchestration-cluster-e2e-tests-pr-reusable.yml on main. Here on main it
+# calls the PR's own copy, so a PR that changes the check tests its own
+# version; the stable branches' copy of this file calls main's, by ref.
+#
+# It stays outside ci.yml and is not a required check: it never blocks a
+# merge, and so is exempt from the Unified CI rules, including their
+# 30-minute job limit (the suite jobs run up to ~40 min).
 on:
   pull_request:
-    # The reusable matrix is sized by base branch and only knows main and
+    # The test matrix is sized by base branch and only knows main and
     # stable/X.Y; release-* branches are irregularly named and validated by
     # the release workflow instead.
     branches:
@@ -22,29 +32,25 @@ on:
       - "qa/c8-orchestration-cluster-e2e-test-suite/**"
       - "!qa/c8-orchestration-cluster-e2e-test-suite/**/*.md"
       - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr.yml"
+      - ".github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml"
       - ".github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml"
+      - ".github/scripts/c8-e2e-suite-report.sh"
+      - ".github/scripts/c8-e2e-suite-triage.mjs"
+      - ".github/scripts/c8-e2e-suite-triage.sh"
+      - ".github/scripts/c8-e2e-suite-base-rerun.sh"
 
+# A newer push cancels the PR's run in progress.
 concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.ref) }}
 
 permissions: {}
 
-env:
-  GHA_BEST_PRACTICES_LINTER: enabled
-  TEST_OWNER: "@camunda/test-automation-team"
-  TEST_PRODUCT: Orchestration Cluster
-  TEST_TYPE: E2E
-
 jobs:
-  tests:
-    # Fork PRs get no Vault secrets, which the H2/RDBMS job's build needs; run
-    # the on-demand workflow for those instead.
-    if: github.event.pull_request.head.repo.fork != true
-    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-reusable.yml
+  suite:
+    uses: ./.github/workflows/c8-orchestration-cluster-e2e-tests-pr-reusable.yml
     secrets: inherit
     permissions:
+      actions: read # the triage job lists this run's jobs
       contents: read
-    with:
-      ref: ${{ github.event.pull_request.head.sha }}
-      base: ${{ github.base_ref }}
+      pull-requests: write # the triage job posts its comment

@@ -36,9 +36,11 @@ const (
 	EnvMode             = "env"
 	secretReferenceBase = "camunda.secrets."
 	maxReferenceLength  = 256
-	MaxSecretSize       = 1024 * 1024
-	MaxImportSize       = 10 * 1024 * 1024
-	MaxImportCount      = 1000
+	// MaxNameLength is the longest name whose camunda.secrets.<name> reference the API accepts.
+	MaxNameLength  = maxReferenceLength - len(secretReferenceBase)
+	MaxSecretSize  = 1024 * 1024
+	MaxImportSize  = 10 * 1024 * 1024
+	MaxImportCount = 1000
 )
 
 type Store struct {
@@ -167,8 +169,8 @@ func ValidateName(name string) error {
 	if name == "" {
 		return errors.New("secret name must not be empty")
 	}
-	if len(secretReferenceBase)+len(name) > maxReferenceLength {
-		return fmt.Errorf("secret name must not exceed %d characters", maxReferenceLength-len(secretReferenceBase))
+	if len(name) > MaxNameLength {
+		return fmt.Errorf("secret name must not exceed %d characters", MaxNameLength)
 	}
 	for _, character := range name {
 		if (character >= 'a' && character <= 'z') ||

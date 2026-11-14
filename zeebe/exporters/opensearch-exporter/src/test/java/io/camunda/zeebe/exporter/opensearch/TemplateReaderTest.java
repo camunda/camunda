@@ -224,9 +224,6 @@ final class TemplateReaderTest {
                 Property.builder().long_(LongNumberProperty.builder().build()).build()),
             Map.entry(
                 "source",
-                Property.builder().object(ObjectProperty.builder().enabled(false).build()).build()),
-            Map.entry(
-                "metadata",
                 Property.builder()
                     .object(ObjectProperty.builder().enabled(false).build())
                     .build()));

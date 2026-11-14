@@ -86,7 +86,6 @@ import type {
 	QueryGroupsRequestBody,
 	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
-import {redactValue, redactValues} from '#/shared/variables/redactedVariable';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
@@ -144,7 +143,10 @@ const queryKeys = {
 		['groupMembers', groupId, 'roles', body] as const,
 	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
 		['groupMembers', groupId, 'mappingRules', body] as const,
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		options === undefined
+			? (['queryClusterVariables', body] as const)
+			: (['queryClusterVariables', body, options] as const),
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
@@ -309,7 +311,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValues(await response.json());
+				return response.json();
 			},
 		}),
 
@@ -326,7 +328,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValues(await response.json());
+				return response.json();
 			},
 			initialPageParam: 0,
 			getNextPageParam: (lastPage, _, lastPageParam) => {
@@ -343,7 +345,7 @@ const queries = {
 				if (error !== null) {
 					throw mapQueryError(error);
 				}
-				return redactValue(await response.json());
+				return response.json();
 			},
 			retry: false,
 		}),
@@ -653,11 +655,11 @@ const queries = {
 			},
 		}),
 
-	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody, options?: {truncateValues?: boolean}) =>
 		queryOptions({
-			queryKey: queryKeys.queryClusterVariables(body),
+			queryKey: queryKeys.queryClusterVariables(body, options),
 			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
-				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				const {response, error} = await request(endpoints.queryClusterVariables(body, options));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

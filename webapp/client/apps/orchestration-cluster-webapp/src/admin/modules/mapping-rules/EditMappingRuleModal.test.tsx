@@ -14,7 +14,7 @@ import {cleanup, render} from 'vitest-browser-react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
-import {mockGetMappingRuleEndpoint, mockUpdateMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
+import {mockQueryMappingRulesEndpoint, mockUpdateMappingRuleEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createMappingRule} from '#/shared-test-modules/api-mocks/mapping-rules';
 import {EditMappingRuleModal} from './EditMappingRuleModal';
 
@@ -67,7 +67,9 @@ describe('<EditMappingRuleModal />', () => {
 				successResponse: HttpResponse.json(updatedMappingRule),
 				failureResponse: new HttpResponse(null, {status: 400}),
 			}),
-			mockGetMappingRuleEndpoint({successResponse: HttpResponse.json(updatedMappingRule)}),
+			mockQueryMappingRulesEndpoint({
+				successResponse: HttpResponse.json({items: [updatedMappingRule], page: {totalItems: 1}}),
+			}),
 		);
 
 		const screen = await render(<EditMappingRuleModal mappingRule={mappingRule} onClose={mockOnClose} />, {

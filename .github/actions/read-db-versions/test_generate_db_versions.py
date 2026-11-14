@@ -22,11 +22,10 @@ _SPEC.loader.exec_module(gen)
 
 FIXTURE_DB_VERSIONS_YML = """
 elasticsearch:
-  es8:
-    - "8.19.16"
   es9:
     - "9.4.0"
-  saas: "8.19.16"
+    - "9.5.2"
+  saas: "9.5.2"
 
 opensearch:
   os2:
@@ -58,7 +57,7 @@ oracle:
 
 class TestMinMax(unittest.TestCase):
     def test_single_entry_list_returns_one_item(self):
-        self.assertEqual(gen.min_max(["8.19.16"]), ["8.19.16"])
+        self.assertEqual(gen.min_max(["9.5.2"]), ["9.5.2"])
 
     def test_multi_entry_list_returns_first_and_last(self):
         self.assertEqual(gen.min_max(["3.5.0", "3.6.0", "3.7.0"]), ["3.5.0", "3.7.0"])
@@ -98,9 +97,9 @@ class TestMainEndToEnd(unittest.TestCase):
 
     def test_single_version_outputs(self):
         outputs = self._run_main()
-        self.assertEqual(outputs["elasticsearch-8"], "8.19.16")
+        self.assertEqual(outputs["elasticsearch-9"], "9.5.2")
         self.assertEqual(outputs["opensearch-3"], "3.7.0")
-        self.assertEqual(outputs["saas"], "8.19.16")
+        self.assertEqual(outputs["saas"], "9.5.2")
 
     def test_es_os_matrix_covers_min_and_max_only(self):
         outputs = self._run_main()

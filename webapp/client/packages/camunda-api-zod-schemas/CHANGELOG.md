@@ -5,6 +5,7 @@
 ### 🚀 Enhancements
 
 - Add `authenticatedCurrentUserSchema` and `AuthenticatedCurrentUser` to the 8.11 schemas, for a current user with `isAnonymous` set to `false` and a set `username` ([#66964](https://github.com/camunda/camunda/pull/66964))
+- Add the `PROBE` resource type and the `ANSWER` permission to the 8.11 authorization schemas ([#68863](https://github.com/camunda/camunda/issues/68863))
 
 ### 🩹 Fixes
 
@@ -12,6 +13,7 @@
 
 ### ❤️ Contributors
 
+- Mathias Vandaele ([@mathias-vandaele](https://github.com/mathias-vandaele))
 - Tim Cline ([@timcline](https://github.com/timcline))
 - Vinícius Goulart ([@vsgoulart](https://github.com/vsgoulart))
 

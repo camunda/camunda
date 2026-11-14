@@ -432,6 +432,7 @@ dependencies {
   implementation(project(":camunda-secret-store-aws"))
   implementation(project(":camunda-secret-store-gcp"))
   implementation(project(":camunda-secret-store-env"))
+  implementation(project(":camunda-secret-store-azure"))
   implementation(project(":zeebe-rebalance"))
   implementation(project(":zeebe-restore"))
   implementation(libs.org.slf4j.slf4j.api)

@@ -86,6 +86,10 @@ import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyAuthorizat
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyMembershipEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionResolvedVersion;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -112,7 +116,6 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskLookupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.ChannelType;
@@ -141,9 +144,12 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
-import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
+import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -1351,7 +1357,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "messageId": "test-id",
                   "name": "test-message",
                   "deadline": 22,
@@ -1383,7 +1388,6 @@ final class JsonSerializableToJsonTest {
                   "timeToLive": 12,
                   "correlationKey": "test-key",
                   "variables": {},
-                  "variablesMetadata": {},
                   "messageId": "",
                   "name": "test-message",
                   "deadline": -1,
@@ -1445,7 +1449,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 6
                 }
@@ -1477,7 +1480,6 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "businessId": "",
                   "variables": {},
-                  "variablesMetadata": {},
                   "tenantId": "<default>",
                   "storageOrdinal": 0
                 }
@@ -1531,7 +1533,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "biz-42",
@@ -1568,7 +1569,6 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "variables": {},
-                  "variablesMetadata": {},
                   "interrupting": true,
                   "tenantId": "<default>",
                   "businessId": "",
@@ -1629,7 +1629,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "bpmnProcessId": "process",
                   "messageKey": 3,
                   "correlationKey": "key",
@@ -1669,7 +1668,6 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 1345,
                   "processDefinitionKey": -1,
                   "variables": {},
-                  "variablesMetadata": {},
                   "bpmnProcessId": "",
                   "messageKey": -1,
                   "correlationKey": "",
@@ -1774,9 +1772,6 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
-                  },
-                  "metadata": {
-                    "protectionModes":[]
                   }
                 }
                 """
@@ -1805,9 +1800,6 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
-                  .setMetadata(
-                      new VariableMetadataRecord()
-                          .setProtectionModes(List.of(ProtectionMode.REDACT)))
                   .setTenantId("tenant-test")
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal);
@@ -1826,9 +1818,6 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
-                  },
-                  "metadata": {
-                    "protectionModes":["REDACT"]
                   }
                 }
                 """
@@ -1849,11 +1838,6 @@ final class JsonSerializableToJsonTest {
               return new VariableDocumentRecord()
                   .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
                   .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
-                  .setVariablesMetadata(
-                      Map.of(
-                          "foo",
-                          new VariableMetadataRecord()
-                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
                   .setScopeKey(scopeKey)
                   .setStorageOrdinal(1234);
             },
@@ -1865,12 +1849,7 @@ final class JsonSerializableToJsonTest {
                   },
                   "scopeKey": 3,
                   "storageOrdinal": 1234,
-                  "tenantId": "<default>",
-                  "variablesMetadata": {
-                    "foo": {
-                      "protectionModes": ["REDACT"]
-                    }
-                  }
+                  "tenantId": "<default>"
                 }
                 """
       },
@@ -1894,8 +1873,7 @@ final class JsonSerializableToJsonTest {
                   "variables": {},
                   "scopeKey": 3,
                   "storageOrdinal": 0,
-                  "tenantId": "<default>",
-                  "variablesMetadata": {}
+                  "tenantId": "<default>"
                 }
                 """
       },
@@ -1932,11 +1910,6 @@ final class JsonSerializableToJsonTest {
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
                   .setBusinessId(businessId)
-                  .setVariablesMetadata(
-                      Map.of(
-                          "foo",
-                          new VariableMetadataRecord()
-                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
                   .setVersionTag("v1.0");
             },
         """
@@ -1961,11 +1934,6 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
-                  "variablesMetadata": {
-                    "foo": {
-                      "protectionModes": ["REDACT"]
-                    }
-                  },
                   "elementInstanceKey": -1
                 }
                 """
@@ -1994,7 +1962,6 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "versionTag": "",
-                  "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
                 """
@@ -2697,7 +2664,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "tenantId": "acme"
                 }
                 """
@@ -2720,7 +2686,6 @@ final class JsonSerializableToJsonTest {
                 {
                   "signalName":"test-signal",
                   "variables": {},
-                  "variablesMetadata": {},
                   "tenantId": "<default>"
                 }
                 """
@@ -3200,7 +3165,6 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {"foo": 1},
-                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3241,7 +3205,6 @@ final class JsonSerializableToJsonTest {
                     "changedAttributes": [],
                     "externalFormReference": "",
                     "variables": {},
-                    "variablesMetadata": {},
                     "customHeaders": {},
                     "action": "",
                     "formKey": -1,
@@ -3339,7 +3302,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "variablesMetadata": {},
                   "customHeaders": {
                     "foo": "bar"
                   },
@@ -3383,7 +3345,6 @@ final class JsonSerializableToJsonTest {
                   "changedAttributes": [],
                   "externalFormReference": "",
                   "variables": {},
-                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
@@ -3430,7 +3391,6 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": null
                   },
-                  "variablesMetadata": {},
                   "customHeaders": {},
                   "action": "",
                   "formKey": -1,
@@ -3615,8 +3575,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
-                  },
-                  "variablesMetadata": {}
+                  }
                 }
                 """
       },
@@ -3642,8 +3601,7 @@ final class JsonSerializableToJsonTest {
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
                   "storageOrdinal": 0,
-                  "variables": {},
-                  "variablesMetadata": {}
+                  "variables": {}
                 }
                 """
       },
@@ -5071,8 +5029,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "tenant-1",
                   "variables": {
                     "foo": "bar"
-                  },
-                  "variablesMetadata": {}
+                  }
                 }
                 """
       },
@@ -5105,8 +5062,7 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "tenantId": "tenant-1",
-                  "variables": {},
-                  "variablesMetadata": {}
+                  "variables": {}
                 }
                 """
       },
@@ -5124,8 +5080,7 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "startedProcessInstances": [],
                   "tenantId": "<default>",
-                  "variables": {},
-                  "variablesMetadata": {}
+                  "variables": {}
                 }
                 """
       },
@@ -5427,6 +5382,167 @@ final class JsonSerializableToJsonTest {
         """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ProbeRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeRecord",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                    .setTenantId("tenant-1")
+                    .setInputExpression("={accessKey: camunda.secrets.awsKey}")
+                    .setInput(VARIABLES_MSGPACK)
+                    .addSecretReference("default", "awsKey", "/accessKey")
+                    .setRequestTimeout(5000L)
+                    .setDeadline(123L)
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.ERROR)
+                    .setData(VARIABLES_MSGPACK)
+                    .setMessage("AWS is unreachable.")
+                    .setEndReason(ProbeEndReason.WORKER_DID_NOT_ANSWER),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:aws-credential:1",
+          "tenantId": "tenant-1",
+          "inputExpression": "={accessKey: camunda.secrets.awsKey}",
+          "input": {"foo": "bar"},
+          "secretReferences": [
+            {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+          ],
+          "requestTimeout": 5000,
+          "deadline": 123,
+          "worker": "connectors",
+          "outcome": "ERROR",
+          "data": {"foo": "bar"},
+          "message": "AWS is unreachable.",
+          "endReason": "WORKER_DID_NOT_ANSWER"
+        }
+        """
+      },
+      {
+        "Empty ProbeRecord",
+        (Supplier<ProbeRecord>) ProbeRecord::new,
+        """
+        {
+          "probeId": "",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "",
+          "outcome": "UNSPECIFIED",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      {
+        "ProbeRecord with reset data",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setProbeId("validate-configuration/io.camunda:slack:1")
+                    .setWorker("connectors")
+                    .setOutcome(ProbeOutcome.OK)
+                    .setData(VARIABLES_MSGPACK)
+                    .resetData(),
+        """
+        {
+          "probeId": "validate-configuration/io.camunda:slack:1",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "connectors",
+          "outcome": "OK",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////// ProbeBatchRecord //////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>)
+            () ->
+                new ProbeBatchRecord()
+                    .setProbeIds(
+                        List.of(
+                            "validate-configuration/io.camunda:aws-credential:1",
+                            "validate-configuration/io.camunda:slack:1"))
+                    .setWorker("connectors")
+                    .setMaxProbesToActivate(4)
+                    .setTenantIds(List.of("tenant-1"))
+                    .setTenantFilter(TenantFilter.ASSIGNED)
+                    .setTruncated(true)
+                    .addProbe(
+                        2251799813685464L,
+                        new ProbeRecord()
+                            .setProbeId("validate-configuration/io.camunda:aws-credential:1")
+                            .setTenantId("tenant-1")
+                            .setInput(VARIABLES_MSGPACK)
+                            .addSecretReference("default", "awsKey", "/accessKey")
+                            .setDeadline(1000L)
+                            .setWorker("connectors")),
+        """
+        {
+          "probeIds": [
+            "validate-configuration/io.camunda:aws-credential:1",
+            "validate-configuration/io.camunda:slack:1"
+          ],
+          "worker": "connectors",
+          "maxProbesToActivate": 4,
+          "probeKeys": [2251799813685464],
+          "probes": [
+            {
+              "probeId": "validate-configuration/io.camunda:aws-credential:1",
+              "tenantId": "tenant-1",
+              "inputExpression": "",
+              "input": {"foo": "bar"},
+              "secretReferences": [
+                {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+              ],
+              "requestTimeout": 0,
+              "deadline": 1000,
+              "worker": "connectors",
+              "outcome": "UNSPECIFIED",
+              "data": {},
+              "message": "",
+              "endReason": "UNSPECIFIED"
+            }
+          ],
+          "truncated": true,
+          "tenantIds": ["tenant-1"],
+          "tenantFilter": "ASSIGNED"
+        }
+        """
+      },
+      {
+        "Empty ProbeBatchRecord",
+        (Supplier<ProbeBatchRecord>) ProbeBatchRecord::new,
+        """
+        {
+          "probeIds": [],
+          "worker": "",
+          "maxProbesToActivate": -1,
+          "probeKeys": [],
+          "probes": [],
+          "truncated": false,
+          "tenantIds": [],
+          "tenantFilter": "PROVIDED"
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       //////////////////////////////// ProcessDefinitionRestoreRecord
       // ///////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -5639,6 +5755,68 @@ final class JsonSerializableToJsonTest {
           "membershipDeletes": [],
           "authorizationDeletes": [],
           "errorMessage": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////// ProcessDefinitionSuspensionRecord /////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>)
+            () ->
+                new ProcessDefinitionSuspensionRecord()
+                    .setProcessDefinitionKey(1L)
+                    .setBpmnProcessId("process-1")
+                    .setVersion(3)
+                    .setTenantId("tenant-1")
+                    .setIncludeProcessInstances(true)
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionResolvedVersion()
+                            .setProcessDefinitionKey(1L)
+                            .setVersion(3)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED))
+                    .addResolvedVersion(
+                        new ProcessDefinitionSuspensionResolvedVersion()
+                            .setProcessDefinitionKey(2L)
+                            .setVersion(2)
+                            .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED))
+                    .setBatchOperationKey(99L),
+        """
+        {
+          "processDefinitionKey": 1,
+          "bpmnProcessId": "process-1",
+          "version": 3,
+          "tenantId": "tenant-1",
+          "includeProcessInstances": true,
+          "resolvedVersions": [
+            {
+              "processDefinitionKey": 1,
+              "version": 3,
+              "outcome": "SUSPENDED"
+            },
+            {
+              "processDefinitionKey": 2,
+              "version": 2,
+              "outcome": "ALREADY_SUSPENDED"
+            }
+          ],
+          "batchOperationKey": 99
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionSuspensionRecord",
+        (Supplier<ProcessDefinitionSuspensionRecord>) ProcessDefinitionSuspensionRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
+          "bpmnProcessId": "",
+          "version": -1,
+          "tenantId": "<default>",
+          "includeProcessInstances": false,
+          "resolvedVersions": [],
+          "batchOperationKey": -1
         }
         """
       },

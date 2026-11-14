@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -323,9 +322,7 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance,
-      final DirectBuffer variablesBuffer,
-      final VariableMetadataLookup metadataLookup)
+      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
       throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
@@ -335,8 +332,7 @@ public class ProcessInstanceCreationHelper {
         processInstance.getStorageOrdinal(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
-        variablesBuffer,
-        metadataLookup);
+        variablesBuffer);
   }
 
   public void activateElementsForStartInstructions(
