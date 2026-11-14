@@ -517,7 +517,23 @@ public final class CamundaClientImpl implements CamundaClient {
       credentialsProvider = new NoopCredentialsProvider();
     }
     jobClient = newJobClient();
+    warnIfRestApiIsPlaintext(config);
     this.httpClient.start();
+  }
+
+  /**
+   * Logs a warning once per client when the REST API is reached over plain HTTP, since requests
+   * (including any credentials) are then sent unencrypted. Only the host and port are logged, so
+   * user info that may be embedded in the address never ends up in the logs.
+   */
+  private static void warnIfRestApiIsPlaintext(final CamundaClientConfiguration config) {
+    final URI restAddress = config.getRestAddress();
+    if (restAddress != null && "http".equalsIgnoreCase(restAddress.getScheme())) {
+      Loggers.LOGGER.warn(
+          "The REST API is accessed over plaintext HTTP (http://{}); requests and credentials are"
+              + " sent unencrypted. Configure an https:// REST address to use TLS.",
+          AddressUtil.composeGatewayAddress(restAddress));
+    }
   }
 
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
