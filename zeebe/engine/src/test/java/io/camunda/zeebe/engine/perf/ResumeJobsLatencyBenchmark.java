@@ -34,11 +34,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Benchmarks the time to resume a process instance with many jobs suspended. This is the reverse of
- * {@link SuspendJobsBenchmark}: unlike suspend, which walks the whole element tree and appends
- * {@code Job.SUSPENDED} for every activatable job in a single command, resume drains one job per
- * {@code RESUME_JOBS} command cycle ({@code ProcessInstanceResumeJobsProcessor}), each its own
- * follow-up command and log append. Latency is therefore expected to scale with N sequential
- * round-trips through the stream processor, not with a single O(N) tree walk.
+ * {@link SuspendJobsBenchmark}: suspend walks the element instance tree one element instance per
+ * command ({@code ElementInstanceWalkSuspendProcessor}), and resume drains one job per {@code
+ * RESUME_JOBS} command cycle ({@code ProcessInstanceResumeJobsProcessor}). Both are N sequential
+ * round-trips through the stream processor, so latency is expected to scale linearly with N.
  */
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
@@ -53,9 +52,10 @@ public class ResumeJobsLatencyBenchmark {
   private static final Logger LOG =
       LoggerFactory.getLogger(ResumeJobsLatencyBenchmark.class.getName());
 
-  // capped at 4000, the limit before jobs were suspended one per batch by the element instance
-  // walk (see SuspensionBatchSizeTest); kept so results stay comparable with earlier runs.
-  @Param({"100", "1000", "2000", "4000"})
+  // up to 4000 compares with versions before the element instance walk, which could not suspend
+  // much more than that in one batch (see SuspensionBatchSizeTest); 10000 and 20000 show whether
+  // resume stays linear beyond that old limit.
+  @Param({"100", "1000", "2000", "4000", "10000", "20000"})
   private int jobCount;
 
   private TestContext testContext;
