@@ -74,11 +74,12 @@
       "Operations",
       "Retry and cancel single instance"
     ],
-    "last_action": "blocked",
-    "last_reason": "baseline produced no score",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43167809293",
-    "updated_at": "2026-11-12T06:27:21Z",
-    "cooldown_until": "2026-11-13T06:27:21Z"
+    "last_action": "open_pr",
+    "last_reason": "iter2 100% vs baseline 55% (+45pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43565906119",
+    "updated_at": "2026-11-14T07:47:23Z",
+    "cooldown_until": "2026-11-28T07:47:23Z",
+    "pr": "https://github.com/camunda/camunda/pull/69413"
   },
   "bb4828fb": {
     "version": "8.7",
