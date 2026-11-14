@@ -1632,6 +1632,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
 					"bottomPanelPlaceholder": "Platzhalter für den unteren Bereich"

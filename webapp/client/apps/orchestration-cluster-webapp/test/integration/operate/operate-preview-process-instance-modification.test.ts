@@ -13,9 +13,11 @@ import {
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 import {
+	mockGetProcessInstanceEndpoint,
 	mockModifyProcessInstanceEndpoint,
 	mockQueryElementInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -131,4 +133,28 @@ test('should warn before leaving modification mode with staged modifications', a
 	await expect(page.getByRole('alertdialog')).toBeVisible();
 	await page.getByRole('alertdialog').getByRole('button', {name: 'Stay'}).click();
 	await expect(page.getByRole('button', {name: 'Review Modifications'})).toBeVisible();
+});
+
+test('should redirect to the process list when the instance disappears during modification', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+}) => {
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await page.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_ID}`}).click();
+	await page
+		.getByRole('dialog', {name: 'Process Instance Modification Mode'})
+		.getByRole('button', {name: 'Continue'})
+		.click();
+	await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+	await page.getByRole('button', {name: 'Add single element instance'}).click();
+
+	network.use(
+		mockGetProcessInstanceEndpoint({
+			successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
+		}),
+	);
+
+	await expect(page).toHaveURL(/\/operate-preview\/processes\?/, {timeout: 15000});
+	await expect(page.getByText(`Instance ${PROCESS_INSTANCE_ID} could not be found`)).toBeVisible();
 });

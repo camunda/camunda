@@ -1635,6 +1635,11 @@
 				}
 			},
 			"processInstance": {
+				"ds": {
+					"forbidden": {
+						"heading": "Vous n'avez pas la permission de consulter ces informations"
+					}
+				},
 				"scaffold": {
 					"diagramPanelPlaceholder": "Espace réservé du panneau de diagramme",
 					"bottomPanelPlaceholder": "Espace réservé du panneau inférieur"
