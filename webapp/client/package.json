@@ -38,7 +38,7 @@
 		"oxlint": "1.93.0",
 		"oxlint-tsgolint": "7.0.2005",
 		"patch-package": "8.0.1",
-		"prettier": "3.9.10"
+		"prettier": "3.10.0"
 	},
 	"version": "8.11.0-SNAPSHOT"
 }
