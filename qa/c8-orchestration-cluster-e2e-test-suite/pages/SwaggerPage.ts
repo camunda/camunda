@@ -10,6 +10,9 @@ import {Page, Locator, expect, type APIRequestContext} from '@playwright/test';
 
 import {credentials} from '../utils/http';
 
+const MAX_SCROLL_STEPS = 200;
+const SCROLL_STEP_MOUNT_TIMEOUT_MS = 500;
+
 export class SwaggerPage {
   private readonly page: Page;
   private readonly csrfCookieName = 'X-CSRF-TOKEN';
@@ -67,6 +70,24 @@ export class SwaggerPage {
     return orchestrationClusterApi.url as string;
   }
 
+  async getGroupedApiDocs(request: APIRequestContext): Promise<unknown> {
+    const groupedApiDocsUrl = await this.getGroupedApiDocsUrl(request);
+
+    const response = await request.get(
+      `${credentials.baseUrl}${groupedApiDocsUrl}`,
+      {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Basic ${credentials.accessToken}`,
+        },
+      },
+    );
+
+    await expect(response).toBeOK();
+
+    return response.json();
+  }
+
   async openExecuteProcessDefinitionSearchDropdown(): Promise<void> {
     const operation = await this.getOperation(
       'post',
@@ -109,8 +130,45 @@ export class SwaggerPage {
       .filter({hasText: apiPath})
       .first();
 
+    await this.scrollUntilMounted(operation);
+    await operation.scrollIntoViewIfNeeded();
     await expect(operation).toBeVisible({timeout: 10_000});
 
     return operation;
+  }
+
+  /**
+   * Swagger UI 5.33+ virtualizes the operation list once a spec has 150 or more tags and
+   * operations combined, so operations outside the viewport are not in the DOM until they are
+   * scrolled to. Scrolls down from the top in viewport-sized steps until the operation is mounted;
+   * if it never is, returns and lets the caller's assertion report the missing operation.
+   */
+  private async scrollUntilMounted(operation: Locator): Promise<void> {
+    if ((await operation.count()) > 0) {
+      return;
+    }
+
+    await this.page.evaluate(() => window.scrollTo(0, 0));
+
+    for (let step = 0; step < MAX_SCROLL_STEPS; step++) {
+      const mounted = await operation
+        .waitFor({state: 'attached', timeout: SCROLL_STEP_MOUNT_TIMEOUT_MS})
+        .then(
+          () => true,
+          () => false,
+        );
+      if (mounted) {
+        return;
+      }
+
+      const reachedBottom = await this.page.evaluate(() => {
+        const before = window.scrollY;
+        window.scrollBy(0, window.innerHeight * 0.8);
+        return window.scrollY === before;
+      });
+      if (reachedBottom) {
+        return;
+      }
+    }
   }
 }
