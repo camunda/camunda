@@ -217,6 +217,40 @@ class UserTaskAuthorizationIT {
   }
 
   @Test
+  void lookupShouldReturnAuthorizedUserTask(
+      @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_1)
+          final CamundaClient camundaClient) {
+    // when
+    final var result = camundaClient.newLookupUserTaskCommand(processId1FirstTaskKey).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(processId1FirstTaskKey);
+    assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
+    assertThat(result.getVariablesAsMap()).isNotEmpty();
+  }
+
+  @Test
+  void lookupShouldReturnForbiddenWithoutPermissions(
+      @Authenticated(USER_WITHOUT_PERMISSIONS) final CamundaClient camundaClient) {
+    // when
+    final ThrowingCallable executeLookup =
+        () -> camundaClient.newLookupUserTaskCommand(processId1FirstTaskKey).send().join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeLookup).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo(
+            ("Command 'FETCH' rejected with code 'FORBIDDEN': Insufficient permissions to perform"
+                    + " operation 'READ_USER_TASK' on resource 'PROCESS_DEFINITION', required"
+                    + " resource identifiers are one of '[*, %s]'; and Insufficient permissions to"
+                    + " perform operation 'READ' on resource 'USER_TASK', required resource"
+                    + " identifiers are one of '[*, %d]'")
+                .formatted(PROCESS_ID_1, processId1FirstTaskKey));
+  }
+
+  @Test
   void getUserTaskFormShouldReturnFormForAuthorizedUserTask(
       @Authenticated(USER_WITH_PROCESS_DEF_READ_USER_TASK_PROCESS_2)
           final CamundaClient camundaClient) {

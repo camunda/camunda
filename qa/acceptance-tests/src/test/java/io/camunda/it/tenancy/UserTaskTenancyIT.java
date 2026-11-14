@@ -140,6 +140,44 @@ public class UserTaskTenancyIT {
         .contains("User Task with key '%s' not found".formatted(userTaskKey));
   }
 
+  @Test
+  void lookupShouldReturnTenantOwnedUserTask(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_A);
+
+    // when
+    final var result = camundaClient.newLookupUserTaskCommand(userTaskKey).send().join();
+
+    // then
+    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKey);
+    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void lookupShouldReturnNotFoundForUserTaskOfOtherTenant(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_B);
+
+    // when
+    final var problem =
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(() -> camundaClient.newLookupUserTaskCommand(userTaskKey).send().join())
+            .actual();
+
+    // then
+    assertThat(problem.code())
+        .describedAs("a task of another tenant must look like it doesn't exist")
+        .isEqualTo(404);
+    assertThat(problem.details().getDetail())
+        .isEqualTo(
+            "Command 'FETCH' rejected with code 'NOT_FOUND': Expected to fetch user task with key"
+                + " '%d', but no such user task was found".formatted(userTaskKey));
+  }
+
   private static void deployResource(
       final CamundaClient camundaClient, final String resourceName, final String tenant) {
     camundaClient
