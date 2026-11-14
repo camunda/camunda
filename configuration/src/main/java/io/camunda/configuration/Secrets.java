@@ -181,6 +181,14 @@ public class Secrets {
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
     private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
     private Map<String, EnvStore> env = new LinkedHashMap<>();
+
+    /**
+     * Azure Key Vault stores, keyed by store id; the only supported id is {@code default}. Sign-in
+     * is meant to be identity-based (managed identity, workload identity, or a service principal
+     * from the {@code AZURE_*} environment variables), but signing in and reading the vault are not
+     * implemented yet: until then every reference resolves as not found. Empty by default, so no
+     * Azure store is configured.
+     */
     private Map<String, AzureKeyVaultStore> azure = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
@@ -790,7 +798,9 @@ public class Secrets {
 
     /**
      * URL of the vault holding the secrets, such as {@code https://my-vault.vault.azure.net}.
-     * Required.
+     * Required, with no default. Must be an absolute {@code https://} URL with only a host and
+     * optional port, as Key Vault requires HTTPS; any host name is accepted, so private endpoints
+     * and sovereign clouds work.
      */
     private @Nullable String vaultUrl;
 
@@ -800,7 +810,8 @@ public class Secrets {
      * {@code camunda-db-password}). When omitted, references map to bare secret names. Applies to
      * {@link #containerSecretId} as well. Key Vault secret names allow only {@code [0-9A-Za-z-]},
      * so use e.g. {@code camunda-} rather than {@code camunda/}; any other character is rejected at
-     * startup.
+     * startup. At most 126 characters, leaving room for at least one character of the name. No
+     * prefix by default.
      */
     private @Nullable String pathPrefix;
 
@@ -808,41 +819,44 @@ public class Secrets {
      * Opt-in: instead of one Key Vault secret per reference, treat every reference as a JSON key
      * inside this one named secret (e.g. {@code app-config}). The secret's value must be a flat
      * JSON object mapping each reference name to a string value (e.g. {@code {"db-password":
-     * "s3cr3t"}}).
+     * "s3cr3t"}}). Not set by default. With {@link #pathPrefix} prepended, it must be a Key Vault
+     * secret name: 1 to 127 characters of {@code [0-9A-Za-z-]}.
      */
     private @Nullable String containerSecretId;
 
     /**
      * Client id of the user-assigned managed identity to sign in with, so each physical tenant can
-     * use its own identity. When omitted, the system-assigned identity or whichever identity the
-     * environment provides is used.
+     * use its own identity. Must not be blank when set. Not set by default, so the system-assigned
+     * identity or whichever identity the environment provides is used.
      */
     private @Nullable String managedIdentityClientId;
 
     /**
      * Microsoft Entra authority host to sign in against, for sovereign clouds (e.g. {@code
-     * https://login.microsoftonline.us}). When omitted, the public cloud is used.
+     * https://login.microsoftonline.us}). Must be an absolute {@code https://} URL with only a host
+     * and optional port when set. Not set by default, so the public cloud is used.
      */
     private @Nullable String authorityHost;
 
     /**
-     * How many times a throttled or transient request to the vault is retried. Defaults to {@code
-     * 3}.
+     * How many times a throttled or transient request to the vault is retried. Must not be
+     * negative. Defaults to {@code 3}.
      */
     private int maxRetries = DEFAULT_MAX_RETRIES;
 
     /**
      * Upper bound on one call to Key Vault, retries included. The background secret resolution
      * calls the store from an IO-bound actor thread shared with every partition's exporter, so an
-     * unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Defaults to 5
-     * seconds.
+     * unbounded call there stalls exporting broker-wide (camunda/camunda#62869). Must be positive.
+     * Defaults to 5 seconds.
      */
     private Duration callTimeout = DEFAULT_CALL_TIMEOUT;
 
     /**
      * Upper bound on a single HTTP attempt within a call, so one stalled socket does not consume
-     * the whole {@link #callTimeout} budget. Defaults to 2 seconds, or to {@link #callTimeout} when
-     * that is shorter. {@code null} while unset, so the default can follow {@link #callTimeout}.
+     * the whole {@link #callTimeout} budget. Must be positive and not longer than {@link
+     * #callTimeout}. Defaults to 2 seconds, or to {@link #callTimeout} when that is shorter. {@code
+     * null} while unset, so the default can follow {@link #callTimeout}.
      */
     private @Nullable Duration attemptTimeout;
 
