@@ -45,6 +45,10 @@ final class GeneratedCodecKeyOrderTest {
       import org.agrona.DirectBuffer;
       """;
 
+  /** The map {"a": 1} */
+  private static final DirectBuffer DOCUMENT =
+      new UnsafeBuffer(new byte[] {(byte) 0x81, (byte) 0xa1, 'a', 0x01});
+
   private static Result compiled;
 
   @BeforeAll
@@ -73,10 +77,12 @@ final class GeneratedCodecKeyOrderTest {
                       boolean flag = true;
                       DirectBuffer name = Decoding.EMPTY;
                       @MsgpackProperty(binary = true) DirectBuffer payload = Decoding.EMPTY;
+                      @MsgpackProperty(document = true) DirectBuffer doc = new org.agrona.concurrent.UnsafeBuffer(new byte[] {(byte) 0x80});
                       Kind kind = Kind.TWO;
                       final List<DirectBuffer> ids = new ArrayList<>();
                       final List<Long> versions = new ArrayList<>();
                       final Inner inner = new Inner();
+                      final List<Inner> inners = new ArrayList<>();
                       @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                     }
                     """));
@@ -152,9 +158,11 @@ final class GeneratedCodecKeyOrderTest {
     assertThat(get(sample, "count")).isEqualTo(1);
     assertThat(get(sample, "key")).isEqualTo(-1L);
     assertThat(get(sample, "flag")).isEqualTo(true);
+    assertThat(get(sample, "doc")).isEqualTo(new UnsafeBuffer(new byte[] {(byte) 0x80}));
     assertThat(get(sample, "kind").toString()).isEqualTo("TWO");
     assertThat((List<?>) get(sample, "ids")).isEmpty();
     assertThat((List<?>) get(sample, "versions")).isEmpty();
+    assertThat((List<?>) get(sample, "inners")).isEmpty();
     assertThat(get(get(sample, "inner"), "value")).isEqualTo(3);
   }
 
@@ -226,6 +234,7 @@ final class GeneratedCodecKeyOrderTest {
             new Entry("flag", w -> w.writeBoolean(false)),
             new Entry("name", w -> w.writeString(utf8("zeebe"))),
             new Entry("payload", w -> w.writeBinary(utf8("bin"))),
+            new Entry("doc", w -> w.writeBinary(DOCUMENT)),
             new Entry("kind", w -> w.writeString(utf8("ONE"))),
             new Entry(
                 "ids",
@@ -248,6 +257,19 @@ final class GeneratedCodecKeyOrderTest {
                   w.writeMapHeader(1);
                   w.writeString(utf8("value"));
                   w.writeInteger(9);
+                }),
+            new Entry(
+                "inners",
+                w -> {
+                  w.writeArrayHeader(2);
+                  for (final int value : new int[] {4, 5}) {
+                    // the entries of an item are in the reverse of the declaration order
+                    w.writeMapHeader(2);
+                    w.writeString(utf8("zz-newer-version"));
+                    w.writeNil();
+                    w.writeString(utf8("value"));
+                    w.writeInteger(value);
+                  }
                 })));
   }
 
@@ -257,10 +279,15 @@ final class GeneratedCodecKeyOrderTest {
     assertThat(get(sample, "flag")).isEqualTo(false);
     assertThat(get(sample, "name")).isEqualTo(utf8("zeebe"));
     assertThat(get(sample, "payload")).isEqualTo(utf8("bin"));
+    assertThat(get(sample, "doc")).isEqualTo(DOCUMENT);
     assertThat(get(sample, "kind").toString()).isEqualTo("ONE");
     assertThat(get(sample, "ids")).isEqualTo(List.of(utf8("a"), utf8("b")));
     assertThat(get(sample, "versions")).isEqualTo(List.of(1L, 300L, 5_000_000_000L));
     assertThat(get(get(sample, "inner"), "value")).isEqualTo(9);
+    final var inners = (List<?>) get(sample, "inners");
+    assertThat(inners).hasSize(2);
+    assertThat(get(inners.get(0), "value")).isEqualTo(4);
+    assertThat(get(inners.get(1), "value")).isEqualTo(5);
   }
 
   private static Object read(final byte[] bytes) throws Exception {

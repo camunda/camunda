@@ -10,6 +10,7 @@ package io.camunda.zeebe.msgpack.pojo.processor;
 import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackSanitized;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import java.io.IOException;
 import java.io.Writer;
@@ -23,6 +24,7 @@ import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
@@ -164,6 +166,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       final var raw = annotation != null && annotation.raw();
       final var binary = annotation != null && annotation.binary();
       final var required = annotation != null && annotation.required();
+      final var document = annotation != null && annotation.document();
+      if (document && (raw || binary)) {
+        throw new IllegalArgumentException(
+            "Field %s: document cannot be combined with raw or binary".formatted(fieldName));
+      }
       final var key =
           annotation == null || annotation.value().isEmpty() ? fieldName : annotation.value();
       if (!keys.add(key)) {
@@ -171,7 +178,12 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             "Field " + fieldName + " uses the key '" + key + "' of another field");
       }
       final var mirror = field.asType();
-      final var kind = typeOf(mirror, raw, binary, fieldName);
+      final var kind = typeOf(mirror, raw, binary, document, fieldName);
+      if (document && kind != Type.DOCUMENT) {
+        throw new IllegalArgumentException(
+            "Field %s: document requires a DirectBuffer or UnsafeBuffer field"
+                .formatted(fieldName));
+      }
       final var isFinal = field.getModifiers().contains(Modifier.FINAL);
       if (!isFinal && kind.container) {
         throw new IllegalArgumentException(
@@ -189,8 +201,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
+      final var sanitized = field.getAnnotation(MsgpackSanitized.class) != null;
       properties.add(
-          new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required));
+          new Property(
+              keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, required, sanitized));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -209,7 +223,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   private Type typeOf(
-      final TypeMirror mirror, final boolean raw, final boolean binary, final String field) {
+      final TypeMirror mirror,
+      final boolean raw,
+      final boolean binary,
+      final boolean document,
+      final String field) {
     switch (mirror.getKind()) {
       case LONG:
         return Type.LONG;
@@ -222,7 +240,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         final var element = (TypeElement) declared.asElement();
         final var name = element.getQualifiedName().toString();
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
-          return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
+          return raw ? Type.RAW : binary ? Type.BINARY : document ? Type.DOCUMENT : Type.STRING;
         }
         if (name.equals(INT_ARRAY_LIST)) {
           return Type.INT_ARRAY_LIST;
@@ -239,6 +257,13 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           if (isType(argument, "java.lang.Long")) {
             return Type.LONG_LIST;
           }
+          if (argument.getKind() == TypeKind.DECLARED) {
+            final var item = (TypeElement) ((DeclaredType) argument).asElement();
+            if (item.getAnnotation(MsgpackPojo.class) != null || isBaseValue(item)) {
+              requirePublicConstructor(item, field);
+              return Type.NESTED_LIST;
+            }
+          }
         }
         if (element.getKind() == ElementKind.ENUM) {
           return Type.ENUM;
@@ -254,6 +279,22 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         break;
     }
     throw new IllegalArgumentException("Unsupported type " + mirror + " of field " + field);
+  }
+
+  /** Items are created while reading, so the generated codec must be able to call {@code new}. */
+  private static void requirePublicConstructor(final TypeElement item, final String field) {
+    final boolean found =
+        item.getEnclosedElements().stream()
+            .anyMatch(
+                e ->
+                    e.getKind() == ElementKind.CONSTRUCTOR
+                        && e.getModifiers().contains(Modifier.PUBLIC)
+                        && ((ExecutableElement) e).getParameters().isEmpty());
+    if (!found) {
+      throw new IllegalArgumentException(
+          "Items of the list %s are created while reading, so %s needs a public constructor without parameters"
+              .formatted(field, item.getQualifiedName()));
+    }
   }
 
   private boolean isType(final TypeMirror mirror, final String qualifiedName) {
@@ -282,6 +323,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   }
 
   private String javaType(final TypeMirror mirror, final Type kind) {
+    if (kind == Type.NESTED_LIST) {
+      final var item = ((DeclaredType) mirror).getTypeArguments().get(0);
+      return ((TypeElement) ((DeclaredType) item).asElement()).getQualifiedName().toString();
+    }
     return kind == Type.ENUM || kind == Type.NESTED
         ? ((TypeElement) ((DeclaredType) mirror).asElement()).getQualifiedName().toString()
         : mirror.toString();
@@ -315,7 +360,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
         // checked on every reset: an exception in the static initializer is not reliably
         // propagated, as the class is initialized while Codecs resolves this resetter
-        case STRING, BINARY, RAW ->
+        case NESTED_LIST ->
+            s.append(
+                "    requireEmpty(DEFAULTS.%1$s, \"%1$s\");\n    target.%1$s.clear();\n"
+                    .formatted(f));
+        case STRING, BINARY, RAW, DOCUMENT ->
             s.append(
                 p.inPlace()
                     ? "    target.%1$s.wrap(DEFAULTS.%1$s);\n".formatted(f)
@@ -327,6 +376,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append("  }\n\n");
     s.append(
         """
+          /** Items are owned by one list, so a default with items would be shared by every reset. */
+          private static void requireEmpty(final java.util.List<?> value, final String field) {
+            if (!value.isEmpty()) {
+              throw new IllegalStateException(
+                  "List " + field + " of %1$s must start empty: its items are created while reading");
+            }
+          }
+
           private static <T> T requireDefault(final T value, final String field) {
             if (value == null) {
               throw new IllegalStateException(
@@ -380,6 +437,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case STRING -> "    n += w.writeString(%s);\n".formatted(get);
             case BINARY -> "    n += w.writeBinary(%s);\n".formatted(get);
             case RAW -> "    n += w.writeRaw(requireRaw(%s, %s));\n".formatted(get, p.keyLiteral());
+            case DOCUMENT -> "    n += w.writeBinary(Decoding.document(%s));\n".formatted(get);
             case ENUM ->
                 "    n += w.writeString(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()]);\n"
                     .formatted(i, get, p.keyLiteral());
@@ -394,6 +452,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += w.writeInteger(%s.%s(i));\n".formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
+            case NESTED_LIST ->
+                "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
+                    + "      n += CODEC_%d.write(w, %s.get(i));\n".formatted(i, get)
+                    + "    }\n";
           });
       i++;
     }
@@ -420,6 +483,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "    n += MsgPackWriter.getEncodedBinaryValueLength(%s.capacity());\n"
                     .formatted(get);
             case RAW -> "    n += requireRaw(%s, %s).capacity();\n".formatted(get, p.keyLiteral());
+            case DOCUMENT ->
+                "    n += MsgPackWriter.getEncodedBinaryValueLength(Decoding.document(%s).capacity());\n"
+                    .formatted(get);
             case ENUM ->
                 "    n += MsgPackWriter.getEncodedStringLength(ENUM_NAMES_%d[requireEnum(%s, %s).ordinal()].capacity());\n"
                     .formatted(i, get, p.keyLiteral());
@@ -436,6 +502,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                         .formatted(get, getter(p.type()))
                     + "    }\n";
             case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
+            case NESTED_LIST ->
+                "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
+                    + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
+                    + "      n += CODEC_%d.getLength(%s.get(i));\n".formatted(i, get)
+                    + "    }\n";
           });
       i++;
     }
@@ -479,12 +550,19 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 p.inPlace()
                     ? "Decoding.readBinary(r, %s);".formatted(f)
                     : f + " = Decoding.readBinary(r);";
+            case DOCUMENT ->
+                p.inPlace()
+                    ? "Decoding.readDocument(r, %s);".formatted(f)
+                    : f + " = Decoding.readDocument(r);";
             case ENUM ->
                 "%s = Decoding.readEnum(r, ENUM_NAMES_%d, ENUM_VALUES_%d);".formatted(f, i, i);
             case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.%2$s;\n          }\n        }"
                     .formatted(f, addElement(p.type()));
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
+            case NESTED_LIST ->
+                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final %2$s item = new %2$s();\n            CODEC_%3$d.read(r, item);\n            %1$s.add(item);\n          }\n        }"
+                    .formatted(f, p.javaType(), i);
           };
       if (p.required()) {
         s.append(
@@ -606,7 +684,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
               }
             """
                 .formatted(p.javaType(), i));
-      } else if (p.type() == Type.NESTED) {
+      } else if (p.type() == Type.NESTED || p.type() == Type.NESTED_LIST) {
         s.append(
             "  private static final MsgpackCodec<%1$s> CODEC_%2$d = Codecs.of(%1$s.class);\n"
                 .formatted(p.javaType(), i));
@@ -636,12 +714,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     STRING(false),
     RAW(false),
     BINARY(false),
+    DOCUMENT(false),
     ENUM(false),
     STRING_LIST(true),
     LONG_LIST(true),
     INT_ARRAY_LIST(true),
     LONG_ARRAY_LIST(true),
-    NESTED(true);
+    NESTED(true),
+    NESTED_LIST(true);
 
     /** Read into the instance the field holds, so the field must be final. */
     private final boolean container;
@@ -656,6 +736,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
    * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
    *     being replaced by a new view
    * @param required reading fails if the key is missing
+   * @param sanitized the value must not appear in a string representation
    */
   private record Property(
       String keyLiteral,
@@ -663,7 +744,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       String field,
       String javaType,
       boolean inPlace,
-      boolean required) {}
+      boolean required,
+      boolean sanitized) {}
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
 }

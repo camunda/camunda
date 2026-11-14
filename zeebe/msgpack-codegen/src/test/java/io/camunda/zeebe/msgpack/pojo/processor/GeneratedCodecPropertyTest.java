@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BaseProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -350,6 +351,8 @@ final class GeneratedCodecPropertyTest {
       case BINARY -> binaryBytes(lengths()).map(v -> (Object) v);
       case RAW ->
           Arbitraries.longs().map(GeneratedCodecPropertyTest::randomValue).map(v -> (Object) v);
+      case DOCUMENT ->
+          Arbitraries.longs().map(GeneratedCodecPropertyTest::randomDocument).map(v -> (Object) v);
       case ENUM -> Arbitraries.integers().between(0, KIND_NAMES.length - 1).map(v -> (Object) v);
       case STRING_LIST ->
           stringBytes(Arbitraries.integers().between(0, 40))
@@ -357,6 +360,15 @@ final class GeneratedCodecPropertyTest {
               .ofMaxSize(20)
               .map(v -> (Object) v);
       case LONG_LIST -> longs().list().ofMaxSize(20).map(v -> (Object) v);
+      case POJO_LIST, VALUE_LIST ->
+          Combinators.combine(
+                  Arbitraries.integers().injectNull(0.3),
+                  stringBytes(Arbitraries.integers().between(0, 40)).injectNull(0.3),
+                  Arbitraries.just(false))
+              .as(NestedValue::new)
+              .list()
+              .ofMaxSize(6)
+              .map(v -> (Object) v);
       case NESTED ->
           Combinators.combine(
                   Arbitraries.integers().injectNull(0.3),
@@ -427,15 +439,22 @@ final class GeneratedCodecPropertyTest {
       case BOOLEAN -> true;
       case STRING, BINARY -> new byte[] {'d', 1};
       case RAW -> new byte[] {(byte) 0xc0};
+      case DOCUMENT -> new byte[] {(byte) 0x80};
       case ENUM -> DEFAULT_KIND;
       case STRING_LIST -> emptyLists ? List.of() : List.of(new byte[] {'x'});
       case LONG_LIST -> emptyLists ? List.of() : List.of(9L);
+      case POJO_LIST, VALUE_LIST -> List.of();
       case NESTED -> new NestedValue(null, null, false);
     };
   }
 
   /** The value with its missing nested parts replaced by their defaults. */
+  @SuppressWarnings("unchecked")
   private static Object complete(final FieldSpec field, final Object value) {
+    if (field.type() == Type.POJO_LIST || field.type() == Type.VALUE_LIST) {
+      return ((List<NestedValue>) value)
+          .stream().map(item -> (NestedValue) complete(nestedField(), item)).toList();
+    }
     if (field.type() == Type.NESTED) {
       final var nested = (NestedValue) value;
       return new NestedValue(
@@ -444,6 +463,10 @@ final class GeneratedCodecPropertyTest {
           false);
     }
     return value;
+  }
+
+  private static FieldSpec nestedField() {
+    return new FieldSpec(0, Type.NESTED, null);
   }
 
   // ------------------------------------------------------------------ encoding
@@ -471,6 +494,7 @@ final class GeneratedCodecPropertyTest {
             case STRING -> w.writeString(new UnsafeBuffer((byte[]) value));
             case BINARY -> w.writeBinary(new UnsafeBuffer((byte[]) value));
             case RAW -> w.writeRaw(new UnsafeBuffer((byte[]) value));
+            case DOCUMENT -> w.writeBinary(new UnsafeBuffer((byte[]) value));
             case ENUM ->
                 w.writeString(
                     new UnsafeBuffer(KIND_NAMES[(Integer) value].getBytes(StandardCharsets.UTF_8)));
@@ -485,6 +509,11 @@ final class GeneratedCodecPropertyTest {
               list.forEach(w::writeInteger);
             }
             case NESTED -> writeNested(w, (NestedValue) value, random, declaredOrder);
+            case POJO_LIST, VALUE_LIST -> {
+              final var list = (List<NestedValue>) value;
+              w.writeArrayHeader(list.size());
+              list.forEach(item -> writeNested(w, item, random, declaredOrder));
+            }
             default -> throw new IllegalStateException(field.type().toString());
           }
         });
@@ -537,6 +566,20 @@ final class GeneratedCodecPropertyTest {
   private static byte[] randomValue(final long seed) {
     final var random = new Random(seed);
     return encoded(w -> writeRandom(w, random, 2));
+  }
+
+  /** A document: a msgpack map of random content, which is what a DocumentProperty holds. */
+  private static byte[] randomDocument(final long seed) {
+    final var random = new Random(seed);
+    return encoded(
+        w -> {
+          final int size = random.nextInt(4);
+          w.writeMapHeader(size);
+          for (int i = 0; i < size; i++) {
+            w.writeString(new UnsafeBuffer(("d" + i).getBytes(StandardCharsets.UTF_8)));
+            writeRandom(w, random, 2);
+          }
+        });
   }
 
   private static void writeRandom(final MsgPackWriter w, final Random random, final int depth) {
@@ -620,9 +663,11 @@ final class GeneratedCodecPropertyTest {
   private static Object comparable(final Type type, final Object value) {
     return switch (type) {
       case LONG, INT, BOOLEAN, LONG_LIST -> value;
-      case STRING, BINARY, RAW -> ByteBuffer.wrap((byte[]) value);
+      case STRING, BINARY, RAW, DOCUMENT -> ByteBuffer.wrap((byte[]) value);
       case ENUM -> KIND_NAMES[(Integer) value];
       case STRING_LIST -> ((List<byte[]>) value).stream().map(ByteBuffer::wrap).toList();
+      case POJO_LIST, VALUE_LIST ->
+          ((List<NestedValue>) value).stream().map(item -> comparable(Type.NESTED, item)).toList();
       case NESTED -> {
         final var nested = (NestedValue) value;
         yield List.of(
@@ -639,7 +684,7 @@ final class GeneratedCodecPropertyTest {
     final var value = compiled.fields().get(field.name()).get(instance);
     return switch (field.type()) {
       case LONG, INT, BOOLEAN, LONG_LIST -> value;
-      case STRING, BINARY, RAW -> bytes((DirectBuffer) value);
+      case STRING, BINARY, RAW, DOCUMENT -> bytes((DirectBuffer) value);
       case ENUM -> value.toString();
       case STRING_LIST ->
           ((List<DirectBuffer>) value).stream().map(GeneratedCodecPropertyTest::bytes).toList();
@@ -647,6 +692,38 @@ final class GeneratedCodecPropertyTest {
           List.of(
               compiled.innerValue().get(value),
               bytes((DirectBuffer) compiled.innerText().get(value)));
+      case POJO_LIST ->
+          ((List<Object>) value)
+              .stream()
+                  .map(
+                      item -> {
+                        try {
+                          return (Object)
+                              List.of(
+                                  compiled.innerValue().get(item),
+                                  bytes((DirectBuffer) compiled.innerText().get(item)));
+                        } catch (final ReflectiveOperationException e) {
+                          throw new IllegalStateException(e);
+                        }
+                      })
+                  .toList();
+      case VALUE_LIST ->
+          ((List<Object>) value)
+              .stream()
+                  .map(
+                      item -> {
+                        try {
+                          return (Object)
+                              List.of(
+                                  compiled.legacy().getMethod("value").invoke(item),
+                                  bytes(
+                                      (DirectBuffer)
+                                          compiled.legacy().getMethod("text").invoke(item)));
+                        } catch (final ReflectiveOperationException e) {
+                          throw new IllegalStateException(e);
+                        }
+                      })
+                  .toList();
     };
   }
 
@@ -668,7 +745,8 @@ final class GeneratedCodecPropertyTest {
       final var value = values.get(field.index());
       switch (field.type()) {
         case LONG, INT, BOOLEAN -> target.set(instance, value);
-        case STRING, BINARY, RAW -> target.set(instance, new UnsafeBuffer((byte[]) value));
+        case STRING, BINARY, RAW, DOCUMENT ->
+            target.set(instance, new UnsafeBuffer((byte[]) value));
         case ENUM -> target.set(instance, compiled.kind().getEnumConstants()[(Integer) value]);
         case STRING_LIST -> {
           final var list = (List<DirectBuffer>) target.get(instance);
@@ -685,6 +763,23 @@ final class GeneratedCodecPropertyTest {
           final var inner = target.get(instance);
           compiled.innerValue().set(inner, nested.value());
           compiled.innerText().set(inner, new UnsafeBuffer(nested.text()));
+        }
+        case POJO_LIST, VALUE_LIST -> {
+          final var list = (List<Object>) target.get(instance);
+          list.clear();
+          for (final var item : (List<NestedValue>) value) {
+            final var bytes = encoded(w -> writeNested(w, item, null, true));
+            if (field.type() == Type.POJO_LIST) {
+              final var created =
+                  compiled.innerValue().getDeclaringClass().getConstructor().newInstance();
+              ((MsgpackBufferValue<?>) created).wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+              list.add(created);
+            } else {
+              final var created = compiled.legacy().getConstructor().newInstance();
+              ((UnpackedObject) created).wrap(new UnsafeBuffer(bytes));
+              list.add(created);
+            }
+          }
         }
         default -> throw new IllegalStateException(field.type().toString());
       }
@@ -729,6 +824,25 @@ final class GeneratedCodecPropertyTest {
                             @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                           }
                           """),
+                  new Source(
+                      "sample.Legacy",
+                      """
+                      package sample;
+                      import io.camunda.zeebe.msgpack.UnpackedObject;
+                      import io.camunda.zeebe.msgpack.property.IntegerProperty;
+                      import io.camunda.zeebe.msgpack.property.StringProperty;
+                      import org.agrona.DirectBuffer;
+                      public final class Legacy extends UnpackedObject {
+                        private final IntegerProperty value = new IntegerProperty("value", 3);
+                        private final StringProperty text = new StringProperty("text", "");
+                        public Legacy() {
+                          super(2);
+                          declareProperty(value).declareProperty(text);
+                        }
+                        public int value() { return value.getValue(); }
+                        public DirectBuffer text() { return text.getValue(); }
+                      }
+                      """),
                   new Source("sample.Sample", source));
           assertThat(result.errors()).as(source).isEmpty();
           try {
@@ -743,7 +857,8 @@ final class GeneratedCodecPropertyTest {
                 result.load("sample.Kind"),
                 fields,
                 accessible(inner, "value"),
-                accessible(inner, "text"));
+                accessible(inner, "text"),
+                result.load("sample.Legacy"));
           } catch (final ReflectiveOperationException e) {
             throw new IllegalStateException(e);
           }
@@ -766,9 +881,12 @@ final class GeneratedCodecPropertyTest {
     STRING,
     BINARY,
     RAW,
+    DOCUMENT,
     ENUM,
     STRING_LIST,
     LONG_LIST,
+    POJO_LIST,
+    VALUE_LIST,
     NESTED
   }
 
@@ -795,6 +913,9 @@ final class GeneratedCodecPropertyTest {
       if (type == Type.RAW) {
         attributes.add("raw = true");
       }
+      if (type == Type.DOCUMENT) {
+        attributes.add("document = true");
+      }
       final var annotation =
           attributes.isEmpty() ? "" : "@MsgpackProperty(" + String.join(", ", attributes) + ") ";
       return annotation
@@ -805,6 +926,8 @@ final class GeneratedCodecPropertyTest {
             case STRING, BINARY ->
                 "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {'d', 1});";
             case RAW -> "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {(byte) 0xc0});";
+            case DOCUMENT ->
+                "DirectBuffer " + name() + " = new UnsafeBuffer(new byte[] {(byte) 0x80});";
             case ENUM -> "Kind " + name() + " = Kind.TWO;";
             case STRING_LIST ->
                 "final List<DirectBuffer> "
@@ -818,6 +941,8 @@ final class GeneratedCodecPropertyTest {
                     + " = new ArrayList<>("
                     + (emptyLists ? "" : "List.of(9L)")
                     + ");";
+            case POJO_LIST -> "final List<Inner> " + name() + " = new ArrayList<>();";
+            case VALUE_LIST -> "final List<Legacy> " + name() + " = new ArrayList<>();";
             case NESTED -> "final Inner " + name() + " = new Inner();";
           };
     }
@@ -861,7 +986,8 @@ final class GeneratedCodecPropertyTest {
       Class<?> kind,
       Map<String, Field> fields,
       Field innerValue,
-      Field innerText) {
+      Field innerText,
+      Class<?> legacy) {
 
     Object newInstance() throws ReflectiveOperationException {
       return sample.getConstructor().newInstance();
@@ -884,9 +1010,11 @@ final class GeneratedCodecPropertyTest {
               case STRING -> new StringProperty(key, "d\u0001");
               case BINARY -> new BinaryProperty(key, new UnsafeBuffer(new byte[] {'d', 1}));
               case RAW -> new PackedProperty(key, new UnsafeBuffer(new byte[] {(byte) 0xc0}));
+              case DOCUMENT -> new DocumentProperty(key);
               case ENUM -> new EnumProperty<>(key, TwinKind.class, TwinKind.TWO);
               case STRING_LIST -> new ArrayProperty<>(key, StringValue::new);
               case LONG_LIST -> new ArrayProperty<>(key, LongValue::new);
+              case POJO_LIST, VALUE_LIST -> new ArrayProperty<>(key, TwinInner::new);
               case NESTED -> new ObjectProperty<>(key, new TwinInner());
             };
         properties.put(field.name(), property);
@@ -904,6 +1032,7 @@ final class GeneratedCodecPropertyTest {
         case STRING -> bytes(((StringProperty) property).getValue());
         case BINARY -> bytes(((BinaryProperty) property).getValue());
         case RAW -> bytes(((PackedProperty) property).getValue());
+        case DOCUMENT -> bytes(((DocumentProperty) property).getValue());
         case ENUM -> ((EnumProperty<?>) property).getValue().toString();
         case STRING_LIST -> {
           final var values = new ArrayList<ByteBuffer>();
@@ -918,6 +1047,12 @@ final class GeneratedCodecPropertyTest {
         case NESTED -> {
           final var inner = ((ObjectProperty<TwinInner>) property).getValue();
           yield List.of(inner.value.getValue(), bytes(inner.text.getValue()));
+        }
+        case POJO_LIST, VALUE_LIST -> {
+          final var values = new ArrayList<Object>();
+          ((ArrayProperty<TwinInner>) property)
+              .forEach(v -> values.add(List.of(v.value.getValue(), bytes(v.text.getValue()))));
+          yield values;
         }
       };
     }
