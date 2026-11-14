@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
 import io.camunda.identity.webapp.controllers.AdminClientConfigController;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
@@ -26,6 +27,7 @@ import io.camunda.security.api.model.config.SaasConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -128,7 +131,8 @@ public class AdminClientConfigControllerTest {
             multiTenancyEnabled,
             expectedOrganizationId,
             expectedClusterId);
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
 
     // Setup MockMvc with the controller for this specific test
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
@@ -195,7 +199,8 @@ public class AdminClientConfigControllerTest {
     final var providers = new OidcProvidersConfiguration();
     providers.setOidc(Map.of("entra", namedProvider));
     cslProperties.getAuthentication().setProviders(providers);
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -211,7 +216,8 @@ public class AdminClientConfigControllerTest {
     final var cslProperties =
         createCamundaSecurityLibraryProperties(
             AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -230,7 +236,8 @@ public class AdminClientConfigControllerTest {
     final var providers = new OidcProvidersConfiguration();
     providers.setOidc(Map.of("entra", new OidcConfiguration()));
     cslProperties.getAuthentication().setProviders(providers);
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -251,7 +258,8 @@ public class AdminClientConfigControllerTest {
     oidcProvidersWithNullEntry.put("entra", null);
     providers.setOidc(oidcProvidersWithNullEntry);
     cslProperties.getAuthentication().setProviders(providers);
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -270,7 +278,8 @@ public class AdminClientConfigControllerTest {
             AuthenticationMethod.OIDC, null, false, "test-org", "test-cluster");
     cslProperties.getAuthentication().getOidc().setClientId("primary-client-id");
     cslProperties.getAuthentication().getOidc().setIssuerUri("https://primary-idp.example.com");
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -292,7 +301,8 @@ public class AdminClientConfigControllerTest {
     final var providers = new OidcProvidersConfiguration();
     providers.setOidc(Map.of("entra", namedProvider));
     cslProperties.getAuthentication().setProviders(providers);
-    final var controller = new AdminClientConfigController(cslProperties, null);
+    final var controller =
+        new AdminClientConfigController(cslProperties, null, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -300,6 +310,80 @@ public class AdminClientConfigControllerTest {
 
     // then
     assertThat(config).containsEntry("isAdditionalIdpConfigured", "false");
+  }
+
+  @Test
+  void shouldReturnTheGroupsModeOfTheRequestTenant() throws Exception {
+    // given — the cluster has no groups claim, and tenanta sets one
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(AuthenticationMethod.OIDC, null, false, null, null);
+    final var environment =
+        new MockEnvironment()
+            .withProperty("camunda.security.authentication.method", "oidc")
+            .withProperty(
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim",
+                "groups");
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(
+                new AdminClientConfigController(cslProperties, null, null, environment))
+            .build();
+
+    // when
+    final var clusterConfig = extractConfigFromResponse(performGetConfig());
+    final var tenantConfig =
+        extractConfigFromResponse(
+            mockMvc
+                .perform(
+                    get("/admin/config.js")
+                        .requestAttr(
+                            PhysicalTenantContext.REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID, "tenanta"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString());
+
+    // then
+    assertThat(clusterConfig).containsEntry("isCamundaGroupsEnabled", "true");
+    assertThat(tenantConfig).containsEntry("isCamundaGroupsEnabled", "false");
+  }
+
+  @Test
+  void shouldReturnTheIdPatternOfTheRequestTenant() throws Exception {
+    // given — tenanta overrides the cluster's ID pattern
+    final var cslProperties =
+        createCamundaSecurityLibraryProperties(AuthenticationMethod.BASIC, null, false, null, null);
+    cslProperties.setIdValidationPattern("^[a-z]+$");
+    final var tenantaProperties =
+        createCamundaSecurityLibraryProperties(AuthenticationMethod.BASIC, null, false, null, null);
+    tenantaProperties.setIdValidationPattern("^[0-9]+$");
+    final var tenantSecurityProperties =
+        new PhysicalTenantSecurityProperties(
+            Map.of("default", cslProperties, "tenanta", tenantaProperties));
+    mockMvc =
+        MockMvcBuilders.standaloneSetup(
+                new AdminClientConfigController(
+                    cslProperties, null, tenantSecurityProperties, new MockEnvironment()))
+            .build();
+
+    // when
+    final var clusterConfig = extractConfigFromResponse(performGetConfig());
+    final var tenantaConfig = extractConfigFromResponse(performGetConfig("tenanta"));
+    final var unknownTenantConfig = extractConfigFromResponse(performGetConfig("unknown"));
+
+    // then
+    assertThat(clusterConfig).containsEntry("idPattern", "^[a-z]+$");
+    assertThat(tenantaConfig).containsEntry("idPattern", "^[0-9]+$");
+    assertThat(unknownTenantConfig).containsEntry("idPattern", "^[a-z]+$");
+  }
+
+  private String performGetConfig(final String physicalTenantId) throws Exception {
+    return mockMvc
+        .perform(
+            get("/admin/config.js")
+                .requestAttr(
+                    PhysicalTenantContext.REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID, physicalTenantId))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
   }
 
   private String performGetConfig() throws Exception {
@@ -348,7 +432,9 @@ public class AdminClientConfigControllerTest {
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
                 AuthenticationMethod.BASIC, null, false, null, null),
-            null);
+            null,
+            null,
+            new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -369,7 +455,9 @@ public class AdminClientConfigControllerTest {
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
                 AuthenticationMethod.BASIC, null, false, null, null),
-            null);
+            null,
+            null,
+            new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -389,7 +477,9 @@ public class AdminClientConfigControllerTest {
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
                 AuthenticationMethod.BASIC, null, false, null, null),
-            null);
+            null,
+            null,
+            new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -413,7 +503,9 @@ public class AdminClientConfigControllerTest {
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
                 AuthenticationMethod.BASIC, null, false, null, null),
-            null);
+            null,
+            null,
+            new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -440,7 +532,9 @@ public class AdminClientConfigControllerTest {
         new AdminClientConfigController(
             createCamundaSecurityLibraryProperties(
                 AuthenticationMethod.BASIC, null, false, null, null),
-            null);
+            null,
+            null,
+            new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     // when
@@ -473,7 +567,9 @@ public class AdminClientConfigControllerTest {
       final CamundaSecurityLibraryProperties cslProperties,
       final WebappConfiguration webappConfiguration)
       throws Exception {
-    final var controller = new AdminClientConfigController(cslProperties, webappConfiguration);
+    final var controller =
+        new AdminClientConfigController(
+            cslProperties, webappConfiguration, null, new MockEnvironment());
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     final String response =
         mockMvc.perform(get("/admin/config.js")).andReturn().getResponse().getContentAsString();
