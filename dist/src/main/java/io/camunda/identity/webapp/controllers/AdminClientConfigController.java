@@ -12,17 +12,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.DefaultRole;
 import io.camunda.security.api.model.config.AuthenticationMethod;
-import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.MappingRuleMembershipPolicy;
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Controller;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -43,31 +44,33 @@ public class AdminClientConfigController {
   private static final String FALLBACK_CONFIG_JS = "window.clientConfig = {};";
   private static final String CONFIG_JS_TEMPLATE = "window.clientConfig = %s;";
 
-  private final String clientConfigAsJS;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
+  // Only the additional IdP is resolved per physical tenant, so the script is built once with each
+  // value.
+  private final String clientConfigWithAdditionalIdp;
+  private final String clientConfigWithoutAdditionalIdp;
   private final ObjectMapper objectMapper;
 
   public AdminClientConfigController(
       final CamundaSecurityLibraryProperties cslProperties,
-      @Autowired(required = false) final WebappConfiguration webappConfiguration) {
+      @Autowired(required = false) final WebappConfiguration webappConfiguration,
+      final Environment environment) {
+    mappingRuleMembershipPolicy = MappingRuleMembershipPolicy.of(cslProperties, environment);
     final var resolvedWebappConfiguration =
         webappConfiguration != null ? webappConfiguration : new WebappConfiguration();
     final boolean isNewDesignSystemEnabled =
         resolvedWebappConfiguration.resolveNewDesignSystemEnabled();
-    final var namedProviders = namedProviders(cslProperties);
-    final boolean isAdditionalIdpConfigured = isAdditionalIdpConfigured(namedProviders);
 
     LOG.info(
         "Admin new design system resolved to {} (explicit override={})",
         isNewDesignSystemEnabled,
         resolvedWebappConfiguration.getNewDesignSystemEnabled());
-    LOG.info(
-        "Admin additional IdP resolved to {} (namedProviders={})",
-        isAdditionalIdpConfigured,
-        namedProviders.keySet());
 
     objectMapper = new ObjectMapper();
-    clientConfigAsJS =
-        generateClientConfig(cslProperties, isNewDesignSystemEnabled, isAdditionalIdpConfigured);
+    clientConfigWithAdditionalIdp =
+        generateClientConfig(cslProperties, isNewDesignSystemEnabled, true);
+    clientConfigWithoutAdditionalIdp =
+        generateClientConfig(cslProperties, isNewDesignSystemEnabled, false);
   }
 
   private String generateClientConfig(
@@ -111,21 +114,6 @@ public class AdminClientConfigController {
     return AuthenticationMethod.OIDC.equals(cslProperties.getAuthentication().getMethod());
   }
 
-  private static Map<String, OidcConfiguration> namedProviders(
-      final CamundaSecurityLibraryProperties cslProperties) {
-    final var providers = cslProperties.getAuthentication().getProviders();
-    final var namedProviders = providers != null ? providers.getOidc() : null;
-    return namedProviders != null ? namedProviders : Map.of();
-  }
-
-  // Only the named providers.oidc.* slot counts (the BYOIDP additional-IdP surface); the flat
-  // authentication.oidc block is the primary IdP and is intentionally excluded.
-  private boolean isAdditionalIdpConfigured(final Map<String, OidcConfiguration> namedProviders) {
-    return namedProviders.values().stream()
-        .filter(Objects::nonNull)
-        .anyMatch(oidc -> StringUtils.hasText(oidc.getClientId()));
-  }
-
   private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
     final var authentication = cslProperties.getAuthentication();
     final var oidcConfig = authentication.getOidc();
@@ -137,7 +125,10 @@ public class AdminClientConfigController {
   @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")
   @ResponseBody
   @Hidden
-  public String getClientConfig() {
-    return clientConfigAsJS;
+  public String getClientConfig(final HttpServletRequest request) {
+    return mappingRuleMembershipPolicy.isAdditionalIdpConfigured(
+            PhysicalTenantContext.getPhysicalTenantId(request))
+        ? clientConfigWithAdditionalIdp
+        : clientConfigWithoutAdditionalIdp;
   }
 }
