@@ -161,7 +161,12 @@ public final class ClockAddProcessor implements TypedRecordProcessor<ClockRecord
     commandDistributionBehavior
         .withKey(eventKey)
         .inQueue(DistributionQueue.CLOCK)
-        .distribute(ValueType.CLOCK, distributedIntent, modifiedRecord, command.getAuthInfo());
+        .distribute(
+            ValueType.CLOCK,
+            distributedIntent,
+            modifiedRecord,
+            command.getAuthInfo(),
+            command.getOperationReference());
   }
 
   private void reject(final TypedRecord<ClockRecord> command, final String reason) {
