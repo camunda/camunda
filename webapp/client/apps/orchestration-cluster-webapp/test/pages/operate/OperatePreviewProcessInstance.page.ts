@@ -47,6 +47,22 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
+	get historyPanel() {
+		return this.page.getByRole('region', {name: 'Instance History'});
+	}
+
+	get historyTree() {
+		return this.historyPanel.getByRole('tree', {name: 'Instance History'});
+	}
+
+	historyItem(name: string | RegExp) {
+		return this.historyTree.getByRole('treeitem', {name});
+	}
+
+	searchResultItem(name: string | RegExp) {
+		return this.historyPanel.getByRole('tree', {name: 'Search results'}).getByRole('treeitem', {name});
+	}
+
 	get variablesList() {
 		return this.page.getByRole('table', {name: 'Variable List'});
 	}
@@ -63,8 +79,12 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.incidentsList.getByRole('table');
 	}
 
+	get tabsList() {
+		return this.page.getByRole('tablist', {name: 'Process instance tabs'});
+	}
+
 	get incidentsTab() {
-		return this.page.getByRole('tab', {name: 'Incidents'});
+		return this.tabsList.getByRole('tab', {name: 'Incidents'});
 	}
 
 	get listenersList() {
@@ -80,11 +100,11 @@ class OperatePreviewProcessInstancePage extends BasePage {
 	}
 
 	tab(name: string) {
-		return this.page.getByRole('tab', {name});
+		return this.tabsList.getByRole('tab', {name});
 	}
 
 	get variablesTab() {
-		return this.page.getByRole('tab', {name: 'Variables'});
+		return this.tabsList.getByRole('tab', {name: 'Variables'});
 	}
 }
 

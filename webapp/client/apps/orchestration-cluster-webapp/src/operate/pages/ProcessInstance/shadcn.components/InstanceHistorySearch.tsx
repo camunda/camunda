@@ -1,0 +1,109 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useCallback, useEffect, useState} from 'react';
+import {useNavigate} from '@tanstack/react-router';
+import {useTranslation} from 'react-i18next';
+import {Button, SearchInput, Tabs, TabsContent, TabsList, TabsTrigger} from '@camunda/design-system';
+import {ArrowDown, ArrowUp} from '@camunda/design-system/icons';
+import {useInstanceHistory} from '../useInstanceHistory';
+import {useProcessInstancePage} from '../useProcessInstancePage';
+import type {ElementStatusFilter} from '../processInstanceSearch';
+
+const SEARCH_DEBOUNCE_MS = 750;
+const STATUS_FILTERS = [
+	{value: 'all', labelKey: 'operate.processInstance.history.search.status.all'},
+	{value: 'active', labelKey: 'operate.processInstance.history.search.status.active'},
+	{value: 'incidents', labelKey: 'operate.processInstance.history.search.status.incidents'},
+] as const;
+
+const InstanceHistorySearch: React.FC = () => {
+	const {t} = useTranslation();
+	const navigate = useNavigate();
+	const history = useInstanceHistory();
+	const {search} = useProcessInstancePage();
+	const applied = search.elementSearch ?? '';
+
+	const updateSearch = useCallback(
+		(update: {elementSearch?: string; elementStatus?: ElementStatusFilter}) =>
+			void navigate({to: '.', search: (current) => ({...current, ...update}), replace: true}),
+		[navigate],
+	);
+
+	const [draft, setDraft] = useState(applied);
+	const [lastApplied, setLastApplied] = useState(applied);
+	if (lastApplied !== applied) {
+		setLastApplied(applied);
+		if (draft.trim() === lastApplied) {
+			setDraft(applied);
+		}
+	}
+
+	useEffect(() => {
+		const next = draft.trim();
+		if (next === applied) {
+			return;
+		}
+		const timeoutId = setTimeout(() => updateSearch({elementSearch: next || undefined}), SEARCH_DEBOUNCE_MS);
+		return () => clearTimeout(timeoutId);
+	}, [draft, applied, updateSearch]);
+
+	const status = search.elementStatus ?? 'all';
+	const isLatestFirst = history.sortOrder === 'DESC';
+	const SortIcon = isLatestFirst ? ArrowDown : ArrowUp;
+	const sortLabelKey = isLatestFirst
+		? 'operate.processInstance.history.search.latestFirst'
+		: 'operate.processInstance.history.search.oldestFirst';
+
+	return (
+		<div className="flex flex-col gap-2 border-b border-border p-2">
+			<div className="flex items-center gap-2">
+				<div className="min-w-0 flex-1">
+					<SearchInput
+						size="sm"
+						aria-label={t('operate.processInstance.history.search.label')}
+						placeholder={t('operate.processInstance.history.search.placeholder')}
+						value={draft}
+						onChange={(event) => setDraft(event.target.value)}
+						onBlur={() => setDraft(draft.trim())}
+						onClear={() => {
+							setDraft('');
+							updateSearch({elementSearch: undefined});
+						}}
+					/>
+				</div>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="shrink-0"
+					onClick={() => history.changeSortOrder(isLatestFirst ? 'ASC' : 'DESC')}
+				>
+					<SortIcon aria-hidden="true" />
+					{t(sortLabelKey)}
+				</Button>
+			</div>
+			<Tabs
+				value={status}
+				onValueChange={(value) =>
+					updateSearch({elementStatus: value === 'all' ? undefined : (value as ElementStatusFilter)})
+				}
+			>
+				<TabsList aria-label={t('operate.processInstance.history.search.statusFilter')}>
+					{STATUS_FILTERS.map(({value, labelKey}) => (
+						<TabsTrigger key={value} value={value}>
+							{t(labelKey)}
+						</TabsTrigger>
+					))}
+				</TabsList>
+				<TabsContent value={status} className="hidden" />
+			</Tabs>
+		</div>
+	);
+};
+
+export {InstanceHistorySearch};

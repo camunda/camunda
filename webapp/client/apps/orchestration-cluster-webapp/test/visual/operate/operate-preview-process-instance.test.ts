@@ -13,6 +13,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryAuditLogsEndpoint,
+	mockQueryElementInstancesEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
 	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
@@ -22,17 +23,40 @@ import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls'
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
-import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {processInstanceDiagramHandlers} from '#/shared-test-modules/process-instance-diagram-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
+const HISTORY_ITEMS = [
+	createElementInstance({
+		elementId: 'start',
+		elementInstanceKey: '2251799813685281',
+		elementName: 'Start',
+		type: 'START_EVENT',
+		state: 'COMPLETED',
+	}),
+	createElementInstance({
+		elementId: 'task-1',
+		elementInstanceKey: '2251799813685290',
+		elementName: 'Task 1',
+		type: 'SERVICE_TASK',
+		state: 'ACTIVE',
+	}),
+];
+
 test.beforeEach(({network}) => {
 	network.use(
+		mockQueryElementInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryElementInstancesResponse(HISTORY_ITEMS)),
+		}),
 		...processInstanceDiagramHandlers(),
 		...processInstanceHeaderHandlers(createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})),
 	);
@@ -210,6 +234,38 @@ test('should match the process instance input mappings tab snapshot', async ({
 
 	await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
 	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test(
+	'should match the instance history panel snapshot',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
+	},
+);
+
+test(
+	'should match the filtered instance history panel snapshot',
+	{tag: '@desktop'},
+	async ({operatePreviewProcessInstancePage, page}) => {
+		await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables?elementSearch=Task`);
+
+		await expect(operatePreviewProcessInstancePage.searchResultItem('Task 1')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.historyPanel).toHaveScreenshot();
+	},
+);
+
+test('should match the mobile instance history tab snapshot', async ({page}) => {
+	await page.setViewportSize({width: 800, height: 900});
+	await page.goto(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/history`);
+
+	await expect(
+		page.getByRole('tree', {name: 'Instance History'}).getByRole('treeitem', {name: 'Task 1'}),
+	).toBeVisible();
+	await expect(page.getByRole('main')).toHaveScreenshot();
 });
 
 test('should match the process instance output mappings tab snapshot', async ({

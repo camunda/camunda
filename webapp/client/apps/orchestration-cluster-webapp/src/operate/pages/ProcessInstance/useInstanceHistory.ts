@@ -242,7 +242,7 @@ function useHistoryController(instance: ProcessInstance) {
 	async function page(key: string, direction: 'next' | 'previous') {
 		const window = windows.get(key);
 		if (!window?.query.data || pending.current.has(key) || window.query.isFetching || forbidden) {
-			return 0;
+			return -1;
 		}
 		const {
 			scope,
@@ -252,7 +252,7 @@ function useHistoryController(instance: ProcessInstance) {
 			? data.items.length === 100
 			: scope.from + 100 < data.page.totalItems;
 		if (direction === 'next' ? !hasNextPage : scope.from === 0) {
-			return 0;
+			return -1;
 		}
 		const next = {
 			...scope,
