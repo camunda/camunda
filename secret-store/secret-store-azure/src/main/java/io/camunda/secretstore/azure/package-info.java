@@ -19,8 +19,11 @@
  * configuration. {@code authorityHost} selects the Microsoft Entra authority for sovereign clouds.
  * {@code maxRetries}, {@code callTimeout} and {@code attemptTimeout} bound each call to the vault.
  *
- * <p>Signing in and reading the vault are not implemented yet (camunda/camunda#67225,
- * camunda/camunda#67226): until then every name is reported as not found and no names are listed.
+ * <p>Developer logins (Azure CLI, IDEs, PowerShell, Azure Developer CLI) are never used, see {@link
+ * io.camunda.secretstore.azure.AzureCredentialChain}.
+ *
+ * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then every name is
+ * reported as not found and no names are listed.
  *
  * <p>See {@link io.camunda.secretstore.azure.AzureKeyVaultStoreConfig} for every setting and its
  * default.
