@@ -78,4 +78,21 @@ describe('<ProcessInstance activeTab="variables" header={HEADER} /> (DS scaffold
 
 		expect(onTabChange).toHaveBeenCalledWith('details');
 	});
+
+	it('should show the incidents count in the incidents tab only when there are incidents', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '800px'}} className="flex flex-col">
+					<ProcessInstance activeTab="variables" incidentsCount={3} header={HEADER} />
+				</div>
+			),
+			{
+				path: '/operate-preview/processes/$processInstanceId',
+				initialEntry: '/operate-preview/processes/2251799813685249',
+			},
+		);
+
+		await expect.element(screen.getByRole('tab', {name: 'Incidents 3'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: /^Variables \d/})).not.toBeInTheDocument();
+	});
 });

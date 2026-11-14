@@ -8,18 +8,16 @@
 
 import {useEffect} from 'react';
 import {Link, useMatchRoute, useNavigate} from '@tanstack/react-router';
-import {useQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Tag} from '@carbon/react';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
 import {
 	isProcessInstanceWaitStateStatisticsEnabled,
-	selectionIncidentsCountQuery,
 	useProcessInstanceWaitStateStatistics,
 } from './processInstance.queries';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstancePage} from './useProcessInstancePage';
+import {useSelectionIncidentsCount} from './useSelectionIncidentsCount';
 import {TabNav} from './processInstanceTabs.styled';
 
 const TAB_PATHS = {
@@ -34,22 +32,6 @@ const TAB_PATHS = {
 } as const;
 
 type TabKey = keyof typeof TAB_PATHS;
-
-function useSelectionIncidentsCount(processInstance: ProcessInstance) {
-	const {resolvedElementInstance, isFetchingElement, selectedElementId} = useProcessInstanceElementSelection();
-	const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
-	const isElementInstanceSelected =
-		elementInstanceKey !== undefined && elementInstanceKey !== processInstance.processInstanceKey;
-	const {data} = useQuery({
-		...selectionIncidentsCountQuery({
-			processInstanceKey: processInstance.processInstanceKey,
-			...(isElementInstanceSelected ? {elementInstanceKey} : {elementId: selectedElementId ?? undefined}),
-		}),
-		enabled: processInstance.hasIncident && (isElementInstanceSelected || !isFetchingElement),
-	});
-
-	return data;
-}
 
 const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistoryTabVisible}) => {
 	const {t} = useTranslation();

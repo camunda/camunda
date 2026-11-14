@@ -55,6 +55,14 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.variablesList.getByRole('row', {name: variableRowName(name)});
 	}
 
+	get incidentsList() {
+		return this.page.getByRole('region', {name: 'Incidents list'});
+	}
+
+	get incidentsTable() {
+		return this.incidentsList.getByRole('table');
+	}
+
 	get incidentsTab() {
 		return this.page.getByRole('tab', {name: 'Incidents'});
 	}

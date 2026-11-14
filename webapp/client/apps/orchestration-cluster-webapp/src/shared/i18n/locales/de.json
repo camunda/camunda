@@ -2051,6 +2051,8 @@
 					"imageAlt": "Detailseite der Prozessinstanz mit Incidents-Tab und Diagramm"
 				},
 				"incidents": {
+					"title": "Incidents",
+					"list": "Incident-Liste",
 					"filterByType": "Nach Incident-Typ filtern",
 					"resetFilters": "Filter zurücksetzen",
 					"errorMessage": "Fehlermeldung",
@@ -2060,6 +2062,8 @@
 					"operations": "Operationen",
 					"retryIncident": "Incident wiederholen",
 					"expandRow": "Zeile erweitern",
+					"collapseRow": "Zeile reduzieren",
+					"selectedRow": "Ausgewählt",
 					"jobId": "Job-ID",
 					"more": "Mehr",
 					"errorModalTitle": "Fehler im Element \"{{name}}\"",
@@ -2557,7 +2561,9 @@
 					"active_other": "{{count}} aktive Instanzen"
 				},
 				"sortableTable": {
-					"sortBy": "Sortieren nach {{label}}"
+					"sortBy": "Sortieren nach {{label}}",
+					"loadingPreviousPage": "Vorherige Einträge werden geladen",
+					"loadingNextPage": "Nächste Einträge werden geladen"
 				}
 			}
 		}
