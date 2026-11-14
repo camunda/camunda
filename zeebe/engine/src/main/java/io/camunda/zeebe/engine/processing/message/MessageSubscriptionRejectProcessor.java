@@ -150,10 +150,14 @@ public final class MessageSubscriptionRejectProcessor
               .setVariables(messageSubscription.getVariablesBuffer())
               .setTenantId(messageSubscription.getTenantId())
               .setMessageKey(messageKey)
-              .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+              .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED)
+              .setOperationReference(requestData.getOperationReference());
 
       stateWriter.appendFollowUpEvent(
-          messageKey, MessageCorrelationIntent.NOT_CORRELATED, messageCorrelationRecord);
+          messageKey,
+          MessageCorrelationIntent.NOT_CORRELATED,
+          messageCorrelationRecord,
+          m -> m.operationReference(requestData.getOperationReference()));
       responseWriter.writeRejectedResponseOnCommand(
           record,
           RejectionType.NOT_FOUND,

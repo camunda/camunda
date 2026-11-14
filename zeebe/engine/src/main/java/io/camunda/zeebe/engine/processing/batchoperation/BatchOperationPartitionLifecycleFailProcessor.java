@@ -103,7 +103,8 @@ public final class BatchOperationPartitionLifecycleFailProcessor
               ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
               BatchOperationIntent.FAIL_PARTITION,
               batchInternalFail,
-              command.getAuthInfo());
+              command.getAuthInfo(),
+              command.getOperationReference());
     }
   }
 }
