@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.apache.logging.log4j.message.Message;
@@ -42,22 +43,35 @@ final class CamundaClientImplPlaintextWarningTest {
   private static final URI GRPC_ADDRESS = URI.create("http://localhost:26500");
 
   private ListAppender logCapture;
+  private LoggerConfig capturingLoggerConfig;
+  private boolean addedLoggerConfig;
 
   @BeforeEach
   void setUp() {
     logCapture = new ListAppender("capture-plaintext-warning");
     logCapture.start();
     final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-    final LoggerConfig loggerConfig = new LoggerConfig(LOGGER_NAME, Level.ALL, true);
-    loggerConfig.addAppender(logCapture, null, null);
-    ctx.getConfiguration().addLogger(LOGGER_NAME, loggerConfig);
+    final Configuration configuration = ctx.getConfiguration();
+    // the test configuration may already define this logger; addLogger would then keep the
+    // existing config and ignore ours, so attach the appender to the existing one instead
+    capturingLoggerConfig = configuration.getLoggers().get(LOGGER_NAME);
+    addedLoggerConfig = capturingLoggerConfig == null;
+    if (addedLoggerConfig) {
+      capturingLoggerConfig = new LoggerConfig(LOGGER_NAME, Level.ALL, true);
+      configuration.addLogger(LOGGER_NAME, capturingLoggerConfig);
+    }
+    capturingLoggerConfig.addAppender(logCapture, null, null);
     ctx.updateLoggers();
   }
 
   @AfterEach
   void tearDown() {
     final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-    ctx.getConfiguration().removeLogger(LOGGER_NAME);
+    // remove only what this test added, so the shared logging configuration stays intact
+    capturingLoggerConfig.removeAppender(logCapture.getName());
+    if (addedLoggerConfig) {
+      ctx.getConfiguration().removeLogger(LOGGER_NAME);
+    }
     ctx.updateLoggers();
     logCapture.stop();
   }
@@ -67,6 +81,7 @@ final class CamundaClientImplPlaintextWarningTest {
     // when
     try (final CamundaClient ignored =
         CamundaClient.newClientBuilder()
+            .applyEnvironmentVariableOverrides(false)
             .grpcAddress(GRPC_ADDRESS)
             .restAddress(URI.create("http://user:secret@camunda.example.com:8080"))
             .build()) {
@@ -84,6 +99,7 @@ final class CamundaClientImplPlaintextWarningTest {
     // when
     try (final CamundaClient ignored =
         CamundaClient.newClientBuilder()
+            .applyEnvironmentVariableOverrides(false)
             .grpcAddress(GRPC_ADDRESS)
             .restAddress(URI.create("https://camunda.example.com:8443"))
             .build()) {
