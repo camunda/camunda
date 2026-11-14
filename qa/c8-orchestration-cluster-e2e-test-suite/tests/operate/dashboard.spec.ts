@@ -80,7 +80,7 @@ test.beforeAll(async ({request}) => {
   const allInstances = instancesList.flatMap((instances) => instances);
   instanceIds = allInstances.map((instance) => instance.processInstanceKey);
 
-  // Wait for instances to be created (50 total: 4+8+10+5+10+10+1+1+1 = 50)
+  // 4+8+10+5+10+10+1+1+1 = 50
   await waitForProcessInstances(request, instanceIds, 50);
 });
 
@@ -97,12 +97,6 @@ test.afterEach(async ({page}, testInfo) => {
 test.describe('Dashboard', () => {
   test('Statistics', async ({operateDashboardPage}) => {
     await test.step('Verify total count equals sum of active and incident instances', async () => {
-      // The three badges (active, incident, total) update on independent
-      // polling intervals while other tests in this suite keep creating
-      // process instances, so reading the parts and then asserting the
-      // sum can fail when the system snapshot shifts between reads.
-      // Re-read all three values atomically on each poll iteration and
-      // verify the invariant holds for a consistent snapshot.
       await expect
         .poll(async () => {
           const incident = Number(
@@ -292,15 +286,6 @@ test.describe('Dashboard', () => {
     operateDashboardPage,
   }) => {
     await test.step('Expand first error and navigate to verify incident count', async () => {
-      // Target the error row created by this beforeAll execution's runTag
-      // rather than the global first row. The first row on the shared nightly
-      // cluster is the largest error group, whose population is constantly
-      // mutated by parallel specs, so the badge count read here and the
-      // filtered Process Instances heading on the destination page disagree
-      // (observed 1519 on the badge vs a different count on the page) and
-      // never converge within the retry budget. The runTag-scoped row is a
-      // stable population owned solely by this spec, matching the isolation
-      // the sibling 'Select process instances by error message' test uses.
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDashboardPage.incidentsByError).toBeVisible();

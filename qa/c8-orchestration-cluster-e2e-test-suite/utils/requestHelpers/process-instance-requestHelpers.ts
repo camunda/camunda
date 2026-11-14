@@ -474,7 +474,6 @@ export async function expectProcessState(
 export async function clearAllProcessInstances(
   request: APIRequestContext,
 ): Promise<void> {
-  // Cancel all active instances first.
   if ((await countProcessInstances(request, 'ACTIVE')) > 0) {
     await runBatchAndWaitForCompletion(
       request,

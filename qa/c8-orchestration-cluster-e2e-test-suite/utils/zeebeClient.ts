@@ -107,12 +107,9 @@ const createSingleInstance = async (
   });
 };
 
-// Defaults to swallowing 404 -- the existing behaviour every other caller in
-// this suite already relies on for teardown. Pass ignoreNotFound: false when
-// the cancellation itself drives the assertion (e.g. finalizing a drain), so a
-// 404 there surfaces instead of letting the next assertion pass vacuously.
-// Teardown can also tolerate an already-pending cancellation, but other
-// INVALID_STATE conflicts must still surface.
+// Ignores 404 by default, for teardown. Pass ignoreNotFound: false when the
+// cancellation is what the test asserts. Teardown also tolerates a pending
+// cancellation; other INVALID_STATE errors still surface.
 const cancelProcessInstance = async (
   processInstanceKey: string,
   {

@@ -37,11 +37,6 @@ test.describe.parallel('Signal Broadcast API', () => {
     state.processInstanceKey = instances[0].processInstanceKey;
   });
 
-  test.afterAll(async () => {
-    // Currently no dedicated cleanup is required. Deployments
-    // are typically reused across tests in this suite.
-  });
-
   test('Broadcast Signal Success WithRequiredFieldsOnly', async ({request}) => {
     const body = {
       signalName: 'Signal_220k2ur',

@@ -174,7 +174,6 @@ export class OperateDiagramPage {
 
     await this.monacoAriaContainer.waitFor({state: 'visible'});
 
-    // Scroll to the bottom of the editor
     await this.monacoScrollableElement.evaluate((el) => {
       el.scrollTop = el.scrollHeight;
     });

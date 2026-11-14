@@ -152,12 +152,7 @@ export class OperateProcessInstanceViewModificationModePage {
       name: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .locator(`[id="newVariables[${index}].name"]`),
-      // Operate's inline variable editor migrated from Monaco to CodeMirror
-      // (#62782): a new variable's value no longer renders a separate
-      // read-only display, and reading the `new-variable-value` group's text
-      // now picks up the visually hidden "Value" label. Target the CodeMirror
-      // content textbox instead -- it holds just the value and is focused by
-      // clicking it, exactly as the old read-only display was.
+      // Read the CodeMirror textbox: the group's text includes the hidden "Value" label.
       readModeValue: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByTestId('new-variable-value')
@@ -512,11 +507,7 @@ export class OperateProcessInstanceViewModificationModePage {
   };
 
   getEditVariableFieldSelector(variableName: string) {
-    // After the inline editor migrated to CodeMirror (#62782), reading the
-    // `edit-variable-value` group's text returns accessibility noise (e.g. the
-    // "Selection deleted" live-region announcement) alongside the value.
-    // Target the CodeMirror content textbox instead; clicking it focuses the
-    // editor just as clicking the group did.
+    // Read the CodeMirror textbox: the group's text includes hidden a11y announcements.
     return this.page
       .getByTestId(`variable-${variableName}`)
       .getByTestId('edit-variable-value')
@@ -645,8 +636,6 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeEnabled();
     await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
@@ -664,8 +653,6 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeEnabled();
     await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
     await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
     await this.clearMonacoEditor();
@@ -758,8 +745,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectEditorToBeLoaded() {
-    // The inline value editor is CodeMirror (#62782); it exposes the
-    // `code-mirror-editor` testid rather than Monaco's `role="code"`.
+    // CodeMirror (#62782) has no role="code", so target its testid.
     await expect(
       this.page.getByTestId('code-mirror-editor').first(),
     ).toBeVisible();

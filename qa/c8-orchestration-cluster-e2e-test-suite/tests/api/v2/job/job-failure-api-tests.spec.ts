@@ -44,7 +44,6 @@ test.describe('Job Fail API Tests', () => {
   test('Fail Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(request, taskType);
 
-    // Now fail the job
     await expect(async () => {
       const failRes = await request.post(
         buildUrl('/jobs/{jobKey}/failure', {jobKey}),

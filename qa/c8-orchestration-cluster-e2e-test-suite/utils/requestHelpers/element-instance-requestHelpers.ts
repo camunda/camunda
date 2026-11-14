@@ -32,7 +32,6 @@ export function createFilter(
 ): {key: string; value: unknown} {
   if (filterValue === '') {
     if (filterKey === 'processDefinitionKey')
-      // Use value from state
       return {key: filterKey, value: state.processDefinitionKey};
     else if (filterKey === 'processInstanceKey')
       return {key: filterKey, value: state.processInstanceKey};

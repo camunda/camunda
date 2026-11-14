@@ -24,12 +24,6 @@ export class LoginPage {
     this.usernameInput = page.getByRole('textbox', {name: 'Username'});
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
-    // Carbon's InlineNotification (Operate, Tasklist) and the new design
-    // system's Alert (admin) both expose `role="alert"`, so match on the role
-    // and the message rather than on either framework's markup. The text
-    // filter also matters: the Operate login page renders an empty alert
-    // region before any error, so the role alone can resolve to more than one
-    // element.
     this.invalidCredentialsError = page
       .getByRole('alert')
       .getByText(/Username and [Pp]assword do(?: not|n't) match/);
@@ -55,12 +49,6 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    // The orchestration-cluster session cookie is shared across Operate,
-    // Tasklist and Identity, so navigating to a "/<app>/login" URL while a
-    // valid session already exists redirects to the app home and renders no
-    // login form. Treat login() as idempotent in exactly that case.
-    // First-login and invalid-credentials tests always render the form (they
-    // start from a fresh, unauthenticated context), so they are unaffected.
     try {
       await waitForAssertion({
         assertion: async () => {
@@ -72,11 +60,6 @@ export class LoginPage {
         maxRetries: 2,
       });
     } catch (error) {
-      // A missing form only means "already signed in" if the app has actually
-      // navigated off the login route. Still being on /login means the form
-      // genuinely failed to render — a slow shell, an app that is not up, a
-      // wrong URL — and swallowing that would resurface as a confusing failure
-      // somewhere later in the test, so let the original error through.
       if (new URL(this.page.url()).pathname.endsWith('/login')) {
         throw error;
       }

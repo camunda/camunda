@@ -66,11 +66,7 @@ export class IdentityGroupsPage {
 
     this.editGroupButton = (rowName) =>
       this.groupsList.getByRole('row', {name: rowName}).getByLabel('Edit');
-    // The design-system list renders the destructive row action as a button
-    // labelled by its visible text, not by `aria-label` (`entityListV2` sets
-    // `iconOnly: !!Icon && !isDangerous`), so match it by role and accessible
-    // name. Edit stays on `getByLabel` because it is icon-only and keeps its
-    // `aria-label`.
+    // Delete is labelled by its visible text; only Edit is icon-only with an aria-label.
     this.deleteGroupButton = (rowName) =>
       this.groupsList
         .getByRole('row', {name: rowName})
@@ -151,9 +147,7 @@ export class IdentityGroupsPage {
     this.searchBox = this.assignUserModal.getByRole('combobox', {
       name: 'Search by name, email, or username',
     });
-    // The results render in a Radix popover that portals as a *sibling* of the
-    // dialog (DS #496), so the listbox is not a descendant of the modal --
-    // scope it to the page.
+    // Results portal outside the dialog (DS #496), so scope them to the page.
     this.searchBoxResult = page.getByRole('listbox');
     this.assignUserButtonModal = this.assignUserModal.getByRole('button', {
       name: 'Assign user',
@@ -221,9 +215,7 @@ export class IdentityGroupsPage {
   async assignUserToGroup(userName: string, userEmail: string) {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    // The search field is a design-system MultiSelect: its closed trigger is a
-    // `combobox`-role div (not an input), so open it first, then type into the
-    // cmdk search box that mounts in the popover.
+    // The MultiSelect trigger is a div: open it, then type in the search box.
     await this.searchBox.click();
     await this.page.locator('[data-slot="command-input"]').fill(userName);
     // Keep matching on the email: this modal leaves `UserMultiSelect`'s
@@ -235,11 +227,7 @@ export class IdentityGroupsPage {
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
-    // The MultiSelect keeps its cmdk popover open after a selection so more
-    // users could be picked, and the open popover overlays the footer and
-    // intercepts the click on the confirm "Assign user" button. Dismiss it
-    // with Escape first -- that closes the top Radix layer (the popover), not
-    // the dialog underneath -- then wait for the listbox to unmount.
+    // The open popover covers the confirm button; Escape closes it, not the dialog.
     await this.page.keyboard.press('Escape');
     await expect(this.searchBoxResult).toBeHidden();
     await this.assignUserButtonModal.click();

@@ -105,7 +105,7 @@ export async function queryPrometheus(
   return body.data.result;
 }
 
-/** Convenience: the scalar value of a single-series instant query, or undefined if empty. */
+/** Scalar value of a single-series instant query, or undefined if empty. */
 export function firstPrometheusValue(
   result: PrometheusQueryResponse['data']['result'],
 ): number | undefined {

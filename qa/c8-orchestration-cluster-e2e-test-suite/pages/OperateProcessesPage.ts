@@ -399,14 +399,6 @@ class OperateProcessesPage {
     confirmButton: Locator;
     startedMessage: Locator;
   }): Promise<void> {
-    // The batch toolbar only renders while rows are selected, and the
-    // confirmation modal lives inside it. A row selection made while the
-    // instances query is still in flight is dropped when the result lands,
-    // which unmounts the toolbar together with the open modal — the click is
-    // silently lost and no operation is ever submitted. So drive selection,
-    // dialog and confirmation as one retried unit, and treat only the
-    // "operation started" notification as success: a closed dialog on its own
-    // can just as easily mean the modal was unmounted.
     const {toolbarButton, confirmButton, startedMessage} = options;
     const selectAll = this.selectAllRowsCheckbox.locator('label');
 
@@ -619,7 +611,6 @@ class OperateProcessesPage {
             .nth(i)
             .locator('label');
 
-          // Wait for the element to be attached and stable
           await checkbox.waitFor({state: 'attached'});
           await sleep(200);
           if (!(await checkbox.isChecked())) {

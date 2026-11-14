@@ -127,8 +127,6 @@ class TaskDetailsPage {
     this.detailsInfo = page.getByTestId('details-info');
     this.taskCompletedBanner = this.page.getByText('Task completed');
     this.addDynamicListRowButton = page.getByRole('button', {name: 'add new'});
-    // Same TabListNav migration as the history tab below: this is now a
-    // `role="tab"`, not a Carbon-era nav link.
     this.processTab = page.getByRole('tab', {
       name: 'Show associated BPMN process',
       exact: true,
@@ -154,11 +152,6 @@ class TaskDetailsPage {
         name: 'Operation type',
       },
     );
-    // The redesigned history table added a new "Open details" action column
-    // (see taskDetailsHistoryDetailsLabel), so the default non-exact name
-    // match for 'Details' now also substring-matches that column's header --
-    // exact: true is required to keep matching only the literal "Details"
-    // column (taskDetailsHistoryDetailsHeader).
     this.historyTableDetailsHeader = this.historyTable.getByRole(
       'columnheader',
       {
@@ -192,27 +185,6 @@ class TaskDetailsPage {
     await this.toggleAssignment(this.unassignButton, this.assignToMeButton);
   }
 
-  /**
-   * Clicks the assignment toggle (one button whose label is "Assign to me" or
-   * "Unassign" depending on the task's assignee) and waits for the label to
-   * flip, which only happens once the backend reports the new assignee.
-   *
-   * Re-issues the click between attempts rather than only waiting longer,
-   * because the two ways this can stall need different remedies and the page
-   * cannot tell them apart: while the command is being applied the button is
-   * disabled, and taskAssignmentMachine polls until it settles -- waiting is
-   * all that's needed. But a rejected command (e.g. issued while the task was
-   * still settling from the previous assignment change) drops the machine back
-   * to idle with only a toast, and nothing ever retries it -- so the label will
-   * never flip no matter how long the test waits. Clicking only while the
-   * toggle is idle covers the second case without double-toggling the first.
-   *
-   * Five attempts rather than the default three: this waits on secondary
-   * storage reporting the new assignee, which is spiky under the parallel
-   * nightly load -- most tasks settle within seconds, but 'assign and unassign
-   * task' spent the whole 90s of three attempts unsettled in run 34817452692
-   * while its neighbours settled in under 15s.
-   */
   private async toggleAssignment(from: Locator, to: Locator): Promise<void> {
     try {
       await waitForAssertion({
@@ -290,13 +262,6 @@ class TaskDetailsPage {
 
   async replaceExistingVariableValue(values: {name: string; value: string}) {
     const {name, value} = values;
-    // Tasklist migrated its variables editor to the shadcn design system
-    // (@camunda/design-system's Label + LoadingTextarea/TextInput). The
-    // value field's accessible name now comes from a visually-hidden
-    // <label> ("<variable name> Value", via taskVariablesValueLabel)
-    // associated by htmlFor -- the old Carbon input exposed that same string
-    // as an HTML title attribute, which getByTitle matched directly;
-    // getByLabel is the equivalent for a real <label>.
     const valueField = this.page.getByLabel(name);
     await valueField.clear();
     await valueField.fill(value);
@@ -343,9 +308,6 @@ class TaskDetailsPage {
     await this.driveNumberInputToValue(target, 'increment');
   }
 
-  /**
-   * Repeatedly press decrement until the input shows the target value.
-   */
   async decrementUntilValue(target: string): Promise<void> {
     await this.driveNumberInputToValue(target, 'decrement');
   }
@@ -388,17 +350,6 @@ class TaskDetailsPage {
     const input = this.page.getByRole('textbox', {name: label});
     await expect(input).toBeVisible();
     await input.click();
-    // Form-js datetime sub-fields (Date and Time) route input through
-    // flatpickr. Setting the value with .fill() updates only the visible
-    // text — it does not feed characters through flatpickr's keydown parser,
-    // so flatpickr's internal date model is never updated. The visible value
-    // therefore passes the toHaveValue check below but is dropped on the
-    // component's next re-render and on task completion, leaving the reopened
-    // completed task with a blank field. Type the value character by
-    // character so flatpickr parses and commits each keystroke, then press
-    // Enter to confirm. This is also the only path that works for the Time
-    // sub-field, whose <input> renders readonly (making .fill() throw
-    // "element is not editable").
     // ControlOrMeta+A is cross-platform (Cmd on macOS, Ctrl elsewhere).
     await this.page.keyboard.press('ControlOrMeta+A');
     await this.page.keyboard.press('Backspace');
@@ -511,7 +462,7 @@ class TaskDetailsPage {
         await expect(this.detailsPanel.getByText(priority)).toBeVisible({
           timeout: 45000,
         });
-        return; // Exit the function if the expectation is met
+        return;
       } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
@@ -530,7 +481,7 @@ class TaskDetailsPage {
         await expect(this.detailsInfo.getByText(name)).toBeVisible({
           timeout: 45000,
         });
-        return; // Exit the function if the expectation is met
+        return;
       } catch {
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`);
@@ -654,13 +605,10 @@ class TaskDetailsPage {
   }
 
   async unassignReassignToMeAndComplete(): Promise<void> {
-    // Unassign from the current assignee
     await this.clickUnassignButton();
 
-    // Assign to the logged-in user and verify assignment
     await this.clickAssignToMeButton();
 
-    // Complete the task, wait for the banner to appear, then disappear
     await expect(this.completeTaskButton).toBeEnabled({timeout: 15000});
     await this.clickCompleteTaskButton();
     await expect(this.taskCompletedBanner).toBeVisible();

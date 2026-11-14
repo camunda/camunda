@@ -35,11 +35,6 @@ export class IdentityRolesDetailsPage {
     this.assignUserButton = page.getByRole('button', {
       name: 'assign user',
     });
-    // The row's "Remove" action is a design-system EntityList row action
-    // (Members.tsx's menuItems), rendered inline (only one action, below the
-    // 3-action overflow-menu threshold) as a button with visible text
-    // "Remove" -- not an icon-only button with an explicit aria-label like
-    // the old Carbon row action, which is why getByLabel no longer matches.
     this.unassignUserButton = (rowName) =>
       this.assignedUsersList
         .getByRole('row', {name: rowName})
@@ -50,15 +45,11 @@ export class IdentityRolesDetailsPage {
     this.closeAssignUserModal = this.assignUserModal.getByRole('button', {
       name: 'Close',
     });
-    // On the new design system the assign-user modal's search field is a cmdk
-    // combobox ("Search by name, email, or username") rather than Carbon's searchbox.
     this.assignUserModalSearchField = this.assignUserModal.getByRole(
       'combobox',
       {name: 'Search by name, email, or username'},
     );
-    // The results render in a Radix popover that portals as a *sibling* of the
-    // dialog (DS #496), so the listbox is not a descendant of the modal —
-    // scope it to the page, not to `assignUserModal`.
+    // Results portal outside the dialog (DS #496), so scope them to the page.
     this.assignUserModalSearchResult = page.getByRole('listbox');
     this.assignUserModalCancelButton = this.assignUserModal.getByRole(
       'button',
@@ -105,16 +96,6 @@ export class IdentityRolesDetailsPage {
       name: user.email,
     });
 
-    // The assign-user modal's cmdk search is debounced + server-driven, and the
-    // option for a just-created user is eventually consistent: a single query
-    // can return empty and get cached by react-query, so waiting longer on one
-    // search does not recover. Mirror the authorizations owner search (#51442)
-    // remedy and reload between attempts to reset the query cache.
-    //
-    // Only the modal interaction is retried, and only while the user is still
-    // unassigned: `AssignMembersModal` passes the assigned users as `excluded`,
-    // so once a submit has landed the option is gone from the results for good
-    // and re-running the search could only ever fail.
     const maxRetries = 3;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -144,9 +125,7 @@ export class IdentityRolesDetailsPage {
   ): Promise<void> {
     await this.assignUserButton.click();
     await expect(this.assignUserModal).toBeVisible();
-    // The search field is a design-system MultiSelect: its closed trigger is a
-    // `combobox`-role div (not an input), so open it first, then type into the
-    // cmdk search box that mounts in the popover.
+    // The MultiSelect trigger is a div: open it, then type in the search box.
     await this.assignUserModalSearchField.click();
     await this.page.locator('[data-slot="command-input"]').fill(username);
     // The option label is "<name> — <email>" and does not echo the username,
@@ -157,11 +136,7 @@ export class IdentityRolesDetailsPage {
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
-    // The MultiSelect keeps its cmdk popover open after a selection so more
-    // users could be picked, and the open popover overlays the footer and
-    // intercepts the click on the confirm "Assign user" button. Dismiss it with
-    // Escape first -- that closes the top Radix layer (the popover), not the
-    // dialog underneath -- then wait for the listbox to unmount.
+    // The open popover covers the confirm button; Escape closes it, not the dialog.
     await this.page.keyboard.press('Escape');
     await expect(this.assignUserModalSearchResult).toBeHidden();
     await this.assignUserModalAssignButton.click();

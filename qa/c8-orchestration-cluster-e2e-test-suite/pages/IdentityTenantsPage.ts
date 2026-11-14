@@ -177,9 +177,7 @@ export class IdentityTenantsPage {
   }
 
   async fillAssignUserSearch(username: string) {
-    // The search field is a design-system MultiSelect: its closed trigger is a
-    // `combobox`-role div (not an input), so open it first, then type into the
-    // cmdk search box that mounts in the popover.
+    // The MultiSelect trigger is a div: open it, then type in the search box.
     await this.assignUserSearchbox.click();
     await this.page.locator('[data-slot="command-input"]').fill(username);
   }
@@ -193,11 +191,7 @@ export class IdentityTenantsPage {
     const userOption = this.assignUserOption(user.id);
     await expect(userOption).toBeVisible({timeout: 30000});
     await userOption.click();
-    // The MultiSelect keeps its cmdk popover open after a selection so more
-    // users could be picked, and the open popover overlays the footer and
-    // intercepts the click on the confirm "Assign user" button. Dismiss it with
-    // Escape first -- that closes the top Radix layer (the popover), not the
-    // dialog underneath -- then wait for the listbox to unmount.
+    // The open popover covers the confirm button; Escape closes it, not the dialog.
     await this.page.keyboard.press('Escape');
     await expect(this.assignUserSearchboxResult).toBeHidden();
     // The assign-user search is debounced + server-driven, so the option can

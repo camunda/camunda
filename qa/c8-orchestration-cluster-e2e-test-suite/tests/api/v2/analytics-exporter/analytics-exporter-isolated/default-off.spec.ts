@@ -19,18 +19,9 @@ import {
   toLokiNanos,
 } from '../../../../../utils/analyticsQueryHelpers';
 
-// The analytics exporter is disabled by default: with no
-// CAMUNDA_DATA_EXPORTERS_ANALYTICS_* config set at all, zero analytics
-// records should ever reach Loki, regardless of how much process-instance
-// load runs against the broker.
-//
-// This runs against a standalone, throwaway camunda broker (see
-// config/docker-compose.analytics-isolated.yml) rather than the shared
-// stack every other test in this suite depends on — proving "disabled by
-// default" requires an environment where the exporter was never configured
-// in the first place, which the counter-parity test's own broker variant
-// (in the same isolated compose file) doesn't satisfy either, since it has
-// the exporter deliberately enabled.
+// With no analytics exporter config, no analytics records should reach Loki.
+// Runs on its own broker (config/docker-compose.analytics-isolated.yml) because
+// proving the default needs a broker that never configured the exporter.
 
 const ISOLATED_BASE_URL =
   process.env.ANALYTICS_ISOLATED_BASE_URL ?? 'http://localhost:28080';
