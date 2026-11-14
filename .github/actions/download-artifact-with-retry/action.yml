@@ -1,0 +1,146 @@
+---
+# owner: @camunda/engineering-operations
+name: Download artifact with retry
+
+description: >
+  Runs `actions/download-artifact` with retries so a transient GitHub
+  artifact API error -- e.g. a `Failed to ListArtifacts: ETIMEDOUT` reaching
+  GitHub endpoints from a self-hosted runner -- does not fail an
+  otherwise-green job. Symmetric to `upload-artifact-with-retry` (INC-7913).
+
+inputs:
+  name:
+    description: Name of the artifact to download. Empty downloads all artifacts.
+    required: false
+    default: ""
+  path:
+    description: Destination path. Empty uses the current working directory.
+    required: false
+    default: ""
+  retry-delay-seconds:
+    description: >
+      Base seconds to wait before each retry. `0` retries immediately.
+    required: false
+    default: "10"
+  retry-jitter-seconds:
+    description: >
+      Upper bound, inclusive, on a random extra wait added to
+      `retry-delay-seconds`. Keeps matrix shards off a lockstep retry, so `0`
+      is only safe for a single unsharded download.
+    required: false
+    default: "10"
+
+outputs:
+  attempts:
+    description: >
+      Number of download attempts made. More than 1 means a transient failure
+      was absorbed and left the job green; `0` means invalid backoff inputs
+      stopped the action before it tried.
+    value: ${{ steps.attempts.outputs.count }}
+
+runs:
+  using: composite
+  # No retry primitive exists for a `uses:` step, so each attempt is a literal
+  # copy gated on the previous attempt's outcome. Keep the `with:` blocks in sync.
+  #
+  # Unlike the upload side, a failed download reserves nothing and needs no
+  # `overwrite`: ListArtifacts fails before anything lands, and a partial
+  # download is re-fetched into the same path on the next attempt.
+  steps:
+    # Up front, not in the wait steps: bash arithmetic reads a non-numeric value
+    # as 0, so a typo would silently drop the backoff even on a run that retries.
+    - name: Validate retry backoff inputs
+      shell: bash
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      run: |
+        set -euo pipefail
+        if ! [[ "$DELAY" =~ ^[0-9]+$ && "$JITTER" =~ ^[0-9]+$ ]]; then
+          echo "::error::retry delay and jitter must be whole seconds, got '$DELAY' and '$JITTER'."
+          exit 1
+        fi
+
+    - name: Download artifact (attempt 1 of 3)
+      id: attempt-1
+      continue-on-error: true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+
+    - name: Wait before attempt 2
+      if: steps.attempt-1.outcome == 'failure'
+      shell: bash
+      # Jittered so matrix shards don't retry in lockstep and recreate the burst.
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      # `10#` forces base-10: the regex above permits leading zeros, which
+      # bare arithmetic would read as octal (`08`/`09` abort, `010` waits 8s).
+      run: sleep $(( 10#$DELAY + RANDOM % (10#$JITTER + 1) ))
+
+    - name: Download artifact (attempt 2 of 3)
+      id: attempt-2
+      if: steps.attempt-1.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+
+    - name: Wait before attempt 3
+      if: steps.attempt-2.outcome == 'failure'
+      shell: bash
+      # Same reason as the wait before attempt 2.
+      env:
+        DELAY: ${{ inputs.retry-delay-seconds }}
+        JITTER: ${{ inputs.retry-jitter-seconds }}
+      # `10#` forces base-10: the regex above permits leading zeros, which
+      # bare arithmetic would read as octal (`08`/`09` abort, `010` waits 8s).
+      run: sleep $(( 10#$DELAY + RANDOM % (10#$JITTER + 1) ))
+
+    - name: Download artifact (attempt 3 of 3)
+      id: attempt-3
+      if: steps.attempt-2.outcome == 'failure'
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ inputs.path }}
+
+    # A successful retry leaves the job green, so surface it in the run summary
+    # to keep a rising rate of absorbed failures visible instead of silent.
+    # `always()`, not `!cancelled()`: an exhausted retry has already failed the
+    # job here, and a failed step skips its successors.
+    - name: Count attempts and report absorbed retries
+      id: attempts
+      if: ${{ always() }}
+      shell: bash
+      env:
+        ARTIFACT_NAME: ${{ inputs.name }}
+        ATTEMPT_1_OUTCOME: ${{ steps.attempt-1.outcome }}
+        ATTEMPT_2_OUTCOME: ${{ steps.attempt-2.outcome }}
+        ATTEMPT_3_OUTCOME: ${{ steps.attempt-3.outcome }}
+      run: |
+        set -euo pipefail
+
+        # Any outcome other than `skipped` means the attempt ran. Counting from
+        # attempt 1 rather than assuming it: the validation step above can fail
+        # and skip every download, and `attempts` must not claim one happened.
+        count=0
+        if [ "$ATTEMPT_1_OUTCOME" != "skipped" ]; then count=1; fi
+        if [ "$ATTEMPT_2_OUTCOME" != "skipped" ]; then count=2; fi
+        if [ "$ATTEMPT_3_OUTCOME" != "skipped" ]; then count=3; fi
+        echo "count=${count}" >> "$GITHUB_OUTPUT"
+
+        if [ "$count" -le 1 ]; then
+          exit 0
+        fi
+
+        if [ "$ATTEMPT_3_OUTCOME" = "failure" ]; then
+          detail="failed after all ${count} download attempts"
+        else
+          detail="needed ${count} download attempts"
+        fi
+        echo "::warning::Artifact '${ARTIFACT_NAME}' ${detail}."
+        echo "Artifact \`${ARTIFACT_NAME}\` ${detail}." >> "$GITHUB_STEP_SUMMARY"
