@@ -152,7 +152,7 @@ public final class EventAppliers implements EventApplier {
     registerUserTaskAppliers(state);
     registerUserTaskLookupAppliers();
 
-    registerCaseAppliers();
+    registerCaseAppliers(state);
 
     registerSignalAppliers(state);
 
@@ -578,6 +578,11 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceBusinessIdIntent.ASSIGNED,
         1,
         new ProcessInstanceBusinessIdAssignedV1Applier(state.getElementInstanceState()));
+    register(
+        ProcessInstanceBusinessIdIntent.ASSIGNED,
+        2,
+        new ProcessInstanceBusinessIdAssignedV2Applier(
+            state.getElementInstanceState(), state.getCaseState()));
   }
 
   private void registerBufferedCommandAppliers(final MutableProcessingState state) {
@@ -981,8 +986,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskLookupIntent.FETCHED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerCaseAppliers() {
-    register(CaseIntent.CREATED, NOOP_EVENT_APPLIER);
+  private void registerCaseAppliers(final MutableProcessingState state) {
+    register(CaseIntent.CREATED, new CaseCreatedApplier(state.getCaseState()));
     register(CaseIntent.STAGE_UPDATED, NOOP_EVENT_APPLIER);
     register(CaseIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(CaseIntent.TERMINATED, NOOP_EVENT_APPLIER);

@@ -440,7 +440,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * Global, so a partition added by scaling starts with the current policy version. An update that
    * is still being applied is not part of it: that only exists on partition 1.
    */
-  POLICY(172, GLOBAL);
+  POLICY(172, GLOBAL),
+
+  /** The cases of the partition, keyed [processInstanceKey]: one per case-marked root instance. */
+  CASE(173, PARTITION_LOCAL),
+
+  /** The stages of a case, keyed [processInstanceKey | stageElementId]. */
+  CASE_STAGE(174, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
