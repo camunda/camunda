@@ -39,6 +39,12 @@ var update = flag.Bool("update-golden", false,
 // Rendered k6 manifests (templates/k6) are left out of every scenario unless
 // its PathFilter selects them, as in the "k6" scenario.
 //
+// DualRegionZone, when set ("region-a" or "region-b"), renders the platform and load-test-setup
+// charts as that half of a dual region cluster (dual_region=true) against the fixed
+// dualRegionPeerNamespace. A set Workload is passed to both renders, so scenario=max covers the
+// overrides that generate-dual-region-values.sh folds into its application-override.yml. Only
+// supported on versions with dual_region_supported=true (main, stable-810).
+//
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
 //
@@ -60,6 +66,7 @@ type scenario struct {
 	Workload            string // "" = default profile; e.g. "max", "realistic"
 	SetupTarget         string // named make target for template-load-test-setup variants
 	PhysicalTenantCount int
+	DualRegionZone      string // "" = single region; "region-a" | "region-b"
 	PlatformOnly        bool
 	PathFilter          []string
 	ExtraArgs           []string // extra newLoadTest.sh flags, e.g. "--use-pgbouncer"
@@ -128,6 +135,35 @@ var defaultScenarios = []scenario{
 	{Name: "opensearch-physical-tenants", Storage: "opensearch", Optimize: true, PhysicalTenantCount: 1},
 	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenantCount: 1},
 	{Name: "none-physical-tenants", Storage: "none", Optimize: false, PhysicalTenantCount: 1},
+	// Both halves of a dual region cluster: every exporter id must target the same Elasticsearch
+	// in both regions, which only shows when region-a and region-b are compared, and region-b
+	// starts without load generators and with a suspended leader balancer.
+	{Name: "elasticsearch-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a"},
+	{Name: "elasticsearch-dual-region-b", Storage: "elasticsearch", DualRegionZone: "region-b"},
+	{Name: "none-dual-region-a", Storage: "none", DualRegionZone: "region-a"},
+	{Name: "max-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a", Workload: "max"},
+	{Name: "realistic-dual-region-a", Storage: "elasticsearch", DualRegionZone: "region-a", Workload: "realistic"},
+}
+
+// dualRegionVersions are the setup versions with dual_region_supported=true.
+var dualRegionVersions = []string{"main", "stable-810"}
+
+// dualRegionPeerNamespace and dualRegionClusterName are fixed, so the rendered contact points,
+// exporter URLs and cluster name are deterministic.
+const (
+	dualRegionPeerNamespace = "c8-golden-dual-region-peer"
+	dualRegionClusterName   = "c8-golden-dual-region"
+)
+
+// dualRegionVars returns the make variables that render a namespace as one half of a dual
+// region cluster.
+func dualRegionVars(zone string) []string {
+	return []string{
+		"dual_region=true",
+		"dual_region_zone=" + zone,
+		"dual_region_peer_namespace=" + dualRegionPeerNamespace,
+		"dual_region_cluster_name=" + dualRegionClusterName,
+	}
 }
 
 // versions lists the setup directories under test, each the name of a directory
@@ -180,6 +216,10 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				continue
 			}
 
+			if s.DualRegionZone != "" && !slices.Contains(dualRegionVersions, v) {
+				continue
+			}
+
 			scenario := versionedScenario{
 				Version:  v,
 				scenario: s,
@@ -207,6 +247,14 @@ func TestGoldenFiles(t *testing.T) {
 
 			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize), s.ExtraArgs...)
 			defer ns.Cleanup()
+
+			// Checked before Workload: that branch renders only the load-test-setup chart, while
+			// a dual region workload also changes the platform's application-override.yml.
+			if s.DualRegionZone != "" {
+				renderAndAssert(t, s.Version, s.Name, "platform", ns, "template", s.Workload, s.PathFilter, dualRegionVars(s.DualRegionZone)...)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter, dualRegionVars(s.DualRegionZone)...)
+				return
+			}
 
 			if s.Workload != "" {
 				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter)
@@ -278,6 +326,56 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 				strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
 				strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
 			)
+		})
+	}
+}
+
+// TestShouldRejectUnsupportedDualRegionConfigurations checks that the Makefile refuses dual region
+// combinations it cannot deploy before anything is provisioned. The workflow validates its own
+// inputs, but a manual `make install dual_region=true ...` only goes through common.mk. The
+// checks are parse-time $(error)s, so `make -n` triggers them without rendering any chart.
+func TestShouldRejectUnsupportedDualRegionConfigurations(t *testing.T) {
+	cases := []struct {
+		name    string
+		version string
+		storage string
+		vars    []string
+		want    string
+	}{
+		{"unsupported-version", "stable-89", "elasticsearch", dualRegionVars("region-a"),
+			"dual_region=true is not supported for this Camunda version"},
+		{"opensearch", "main", "opensearch", dualRegionVars("region-a"),
+			"dual_region=true requires secondary_storage=elasticsearch or none"},
+		{"invalid-zone", "main", "elasticsearch", dualRegionVars("region-c"),
+			"dual_region=true requires dual_region_zone to be region-a or region-b"},
+		{"missing-peer", "main", "elasticsearch",
+			[]string{"dual_region=true", "dual_region_zone=region-a", "dual_region_cluster_name=" + dualRegionClusterName},
+			"dual_region=true requires dual_region_peer_namespace"},
+		{"missing-cluster-name", "main", "elasticsearch",
+			[]string{"dual_region=true", "dual_region_zone=region-a", "dual_region_peer_namespace=" + dualRegionPeerNamespace},
+			"dual_region=true requires dual_region_cluster_name"},
+		{"optimize", "main", "elasticsearch", append(dualRegionVars("region-a"), "enable_optimize=true"),
+			"dual_region=true does not support enable_optimize=true"},
+		{"physical-tenants", "main", "elasticsearch", append(dualRegionVars("region-a"), "physical_tenant_count=1"),
+			"dual_region=true does not support physical_tenant_count > 0"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			ns := Scaffold(t, c.version, "c8-golden-dual-region-reject-"+c.name, c.storage, "false")
+			defer ns.Cleanup()
+
+			// when
+			cmd := exec.Command("make", append([]string{"-n", "template"}, c.vars...)...)
+			cmd.Dir = ns.Dir
+			out, err := cmd.CombinedOutput()
+
+			// then
+			require.Error(t, err, "make accepted the configuration:\n%s", string(out))
+			require.Contains(t, string(out), c.want)
 		})
 	}
 }
