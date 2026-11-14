@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.SuspensionMetrics;
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -59,12 +60,15 @@ public final class ProcessInstanceResumeProcessor
   private final CslAuthorizationCheck cslCheck;
   private final SuspensionState suspensionState;
   private final SuspensionMetrics suspensionMetrics;
+  private final AsyncRequestBehavior asyncRequestBehavior;
 
   public ProcessInstanceResumeProcessor(
       final ProcessingState processingState,
       final Writers writers,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
       final SuspensionMetrics suspensionMetrics) {
+    this.asyncRequestBehavior = asyncRequestBehavior;
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -174,6 +178,9 @@ public final class ProcessInstanceResumeProcessor
       // switch the marker to RESUMING before the first DRAIN so the buffered commands it writes
       // back are let through by the suspension gate instead of being buffered again
       stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMING, value);
+      // RESUMED is written by a later command, so keep this command's references (e.g. its batch
+      // reference) for it; a restart keeps the first resume's references
+      asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
     } else {
       LOG.debug(
           "Resuming process instance '{}': drain was already in progress, restarting it",

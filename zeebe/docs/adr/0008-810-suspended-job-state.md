@@ -220,6 +220,12 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
   would not be. We run on the same path as process instance migration which is fine so far.
 - No downgrade once a job is suspended: older brokers fail on the unknown `SUSPENDED` enum name.
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
+- A user task canceled by a drained command before `RESUME_USER_TASKS` reaches it gets no
+  `UserTask.RESUMED`. Exporters clear its suspended flag on `UserTask.CANCELED`.
+- A drained command or a job completion can end the instance before `COMPLETE_RESUMING` runs, so
+  the rest of the resume chain is rejected. The process then writes `ProcessInstance.RESUMED`
+  itself when it finishes completing or terminating, so every resume ends with exactly one
+  `RESUMED` ([#66736](https://github.com/camunda/camunda/issues/66736)).
 - Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
   suspend.
 
