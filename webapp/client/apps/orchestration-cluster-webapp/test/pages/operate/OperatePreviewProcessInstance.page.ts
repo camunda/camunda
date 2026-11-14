@@ -15,8 +15,8 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		super(page);
 	}
 
-	async goto(processInstanceId: string) {
-		return this.page.goto(`/operate-preview/processes/${processInstanceId}`);
+	async goto(processInstanceId: string, path = '') {
+		return this.page.goto(`/operate-preview/processes/${processInstanceId}${path}`);
 	}
 
 	get heading() {
@@ -65,6 +65,22 @@ class OperatePreviewProcessInstancePage extends BasePage {
 
 	get incidentsTab() {
 		return this.page.getByRole('tab', {name: 'Incidents'});
+	}
+
+	get listenersList() {
+		return this.page.getByRole('table', {name: 'Listeners List'});
+	}
+
+	get operationsLogTable() {
+		return this.page.getByRole('table', {name: 'Operations Log List'});
+	}
+
+	get tabPanel() {
+		return this.page.getByRole('tabpanel');
+	}
+
+	tab(name: string) {
+		return this.page.getByRole('tab', {name});
 	}
 
 	get variablesTab() {

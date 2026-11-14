@@ -14,27 +14,35 @@ describe('getVisibleProcessInstanceTabs', () => {
 		{
 			name: 'no incident, no selection, and no process-level wait state',
 			input: {hasIncidentsTab: false, hasSelection: false, isProcessLevelWaiting: false},
-			expected: ['variables', 'listeners'],
+			expected: ['variables', 'listeners', 'operations-log'],
 		},
 		{
 			name: 'an incident without a selection',
 			input: {hasIncidentsTab: true, hasSelection: false, isProcessLevelWaiting: false},
-			expected: ['variables', 'incidents', 'listeners'],
+			expected: ['variables', 'incidents', 'listeners', 'operations-log'],
 		},
 		{
 			name: 'a selection without an incident',
 			input: {hasIncidentsTab: false, hasSelection: true, isProcessLevelWaiting: false},
-			expected: ['variables', 'listeners', 'details'],
+			expected: ['variables', 'input-mappings', 'output-mappings', 'listeners', 'operations-log', 'details'],
 		},
 		{
 			name: 'a process-level wait state without a selection',
 			input: {hasIncidentsTab: false, hasSelection: false, isProcessLevelWaiting: true},
-			expected: ['variables', 'listeners', 'details'],
+			expected: ['variables', 'listeners', 'operations-log', 'details'],
 		},
 		{
 			name: 'an incident, a selection, and a process-level wait state',
 			input: {hasIncidentsTab: true, hasSelection: true, isProcessLevelWaiting: true},
-			expected: ['variables', 'incidents', 'listeners', 'details'],
+			expected: [
+				'variables',
+				'input-mappings',
+				'output-mappings',
+				'incidents',
+				'listeners',
+				'operations-log',
+				'details',
+			],
 		},
 	] as const)('should show $expected for $name', ({input, expected}) => {
 		expect([...getVisibleProcessInstanceTabs(input)].sort()).toEqual([...expected].sort());

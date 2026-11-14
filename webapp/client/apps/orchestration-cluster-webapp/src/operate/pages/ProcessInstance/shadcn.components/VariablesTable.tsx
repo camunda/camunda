@@ -150,12 +150,11 @@ const VariablesTable: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 				)}
 				{error === null && !isEmptyResult && (
 					<StructuredList
-						className="[&_table]:table-fixed"
+						className="[&_table]:min-w-[32rem] [&_table]:table-fixed"
 						isFlush={false}
 						cellClassName="align-middle"
 						containerClassName="rounded-none border-0 shadow-none"
 						label={t('operate.processInstance.variables.list')}
-						headerSize="sm"
 						headerColumns={[
 							{cellContent: t('operate.processInstance.variables.name'), width: NAME_COLUMN_WIDTH},
 							{cellContent: t('operate.processInstance.variables.value'), width: VALUE_COLUMN_WIDTH},

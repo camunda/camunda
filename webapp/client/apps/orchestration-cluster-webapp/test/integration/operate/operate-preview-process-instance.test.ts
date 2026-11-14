@@ -8,7 +8,10 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
 import {
+	mockGetProcessDefinitionXmlEndpoint,
 	mockCurrentUserEndpoint,
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
@@ -16,6 +19,8 @@ import {
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
 	mockGetIncidentEndpoint,
+	mockQueryAuditLogsEndpoint,
+	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
 	mockGetElementInstanceEndpoint,
@@ -31,6 +36,8 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
+import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -263,6 +270,61 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		await expect(page).not.toHaveURL(/elementId=/);
 	});
 
+	test('should list the listeners of the process instance in the Listeners tab', async ({
+		network,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockQueryJobsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createListenerJob({jobKey: '100', type: 'audit-listener'})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Listeners').click();
+
+		await expect(operatePreviewProcessInstancePage.listenersList.getByText('audit-listener')).toBeVisible();
+	});
+
+	test('should list the operations of the process instance in the Operations log tab', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.tab('Operations Log').click();
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/operations-log`);
+		await expect(
+			operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Create'}),
+		).toBeVisible();
+	});
+
+	test('should only offer the mapping tabs when an element is selected', async ({
+		operatePreviewProcessInstancePage,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await expect(operatePreviewProcessInstancePage.variablesTab).toBeVisible();
+
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeHidden();
+
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeVisible();
+		await expect(operatePreviewProcessInstancePage.tab('Output Mappings')).toBeVisible();
+	});
+
 	test('should redirect to the default tab and switch tabs through the URL', async ({
 		network,
 		operatePreviewProcessInstancePage,
@@ -334,6 +396,27 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		expect(statisticsRequests).toHaveLength(0);
 	});
 
+	test('should leave the mapping tab when the selection is cleared and the flag is off', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+		await operatePreviewProcessInstancePage.tab('Input Mappings').click();
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toHaveAttribute('aria-selected', 'true');
+
+		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		await expect(operatePreviewProcessInstancePage.variablesTab).toHaveAttribute('aria-selected', 'true');
+	});
+
 	test('should not render a breadcrumb for a root instance', async ({network, operatePreviewProcessInstancePage}) => {
 		network.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
 
@@ -363,5 +446,108 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 				name: 'View Process Parent Process - Instance 1',
 			}),
 		).toBeVisible();
+	});
+
+	test('should list the input mappings of the selected element', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({
+				successResponse: HttpResponse.text(
+					BPMN_XML.replace(
+						'<zeebe:userTask />',
+						'<zeebe:userTask /><zeebe:ioMapping><zeebe:input source="=orderId" target="localOrderId" /></zeebe:ioMapping>',
+					),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/input-mappings?elementId=task-1');
+
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toHaveAttribute('aria-selected', 'true');
+		await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
+	});
+
+	test('should leave the input mappings tab when the element is deselected', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/input-mappings?elementId=task-1');
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeVisible();
+
+		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toBeHidden();
+	});
+
+	test('should request the operations filtered by the operation type from the URL', async ({
+		network,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				schema: z.object({
+					filter: z.object({operationType: z.object({$in: z.tuple([z.literal('RESOLVE')])})}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({items: [createAuditLog({operationType: 'RESOLVE'})]}),
+				),
+				failureResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/operations-log?operationType=RESOLVE');
+
+		await expect(
+			operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Resolve'}),
+		).toBeVisible();
+	});
+
+	test('should request the operations sorted by a clicked column', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/operations-log');
+		await expect(
+			operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Create'}),
+		).toBeVisible();
+
+		network.use(
+			mockQueryAuditLogsEndpoint({
+				schema: z.object({sort: z.tuple([z.object({field: z.literal('entityType'), order: z.literal('DESC')})])}),
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({items: [createAuditLog({operationType: 'RESOLVE'})]}),
+				),
+				failureResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+			}),
+		);
+		await page.getByRole('button', {name: 'Entity Type'}).click();
+
+		await expect(
+			operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Resolve'}),
+		).toBeVisible();
+	});
+
+	test('should show an empty message when the instance has no operations', async ({
+		network,
+		page,
+		operatePreviewProcessInstancePage,
+	}) => {
+		network.use(
+			mockQueryAuditLogsEndpoint({successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: []}))}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/operations-log');
+
+		await expect(page.getByText('No operations found for this instance')).toBeVisible();
 	});
 });
