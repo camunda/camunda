@@ -110,4 +110,31 @@ class AuthenticationHandlerOidcUserInfoTest {
     assertThat(decodeDescription).doesNotContain("wrong.example").doesNotContain("2024-01-01");
     assertThat(decodeFail.getLeft().getCause()).isNull();
   }
+
+  @Test
+  void decoderInitializationFailureReturnsUnavailableWithoutLeakingIssuer() {
+    // A lazily-resolved decoder throws JwtDecoderInitializationException (not a JwtException)
+    // when the issuer's configuration cannot be reached. It must surface as a retryable
+    // UNAVAILABLE status with a generic description, not escape the interceptor (#68254).
+    final var jwtDecoder = mock(JwtDecoder.class);
+    final var claimsProvider = mock(OidcClaimsProvider.class);
+    final var oidc = new OidcConfiguration();
+    oidc.setUsernameClaim("sub");
+
+    when(jwtDecoder.decode("token-abc"))
+        .thenThrow(
+            new org.springframework.security.oauth2.jwt.JwtDecoderInitializationException(
+                "Failed to lazily resolve the supplied JwtDecoder instance",
+                new IllegalArgumentException(
+                    "Unable to resolve Configuration with the provided Issuer of \"https://unreachable.idp.example\"")));
+
+    final var handler = new Oidc(jwtDecoder, claimsProvider, oidc);
+    final var result = handler.authenticate("Bearer token-abc");
+
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().getCode()).isEqualTo(io.grpc.Status.UNAVAILABLE.getCode());
+    final String description = result.getLeft().getDescription();
+    assertThat(description).doesNotContain("unreachable.idp.example").doesNotContain("resolve");
+    assertThat(result.getLeft().getCause()).isNull();
+  }
 }
