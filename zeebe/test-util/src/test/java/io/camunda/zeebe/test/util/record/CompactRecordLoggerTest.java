@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
+import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMessageContentValue;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryMetricsValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableCaseRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableCaseStageValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
@@ -161,6 +164,59 @@ class CompactRecordLoggerTest {
 
       // then
       assertThat(summary).isEqualTo("fetchVariables:[foo, bar] (tenant: tenant-1)");
+    }
+
+    @Test
+    void shouldSummarizeCaseRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.CASE)
+              .withValue(
+                  ImmutableCaseRecordValue.builder()
+                      .withProcessInstanceKey(123L)
+                      .withTitle("Order #42 for ACME")
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeCase(record);
+
+      // then
+      assertThat(summary).isEqualTo("processInstanceKey:K123 title:Order #42 for ACME");
+    }
+
+    @Test
+    void shouldSummarizeStagesOfCaseRecord() {
+      // given
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.CASE)
+              .withValue(
+                  ImmutableCaseRecordValue.builder()
+                      .withProcessInstanceKey(123L)
+                      .withTitle("Order #42 for ACME")
+                      .addStages(
+                          ImmutableCaseStageValue.builder()
+                              .withElementId("review")
+                              .withStatus(CaseStageStatus.ACTIVE)
+                              .build())
+                      .addStages(
+                          ImmutableCaseStageValue.builder()
+                              .withElementId("approve")
+                              .withStatus(CaseStageStatus.NOT_STARTED)
+                              .build())
+                      .build())
+              .build();
+
+      // when
+      final var summary = compactRecordLogger.summarizeCase(record);
+
+      // then
+      assertThat(summary)
+          .isEqualTo(
+              "processInstanceKey:K123 title:Order #42 for ACME"
+                  + " stages:[review=ACTIVE, approve=NOT_STARTED]");
     }
 
     @Test

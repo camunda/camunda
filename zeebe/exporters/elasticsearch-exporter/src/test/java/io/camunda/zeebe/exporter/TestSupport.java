@@ -155,6 +155,7 @@ final class TestSupport {
             ValueType.PROCESS_DEFINITION_RESTORE,
             ValueType.POLICY_UPDATE,
             ValueType.PROCESS_DEFINITION_SUSPENSION,
+            ValueType.CASE,
             // internal engine-to-engine record, never exported by design
             ValueType.AGENT_HISTORY_BATCH,
             // a read of the engine state that changes nothing, never exported by design

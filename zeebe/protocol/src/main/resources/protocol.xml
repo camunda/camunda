@@ -109,6 +109,7 @@
       <validValue name="PROBE">83</validValue>
       <validValue name="PROBE_BATCH">84</validValue>
       <validValue name="PROCESS_DEFINITION_SUSPENSION">85</validValue>
+      <validValue name="CASE">86</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
