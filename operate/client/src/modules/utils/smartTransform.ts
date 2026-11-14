@@ -10,10 +10,44 @@ import type {VariableFilterOperator} from 'modules/stores/variableFilter';
 import type {ProcessInstanceVariableValueFilter} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const STRUCTURAL_CHARS_RE = /[{}[\]"]/;
+const INTEGER_RE = /^-?(?:0|[1-9]\d*)$/;
+// Matches strings first, so that digits inside of them are consumed and left alone.
+const JSON_STRING_OR_NUMBER_RE =
+  /"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+const UNSAFE_INTEGER_MARKER = '\0unsafe-integer:';
+// The marker as `JSON.stringify` writes it, wrapped in the quotes of its string.
+const ENCODED_UNSAFE_INTEGER_RE = /"\\u0000unsafe-integer:(-?\d+)"/g;
+
+/**
+ * Parses JSON like `JSON.parse`, but reads integers a double cannot represent
+ * as `BigInt`. Variables can hold any 64-bit integer and are matched by their
+ * exact JSON text, so a rounded literal would match the wrong variable values.
+ */
+const parseJson = (input: string): unknown => {
+  const markedInput = input.replace(JSON_STRING_OR_NUMBER_RE, (token) =>
+    INTEGER_RE.test(token) && !Number.isSafeInteger(Number(token))
+      ? JSON.stringify(`${UNSAFE_INTEGER_MARKER}${token}`)
+      : token,
+  );
+
+  return JSON.parse(markedInput, (_key, value: unknown) =>
+    typeof value === 'string' && value.startsWith(UNSAFE_INTEGER_MARKER)
+      ? BigInt(value.slice(UNSAFE_INTEGER_MARKER.length))
+      : value,
+  );
+};
+
+/** Encodes a value like `JSON.stringify`, but writes `BigInt` as an integer. */
+const encodeJson = (value: unknown): string =>
+  JSON.stringify(value, (_key, member: unknown) =>
+    typeof member === 'bigint'
+      ? `${UNSAFE_INTEGER_MARKER}${member.toString()}`
+      : member,
+  ).replace(ENCODED_UNSAFE_INTEGER_RE, '$1');
 
 const parseScalar = (input: string): unknown => {
   try {
-    return JSON.parse(input);
+    return parseJson(input);
   } catch {
     return input;
   }
@@ -29,7 +63,7 @@ const smartTransformValue = (raw: string): unknown => {
   }
 
   try {
-    return JSON.parse(trimmed);
+    return parseJson(trimmed);
   } catch {
     if (trimmed.includes(',') && !STRUCTURAL_CHARS_RE.test(trimmed)) {
       return trimmed
@@ -51,14 +85,14 @@ const toStringFilterProperty = (
 ): ProcessInstanceVariableValueFilter => {
   switch (operator) {
     case 'equals':
-      return {$eq: JSON.stringify(value)};
+      return {$eq: encodeJson(value)};
     case 'notEqual':
-      return {$neq: JSON.stringify(value)};
+      return {$neq: encodeJson(value)};
     case 'contains':
       return {$like: `*${String(value)}*`};
     case 'oneOf': {
       const arr = Array.isArray(value) ? value : [value];
-      return {$in: arr.map((v) => JSON.stringify(v))};
+      return {$in: arr.map(encodeJson)};
     }
     case 'exists':
       return {$exists: true};
