@@ -311,10 +311,7 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter(
-            'Process Instance Key(s)',
-          );
-          await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+          await operateFiltersPanelPage.reapplyProcessInstanceKeyFilterAfterReload(
             `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
           );
         },
