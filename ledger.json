@@ -214,5 +214,18 @@
     "updated_at": "2026-11-15T07:20:46Z",
     "cooldown_until": "2026-11-29T07:20:46Z",
     "pr": "https://github.com/camunda/camunda/pull/69452"
+  },
+  "df6c1204": {
+    "version": "8.10",
+    "file": "tests/operate/processDefinitionDraining.spec.ts",
+    "titlePath": [
+      "Operate Process Definition Draining",
+      "Dashboard marks the draining definition with a draining indicator"
+    ],
+    "last_action": "delete_branch",
+    "last_reason": "iter2 75% vs baseline 65% (+10pp); below 80% in e2e-v2 75%",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43685029000",
+    "updated_at": "2026-11-15T07:54:11Z",
+    "cooldown_until": "2026-11-22T07:54:11Z"
   }
 }
