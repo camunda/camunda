@@ -16,7 +16,10 @@ import {
   assertForbiddenRequest,
   encode,
 } from '../../../../utils/http';
-import {defaultAssertionOptions} from '../../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+} from '../../../../utils/constants';
 import {
   createMammalProcessInstanceAndDeployMammalDecision,
   createUser,
@@ -123,7 +126,12 @@ test.describe.serial('Delete Decision Instances API Tests', () => {
           res,
           `Decision Instance with id '${decisionEvaluationInstanceKeyToGet}' not found`,
         );
-      }).toPass(defaultAssertionOptions);
+        // The deletion command returns 204 as soon as it is accepted, but the
+        // instance stays readable until the delete propagates through the
+        // exporter into secondary storage. On the loaded nightly cluster that
+        // lag intermittently exceeds the default 30s window, so poll on the
+        // extended secondary-storage budget instead.
+      }).toPass(extendedAssertionOptions);
     });
   });
 
