@@ -200,5 +200,19 @@
     "updated_at": "2026-11-15T06:56:32Z",
     "cooldown_until": "2026-11-29T06:56:32Z",
     "pr": "https://github.com/camunda/camunda/pull/69451"
+  },
+  "35a13433": {
+    "version": "main",
+    "file": "tests/api/v2/decision-instance/decision-instance-delete-api.spec.ts",
+    "titlePath": [
+      "Delete Decision Instances API Tests",
+      "Delete Decision Instance - Success"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 92.5% (+7.5pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43685062727",
+    "updated_at": "2026-11-15T07:20:46Z",
+    "cooldown_until": "2026-11-29T07:20:46Z",
+    "pr": "https://github.com/camunda/camunda/pull/69452"
   }
 }
