@@ -1805,9 +1805,14 @@ jobs:
           # would hand their PR to the next sweep, branch deletion included. So
           # release it only when the last application was this agent's own. No
           # event to attribute it to means it is not provably ours: keep it.
-          applier=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/timeline" \
-            --jq '[.[] | select(.event == "labeled" and .label.name == "do-not-close")][-1].actor.login // ""' \
-            2>/dev/null | tail -1)
+          # --slurp, because --paginate alone runs --jq once PER PAGE: the
+          # filter would emit one line per page and the last page carries no
+          # labeled event, so reading the last line loses the actor. --slurp
+          # hands jq every page at once, and `.[][]` flattens them back to
+          # events. Same pattern as .github/scripts/nightly-fix-reopen.sh.
+          applier=$(gh api --paginate --slurp "repos/${REPO}/issues/${PR_NUMBER}/timeline" \
+            --jq '[.[][] | select(.event == "labeled" and .label.name == "do-not-close")][-1].actor.login // ""' \
+            2>/dev/null)
           # GitHub spells an App actor `qa-processes[bot]` here and `app/qa-processes` elsewhere.
           owner=$(printf '%s' "$applier" | tr '[:upper:]' '[:lower:]' | sed -e 's#^app/##' -e 's#\[bot\]$##')
           if [ -z "$applier" ]; then
