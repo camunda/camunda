@@ -8,21 +8,18 @@
 
 import {useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Link, useRouter} from '@tanstack/react-router';
+import {useRouter} from '@tanstack/react-router';
 import {DataTable, EmptyState, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
 import {CaseStatusBadge} from '#/tasklist/modules/cases/components/CaseStatusBadge';
 import {SORT_FIELDS, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
+import {RouterRowLink} from '#/shared/router/RouterRowLink';
 
 const PAGE_SIZE = 25;
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
-
-const RowLink: React.FC<React.ComponentProps<'a'> & {href: string}> = ({href, ref: _ref, ...props}) => (
-	<Link to={href} {...props} />
-);
 
 function getCaseTitle(processInstance: ProcessInstance) {
 	return processInstance.processDefinitionName ?? processInstance.processDefinitionId;
@@ -157,7 +154,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 			data={cases}
 			getRowId={getRowId}
 			rowHref={getRowHref}
-			linkComponent={RowLink}
+			linkComponent={RouterRowLink}
 			rowClickLabel={getRowLabel}
 			sorting={sorting}
 			pagination={pagination}

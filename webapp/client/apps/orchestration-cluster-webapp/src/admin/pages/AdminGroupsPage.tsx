@@ -21,7 +21,7 @@ import {
 	type SortingConfig,
 } from '@camunda/design-system';
 import type {Group} from '@camunda/camunda-api-zod-schemas/8.11';
-import {RouterRowLink} from '#/admin/modules/shared/RouterRowLink';
+import {RouterRowLink} from '#/shared/router/RouterRowLink';
 import {useAdminDetailPath} from '#/admin/modules/shared/useAdminDetailPath';
 import {useDebouncedUrlFilter} from '#/shared/hooks/useDebouncedUrlFilter';
 import {AddGroupModal} from '#/admin/modules/groups/AddGroupModal';
