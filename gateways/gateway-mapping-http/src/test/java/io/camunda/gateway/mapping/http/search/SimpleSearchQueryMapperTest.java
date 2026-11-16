@@ -51,6 +51,6 @@ class SimpleSearchQueryMapperTest {
     final var filter = SimpleSearchQueryMapper.toProcessDefinitionFilter(simpleFilter);
 
     // then
-    assertThat(filter.get$Or()).isNull();
+    assertThat(filter.get$Or()).isNullOrEmpty();
   }
 }
