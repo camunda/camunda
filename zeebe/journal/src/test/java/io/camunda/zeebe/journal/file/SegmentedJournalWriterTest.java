@@ -82,6 +82,25 @@ final class SegmentedJournalWriterTest {
   }
 
   @Test
+  void shouldNotClaimUnflushedEntriesAsFlushedOnDeleteAfter() throws FlushException {
+    // given - 1-3 are flushed (segment 1: 1-2, segment 2: 3); 4-6 are not (segment 2: 4,
+    // segment 3: 5-6)
+    writer.append(1, journalFactory.entry());
+    writer.append(2, journalFactory.entry());
+    writer.append(3, journalFactory.entry());
+    writer.flush();
+    writer.append(4, journalFactory.entry());
+    writer.append(5, journalFactory.entry());
+    writer.append(6, journalFactory.entry());
+
+    // when - truncating into segment 3 keeps the unflushed entries 4 and 5
+    writer.deleteAfter(5);
+
+    // then - they are not claimed as flushed, so the next flush still covers segment 2
+    assertThat(writer.getLastFlushedIndex()).isEqualTo(3L);
+  }
+
+  @Test
   void shouldResetLastFlushedIndexOnReset() throws FlushException {
     // given
     writer.append(1, journalFactory.entry());
