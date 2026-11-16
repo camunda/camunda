@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.rest.config;
 import static io.camunda.security.api.model.config.MultiTenancyConfiguration.API_ENABLED_PROPERTY;
 import static io.camunda.security.api.model.config.oidc.OidcConfiguration.GROUPS_CLAIM_PROPERTY;
 import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT;
+import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANT_URI_PREFIX;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.authentication.pt.PhysicalTenantCamundaGroups;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
@@ -30,6 +32,7 @@ import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
@@ -39,7 +42,7 @@ public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
+      "Groups API is disabled because the application, or this physical tenant, is configured in group claim mode. To use the Groups API, reconfigure it to manage group mode by removing the '%s' property, or the physical tenant's override of it."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
   @VisibleForTesting
@@ -114,17 +117,23 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
-  @Conditional(GroupsClaimConfiguredCondition.class)
+  /**
+   * Blocks the Groups API for each physical tenant that takes its groups from a groups claim, and
+   * only for those: another tenant can still manage its groups in Camunda.
+   */
+  @Conditional(PhysicalTenantCamundaGroups.DisabledForAnyTenant.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper, final Environment environment) {
+    final var camundaGroups = new PhysicalTenantCamundaGroups(environment);
     final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
         new FilterRegistrationBean<>();
     registration.setFilter(
         new EndpointAccessErrorFilter(
             objectMapper,
             GROUPS_API_DISABLED_ERROR_MESSAGE,
-            patterns("/v2/groups/**", PHYSICAL_TENANTS_PATH_SEGMENT + "*/v2/groups/**")));
+            patterns("/v2/groups/**", PHYSICAL_TENANT_URI_PREFIX + "/v2/groups/**"),
+            physicalTenantId -> !camundaGroups.isCamundaGroupsEnabled(physicalTenantId)));
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
@@ -180,27 +189,6 @@ public class ApiFiltersConfiguration {
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       return "false"
           .equalsIgnoreCase(context.getEnvironment().getProperty(CANONICAL_API_ENABLED_PROPERTY));
-    }
-  }
-
-  /**
-   * Matches when the OIDC groups-claim property is configured, meaning groups are managed
-   * externally via the identity provider. {@code GROUPS_CLAIM_PROPERTY} is camelCase ({@code
-   * groupsClaim}); querying the {@link ConditionContext#getEnvironment()} with that exact string
-   * only matches a camelCase-configured property. Canonicalizing it first makes the lookup match a
-   * kebab-case ({@code groups-claim}) YAML key too, relying on Spring Boot's relaxed property
-   * binding.
-   */
-  static final class GroupsClaimConfiguredCondition implements Condition {
-
-    private static final String CANONICAL_GROUPS_CLAIM_PROPERTY =
-        ConfigurationPropertyName.adapt(GROUPS_CLAIM_PROPERTY, '.').toString();
-
-    @Override
-    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String groupsClaim =
-          context.getEnvironment().getProperty(CANONICAL_GROUPS_CLAIM_PROPERTY);
-      return groupsClaim != null && !groupsClaim.isEmpty();
     }
   }
 }
