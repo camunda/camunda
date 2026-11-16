@@ -196,8 +196,8 @@ export class IdentityAuthorizationsPage {
         // the engine rejects it with ALREADY_EXISTS (409) and the modal stays
         // open, which previously turned a succeeded create into a hard
         // toBeHidden failure. ALREADY_EXISTS confirms the authorization exists
-        // — the desired end state — so treat it as success. Owners are unique
-        // per run, so this code can only appear for our own prior attempt.
+        // — the desired end state. Owners are unique per run, so this code can
+        // only appear for our own prior attempt.
         const alreadyExistsAlert = this.createAuthorizationModal
           .getByRole('alert')
           .filter({hasText: 'ALREADY_EXISTS'});
@@ -206,10 +206,19 @@ export class IdentityAuthorizationsPage {
             timeout: 15000,
           });
         } catch (error) {
-          if (await alreadyExistsAlert.isVisible()) {
-            return;
+          if (!(await alreadyExistsAlert.isVisible())) {
+            throw error;
           }
-          throw error;
+          // The 409 keeps the modal open. Dismiss it so its overlay
+          // intercepts neither the list verification below nor the next
+          // step's navigation, then fall through to the same verification
+          // the happy path runs instead of returning blind.
+          await this.createAuthorizationModal
+            .getByRole('button', {name: 'Cancel'})
+            .click();
+          await expect(this.createAuthorizationModal).toBeHidden({
+            timeout: 15000,
+          });
         }
 
         await this.selectResourceTypeTab(authorization.resourceType);
