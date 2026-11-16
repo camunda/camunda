@@ -71,10 +71,9 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      # The base re-run's scripts: the checkout above is the tested branch,
-      # which does not carry them when a stable branch's PR is tested.
+      # The suite's CI scripts (job summary, base re-run): the checkout above
+      # is the tested branch, which does not carry them on stable branches.
       - name: Check out the suite CI scripts
-        if: inputs.compare-base-sha != ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.scripts-ref || github.workflow_sha }}
@@ -314,6 +313,16 @@ jobs:
             printf '%s\t%s\n' "$LEG" "$GITHUB_RUN_ATTEMPT" > json-report/leg.txt
           fi
 
+      # This job's counts and failing tests on the run's summary page.
+      - name: Write the job summary
+        if: always()
+        continue-on-error: true
+        shell: bash
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          TITLE: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
+        run: node "$GITHUB_WORKSPACE/.suite-ci/.github/scripts/c8-e2e-suite-triage.mjs" run-summary json-report/results.json "$TITLE" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload JSON report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -366,10 +375,9 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      # The base re-run's scripts: the checkout above is the tested branch,
-      # which does not carry them when a stable branch's PR is tested.
+      # The suite's CI scripts (job summary, base re-run): the checkout above
+      # is the tested branch, which does not carry them on stable branches.
       - name: Check out the suite CI scripts
-        if: inputs.compare-base-sha != ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.scripts-ref || github.workflow_sha }}
@@ -558,6 +566,16 @@ jobs:
             printf '%s\t%s\n' "$LEG" "$GITHUB_RUN_ATTEMPT" > json-report/leg.txt
           fi
 
+      # This job's counts and failing tests on the run's summary page.
+      - name: Write the job summary
+        if: always()
+        continue-on-error: true
+        shell: bash
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          TITLE: C8 Orchestration Cluster API Tests (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
+        run: node "$GITHUB_WORKSPACE/.suite-ci/.github/scripts/c8-e2e-suite-triage.mjs" run-summary json-report/results.json "$TITLE" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload JSON report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -621,10 +639,9 @@ jobs:
           ref: ${{ inputs.ref }}
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      # The base re-run's scripts: the checkout above is the tested branch,
-      # which does not carry them when a stable branch's PR is tested.
+      # The suite's CI scripts (job summary, base re-run): the checkout above
+      # is the tested branch, which does not carry them on stable branches.
       - name: Check out the suite CI scripts
-        if: inputs.compare-base-sha != ''
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.scripts-ref || github.workflow_sha }}
@@ -929,6 +946,16 @@ jobs:
           if [[ -f json-report/results.json ]]; then
             printf '%s\t%s\n' "$LEG" "$GITHUB_RUN_ATTEMPT" > json-report/leg.txt
           fi
+
+      # This job's counts and failing tests on the run's summary page.
+      - name: Write the job summary
+        if: always()
+        continue-on-error: true
+        shell: bash
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        env:
+          TITLE: C8 Orchestration Cluster E2E Tests (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
+        run: node "$GITHUB_WORKSPACE/.suite-ci/.github/scripts/c8-e2e-suite-triage.mjs" run-summary json-report/results.json "$TITLE" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload JSON report
         if: always()
