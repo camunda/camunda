@@ -30,14 +30,24 @@ import io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.service.ProcessDefinitionServices.ProcessDefinitionStateChangeRequest;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessDefinitionRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionSuspensionIntent;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class ProcessDefinitionServiceTest {
 
@@ -64,6 +74,7 @@ public class ProcessDefinitionServiceTest {
     brokerClient = mock(BrokerClient.class);
     formServices = mock(FormServices.class);
     executorProvider = mock(ApiServicesExecutorProvider.class);
+    when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     authorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
 
     services =
@@ -212,6 +223,54 @@ public class ProcessDefinitionServiceTest {
                 .formatted(FORM_ID, PROCESS_DEFINITION_KEY))
         .extracting(e -> ((ServiceException) e).getStatus())
         .isEqualTo(Status.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldSendSuspensionByIdToBroker() {
+    // given
+    final var captor = ArgumentCaptor.forClass(BrokerSuspendProcessDefinitionRequest.class);
+    final var response = new ProcessDefinitionSuspensionRecord().setBatchOperationKey(42L);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(response)));
+    final var request =
+        new ProcessDefinitionStateChangeRequest(-1L, "invoice-review", 2, TENANT_ID, true);
+
+    // when
+    final var result = services.suspendProcessDefinitions(request, authentication).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(42L);
+    final var sent = captor.getValue();
+    assertThat(sent.getValueType()).isEqualTo(ValueType.PROCESS_DEFINITION_SUSPENSION);
+    assertThat(sent.getIntent()).isEqualTo(ProcessDefinitionSuspensionIntent.SUSPEND);
+    assertThat(sent.getRequestWriter())
+        .returns(-1L, ProcessDefinitionSuspensionRecord::getProcessDefinitionKey)
+        .returns("invoice-review", ProcessDefinitionSuspensionRecord::getBpmnProcessId)
+        .returns(2, ProcessDefinitionSuspensionRecord::getVersion)
+        .returns(TENANT_ID, ProcessDefinitionSuspensionRecord::getTenantId)
+        .returns(true, ProcessDefinitionSuspensionRecord::isIncludeProcessInstances);
+  }
+
+  @Test
+  public void shouldSendResumptionByKeyToBroker() {
+    // given
+    final var captor = ArgumentCaptor.forClass(BrokerResumeProcessDefinitionRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new BrokerResponse<>(new ProcessDefinitionSuspensionRecord())));
+    final var request =
+        new ProcessDefinitionStateChangeRequest(PROCESS_DEFINITION_KEY, "", -1, TENANT_ID, false);
+
+    // when
+    services.resumeProcessDefinitions(request, authentication).join();
+
+    // then
+    final var sent = captor.getValue();
+    assertThat(sent.getIntent()).isEqualTo(ProcessDefinitionSuspensionIntent.RESUME);
+    assertThat(sent.getRequestWriter())
+        .returns(PROCESS_DEFINITION_KEY, ProcessDefinitionSuspensionRecord::getProcessDefinitionKey)
+        .returns(false, ProcessDefinitionSuspensionRecord::isIncludeProcessInstances);
   }
 
   private static ProcessDefinitionEntity processDefinition(final String formId) {
