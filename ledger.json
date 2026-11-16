@@ -101,11 +101,12 @@
       "Roles functionalities",
       "User inherits permissions through role assignment"
     ],
-    "last_action": "not_reproduced",
-    "last_reason": "baseline passed all 20 runs; the nightly flake did not reproduce",
-    "last_run": "https://github.com/camunda/camunda/actions/runs/43224216687",
-    "updated_at": "2026-11-12T13:42:10Z",
-    "cooldown_until": "2026-11-15T13:42:10Z"
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 85% (+15pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43817621639",
+    "updated_at": "2026-11-16T07:13:12Z",
+    "cooldown_until": "2026-11-30T07:13:12Z",
+    "pr": "https://github.com/camunda/camunda/pull/69476"
   },
   "3b4d6f3c": {
     "version": "8.8",
