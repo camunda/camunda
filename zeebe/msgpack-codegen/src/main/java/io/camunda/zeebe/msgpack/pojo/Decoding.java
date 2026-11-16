@@ -46,6 +46,33 @@ public final class Decoding {
   }
 
   /**
+   * Returns the value of a {@code @MsgpackRequired} long, for its getter: {@code return
+   * Decoding.required(field, FooOps.SENTINEL_field, "key");}. Fails like the {@code getValue()} of
+   * a legacy property that was never set if the field still holds its sentinel.
+   *
+   * @throws MsgpackPropertyException if the value is the sentinel, which means that it is unset
+   */
+  public static long required(final long value, final long sentinel, final String key) {
+    if (value == sentinel) {
+      throw unset(key);
+    }
+    return value;
+  }
+
+  /** Like {@link #required(long, long, String)}, for a {@code @MsgpackRequired} int. */
+  public static int required(final int value, final int sentinel, final String key) {
+    if (value == sentinel) {
+      throw unset(key);
+    }
+    return value;
+  }
+
+  private static MsgpackPropertyException unset(final String key) {
+    return new MsgpackPropertyException(
+        new StringValue(key), "Expected a value or default value to be specified, but has nothing");
+  }
+
+  /**
    * Compares two buffers by their bytes, whatever their class, like the {@code StringValue}, {@code
    * BinaryValue} and {@code PackedValue} they replace.
    */

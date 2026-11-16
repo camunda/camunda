@@ -76,7 +76,9 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   `@MsgpackRequired long priority = Long.MIN_VALUE;` where 0 is a real value). A new instance and
   one after `reset` hold the sentinel, so both are unset. The generated code compares with a
   `static final` copy of each sentinel. The sentinel must be outside the values of the property:
-  writing it fails like an unset property, and so does reading a message that holds it. The
+  writing it fails like an unset property, and so does reading a message that holds it. Its
+  getter returns `Decoding.required(field, FooOps.SENTINEL_field, "key")`, which fails like the
+  `getValue()` of an unset legacy property. The
   processor rejects `@Nullable` on a primitive, on a holder, on an `UnsafeBuffer` or on a nested
   value, a holder that is not `final`, and a `Boolean`, `Long` or `Integer` that is not
   `@Nullable`.
