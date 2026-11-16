@@ -136,10 +136,10 @@ spec:
                 optional: true
           resources:
             limits:
-              cpu: 250m
+              cpu: 1
               memory: 2Gi
             requests:
-              cpu: 250m
+              cpu: 500m
               memory: 2Gi
           ports:
             - containerPort: 9600
