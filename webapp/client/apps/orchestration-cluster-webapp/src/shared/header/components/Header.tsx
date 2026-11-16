@@ -36,6 +36,7 @@ import {authenticationStore} from '#/shared/auth/authentication.store';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {getC4Dictionary, getC4Locale} from '#/shared/i18n/shadcn.components/c4-dictionaries';
 import {themeStore} from '#/shared/theme/theme';
 import {HeaderBadges} from './HeaderBadges';
 import {InfoMenu} from './InfoMenu';
@@ -113,7 +114,8 @@ type Props = {
 };
 
 const Header: React.FC<Props> = observer(({currentUser, license}) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
+	const locale = getC4Locale(i18n.resolvedLanguage);
 	const {currentPage} = useCurrentPage();
 	const sidebarChildren = useSidebarChildren(currentUser);
 	const hasSidebar = sidebarChildren.length > 0;
@@ -165,7 +167,7 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 
 	return (
 		<ToolsProvider>
-			<C4Provider theme={themeStore.actualTheme}>
+			<C4Provider theme={themeStore.actualTheme} dictionary={getC4Dictionary(locale)} locale={locale}>
 				<TooltipProvider>
 					<SidebarProvider>
 						<SidebarBodySync hasSidebar={hasSidebar} />
