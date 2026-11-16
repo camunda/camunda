@@ -14,7 +14,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.RecordingProbeNotifier;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
@@ -222,6 +224,67 @@ public final class ProbeTest {
                     .formatted(probeId)
                 + " it. The cluster may be under heavy load; retry later.");
     verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(55, 555L);
+  }
+
+  @Test
+  public void shouldRejectATimeOutOfAProbeThatAlreadyEnded() {
+    // given a probe that ended at once, as its deadline had passed
+    final var created =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withDeadline(ENGINE.getClock().getCurrentTimeInMillis() - 1)
+            .create();
+    RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(created.getKey()).await();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(created.getKey())
+            .probe(ProbeIntent.TIME_OUT, new ProbeRecord().setProbeId(probeId)));
+
+    // then
+    final var rejection =
+        RecordingExporter.probeRecords(ProbeIntent.TIME_OUT)
+            .onlyCommandRejections()
+            .withRecordKey(created.getKey())
+            .getFirst();
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to time out probe with key '%d', but no such probe was found"
+                .formatted(created.getKey()));
+  }
+
+  @Test
+  public void shouldRejectATimeOutBeforeTheDeadline() {
+    // given
+    final var created =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withDeadline(ENGINE.getClock().getCurrentTimeInMillis() + 10_000)
+            .create();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(created.getKey())
+            .probe(ProbeIntent.TIME_OUT, new ProbeRecord().setProbeId(probeId)));
+
+    // then
+    final var rejection =
+        RecordingExporter.probeRecords(ProbeIntent.TIME_OUT)
+            .onlyCommandRejections()
+            .withRecordKey(created.getKey())
+            .getFirst();
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to time out probe with key '%d', but it has not timed out"
+                .formatted(created.getKey()));
   }
 
   @Test
