@@ -227,5 +227,18 @@
     "last_run": "https://github.com/camunda/camunda/actions/runs/43685029000",
     "updated_at": "2026-11-15T07:54:11Z",
     "cooldown_until": "2026-11-22T07:54:11Z"
+  },
+  "352a4c20": {
+    "version": "main",
+    "file": "tests/api/v2/message/search-message-subscription-api-tests.spec.ts",
+    "titlePath": [
+      "Search Message Subscription API Tests",
+      "Search Message Flow"
+    ],
+    "last_action": "not_reproduced",
+    "last_reason": "baseline passed all 40 runs; the nightly flake did not reproduce",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/43817597980",
+    "updated_at": "2026-11-16T07:00:36Z",
+    "cooldown_until": "2026-11-19T07:00:36Z"
   }
 }
