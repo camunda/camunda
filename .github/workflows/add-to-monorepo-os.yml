@@ -65,7 +65,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Add to Monorepo OS board
-        uses: camunda/infra-global-github-actions/add-to-monorepo-os@b0e719fb785b3a71c155e61abd8a25cf97e31741 # add-to-monorepo-os-1.0.0
+        uses: camunda/infra-global-github-actions/add-to-monorepo-os@314ba213caf10f94b88422e634a785d8e41bd16a # add-to-monorepo-os-1.0.1
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
