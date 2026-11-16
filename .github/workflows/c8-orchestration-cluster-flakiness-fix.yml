@@ -1798,12 +1798,26 @@ jobs:
           # commit was green, and this push moved the head past that
           # measurement. Leaving it would exempt an unmeasured head from
           # close-stale-fix-prs indefinitely, so give it up for the same reason
-          # a best-effort PR never gets one: it is no longer proven. A human
-          # may still apply it — a reviewer's hold is their call, not ours.
-          if gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label do-not-close >/dev/null 2>&1; then
+          # a best-effort PR never gets one: it is no longer proven.
+          #
+          # Only ours, though. A reviewer can apply the same label while this
+          # round is running — it takes minutes — and removing their override
+          # would hand their PR to the next sweep, branch deletion included. So
+          # release it only when the last application was this agent's own. No
+          # event to attribute it to means it is not provably ours: keep it.
+          applier=$(gh api --paginate "repos/${REPO}/issues/${PR_NUMBER}/timeline" \
+            --jq '[.[] | select(.event == "labeled" and .label.name == "do-not-close")][-1].actor.login // ""' \
+            2>/dev/null | tail -1)
+          # GitHub spells an App actor `qa-processes[bot]` here and `app/qa-processes` elsewhere.
+          owner=$(printf '%s' "$applier" | tr '[:upper:]' '[:lower:]' | sed -e 's#^app/##' -e 's#\[bot\]$##')
+          if [ -z "$applier" ]; then
+            echo "do-not-close was not set on #${PR_NUMBER} -- nothing to release."
+          elif [ "$owner" != "qa-processes" ]; then
+            echo "Hold kept: do-not-close was applied by ${applier}, not by this agent."
+          elif gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label do-not-close >/dev/null 2>&1; then
             echo "Hold released: ${PUSHED} was not measured."
           else
-            echo "do-not-close was not set on #${PR_NUMBER} -- nothing to release."
+            echo "::warning::could not release do-not-close on #${PR_NUMBER}"
           fi
 
       - name: Summarize the round
