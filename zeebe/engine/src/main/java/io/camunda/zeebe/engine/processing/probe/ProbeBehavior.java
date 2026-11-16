@@ -55,7 +55,23 @@ public final class ProbeBehavior {
    * other async request.
    */
   public void timeOut(final long probeKey, final ProbeRecord probe, final ProbeEndReason reason) {
-    final var timedOut = ended(probe, reason);
+    writeTimedOut(probeKey, ended(probe, reason));
+  }
+
+  /**
+   * Ends a probe whose {@code CREATE} reached the engine after its deadline, as {@link #timeOut}
+   * with {@code NO_WORKER}, but says why: no worker had a chance to collect it.
+   */
+  public void timeOutOnArrival(final long probeKey, final ProbeRecord probe) {
+    final var timedOut =
+        ended(probe, ProbeEndReason.NO_WORKER)
+            .setMessage(
+                "The probe for '%s' reached the engine after its deadline, so no worker could collect it. The cluster may be under heavy load; retry later."
+                    .formatted(probe.getProbeId()));
+    writeTimedOut(probeKey, timedOut);
+  }
+
+  private void writeTimedOut(final long probeKey, final ProbeRecord timedOut) {
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.TIMED_OUT, timedOut);
     asyncRequestState
         .findRequest(probeKey, ValueType.PROBE, ProbeIntent.CREATE)

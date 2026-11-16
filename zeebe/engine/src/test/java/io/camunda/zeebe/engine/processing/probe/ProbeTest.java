@@ -215,6 +215,12 @@ public final class ProbeTest {
         .describedAs("ended by the CREATE itself")
         .isEqualTo(created.getSourceRecordPosition());
     assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
+    assertThat(timedOut.getValue().getMessage())
+        .describedAs("says that no worker had a chance, not that none polls")
+        .isEqualTo(
+            "The probe for '%s' reached the engine after its deadline, so no worker could collect"
+                    .formatted(probeId)
+                + " it. The cluster may be under heavy load; retry later.");
     verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(55, 555L);
   }
 
@@ -283,6 +289,41 @@ public final class ProbeTest {
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldRejectADeadlineBeyondTheTimeoutCap() {
+    // given a deadline further away than the longest timeout plus the allowed clock skew, by more
+    // than the time the command may take to be processed
+    final long deadline = ENGINE.getClock().getCurrentTimeInMillis() + 30_000 + 5_000 + 1_000;
+
+    // when
+    final var rejection =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withDeadline(deadline)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .startsWith("Expected a deadline at most 35000 ms from now, but got one ");
+  }
+
+  @Test
+  public void shouldAcceptADeadlineAtTheTimeoutCapPlusClockSkew() {
+    // given a gateway clock up to 5 s ahead of the broker's
+    final long deadline = ENGINE.getClock().getCurrentTimeInMillis() + 30_000 + 5_000;
+
+    // when
+    final var created =
+        ENGINE.probe().withProbeId(probeId).withInput("={}").withDeadline(deadline).create();
+
+    // then
+    assertThat(created.getValue().getDeadline()).isEqualTo(deadline);
   }
 
   @Test

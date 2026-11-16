@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -54,6 +53,13 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
 
   static final int MAX_PROBE_ID_LENGTH = 256;
   static final long MAX_REQUEST_TIMEOUT = Duration.ofSeconds(30).toMillis();
+
+  /**
+   * How far the gateway's clock may run ahead of the broker's before a deadline counts as beyond
+   * the timeout cap. Without a bound on the deadline, a client could keep a probe in the state for
+   * as long as it likes, which the timeout cap exists to prevent.
+   */
+  static final long MAX_DEADLINE_CLOCK_SKEW = Duration.ofSeconds(5).toMillis();
 
   private static final String TENANT_NOT_ASSIGNED_MESSAGE =
       "Expected to create a probe for tenant '%s', but the user is not assigned to this tenant.";
@@ -129,7 +135,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
     // the gateway set the deadline when the request arrived; a CREATE that queued past it ends at
     // once, rather than leaving its client to the gateway's own time-out
     if (probe.getDeadline() <= clock.millis()) {
-      probeBehavior.timeOut(probeKey, probe, ProbeEndReason.NO_WORKER);
+      probeBehavior.timeOutOnArrival(probeKey, probe);
       return;
     }
     timeoutChecker.schedule(probe.getDeadline());
@@ -158,6 +164,14 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
       return invalidArgument(
           "Expected a deadline set when the request was received, but got %d."
               .formatted(probe.getDeadline()));
+    }
+    final long latestDeadline = clock.millis() + MAX_REQUEST_TIMEOUT + MAX_DEADLINE_CLOCK_SKEW;
+    if (probe.getDeadline() > latestDeadline) {
+      return invalidArgument(
+          "Expected a deadline at most %d ms from now, but got one %d ms from now."
+              .formatted(
+                  MAX_REQUEST_TIMEOUT + MAX_DEADLINE_CLOCK_SKEW,
+                  probe.getDeadline() - clock.millis()));
     }
     return Either.right(probe);
   }
