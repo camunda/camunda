@@ -27,7 +27,9 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstance
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessDefinitionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessDefinitionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
@@ -52,8 +54,10 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessRequestObject;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -504,6 +508,86 @@ public final class RequestMapper extends RequestUtil {
     return brokerRequest;
   }
 
+  public static BrokerSuspendProcessDefinitionRequest toSuspendProcessDefinitionRequest(
+      final SuspendProcessDefinitionRequest grpcRequest) {
+    final var selection =
+        toValidProcessDefinitionSelection(
+            "SuspendProcessDefinition",
+            grpcRequest.getProcessDefinitionKey(),
+            grpcRequest.getBpmnProcessId(),
+            grpcRequest.hasVersion(),
+            grpcRequest.getVersion(),
+            grpcRequest.getTenantId());
+    return new BrokerSuspendProcessDefinitionRequest()
+        .setProcessDefinitionKey(selection.processDefinitionKey())
+        .setBpmnProcessId(selection.bpmnProcessId())
+        .setVersion(selection.version())
+        .setTenantId(selection.tenantId())
+        .setIncludeProcessInstances(grpcRequest.getIncludeProcessInstances());
+  }
+
+  public static BrokerResumeProcessDefinitionRequest toResumeProcessDefinitionRequest(
+      final ResumeProcessDefinitionRequest grpcRequest) {
+    final var selection =
+        toValidProcessDefinitionSelection(
+            "ResumeProcessDefinition",
+            grpcRequest.getProcessDefinitionKey(),
+            grpcRequest.getBpmnProcessId(),
+            grpcRequest.hasVersion(),
+            grpcRequest.getVersion(),
+            grpcRequest.getTenantId());
+    return new BrokerResumeProcessDefinitionRequest()
+        .setProcessDefinitionKey(selection.processDefinitionKey())
+        .setBpmnProcessId(selection.bpmnProcessId())
+        .setVersion(selection.version())
+        .setTenantId(selection.tenantId())
+        .setIncludeProcessInstances(grpcRequest.getIncludeProcessInstances());
+  }
+
+  /**
+   * Selects the process definition versions to suspend or resume. A key identifies exactly one
+   * version, so the version and tenant can only be set together with the BPMN process id. Without a
+   * version, all versions of the BPMN process id are selected, which the broker expects as {@code
+   * -1}. The tenant of a key request stays empty, because the key already determines the tenant.
+   */
+  private static ProcessDefinitionSelection toValidProcessDefinitionSelection(
+      final String commandName,
+      final long processDefinitionKey,
+      final String bpmnProcessId,
+      final boolean hasVersion,
+      final int version,
+      final String tenantId) {
+    final boolean hasKey = processDefinitionKey != 0;
+    final boolean hasBpmnProcessId = !StringUtils.isBlank(bpmnProcessId);
+
+    if (hasKey == hasBpmnProcessId) {
+      throw new IllegalArgumentException(
+          "Expected to %s by either a process definition key or a BPMN process id, but %s"
+              .formatted(commandName, hasKey ? "both were provided" : "neither was provided"));
+    }
+
+    if (hasKey) {
+      if (processDefinitionKey < 0) {
+        throw new IllegalArgumentException(
+            "Expected to %s with a positive process definition key, but got '%d'"
+                .formatted(commandName, processDefinitionKey));
+      }
+      if (hasVersion || !StringUtils.isBlank(tenantId)) {
+        throw new IllegalArgumentException(
+            "Expected to %s by process definition key without a version or tenant id, but one was provided. The version and tenant id can only be set together with a BPMN process id"
+                .formatted(commandName));
+      }
+      return new ProcessDefinitionSelection(processDefinitionKey, "", -1, "");
+    }
+
+    if (hasVersion && version < 1) {
+      throw new IllegalArgumentException(
+          "Expected to %s with a positive version, but got '%d'".formatted(commandName, version));
+    }
+    return new ProcessDefinitionSelection(
+        -1L, bpmnProcessId, hasVersion ? version : -1, ensureTenantIdSet(commandName, tenantId));
+  }
+
   public static BrokerBroadcastSignalRequest toBroadcastSignalRequest(
       final BroadcastSignalRequest grpcRequest) {
     return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
@@ -644,4 +728,7 @@ public final class RequestMapper extends RequestUtil {
               "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
     };
   }
+
+  private record ProcessDefinitionSelection(
+      long processDefinitionKey, String bpmnProcessId, int version, String tenantId) {}
 }

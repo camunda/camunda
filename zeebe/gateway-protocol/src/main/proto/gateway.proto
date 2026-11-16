@@ -993,6 +993,110 @@ message AssignProcessInstanceBusinessIdResponse {
 
 }
 
+message SuspendProcessDefinitionRequest {
+  // The key of the process definition version to suspend. Set either this or the
+  // bpmnProcessId, not both.
+  int64 processDefinitionKey = 1;
+  // The BPMN process id of the process definition to suspend. Set either this or the
+  // processDefinitionKey, not both.
+  string bpmnProcessId = 2;
+  // The version of the process definition to suspend. If omitted, all versions of the
+  // bpmnProcessId are suspended. Can only be set together with the bpmnProcessId.
+  optional int32 version = 3;
+  // The tenant of the process definition. Can only be set together with the bpmnProcessId.
+  // If omitted, the default tenant is used, unless multi-tenancy is enabled.
+  string tenantId = 4;
+  // Whether to also suspend the running process instances of the affected process definition
+  // versions. The instances are suspended by a batch operation.
+  bool includeProcessInstances = 5;
+}
+
+message SuspendProcessDefinitionResponse {
+  // What the suspension did to one process definition version.
+  message ProcessDefinitionVersion {
+    enum Outcome {
+      // the outcome is not set, for example because the field is missing or the outcome is newer
+      // than the client.
+      OUTCOME_UNSPECIFIED = 0;
+      // the version was active and is now suspended. The suspension applies to all partitions
+      // shortly after the response.
+      SUSPENDED = 1;
+      // the version was already suspended, so its state is unchanged. With
+      // includeProcessInstances, its process instances are still suspended by the batch operation.
+      ALREADY_SUSPENDED = 2;
+      // the version is being deleted and is left unchanged. This only occurs when the request
+      // selects by bpmnProcessId without a version; selecting a single draining version is
+      // rejected with FAILED_PRECONDITION.
+      DRAINING = 3;
+    }
+
+    // The key of the process definition version.
+    int64 processDefinitionKey = 1;
+    // The version of the process definition.
+    int32 version = 2;
+    // What the suspension did to this version.
+    Outcome outcome = 3;
+  }
+
+  // The affected process definition versions.
+  repeated ProcessDefinitionVersion processDefinitions = 1;
+  // The key of the batch operation that suspends the running process instances. Only set when
+  // includeProcessInstances is set in the request.
+  optional string batchOperationKey = 2;
+}
+
+message ResumeProcessDefinitionRequest {
+  // The key of the process definition version to resume. Set either this or the
+  // bpmnProcessId, not both.
+  int64 processDefinitionKey = 1;
+  // The BPMN process id of the process definition to resume. Set either this or the
+  // processDefinitionKey, not both.
+  string bpmnProcessId = 2;
+  // The version of the process definition to resume. If omitted, all versions of the
+  // bpmnProcessId are resumed. Can only be set together with the bpmnProcessId.
+  optional int32 version = 3;
+  // The tenant of the process definition. Can only be set together with the bpmnProcessId.
+  // If omitted, the default tenant is used, unless multi-tenancy is enabled.
+  string tenantId = 4;
+  // Whether to also resume the suspended process instances of the affected process definition
+  // versions. The instances are resumed by a batch operation.
+  bool includeProcessInstances = 5;
+}
+
+message ResumeProcessDefinitionResponse {
+  // What the resumption did to one process definition version.
+  message ProcessDefinitionVersion {
+    enum Outcome {
+      // the outcome is not set, for example because the field is missing or the outcome is newer
+      // than the client.
+      OUTCOME_UNSPECIFIED = 0;
+      // the version was suspended and is now active again. The resumption applies to all
+      // partitions shortly after the response.
+      RESUMED = 1;
+      // the version was already active, so its state is unchanged. With includeProcessInstances,
+      // its suspended process instances are still resumed by the batch operation.
+      ALREADY_RESUMED = 2;
+      // the version is being deleted and is left unchanged. This only occurs when the request
+      // selects by bpmnProcessId without a version; selecting a single draining version is
+      // rejected with FAILED_PRECONDITION.
+      DRAINING = 3;
+    }
+
+    // The key of the process definition version.
+    int64 processDefinitionKey = 1;
+    // The version of the process definition.
+    int32 version = 2;
+    // What the resumption did to this version.
+    Outcome outcome = 3;
+  }
+
+  // The affected process definition versions.
+  repeated ProcessDefinitionVersion processDefinitions = 1;
+  // The key of the batch operation that resumes the suspended process instances. Only set when
+  // includeProcessInstances is set in the request.
+  optional string batchOperationKey = 2;
+}
+
 message DeleteResourceRequest {
   // The key of the resource that should be deleted. This can either be the key
   // of a process definition, the key of a decision requirements definition or the key of a form.
@@ -1398,6 +1502,58 @@ service Gateway {
         - the business id is empty or exceeds the allowed length
    */
   rpc AssignProcessInstanceBusinessId (AssignProcessInstanceBusinessIdRequest) returns (AssignProcessInstanceBusinessIdResponse) {
+
+  }
+
+  /*
+    Suspends process definitions, so that no new process instances can be created from them.
+    The process definitions are selected either by their key, which identifies exactly one
+    version, or by their BPMN process id with an optional version. Without a version, all
+    versions of the process definition are suspended.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - neither a process definition key nor a BPMN process id is given, or both are given
+        - a version or a tenant id is given together with a process definition key
+        - the version is not positive
+        - the tenant id is invalid, or missing while multi-tenancy is enabled
+
+      NOT_FOUND:
+        - no process definition matches the request
+
+      FAILED_PRECONDITION:
+        - a matching process definition is not in a state that can be suspended
+
+      PERMISSION_DENIED:
+        - the user is not authorized to suspend the process definition
+   */
+  rpc SuspendProcessDefinition (SuspendProcessDefinitionRequest) returns (SuspendProcessDefinitionResponse) {
+
+  }
+
+  /*
+    Resumes suspended process definitions, so that process instances can be created from them
+    again. The process definitions are selected either by their key, which identifies exactly one
+    version, or by their BPMN process id with an optional version. Without a version, all
+    versions of the process definition are resumed.
+
+    Errors:
+      INVALID_ARGUMENT:
+        - neither a process definition key nor a BPMN process id is given, or both are given
+        - a version or a tenant id is given together with a process definition key
+        - the version is not positive
+        - the tenant id is invalid, or missing while multi-tenancy is enabled
+
+      NOT_FOUND:
+        - no process definition matches the request
+
+      FAILED_PRECONDITION:
+        - a matching process definition is not in a state that can be resumed
+
+      PERMISSION_DENIED:
+        - the user is not authorized to resume the process definition
+   */
+  rpc ResumeProcessDefinition (ResumeProcessDefinitionRequest) returns (ResumeProcessDefinitionResponse) {
 
   }
 

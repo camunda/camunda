@@ -44,9 +44,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -234,6 +238,22 @@ public class GatewayGrpcService extends GatewayImplBase {
       final DeleteResourceRequest request,
       final StreamObserver<DeleteResourceResponse> responseObserver) {
     endpointManager.deleteResource(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void suspendProcessDefinition(
+      final SuspendProcessDefinitionRequest request,
+      final StreamObserver<SuspendProcessDefinitionResponse> responseObserver) {
+    endpointManager.suspendProcessDefinition(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void resumeProcessDefinition(
+      final ResumeProcessDefinitionRequest request,
+      final StreamObserver<ResumeProcessDefinitionResponse> responseObserver) {
+    endpointManager.resumeProcessDefinition(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 

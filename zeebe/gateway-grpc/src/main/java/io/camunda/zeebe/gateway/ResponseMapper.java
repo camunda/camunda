@@ -44,7 +44,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceRefere
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResumeProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessDefinitionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
@@ -59,6 +61,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processdefinition.ProcessDefinitionSuspensionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -529,6 +532,46 @@ public final class ResponseMapper {
   public static AssignProcessInstanceBusinessIdResponse toAssignProcessInstanceBusinessIdResponse(
       final long key, final ProcessInstanceBusinessIdRecord brokerResponse) {
     return AssignProcessInstanceBusinessIdResponse.getDefaultInstance();
+  }
+
+  public static SuspendProcessDefinitionResponse toSuspendProcessDefinitionResponse(
+      final long key, final ProcessDefinitionSuspensionRecord brokerResponse) {
+    final var responseBuilder = SuspendProcessDefinitionResponse.newBuilder();
+    brokerResponse
+        .getResolvedVersions()
+        .forEach(
+            version ->
+                responseBuilder.addProcessDefinitions(
+                    SuspendProcessDefinitionResponse.ProcessDefinitionVersion.newBuilder()
+                        .setProcessDefinitionKey(version.getProcessDefinitionKey())
+                        .setVersion(version.getVersion())
+                        .setOutcome(
+                            SuspendProcessDefinitionResponse.ProcessDefinitionVersion.Outcome
+                                .valueOf(version.getOutcome().name()))));
+    if (brokerResponse.getBatchOperationKey() > 0) {
+      responseBuilder.setBatchOperationKey(String.valueOf(brokerResponse.getBatchOperationKey()));
+    }
+    return responseBuilder.build();
+  }
+
+  public static ResumeProcessDefinitionResponse toResumeProcessDefinitionResponse(
+      final long key, final ProcessDefinitionSuspensionRecord brokerResponse) {
+    final var responseBuilder = ResumeProcessDefinitionResponse.newBuilder();
+    brokerResponse
+        .getResolvedVersions()
+        .forEach(
+            version ->
+                responseBuilder.addProcessDefinitions(
+                    ResumeProcessDefinitionResponse.ProcessDefinitionVersion.newBuilder()
+                        .setProcessDefinitionKey(version.getProcessDefinitionKey())
+                        .setVersion(version.getVersion())
+                        .setOutcome(
+                            ResumeProcessDefinitionResponse.ProcessDefinitionVersion.Outcome
+                                .valueOf(version.getOutcome().name()))));
+    if (brokerResponse.getBatchOperationKey() > 0) {
+      responseBuilder.setBatchOperationKey(String.valueOf(brokerResponse.getBatchOperationKey()));
+    }
+    return responseBuilder.build();
   }
 
   public static DeleteResourceResponse toDeleteResourceResponse(
