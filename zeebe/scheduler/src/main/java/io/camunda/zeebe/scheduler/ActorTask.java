@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.ActorMetrics.ActorMetricsScoped;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class ActorTask {
   private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
+  private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
   private static final AtomicReferenceFieldUpdater<ActorTask, ActorLifecyclePhase>
       LIFECYCLE_UPDATER =
           AtomicReferenceFieldUpdater.newUpdater(
@@ -248,7 +250,8 @@ public class ActorTask {
     // we need to work on a copy - otherwise we would get a ConcurrentModificationException
     // since some subscriptions remove them self on cancel
     final var actorSubscriptions = new ArrayList<>(subscriptions);
-    actorSubscriptions.forEach(ActorSubscription::cancel);
+    actorSubscriptions.forEach(
+        subscription -> runGuarded(subscription::cancel, "cancel a subscription"));
     subscriptions = new ArrayList<>();
 
     final Queue<ActorJob> activeJobsQueue = submittedJobs;
@@ -261,6 +264,15 @@ public class ActorTask {
       failJob(j);
     }
     metrics.close();
+  }
+
+  private void runGuarded(final Runnable action, final String description) {
+    try {
+      action.run();
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
+      LOG.error("Actor {} failed to {}", actor.getName(), description, e);
+    }
   }
 
   private void failJob(final ActorJob job) {

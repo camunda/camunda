@@ -122,6 +122,47 @@ final class ActorErrorHandlingTest {
     assertThat(call).succeedsWithin(Duration.ZERO).isEqualTo(1);
   }
 
+  @Test
+  void shouldCancelRemainingSubscriptionsWhenOneFailsToCancel() {
+    // given
+    final var actor = startActor(new DefaultActor());
+    final var subscription = new CancelRecordingSubscription();
+    actor.run(
+        () -> {
+          final var task = ActorThread.current().getCurrentJob().getTask();
+          task.addSubscription(new CancelFailingSubscription());
+          task.addSubscription(subscription);
+        });
+    scheduler.workUntilDone();
+
+    // when
+    actor.closeAsync();
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(subscription.cancelled).isTrue();
+  }
+
+  @Test
+  void shouldCloseWhenSubscriptionCancelThrows() {
+    // given
+    final var actor = startActor(new DefaultActor());
+    actor.run(
+        () ->
+            ActorThread.current()
+                .getCurrentJob()
+                .getTask()
+                .addSubscription(new CancelFailingSubscription()));
+    scheduler.workUntilDone();
+
+    // when
+    final var closeFuture = actor.closeAsync();
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(closeFuture).succeedsWithin(Duration.ZERO);
+  }
+
   private <T extends Actor> T startActor(final T actor) {
     scheduler.submitActor(actor);
     scheduler.workUntilDone();
@@ -141,6 +182,52 @@ final class ActorErrorHandlingTest {
     protected void handleFailure(final Throwable failure) {
       failures.add(failure);
       actor.fail(failure);
+    }
+  }
+
+  private static final class CancelFailingSubscription implements ActorSubscription {
+    @Override
+    public boolean poll() {
+      return false;
+    }
+
+    @Override
+    public ActorJob getJob() {
+      return null;
+    }
+
+    @Override
+    public boolean isRecurring() {
+      return false;
+    }
+
+    @Override
+    public void cancel() {
+      throw new IllegalStateException("cancel failure");
+    }
+  }
+
+  private static final class CancelRecordingSubscription implements ActorSubscription {
+    private boolean cancelled;
+
+    @Override
+    public boolean poll() {
+      return false;
+    }
+
+    @Override
+    public ActorJob getJob() {
+      return null;
+    }
+
+    @Override
+    public boolean isRecurring() {
+      return false;
+    }
+
+    @Override
+    public void cancel() {
+      cancelled = true;
     }
   }
 
