@@ -187,9 +187,30 @@ export class IdentityAuthorizationsPage {
         await this.fillResourceId(authorization.resourceId);
         await this.selectAccessPermissions(authorization.accessPermissions);
         await this.createAuthorizationSubmitButton.click({timeout: 15000});
-        await expect(this.createAuthorizationModal).toBeHidden({
-          timeout: 15000,
-        });
+
+        // Creating an authorization is not idempotent, so the retry loop must
+        // not blindly re-submit it. A transient hiccup on an earlier attempt —
+        // a slow modal close, or export lag in the list verification below —
+        // can make a create that the engine actually persisted (201) look
+        // failed and trigger a retry. The retry re-submits the same command,
+        // the engine rejects it with ALREADY_EXISTS (409) and the modal stays
+        // open, which previously turned a succeeded create into a hard
+        // toBeHidden failure. ALREADY_EXISTS confirms the authorization exists
+        // — the desired end state — so treat it as success. Owners are unique
+        // per run, so this code can only appear for our own prior attempt.
+        const alreadyExistsAlert = this.createAuthorizationModal
+          .getByRole('alert')
+          .filter({hasText: 'ALREADY_EXISTS'});
+        try {
+          await expect(this.createAuthorizationModal).toBeHidden({
+            timeout: 15000,
+          });
+        } catch (error) {
+          if (await alreadyExistsAlert.isVisible()) {
+            return;
+          }
+          throw error;
+        }
 
         await this.selectResourceTypeTab(authorization.resourceType);
         const item = this.getAuthorizationCell(authorization.ownerId);
