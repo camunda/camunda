@@ -106,7 +106,9 @@ const VersionFooter: React.FC = () => {
 
 	return (
 		<div className="px-2 py-1.5 text-xs text-neutral-foreground-subtle">
-			<div>{t('headerVersionLabel', {version: import.meta.env.VITE_VERSION})}</div>
+			{import.meta.env.VITE_VERSION ? (
+				<div>{t('headerVersionLabel', {version: import.meta.env.VITE_VERSION})}</div>
+			) : null}
 			<div>© Camunda Services GmbH {CURRENT_YEAR}. All rights reserved.</div>
 		</div>
 	);
