@@ -18,7 +18,7 @@ import org.jspecify.annotations.Nullable;
  * scans: the store merges its unflushed writes into a scan by comparing keys.
  *
  * <p>Keys belong to groups, for example a column family or an entity type. A group is the unit of
- * the metrics.
+ * the key index and of the metrics.
  *
  * @param <K> the key type
  * @param <V> the value as the store holds it; immutable once the store has it, so that the writer
@@ -29,6 +29,18 @@ public interface Backend<K extends Comparable<K>, V, T> {
 
   /** The group that the key belongs to. */
   long groupOf(K key);
+
+  /**
+   * The range of all keys of a group; the cursor of a scan of the group stays in it. The range is
+   * the smallest key of the group and the first key after it, or null if there is none.
+   */
+  KeyRange<K> groupRange(long group);
+
+  /**
+   * A key at or after every key of the group, that the group's cursors still accept as a seek key.
+   * Used to seek to the last key of a group.
+   */
+  K groupLastSeekKey(long group);
 
   /** Reads the committed value, or returns null if there is none. */
   @Nullable V get(K key);

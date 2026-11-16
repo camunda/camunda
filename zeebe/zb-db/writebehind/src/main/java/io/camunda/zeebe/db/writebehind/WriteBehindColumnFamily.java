@@ -380,7 +380,9 @@ final class WriteBehindColumnFamily<
     final var seekTarget =
         startAt == null ? prefixKey : encode(columnFamily.getValue(), startAt, keyBuffer);
     long visited = 0;
-    try (final var cursor = context.currentTransaction().newCursor(prefixKey)) {
+    final var transaction = context.currentTransaction();
+    transaction.prepareScan(columnFamily.getValue());
+    try (final var cursor = transaction.newCursor(prefixKey)) {
       if (reverse) {
         cursor.seekForPrev(RawKey.of(seekTarget));
       } else {
@@ -391,17 +393,24 @@ final class WriteBehindColumnFamily<
         if (!startsWith(prefixKey, 0, prefixKey.length, key, 0, key.length)) {
           break;
         }
-        visited++;
         if (entryVisitor != null) {
+          if (!cursor.readValue(valueInstance)) {
+            // another context deleted the entry after the cursor found its key
+            cursor.advance();
+            continue;
+          }
+          visited++;
           wrapKey(key);
-          cursor.readValue(valueInstance);
           if (!entryVisitor.visit(keyInstance, valueInstance)) {
             break;
           }
-        } else if (keyVisitor != null) {
-          wrapKey(key);
-          if (!keyVisitor.visit(keyInstance)) {
-            break;
+        } else {
+          visited++;
+          if (keyVisitor != null) {
+            wrapKey(key);
+            if (!keyVisitor.visit(keyInstance)) {
+              break;
+            }
           }
         }
         cursor.advance();

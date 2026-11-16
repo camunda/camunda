@@ -126,7 +126,7 @@ final class ScanViewTest {
       final ViewSource<RawKey, HeldValue, DbValue> scan, final RawKey key) {
     final var value = new DbLong();
     scan.seek(key);
-    scan.readValue(value);
+    assertThat(scan.readValueUnlessStale(value)).isTrue();
     return value.getValue();
   }
 

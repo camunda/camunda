@@ -37,6 +37,28 @@ final class WriteBehindMetrics {
 
   final LongAdder flushFailures = new LongAdder();
 
+  /** Key indexes loaded from the storage, and loads thrown away because a commit overtook them. */
+  final LongAdder keyIndexLoads = new LongAdder();
+
+  final LongAdder keyIndexDiscardedLoads = new LongAdder();
+
+  /** Key indexes given up for good, see {@link KeyIndex#disable}. */
+  final LongAdder keyIndexDisables = new LongAdder();
+
+  /** Scans that started on a key index instead of on the storage. */
+  final LongAdder indexedScans = new LongAdder();
+
+  /** Indexed scans that switched to the storage, because a commit changed the keys of the index. */
+  final LongAdder keyIndexSwitches = new LongAdder();
+
+  /** Indexed scans that went past the window of their index and continued on the storage. */
+  final LongAdder keyIndexHandovers = new LongAdder();
+
+  /** Windows that were refilled, and refills thrown away because a commit overtook them. */
+  final LongAdder keyIndexRefills = new LongAdder();
+
+  final LongAdder keyIndexDiscardedRefills = new LongAdder();
+
   // copied on write: a lookup by a primitive key, without a lock or a boxed key, on every read and
   // write; a column family is added once, when it is first used
   private volatile Long2ObjectHashMap<ColumnFamilyCounters> columnFamilies =
@@ -83,6 +105,14 @@ final class WriteBehindMetrics {
     counter(registry, "iterators.opened", iteratorsOpened, tags);
     counter(registry, "flush.retries", flushRetries, tags);
     counter(registry, "flush.failures", flushFailures, tags);
+    counter(registry, "keyindex.loads", keyIndexLoads, tags);
+    counter(registry, "keyindex.loads.discarded", keyIndexDiscardedLoads, tags);
+    counter(registry, "keyindex.disables", keyIndexDisables, tags);
+    counter(registry, "keyindex.switches", keyIndexSwitches, tags);
+    counter(registry, "keyindex.handovers", keyIndexHandovers, tags);
+    counter(registry, "keyindex.refills", keyIndexRefills, tags);
+    counter(registry, "keyindex.refills.discarded", keyIndexDiscardedRefills, tags);
+    counter(registry, "scan.indexed", indexedScans, tags);
     FunctionTimer.builder(
             PREFIX + "flush.duration",
             this,
@@ -113,6 +143,9 @@ final class WriteBehindMetrics {
     /** Point lookups answered by the read cache. */
     final LongAdder cacheHits = new LongAdder();
 
+    /** Point lookups answered "absent" by the key index of the column family. */
+    final LongAdder keyIndexAbsent = new LongAdder();
+
     /** Point lookups that went to the storage, and how many of them found a value. */
     final LongAdder storageGets = new LongAdder();
 
@@ -135,6 +168,7 @@ final class WriteBehindMetrics {
       all.put("committed.deletes", committedDeletes);
       all.put("lookup.dirty.hits", dirtyHits);
       all.put("lookup.cache.hits", cacheHits);
+      all.put("lookup.keyindex.absent", keyIndexAbsent);
       all.put("lookup.storage.gets", storageGets);
       all.put("lookup.storage.found", storageGetsFound);
       all.put("scan.storage.iterators", iterators);

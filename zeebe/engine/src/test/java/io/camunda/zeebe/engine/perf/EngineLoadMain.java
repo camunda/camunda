@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.perf;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.EngineKeyIndexPolicies;
 import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -31,6 +33,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 
@@ -47,13 +51,18 @@ import org.apache.logging.log4j.core.config.Configurator;
  * state, {@code LOAD_BATCH} [100] commands written before waiting, {@code LOAD_REVISIT} [false] to
  * keep the prefilled instances open and complete the oldest open instance for each new one, {@code
  * ZEEBE_DB_ROCKSDB_STATISTICS} [false] to print the RocksDB metrics after the run, {@code
- * ZEEBE_DB_ACCESS_METRICS} [false] for RocksDB access counts per column family. The write-behind
- * counters per column family are always printed (lines starting with {@code CF}). The summary is
- * printed on one line starting with {@code LOAD-TEST-RESULT}.
+ * ZEEBE_DB_ACCESS_METRICS} [false] for RocksDB access counts per column family, {@code
+ * ZEEBE_DB_KEY_INDEX} [default] and {@code ZEEBE_DB_KEY_INDEX_MAX_KEYS} for the write-behind key
+ * index, see {@link EngineKeyIndexPolicies#parse}. The settings are printed first, on a line
+ * starting with {@code LOAD-TEST-CONFIG}. The write-behind counters per column family are always
+ * printed (lines starting with {@code CF}), their sums on a line starting with {@code CF-TOTAL},
+ * and the store-wide ones, like the key index loads and handovers, on a line starting with {@code
+ * WRITE-BEHIND}. The summary is printed on one line starting with {@code LOAD-TEST-RESULT}.
  */
 public final class EngineLoadMain {
 
   private static final String JOB_TYPE = "task";
+  private static final String WRITE_BEHIND_PREFIX = "zeebe.writebehind.";
 
   private final TestEngine engine;
   private final LogStreamReader reader;
@@ -88,6 +97,20 @@ public final class EngineLoadMain {
     final boolean revisit = Boolean.parseBoolean(env("LOAD_REVISIT", "false"));
     final boolean writeBehind =
         Boolean.parseBoolean(System.getenv("ZEEBE_DB_WRITE_BEHIND_ENABLED"));
+    final var keyIndex = writeBehind ? EngineKeyIndexPolicies.fromEnvironment() : null;
+    final var mode = keyIndex == null ? "rocksdb" : "write-behind keyIndex=" + keyIndex.name();
+    System.out.printf(
+        "LOAD-TEST-CONFIG mode=%s revisit=%s instances=%d warmup=%d prefill=%d batch=%d%s%n",
+        mode,
+        revisit,
+        instances,
+        warmup,
+        prefill,
+        batch,
+        keyIndex == null
+            ? ""
+            : " keyIndexMaxKeys=%d keyIndexPolicies=%s"
+                .formatted(DefaultZeebeDbFactory.keyIndexMaxKeys(), keyIndex.describePolicies()));
 
     final var context = TestEngine.createTestContext();
     try {
@@ -105,36 +128,36 @@ public final class EngineLoadMain {
 
       load.run(warmup);
       final var baseline = load.engine.columnFamilyMetrics();
-      final var dbBaseline = statistics ? load.engine.dbMetrics() : Map.<String, Double>of();
+      final var dbBaseline = load.engine.dbMetrics();
       final var start = System.nanoTime();
       load.run(instances);
       final var seconds = Duration.ofNanos(System.nanoTime() - start).toNanos() / 1e9;
       System.out.printf(
           "LOAD-TEST-RESULT mode=%s revisit=%s instances=%d prefill=%d batch=%d duration=%.2fs throughput=%.1f instances/s%n",
-          writeBehind ? "write-behind" : "rocksdb",
-          revisit,
-          instances,
-          prefill,
-          batch,
-          seconds,
-          instances / seconds);
+          mode, revisit, instances, prefill, batch, seconds, instances / seconds);
       // a snapshot waits until the write-behind writer has flushed everything, so the counters
       // and RocksDB's statistics cover all writes of the run
       load.engine.commandWriter().snapshot(1);
+      final var dbMetrics = load.engine.dbMetrics();
       if (statistics) {
         // gauges that hold a level, like memory use, are printed as their change as well
-        load.engine
-            .dbMetrics()
-            .forEach(
-                (name, value) -> {
-                  final var change = value - dbBaseline.getOrDefault(name, 0.0);
-                  if (change != 0) {
-                    System.out.printf("ROCKSDB %s=%.0f%n", name, change);
-                  }
-                });
+        dbMetrics.forEach(
+            (name, value) -> {
+              final var change = value - dbBaseline.getOrDefault(name, 0.0);
+              if (change != 0 && !name.startsWith(WRITE_BEHIND_PREFIX)) {
+                System.out.printf("ROCKSDB %s=%.0f%n", name, change);
+              }
+            });
       }
-      TestEngine.formatColumnFamilyMetrics(load.engine.columnFamilyMetrics(), baseline)
+      if (writeBehind) {
+        // the key indexes load during the warmup or the prefill, so print the whole run as well
+        System.out.println("WRITE-BEHIND " + writeBehindCounters(dbMetrics, dbBaseline));
+        System.out.println("WRITE-BEHIND-SINCE-START " + writeBehindCounters(dbMetrics, Map.of()));
+      }
+      final var columnFamilies = load.engine.columnFamilyMetrics();
+      TestEngine.formatColumnFamilyMetrics(columnFamilies, baseline)
           .forEach(m -> System.out.println("CF " + m));
+      System.out.println("CF-TOTAL " + sumOverColumnFamilies(columnFamilies, baseline));
     } finally {
       context.close();
     }
@@ -240,6 +263,43 @@ public final class EngineLoadMain {
             .commandWriter()
             .writeCommand(
                 jobKey, JobIntent.COMPLETE, completion, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  /** The store-wide write-behind counters, zeros included, as the change since {@code baseline}. */
+  private static String writeBehindCounters(
+      final Map<String, Double> current, final Map<String, Double> baseline) {
+    return current.entrySet().stream()
+        .filter(e -> e.getKey().startsWith(WRITE_BEHIND_PREFIX))
+        .map(
+            e ->
+                "%s=%.0f"
+                    .formatted(
+                        // a timer's first measurement is its count
+                        e.getKey()
+                            .substring(WRITE_BEHIND_PREFIX.length())
+                            .replace("flush.duration", "flushes"),
+                        e.getValue() - baseline.getOrDefault(e.getKey(), 0.0)))
+        .collect(Collectors.joining(" "));
+  }
+
+  private static String sumOverColumnFamilies(
+      final Map<String, Map<String, Double>> current,
+      final Map<String, Map<String, Double>> baseline) {
+    final var totals = new TreeMap<String, Double>();
+    current.forEach(
+        (columnFamily, metrics) ->
+            metrics.forEach(
+                (metric, value) ->
+                    totals.merge(
+                        metric,
+                        value
+                            - baseline
+                                .getOrDefault(columnFamily, Map.of())
+                                .getOrDefault(metric, 0.0),
+                        Double::sum)));
+    return totals.entrySet().stream()
+        .map(e -> "%s=%.0f".formatted(e.getKey(), e.getValue()))
+        .collect(Collectors.joining(" "));
   }
 
   private static String env(final String name, final String defaultValue) {

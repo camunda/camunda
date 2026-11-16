@@ -16,9 +16,9 @@ import org.jspecify.annotations.Nullable;
  * the key.
  *
  * <p>Values from memory are copied out of the held values; only values from the storage are
- * decoded, and only when {@link #readValue} asks for them.
+ * decoded, and only when {@link #readValueUnlessStale} asks for them. A view never turns stale.
  */
-final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
+final class ViewSource<K extends Comparable<K>, V, T> implements CommittedSource<K, V, T> {
 
   private final Backend<K, V, T> backend;
   private final DirtyRange<K, V> dirty;
@@ -37,8 +37,8 @@ final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
     stored = view.storageCursor();
   }
 
-  /** Positions on the first key that is at or after {@code key}; later steps go forward. */
-  void seek(final K key) {
+  @Override
+  public void seek(final K key) {
     forward = true;
     dirtyEntry = dirty.ceilingEntry(key);
     stored.seek(key);
@@ -46,8 +46,8 @@ final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
     settle();
   }
 
-  /** Positions on the last key that is at or before {@code key}; later steps go backward. */
-  void seekForPrev(final K key) {
+  @Override
+  public void seekForPrev(final K key) {
     forward = false;
     dirtyEntry = dirty.floorEntry(key);
     stored.seekForPrev(key);
@@ -55,23 +55,24 @@ final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
     settle();
   }
 
-  boolean isValid() {
+  @Override
+  public boolean isValid() {
     return currentKey != null;
   }
 
-  /** The current key. Shared: callers must not change it. */
-  K key() {
+  @Override
+  public K key() {
     return current();
   }
 
-  /** Moves on in the direction of the last seek. */
-  void advance() {
+  @Override
+  public void advance() {
     advancePast(current());
     settle();
   }
 
-  /** Copies or decodes the value of the current key into {@code target}. */
-  void readValue(final T target) {
+  @Override
+  public boolean readValueUnlessStale(final T target) {
     current();
     final var value = currentValue;
     if (value != null) {
@@ -79,6 +80,7 @@ final class ViewSource<K extends Comparable<K>, V, T> implements AutoCloseable {
     } else {
       stored.readValue(target);
     }
+    return true;
   }
 
   @Override
