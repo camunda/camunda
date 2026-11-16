@@ -1016,6 +1016,37 @@ class UserTaskSearchIT {
   }
 
   @Test
+  void shouldReturnUserTaskByCreationDateIn() {
+    // given two user tasks and their exact creation dates
+    final var userTasks =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .sort(s -> s.creationDate().asc())
+            .page(p -> p.limit(2))
+            .send()
+            .join()
+            .items();
+    assertThat(userTasks).hasSize(2);
+    final var creationDates = userTasks.stream().map(UserTask::getCreationDate).toList();
+
+    // when
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.creationDate(b -> b.in(creationDates)))
+            .send()
+            .join();
+
+    // then only user tasks created at one of those instants are returned
+    assertThat(result.items())
+        .extracting(UserTask::getUserTaskKey)
+        .contains(userTasks.get(0).getUserTaskKey(), userTasks.get(1).getUserTaskKey());
+    assertThat(result.items())
+        .extracting(UserTask::getCreationDate)
+        .allSatisfy(date -> assertThat(creationDates).contains(date));
+  }
+
+  @Test
   void shouldReturnUserTaskByCreationDateGt() {
     // when
     final var userTaskList =
