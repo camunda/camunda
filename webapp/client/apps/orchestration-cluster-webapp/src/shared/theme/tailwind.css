@@ -318,7 +318,7 @@
 		user-select: none;
 	}
 
-	.djs-overlay:has(> .op-drilldown-icon) {
+	.djs-overlay:has(.op-drilldown-icon) {
 		pointer-events: none;
 	}
 
