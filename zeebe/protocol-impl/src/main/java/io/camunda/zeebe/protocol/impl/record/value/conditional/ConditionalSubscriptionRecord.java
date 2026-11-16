@@ -10,14 +10,14 @@ package io.camunda.zeebe.protocol.impl.record.value.conditional;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -25,84 +25,46 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class ConditionalSubscriptionRecord extends UnifiedRecordValue
-    implements ConditionalSubscriptionRecordValue {
-
-  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue CATCH_EVENT_ID_KEY = new StringValue("catchEventId");
-  private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
-  private static final StringValue CONDITION_KEY = new StringValue("condition");
-  private static final StringValue VARIABLE_NAMES_KEY = new StringValue("variableNames");
-  private static final StringValue VARIABLE_EVENTS_KEY = new StringValue("variableEvents");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
+@MsgpackPojo
+@NullMarked
+public final class ConditionalSubscriptionRecord
+    extends MsgpackBufferValue<ConditionalSubscriptionRecord>
+    implements MsgpackRecordValue, ConditionalSubscriptionRecordValue {
 
   // default to -1 for root level start events
-  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty elementInstanceKeyProp =
-      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
-  private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
-  private final StringProperty conditionProp = new StringProperty(CONDITION_KEY, "");
-  private final ArrayProperty<StringValue> variableNamesProp =
-      new ArrayProperty<>(VARIABLE_NAMES_KEY, StringValue::new);
-  private final ArrayProperty<StringValue> variableEventsProp =
-      new ArrayProperty<>(VARIABLE_EVENTS_KEY, StringValue::new);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-
-  public ConditionalSubscriptionRecord() {
-    super(14);
-    declareProperty(scopeKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(catchEventIdProp)
-        .declareProperty(interruptingProp)
-        .declareProperty(conditionProp)
-        .declareProperty(variableNamesProp)
-        .declareProperty(variableEventsProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(elementTypeProp);
-  }
+  long scopeKey = -1L;
+  long processInstanceKey = -1L;
+  long elementInstanceKey = -1L;
+  long processDefinitionKey = -1L;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  DirectBuffer catchEventId = Decoding.EMPTY;
+  boolean interrupting = true;
+  DirectBuffer condition = Decoding.EMPTY;
+  final List<DirectBuffer> variableNames = new ArrayList<>();
+  final List<DirectBuffer> variableEvents = new ArrayList<>();
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  BpmnElementType elementType = BpmnElementType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final ConditionalSubscriptionRecord record) {
-    scopeKeyProp.setValue(record.getScopeKey());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    elementInstanceKeyProp.setValue(record.getElementInstanceKey());
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessId());
-    catchEventIdProp.setValue(record.getCatchEventId());
-    interruptingProp.setValue(record.isInterrupting());
-    conditionProp.setValue(record.getCondition());
+    scopeKey = record.getScopeKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    elementInstanceKey = record.getElementInstanceKey();
+    processDefinitionKey = record.getProcessDefinitionKey();
+    bpmnProcessId = BufferUtil.wrapString(record.getBpmnProcessId());
+    catchEventId = BufferUtil.wrapString(record.getCatchEventId());
+    interrupting = record.isInterrupting();
+    condition = BufferUtil.wrapString(record.getCondition());
     setVariableNames(record.getVariableNames());
     setVariableEvents(record.getVariableEvents());
-    tenantIdProp.setValue(record.getTenantId());
-    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    elementTypeProp.setValue(record.getElementType());
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    rootProcessInstanceKey = record.getRootProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    elementType = record.getElementType();
   }
 
   /**
@@ -122,21 +84,21 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
    */
   @Override
   public long getScopeKey() {
-    return scopeKeyProp.getValue();
+    return scopeKey;
   }
 
   public ConditionalSubscriptionRecord setScopeKey(final long key) {
-    scopeKeyProp.setValue(key);
+    scopeKey = key;
     return this;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   public ConditionalSubscriptionRecord setElementInstanceKey(final long key) {
-    elementInstanceKeyProp.setValue(key);
+    elementInstanceKey = key;
     return this;
   }
 
@@ -148,16 +110,16 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public ConditionalSubscriptionRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
+    processInstanceKey = key;
     return this;
   }
 
@@ -168,119 +130,127 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
    */
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public ConditionalSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
+    processDefinitionKey = key;
     return this;
   }
 
   @Override
   public String getCatchEventId() {
-    return bufferAsString(catchEventIdProp.getValue());
+    return bufferAsString(catchEventId);
   }
 
   @Override
   public String getCondition() {
-    return BufferUtil.bufferAsString(conditionProp.getValue());
+    return BufferUtil.bufferAsString(condition);
   }
 
   public ConditionalSubscriptionRecord setCondition(final DirectBuffer condition) {
-    conditionProp.setValue(condition);
+    this.condition = condition;
     return this;
   }
 
   @Override
   public List<String> getVariableNames() {
-    final var variableNames = new ArrayList<String>();
-    variableNamesProp.forEach(
-        name -> variableNames.add(BufferUtil.bufferAsString(name.getValue())));
-    return variableNames;
+    final var names = new ArrayList<String>();
+    variableNames.forEach(name -> names.add(BufferUtil.bufferAsString(name)));
+    return names;
   }
 
   public ConditionalSubscriptionRecord setVariableNames(final List<String> variableNames) {
-    variableNamesProp.reset();
-    variableNames.forEach(name -> variableNamesProp.add().wrap(name));
+    this.variableNames.clear();
+    variableNames.forEach(name -> this.variableNames.add(BufferUtil.wrapString(name)));
     return this;
   }
 
   @Override
   public List<String> getVariableEvents() {
-    final var variableEvents = new ArrayList<String>();
-    variableEventsProp.forEach(
-        event -> variableEvents.add(BufferUtil.bufferAsString(event.getValue())));
-    return variableEvents;
+    final var events = new ArrayList<String>();
+    variableEvents.forEach(event -> events.add(BufferUtil.bufferAsString(event)));
+    return events;
   }
 
   public ConditionalSubscriptionRecord setVariableEvents(final List<String> variableEvents) {
-    variableEventsProp.reset();
-    variableEvents.forEach(event -> variableEventsProp.add().wrap(event));
+    this.variableEvents.clear();
+    variableEvents.forEach(event -> this.variableEvents.add(BufferUtil.wrapString(event)));
     return this;
   }
 
   @Override
   public boolean isInterrupting() {
-    return interruptingProp.getValue();
+    return interrupting;
   }
 
   public ConditionalSubscriptionRecord setInterrupting(final boolean interrupting) {
-    interruptingProp.setValue(interrupting);
+    this.interrupting = interrupting;
     return this;
   }
 
   @Override
   public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+    return elementType;
   }
 
   public ConditionalSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+    this.elementType = elementType;
     return this;
   }
 
   public ConditionalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
-    catchEventIdProp.setValue(catchEventId);
+    this.catchEventId = catchEventId;
     return this;
   }
 
   public ConditionalSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCatchEventIdBuffer() {
-    return catchEventIdProp.getValue();
+    return catchEventId;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ConditionalSubscriptionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public ConditionalSubscriptionRecord setRootProcessInstanceKey(final long key) {
-    rootProcessInstanceKeyProp.setValue(key);
+    rootProcessInstanceKey = key;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public ConditionalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ConditionalSubscriptionRecord> codec() {
+    return ConditionalSubscriptionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ConditionalSubscriptionRecord> ops() {
+    return ConditionalSubscriptionRecordOps.INSTANCE;
   }
 }

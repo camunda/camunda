@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.asyncrequest;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -24,8 +25,8 @@ public final class AsyncRequestMetadataValueV1 extends UnpackedObject
 
   private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
 
-  private final ObjectProperty<AsyncRequestRecord> recordProp =
-      new ObjectProperty<>("asyncRequestRecord", new AsyncRequestRecord());
+  private final ObjectProperty<RecordObjectValue<AsyncRequestRecord>> recordProp =
+      new ObjectProperty<>("asyncRequestRecord", new RecordObjectValue<>(new AsyncRequestRecord()));
 
   public AsyncRequestMetadataValueV1() {
     super(2);
@@ -34,11 +35,11 @@ public final class AsyncRequestMetadataValueV1 extends UnpackedObject
 
   public void wrap(final long asyncRequestKey, final AsyncRequestRecord record) {
     asyncRequestKeyProperty.setValue(asyncRequestKey);
-    recordProp.getValue().wrap(record);
+    recordProp.getValue().get().wrap(record);
   }
 
   public AsyncRequestRecord getRecord() {
-    return recordProp.getValue();
+    return recordProp.getValue().get();
   }
 
   public long getAsyncRequestKey() {

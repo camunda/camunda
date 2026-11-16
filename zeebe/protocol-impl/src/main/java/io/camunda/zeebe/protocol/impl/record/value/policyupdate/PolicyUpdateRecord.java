@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.policyupdate;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -27,9 +30,12 @@ import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * A policy update. On an {@code APPEND_CHUNK} command it carries one chunk: each section is an
@@ -37,243 +43,221 @@ import java.util.stream.Collectors;
  * deletions of the Hub change set, in the apply order defined by the change set contract. The other
  * intents leave the sections empty and carry only the update's identifiers.
  */
-public final class PolicyUpdateRecord extends UnifiedRecordValue
-    implements PolicyUpdateRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class PolicyUpdateRecord extends MsgpackBufferValue<PolicyUpdateRecord>
+    implements MsgpackRecordValue, PolicyUpdateRecordValue {
 
-  private final StringProperty policyIdProp = new StringProperty("policyId", "");
-  private final LongProperty policyVersionProp = new LongProperty("policyVersion", 0);
-  private final LongProperty basePolicyVersionProp = new LongProperty("basePolicyVersion", 0);
-  private final LongProperty seqNoProp = new LongProperty("seqNo", 0);
-  private final StringProperty updateIdProp = new StringProperty("updateId", "");
-  private final IntegerProperty chunkIndexProp = new IntegerProperty("chunkIndex", -1);
-  private final IntegerProperty chunkCountProp = new IntegerProperty("chunkCount", -1);
+  DirectBuffer policyId = Decoding.EMPTY;
+  long policyVersion = 0L;
+  long basePolicyVersion = 0L;
+  long seqNo = 0L;
+  DirectBuffer updateId = Decoding.EMPTY;
+  int chunkIndex = -1;
+  int chunkCount = -1;
 
-  private final ArrayProperty<TenantRecord> tenantsProp =
-      new ArrayProperty<>("tenants", TenantRecord::new);
-  private final ArrayProperty<RoleRecord> rolesProp = new ArrayProperty<>("roles", RoleRecord::new);
-  private final ArrayProperty<GroupRecord> groupsProp =
-      new ArrayProperty<>("groups", GroupRecord::new);
-  private final ArrayProperty<MappingRuleRecord> mappingRulesProp =
-      new ArrayProperty<>("mappingRules", MappingRuleRecord::new);
-  private final ArrayProperty<PolicyMembershipEntry> membershipsProp =
-      new ArrayProperty<>("memberships", PolicyMembershipEntry::new);
-  private final ArrayProperty<AuthorizationRecord> authorizationsProp =
-      new ArrayProperty<>("authorizations", AuthorizationRecord::new);
-  private final ArrayProperty<PolicyDeleteEntry> deletesProp =
-      new ArrayProperty<>("deletes", PolicyDeleteEntry::new);
-  private final ArrayProperty<PolicyMembershipEntry> membershipDeletesProp =
-      new ArrayProperty<>("membershipDeletes", PolicyMembershipEntry::new);
-  private final ArrayProperty<PolicyAuthorizationDeleteEntry> authorizationDeletesProp =
-      new ArrayProperty<>("authorizationDeletes", PolicyAuthorizationDeleteEntry::new);
+  final List<TenantRecord> tenants = new ArrayList<>();
+  final List<RoleRecord> roles = new ArrayList<>();
+  final List<GroupRecord> groups = new ArrayList<>();
+  final List<MappingRuleRecord> mappingRules = new ArrayList<>();
+  final List<PolicyMembershipEntry> memberships = new ArrayList<>();
+  final List<AuthorizationRecord> authorizations = new ArrayList<>();
+  final List<PolicyDeleteEntry> deletes = new ArrayList<>();
+  final List<PolicyMembershipEntry> membershipDeletes = new ArrayList<>();
+  final List<PolicyAuthorizationDeleteEntry> authorizationDeletes = new ArrayList<>();
 
-  private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
-
-  public PolicyUpdateRecord() {
-    super(17);
-    declareProperty(policyIdProp)
-        .declareProperty(policyVersionProp)
-        .declareProperty(basePolicyVersionProp)
-        .declareProperty(seqNoProp)
-        .declareProperty(updateIdProp)
-        .declareProperty(chunkIndexProp)
-        .declareProperty(chunkCountProp)
-        .declareProperty(tenantsProp)
-        .declareProperty(rolesProp)
-        .declareProperty(groupsProp)
-        .declareProperty(mappingRulesProp)
-        .declareProperty(membershipsProp)
-        .declareProperty(authorizationsProp)
-        .declareProperty(deletesProp)
-        .declareProperty(membershipDeletesProp)
-        .declareProperty(authorizationDeletesProp)
-        .declareProperty(errorMessageProp);
-  }
+  DirectBuffer errorMessage = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getPolicyId() {
-    return BufferUtil.bufferAsString(policyIdProp.getValue());
+    return BufferUtil.bufferAsString(policyId);
   }
 
   public PolicyUpdateRecord setPolicyId(final String policyId) {
-    policyIdProp.setValue(policyId);
+    this.policyId = BufferUtil.wrapString(policyId);
     return this;
   }
 
   @Override
   public long getPolicyVersion() {
-    return policyVersionProp.getValue();
+    return policyVersion;
   }
 
   public PolicyUpdateRecord setPolicyVersion(final long policyVersion) {
-    policyVersionProp.setValue(policyVersion);
+    this.policyVersion = policyVersion;
     return this;
   }
 
   @Override
   public long getBasePolicyVersion() {
-    return basePolicyVersionProp.getValue();
+    return basePolicyVersion;
   }
 
   public PolicyUpdateRecord setBasePolicyVersion(final long basePolicyVersion) {
-    basePolicyVersionProp.setValue(basePolicyVersion);
+    this.basePolicyVersion = basePolicyVersion;
     return this;
   }
 
   @Override
   public long getSeqNo() {
-    return seqNoProp.getValue();
+    return seqNo;
   }
 
   public PolicyUpdateRecord setSeqNo(final long seqNo) {
-    seqNoProp.setValue(seqNo);
+    this.seqNo = seqNo;
     return this;
   }
 
   @Override
   public String getUpdateId() {
-    return BufferUtil.bufferAsString(updateIdProp.getValue());
+    return BufferUtil.bufferAsString(updateId);
   }
 
   public PolicyUpdateRecord setUpdateId(final String updateId) {
-    updateIdProp.setValue(updateId);
+    this.updateId = BufferUtil.wrapString(updateId);
     return this;
   }
 
   @Override
   public int getChunkIndex() {
-    return chunkIndexProp.getValue();
+    return chunkIndex;
   }
 
   public PolicyUpdateRecord setChunkIndex(final int chunkIndex) {
-    chunkIndexProp.setValue(chunkIndex);
+    this.chunkIndex = chunkIndex;
     return this;
   }
 
   @Override
   public int getChunkCount() {
-    return chunkCountProp.getValue();
+    return chunkCount;
   }
 
   public PolicyUpdateRecord setChunkCount(final int chunkCount) {
-    chunkCountProp.setValue(chunkCount);
+    this.chunkCount = chunkCount;
     return this;
   }
 
   @Override
   public List<TenantRecordValue> getTenants() {
-    return tenantsProp.stream().collect(Collectors.toList());
+    return tenants.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setTenants(final Collection<TenantRecordValue> tenants) {
-    tenantsProp.reset();
-    tenants.forEach(tenant -> copyTenant(tenantsProp.add(), tenant));
+    this.tenants.clear();
+    tenants.forEach(tenant -> this.tenants.add(copyTenant(tenant)));
     return this;
   }
 
   @Override
   public List<RoleRecordValue> getRoles() {
-    return rolesProp.stream().collect(Collectors.toList());
+    return roles.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setRoles(final Collection<RoleRecordValue> roles) {
-    rolesProp.reset();
-    roles.forEach(role -> copyRole(rolesProp.add(), role));
+    this.roles.clear();
+    roles.forEach(role -> this.roles.add(copyRole(role)));
     return this;
   }
 
   @Override
   public List<GroupRecordValue> getGroups() {
-    return groupsProp.stream().collect(Collectors.toList());
+    return groups.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setGroups(final Collection<GroupRecordValue> groups) {
-    groupsProp.reset();
-    groups.forEach(group -> copyGroup(groupsProp.add(), group));
+    this.groups.clear();
+    groups.forEach(group -> this.groups.add(copyGroup(group)));
     return this;
   }
 
   @Override
   public List<MappingRuleRecordValue> getMappingRules() {
-    return mappingRulesProp.stream().collect(Collectors.toList());
+    return mappingRules.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setMappingRules(final Collection<MappingRuleRecordValue> mappingRules) {
-    mappingRulesProp.reset();
-    mappingRules.forEach(rule -> copyMappingRule(mappingRulesProp.add(), rule));
+    this.mappingRules.clear();
+    mappingRules.forEach(rule -> this.mappingRules.add(copyMappingRule(rule)));
     return this;
   }
 
   @Override
   public List<PolicyMembershipEntryValue> getMemberships() {
-    return membershipsProp.stream().collect(Collectors.toList());
+    return memberships.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setMemberships(final Collection<PolicyMembershipEntryValue> entries) {
-    membershipsProp.reset();
-    entries.forEach(entry -> copyMembership(membershipsProp.add(), entry));
+    memberships.clear();
+    entries.forEach(entry -> memberships.add(copyMembership(entry)));
     return this;
   }
 
   @Override
   public List<AuthorizationRecordValue> getAuthorizations() {
-    return authorizationsProp.stream().collect(Collectors.toList());
+    return authorizations.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setAuthorizations(
       final Collection<AuthorizationRecordValue> authorizations) {
-    authorizationsProp.reset();
-    authorizations.forEach(auth -> copyAuthorization(authorizationsProp.add(), auth));
+    this.authorizations.clear();
+    authorizations.forEach(auth -> this.authorizations.add(copyAuthorization(auth)));
     return this;
   }
 
   @Override
   public List<PolicyDeleteEntryValue> getDeletes() {
-    return deletesProp.stream().collect(Collectors.toList());
+    return deletes.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setDeletes(final Collection<PolicyDeleteEntryValue> deletes) {
-    deletesProp.reset();
+    this.deletes.clear();
     deletes.forEach(
-        delete -> deletesProp.add().setEntityType(delete.getEntityType()).setId(delete.getId()));
+        delete ->
+            this.deletes.add(
+                new PolicyDeleteEntry()
+                    .setEntityType(delete.getEntityType())
+                    .setId(delete.getId())));
     return this;
   }
 
   @Override
   public List<PolicyMembershipEntryValue> getMembershipDeletes() {
-    return membershipDeletesProp.stream().collect(Collectors.toList());
+    return membershipDeletes.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setMembershipDeletes(
       final Collection<PolicyMembershipEntryValue> entries) {
-    membershipDeletesProp.reset();
-    entries.forEach(entry -> copyMembership(membershipDeletesProp.add(), entry));
+    membershipDeletes.clear();
+    entries.forEach(entry -> membershipDeletes.add(copyMembership(entry)));
     return this;
   }
 
   @Override
   public List<PolicyAuthorizationDeleteEntryValue> getAuthorizationDeletes() {
-    return authorizationDeletesProp.stream().collect(Collectors.toList());
+    return authorizationDeletes.stream().collect(Collectors.toList());
   }
 
   public PolicyUpdateRecord setAuthorizationDeletes(
       final Collection<PolicyAuthorizationDeleteEntryValue> deletes) {
-    authorizationDeletesProp.reset();
-    deletes.forEach(delete -> copyAuthorizationDelete(authorizationDeletesProp.add(), delete));
+    authorizationDeletes.clear();
+    deletes.forEach(delete -> authorizationDeletes.add(copyAuthorizationDelete(delete)));
     return this;
   }
 
   @Override
   public String getErrorMessage() {
-    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+    return BufferUtil.bufferAsString(errorMessage);
   }
 
   public PolicyUpdateRecord setErrorMessage(final String errorMessage) {
-    errorMessageProp.setValue(errorMessage);
+    this.errorMessage = BufferUtil.wrapString(errorMessage);
     return this;
   }
 
-  private static void copyTenant(final TenantRecord target, final TenantRecordValue source) {
-    target
+  private static TenantRecord copyTenant(final TenantRecordValue source) {
+    return new TenantRecord()
         .setTenantKey(source.getTenantKey())
         .setTenantId(source.getTenantId())
         .setName(source.getName())
@@ -282,8 +266,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setEntityType(source.getEntityType());
   }
 
-  private static void copyRole(final RoleRecord target, final RoleRecordValue source) {
-    target
+  private static RoleRecord copyRole(final RoleRecordValue source) {
+    return new RoleRecord()
         .setRoleKey(source.getRoleKey())
         .setRoleId(source.getRoleId())
         .setName(source.getName())
@@ -292,8 +276,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setEntityType(source.getEntityType());
   }
 
-  private static void copyGroup(final GroupRecord target, final GroupRecordValue source) {
-    target
+  private static GroupRecord copyGroup(final GroupRecordValue source) {
+    return new GroupRecord()
         .setGroupKey(source.getGroupKey())
         .setGroupId(source.getGroupId())
         .setName(source.getName())
@@ -302,9 +286,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setEntityType(source.getEntityType());
   }
 
-  private static void copyMappingRule(
-      final MappingRuleRecord target, final MappingRuleRecordValue source) {
-    target
+  private static MappingRuleRecord copyMappingRule(final MappingRuleRecordValue source) {
+    return new MappingRuleRecord()
         .setMappingRuleKey(source.getMappingRuleKey())
         .setMappingRuleId(source.getMappingRuleId())
         .setName(source.getName())
@@ -312,19 +295,17 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setClaimValue(source.getClaimValue());
   }
 
-  private static void copyMembership(
-      final PolicyMembershipEntry target, final PolicyMembershipEntryValue source) {
-    target
+  private static PolicyMembershipEntry copyMembership(final PolicyMembershipEntryValue source) {
+    return new PolicyMembershipEntry()
         .setTargetType(source.getTargetType())
         .setTargetId(source.getTargetId())
         .setMemberType(source.getMemberType())
         .setMemberId(source.getMemberId());
   }
 
-  private static void copyAuthorizationDelete(
-      final PolicyAuthorizationDeleteEntry target,
+  private static PolicyAuthorizationDeleteEntry copyAuthorizationDelete(
       final PolicyAuthorizationDeleteEntryValue source) {
-    target
+    return new PolicyAuthorizationDeleteEntry()
         .setOwnerType(source.getOwnerType())
         .setOwnerId(source.getOwnerId())
         .setResourceType(source.getResourceType())
@@ -333,9 +314,8 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setResourcePropertyName(source.getResourcePropertyName());
   }
 
-  private static void copyAuthorization(
-      final AuthorizationRecord target, final AuthorizationRecordValue source) {
-    target
+  private static AuthorizationRecord copyAuthorization(final AuthorizationRecordValue source) {
+    return new AuthorizationRecord()
         .setAuthorizationKey(source.getAuthorizationKey())
         .setOwnerId(source.getOwnerId())
         .setOwnerType(source.getOwnerType())
@@ -344,5 +324,15 @@ public final class PolicyUpdateRecord extends UnifiedRecordValue
         .setResourcePropertyName(source.getResourcePropertyName())
         .setResourceType(source.getResourceType())
         .setPermissionTypes(source.getPermissionTypes());
+  }
+
+  @Override
+  protected MsgpackCodec<PolicyUpdateRecord> codec() {
+    return PolicyUpdateRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PolicyUpdateRecord> ops() {
+    return PolicyUpdateRecordOps.INSTANCE;
   }
 }

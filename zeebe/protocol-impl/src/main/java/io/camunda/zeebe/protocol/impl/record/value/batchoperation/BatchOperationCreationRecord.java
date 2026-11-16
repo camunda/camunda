@@ -7,17 +7,17 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -27,10 +27,16 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Collection;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class BatchOperationCreationRecord extends UnifiedRecordValue
-    implements BatchOperationCreationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationCreationRecord
+    extends MsgpackBufferValue<BatchOperationCreationRecord>
+    implements MsgpackRecordValue, BatchOperationCreationRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
@@ -44,130 +50,115 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_PARTITION_IDS = "partitionIds";
   public static final String PROP_FOLLOWUP_COMMAND = "followUpCommand";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-  private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>(PROP_BATCH_OPERATION_TYPE, BatchOperationType.class);
-  private final BinaryProperty entityFilterProp =
-      new BinaryProperty(PROP_ENTITY_FILTER, new UnsafeBuffer());
-  private final ObjectProperty<BatchOperationProcessInstanceMigrationPlan> migrationPlanProp =
-      new ObjectProperty<>(PROP_MIGRATION_PLAN, new BatchOperationProcessInstanceMigrationPlan());
-  private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
-      new ObjectProperty<>(
-          PROP_MODIFICATION_PLAN, new BatchOperationProcessInstanceModificationPlan());
-  private final ObjectProperty<BatchOperationJobUpdatePlan> jobUpdatePlanProp =
-      new ObjectProperty<>(PROP_JOB_UPDATE_PLAN, new BatchOperationJobUpdatePlan());
-  // Authentication, needed for query in scheduler + command auth
-  private final DocumentProperty authenticationProp = new DocumentProperty(PROP_AUTHENTICATION);
-  // Authorization check, needed for single operations that skip batch permission checks
-  private final DocumentProperty authorizationCheckProp =
-      new DocumentProperty(PROP_AUTHORIZATION_CHECK);
-  private final ArrayProperty<IntegerValue> partitionIdsProp =
-      new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
-  private final ObjectProperty<NestedRecord> followUpCommandProp =
-      new ObjectProperty<>(PROP_FOLLOWUP_COMMAND, new NestedRecord());
+  long batchOperationKey = -1L;
+  int storageOrdinal = 0;
+  @Nullable BatchOperationType batchOperationType;
 
-  public BatchOperationCreationRecord() {
-    super(11);
-    declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(batchOperationTypeProp)
-        .declareProperty(entityFilterProp)
-        .declareProperty(migrationPlanProp)
-        .declareProperty(modificationPlanProp)
-        .declareProperty(jobUpdatePlanProp)
-        .declareProperty(authenticationProp)
-        .declareProperty(authorizationCheckProp)
-        .declareProperty(partitionIdsProp)
-        .declareProperty(followUpCommandProp);
-  }
+  @MsgpackProperty(binary = true)
+  DirectBuffer entityFilter = Decoding.EMPTY;
+
+  final BatchOperationProcessInstanceMigrationPlan migrationPlan =
+      new BatchOperationProcessInstanceMigrationPlan();
+  final BatchOperationProcessInstanceModificationPlan modificationPlan =
+      new BatchOperationProcessInstanceModificationPlan();
+  final BatchOperationJobUpdatePlan jobUpdatePlan = new BatchOperationJobUpdatePlan();
+
+  // Authentication, needed for query in scheduler + command auth
+  @MsgpackProperty(document = true)
+  DirectBuffer authentication = DocumentValue.EMPTY_DOCUMENT;
+
+  // Authorization check, needed for single operations that skip batch permission checks
+  @MsgpackProperty(document = true)
+  DirectBuffer authorizationCheck = DocumentValue.EMPTY_DOCUMENT;
+
+  final IntArrayList partitionIds = new IntArrayList();
+  final NestedRecord followUpCommand = new NestedRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey;
   }
 
   public BatchOperationCreationRecord setBatchOperationKey(final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey = batchOperationKey;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationCreationRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public BatchOperationType getBatchOperationType() {
-    return batchOperationTypeProp.getValue();
+    return Decoding.required(batchOperationType, "batchOperationType");
   }
 
   public BatchOperationCreationRecord setBatchOperationType(
       final BatchOperationType batchOperationType) {
-    batchOperationTypeProp.setValue(batchOperationType);
+    this.batchOperationType = batchOperationType;
     return this;
   }
 
   @Override
+  @SuppressWarnings("NullAway") // the value interface is not @Nullable, but an empty filter is null
   public String getEntityFilter() {
-    return entityFilterProp.getValue().capacity() == 0
-        ? null
-        : MsgPackConverter.convertToJson(entityFilterProp.getValue());
+    return entityFilter.capacity() == 0 ? null : MsgPackConverter.convertToJson(entityFilter);
   }
 
   public BatchOperationCreationRecord setEntityFilter(final DirectBuffer filterBuffer) {
-    entityFilterProp.setValue(new UnsafeBuffer(filterBuffer));
+    entityFilter = new UnsafeBuffer(filterBuffer);
     return this;
   }
 
   @Override
   public BatchOperationProcessInstanceMigrationPlanValue getMigrationPlan() {
-    return migrationPlanProp.getValue();
+    return migrationPlan;
   }
 
   public BatchOperationCreationRecord setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
-    migrationPlanProp.getValue().wrap(migrationPlan);
+    this.migrationPlan.wrap(migrationPlan);
     return this;
   }
 
   @Override
   public BatchOperationProcessInstanceModificationPlanValue getModificationPlan() {
-    return modificationPlanProp.getValue();
+    return modificationPlan;
   }
 
   public BatchOperationCreationRecord setModificationPlan(
       final BatchOperationProcessInstanceModificationPlanValue migrationPlan) {
-    modificationPlanProp.getValue().wrap(migrationPlan);
+    modificationPlan.wrap(migrationPlan);
     return this;
   }
 
   @Override
   public BatchOperationJobUpdatePlanValue getJobUpdatePlan() {
-    return jobUpdatePlanProp.getValue();
+    return jobUpdatePlan;
   }
 
   public BatchOperationCreationRecord setJobUpdatePlan(
       final BatchOperationJobUpdatePlanValue jobUpdatePlan) {
-    jobUpdatePlanProp.getValue().wrap(jobUpdatePlan);
+    this.jobUpdatePlan.wrap(jobUpdatePlan);
     return this;
   }
 
   @Override
   public List<Integer> getPartitionIds() {
-    return partitionIdsProp.stream().map(IntegerValue::getValue).toList();
+    return partitionIds.stream().toList();
   }
 
   public BatchOperationCreationRecord setPartitionIds(final Collection<Integer> partitionIds) {
-    partitionIdsProp.reset();
+    this.partitionIds.clear();
     for (final Integer partitionId : partitionIds) {
-      partitionIdsProp.add().setValue(partitionId);
+      this.partitionIds.addInt(partitionId);
     }
 
     return this;
@@ -175,29 +166,29 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
 
   @Override
   public NestedRecord getFollowUpCommand() {
-    return followUpCommandProp.getValue();
+    return followUpCommand;
   }
 
   public DirectBuffer getAuthenticationBuffer() {
-    return authenticationProp.getValue();
+    return authentication;
   }
 
   public BatchOperationCreationRecord setAuthentication(final DirectBuffer authentication) {
-    authenticationProp.setValue(authentication);
+    this.authentication = Decoding.document(authentication);
     return this;
   }
 
   public DirectBuffer getAuthorizationCheckBuffer() {
-    return authorizationCheckProp.getValue();
+    return authorizationCheck;
   }
 
   public BatchOperationCreationRecord setAuthorizationCheck(final DirectBuffer authorizationCheck) {
-    authorizationCheckProp.setValue(authorizationCheck);
+    this.authorizationCheck = Decoding.document(authorizationCheck);
     return this;
   }
 
   public DirectBuffer getEntityFilterBuffer() {
-    return entityFilterProp.getValue();
+    return entityFilter;
   }
 
   public BatchOperationCreationRecord setFollowUpCommand(
@@ -207,17 +198,27 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   }
 
   public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
-    batchOperationKeyProp.setValue(record.getBatchOperationKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    batchOperationTypeProp.setValue(record.getBatchOperationType());
-    entityFilterProp.setValue(record.getEntityFilterBuffer());
-    migrationPlanProp.getValue().wrap(record.getMigrationPlan());
-    modificationPlanProp.getValue().wrap(record.getModificationPlan());
-    jobUpdatePlanProp.getValue().wrap(record.getJobUpdatePlan());
-    authenticationProp.setValue(record.getAuthenticationBuffer());
+    batchOperationKey = record.getBatchOperationKey();
+    storageOrdinal = record.getStorageOrdinal();
+    batchOperationType = record.getBatchOperationType();
+    entityFilter = record.getEntityFilterBuffer();
+    migrationPlan.wrap(record.getMigrationPlan());
+    modificationPlan.wrap(record.getModificationPlan());
+    jobUpdatePlan.wrap(record.getJobUpdatePlan());
+    authentication = Decoding.document(record.getAuthenticationBuffer());
     setPartitionIds(record.getPartitionIds());
-    followUpCommandProp.getValue().wrap(record.getFollowUpCommand());
+    followUpCommand.wrap(record.getFollowUpCommand());
 
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationCreationRecord> codec() {
+    return BatchOperationCreationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationCreationRecord> ops() {
+    return BatchOperationCreationRecordOps.INSTANCE;
   }
 }

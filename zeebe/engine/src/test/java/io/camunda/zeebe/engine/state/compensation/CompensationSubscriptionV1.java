@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.compensation;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -20,8 +21,10 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  */
 public final class CompensationSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<CompensationSubscriptionRecord> recordProp =
-      new ObjectProperty<>("compensationSubscriptionRecord", new CompensationSubscriptionRecord());
+  private final ObjectProperty<RecordObjectValue<CompensationSubscriptionRecord>> recordProp =
+      new ObjectProperty<>(
+          "compensationSubscriptionRecord",
+          new RecordObjectValue<>(new CompensationSubscriptionRecord()));
 
   private final LongProperty keyProp = new LongProperty("key");
 
@@ -42,11 +45,11 @@ public final class CompensationSubscriptionV1 extends UnpackedObject implements 
   }
 
   public CompensationSubscriptionRecord getRecord() {
-    return recordProp.getValue();
+    return recordProp.getValue().get();
   }
 
   public void setRecord(final CompensationSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
+    recordProp.getValue().get().wrap(record);
   }
 
   public long getKey() {

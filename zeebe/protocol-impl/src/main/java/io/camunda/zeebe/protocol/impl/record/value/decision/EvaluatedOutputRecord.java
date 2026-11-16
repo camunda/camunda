@@ -10,67 +10,87 @@ package io.camunda.zeebe.protocol.impl.record.value.decision;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class EvaluatedOutputRecord extends UnifiedRecordValue
-    implements EvaluatedOutputValue {
+@MsgpackPojo
+@NullMarked
+public final class EvaluatedOutputRecord extends MsgpackBufferValue<EvaluatedOutputRecord>
+    implements MsgpackRecordValue, EvaluatedOutputValue {
 
-  private final StringProperty outputIdProp = new StringProperty("outputId");
-  private final StringProperty outputNameProp = new StringProperty("outputName", "");
-  private final BinaryProperty outputValueProp = new BinaryProperty("outputValue");
+  @Nullable DirectBuffer outputId;
+  DirectBuffer outputName = Decoding.EMPTY;
 
-  public EvaluatedOutputRecord() {
-    super(3);
-    declareProperty(outputIdProp).declareProperty(outputNameProp).declareProperty(outputValueProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer outputValue;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getOutputId() {
-    return bufferAsString(outputIdProp.getValue());
+    return bufferAsString(Decoding.required(outputId, "outputId"));
   }
 
   public EvaluatedOutputRecord setOutputId(final String outputId) {
-    outputIdProp.setValue(outputId);
+    this.outputId = BufferUtil.wrapString(outputId);
     return this;
   }
 
   @Override
   public String getOutputName() {
-    return bufferAsString(outputNameProp.getValue());
+    return bufferAsString(outputName);
   }
 
   public EvaluatedOutputRecord setOutputName(final String outputName) {
-    outputNameProp.setValue(outputName);
+    this.outputName = BufferUtil.wrapString(outputName);
     return this;
   }
 
   @Override
   public String getOutputValue() {
-    return MsgPackConverter.convertToJson(outputValueProp.getValue());
+    return MsgPackConverter.convertToJson(Decoding.required(outputValue, "outputValue"));
   }
 
   public EvaluatedOutputRecord setOutputValue(final DirectBuffer outputValue) {
-    outputValueProp.setValue(outputValue);
+    this.outputValue = outputValue;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getOutputValueBuffer() {
-    return outputValueProp.getValue();
+    return Decoding.required(outputValue, "outputValue");
   }
 
   @JsonIgnore
   public DirectBuffer getOutputIdBuffer() {
-    return outputIdProp.getValue();
+    return Decoding.required(outputId, "outputId");
   }
 
   @JsonIgnore
   public DirectBuffer getOutputNameBuffer() {
-    return outputNameProp.getValue();
+    return outputName;
+  }
+
+  @Override
+  protected MsgpackCodec<EvaluatedOutputRecord> codec() {
+    return EvaluatedOutputRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<EvaluatedOutputRecord> ops() {
+    return EvaluatedOutputRecordOps.INSTANCE;
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.agentinstance;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
@@ -18,8 +19,8 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRe
  */
 public final class DbAgentInstanceV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<AgentInstanceRecord> recordProp =
-      new ObjectProperty<>("agentInstance", new AgentInstanceRecord());
+  private final ObjectProperty<RecordObjectValue<AgentInstanceRecord>> recordProp =
+      new ObjectProperty<>("agentInstance", new RecordObjectValue<>(new AgentInstanceRecord()));
 
   public DbAgentInstanceV1() {
     super(1);
@@ -27,10 +28,10 @@ public final class DbAgentInstanceV1 extends UnpackedObject implements DbValue {
   }
 
   public AgentInstanceRecord getRecord() {
-    return recordProp.getValue();
+    return recordProp.getValue().get();
   }
 
   public void setRecord(final AgentInstanceRecord record) {
-    recordProp.getValue().copyFrom(record);
+    recordProp.getValue().get().copyFrom(record);
   }
 }

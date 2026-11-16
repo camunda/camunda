@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.conditional;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -19,8 +20,10 @@ import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscr
  */
 public final class ConditionalSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<ConditionalSubscriptionRecord> recordProp =
-      new ObjectProperty<>("conditionalSubscriptionRecord", new ConditionalSubscriptionRecord());
+  private final ObjectProperty<RecordObjectValue<ConditionalSubscriptionRecord>> recordProp =
+      new ObjectProperty<>(
+          "conditionalSubscriptionRecord",
+          new RecordObjectValue<>(new ConditionalSubscriptionRecord()));
   private final LongProperty keyProp = new LongProperty("key");
 
   public ConditionalSubscriptionV1() {
@@ -29,11 +32,11 @@ public final class ConditionalSubscriptionV1 extends UnpackedObject implements D
   }
 
   public ConditionalSubscriptionRecord getRecord() {
-    return recordProp.getValue();
+    return recordProp.getValue().get();
   }
 
   public void setRecord(final ConditionalSubscriptionRecord record) {
-    recordProp.getValue().wrap(record);
+    recordProp.getValue().get().wrap(record);
   }
 
   public long getKey() {

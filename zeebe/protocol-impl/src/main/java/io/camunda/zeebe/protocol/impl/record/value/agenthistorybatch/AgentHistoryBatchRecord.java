@@ -7,63 +7,70 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agenthistorybatch;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class AgentHistoryBatchRecord extends UnifiedRecordValue
-    implements AgentHistoryBatchRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class AgentHistoryBatchRecord extends MsgpackBufferValue<AgentHistoryBatchRecord>
+    implements MsgpackRecordValue, AgentHistoryBatchRecordValue {
 
-  private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
-  private final ArrayProperty<StringValue> historyItemIdsProp =
-      new ArrayProperty<>("historyItemIds", StringValue::new);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-
-  public AgentHistoryBatchRecord() {
-    super(3);
-    declareProperty(agentInstanceKeyProp)
-        .declareProperty(historyItemIdsProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  long agentInstanceKey = -1L;
+  final List<DirectBuffer> historyItemIds = new ArrayList<>();
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getAgentInstanceKey() {
-    return agentInstanceKeyProp.getValue();
+    return agentInstanceKey;
   }
 
   public AgentHistoryBatchRecord setAgentInstanceKey(final long agentInstanceKey) {
-    agentInstanceKeyProp.setValue(agentInstanceKey);
+    this.agentInstanceKey = agentInstanceKey;
     return this;
   }
 
   @Override
   public List<String> getHistoryItemIds() {
-    return historyItemIdsProp.stream()
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return historyItemIds.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   public AgentHistoryBatchRecord setHistoryItemIds(final List<String> historyItemIds) {
-    historyItemIdsProp.reset();
+    this.historyItemIds.clear();
     if (historyItemIds != null) {
-      historyItemIds.forEach(id -> historyItemIdsProp.add().wrap(BufferUtil.wrapString(id)));
+      historyItemIds.forEach(id -> this.historyItemIds.add(BufferUtil.wrapString(id)));
     }
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public AgentHistoryBatchRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AgentHistoryBatchRecord> codec() {
+    return AgentHistoryBatchRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentHistoryBatchRecord> ops() {
+    return AgentHistoryBatchRecordOps.INSTANCE;
   }
 }

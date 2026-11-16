@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.clustervariable;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
@@ -19,8 +20,8 @@ import org.agrona.DirectBuffer;
  */
 public final class ClusterVariableInstanceV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<ClusterVariableRecord> clusterVariable =
-      new ObjectProperty<>("clusterVariable", new ClusterVariableRecord());
+  private final ObjectProperty<RecordObjectValue<ClusterVariableRecord>> clusterVariable =
+      new ObjectProperty<>("clusterVariable", new RecordObjectValue<>(new ClusterVariableRecord()));
 
   public ClusterVariableInstanceV1() {
     super(1);
@@ -28,18 +29,18 @@ public final class ClusterVariableInstanceV1 extends UnpackedObject implements D
   }
 
   public void setRecord(final ClusterVariableRecord clusterVariableRecord) {
-    clusterVariable.getValue().copyFrom(clusterVariableRecord);
+    clusterVariable.getValue().get().copyFrom(clusterVariableRecord);
   }
 
   public ClusterVariableRecord getRecord() {
-    return clusterVariable.getValue();
+    return clusterVariable.getValue().get();
   }
 
   public DirectBuffer getValueBuffer() {
-    return clusterVariable.getValue().getValueBuffer();
+    return clusterVariable.getValue().get().getValueBuffer();
   }
 
   public DirectBuffer getMetadataBuffer() {
-    return clusterVariable.getValue().getMetadataBuffer();
+    return clusterVariable.getValue().get().getMetadataBuffer();
   }
 }

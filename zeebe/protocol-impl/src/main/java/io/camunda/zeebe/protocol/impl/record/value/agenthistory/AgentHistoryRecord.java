@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceLimits;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceTool;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -24,205 +23,171 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class AgentHistoryRecord extends UnifiedRecordValue
-    implements AgentHistoryRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class AgentHistoryRecord extends MsgpackBufferValue<AgentHistoryRecord>
+    implements MsgpackRecordValue, AgentHistoryRecordValue {
 
-  private final LongProperty agentHistoryKeyProp = new LongProperty("agentHistoryKey", -1L);
-  private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final StringProperty jobLeaseTokenProp = new StringProperty("jobLeaseToken", "");
-  private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
-  private final EnumProperty<AgentHistoryRole> roleProp =
-      new EnumProperty<>("role", AgentHistoryRole.class, AgentHistoryRole.UNSPECIFIED);
-  private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
-  private final ArrayProperty<AgentHistoryMessageContent> contentProp =
-      new ArrayProperty<>("content", AgentHistoryMessageContent::new);
-  private final ArrayProperty<AgentHistoryMessageContent> systemPromptProp =
-      new ArrayProperty<>("systemPrompt", AgentHistoryMessageContent::new);
-  private final ArrayProperty<AgentHistoryEmbeddedToolCall> toolCallsProp =
-      new ArrayProperty<>("toolCalls", AgentHistoryEmbeddedToolCall::new);
-  private final ObjectProperty<AgentHistoryMetrics> metricsProp =
-      new ObjectProperty<>("metrics", new AgentHistoryMetrics());
-  private final StringProperty historyItemIdProp = new StringProperty("historyItemId", "");
-  private final ArrayProperty<AgentInstanceTool> toolsProp =
-      new ArrayProperty<>("tools", AgentInstanceTool::new);
-  private final StringProperty modelProp = new StringProperty("model", "");
-  private final StringProperty providerProp = new StringProperty("provider", "");
-  private final ObjectProperty<AgentInstanceLimits> limitsProp =
-      new ObjectProperty<>("limits", new AgentInstanceLimits());
-  private final ArrayProperty<StringValue> changedAttributesProp =
-      new ArrayProperty<>("changedAttributes", StringValue::new);
-  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-
-  public AgentHistoryRecord() {
-    super(25);
-    declareProperty(agentHistoryKeyProp)
-        .declareProperty(agentInstanceKeyProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(jobKeyProp)
-        .declareProperty(jobLeaseTokenProp)
-        .declareProperty(loopIterationProp)
-        .declareProperty(roleProp)
-        .declareProperty(producedAtProp)
-        .declareProperty(contentProp)
-        .declareProperty(systemPromptProp)
-        .declareProperty(toolCallsProp)
-        .declareProperty(metricsProp)
-        .declareProperty(historyItemIdProp)
-        .declareProperty(toolsProp)
-        .declareProperty(modelProp)
-        .declareProperty(providerProp)
-        .declareProperty(limitsProp)
-        .declareProperty(changedAttributesProp)
-        .declareProperty(isDuplicateProp);
-  }
+  long agentHistoryKey = -1L;
+  long agentInstanceKey = -1L;
+  long elementInstanceKey = -1L;
+  long processInstanceKey = -1L;
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long jobKey = -1L;
+  DirectBuffer jobLeaseToken = Decoding.EMPTY;
+  int loopIteration = 0;
+  AgentHistoryRole role = AgentHistoryRole.UNSPECIFIED;
+  long producedAt = -1L;
+  final List<AgentHistoryMessageContent> content = new ArrayList<>();
+  final List<AgentHistoryMessageContent> systemPrompt = new ArrayList<>();
+  final List<AgentHistoryEmbeddedToolCall> toolCalls = new ArrayList<>();
+  final AgentHistoryMetrics metrics = new AgentHistoryMetrics();
+  DirectBuffer historyItemId = Decoding.EMPTY;
+  final List<AgentInstanceTool> tools = new ArrayList<>();
+  DirectBuffer model = Decoding.EMPTY;
+  DirectBuffer provider = Decoding.EMPTY;
+  final AgentInstanceLimits limits = new AgentInstanceLimits();
+  final List<DirectBuffer> changedAttributes = new ArrayList<>();
+  boolean isDuplicate = false;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getAgentHistoryKey() {
-    return agentHistoryKeyProp.getValue();
+    return agentHistoryKey;
   }
 
   public AgentHistoryRecord setAgentHistoryKey(final long agentHistoryKey) {
-    agentHistoryKeyProp.setValue(agentHistoryKey);
+    this.agentHistoryKey = agentHistoryKey;
     return this;
   }
 
   @Override
   public long getAgentInstanceKey() {
-    return agentInstanceKeyProp.getValue();
+    return agentInstanceKey;
   }
 
   public AgentHistoryRecord setAgentInstanceKey(final long agentInstanceKey) {
-    agentInstanceKeyProp.setValue(agentInstanceKey);
+    this.agentInstanceKey = agentInstanceKey;
     return this;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   public AgentHistoryRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public AgentHistoryRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public AgentHistoryRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(bpmnProcessId);
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public AgentHistoryRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public AgentHistoryRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getJobKey() {
-    return jobKeyProp.getValue();
+    return jobKey;
   }
 
   public AgentHistoryRecord setJobKey(final long jobKey) {
-    jobKeyProp.setValue(jobKey);
+    this.jobKey = jobKey;
     return this;
   }
 
   @Override
   public String getJobLeaseToken() {
-    return BufferUtil.bufferAsString(jobLeaseTokenProp.getValue());
+    return BufferUtil.bufferAsString(jobLeaseToken);
   }
 
   public AgentHistoryRecord setJobLeaseToken(final String jobLeaseToken) {
-    jobLeaseTokenProp.setValue(jobLeaseToken);
+    this.jobLeaseToken = BufferUtil.wrapString(jobLeaseToken);
     return this;
   }
 
   @Override
   public int getLoopIteration() {
-    return loopIterationProp.getValue();
+    return loopIteration;
   }
 
   public AgentHistoryRecord setLoopIteration(final int loopIteration) {
-    loopIterationProp.setValue(loopIteration);
+    this.loopIteration = loopIteration;
     return this;
   }
 
   @Override
   public AgentHistoryRole getRole() {
-    return roleProp.getValue();
+    return role;
   }
 
   public AgentHistoryRecord setRole(final AgentHistoryRole role) {
-    roleProp.setValue(role);
+    this.role = role;
     return this;
   }
 
   @Override
   public long getProducedAt() {
-    return producedAtProp.getValue();
+    return producedAt;
   }
 
   public AgentHistoryRecord setProducedAt(final long producedAt) {
-    producedAtProp.setValue(producedAt);
+    this.producedAt = producedAt;
     return this;
   }
 
   @Override
   public List<AgentHistoryMessageContentValue> getContent() {
-    return contentProp.stream()
+    return content.stream()
         .map(
             element -> {
               final var copy = new AgentHistoryMessageContent();
@@ -234,16 +199,18 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setContent(
       final List<? extends AgentHistoryMessageContentValue> content) {
-    contentProp.reset();
+    this.content.clear();
     for (final var item : content) {
-      contentProp.add().copy(item);
+      final var copy = new AgentHistoryMessageContent();
+      copy.copy(item);
+      this.content.add(copy);
     }
     return this;
   }
 
   @Override
   public List<AgentHistoryMessageContentValue> getSystemPrompt() {
-    return systemPromptProp.stream()
+    return systemPrompt.stream()
         .map(
             element -> {
               final var copy = new AgentHistoryMessageContent();
@@ -255,10 +222,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setSystemPrompt(
       final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
-    systemPromptProp.reset();
+    this.systemPrompt.clear();
     if (systemPrompt != null) {
       for (final var item : systemPrompt) {
-        systemPromptProp.add().copy(item);
+        final var copy = new AgentHistoryMessageContent();
+        copy.copy(item);
+        this.systemPrompt.add(copy);
       }
     }
     return this;
@@ -266,7 +235,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   @Override
   public List<AgentHistoryEmbeddedToolCallValue> getToolCalls() {
-    return toolCallsProp.stream()
+    return toolCalls.stream()
         .map(
             element -> {
               final var copy = new AgentHistoryEmbeddedToolCall();
@@ -278,31 +247,33 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setToolCalls(
       final List<? extends AgentHistoryEmbeddedToolCallValue> toolCalls) {
-    toolCallsProp.reset();
+    this.toolCalls.clear();
     for (final var item : toolCalls) {
-      toolCallsProp.add().copy(item);
+      final var copy = new AgentHistoryEmbeddedToolCall();
+      copy.copy(item);
+      this.toolCalls.add(copy);
     }
     return this;
   }
 
   @Override
   public AgentHistoryMetrics getMetrics() {
-    return metricsProp.getValue();
+    return metrics;
   }
 
   @Override
   public String getHistoryItemId() {
-    return BufferUtil.bufferAsString(historyItemIdProp.getValue());
+    return BufferUtil.bufferAsString(historyItemId);
   }
 
   public AgentHistoryRecord setHistoryItemId(final String historyItemId) {
-    historyItemIdProp.setValue(historyItemId);
+    this.historyItemId = BufferUtil.wrapString(historyItemId);
     return this;
   }
 
   @Override
   public List<AgentInstanceToolValue> getTools() {
-    return toolsProp.stream()
+    return tools.stream()
         .map(
             element -> {
               final var copy = new AgentInstanceTool();
@@ -313,10 +284,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   public AgentHistoryRecord setTools(final List<? extends AgentInstanceToolValue> tools) {
-    toolsProp.reset();
+    this.tools.clear();
     if (tools != null) {
       for (final var tool : tools) {
-        toolsProp.add().copy(tool);
+        final var copy = new AgentInstanceTool();
+        copy.copy(tool);
+        this.tools.add(copy);
       }
     }
     return this;
@@ -324,83 +297,85 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   @Override
   public String getModel() {
-    return BufferUtil.bufferAsString(modelProp.getValue());
+    return BufferUtil.bufferAsString(model);
   }
 
   public AgentHistoryRecord setModel(final String model) {
-    modelProp.setValue(model);
+    this.model = BufferUtil.wrapString(model);
     return this;
   }
 
   @Override
   public String getProvider() {
-    return BufferUtil.bufferAsString(providerProp.getValue());
+    return BufferUtil.bufferAsString(provider);
   }
 
   public AgentHistoryRecord setProvider(final String provider) {
-    providerProp.setValue(provider);
+    this.provider = BufferUtil.wrapString(provider);
     return this;
   }
 
   @Override
   public AgentInstanceLimits getLimits() {
-    return limitsProp.getValue();
+    return limits;
   }
 
   @Override
   public List<String> getChangedAttributes() {
-    return changedAttributesProp.stream()
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return changedAttributes.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   public AgentHistoryRecord setChangedAttributes(final List<String> changedAttributes) {
-    changedAttributesProp.reset();
+    this.changedAttributes.clear();
     if (changedAttributes != null) {
-      changedAttributes.forEach(
-          attr -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attr)));
+      changedAttributes.forEach(attr -> this.changedAttributes.add(BufferUtil.wrapString(attr)));
     }
     return this;
   }
 
   @Override
   public boolean isDuplicate() {
-    return isDuplicateProp.getValue();
+    return isDuplicate;
   }
 
   public AgentHistoryRecord setDuplicate(final boolean duplicate) {
-    isDuplicateProp.setValue(duplicate);
+    this.isDuplicate = duplicate;
     return this;
   }
 
   public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public AgentHistoryRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
-    contentProp.add().copy(content);
+    final var copy = new AgentHistoryMessageContent();
+    copy.copy(content);
+    this.content.add(copy);
     return this;
   }
 
   public AgentHistoryRecord addSystemPrompt(final AgentHistoryMessageContent block) {
-    systemPromptProp.add().copy(block);
+    final var copy = new AgentHistoryMessageContent();
+    copy.copy(block);
+    systemPrompt.add(copy);
     return this;
   }
 
   public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
-    toolCallsProp.add().copy(toolCall);
+    final var copy = new AgentHistoryEmbeddedToolCall();
+    copy.copy(toolCall);
+    toolCalls.add(copy);
     return this;
   }
 
@@ -409,7 +384,17 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   public AgentHistoryRecord addChangedAttribute(final String attribute) {
-    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    changedAttributes.add(BufferUtil.wrapString(attribute));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AgentHistoryRecord> codec() {
+    return AgentHistoryRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentHistoryRecord> ops() {
+    return AgentHistoryRecordOps.INSTANCE;
   }
 }

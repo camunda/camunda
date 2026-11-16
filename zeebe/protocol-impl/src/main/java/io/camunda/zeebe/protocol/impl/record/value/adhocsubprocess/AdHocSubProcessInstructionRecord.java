@@ -8,61 +8,46 @@
 package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
-    implements AdHocSubProcessInstructionRecordValue {
-  private static final StringValue AD_HOC_SUB_PROCESS_INSTANCE_KEY =
-      new StringValue("adHocSubProcessInstanceKey");
-  private static final StringValue ACTIVATE_ELEMENTS = new StringValue("activateElements");
-  private static final StringValue CANCEL_REMAINING_INSTANCES =
-      new StringValue("cancelRemainingInstances");
-  private static final StringValue TENANT_ID = new StringValue("tenantId");
-  private static final StringValue COMPLETION_CONDITION_FULFILLED =
-      new StringValue("completionConditionFulfilled");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+@MsgpackPojo
+@NullMarked
+public final class AdHocSubProcessInstructionRecord
+    extends MsgpackBufferValue<AdHocSubProcessInstructionRecord>
+    implements MsgpackRecordValue, AdHocSubProcessInstructionRecordValue {
 
-  private final LongProperty adHocSubProcessInstanceKey =
-      new LongProperty(AD_HOC_SUB_PROCESS_INSTANCE_KEY, -1L);
-  private final ArrayProperty<AdHocSubProcessActivateElementInstruction> activateElements =
-      new ArrayProperty<>(ACTIVATE_ELEMENTS, AdHocSubProcessActivateElementInstruction::new);
-  private final BooleanProperty cancelRemainingInstances =
-      new BooleanProperty(CANCEL_REMAINING_INSTANCES, false);
-  private final StringProperty tenantId =
-      new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final BooleanProperty completionConditionFulfilledProp =
-      new BooleanProperty(COMPLETION_CONDITION_FULFILLED, false);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-
-  public AdHocSubProcessInstructionRecord() {
-    super(6);
-    declareProperty(adHocSubProcessInstanceKey)
-        .declareProperty(activateElements)
-        .declareProperty(cancelRemainingInstances)
-        .declareProperty(tenantId)
-        .declareProperty(completionConditionFulfilledProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  long adHocSubProcessInstanceKey = -1L;
+  final List<AdHocSubProcessActivateElementInstruction> activateElements = new ArrayList<>();
+  boolean cancelRemainingInstances = false;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  boolean completionConditionFulfilled = false;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getAdHocSubProcessInstanceKey() {
-    return adHocSubProcessInstanceKey.getValue();
+    return adHocSubProcessInstanceKey;
   }
 
   public AdHocSubProcessInstructionRecord setAdHocSubProcessInstanceKey(
       final long adHocSubProcessInstanceKey) {
-    this.adHocSubProcessInstanceKey.setValue(adHocSubProcessInstanceKey);
+    this.adHocSubProcessInstanceKey = adHocSubProcessInstanceKey;
     return this;
   }
 
@@ -75,22 +60,22 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
 
   @Override
   public boolean isCancelRemainingInstances() {
-    return cancelRemainingInstances.getValue();
+    return cancelRemainingInstances;
   }
 
   @Override
   public boolean isCompletionConditionFulfilled() {
-    return completionConditionFulfilledProp.getValue();
+    return completionConditionFulfilled;
   }
 
   public AdHocSubProcessInstructionRecord setCompletionConditionFulfilled(final boolean fulfilled) {
-    completionConditionFulfilledProp.setValue(fulfilled);
+    completionConditionFulfilled = fulfilled;
     return this;
   }
 
   public AdHocSubProcessInstructionRecord setCancelRemainingInstances(
       final boolean cancelRemainingInstances) {
-    this.cancelRemainingInstances.setValue(cancelRemainingInstances);
+    this.cancelRemainingInstances = cancelRemainingInstances;
     return this;
   }
 
@@ -102,26 +87,89 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
    */
   @JsonIgnore
   public ValueArray<AdHocSubProcessActivateElementInstruction> activateElements() {
-    return activateElements;
+    return new ActivateElements(activateElements);
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantId.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public AdHocSubProcessInstructionRecord setTenantId(final String tenantId) {
-    this.tenantId.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public AdHocSubProcessInstructionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AdHocSubProcessInstructionRecord> codec() {
+    return AdHocSubProcessInstructionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AdHocSubProcessInstructionRecord> ops() {
+    return AdHocSubProcessInstructionRecordOps.INSTANCE;
+  }
+
+  /**
+   * The mutable accessor of {@code activateElements}: it adds and removes the elements of the list,
+   * so that code written against the former {@code ArrayProperty} keeps working.
+   */
+  private static final class ActivateElements
+      implements ValueArray<AdHocSubProcessActivateElementInstruction> {
+
+    final List<AdHocSubProcessActivateElementInstruction> elements;
+
+    private ActivateElements(final List<AdHocSubProcessActivateElementInstruction> elements) {
+      this.elements = elements;
+    }
+
+    @Override
+    public AdHocSubProcessActivateElementInstruction add() {
+      final var element = new AdHocSubProcessActivateElementInstruction();
+      elements.add(element);
+      return element;
+    }
+
+    @Override
+    public AdHocSubProcessActivateElementInstruction add(final int index) {
+      final var element = new AdHocSubProcessActivateElementInstruction();
+      elements.add(index, element);
+      return element;
+    }
+
+    @Override
+    public AdHocSubProcessActivateElementInstruction get(final int index) {
+      return elements.get(index);
+    }
+
+    @Override
+    public AdHocSubProcessActivateElementInstruction remove(final int index) {
+      return elements.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return elements.size();
+    }
+
+    @Override
+    public Stream<AdHocSubProcessActivateElementInstruction> stream() {
+      return elements.stream();
+    }
+
+    @Override
+    public Iterator<AdHocSubProcessActivateElementInstruction> iterator() {
+      return elements.iterator();
+    }
   }
 }

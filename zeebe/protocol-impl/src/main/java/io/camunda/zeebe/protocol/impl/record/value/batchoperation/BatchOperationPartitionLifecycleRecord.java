@@ -7,72 +7,69 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordValue
-    implements BatchOperationPartitionLifecycleRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationPartitionLifecycleRecord
+    extends MsgpackBufferValue<BatchOperationPartitionLifecycleRecord>
+    implements MsgpackRecordValue, BatchOperationPartitionLifecycleRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_SOURCE_PARTITION_ID = "sourcePartitionId";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-  private final IntegerProperty sourcePartitionIdProp =
-      new IntegerProperty(PROP_SOURCE_PARTITION_ID, -1);
-  private final ObjectProperty<BatchOperationError> errorProp =
-      new ObjectProperty<>("error", new BatchOperationError());
-
-  public BatchOperationPartitionLifecycleRecord() {
-    super(4);
-    declareProperty(batchOperationKeyProp);
-    declareProperty(storageOrdinalProp);
-    declareProperty(sourcePartitionIdProp);
-    declareProperty(errorProp);
-  }
+  final RequiredLong batchOperationKey = new RequiredLong();
+  int storageOrdinal = 0;
+  int sourcePartitionId = -1;
+  final BatchOperationError error = new BatchOperationError();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public BatchOperationPartitionLifecycleRecord setBatchOperationKey(final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationPartitionLifecycleRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public Integer getSourcePartitionId() {
-    return sourcePartitionIdProp.getValue();
+    return sourcePartitionId;
   }
 
   public BatchOperationPartitionLifecycleRecord setSourcePartitionId(final int sourcePartitionId) {
-    sourcePartitionIdProp.reset();
-    sourcePartitionIdProp.setValue(sourcePartitionId);
+    this.sourcePartitionId = sourcePartitionId;
     return this;
   }
 
   public BatchOperationError getError() {
-    return errorProp.getValue();
+    return error;
   }
 
   public BatchOperationPartitionLifecycleRecord setError(final BatchOperationError error) {
-    errorProp.getValue().wrap(error);
+    this.error.wrap(error);
     return this;
   }
 
@@ -83,5 +80,15 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
     setSourcePartitionId(record.getSourcePartitionId());
     setError(record.getError());
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationPartitionLifecycleRecord> codec() {
+    return BatchOperationPartitionLifecycleRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationPartitionLifecycleRecord> ops() {
+    return BatchOperationPartitionLifecycleRecordOps.INSTANCE;
   }
 }

@@ -7,96 +7,106 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class RoleRecord extends MsgpackBufferValue<RoleRecord>
+    implements MsgpackRecordValue, RoleRecordValue {
 
-  private final LongProperty roleKeyProp = new LongProperty("roleKey", -1L);
-  private final StringProperty roleIdProp = new StringProperty("roleId");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final StringProperty entityIdProp = new StringProperty("entityId", "");
-  private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
-
-  public RoleRecord() {
-    super(6);
-    declareProperty(roleKeyProp)
-        .declareProperty(roleIdProp)
-        .declareProperty(nameProp)
-        .declareProperty(descriptionProp)
-        .declareProperty(entityIdProp)
-        .declareProperty(entityTypeProp);
-  }
+  long roleKey = -1L;
+  @Nullable DirectBuffer roleId;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer description = Decoding.EMPTY;
+  DirectBuffer entityId = Decoding.EMPTY;
+  EntityType entityType = EntityType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getRoleKey() {
-    return roleKeyProp.getValue();
+    return roleKey;
   }
 
   public RoleRecord setRoleKey(final long roleKey) {
-    roleKeyProp.setValue(roleKey);
+    this.roleKey = roleKey;
     return this;
   }
 
   @Override
   public String getRoleId() {
-    return BufferUtil.bufferAsString(roleIdProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(roleId, "roleId"));
   }
 
   public RoleRecord setRoleId(final String roleId) {
-    roleIdProp.setValue(roleId);
+    this.roleId = BufferUtil.wrapString(roleId);
     return this;
   }
 
   @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(name);
   }
 
   public RoleRecord setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   @Override
   public String getDescription() {
-    return BufferUtil.bufferAsString(descriptionProp.getValue());
+    return BufferUtil.bufferAsString(description);
   }
 
   public RoleRecord setDescription(final String description) {
     if (description == null) {
-      descriptionProp.reset();
+      this.description = Decoding.EMPTY;
       return this;
     }
 
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
   @Override
   public String getEntityId() {
-    return BufferUtil.bufferAsString(entityIdProp.getValue());
+    return BufferUtil.bufferAsString(entityId);
   }
 
   public RoleRecord setEntityId(final String entityId) {
-    entityIdProp.setValue(entityId);
+    this.entityId = BufferUtil.wrapString(entityId);
     return this;
   }
 
   @Override
   public EntityType getEntityType() {
-    return entityTypeProp.getValue();
+    return entityType;
   }
 
   public RoleRecord setEntityType(final EntityType entityType) {
-    entityTypeProp.setValue(entityType);
+    this.entityType = entityType;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<RoleRecord> codec() {
+    return RoleRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<RoleRecord> ops() {
+    return RoleRecordOps.INSTANCE;
   }
 }
