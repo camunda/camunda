@@ -92,7 +92,7 @@
 		"cross-env": "10.1.0",
 		"knip": "6.45.1",
 		"msw": "3.0.5",
-		"rollup-plugin-sbom": "5.0.1",
+		"rollup-plugin-sbom": "5.0.2",
 		"typescript": "7.0.2",
 		"vite": "8.3.8",
 		"vitest": "5.1.0",
