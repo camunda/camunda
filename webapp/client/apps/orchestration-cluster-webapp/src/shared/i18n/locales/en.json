@@ -729,6 +729,7 @@
 				"learnMore": "Learn more about {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Usernames are case-sensitive. Enter the username exactly as it is known to the identity provider.",
 				"kinds": {
 					"users": "users",
 					"groups": "groups",

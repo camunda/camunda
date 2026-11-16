@@ -61,6 +61,8 @@ const AssignMembersModal: React.FC<Props> = ({
 	const idLabel = t(`${key}.idLabel`);
 	const cancel = t(`admin.${owner}.cancel`);
 	const inputId = `assign-${kind}-input`;
+	const hintId = `${inputId}-hint`;
+	const isUsernameInput = entersIdAsText && kind === 'users';
 
 	const pickerOptions = getSortedOptionsIncludingSelected(options, selectedIds);
 	const idsToAssign = entersIdAsText ? [selectedId.trim()].filter((id) => id !== '') : selectedIds;
@@ -126,6 +128,7 @@ const AssignMembersModal: React.FC<Props> = ({
 								id={inputId}
 								autoFocus
 								placeholder={t(`${key}.enterId`)}
+								aria-describedby={isUsernameInput ? hintId : undefined}
 								value={selectedId}
 								onChange={(event) => setSelectedId(event.target.value)}
 							/>
@@ -142,6 +145,11 @@ const AssignMembersModal: React.FC<Props> = ({
 								placeholder={t(`${key}.select`)}
 								searchPlaceholder={t(`${key}.search`)}
 							/>
+						)}
+						{isUsernameInput && (
+							<span id={hintId} className="text-xs text-muted-foreground">
+								{t('admin.members.usernameCaseSensitiveHint')}
+							</span>
 						)}
 						{isCandidatesError && (
 							<span role="alert" className="text-xs text-danger-foreground-subtle">
