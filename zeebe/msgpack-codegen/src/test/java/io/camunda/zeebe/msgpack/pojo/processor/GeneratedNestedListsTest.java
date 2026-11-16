@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -99,6 +100,7 @@ final class GeneratedNestedListsTest {
                   final List<List<List<Long>>> deep = new ArrayList<>();
                   final List<List<DirectBuffer>> names = new ArrayList<>();
                   final List<List<Item>> items = new ArrayList<>();
+                  final List<List<io.camunda.zeebe.msgpack.value.StringValue>> values = new ArrayList<>();
                   @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                 }
                 """),
@@ -181,6 +183,11 @@ final class GeneratedNestedListsTest {
     @SuppressWarnings("unchecked")
     final var items = (List<List<Object>>) get(source, "items");
     items.add(List.of(item.newInstance(7L), item.newInstance(8L)));
+    @SuppressWarnings("unchecked")
+    final var values = (List<List<StringValue>>) get(source, "values");
+    final var value = new StringValue();
+    value.wrap(new UnsafeBuffer("v".getBytes()));
+    values.add(List.of(value));
 
     // when
     final var written = new UnsafeBuffer(new byte[source.getLength()]);
@@ -197,6 +204,9 @@ final class GeneratedNestedListsTest {
     assertThat(read).isEqualTo(source).hasSameHashCodeAs(source);
     assertThat(copy.toString())
         .contains("[[[1,2],[]],[[70000]]]", "\"deep\"", "[[\"a\",\"bc\"],[]]", "[[{\"id\":7");
+    assertThat(copy.toString()).contains("[[\"v\"]]");
+    assertThat(get(copy, "values")).isEqualTo(values);
+    assertThat(((List<?>) get(copy, "values")).get(0)).isNotSameAs(values.get(0));
     assertThat(((List<?>) get(copy, "items")).get(0)).isNotSameAs(items.get(0));
   }
 
