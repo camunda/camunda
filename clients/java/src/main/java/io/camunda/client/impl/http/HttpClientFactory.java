@@ -45,6 +45,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.client5.http.config.RequestConfig.Builder;
 import org.apache.hc.client5.http.impl.ChainElement;
@@ -73,30 +74,44 @@ public class HttpClientFactory {
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
 
+  /**
+   * Maximum age of a pooled connection, however often it is used. Without it, a connection to a
+   * replaced server pod keeps timing out forever, as busy clients never let it go idle.
+   */
+  static final TimeValue DEFAULT_CONNECTION_TIME_TO_LIVE = TimeValue.ofSeconds(60);
+
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
+  private final TimeValue connectionTimeToLive;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, DEFAULT_CONNECTION_TIME_TO_LIVE);
   }
 
-  /** Lets tests shorten the margin of the response deadline. */
+  /** Lets tests shorten the margin of the response deadline and the connection lifetime. */
   HttpClientFactory(
-      final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final TimeValue connectionTimeToLive) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
+    this.connectionTimeToLive = connectionTimeToLive;
   }
 
   public HttpClient createClient() {
+    return createClient(createConnectionManager());
+  }
+
+  /** Lets tests keep a handle on the connection pool to observe it. */
+  HttpClient createClient(final PoolingAsyncClientConnectionManager connectionManager) {
     final RequestConfig defaultRequestConfig = defaultClientRequestConfigBuilder().build();
     final CredentialsProvider credentialsProvider =
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
-    final PoolingAsyncClientConnectionManager connectionManager = createConnectionManager();
     final CloseableHttpAsyncClient client =
         defaultClientBuilder(credentialsProvider, connectionManager)
             .setDefaultRequestConfig(defaultRequestConfig)
@@ -114,7 +129,7 @@ public class HttpClientFactory {
         credentialsProvider);
   }
 
-  private PoolingAsyncClientConnectionManager createConnectionManager() {
+  PoolingAsyncClientConnectionManager createConnectionManager() {
     final HttpClientHostnameVerifier hostnameVerifier =
         new HostnameVerifier(config.getOverrideAuthority());
     final TlsStrategy tlsStrategy =
@@ -130,7 +145,9 @@ public class HttpClientFactory {
             // connection, which is only safe with one exchange per HTTP/2 connection. Pin it, as
             // newer httpclient5 versions default to multiplexing.
             .setMessageMultiplexing(false)
-            .setMaxConnPerRoute(config.getMaxHttpConnections());
+            .setMaxConnPerRoute(config.getMaxHttpConnections())
+            .setDefaultConnectionConfig(
+                ConnectionConfig.custom().setTimeToLive(connectionTimeToLive).build());
 
     return connectionManagerBuilder.build();
   }
