@@ -18,8 +18,9 @@ import java.time.InstantSource;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Times out probes at their deadline. It runs at the next deadline instead of polling, as {@code
- * JobBackoffCheckScheduler} does for backed-off jobs, and stops when no probe is pending.
+ * Times out probes at their deadline. Instead of polling, it runs at most {@link #hop} ahead of the
+ * next deadline, as {@code JobBackoffCheckScheduler} runs at the next backoff of jobs, and stops
+ * when no probe is pending.
  *
  * <p>Unlike for jobs, a client waits for the time-out, and the gateway gives up 500 ms after the
  * deadline. The schedule service runs a task due at least half its check interval away only at the
