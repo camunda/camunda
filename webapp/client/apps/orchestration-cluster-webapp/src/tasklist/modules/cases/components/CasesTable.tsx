@@ -8,12 +8,12 @@
 
 import {useCallback, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useRouter} from '@tanstack/react-router';
-import {DataTable, EmptyState, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
+import {Link, useRouter} from '@tanstack/react-router';
+import {Button, DataTable, EmptyState, type DataTableColumn, type SortingConfig} from '@camunda/design-system';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
 import {CaseStatusBadge} from '#/tasklist/modules/cases/components/CaseStatusBadge';
-import {SORT_FIELDS, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
+import {SORT_FIELDS, casesSearchDefaults, type CasesSearch} from '#/tasklist/modules/cases/searchSchema';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {RouterRowLink} from '#/shared/router/RouterRowLink';
 
@@ -28,6 +28,48 @@ function getCaseTitle(processInstance: ProcessInstance) {
 function getRowId(processInstance: ProcessInstance) {
 	return processInstance.processInstanceKey;
 }
+
+const CasesEmptyState: React.FC<{search: CasesSearch}> = ({search}) => {
+	const {t} = useTranslation();
+
+	if (search.page > casesSearchDefaults.page) {
+		return (
+			<EmptyState
+				heading={t('tasklist.casesPageOutOfRangeHeading')}
+				headingLevel={2}
+				description={t('tasklist.casesPageOutOfRangeDescription')}
+				action={
+					<Button asChild variant="link">
+						<Link to="/tasklist/cases" search={{...search, page: casesSearchDefaults.page}}>
+							{t('tasklist.casesGoToFirstPage')}
+						</Link>
+					</Button>
+				}
+				size="sm"
+			/>
+		);
+	}
+
+	if (search.search) {
+		return (
+			<EmptyState
+				heading={t('tasklist.casesNoMatchingCasesHeading')}
+				headingLevel={2}
+				description={t('tasklist.casesNoMatchingCasesDescription', {search: search.search})}
+				size="sm"
+			/>
+		);
+	}
+
+	return (
+		<EmptyState
+			heading={t('tasklist.casesNoOpenCasesHeading')}
+			headingLevel={2}
+			description={t('tasklist.casesNoOpenCasesDescription')}
+			size="sm"
+		/>
+	);
+};
 
 type Props = {
 	cases: ProcessInstance[];
@@ -158,23 +200,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search, onSearchChange}
 			rowClickLabel={getRowLabel}
 			sorting={sorting}
 			pagination={pagination}
-			emptyState={
-				search.search ? (
-					<EmptyState
-						heading={t('tasklist.casesNoMatchingCasesHeading')}
-						headingLevel={2}
-						description={t('tasklist.casesNoMatchingCasesDescription', {search: search.search})}
-						size="sm"
-					/>
-				) : (
-					<EmptyState
-						heading={t('tasklist.casesNoOpenCasesHeading')}
-						headingLevel={2}
-						description={t('tasklist.casesNoOpenCasesDescription')}
-						size="sm"
-					/>
-				)
-			}
+			emptyState={<CasesEmptyState search={search} />}
 		/>
 	);
 };

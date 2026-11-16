@@ -154,4 +154,24 @@ describe('<CasesTable />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'No matching cases'})).toBeVisible();
 		await expect.element(screen.getByText('No open case has a business ID that contains "XY-1".')).toBeVisible();
 	});
+
+	it('should offer a link back to the first page when the page is past the last one', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<CasesTable
+					cases={[]}
+					totalItems={0}
+					search={{...casesSearchDefaults, search: 'XY-1', page: 4}}
+					onSearchChange={vi.fn()}
+				/>
+			),
+			{path: '/tasklist/cases'},
+		);
+
+		await expect.element(screen.getByRole('heading', {name: 'No cases on this page'})).toBeVisible();
+
+		await userEvent.click(screen.getByRole('link', {name: 'Go to the first page'}));
+
+		await expect.poll(() => screen.router.state.location.search).toMatchObject({search: 'XY-1', page: 1});
+	});
 });
