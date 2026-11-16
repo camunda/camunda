@@ -10,10 +10,11 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 
 public final class ElementInstanceWalkRecord extends UnifiedRecordValue
-    implements ElementInstanceWalkRecordValue {
+    implements ElementInstanceWalkRecordValue, MutableStorageOrdinal {
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1L);
@@ -103,6 +104,7 @@ public final class ElementInstanceWalkRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public ElementInstanceWalkRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

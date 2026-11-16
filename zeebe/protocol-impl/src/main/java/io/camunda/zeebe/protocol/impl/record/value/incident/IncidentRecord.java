@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -26,7 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
-public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
+public final class IncidentRecord extends UnifiedRecordValue
+    implements IncidentRecordValue, MutableStorageOrdinal {
   // Static StringValue keys to avoid memory waste
   private static final StringValue ERROR_TYPE_KEY = new StringValue("errorType");
   private static final StringValue ERROR_MESSAGE_KEY = new StringValue("errorMessage");
@@ -292,6 +294,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public IncidentRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

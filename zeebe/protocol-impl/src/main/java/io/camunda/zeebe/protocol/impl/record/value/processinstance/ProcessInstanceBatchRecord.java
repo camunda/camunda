@@ -10,11 +10,12 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
 public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
-    implements ProcessInstanceBatchRecordValue {
+    implements ProcessInstanceBatchRecordValue, MutableStorageOrdinal {
 
   private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
   private final LongProperty processDefinitionKeyProperty =
@@ -99,6 +100,7 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
     return storageOrdinalProperty.getValue();
   }
 
+  @Override
   public ProcessInstanceBatchRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProperty.setValue(storageOrdinal);
     return this;

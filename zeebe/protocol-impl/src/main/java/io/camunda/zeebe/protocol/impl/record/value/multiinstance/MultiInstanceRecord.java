@@ -14,12 +14,14 @@ import io.camunda.zeebe.msgpack.value.BinaryValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public class MultiInstanceRecord extends UnifiedRecordValue implements MultiInstanceRecordValue {
+public class MultiInstanceRecord extends UnifiedRecordValue
+    implements MultiInstanceRecordValue, MutableStorageOrdinal {
   private static final StringValue INPUT_COLLECTION = new StringValue("inputCollection");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
@@ -55,6 +57,7 @@ public class MultiInstanceRecord extends UnifiedRecordValue implements MultiInst
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public MultiInstanceRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

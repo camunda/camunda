@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -36,7 +37,8 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
+public final class UserTaskRecord extends UnifiedRecordValue
+    implements UserTaskRecordValue, MutableStorageOrdinal {
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
@@ -823,6 +825,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public UserTaskRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

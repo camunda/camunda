@@ -26,6 +26,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
@@ -41,7 +42,8 @@ import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+public final class JobRecord extends UnifiedRecordValue
+    implements JobRecordValue, MutableStorageOrdinal {
 
   /**
    * The worker type prefix for Camunda Agentic AI jobs that are set in Camunda Connectors.
@@ -624,6 +626,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public JobRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

@@ -12,12 +12,13 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryBatchRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
 public final class AgentHistoryBatchRecord extends UnifiedRecordValue
-    implements AgentHistoryBatchRecordValue {
+    implements AgentHistoryBatchRecordValue, MutableStorageOrdinal {
 
   private final LongProperty agentInstanceKeyProp = new LongProperty("agentInstanceKey", -1L);
   private final ArrayProperty<StringValue> historyItemIdsProp =
@@ -62,6 +63,7 @@ public final class AgentHistoryBatchRecord extends UnifiedRecordValue
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public AgentHistoryBatchRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

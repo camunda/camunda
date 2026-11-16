@@ -16,6 +16,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
@@ -35,7 +36,7 @@ import org.agrona.DirectBuffer;
  * #variablesProp} carries the originating message's variables on requests and is empty on replies.
  */
 public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecordValue
-    implements MessageStartProcessInstanceRequestRecordValue {
+    implements MessageStartProcessInstanceRequestRecordValue, MutableStorageOrdinal {
 
   private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
@@ -290,6 +291,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public MessageStartProcessInstanceRequestRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;

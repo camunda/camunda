@@ -16,13 +16,15 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class TimerRecord extends UnifiedRecordValue implements TimerRecordValue {
+public final class TimerRecord extends UnifiedRecordValue
+    implements TimerRecordValue, MutableStorageOrdinal {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
@@ -165,6 +167,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
     return storageOrdinalProp.getValue();
   }
 
+  @Override
   public TimerRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
