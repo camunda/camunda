@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -34,23 +35,28 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
       "Expected to yield probe with key '%d', but no such probe was found.";
   private static final String NOT_ACTIVATED_MESSAGE =
       "Expected to yield probe with key '%d', but it is in state '%s'.";
+  private static final String EXPIRED_MESSAGE =
+      "Expected to yield probe with key '%d', but its deadline has passed.";
 
   private final ProbeState probeState;
   private final ProbeBehavior probeBehavior;
   private final CslTenantCheck tenantCheck;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final InstantSource clock;
 
   public ProbeYieldProcessor(
       final ProbeState probeState,
       final ProbeBehavior probeBehavior,
       final CslTenantCheck tenantCheck,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     this.probeState = probeState;
     this.probeBehavior = probeBehavior;
     this.tenantCheck = tenantCheck;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    this.clock = clock;
   }
 
   @Override
@@ -61,6 +67,12 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
     if (state == State.NOT_FOUND || probe == null || !isOfAuthorizedTenant(command, probe)) {
       rejectionWriter.appendRejection(
           command, RejectionType.NOT_FOUND, NOT_FOUND_MESSAGE.formatted(probeKey));
+      return;
+    }
+    // late, as an answer (F4): the probe stays with its worker until the queued TIME_OUT ends it
+    if (probe.getDeadline() <= clock.millis()) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.NOT_FOUND, EXPIRED_MESSAGE.formatted(probeKey));
       return;
     }
     if (state != State.ACTIVATED) {

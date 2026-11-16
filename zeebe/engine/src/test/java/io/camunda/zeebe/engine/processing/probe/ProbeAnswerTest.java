@@ -298,6 +298,92 @@ public final class ProbeAnswerTest {
         .isEmpty();
   }
 
+  @Test
+  public void shouldRejectAnAnswerProcessedAfterTheDeadlineBeforeItsTimeOut() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1_000)
+            .withRequest(45, 455L)
+            .create()
+            .getKey();
+    ENGINE.probe().activate(List.of(probeId), "connectors-runtime", 1);
+
+    // when the answer is in the log before the TIME_OUT, but processed after the deadline
+    ENGINE.pauseProcessing(1);
+    try {
+      ENGINE.writeCommandOnPartition(
+          1, probeKey, ProbeIntent.ANSWER, ok(Map.of("status", "SUCCESS")));
+      ENGINE.increaseTime(Duration.ofSeconds(2));
+    } finally {
+      ENGINE.resumeProcessing(1);
+    }
+
+    // then the answer is late (F4), and the client keeps the time-out the deadline promised
+    final var rejection =
+        RecordingExporter.probeRecords(ProbeIntent.ANSWER)
+            .onlyCommandRejections()
+            .withRecordKey(probeKey)
+            .getFirst();
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to answer probe with key '%d', but its deadline has passed."
+                .formatted(probeKey));
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.WORKER_DID_NOT_ANSWER);
+    assertThat(
+            RecordingExporter.probeRecords()
+                .withRecordKey(probeKey)
+                .limit(r -> r.getIntent() == ProbeIntent.TIMED_OUT)
+                .withIntent(ProbeIntent.ANSWERED)
+                .exists())
+        .isFalse();
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(45, 455L);
+  }
+
+  @Test
+  public void shouldRejectAYieldProcessedAfterTheDeadlineBeforeItsTimeOut() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1_000)
+            .create()
+            .getKey();
+    ENGINE.probe().activate(List.of(probeId), "connectors-runtime", 1);
+
+    // when the yield is in the log before the TIME_OUT, but processed after the deadline
+    ENGINE.pauseProcessing(1);
+    try {
+      ENGINE.writeCommandOnPartition(1, probeKey, ProbeIntent.YIELD, new ProbeRecord());
+      ENGINE.increaseTime(Duration.ofSeconds(2));
+    } finally {
+      ENGINE.resumeProcessing(1);
+    }
+
+    // then the probe stays with its worker, and ends as one the worker did not answer
+    final var rejection =
+        RecordingExporter.probeRecords(ProbeIntent.YIELD)
+            .onlyCommandRejections()
+            .withRecordKey(probeKey)
+            .getFirst();
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to yield probe with key '%d', but its deadline has passed."
+                .formatted(probeKey));
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.WORKER_DID_NOT_ANSWER);
+  }
+
   private long activatedProbe() {
     final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
     ENGINE.probe().activate(List.of(probeId), "worker", 1);

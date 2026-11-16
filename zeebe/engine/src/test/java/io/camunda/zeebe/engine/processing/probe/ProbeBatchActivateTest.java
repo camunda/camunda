@@ -13,12 +13,17 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingProbeNotifier;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProbeBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -236,6 +241,47 @@ public final class ProbeBatchActivateTest {
         List.of(probeId),
         0,
         "Expected to activate probes with max probes to activate greater than zero, but it was '0'.");
+  }
+
+  @Test
+  public void shouldSkipAProbeWhoseDeadlineHasPassedBeforeItsTimeOut() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequestTimeout(1_000)
+            .create()
+            .getKey();
+
+    // when the poll is in the log before the TIME_OUT, but processed after the deadline
+    ENGINE.pauseProcessing(1);
+    final long pollPosition;
+    try {
+      pollPosition =
+          ENGINE.writeCommandOnPartition(
+              1,
+              -1L,
+              ProbeBatchIntent.ACTIVATE,
+              new ProbeBatchRecord()
+                  .setProbeIds(List.of(probeId))
+                  .setWorker("worker")
+                  .setMaxProbesToActivate(1));
+      ENGINE.increaseTime(Duration.ofSeconds(2));
+    } finally {
+      ENGINE.resumeProcessing(1);
+    }
+
+    // then the poll gets nothing, and the probe ends as one no worker collected (D40)
+    final var activated =
+        RecordingExporter.probeBatchRecords(ProbeBatchIntent.ACTIVATED)
+            .withSourceRecordPosition(pollPosition)
+            .getFirst();
+    assertThat(activated.getValue().getProbeKeys()).isEmpty();
+    final var timedOut =
+        RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
+    assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
   }
 
   private long createProbe(final String probeId, final String input) {

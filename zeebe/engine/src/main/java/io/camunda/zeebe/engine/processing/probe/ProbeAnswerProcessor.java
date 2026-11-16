@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -52,6 +53,8 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
       "Expected to answer probe with key '%d', but no such probe was found.";
   private static final String NOT_ACTIVATED_MESSAGE =
       "Expected to answer probe with key '%d', but it is in state '%s'.";
+  private static final String EXPIRED_MESSAGE =
+      "Expected to answer probe with key '%d', but its deadline has passed.";
 
   private final ProbeState probeState;
   private final CslAuthorizationCheck cslCheck;
@@ -59,11 +62,16 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final InstantSource clock;
 
   public ProbeAnswerProcessor(
-      final ProbeState probeState, final CslAuthorizationCheck cslCheck, final Writers writers) {
+      final ProbeState probeState,
+      final CslAuthorizationCheck cslCheck,
+      final Writers writers,
+      final InstantSource clock) {
     this.probeState = probeState;
     this.cslCheck = cslCheck;
+    this.clock = clock;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -81,6 +89,7 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
 
     final var checked =
         authorize(command, probe)
+            .flatMap(ignored -> checkNotExpired(probeKey, probe))
             .flatMap(ignored -> validateEnvelope(command.getValue()))
             .flatMap(ignored -> checkActivated(probeKey));
     if (checked.isLeft()) {
@@ -148,6 +157,17 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
                     hasData ? "with" : "without",
                     hasMessage ? "a" : "no",
                     answer.getMessage().length())));
+  }
+
+  /**
+   * An answer processed after the deadline is late (F4), even if the TIME_OUT that ends the probe
+   * is still queued behind it: the client keeps the time-out response the deadline promised.
+   */
+  private Either<Rejection, ProbeRecord> checkNotExpired(
+      final long probeKey, final ProbeRecord probe) {
+    return probe.getDeadline() > clock.millis()
+        ? Either.right(probe)
+        : Either.left(new Rejection(RejectionType.NOT_FOUND, EXPIRED_MESSAGE.formatted(probeKey)));
   }
 
   private Either<Rejection, State> checkActivated(final long probeKey) {

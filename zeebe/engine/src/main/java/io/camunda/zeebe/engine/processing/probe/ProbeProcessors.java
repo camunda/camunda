@@ -68,16 +68,21 @@ public final class ProbeProcessors {
             ValueType.PROBE_BATCH,
             ProbeBatchIntent.ACTIVATE,
             new ProbeBatchActivateProcessor(
-                processingState.getProbeState(), cslCheck, tenantCheck, keyGenerator, writers))
+                processingState.getProbeState(),
+                cslCheck,
+                tenantCheck,
+                keyGenerator,
+                writers,
+                clock))
         .onCommand(
             ValueType.PROBE,
             ProbeIntent.YIELD,
             new ProbeYieldProcessor(
-                processingState.getProbeState(), probeBehavior, tenantCheck, writers))
+                processingState.getProbeState(), probeBehavior, tenantCheck, writers, clock))
         .onCommand(
             ValueType.PROBE,
             ProbeIntent.ANSWER,
-            new ProbeAnswerProcessor(processingState.getProbeState(), cslCheck, writers))
+            new ProbeAnswerProcessor(processingState.getProbeState(), cslCheck, writers, clock))
         .onCommand(
             ValueType.PROBE, ProbeIntent.RESPOND, new ProbeRespondProcessor(probeBehavior, writers))
         .onCommand(

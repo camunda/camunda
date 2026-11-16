@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Predicate;
@@ -58,14 +59,17 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final InstantSource clock;
 
   public ProbeBatchActivateProcessor(
       final ProbeState probeState,
       final CslAuthorizationCheck cslCheck,
       final CslTenantCheck tenantCheck,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     this.probeState = probeState;
+    this.clock = clock;
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
     this.keyGenerator = keyGenerator;
@@ -106,6 +110,7 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
     final var value = command.getValue();
     final int maxProbes = value.getMaxProbesToActivate();
     final var mayAnswer = answerPermission(command);
+    final long now = clock.millis();
 
     for (final String probeId : value.getProbeIds()) {
       if (value.probeKeys().size() >= maxProbes || value.isTruncated()) {
@@ -118,6 +123,10 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
           BufferUtil.wrapString(probeId),
           tenantIds,
           (probeKey, probe) -> {
+            // an expired probe waits for its queued TIME_OUT, which ends it as NO_WORKER (D40)
+            if (probe.getDeadline() <= now) {
+              return true;
+            }
             probe.setWorker(value.getWorkerBuffer());
             final int expectedEventLength =
                 command.getLength()
