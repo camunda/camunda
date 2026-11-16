@@ -34,6 +34,9 @@ final class RoundRobinActivateJobsHandlerTest {
       new RoundRobinActivateJobsHandler<>(
           brokerClient, Long.MAX_VALUE, r -> new EmptyResult(), IllegalStateException::new);
 
+  // Deterministic only because the production cache evicts inline (executor(Runnable::run)), so
+  // the size bound holds as soon as each activation returns. If this test becomes flaky, check
+  // whether that direct executor was removed.
   @Test
   void shouldForgetRoundRobinPositionOfJobTypesBeyondLimit() {
     // given - every job type activated once, which advances its round-robin cursor
