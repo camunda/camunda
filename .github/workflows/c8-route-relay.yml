@@ -8,8 +8,14 @@
 # construction rather than by prompt instruction.
 #
 # This file therefore does one thing: decide that a Camunda engineer asked for
-# a routing, and hand the issue number across. It reads nothing private, runs
-# no model, and uploads nothing.
+# a routing, and hand the repository and issue number across. It reads nothing
+# private, runs no model, and uploads nothing.
+#
+# It is repository-agnostic on purpose -- it names no repository, taking its
+# own from GITHUB_REPOSITORY -- so onboarding another repository is a copy of
+# this file plus one line added to BOTH allowlists in
+# camunda/eng-kit-memory:.github/workflows/c8-route.md. The agent refuses to
+# run for a repository that is not on them.
 name: c8-route relay
 
 on:
@@ -103,10 +109,12 @@ jobs:
           owner: camunda
           repositories: eng-kit-memory
 
-      # Only the issue number crosses. The agent fetches the issue itself from
-      # this public repository, so no issue text passes through the dispatch
-      # payload -- one less place for untrusted text to be mistaken for
-      # configuration.
+      # Only the repository and the issue number cross. The agent fetches the
+      # issue itself, so no issue text passes through the dispatch payload --
+      # one less place for untrusted text to be mistaken for configuration.
+      # The repository is taken from GITHUB_REPOSITORY rather than written
+      # here, so this step is identical in every onboarded repository and
+      # cannot name one it is not running in.
       - name: Dispatch the routing agent
         env:
           GH_TOKEN: ${{ steps.dispatch-token.outputs.token }}
@@ -116,8 +124,9 @@ jobs:
           gh workflow run c8-route.lock.yml \
             --repo camunda/eng-kit-memory \
             --ref main \
+            --field "repo=${GITHUB_REPOSITORY}" \
             --field "issue_number=${ISSUE}"
-          echo "::notice::dispatched c8-route for issue #${ISSUE}"
+          echo "::notice::dispatched c8-route for ${GITHUB_REPOSITORY}#${ISSUE}"
 
       # A failed dispatch would otherwise leave the asker watching an eyes
       # reaction forever, with the error buried in a workflow log on a public
