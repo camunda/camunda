@@ -9,12 +9,14 @@ package io.camunda.zeebe.broker.probe;
 
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Tells the gateways that a probe ID has probes to collect, as {@code RemoteJobStreamer} announces
  * job types. The topic belongs to the physical tenant and to probes alone, so a probe never wakes a
  * job poll.
  */
+@NullMarked
 public final class RemoteProbeNotifier implements ProbeNotifier {
 
   private static final String PROBES_AVAILABLE_TOPIC = "probesAvailable";

@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
+import org.jspecify.annotations.NullMarked;
 
 /** Stores the new probe, activatable until a poll collects it or its deadline passes. */
+@NullMarked
 public final class ProbeCreatedApplier implements TypedEventApplier<ProbeIntent, ProbeRecord> {
 
   private final MutableProbeState probeState;

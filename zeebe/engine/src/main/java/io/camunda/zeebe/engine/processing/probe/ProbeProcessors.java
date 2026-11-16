@@ -21,7 +21,9 @@ import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.function.Supplier;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class ProbeProcessors {
 
   private ProbeProcessors() {}

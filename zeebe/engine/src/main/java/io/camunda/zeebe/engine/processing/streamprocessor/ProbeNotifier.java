@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import org.jspecify.annotations.NullMarked;
+
 /**
  * Tells the gateways that a probe ID has probes to collect, so a long poll waiting for that probe
  * ID tries again, as {@link JobStreamer#notifyWorkAvailable(String)} does for job types.
  */
+@NullMarked
 @FunctionalInterface
 public interface ProbeNotifier {
 
