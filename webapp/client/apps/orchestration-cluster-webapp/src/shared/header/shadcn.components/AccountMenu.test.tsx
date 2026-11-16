@@ -29,6 +29,17 @@ describe('User info', () => {
 		await expect.element(screen.getByText('Demo User')).toBeVisible();
 	});
 
+	it('should render the email and the version only when provided', async () => {
+		const screen = await render(
+			<AccountMenu displayName="Demo User" email="demo@example.com" version="8.11.0" canLogout onLogout={() => {}} />,
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Settings'}));
+
+		await expect.element(screen.getByText('demo@example.com')).toBeVisible();
+		await expect.element(screen.getByText('Version 8.11.0')).toBeVisible();
+	});
+
 	it('should render language selection dropdown', async () => {
 		const screen = await render(<AccountMenu displayName="Demo User" canLogout onLogout={() => {}} />);
 

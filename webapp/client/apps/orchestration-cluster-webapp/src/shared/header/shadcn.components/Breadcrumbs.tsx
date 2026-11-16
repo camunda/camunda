@@ -29,6 +29,8 @@ import {getBootConfig} from '#/shared/config/getBootConfig';
 type Options = {
 	currentApp: CurrentApp;
 	webappLinks: Record<string, string>;
+	operateBase?: '/operate' | typeof OPERATE_BASE;
+	className?: string;
 };
 
 function getBreadcrumbIcon(key: string, currentApp: CamundaAppKey): NavIcon {
@@ -46,16 +48,18 @@ function getAppIcon(key: string): NavIcon | undefined {
 	return Object.prototype.hasOwnProperty.call(camundaAppIcons, key) ? camundaAppIcons[key as CamundaAppKey] : undefined;
 }
 
-function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor, currentApp: CamundaAppKey): NavBreadcrumbDescriptor {
+function mapBreadcrumb(
+	breadcrumb: BreadcrumbDescriptor,
+	currentApp: CamundaAppKey,
+	operateBase: NonNullable<Options['operateBase']>,
+): NavBreadcrumbDescriptor {
 	return {
 		key: breadcrumb.key,
 		label: breadcrumb.label,
 		icon: getBreadcrumbIcon(breadcrumb.key, currentApp),
 		onClick: breadcrumb.onClick,
 		linkProps:
-			breadcrumb.key === 'app'
-				? {to: currentApp === 'operate' ? OPERATE_BASE : `/${currentApp}`}
-				: breadcrumb.linkProps,
+			breadcrumb.key === 'app' ? {to: currentApp === 'operate' ? operateBase : `/${currentApp}`} : breadcrumb.linkProps,
 		actions: breadcrumb.actions,
 		dropdownTitle: breadcrumb.dropdownTitle,
 		dropdownAriaLabel: breadcrumb.dropdownAriaLabel,
@@ -73,7 +77,7 @@ function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor, currentApp: CamundaAppK
 	};
 }
 
-const Breadcrumbs: React.FC<Options> = ({currentApp, webappLinks}) => {
+const Breadcrumbs: React.FC<Options> = ({currentApp, webappLinks, operateBase = OPERATE_BASE, className}) => {
 	const {t} = useTranslation();
 	const activeItemKey = useRouterState({
 		select: ({location}) => `${location.pathname}${location.searchStr}`,
@@ -84,8 +88,8 @@ const Breadcrumbs: React.FC<Options> = ({currentApp, webappLinks}) => {
 		webappLinks: organizationId !== null && clusterId !== null ? webappLinks : undefined,
 	});
 	const items = useMemo(
-		() => breadcrumbs.map((breadcrumb) => mapBreadcrumb(breadcrumb, currentApp)),
-		[breadcrumbs, currentApp],
+		() => breadcrumbs.map((breadcrumb) => mapBreadcrumb(breadcrumb, currentApp, operateBase)),
+		[breadcrumbs, currentApp, operateBase],
 	);
 
 	if (items.length === 0) {
@@ -98,6 +102,7 @@ const Breadcrumbs: React.FC<Options> = ({currentApp, webappLinks}) => {
 			activeItemKey={activeItemKey}
 			linkComponent={Link}
 			aria-label={t('headerContextLabel')}
+			className={className}
 		/>
 	);
 };

@@ -12,15 +12,10 @@ import {useTranslation} from 'react-i18next';
 import {
 	Bot,
 	Briefcase,
-	GitBranch,
-	History,
-	LayoutDashboard,
-	Layers,
 	ListChecks,
 	ListTodo,
 	Package,
 	Settings,
-	Settings2,
 	ShieldCheck,
 	User,
 	UserCog,
@@ -36,6 +31,7 @@ import {OPERATE_BASE} from '#/shared/operateBase';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
+import {getOperateSidebarItems} from './operateSidebarItems';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
@@ -43,10 +39,6 @@ const tabRoutes = {
 	tasklistProcesses: '/tasklist/processes',
 	tasklistCases: '/tasklist/cases',
 	operateDashboard: OPERATE_BASE,
-	operateProcesses: `${OPERATE_BASE}/processes`,
-	operateDecisions: `${OPERATE_BASE}/decisions`,
-	operateOperationsLog: `${OPERATE_BASE}/operations-log`,
-	operateBatchOperations: `${OPERATE_BASE}/batch-operations`,
 	adminIndex: '/admin',
 	adminUsers: '/admin/users',
 	adminGroups: '/admin/groups',
@@ -208,10 +200,6 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
-		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
-		const isOperateDecisionsRoute = matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false;
-		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
-		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
 		return {
 			ariaLabel: t('headerAppBarLabel'),
@@ -220,77 +208,7 @@ function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNav
 				icon: camundaAppIcons.operate,
 				label: 'Operate',
 			},
-			items: hasOperateAccess
-				? [
-						{
-							type: 'item',
-							key: 'dashboard',
-							label: t('operate.dashboard.title'),
-							icon: LayoutDashboard,
-							isActive:
-								!isOperateProcessesRoute &&
-								!isOperateDecisionsRoute &&
-								!isOperateBatchOperationsRoute &&
-								!isOperateOperationsLogRoute,
-							linkProps: {
-								to: tabRoutes['operateDashboard'],
-								activeOptions: {exact: true},
-							},
-						},
-						{
-							type: 'item',
-							key: 'processes',
-							label: t('operate.processes.title'),
-							icon: Workflow,
-							isActive: isOperateProcessesRoute,
-							linkProps: {
-								to: tabRoutes['operateProcesses'],
-								search: {active: true, suspended: true, incidents: true},
-								state: {operateHideOptionalFilters: true},
-							},
-						},
-						{
-							type: 'item',
-							key: 'decisions',
-							label: t('operate.decisions.title'),
-							icon: GitBranch,
-							isActive: isOperateDecisionsRoute,
-							linkProps: {
-								to: tabRoutes['operateDecisions'],
-								search: {evaluated: true, failed: true},
-								state: {operateHideOptionalFilters: true},
-							},
-						},
-						{
-							type: 'group',
-							key: 'operations',
-							label: t('operate.operations.title'),
-							icon: Settings2,
-							children: [
-								{
-									type: 'item',
-									key: 'batch-operations',
-									label: t('operate.batchOperations.title'),
-									icon: Layers,
-									isActive: isOperateBatchOperationsRoute,
-									linkProps: {
-										to: tabRoutes['operateBatchOperations'],
-									},
-								},
-								{
-									type: 'item',
-									key: 'operations-log',
-									label: t('operate.operationsLog.title'),
-									icon: History,
-									isActive: isOperateOperationsLogRoute,
-									linkProps: {
-										to: tabRoutes['operateOperationsLog'],
-									},
-								},
-							],
-						},
-					]
-				: [],
+			items: hasOperateAccess ? getOperateSidebarItems({t, matchRoute, base: OPERATE_BASE}) : [],
 		};
 	}
 

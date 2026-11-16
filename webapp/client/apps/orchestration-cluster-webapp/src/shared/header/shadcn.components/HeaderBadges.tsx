@@ -13,17 +13,21 @@ import {getBootConfig} from '#/shared/config/getBootConfig';
 import {queries} from '#/shared/http/queries';
 import {LicenseBadges} from './LicenseBadges';
 
-const HeaderBadges: React.FC = () => {
+type Props = {
+	hideLicenseBelow?: string;
+};
+
+const HeaderBadges: React.FC<Props> = ({hideLicenseBelow = '64rem'}) => {
 	const {clusters} = useC3Profile();
 	const {data: license} = useSuspenseQuery(queries.getLicense());
-	const isBelowLg = useMediaQuery('(width < 64rem)');
+	const isNarrow = useMediaQuery(`(width < ${hideLicenseBelow})`);
 	const {clusterId} = getBootConfig();
 	const stage = clusters?.find(({uuid}) => uuid === clusterId)?.labels?.camunda?.[0] ?? '';
 
 	return (
 		<div className="flex items-center gap-2">
 			<EnvironmentBadge stage={stage} />
-			{isBelowLg ? null : <LicenseBadges license={license} />}
+			{isNarrow ? null : <LicenseBadges license={license} />}
 		</div>
 	);
 };

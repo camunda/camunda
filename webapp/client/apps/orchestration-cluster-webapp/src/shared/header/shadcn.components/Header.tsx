@@ -7,14 +7,11 @@
  */
 
 import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast} from '@camunda/design-system';
-import {SaasNotifications} from '@camunda/oc-saas-notifications';
-import {useC3Profile} from '@camunda/camunda-composite-components';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {authenticationStore} from '#/shared/auth/authentication.store';
 import {C3Provider, type CurrentApp} from '#/shared/c3/components/C3Provider';
-import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
@@ -22,6 +19,8 @@ import {AccountMenu} from './AccountMenu';
 import {Breadcrumbs} from './Breadcrumbs';
 import {HeaderBadges} from './HeaderBadges';
 import {HelpMenu} from './HelpMenu';
+import {SaasAccountMenu} from './SaasAccountMenu';
+import {useSaasGlobalActions} from './useSaasGlobalActions';
 import {useCallback, useMemo} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
@@ -33,44 +32,14 @@ type Props = {
 	initialSaasToken: string | null;
 };
 
-const SaasAccountMenu: React.FC<React.ComponentProps<typeof AccountMenu>> = (props) => {
-	const {onThemeChange} = useC3Profile();
-
-	return <AccountMenu {...props} onThemeChange={onThemeChange} />;
-};
-
 const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
-	const {t, i18n} = useTranslation();
+	const {t} = useTranslation();
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 	const {ariaLabel, homeRoute, items} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
-	const {organizationId, clusterId} = getBootConfig();
-	const isSaas = organizationId !== null && clusterId !== null;
+	const {isSaas, globalActions} = useSaasGlobalActions(initialSaasToken);
 	const breadcrumb =
 		currentApp === undefined ? undefined : <Breadcrumbs currentApp={currentApp} webappLinks={currentUser.c8Links} />;
-	const globalActions = useMemo(
-		() =>
-			isSaas && initialSaasToken !== null
-				? [
-						{
-							key: 'notifications',
-							label: t('headerNotificationsLabel'),
-							element: (
-								<SaasNotifications
-									locale={i18n.resolvedLanguage}
-									labels={{
-										title: t('headerNotificationsLabel'),
-										loading: t('headerNotificationsLoading'),
-										empty: t('headerNotificationsEmptyDescription'),
-									}}
-								/>
-							),
-						},
-					]
-				: undefined,
-		[i18n.resolvedLanguage, initialSaasToken, isSaas, t],
-	);
-
 	const handleLogout = useCallback(() => {
 		toast.info(t('notificationLogOutTitle'), {
 			description: t('notificationLogOutSubtitle'),
@@ -108,7 +77,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 						actions={
 							<>
 								<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
-								{isSaas && initialSaasToken !== null ? (
+								{isSaas ? (
 									<SaasAccountMenu
 										displayName={currentUser.displayName ?? currentUser.username}
 										canLogout={canLogout}

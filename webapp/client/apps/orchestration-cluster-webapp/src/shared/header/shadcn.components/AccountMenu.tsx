@@ -34,6 +34,8 @@ const themeOptions = [
 
 type Props = {
 	displayName: string;
+	email?: string | null;
+	version?: string;
 	canLogout: boolean;
 	onLogout: () => void;
 	onOpenCookiePreferences?: () => void;
@@ -41,7 +43,7 @@ type Props = {
 };
 
 const AccountMenu: React.FC<Props> = observer(
-	({displayName, canLogout, onLogout, onOpenCookiePreferences, onThemeChange}) => {
+	({displayName, email, version, canLogout, onLogout, onOpenCookiePreferences, onThemeChange}) => {
 		const {t, i18n} = useTranslation();
 		const {selectedTheme, changeTheme} = themeStore;
 		const selectedLanguage = i18n.language.split('-')[0];
@@ -61,6 +63,11 @@ const AccountMenu: React.FC<Props> = observer(
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-56">
 					<DropdownMenuLabel className="font-normal">{displayName}</DropdownMenuLabel>
+					{email ? (
+						<Text as="div" variant="label-sm" className="px-2 py-1.5 text-neutral-foreground-subtle">
+							{email}
+						</Text>
+					) : null}
 					<DropdownMenuSeparator />
 					<div className="px-2 py-1.5">
 						<Text as="span" variant="label-sm" className="text-neutral-foreground-subtle">
@@ -139,6 +146,14 @@ const AccountMenu: React.FC<Props> = observer(
 								<LogOut aria-hidden />
 								{t('headerLogOutLabel')}
 							</DropdownMenuItem>
+						</>
+					) : null}
+					{version ? (
+						<>
+							<DropdownMenuSeparator />
+							<Text as="div" variant="label-sm" className="px-2 py-1.5 text-neutral-foreground-subtle">
+								{t('headerVersionLabel', {version})}
+							</Text>
 						</>
 					) : null}
 				</DropdownMenuContent>
