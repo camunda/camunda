@@ -31,20 +31,18 @@ public final class PolicyUpdateProcessors {
       final EngineSecurityConfig securityConfig) {
     final var policyUpdateState = processingState.getPolicyUpdateState();
     final var commandMapper = new PolicyUpdateCommandMapper(processingState);
+    final var validator = new PolicyUpdateValidator(processingState, commandMapper, securityConfig);
     typedRecordProcessors
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPEND_CHUNK,
-            new PolicyUpdateAppendChunkProcessor(policyUpdateState, keyGenerator, writers))
+            new PolicyUpdateAppendChunkProcessor(
+                policyUpdateState, validator, keyGenerator, writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.APPLY_CHUNK,
             new PolicyUpdateApplyChunkProcessor(
-                policyUpdateState,
-                commandMapper,
-                new PolicyUpdateValidator(processingState, securityConfig),
-                keyGenerator,
-                writers))
+                policyUpdateState, commandMapper, keyGenerator, writers))
         .onCommand(
             ValueType.POLICY_UPDATE,
             PolicyUpdateIntent.COMMIT_VERSION,

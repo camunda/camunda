@@ -28,9 +28,10 @@ import java.util.function.Function;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Validates all identity commands of a policy update before any of them is written, with the same
- * rules as the identity processors, so that an invalid update changes nothing. The commands are
- * validated in apply order against the state plus the commands before them.
+ * Validates a whole policy update, all its chunks together, before any of its identity commands is
+ * written, with the same rules as the identity processors, so that an invalid update changes
+ * nothing. The chunks are mapped to identity commands, which are validated in apply order against
+ * the state plus the commands before them, including those of earlier chunks.
  *
  * <p>Only role commands are validated so far; the commands of the other entities pass unchecked and
  * can still be rejected by their processors.
@@ -39,18 +40,34 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateValidator {
 
   private final ProcessingState state;
+  private final PolicyUpdateCommandMapper commandMapper;
   private final EngineSecurityConfig securityConfig;
 
   public PolicyUpdateValidator(
-      final ProcessingState state, final EngineSecurityConfig securityConfig) {
+      final ProcessingState state,
+      final PolicyUpdateCommandMapper commandMapper,
+      final EngineSecurityConfig securityConfig) {
     this.state = state;
+    this.commandMapper = commandMapper;
     this.securityConfig = securityConfig;
   }
 
-  /** Returns the reasons why the update can't be applied, or an empty list if it can. */
-  public List<String> validate(
-      final PolicyUpdateRecordValue chunk, final List<IdentityCommand> commands) {
-    final var duplicates = findDuplicateUpserts(chunk);
+  /**
+   * Returns the reasons why the update can't be applied, or an empty list if it can.
+   *
+   * @param chunks all chunks of the update, in their order
+   */
+  public List<String> validate(final List<? extends PolicyUpdateRecordValue> chunks) {
+    final var commands = new ArrayList<IdentityCommand>();
+    final var unmappable = new ArrayList<String>();
+    for (final var chunk : chunks) {
+      commandMapper.toCommands(chunk).ifRightOrLeft(commands::addAll, unmappable::addAll);
+    }
+    if (!unmappable.isEmpty()) {
+      return unmappable;
+    }
+
+    final var duplicates = findDuplicateUpserts(chunks);
     if (!duplicates.isEmpty()) {
       // a duplicate is mapped to two creates, so validating the commands adds nothing
       return duplicates;
@@ -81,23 +98,37 @@ public final class PolicyUpdateValidator {
     return Either.right(command);
   }
 
-  private static List<String> findDuplicateUpserts(final PolicyUpdateRecordValue chunk) {
+  private static List<String> findDuplicateUpserts(
+      final List<? extends PolicyUpdateRecordValue> chunks) {
     final var errors = new ArrayList<String>();
-    findDuplicates(errors, "tenant", chunk.getTenants(), TenantRecordValue::getTenantId);
-    findDuplicates(errors, "role", chunk.getRoles(), RoleRecordValue::getRoleId);
-    findDuplicates(errors, "group", chunk.getGroups(), GroupRecordValue::getGroupId);
     findDuplicates(
-        errors, "mapping rule", chunk.getMappingRules(), MappingRuleRecordValue::getMappingRuleId);
+        errors,
+        "tenant",
+        chunks,
+        PolicyUpdateRecordValue::getTenants,
+        TenantRecordValue::getTenantId);
+    findDuplicates(
+        errors, "role", chunks, PolicyUpdateRecordValue::getRoles, RoleRecordValue::getRoleId);
+    findDuplicates(
+        errors, "group", chunks, PolicyUpdateRecordValue::getGroups, GroupRecordValue::getGroupId);
+    findDuplicates(
+        errors,
+        "mapping rule",
+        chunks,
+        PolicyUpdateRecordValue::getMappingRules,
+        MappingRuleRecordValue::getMappingRuleId);
     return errors;
   }
 
   private static <T> void findDuplicates(
       final List<String> errors,
       final String entityName,
-      final List<T> entities,
+      final List<? extends PolicyUpdateRecordValue> chunks,
+      final Function<PolicyUpdateRecordValue, List<T>> section,
       final Function<T, String> id) {
     final var seen = new HashSet<String>();
     final var reported = new HashSet<String>();
+    final var entities = chunks.stream().flatMap(chunk -> section.apply(chunk).stream()).toList();
     for (final var entity : entities) {
       final var entityId = id.apply(entity);
       if (!seen.add(entityId) && reported.add(entityId)) {

@@ -372,8 +372,8 @@ public final class PolicyUpdateApplyTest {
     assertThat(rejection.getRejectionReason()).contains("client request");
   }
 
-  private static Record<PolicyUpdateRecordValue> rejectionOf(final String updateId) {
-    return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+  static Record<PolicyUpdateRecordValue> rejectionOf(final String updateId) {
+    return RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
         .onlyCommandRejections()
         .filter(record -> record.getValue().getUpdateId().equals(updateId))
         .getFirst();
