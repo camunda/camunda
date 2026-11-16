@@ -343,8 +343,10 @@ jobs:
         run: |
           set -uo pipefail
           read -ra args <<< "$PROJECT_ARGS $SPEC_PATHS"
-          npx playwright test "${args[@]}"
-          status=$?
+          # The step shell runs with -e, so a red baseline must be captured
+          # here rather than abort the step before `result` is written.
+          status=0
+          npx playwright test "${args[@]}" || status=$?
           mkdir -p /tmp/baseline
           cp json-report/results.json /tmp/baseline/results.json 2>/dev/null || true
           if [ "$status" -eq 0 ]; then
