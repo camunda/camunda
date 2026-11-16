@@ -215,6 +215,20 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public JobWorkerMockBuilder mockCallActivity(final String calledProcessId) {
+    final CamundaClient client = createClient();
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehaviorSupplier.get());
+
+    final JobWorkerMockBuilder builder =
+        new JobWorkerMockBuilderImpl(null, calledProcessId, client, exampleDataReader);
+    if (jobReservationToken != null) {
+      builder.withJobReservationToken(jobReservationToken);
+    }
+    return builder;
+  }
+
+  @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
     return new MockChildProcessBuilderImpl(client);

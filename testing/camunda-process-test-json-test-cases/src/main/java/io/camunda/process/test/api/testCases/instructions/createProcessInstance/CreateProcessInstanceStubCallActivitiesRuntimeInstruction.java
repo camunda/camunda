@@ -16,7 +16,9 @@
 package io.camunda.process.test.api.testCases.instructions.createProcessInstance;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
@@ -47,4 +49,15 @@ public interface CreateProcessInstanceStubCallActivitiesRuntimeInstruction
    * @return the called-process ids to stub
    */
   List<String> getProcessIds();
+
+  /**
+   * The token that reserves the stub jobs, so a mock worker presenting it can drain them (see
+   * {@link io.camunda.process.test.api.CamundaProcessTestContext#mockCallActivity(String)
+   * mockCallActivity}). Use {@link TestCaseJobReservationToken#PLACEHOLDER}: the runner substitutes
+   * the token of the current run for it. Required to mock the stubbed call activities on a remote
+   * cluster.
+   *
+   * @return the job reservation token or empty if not set
+   */
+  Optional<String> getJobReservationToken();
 }

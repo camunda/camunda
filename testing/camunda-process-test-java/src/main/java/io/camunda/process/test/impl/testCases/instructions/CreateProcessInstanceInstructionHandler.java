@@ -28,7 +28,6 @@ import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import io.camunda.process.test.impl.testCases.TestRunContext;
-import java.util.List;
 import java.util.Optional;
 
 public class CreateProcessInstanceInstructionHandler
@@ -81,8 +80,9 @@ public class CreateProcessInstanceInstructionHandler
 
     final Optional<CreateProcessInstanceReserveJobsRuntimeInstruction> reserveJobs =
         reserveJobsOf(instruction);
-    final List<String> stubbedCallActivityProcessIds = stubbedCallActivityProcessIdsOf(instruction);
-    final boolean stubCallActivities = !stubbedCallActivityProcessIds.isEmpty();
+    final Optional<CreateProcessInstanceStubCallActivitiesRuntimeInstruction>
+        stubCallActivitiesOpt = stubCallActivitiesOf(instruction);
+    final boolean stubCallActivities = stubCallActivitiesOpt.isPresent();
 
     final boolean isolated = reserveJobs.isPresent() || stubCallActivities;
 
@@ -91,9 +91,16 @@ public class CreateProcessInstanceInstructionHandler
             command.reserveJobs(
                 runContext.resolveJobReservationToken(reserve.getJobReservationToken()),
                 reserve.getJobTypes().toArray(new String[0])));
-    if (stubCallActivities) {
-      command.stubCallActivities(stubbedCallActivityProcessIds.toArray(new String[0]));
-    }
+    stubCallActivitiesOpt.ifPresent(
+        stub -> {
+          final Optional<String> token =
+              stub.getJobReservationToken().map(runContext::resolveJobReservationToken);
+          if (token.isPresent()) {
+            command.stubCallActivities(token.get(), stub.getProcessIds());
+          } else {
+            command.stubCallActivities(stub.getProcessIds().toArray(new String[0]));
+          }
+        });
 
     final ProcessInstanceEvent processInstance = command.send().join();
 
@@ -109,14 +116,12 @@ public class CreateProcessInstanceInstructionHandler
         .findFirst();
   }
 
-  private static List<String> stubbedCallActivityProcessIdsOf(
-      final CreateProcessInstanceInstruction instruction) {
+  private static Optional<CreateProcessInstanceStubCallActivitiesRuntimeInstruction>
+      stubCallActivitiesOf(final CreateProcessInstanceInstruction instruction) {
     return instruction.getRuntimeInstructions().stream()
         .filter(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::isInstance)
         .map(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::cast)
-        .map(CreateProcessInstanceStubCallActivitiesRuntimeInstruction::getProcessIds)
-        .findFirst()
-        .orElseGet(java.util.Collections::emptyList);
+        .findFirst();
   }
 
   @Override

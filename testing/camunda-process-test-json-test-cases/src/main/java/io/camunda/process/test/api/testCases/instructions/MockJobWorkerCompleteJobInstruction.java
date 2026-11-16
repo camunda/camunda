@@ -35,11 +35,22 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
   }
 
   /**
-   * The job type to mock. This should match the `zeebeJobType` in the BPMN model.
+   * The job type to mock. This should match the `zeebeJobType` in the BPMN model. Exactly one of
+   * {@code jobType} or {@code calledProcessId} is set.
    *
-   * @return the job type
+   * @return the job type or empty when mocking a call activity
    */
-  String getJobType();
+  Optional<String> getJobType();
+
+  /**
+   * The called-process id whose stubbed call activities to stand in for, instead of a job type.
+   * When set, the mock drains the stub jobs of every call activity calling this process. Requires
+   * {@link #getJobReservationToken()}. Exactly one of {@code jobType} or {@code calledProcessId} is
+   * set.
+   *
+   * @return the called-process id or empty when mocking an ordinary job type
+   */
+  Optional<String> getCalledProcessId();
 
   /**
    * The reservation token the jobs of this type were reserved with. Use {@link

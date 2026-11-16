@@ -239,6 +239,10 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "jobReservationToken": {
+                    "description": "The token that reserves the stub jobs, so a mock worker presenting it can drain them. Use the placeholder '${jobReservationToken}'; the runner substitutes the token of the current run.",
+                    "type": "string"
                   }
                 },
                 "required": [
@@ -1121,7 +1125,11 @@
           "const": "MOCK_JOB_WORKER_COMPLETE_JOB"
         },
         "jobType": {
-          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "calledProcessId": {
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires jobReservationToken. Exactly one of jobType or calledProcessId must be set.",
           "type": "string"
         },
         "jobReservationToken": {
@@ -1140,8 +1148,19 @@
         }
       },
       "required": [
-        "type",
-        "jobType"
+        "type"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "jobType"
+          ]
+        },
+        {
+          "required": [
+            "calledProcessId"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -1273,7 +1292,11 @@
           "const": "MOCK_JOB_WORKER_THROW_BPMN_ERROR"
         },
         "jobType": {
-          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "calledProcessId": {
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires jobReservationToken. Exactly one of jobType or calledProcessId must be set.",
           "type": "string"
         },
         "jobReservationToken": {
@@ -1296,8 +1319,19 @@
       },
       "required": [
         "type",
-        "jobType",
         "errorCode"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "jobType"
+          ]
+        },
+        {
+          "required": [
+            "calledProcessId"
+          ]
+        }
       ],
       "additionalProperties": false
     },

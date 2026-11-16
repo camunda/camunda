@@ -36,6 +36,7 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   private static final String ACTION_THROW_BPMN_ERROR = "Throw BPMN Error";
 
   private final String jobType;
+  private final String calledProcessId;
   private final CamundaClient client;
   private final BpmnExampleDataReader exampleDataReader;
 
@@ -47,13 +48,24 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
       final String jobType,
       final CamundaClient client,
       final BpmnExampleDataReader exampleDataReader) {
+    this(jobType, null, client, exampleDataReader);
+  }
+
+  public JobWorkerMockBuilderImpl(
+      final String jobType,
+      final String calledProcessId,
+      final CamundaClient client,
+      final BpmnExampleDataReader exampleDataReader) {
 
     this.jobType = jobType;
+    this.calledProcessId = calledProcessId;
     this.client = client;
     this.exampleDataReader = exampleDataReader;
+    final String subscription =
+        calledProcessId != null ? "calledProcessId: " + calledProcessId : "jobType: " + jobType;
     logMessagePrefix =
         (action, job) ->
-            String.format("Mock: %s [jobType: %s, jobKey: %s]", action, jobType, job.getKey());
+            String.format("Mock: %s [%s, jobKey: %s]", action, subscription, job.getKey());
   }
 
   @Override
@@ -143,7 +155,7 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   @Override
   public JobWorkerMock withHandler(final JobHandler jobHandler) {
-    return new JobWorkerMockImpl(jobType, client, jobHandler, jobReservationToken);
+    return new JobWorkerMockImpl(jobType, calledProcessId, client, jobHandler, jobReservationToken);
   }
 
   private CompleteJobCommandStep1 applyReservationToken(final CompleteJobCommandStep1 command) {

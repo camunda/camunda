@@ -39,7 +39,11 @@ public class MockJobWorkerCompleteJobInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final JobWorkerMockBuilder mockBuilder = context.mockJobWorker(instruction.getJobType());
+    final JobWorkerMockBuilder mockBuilder =
+        instruction
+            .getCalledProcessId()
+            .map(context::mockCallActivity)
+            .orElseGet(() -> context.mockJobWorker(instruction.getJobType().get()));
     instruction
         .getJobReservationToken()
         .map(runContext::resolveJobReservationToken)

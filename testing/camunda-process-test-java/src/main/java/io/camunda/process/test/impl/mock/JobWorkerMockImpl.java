@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import java.util.ArrayList;
@@ -34,6 +35,15 @@ public class JobWorkerMockImpl implements JobWorkerMock {
 
   public JobWorkerMockImpl(
       final String jobType,
+      final CamundaClient camundaClient,
+      final JobHandler jobHandler,
+      final String jobReservationToken) {
+    this(jobType, null, camundaClient, jobHandler, jobReservationToken);
+  }
+
+  public JobWorkerMockImpl(
+      final String jobType,
+      final String calledProcessId,
       final CamundaClient camundaClient,
       final JobHandler jobHandler,
       final String jobReservationToken) {
@@ -69,8 +79,11 @@ public class JobWorkerMockImpl implements JobWorkerMock {
           }
         };
 
-    final JobWorkerBuilderStep3 workerBuilder =
-        camundaClient.newWorker().jobType(jobType).handler(safeLoggingJobHandler);
+    final JobWorkerBuilderStep2 subscription =
+        calledProcessId != null
+            ? camundaClient.newWorker().calledProcessId(calledProcessId)
+            : camundaClient.newWorker().jobType(jobType);
+    final JobWorkerBuilderStep3 workerBuilder = subscription.handler(safeLoggingJobHandler);
     if (jobReservationToken != null) {
       workerBuilder.jobReservationToken(jobReservationToken);
     }

@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -107,6 +108,24 @@ public interface CamundaProcessTestContext {
    * @return a {@see JobWorkerMock} instance for configuring the mock behavior.
    */
   JobWorkerMockBuilder mockJobWorker(final String jobType);
+
+  /**
+   * Creates a mock worker that stands in for a stubbed call activity's child process, draining the
+   * stub jobs of every call activity that calls {@code calledProcessId} (see {@link
+   * CreateProcessInstanceCommandStep1#stubCallActivities(String, java.util.List)
+   * stubCallActivities}). One such mock drives every occurrence, a multi-instance call activity
+   * included.
+   *
+   * <p>The mock uses the context's {@link #setJobReservationToken(String) reservation token}, which
+   * must match the token the instance was stubbed with, so set it (or create the instance with a
+   * token) before registering the mock. Configure the stand-in behavior — {@code thenComplete},
+   * {@code thenThrowBpmnError} — on the returned builder, the same as {@link
+   * #mockJobWorker(String)}.
+   *
+   * @param calledProcessId the BPMN process id whose stubbed call activities to stand in for
+   * @return a builder for configuring the mock behavior
+   */
+  JobWorkerMockBuilder mockCallActivity(final String calledProcessId);
 
   /**
    * Returns a builder for constructing a mock child process. Use {@link

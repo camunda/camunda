@@ -144,10 +144,10 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
 
   private static Optional<String> mockedJobTypeOf(final TestCaseInstruction instruction) {
     if (instruction instanceof MockJobWorkerCompleteJobInstruction) {
-      return Optional.of(((MockJobWorkerCompleteJobInstruction) instruction).getJobType());
+      return ((MockJobWorkerCompleteJobInstruction) instruction).getJobType();
     }
     if (instruction instanceof MockJobWorkerThrowBpmnErrorInstruction) {
-      return Optional.of(((MockJobWorkerThrowBpmnErrorInstruction) instruction).getJobType());
+      return ((MockJobWorkerThrowBpmnErrorInstruction) instruction).getJobType();
     }
     return Optional.empty();
   }
