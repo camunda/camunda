@@ -35,7 +35,6 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 	// navigation shows the same loading row legacy did, instead of a blank page while the loader awaits.
 	pendingComponent: () => (
 		<DecisionInstanceShell
-			isPending
 			header={
 				<InstanceHeaderSkeleton
 					headerColumns={getHeaderColumns(t, {

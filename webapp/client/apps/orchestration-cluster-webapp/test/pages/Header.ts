@@ -25,7 +25,7 @@ class Header extends View {
 			throw new Error('No branding name configured for this page');
 		}
 
-		return this.page.getByRole('banner', {name: this.brandingName});
+		return this.page.getByRole('link', {name: this.brandingName});
 	}
 
 	get userMenuButton() {
@@ -45,7 +45,7 @@ class Header extends View {
 	}
 
 	get infoSidebarToggle() {
-		return this.page.getByRole('button', {name: /open info/i});
+		return this.page.getByRole('button', {name: 'Info', exact: true});
 	}
 
 	get logoutMenuItem() {

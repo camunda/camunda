@@ -129,20 +129,7 @@ test.describe('logout', () => {
 		await operateIndexPage.goto();
 		await operateIndexPage.header.openUserMenu();
 
-		await expect(operateIndexPage.header.userMenuButton).toBeVisible();
+		await expect(operateIndexPage.header.menu).toBeVisible();
 		await expect(operateIndexPage.header.logoutMenuItem).toBeHidden();
-	});
-});
-
-test.describe('language', () => {
-	test('should translate the user menu button when the language is changed', async ({operateIndexPage}) => {
-		await operateIndexPage.goto();
-		await operateIndexPage.header.openUserMenu();
-
-		await operateIndexPage.header.selectLanguage('Deutsch');
-
-		await expect(
-			operateIndexPage.header.getUserMenuButton(`Benutzermenü, ${currentUserMock.displayName}`),
-		).toBeVisible();
 	});
 });

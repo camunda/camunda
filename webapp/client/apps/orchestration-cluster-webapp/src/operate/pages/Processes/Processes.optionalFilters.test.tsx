@@ -33,6 +33,7 @@ import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {Header} from '#/shared/header/components/Header';
+import {PageContent} from '#/shared/header/components/styled';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
 
@@ -54,7 +55,9 @@ function ProcessesWithHeader() {
 	return (
 		<>
 			<Header currentUser={createCurrentUser()} license={createLicense()} />
-			<ProcessesHarness />
+			<PageContent>
+				<ProcessesHarness />
+			</PageContent>
 		</>
 	);
 }
@@ -317,7 +320,7 @@ describe('Optional Filters', () => {
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 			);
 			const screen = await renderProcessesPageWithHeader({processInstanceKey: '2251799813685467'});
-			const processesHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Processes'});
+			const processesHeaderLink = screen.getByRole('link', {name: 'Processes'});
 
 			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 			await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
@@ -365,7 +368,7 @@ describe('Optional Filters', () => {
 			await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
 			await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
 
-			await userEvent.click(screen.getByRole('banner').getByRole('link', {name: 'Processes'}));
+			await userEvent.click(screen.getByRole('link', {name: 'Processes'}));
 
 			await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 			await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();

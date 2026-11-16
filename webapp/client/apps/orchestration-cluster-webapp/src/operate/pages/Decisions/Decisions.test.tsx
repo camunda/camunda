@@ -36,6 +36,7 @@ import {DecisionsHarness} from './DecisionsHarness';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {Header} from '#/shared/header/components/Header';
+import {PageContent} from '#/shared/header/components/styled';
 import {mockQueryDecisionDefinitionsEndpointByFilter} from './mockQueryDecisionDefinitionsEndpointByFilter';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
@@ -54,7 +55,9 @@ function DecisionsWithHeader() {
 	return (
 		<>
 			<Header currentUser={createCurrentUser()} license={createLicense()} />
-			<DecisionsHarness />
+			<PageContent>
+				<DecisionsHarness />
+			</PageContent>
 		</>
 	);
 }
@@ -592,7 +595,7 @@ describe('<Decisions />', () => {
 			path: '/operate/decisions',
 			initialEntry: '/operate/decisions?evaluated=true&failed=true',
 		});
-		const decisionsHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Decisions'});
+		const decisionsHeaderLink = screen.getByRole('link', {name: 'Decisions'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));

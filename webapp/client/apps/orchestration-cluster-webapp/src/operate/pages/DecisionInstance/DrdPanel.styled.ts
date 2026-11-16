@@ -10,7 +10,7 @@ import styled from 'styled-components';
 
 const DrdPanelContainer = styled.div`
 	position: absolute;
-	top: var(--cds-spacing-09);
+	top: 0;
 	bottom: 0;
 	right: 0;
 	display: flex;

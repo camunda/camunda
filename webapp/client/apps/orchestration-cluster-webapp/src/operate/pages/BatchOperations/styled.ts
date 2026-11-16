@@ -10,12 +10,11 @@ import styled, {css} from 'styled-components';
 import {styles} from '@carbon/type';
 import {Link} from '@carbon/react';
 
-const PageContainer = styled.main`
+const PageContainer = styled.div`
 	display: flex;
 	flex-direction: column;
 	height: 100%;
 	box-sizing: border-box;
-	padding-top: var(--cds-spacing-09);
 	overflow: hidden;
 	background-color: var(--cds-layer);
 `;

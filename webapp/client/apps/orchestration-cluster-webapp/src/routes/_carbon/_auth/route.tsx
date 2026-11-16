@@ -19,6 +19,7 @@ import {storeSessionState} from '#/shared/browser-storage/session-storage';
 import {C3Provider} from '#/shared/c3/components/C3Provider';
 import {fetchSaasToken} from '#/shared/c3/fetchSaasToken';
 import {Header} from '#/shared/header/components/Header';
+import {PageContent} from '#/shared/header/components/styled';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 import {isTasklistPath} from '#/shared/auth/isTasklistPath';
@@ -78,15 +79,17 @@ const Route = createFileRoute('/_carbon/_auth')({
 				<SessionWatcher />
 				<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
 					<Header currentUser={currentUser} license={license} />
-					<Outlet />
+					<PageContent>
+						<Outlet />
+					</PageContent>
 				</C3Provider>
 			</>
 		);
 	},
 	notFoundComponent: () => (
-		<main className="cds--content">
+		<div className="cds--content">
 			<NotFoundPage />
-		</main>
+		</div>
 	),
 });
 
