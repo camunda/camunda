@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -25,7 +27,6 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -33,8 +34,15 @@ import java.util.function.Function;
 /**
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
+ *
+ * <p>The map is bounded to the {@link #MAX_TRACKED_JOB_TYPES} most frequently used job types
+ * (W-TinyLFU), as job types are user input and thus unbounded. Evicted job types lose their
+ * round-robin cursor and restart from the first partition when seen again; this only skews the
+ * first request of an infrequently used type, so the overall distribution stays even.
  */
 public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandler<T> {
+
+  static final int MAX_TRACKED_JOB_TYPES = 1024;
 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
@@ -42,8 +50,15 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
   private static final String MAX_MESSAGE_SIZE_EXCEEDED_MSG =
       "the response is bigger than the maximum allowed message size %d";
 
-  private final Map<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
-      new ConcurrentHashMap<>();
+  // Bounded because job types are user input, so their domain is unbounded and tracking every
+  // type seen over the gateway's lifetime would leak memory.
+  private final Cache<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
+      Caffeine.newBuilder()
+          .maximumSize(MAX_TRACKED_JOB_TYPES)
+          // Keeps cache maintenance off the JVM-wide common pool, which other components share and
+          // could starve; with at most 1024 tiny entries, evicting inline adds negligible latency.
+          .executor(Runnable::run)
+          .build();
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
   private final long maxMessageSize;
@@ -324,10 +339,14 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
         reason);
   }
 
+  long trackedJobTypesCount() {
+    return jobTypeToNextPartitionId.estimatedSize();
+  }
+
   private PartitionIdIterator partitionIdIteratorForType(
       final String jobType, final int partitionsCount, final String partitionGroup) {
     final var nextPartitionSupplier =
-        jobTypeToNextPartitionId.computeIfAbsent(jobType, t -> new RoundRobinDispatchStrategy());
+        jobTypeToNextPartitionId.get(jobType, t -> new RoundRobinDispatchStrategy());
     return new PartitionIdIterator(
         nextPartitionSupplier.determinePartition(topologyManager, partitionGroup),
         partitionsCount,
